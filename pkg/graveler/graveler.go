@@ -410,6 +410,14 @@ type CommitParams struct {
 	SourceMetaRange *MetaRangeID
 }
 
+type GarbageCollectionRunMetadata struct {
+	RunID string
+	// Location of expired commits CSV file on object store
+	CommitsCSVLocation string
+	// Location of where to write expired addresses on object store
+	AddressLocation string
+}
+
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -1376,8 +1384,8 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository 
 	}
 
 	return &GarbageCollectionRunMetadata{
-		RunId:              runID,
-		CommitsCsvLocation: commitsLocation,
+		RunID:              runID,
+		CommitsCSVLocation: commitsLocation,
 		AddressLocation:    addressLocation,
 	}, err
 }

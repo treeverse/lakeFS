@@ -5,8 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"path"
+	"net/url"
 	"sort"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ import (
 	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/testutil"
-	"github.com/xitongsys/parquet-go-source/local"
+	"github.com/xitongsys/parquet-go-source/buffer"
 	"github.com/xitongsys/parquet-go/reader"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -607,24 +606,41 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			repositoryID := repoID.String()
 
 			var (
-				mark  *catalog.GCUncommittedMark
-				runID string
+				mark       *catalog.GCUncommittedMark
+				runID      string
+				allRecords []string
 			)
 			for {
 				result, err := c.PrepareGCUncommitted(ctx, repositoryID, mark)
 				require.NoError(t, err)
+
+				// keep or check run id match previous calls
 				if runID == "" {
-					runID = result.Metadata.RunId
+					runID = result.RunID
 				} else {
-					require.Equal(t, runID, result.Metadata.RunId)
+					require.Equal(t, runID, result.RunID)
 				}
+
+				// read parquet information if data was stored to location
+				if result.Location != "" && result.Filename != "" {
+					objLocation, err := url.JoinPath(result.Location, result.Filename)
+					require.NoError(t, err)
+					addresses := readPhysicalAddressesFromParquetObject(t, ctx, c, objLocation)
+					allRecords = append(allRecords, addresses...)
+				}
+
 				mark = result.Mark
 				if mark == nil {
 					break
 				}
 				require.Equal(t, runID, result.Mark.RunID)
 			}
-			verifyPrepareGCUncommittedData(t, ctx, runID, c, expectedRecords)
+
+			// match expected records found in parquet data
+			sort.Strings(allRecords)
+			if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
+				t.Errorf("Found diff in expected records: %s", diff)
+			}
 		})
 	}
 }
@@ -743,73 +759,39 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 
 	repoPartition := graveler.RepoPartition(repository)
-	// TODO(barak): remove
-	// entIt := kvmock.NewMockEntriesIterator(test.Controller)
-	// entIt.EXPECT().Next().AnyTimes().Return(false)
-	// entIt.EXPECT().Err().AnyTimes().Return(nil)
-	// entIt.EXPECT().Close().AnyTimes()
 	test.KVStore.EXPECT().Scan(gomock.Any(), []byte(repoPartition), gomock.Any()).AnyTimes().Return(cUtils.NewFakeKVEntryIterator(trackedEntries), nil)
 
 	sort.Strings(expectedRecords)
 	return test, expectedRecords
 }
 
-func verifyPrepareGCUncommittedData(t *testing.T, ctx context.Context, runID string, c *catalog.Catalog, expectedRecords []string) {
-	location := fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID)
-	var allRecords []string
-	err := c.BlockAdapter.Walk(context.Background(), block.WalkOpts{
-		StorageNamespace: repository.Repository.StorageNamespace.String(),
-		Prefix:           location,
-	}, func(id string) error {
-		fd, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
-			Identifier:     id,
-			IdentifierType: block.IdentifierTypeFull,
-		}, 0)
-		if err != nil {
-			return err
-		}
-		filename := path.Join(t.TempDir(), xid.New().String())
-		fr, err := local.NewLocalFileWriter(filename)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = fr.Close()
-			_ = os.Remove(filename)
-		}()
-
-		_, err = io.Copy(fr, fd)
-		if err != nil {
-			return err
-		}
-
-		_, err = fr.Seek(0, 0)
-		if err != nil {
-			return err
-		}
-
-		pr, err := reader.NewParquetReader(fr, new(catalog.UncommittedParquetObject), 4)
-		if err != nil {
-			return err
-		}
-
-		count := pr.GetNumRows()
-		u := make([]*catalog.UncommittedParquetObject, count)
-		err = pr.Read(&u)
-		if err != nil {
-			return err
-		}
-		pr.ReadStop()
-
-		for _, record := range u {
-			allRecords = append(allRecords, record.PhysicalAddress)
-		}
-		return nil
-	})
-
+func readPhysicalAddressesFromParquetObject(t *testing.T, ctx context.Context, c *catalog.Catalog, obj string) []string {
+	objReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
+		Identifier:       obj,
+		IdentifierType:   block.IdentifierTypeFull,
+		StorageNamespace: repository.StorageNamespace.String(),
+	}, 0)
 	require.NoError(t, err)
-	sort.Strings(allRecords)
-	if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
-		t.Errorf("Found diff in expected records: %s", diff)
+	defer func() { _ = objReader.Close() }()
+
+	data, err := io.ReadAll(objReader)
+	require.NoError(t, err)
+	bufferFile, err := buffer.NewBufferFile(data)
+	require.NoError(t, err)
+	defer func() { _ = bufferFile.Close() }()
+
+	pr, err := reader.NewParquetReader(bufferFile, new(catalog.UncommittedParquetObject), 4)
+	require.NoError(t, err)
+
+	count := pr.GetNumRows()
+	u := make([]*catalog.UncommittedParquetObject, count)
+	err = pr.Read(&u)
+	require.NoError(t, err)
+	pr.ReadStop()
+
+	var records []string
+	for _, record := range u {
+		records = append(records, record.PhysicalAddress)
 	}
+	return records
 }

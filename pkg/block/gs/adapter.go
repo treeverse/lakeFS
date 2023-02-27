@@ -86,17 +86,6 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
-func resolveNamespacePrefix(lsOpts block.WalkOpts) (block.QualifiedPrefix, error) {
-	qualifiedPrefix, err := block.ResolveNamespacePrefix(lsOpts.StorageNamespace, lsOpts.Prefix)
-	if err != nil {
-		return qualifiedPrefix, err
-	}
-	if qualifiedPrefix.StorageType != block.StorageTypeGS {
-		return qualifiedPrefix, block.ErrInvalidNamespace
-	}
-	return qualifiedPrefix, nil
-}
-
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
@@ -164,35 +153,6 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 	return k, nil
-}
-
-func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	var err error
-	defer reportMetrics("Walk", time.Now(), nil, &err)
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	iter := a.client.
-		Bucket(qualifiedPrefix.StorageNamespace).
-		Objects(ctx, &storage.Query{Prefix: qualifiedPrefix.Prefix})
-
-	for {
-		attrs, err := iter.Next()
-
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedPrefix.StorageNamespace, err)
-		}
-
-		if err := walkFn(attrs.Name); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func isErrNotFound(err error) bool {
