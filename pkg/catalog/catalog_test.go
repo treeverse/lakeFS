@@ -768,7 +768,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 func readPhysicalAddressesFromParquetObject(t *testing.T, ctx context.Context, c *catalog.Catalog, obj string) []string {
 	objReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
 		Identifier:       obj,
-		IdentifierType:   block.IdentifierTypeRelative,
+		IdentifierType:   block.IdentifierTypeFull,
 		StorageNamespace: repository.StorageNamespace.String(),
 	}, 0)
 	require.NoError(t, err)
