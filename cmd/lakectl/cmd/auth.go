@@ -378,7 +378,7 @@ var aclGroupACLGet = &cobra.Command{
 
 		Write(permissionTemplate, struct{ Group, Permission string }{id, resp.JSON200.Permission})
 		repositories := resp.JSON200.Repositories
-		if repositories == nil || len(*repositories) == 0 {
+		if *resp.JSON200.AllRepositories {
 			Write("{{\"All repositories\" | red | bold}}\n", nil)
 		} else {
 			rows := make([][]interface{}, len(*repositories))
@@ -417,8 +417,9 @@ var aclGroupACLSet = &cobra.Command{
 		}
 
 		acl := api.SetGroupACLJSONRequestBody{
-			Permission:   permission,
-			Repositories: &repositories,
+			Permission:      permission,
+			AllRepositories: &useAllRepositories,
+			Repositories:    &repositories,
 		}
 
 		resp, err := clt.SetGroupACL(cmd.Context(), id, acl)
