@@ -602,11 +602,6 @@ td .form-group {
   margin-right: 8px;
 }
 
-.object-viewer-buttons {
-  width: 20%;
-  text-align: right;
-  margin-right: 5px;
-}
 
 .object-viewer-sql-input.form-control {
   background-color: #333333;
