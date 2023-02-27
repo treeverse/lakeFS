@@ -549,6 +549,7 @@ td .form-group {
 .import-num-objects {
   display: inline-flex;
   color: green;
+  font-weight: bolder;
 }
 
 .import-text {

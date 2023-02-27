@@ -7,15 +7,19 @@ import {Link} from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
+import {MetadataFields} from "../../../lib/components/repository/changes";
 
 const ImportPhase = {
     NotStarted: 0,
     InProgress: 1,
     Completed: 2,
     Failed: 3,
+    Merging: 4,
+    MergeFailed: 5,
+    Merged: 6,
 }
 
-const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId) => {
+const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId, metadata = {}) => {
     let paginationResp = {};
     let after = "";
     let importBranchResp;
@@ -46,7 +50,7 @@ const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, b
             throw error;
         }
     }
-    await commits.commit(repoId, importBranchResp.id, commitMsg, {}, metarange.id);
+    await commits.commit(repoId, importBranchResp.id, commitMsg, metadata, metarange.id);
     importStatusUpdate.importPhase = ImportPhase.Completed;
     updateImportState(importStatusUpdate);
 }
@@ -70,10 +74,9 @@ const ImportProgress = ({numObjects}) => {
     return (<Row>
         <Col>
             <div className='import-text'>
-                <p>Imported <strong>
-                    <div className='import-num-objects'> {numObjects} </div>
+                Imported <strong>
+                    <span className='import-num-objects'> {numObjects} </span>
                 </strong> objects so far...
-                </p>
             </div>
             <div>
                 <LinearProgress color="success"/>
@@ -100,28 +103,63 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
             {(currBranch && importBranch !== currBranch) &&
                 <div className='import-text'>
                     <p> Use the&nbsp;<Link to={`${location.pathname.replace(/[^/]*$/, "compare")}?ref=${currBranch}&compare=${importBranch}`}
-                                           variant="success">Compare tab</Link>&nbsp;to view the changes and merge
-                        them to {currBranch}.
+                                           variant="success">Compare tab</Link>&nbsp;to view the changes and merge, or merge directly below.
                     </p>
                 </div>
             }
         </Col>
     </Row>);
 }
-const ExecuteImportButton = ({isEnabled, importPhase, importFunc}) => {
-    const enableImport = importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed;
-    return (
-        <Button variant="success"
-                disabled={!isEnabled || !enableImport}
-                onClick={() => {
-                        if (importPhase !== ImportPhase.InProgress) {
-                            importFunc();
-                        }
-                    }}>
-        {importPhase === ImportPhase.InProgress && 'Importing...'}
-        {(importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) && 'Import'}
-        {importPhase === ImportPhase.Completed && 'Import completed'}
-    </Button>);
+const ExecuteImportButton = ({isEnabled, importPhase, importFunc, mergeFunc, doneFunc}) => {
+    switch (importPhase) {
+        case ImportPhase.Completed:
+            return <Button
+                variant="success"
+                onClick={mergeFunc}
+                disabled={!isEnabled}>
+                    Merge Changes
+            </Button>
+        case ImportPhase.NotStarted:
+            return <Button
+                variant="success"
+                disabled={!isEnabled}
+                onClick={importFunc}>
+                Import
+            </Button>
+        case ImportPhase.InProgress:
+            return <Button
+                variant="success"
+                disabled={true}>
+                Importing...
+            </Button>
+        case ImportPhase.Failed:
+            return <Button
+                variant="success"
+                disabled={!isEnabled}
+                onClick={importFunc}>
+                Import
+            </Button>
+        case ImportPhase.Merging:
+            return <Button
+                variant="success"
+                disabled={true}>
+                Merging Changes...
+            </Button>
+        case ImportPhase.MergeFailed:
+            return <Button
+                variant="success"
+                onClick={mergeFunc}
+                disabled={!isEnabled}>
+                Try Again
+            </Button>
+        case ImportPhase.Merged:
+            return <Button
+                variant="success"
+                disabled={!isEnabled}
+                onClick={doneFunc}>
+                Done
+            </Button>
+    }
 }
 
 const ImportForm = ({
@@ -134,13 +172,21 @@ const ImportForm = ({
                         path,
                         commitMsgRef,
                         updateSrcValidity,
+                        metadataFields,
+                        setMetadataFields,
                         shouldAddPath = false,
                         err = null,
+
                     }) => {
     const [isSourceValid, setIsSourceValid] = useState(true);
     const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
     const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
     const updateSourceURLValidity = () => {
+        if (!sourceRef.current.value) {
+            updateSrcValidity(true);
+            setIsSourceValid(true);
+            return
+        }
         const isValid = storageNamespaceValidityRegex.test(sourceRef.current.value);
         updateSrcValidity(isValid);
         setIsSourceValid(isValid);
@@ -156,7 +202,7 @@ const ImportForm = ({
         <form>
             <Form.Group className='form-group'>
                 <Form.Label><strong>Import from:</strong></Form.Label>
-                <Form.Control type="text" name="text" style={pathStyle} sm={8} ref={sourceRef} autoFocus
+                <Form.Control type="text" name="import-from" style={pathStyle} sm={8} ref={sourceRef} autoFocus
                               placeholder={sourceURIExample}
                               onChange={updateSourceURLValidity}/>
                 {isSourceValid === false &&
@@ -164,9 +210,11 @@ const ImportForm = ({
                         {`Import source should match the following pattern: "${storageNamespaceValidityRegexStr}"`}
                     </Form.Text>
                 }
-                <Form.Text style={{color: 'grey', justifyContent: "space-between"}}>
-                    A URI on the object store to import from.<br/>
-                </Form.Text>
+                {isSourceValid &&
+                    <Form.Text style={{color: 'grey', justifyContent: "space-between"}}>
+                        A URI on the object store to import from.<br/>
+                    </Form.Text>
+                }
             </Form.Group>
             {shouldAddPath &&
                 <Form.Group className='form-group'>
@@ -176,7 +224,7 @@ const ImportForm = ({
                             {basePath}
                         </Col>
                         <Col style={pathStyle}>
-                            <Form.Control type="text" autoFocus name="text" ref={destRef} defaultValue={path}/>
+                            <Form.Control type="text" autoFocus name="destination" ref={destRef} defaultValue={path}/>
                         </Col>
                     </Row>
                     <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
@@ -186,8 +234,9 @@ const ImportForm = ({
             }
             <Form.Group className='form-group'>
                 <Form.Label><strong>Commit Message:</strong></Form.Label>
-                <Form.Control sm={8} type="text" ref={commitMsgRef} name="text" autoFocus defaultValue={`Imported data from ${config.blockstore_type}`}/>
+                <Form.Control sm={8} type="text" ref={commitMsgRef} name="commit-message" autoFocus defaultValue={`Imported data from ${config.blockstore_type}`}/>
             </Form.Group>
+            <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
             {err &&
                 <Alert variant={"danger"}>{err.message}</Alert>}
         </form>

@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react";
 
 import {
     ArrowLeftIcon,
-    ClockIcon, DiffIcon, InfoIcon
+    ClockIcon, DiffIcon, InfoIcon, PlusIcon, XIcon
 } from "@primer/octicons-react";
 
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
@@ -18,6 +18,9 @@ import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {refs, statistics} from "../../api";
 import {DeltaLakeDiff} from "./TableDiff";
+import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -279,4 +282,49 @@ const ExperimentalDeltaDiffButton = ({showButton = false}) => {
             </Button>
         </ExperimentalOverlayTooltip>
     </>
+}
+
+export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
+    return (
+        <div className="mt-3">
+            {metadataFields.map((f, i) => {
+                return (
+                    <Form.Group key={`commit-metadata-field-${f.key}-${f.value}-${i}`} className="mb-3">
+                        <Row>
+                            <Col md={{span: 5}}>
+                                <Form.Control type="text" placeholder="Key" defaultValue={f.key}
+                                              onChange={(e) => {
+                                                  metadataFields[i].key = e.currentTarget.value;
+                                                  setMetadataFields(metadataFields);
+                                              }}/>
+                            </Col>
+                            <Col md={{span: 5}}>
+                                <Form.Control type="text" placeholder="Value" defaultValue={f.value}
+                                              onChange={(e) => {
+                                                  metadataFields[i].value = e.currentTarget.value;
+                                                  setMetadataFields(metadataFields);
+                                              }}/>
+                            </Col>
+                            <Col md={{span: 1}}>
+                                <Form.Text>
+                                    <Button size="sm" variant="secondary" onClick={() => {
+                                        setMetadataFields([...metadataFields.slice(0, i), ...metadataFields.slice(i + 1)]);
+                                    }}>
+                                        <XIcon/>
+                                    </Button>
+                                </Form.Text>
+                            </Col>
+                        </Row>
+                    </Form.Group>
+                )
+            })}
+
+            <Button onClick={() => {
+                setMetadataFields([...metadataFields, {key: "", value: ""}]);
+            }} size="sm" variant="secondary">
+                <PlusIcon/>{' '}
+                Add Metadata field
+            </Button>
+        </div>
+    )
 }
