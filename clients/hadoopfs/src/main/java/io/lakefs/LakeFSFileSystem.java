@@ -1,14 +1,13 @@
 package io.lakefs;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.clients.api.*;
 import io.lakefs.clients.api.model.*;
 import io.lakefs.utils.ObjectLocation;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
 import org.jetbrains.annotations.NotNull;

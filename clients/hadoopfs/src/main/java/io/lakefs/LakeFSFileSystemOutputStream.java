@@ -4,10 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.hadoop.fs.Path;
 
 import io.lakefs.clients.api.ApiException;
@@ -45,9 +45,12 @@ class LakeFSFileSystemOutputStream extends OutputStream {
         OutputStream out = connection.getOutputStream();
         out.write(buffer.toByteArray());
         out.close();
-        
+        String eTag = ObjectUtils.firstNonNull(
+            connection.getHeaderField("Content-MD5"),
+            connection.getHeaderField("ETag")
+        );
         try {
-            lfs.linkPhysicalAddress(objectLoc, new StagingMetadata().checksum(connection.getHeaderField("Content-MD5")).sizeBytes(Long.valueOf(buffer.size())).staging(stagingLocation));
+            lfs.linkPhysicalAddress(objectLoc, new StagingMetadata().checksum(eTag).sizeBytes(Long.valueOf(buffer.size())).staging(stagingLocation));
         } catch (ApiException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
