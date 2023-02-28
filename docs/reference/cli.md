@@ -12,7 +12,7 @@ redirect_from:
 # `lakectl` CLI Reference
 {:.no_toc}
 
-`lakectl` is a command-line tool to explore manage and work with lakeFS.
+lakectl is the lakeFS command-line tool.
 
 {% include toc.html h_max=2 %}
 
