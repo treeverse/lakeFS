@@ -26,8 +26,8 @@ var (
 	blockURL string
 )
 
-func createDNSServer(ctx context.Context, domain string) {
-	zone := &dns.Zone{
+func createDNSResolver(domain string) {
+	zone := dns.Zone{
 		Origin: domain + ".",
 		TTL:    5 * time.Minute,
 		RRs: dns.RRSet{
@@ -39,20 +39,11 @@ func createDNSServer(ctx context.Context, domain string) {
 		},
 	}
 
-	srv := &dns.Server{
-		Addr:    ":53",
-		Handler: zone,
-	}
-
-	go srv.ListenAndServe(ctx)
-
 	mux := new(dns.ResolveMux)
-	mux.Handle(dns.TypeANY, zone.Origin, zone)
-
+	mux.Handle(dns.TypeANY, zone.Origin, &zone)
 	client := &dns.Client{
 		Resolver: mux,
 	}
-
 	net.DefaultResolver = &net.Resolver{
 		PreferGo: true,
 		Dial:     client.Dial,
@@ -65,9 +56,10 @@ func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
 	})
 
-	domain := "blob.localhost"
+	domain := "azurite.test" // TLD for test
 	accountHost := accountName + "." + domain
-	createDNSServer(ctx, domain)
+
+	createDNSResolver(domain)
 
 	// set cleanup
 	closer := func() {
