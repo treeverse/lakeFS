@@ -1,4 +1,4 @@
-package io.lakefs;
+package io.lakefs.storage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.io.InputBuffer;
 
 // TODO this class is only for POC
-class LakeFSFileSystemInputStream  extends FSInputStream {
+public class LakeFSFileSystemInputStream  extends FSInputStream {
     private InputBuffer in;
     private byte[] content;
     

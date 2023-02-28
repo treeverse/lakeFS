@@ -64,6 +64,7 @@ public class LakeFSFileSystemTest {
     protected BranchesApi branchesApi;
     protected RepositoriesApi repositoriesApi;
     protected StagingApi stagingApi;
+    protected ConfigApi configApi;
 
     protected AmazonS3 s3Client;
 
@@ -143,13 +144,19 @@ public class LakeFSFileSystemTest {
 
         lfsClient = mock(LakeFSClient.class, Answers.RETURNS_SMART_NULLS);
         objectsApi = mock(ObjectsApi.class, Answers.RETURNS_SMART_NULLS);
-        when(lfsClient.getObjects()).thenReturn(objectsApi);
+        when(lfsClient.getObjectsApi()).thenReturn(objectsApi);
         branchesApi = mock(BranchesApi.class, Answers.RETURNS_SMART_NULLS);
-        when(lfsClient.getBranches()).thenReturn(branchesApi);
+        when(lfsClient.getBranchesApi()).thenReturn(branchesApi);
         repositoriesApi = mock(RepositoriesApi.class, Answers.RETURNS_SMART_NULLS);
-        when(lfsClient.getRepositories()).thenReturn(repositoriesApi);
+        when(lfsClient.getRepositoriesApi()).thenReturn(repositoriesApi);
         stagingApi = mock(StagingApi.class, Answers.RETURNS_SMART_NULLS);
-        when(lfsClient.getStaging()).thenReturn(stagingApi);
+        when(lfsClient.getStagingApi()).thenReturn(stagingApi);
+        configApi = mock(ConfigApi.class, Answers.RETURNS_SMART_NULLS);
+        when(lfsClient.getConfigApi()).thenReturn(configApi);
+        when(configApi.getStorageConfig())
+            .thenReturn(new StorageConfig().blockstoreType("s3").blockstoreNamespaceValidityRegex("^s3://.*$"));
+        when(repositoriesApi.getRepository("repo"))
+            .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
 
         when(repositoriesApi.getRepository("repo"))
             .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));

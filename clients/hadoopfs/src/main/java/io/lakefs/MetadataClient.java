@@ -34,7 +34,7 @@ public class MetadataClient {
      * @return ObjectMetadata filled with Etag and content length
      * @throws IOException case etag can't be extracted by s3 or file status
      */
-    ObjectMetadata getObjectMetadata(URI physicalUri) throws IOException {
+    public ObjectMetadata getObjectMetadata(URI physicalUri) throws IOException {
         String bucket = physicalUri.getHost();
         String key = physicalUri.getPath().substring(1);
 

@@ -1,4 +1,4 @@
-package io.lakefs;
+package io.lakefs.storage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,23 +10,29 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.hadoop.fs.Path;
 
+import io.lakefs.LakeFSClient;
+import io.lakefs.LakeFSFileSystem;
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
 import io.lakefs.utils.ObjectLocation;
 
-class LakeFSFileSystemOutputStream extends OutputStream {
-    private HttpURLConnection connection;
-    private ByteArrayOutputStream buffer;
-    private StagingLocation stagingLocation;
-    private ObjectLocation objectLoc;
-    private AtomicBoolean isClosed = new AtomicBoolean(false);
-    private LakeFSFileSystem lfs;
-    public LakeFSFileSystemOutputStream(LakeFSFileSystem lfs, HttpURLConnection connection, ObjectLocation objectLoc, StagingLocation stagingLocation) throws IOException {
+public class LakeFSFileSystemOutputStream extends OutputStream {
+    private final HttpURLConnection connection;
+    private final ByteArrayOutputStream buffer;
+    private final StagingLocation stagingLocation;
+    private final ObjectLocation objectLoc;
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
+    private final LakeFSFileSystem lfs;
+    private final LakeFSClient lakeFSClient;
+
+    public LakeFSFileSystemOutputStream(LakeFSFileSystem lfs, LakeFSClient lfsClient, HttpURLConnection connection, ObjectLocation objectLoc, StagingLocation stagingLocation) throws IOException {
         this.connection = connection;
         this.objectLoc = objectLoc;
         this.stagingLocation = stagingLocation;
         this.lfs = lfs;
+        this.lakeFSClient = lfsClient;
         this.buffer = new ByteArrayOutputStream();
     }
 
@@ -49,11 +55,12 @@ class LakeFSFileSystemOutputStream extends OutputStream {
             connection.getHeaderField("Content-MD5"),
             connection.getHeaderField("ETag")
         );
+        StagingApi staging = lakeFSClient.getStagingApi();
+        StagingMetadata stagingMetadata = new StagingMetadata().checksum(eTag).sizeBytes(Long.valueOf(buffer.size())).staging(stagingLocation);
         try {
-            lfs.linkPhysicalAddress(objectLoc, new StagingMetadata().checksum(eTag).sizeBytes(Long.valueOf(buffer.size())).staging(stagingLocation));
+            staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);
         } catch (ApiException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw new IOException("link lakeFS path to physical address", e);
         }
         lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
         

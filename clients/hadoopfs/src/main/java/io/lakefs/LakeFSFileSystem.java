@@ -1,46 +1,72 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.*;
-import io.lakefs.clients.api.model.*;
-import io.lakefs.utils.ObjectLocation;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.util.Progressable;
-import org.apache.http.HttpStatus;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
-
-import javax.annotation.Nonnull;
+import static io.lakefs.Constants.DEFAULT_LIST_AMOUNT;
+import static io.lakefs.Constants.LIST_AMOUNT_KEY_SUFFIX;
+import static io.lakefs.Constants.SEPARATOR;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static io.lakefs.Constants.*;
+import javax.annotation.Nonnull;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.BranchesApi;
+import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.api.RepositoriesApi;
+import io.lakefs.clients.api.model.ObjectCopyCreation;
+import io.lakefs.clients.api.model.ObjectErrorList;
+import io.lakefs.clients.api.model.ObjectStageCreation;
+import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.ObjectStatsList;
+import io.lakefs.clients.api.model.Pagination;
+import io.lakefs.clients.api.model.PathList;
+import io.lakefs.clients.api.model.Repository;
+import io.lakefs.clients.api.model.StorageConfig;
+import io.lakefs.storage.CreateOutputStreamParams;
+import io.lakefs.storage.PhysicalAddressTranslator;
+import io.lakefs.storage.SimpleStorageAccessStrategy;
+import io.lakefs.storage.StorageAccessStrategy;
+import io.lakefs.utils.ObjectLocation;
 
 /**
  * A dummy implementation of the core lakeFS Filesystem.
- * This class implements a {@link LakeFSFileSystem} that can be registered to Spark and support limited write and read actions.
+ * This class implements a {@link LakeFSFileSystem} that can be registered to
+ * Spark and support limited write and read actions.
  * <p>
  * Configure Spark to use lakeFS filesystem by property:
  * spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem.
@@ -63,6 +89,8 @@ public class LakeFSFileSystem extends FileSystem {
     private int listAmount;
     private FileSystem fsForConfig;
     private String blockstoreType;
+    private PhysicalAddressTranslator physicalAddressTranslator;
+    private StorageAccessStrategy storageAccessStrategy;
     private static File emptyFile = new File("/dev/null");
 
     // Currently bulk deletes *must* receive a single-threaded executor!
@@ -74,23 +102,6 @@ public class LakeFSFileSystem extends FileSystem {
                 return t;
             }
         });
-
-    private URI translateUri(URI uri) throws java.net.URISyntaxException, ApiException {
-        String regex = lfsClient.getConfigApi().getStorageConfig().getBlockstoreNamespaceValidityRegex();
-        if (!uri.toString().matches(regex)) {
-            throw new RuntimeException(String.format("URI %s does not match blockstore namespace regex %s", uri.toString(),
-                    regex));
-        }
-        switch (blockstoreType) {
-            case "s3":
-                return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
-                        uri.getFragment());
-            case "azure":
-                // TODO(johnnyaug) - translate https:// style to abfs://
-            default:
-                throw new RuntimeException(String.format("lakeFS has unsupported blockstore type %s", blockstoreType));
-        }
-    }
 
     public URI getUri() {
         return uri;
@@ -122,11 +133,13 @@ public class LakeFSFileSystem extends FileSystem {
 
         listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
         try {
-            blockstoreType = lfsClient.getConfigApi().getStorageConfig().getBlockstoreType();
+            StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig();
+            physicalAddressTranslator = new PhysicalAddressTranslator(storageConfig.getBlockstoreType(),
+                    storageConfig.getBlockstoreNamespaceValidityRegex());
         } catch (ApiException e) {
             throw new IOException("Failed to get lakeFS blockstore type", e);
         }
-        
+        storageAccessStrategy = new SimpleStorageAccessStrategy(this, lfsClient, conf, physicalAddressTranslator);
         // based on path get underlying FileSystem
         Path path = new Path(name);
         ObjectLocation objectLoc = pathToObjectLocation(path);
@@ -135,7 +148,7 @@ public class LakeFSFileSystem extends FileSystem {
             Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
             String storageNamespace = repository.getStorageNamespace();
             URI storageURI = URI.create(storageNamespace);
-            Path physicalPath = new Path(translateUri(storageURI));
+            Path physicalPath = new Path(physicalAddressTranslator.translate(storageURI));
             fsForConfig = physicalPath.getFileSystem(conf);
         } catch (ApiException | URISyntaxException e) {
             LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
@@ -166,14 +179,9 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
         OPERATIONS_LOG.trace("open({})", path);
-        try {
-            ObjectsApi objects = lfsClient.getObjectsApi();
+        try {                        
             ObjectLocation objectLoc = pathToObjectLocation(path);
-            ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(),
-                    false, true);
-
-            HttpURLConnection connection = (HttpURLConnection) new URL(stats.getPhysicalAddress()).openConnection();
-            return new FSDataInputStream(new LakeFSFileSystemInputStream(connection.getInputStream(), connection.getContentLength()));
+            return storageAccessStrategy.createDataInputStream(objectLoc);
         } catch (ApiException e) {
             throw translateException("open: " + path, e);
         }
@@ -222,41 +230,15 @@ public class LakeFSFileSystem extends FileSystem {
         }
         try {
             ObjectLocation objectLoc = pathToObjectLocation(path);
-            return createDataOutputStream(
-                    (fs, fp) -> fs.create(fp, true, bufferSize, replication, blockSize, progress),
-                    objectLoc);
-        } catch (io.lakefs.clients.api.ApiException e) {
+            return storageAccessStrategy.createDataOutputStream(objectLoc,
+                    new CreateOutputStreamParams()
+                            .overwrite(true)
+                            .bufferSize(bufferSize)
+                            .replication(replication)
+                            .blockSize(blockSize).progress(progress));
+        } catch (ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
-        } catch (java.net.URISyntaxException e) {
-            throw new IOException("underlying storage uri", e);
         }
-    }
-
-    /**
-     * Returns output stream to write data into object location
-     * @param createStream callback function accepts the underlying filesystem and the physical path
-     * @param objectLoc to write to
-     * @return output stream to write
-     * @throws ApiException
-     * @throws URISyntaxException
-     * @throws IOException
-     */
-    @NotNull
-    private FSDataOutputStream createDataOutputStream(BiFunctionWithIOException<FileSystem, Path, OutputStream> createStream,
-                                                      ObjectLocation objectLoc)
-            throws ApiException, URISyntaxException, IOException {
-        StagingApi staging = lfsClient.getStagingApi();
-        StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(),
-                objectLoc.getPath(), true);
-        URL presignedUrl = new URL(stagingLoc.getPresignedUrl());
-        System.out.println("presignedUrl: " + presignedUrl);
-        HttpURLConnection connection = (HttpURLConnection) presignedUrl.openConnection();
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/octet-stream"); // TODO be better than this
-        connection.setRequestMethod("PUT");
-        OutputStream out = new LakeFSFileSystemOutputStream(this, connection, objectLoc, stagingLoc);
-        // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
-        return new FSDataOutputStream(out, null);
     }
 
     @Override
@@ -581,7 +563,8 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectsApi objectsApi = lfsClient.getObjectsApi();
             objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
         } catch (ApiException e) {
-            // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/874c055e73293e0f707719ebca1819979fb211d8/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
+            // This condition mimics s3a behaviour in
+            // https://github.com/apache/hadoop/blob/874c055e73293e0f707719ebca1819979fb211d8/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
             if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
                 LOG.error("Could not delete: {}, reason: {}", loc, e.getResponseBody());
                 return false;
@@ -593,9 +576,12 @@ public class LakeFSFileSystem extends FileSystem {
 
     /**
      * Delete parents directory markers from path until root.
-     * Assume the caller created an object under the path which will make the empty directory irrelevant.
+     * Assume the caller created an object under the path which will make the empty
+     * directory irrelevant.
      * Based on the S3AFileSystem implementation.
-     * NOTE there is a race with mkdir which in case we move a file to a directory which mkdirs try to create, in case we try to delete
+     * NOTE there is a race with mkdir which in case we move a file to a directory
+     * which mkdirs try to create, in case we try to delete
+     * 
      * @param f path to start for empty directory markers
      */
     void deleteEmptyDirectoryMarkers(Path f) {
@@ -744,18 +730,11 @@ public class LakeFSFileSystem extends FileSystem {
     private void createDirectoryMarker(Path path) throws IOException {
         try {
             ObjectLocation objectLoc = pathToObjectLocation(path).toDirectory();
-            OutputStream out = createDataOutputStream(FileSystem::create, objectLoc);
+            OutputStream out = storageAccessStrategy.createDataOutputStream(objectLoc, null);
             out.close();
         } catch (io.lakefs.clients.api.ApiException e) {
             throw new IOException("createDirectoryMarker: " + e.getResponseBody(), e);
-        } catch (java.net.URISyntaxException e) {
-            throw new IOException("createDirectoryMarker", e);
         }
-    }
-
-    void linkPhysicalAddress(ObjectLocation objectLoc, StagingMetadata stagingMetadata) throws IOException, ApiException {
-        StagingApi staging = lfsClient.getStagingApi();
-        staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);
     }
 
     /**
