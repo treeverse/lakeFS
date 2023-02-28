@@ -108,7 +108,7 @@ func (m *merger) destBeforeSource(destValue *graveler.ValueRecord) error {
 			switch m.strategy {
 			case graveler.MergeStrategyDest:
 				break
-			case graveler.MergeStrategySource:
+			case graveler.MergeStrategySrc:
 				m.haveDest = m.dest.Next()
 				return nil
 			default: // graveler.MergeStrategyNone
@@ -138,7 +138,7 @@ func (m *merger) sourceBeforeDest(sourceValue *graveler.ValueRecord) error {
 			case graveler.MergeStrategyDest:
 				m.haveSource = m.source.Next()
 				return nil
-			case graveler.MergeStrategySource:
+			case graveler.MergeStrategySrc:
 				break
 			default: // graveler.MergeStrategyNone
 				return graveler.ErrConflictFound
@@ -306,7 +306,7 @@ func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *gr
 		if err != nil {
 			return fmt.Errorf("write record: %w", err)
 		}
-	case graveler.MergeStrategySource:
+	case graveler.MergeStrategySrc:
 		err := m.writeRecord(sourceValue)
 		if err != nil {
 			return fmt.Errorf("write record: %w", err)
@@ -468,7 +468,7 @@ func (m *merger) merge() error {
 	}
 
 	if m.haveSource {
-		if err := m.handleAll(m.source, graveler.MergeStrategySource); err != nil {
+		if err := m.handleAll(m.source, graveler.MergeStrategySrc); err != nil {
 			return err
 		}
 	}

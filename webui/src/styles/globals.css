@@ -549,6 +549,8 @@ td .form-group {
 .import-num-objects {
   display: inline-flex;
   color: green;
+  font-weight: bolder;
+  margin: 0 2px;
 }
 
 .import-text {
@@ -602,11 +604,6 @@ td .form-group {
   margin-right: 8px;
 }
 
-.object-viewer-buttons {
-  width: 20%;
-  text-align: right;
-  margin-right: 5px;
-}
 
 .object-viewer-sql-input.form-control {
   background-color: #333333;
@@ -642,3 +639,47 @@ td .form-group {
 .required-field-label {
   color: red;
 }
+
+.otf-diff-update {
+  background-color: var(--color-bg-changed);
+}
+
+.otf-diff-create {
+  background-color: var(--color-bg-added)
+}
+
+.otf-diff-delete {
+  background-color: var(--color-bg-removed);
+}
+
+.table.table-diff {
+  table-layout: fixed;
+}
+
+td.table-operation-type {
+  padding-left: 30px;
+}
+
+td.table-id, td.table-id-placeholder {
+  text-align: left;
+  width: 8%;
+}
+
+td.operation-expansion, td.operation-expansion-placeholder {
+  padding-right: 0px;
+  width: 4%;
+}
+
+td.table-operation-details {
+  padding-left: 30px;
+}
+
+.table-operation-expansion {
+  color: black;
+}
+
+td.table-diff-type {
+  padding: 10px;
+  font-size: medium;
+}
+

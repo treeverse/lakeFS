@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -53,6 +54,15 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
+func SourceIP(r *http.Request) string {
+	sourceIP, sourcePort, err := net.SplitHostPort(r.RemoteAddr)
+
+	if err != nil {
+		return err.Error()
+	}
+	return sourceIP + ":" + sourcePort
+}
+
 func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +70,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
 			client := GetRequestLakeFSClient(r)
+			sourceIP := SourceIP(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
@@ -81,6 +92,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				"sent_bytes":     writer.ResponseSize,
 				"client":         client,
 				logging.LogAudit: true,
+				"source_ip":      sourceIP,
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)

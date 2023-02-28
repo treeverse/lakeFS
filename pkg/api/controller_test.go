@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
@@ -38,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -599,7 +601,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		user:         "user3",
 		commitName:   "P",
 	})
-	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", nil, "")
+	mergeCommit, err := deps.catalog.Merge(ctx, "repo3", "main", "branch-b", "user3", "commitR", catalog.Metadata{}, "")
 	testutil.Must(t, err)
 	commitsMap["commitR"] = mergeCommit
 	commitsMap["commitM"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
@@ -610,7 +612,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 		user:         "user2",
 		commitName:   "M",
 	})
-	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", nil, "")
+	mergeCommit, err = deps.catalog.Merge(ctx, "repo3", "main", "branch-a", "user2", "commitN", catalog.Metadata{}, "")
 	testutil.Must(t, err)
 	commitsMap["commitN"] = mergeCommit
 	commitsMap["commitX"] = testCommitEntries(t, ctx, deps.catalog, deps, commitEntriesParams{
@@ -862,6 +864,23 @@ func TestController_CommitHandler(t *testing.T) {
 		verifyResponseOK(t, resp, err)
 		if resp.JSON201.CreationDate != date {
 			t.Errorf("creation date expected %d, got: %d", date, resp.JSON201.CreationDate)
+		}
+	})
+
+	t.Run("protected branch", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repository", err)
+		err = deps.catalog.CreateBranchProtectionRule(ctx, repo, "main", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
+		testutil.MustDo(t, "protection rule", err)
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
+		testutil.MustDo(t, "commit to protected branch", err)
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "committed to protected branch",
+		})
+		testutil.Must(t, err)
+		if resp.JSON403 == nil {
+			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
 }
@@ -2958,6 +2977,36 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	})
 }
 
+func TestController_MergeInvalidStrategy(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	const repoName = "repo7"
+	repoResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    api.StringPtr("main"),
+		Name:             repoName,
+		StorageNamespace: "mem://",
+	})
+	verifyResponseOK(t, repoResp, err)
+
+	branchResp, err := clt.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{Name: "work", Source: "main"})
+	verifyResponseOK(t, branchResp, err)
+
+	const content = "awesome content"
+	resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, "work")
+	verifyResponseOK(t, resp, err)
+
+	commitResp, err := clt.CommitWithResponse(ctx, repoName, "work", &api.CommitParams{}, api.CommitJSONRequestBody{Message: "file 1 commit to work"})
+	verifyResponseOK(t, commitResp, err)
+
+	strategy := "bad strategy"
+	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "work", "main", api.MergeIntoBranchJSONRequestBody{
+		Message:  api.StringPtr("merge work to main"),
+		Strategy: &strategy,
+	})
+	require.Equal(t, http.StatusBadRequest, mergeResp.StatusCode())
+}
+
 func TestController_MergeDiffWithParent(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -3242,7 +3291,7 @@ func TestController_Revert(t *testing.T) {
 		_, err = deps.catalog.Commit(ctx, repo, "branch1", "second", DefaultUserID, nil, nil, nil)
 		testutil.Must(t, err)
 		// merge branch1 to main
-		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", nil, "")
+		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", catalog.Metadata{}, "")
 		testutil.Must(t, err)
 
 		// revert changes should fail
@@ -4047,4 +4096,116 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON400)
 	})
+}
+
+func TestController_OtfDiff(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	username := "username"
+	_, _ = clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{Id: username})
+	server := deps.server
+	authProvider := generateJWTToken(deps.authService, username)
+	nonExistingUserAuthProvider := generateJWTToken(deps.authService, username+"NE")
+	noCredsClient, _ := api.NewClientWithResponses(server.URL+api.BaseURL, api.WithRequestEditorFn(authProvider.Intercept))
+	noUserClient, _ := api.NewClientWithResponses(server.URL+api.BaseURL, api.WithRequestEditorFn(nonExistingUserAuthProvider.Intercept))
+
+	repo := testUniqueRepoName()
+
+	diffParams := api.OtfDiffParams{
+		TablePath: "path/to/table",
+		Type:      tablediff.ControllerTestPlugin,
+	}
+	testCases := []struct {
+		clt                api.ClientWithResponsesInterface
+		expectedHttpStatus int
+		err                error
+		resultDiffType     string
+		description        string
+	}{
+		{
+			clt:                clt,
+			expectedHttpStatus: http.StatusOK,
+			resultDiffType:     "changed",
+			description:        "success - table changed",
+		},
+		{
+			clt:                clt,
+			expectedHttpStatus: http.StatusOK,
+			resultDiffType:     "dropped",
+			description:        "success - table dropped",
+		},
+		{
+			clt:                clt,
+			expectedHttpStatus: http.StatusOK,
+			resultDiffType:     "created",
+			description:        "success - table created",
+		},
+		{
+			clt:                clt,
+			expectedHttpStatus: http.StatusNotFound,
+			err:                tablediff.ErrTableNotFound,
+			description:        "failure - table not found",
+		},
+		{
+			clt:                clt,
+			expectedHttpStatus: http.StatusInternalServerError,
+			err:                tablediff.ErrDiffFailed,
+			description:        "failure - internal error",
+		},
+		{
+			clt:                noUserClient,
+			expectedHttpStatus: http.StatusUnauthorized,
+			description:        "failure - non existing user",
+		},
+		{
+			clt:                noCredsClient,
+			expectedHttpStatus: http.StatusPreconditionFailed,
+			description:        "failure - user without credentials",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			currCtx := context.Background()
+
+			left := "left"
+			right := "right"
+
+			if tc.resultDiffType == "dropped" {
+				left = "dropped"
+			} else if tc.resultDiffType == "created" {
+				right = "created"
+			}
+			if errors.Is(tc.err, tablediff.ErrTableNotFound) {
+				left = "notfound"
+				right = "notfound"
+			} else if errors.Is(tc.err, tablediff.ErrDiffFailed) {
+				diffParams.Type = "nonExistingPlugin"
+			}
+
+			response, err := tc.clt.OtfDiffWithResponse(currCtx, repo, left, right, &diffParams)
+
+			require.NoError(t, err)
+			require.NotNil(t, response)
+			require.NotEmpty(t, response.StatusCode())
+			require.Equal(t, tc.expectedHttpStatus, response.StatusCode())
+			if tc.expectedHttpStatus == http.StatusOK {
+				require.NotNil(t, response.JSON200)
+				require.Equal(t, tc.resultDiffType, *response.JSON200.DiffType)
+				if tc.resultDiffType != "dropped" {
+					require.NotEmpty(t, response.JSON200.Results)
+				} else {
+					require.Empty(t, response.JSON200.Results)
+				}
+			}
+		})
+	}
+}
+
+func generateJWTToken(authService auth.Service, username string) *securityprovider.SecurityProviderApiKey {
+	secret := authService.SecretStore().SharedSecret()
+	now := time.Now()
+	expires := now.Add(time.Hour)
+	apiToken, _ := api.GenerateJWTLogin(secret, username, now, expires)
+	authProvider, _ := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
+	return authProvider
 }

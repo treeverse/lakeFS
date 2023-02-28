@@ -6,7 +6,7 @@ parent: Quickstart
 nav_order: 10
 has_children: false
 next: ["Create your first repository", "./repository.html"]
-redirect_from: [ "./quickstart/", "quickstart/installing.html"]
+redirect_from: [ "./quickstart/", "quickstart/installing.html", "quickstart/try.html"]
 ---
 
 # Run lakeFS

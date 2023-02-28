@@ -32,8 +32,21 @@ message DiffRequest {
   GatewayConfig gateway_config = 2;
 }
 
+enum DiffType {
+  CHANGED = 0;
+  CREATED = 1;
+  DROPPED = 2;
+}
+
+enum OperationType {
+  CREATE = 0;
+  UPDATE = 1;
+  DELETE = 2;
+}
+
 message DiffResponse {
-  repeated TableOperation records = 1;
+  repeated TableOperation entries = 1;
+  DiffType diffType = 2;
 }
 
 message HistoryRequest {
@@ -41,7 +54,7 @@ message HistoryRequest {
 }
 
 message HistoryResponse {
-  repeated TableOperation records = 1;
+  repeated TableOperation entries = 1;
 }
 
 /*
@@ -58,6 +71,7 @@ message TableOperation {
   google.protobuf.Timestamp timestamp = 2;
   string operation = 3;
   map<string, string> content = 4;
+  OperationType operation_type = 5;
 }
 
 service TableDiffer {

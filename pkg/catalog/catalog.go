@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -152,6 +153,7 @@ type Catalog struct {
 	BackgroundLimiter        ratelimit.Limiter
 	KVStore                  kv.Store
 	KVStoreLimited           kv.Store
+	addressProvider          *ident.HexAddressProvider
 }
 
 const (
@@ -238,12 +240,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	go executor.Run(ctx)
 
 	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
+	addressProvider := ident.NewHexAddressProvider()
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
 			Executor:              executor,
 			KVStore:               cfg.KVStore,
 			KVStoreLimited:        storeLimiter,
-			AddressProvider:       ident.NewHexAddressProvider(),
+			AddressProvider:       addressProvider,
 			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
 			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
 		})
@@ -271,6 +274,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStore:                  cfg.KVStore,
 		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 		KVStoreLimited:           storeLimiter,
+		addressProvider:          addressProvider,
 	}, nil
 }
 
@@ -1593,6 +1597,29 @@ func (c *Catalog) Merge(ctx context.Context, repositoryID string, destinationBra
 	return commitID.String(), nil
 }
 
+func (c *Catalog) FindMergeBase(ctx context.Context, repositoryID string, destinationRef string, sourceRef string) (string, string, string, error) {
+	destination := graveler.Ref(destinationRef)
+	source := graveler.Ref(sourceRef)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "destination", Value: destination, Fn: graveler.ValidateRef},
+		{Name: "source", Value: source, Fn: graveler.ValidateRef},
+	}); err != nil {
+		return "", "", "", err
+	}
+
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	fromCommit, toCommit, baseCommit, err := c.Store.FindMergeBase(ctx, repository, destination, source)
+	if err != nil {
+		return "", "", "", err
+	}
+	return fromCommit.CommitID.String(), toCommit.CommitID.String(), c.addressProvider.ContentAddress(baseCommit), nil
+}
+
 func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -1770,8 +1797,10 @@ type GCUncommittedMark struct {
 }
 
 type PrepareGCUncommittedInfo struct {
+	RunID    string `json:"run_id"`
+	Location string `json:"location"`
+	Filename string `json:"filename"`
 	Mark     *GCUncommittedMark
-	Metadata graveler.GarbageCollectionRunMetadata
 }
 
 type UncommittedParquetObject struct {
@@ -1779,20 +1808,27 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
+func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) (string, error) {
 	_, err := fd.Seek(0, 0)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !strings.HasSuffix(location, "/") {
-		location += "/"
+	// location is full path to underlying storage - join a unique filename and upload data
+	name := xid.New().String()
+	identifier, err := url.JoinPath(location, name)
+	if err != nil {
+		return "", err
 	}
-	location += xid.New().String()
-	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
+	obj := block.ObjectPointer{
 		StorageNamespace: ns.String(),
-		Identifier:       location,
+		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
-	}, size, fd, block.PutOpts{})
+	}
+	err = c.BlockAdapter.Put(ctx, obj, size, fd, block.PutOpts{})
+	if err != nil {
+		return "", err
+	}
+	return name, nil
 }
 
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
@@ -1838,19 +1874,19 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}
 
 	// Upload parquet file to object store
+	var name string
 	if hasData {
-		err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+		name, err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &PrepareGCUncommittedInfo{
-		Mark: newMark,
-		Metadata: graveler.GarbageCollectionRunMetadata{
-			RunId:               runID,
-			UncommittedLocation: uncommittedLocation,
-		},
+		Mark:     newMark,
+		RunID:    runID,
+		Location: uncommittedLocation,
+		Filename: name,
 	}, nil
 }
 
@@ -1923,8 +1959,16 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		dstEntry.Path = destPath
 		dstEntry.AddressType = AddressTypeRelative
 		dstEntry.PhysicalAddress = c.PathProvider.NewPath()
-		srcObject := block.ObjectPointer{StorageNamespace: srcRepo.StorageNamespace, Identifier: srcEntry.PhysicalAddress}
-		destObj := block.ObjectPointer{StorageNamespace: destRepo.StorageNamespace, Identifier: dstEntry.PhysicalAddress}
+		srcObject := block.ObjectPointer{
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		destObj := block.ObjectPointer{
+			StorageNamespace: destRepo.StorageNamespace,
+			IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
+			Identifier:       dstEntry.PhysicalAddress,
+		}
 		err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
 		if err != nil {
 			return nil, false, err

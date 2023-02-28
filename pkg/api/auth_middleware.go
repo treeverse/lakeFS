@@ -10,12 +10,11 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/auth/oidc"
+	oidc_encoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -23,6 +22,8 @@ import (
 const (
 	TokenSessionKeyName     = "token"
 	InternalAuthSessionName = "internal_auth_session"
+	IDTokenClaimsSessionKey = "id_token_claims"
+	OIDCAuthSessionName     = "oidc_auth_session"
 )
 
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
@@ -142,7 +143,7 @@ func checkSecurityRequirements(r *http.Request,
 
 func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
 	if friendlyName != "" {
-		user.FriendlyName = swag.String(friendlyName)
+		user.FriendlyName = &friendlyName
 	}
 	return user
 }
@@ -151,7 +152,7 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
 func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc.Claims)
+	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc_encoding.Claims)
 	if !ok || idTokenClaims == nil {
 		return nil, ErrAuthenticatingRequest
 	}

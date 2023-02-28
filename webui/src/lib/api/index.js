@@ -478,6 +478,22 @@ class Repositories {
             throw new Error(await extractError(response));
         }
     }
+
+    async otfDiff(repoId, leftRef, rightRef, tablePath = "", type) {
+        const query = qs({table_path: tablePath, type});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
+        if (response.status !== 200) {
+            switch (response.status) {
+                case 401:
+                    throw new AuthorizationError('user unauthorized');
+                case 404:
+                    throw new NotFoundError(`table ${tablePath} not found`);
+                default:
+                    throw new Error(await extractError(response));
+            }
+        }
+        return response.json();
+    }
 }
 
 class Branches {
@@ -579,8 +595,8 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", presign= false, amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
-        const query = qs({prefix: tree, amount, after, readUncommitted, delimiter, presign});
+    async list(repoId, ref, tree, after = "", presign= false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
+        const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -889,7 +905,7 @@ class Config {
             case 200:
                 cfg = await response.json();
                 cfg.warnings = []
-                if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
+                if (cfg.blockstore_type === 'mem') {
                     cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
                 }
                 return cfg;

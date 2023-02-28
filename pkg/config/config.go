@@ -38,35 +38,11 @@ var (
 const UseLocalConfiguration = "local-settings"
 
 type OIDC struct {
-	Enabled        bool `mapstructure:"enabled"`
-	IsDefaultLogin bool `mapstructure:"is_default_login"`
-
-	// provider details:
-	URL          string `mapstructure:"url"`
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-
-	// configure the OIDC authentication flow:
-	CallbackBaseURL                  string            `mapstructure:"callback_base_url"`
-	AuthorizeEndpointQueryParameters map[string]string `mapstructure:"authorize_endpoint_query_parameters"`
-
 	// configure how users are handled on the lakeFS side:
 	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
 	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
 	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
-	AdditionalScopeClaims  []string          `mapstructure:"additional_scope_claims"`
-}
-
-// LDAP holds configuration for authenticating on an LDAP server.
-type LDAP struct {
-	ServerEndpoint    string `mapstructure:"server_endpoint"`
-	BindDN            string `mapstructure:"bind_dn"`
-	BindPassword      string `mapstructure:"bind_password"`
-	DefaultUserGroup  string `mapstructure:"default_user_group"`
-	UsernameAttribute string `mapstructure:"username_attribute"`
-	UserBaseDN        string `mapstructure:"user_base_dn"`
-	UserFilter        string `mapstructure:"user_filter"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -154,6 +130,10 @@ type Config struct {
 			AwsProfile         string `mapstructure:"aws_profile"`
 			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
 			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+
+			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
+			// Won't run when is equal or less than 0.
+			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
 		} `mapstructure:"dynamodb"`
 	}
 
@@ -172,8 +152,17 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP *LDAP
-		OIDC OIDC
+		RemoteAuthenticator struct {
+			// Enabled if set true will enable remote authentication
+			Enabled bool `mapstructure:"enabled"`
+			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+			Endpoint string `mapstructure:"endpoint"`
+			// DefaultUserGroup is the default group for the users authenticated by the remote service
+			DefaultUserGroup string `mapstructure:"default_user_group"`
+			// RequestTimeout timeout for remote authentication requests
+			RequestTimeout time.Duration `mapstructure:"request_timeout"`
+		} `mapstructure:"remote_authenticator"`
+		OIDC OIDC `mapstructure:"oidc"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
@@ -192,7 +181,10 @@ type Config struct {
 		Type                   string `mapstructure:"type" validate:"required"`
 		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
 		Local                  *struct {
-			Path string `mapstructure:"path"`
+			Path                    string   `mapstructure:"path"`
+			ImportEnabled           bool     `mapstructure:"import_enabled"`
+			ImportHidden            bool     `mapstructure:"import_hidden"`
+			AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
 		}
 		S3 *struct {
 			S3AuthInfo                    `mapstructure:",squash"`
@@ -207,20 +199,23 @@ type Config struct {
 			ServerSideEncryption          string        `mapstructure:"server_side_encryption"`
 			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
 		} `mapstructure:"s3"`
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
 			StorageAccount   string        `mapstructure:"storage_account"`
 			StorageAccessKey string        `mapstructure:"storage_access_key"`
 			// Deprecated: Value ignored
-			AuthMethod      string        `mapstructure:"auth_method"`
-			PreSignedExpiry time.Duration `mapstructure:"pre_signed_expiry"`
+			AuthMethod       string        `mapstructure:"auth_method"`
+			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
 		} `mapstructure:"azure"`
 		GS *struct {
-			S3Endpoint      string        `mapstructure:"s3_endpoint"`
-			CredentialsFile string        `mapstructure:"credentials_file"`
-			CredentialsJSON string        `mapstructure:"credentials_json"`
-			PreSignedExpiry time.Duration `mapstructure:"pre_signed_expiry"`
+			S3Endpoint       string        `mapstructure:"s3_endpoint"`
+			CredentialsFile  string        `mapstructure:"credentials_file"`
+			CredentialsJSON  string        `mapstructure:"credentials_json"`
+			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
 		} `mapstructure:"gs"`
 	}
 	Committed struct {
@@ -409,13 +404,14 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 
 	if c.Database.DynamoDB != nil {
 		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:          c.Database.DynamoDB.TableName,
-			ScanLimit:          c.Database.DynamoDB.ScanLimit,
-			Endpoint:           c.Database.DynamoDB.Endpoint,
-			AwsRegion:          c.Database.DynamoDB.AwsRegion,
-			AwsProfile:         c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:     c.Database.DynamoDB.AwsAccessKeyID,
-			AwsSecretAccessKey: c.Database.DynamoDB.AwsSecretAccessKey,
+			TableName:           c.Database.DynamoDB.TableName,
+			ScanLimit:           c.Database.DynamoDB.ScanLimit,
+			Endpoint:            c.Database.DynamoDB.Endpoint,
+			AwsRegion:           c.Database.DynamoDB.AwsRegion,
+			AwsProfile:          c.Database.DynamoDB.AwsProfile,
+			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID,
+			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey,
+			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
 		}
 	}
 	return p, nil
@@ -478,6 +474,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,
 		ServerSideEncryptionKmsKeyID:  c.Blockstore.S3.ServerSideEncryptionKmsKeyID,
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
+		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 	}, nil
 }
 
@@ -488,7 +485,9 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 		return blockparams.Local{}, fmt.Errorf("parse blockstore location URI %s: %w", localPath, err)
 	}
 
-	return blockparams.Local{Path: path}, nil
+	params := blockparams.Local(*c.Blockstore.Local)
+	params.Path = path
+	return params, nil
 }
 
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {

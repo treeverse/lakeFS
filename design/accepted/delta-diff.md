@@ -80,15 +80,15 @@ Plugins can be written and consumed in almost every major language. This is achi
   A single connection is made between any plugin and the core process. For gRPC-based plugins, the HTTP2 protocol handles [connection multiplexing](https://freecontent.manning.com/animation-http-1-1-vs-http-2-vs-http-2-with-push/).
 * The plugin and core system are separate processes, which means that a crash of a plugin won't cause the core system to crash (lakeFS in our case).
 
-![Microkernel architecture overview](diagrams/microkernel-overview.png)
-[(excalidraw file)](diagrams/microkernel-overview.excalidraw)
+![Microkernel architecture overview](../open/diagrams/microkernel-overview.png)
+[(excalidraw file)](../open/diagrams/microkernel-overview.excalidraw)
 
 ---
 
 ## Implementation
 
-![Delta Diff flow](diagrams/delta-diff-flow.png)
-[(excalidraw file)](diagrams/delta-diff-flow.excalidraw)
+![Delta Diff flow](../open/diagrams/delta-diff-flow.png)
+[(excalidraw file)](../open/diagrams/delta-diff-flow.excalidraw)
 
 #### DiffService
 
@@ -158,38 +158,54 @@ To overcome this scenario, we'll use special diff credentials as follows:
 
 - GET `/repositories/repo/{repo}/otf/refs/{left_ref}/diff/{right_ref}?table_path={path}&type={diff_type}`
     - Tagged as experimental
-    - **Response**:  
-        The response includes an array of operations from different versions of the specified table format.
-        It has a general structure that enables formatting the different table format operation structs.
-      - version:
-        - type: string
-        - description: the version/snapshot/transaction id of the operation.
-      - timestamp (epoch):
-        - type: long
-        - description: operation's timestamp.
-      - operation:
-        - type: string
-        - description: operation's name.
-      - operationContent:
-        - type: map
-        - description: an operation content specific to the table format implemented.
-      
-      **Delta lake response example**:
-      ```json
-      [
-           {
-               "version": "1",
-               "timestamp":1515491537026,
-               "operation":"INSERT",
-               "operationContent":{
-                   "operationParameters": {
-                      "mode":"Append",
-                      "partitionBy":"[]"
-                    }
-          },
-          ...
-      ]
-      ```
+      - **Response**:  
+          The response includes an array of operations from different versions of the specified table format, and the type of diff:
+            `changed`, `created`, or `dropped`.  
+          It has a general structure that enables formatting the different table format operation structs.
+        - `DiffType`: 
+          - description: the type of change
+          - type: string
+        - `Results`:
+          - description: an array of differences
+          - type: array[
+            - id:
+              - type: string
+              - description: the version/snapshot/transaction id of the operation.
+            - timestamp (epoch):
+              - type: long
+              - description: operation's timestamp.
+            - operation:
+              - type: string
+              - description: operation's name.
+            - operationContent:
+              - type: map
+              - description: an operation content specific to the table format implemented.  
+            - operationType:
+              - type: string
+              - description: the type of performed operation: created, updated, or deleted
+            ]  
+
+            **Delta lake response example**:
+          
+            ```json
+            {
+                "table_diff_type": "changed",
+                "results": [
+                  {
+                      "id": "1",
+                      "timestamp":1515491537026,
+                      "operation_type": "update",
+                      "operation":"INSERT",
+                      "operation_content":{
+                           "operation_parameters": {
+                              "mode":"Append",
+                              "partitionBy":"[]"
+                            }
+                  },
+                  ...
+              ]
+                
+            ```
     
 ---
 

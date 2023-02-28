@@ -129,26 +129,6 @@ paths:
       tags:
       - auth
       x-accepts: application/json
-  /oidc/callback:
-    get:
-      deprecated: true
-      description: 'Deprecated: embedded OIDC support is now deprecated'
-      operationId: oauthCallback
-      responses:
-        "302":
-          description: successfully got token
-        "401":
-          description: failed to exchange authorization code for token
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      tags:
-      - auth
-      x-accepts: application/json
   /auth/login:
     post:
       operationId: login
@@ -1740,6 +1720,83 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+    get:
+      operationId: otfDiff
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: left_ref
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: right_ref
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: a path to the table location under the specified ref.
+        explode: true
+        in: query
+        name: table_path
+        required: true
+        schema:
+          type: string
+        style: form
+      - description: the type of otf
+        explode: true
+        in: query
+        name: type
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtfDiffList'
+          description: diff list
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: perform otf diff
+      tags:
+      - experimental
+      - otf diff
+      x-accepts: application/json
   /repositories/{repository}/refs/dump:
     put:
       operationId: dumpRefs
@@ -2390,6 +2447,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2440,6 +2503,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -2614,6 +2683,67 @@ paths:
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
+    get:
+      operationId: findMergeBase
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: source ref
+        explode: false
+        in: path
+        name: sourceRef
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: destination branch name
+        explode: false
+        in: path
+        name: destinationBranch
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindMergeBaseResult'
+          description: Found the merge base
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: find the merge base for 2 references
+      tags:
+      - refs
+      x-accepts: application/json
     post:
       operationId: mergeIntoBranch
       parameters:
@@ -2664,6 +2794,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3343,6 +3479,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3448,6 +3590,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3537,6 +3685,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -3664,6 +3818,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
         "404":
           content:
             application/json:
@@ -4967,6 +5127,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Precondition Failed
+    Forbidden:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Forbidden
     ValidationError:
       content:
         application/json:
@@ -5070,6 +5236,26 @@ components:
       required:
       - pagination
       - results
+      type: object
+    FindMergeBaseResult:
+      example:
+        destination_commit_id: destination_commit_id
+        base_commit_id: base_commit_id
+        source_commit_id: source_commit_id
+      properties:
+        source_commit_id:
+          description: The commit ID of the merge source
+          type: string
+        destination_commit_id:
+          description: The commit ID of the merge destination
+          type: string
+        base_commit_id:
+          description: The commit ID of the merge base
+          type: string
+      required:
+      - base_commit_id
+      - destination_commit_id
+      - source_commit_id
       type: object
     MergeResultSummary:
       example:
@@ -5384,6 +5570,65 @@ components:
       - pagination
       - results
       type: object
+    OtfDiffEntry:
+      example:
+        operation_content: '{}'
+        operation_type: create
+        id: id
+        operation: operation
+        timestamp: 0
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: integer
+        operation:
+          type: string
+        operation_content:
+          description: free form content describing the returned operation diff
+          type: object
+        operation_type:
+          description: the operation category (CUD)
+          enum:
+          - create
+          - update
+          - delete
+          type: string
+      required:
+      - id
+      - operation
+      - operation_content
+      - operation_type
+      - timestamp
+      type: object
+    OtfDiffList:
+      example:
+        diff_type: created
+        results:
+        - operation_content: '{}'
+          operation_type: create
+          id: id
+          operation: operation
+          timestamp: 0
+        - operation_content: '{}'
+          operation_type: create
+          id: id
+          operation: operation
+          timestamp: 0
+      properties:
+        diff_type:
+          enum:
+          - created
+          - dropped
+          - changed
+          type: string
+        results:
+          items:
+            $ref: '#/components/schemas/OtfDiffEntry'
+          type: array
+      required:
+      - results
+      type: object
     ResetCreation:
       example:
         path: path
@@ -5591,8 +5836,6 @@ components:
       - location
       type: object
     Error:
-      example:
-        message: message
       properties:
         message:
           description: short message explaining the error
@@ -5744,7 +5987,6 @@ components:
       type: object
     SetupState:
       example:
-        oidc_enabled: true
         login_config:
           login_failed_message: login_failed_message
           logout_url: logout_url
@@ -5755,7 +5997,6 @@ components:
           - login_cookie_names
           - login_cookie_names
           fallback_login_label: fallback_login_label
-        oidc_default_login: true
         state: initialized
       properties:
         state:
@@ -5766,14 +6007,6 @@ components:
           type: string
         login_config:
           $ref: '#/components/schemas/LoginConfig'
-        oidc_enabled:
-          deprecated: true
-          description: 'Deprecated: embedded OIDC support is now deprecated'
-          type: boolean
-        oidc_default_login:
-          deprecated: true
-          description: 'Deprecated: embedded OIDC support is now deprecated'
-          type: boolean
       type: object
     AccessKeyCredentials:
       example:
@@ -6132,6 +6365,7 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
+        import_support: true
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
       properties:
@@ -6145,10 +6379,13 @@ components:
           type: string
         pre_sign_support:
           type: boolean
+        import_support:
+          type: boolean
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       - blockstore_type
+      - import_support
       - pre_sign_support
       type: object
     VersionConfig:

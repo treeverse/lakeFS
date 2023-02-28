@@ -27,6 +27,7 @@ from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
+from lakefs_client.model.find_merge_base_result import FindMergeBaseResult
 from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
 from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
@@ -56,6 +57,8 @@ from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
 from lakefs_client.model.object_user_metadata import ObjectUserMetadata
+from lakefs_client.model.otf_diff_entry import OtfDiffEntry
+from lakefs_client.model.otf_diff_list import OtfDiffList
 from lakefs_client.model.pagination import Pagination
 from lakefs_client.model.path_list import PathList
 from lakefs_client.model.policy import Policy

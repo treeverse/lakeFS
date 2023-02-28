@@ -3,40 +3,23 @@ package local_test
 import (
 	"context"
 	"io"
-	"os"
+	"io/fs"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/local"
-	adapterTest "github.com/treeverse/lakefs/pkg/block/test"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 const testStorageNamespace = "local://test"
 
-func TestLocalAdapter(t *testing.T) {
-	var params []func(*local.Adapter)
-	adapterTest.TestAdapter(t, block.BlockstoreTypeLocal, params)
-}
-
 func makeAdapter(t *testing.T) *local.Adapter {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "testing-local-adapter-*")
-	testutil.MustDo(t, "TempDir", err)
-	testutil.MustDo(t, "NewAdapter", os.MkdirAll(dir, 0700))
-	a, err := local.NewAdapter(dir)
+	a, err := local.NewAdapter(t.TempDir())
 	testutil.MustDo(t, "NewAdapter", err)
-
-	t.Cleanup(func() {
-		if _, ok := os.LookupEnv("GOTEST_KEEP_LOCAL"); ok {
-			return
-		}
-		_ = os.RemoveAll(dir)
-	})
 	return a
 }
 
@@ -138,8 +121,7 @@ func TestLocalCopy(t *testing.T) {
 	a := makeAdapter(t)
 	ctx := context.Background()
 
-	contents := "foo bar baz quux"
-
+	const contents = "foo bar baz quux"
 	testutil.MustDo(t, "Put", a.Put(ctx, makePointer("src"), 0, strings.NewReader(contents), block.PutOpts{}))
 
 	testutil.MustDo(t, "Copy", a.Copy(ctx, makePointer("src"), makePointer("export/to/dst")))
@@ -150,24 +132,6 @@ func TestLocalCopy(t *testing.T) {
 	if string(got) != contents {
 		t.Errorf("expected to read \"%s\" as written, got \"%s\"", contents, string(got))
 	}
-}
-
-func dumpPathTree(t testing.TB, root string) []string {
-	t.Helper()
-	tree := make([]string, 0)
-	err := filepath.Walk(root, func(path string, _ os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		p := strings.TrimPrefix(path, root)
-		tree = append(tree, p)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("walking on '%s': %s", root, err)
-	}
-	sort.Strings(tree)
-	return tree
 }
 
 func TestAdapter_Remove(t *testing.T) {
@@ -217,12 +181,25 @@ func TestAdapter_Remove(t *testing.T) {
 				obj := makePointer(o)
 				testutil.MustDo(t, "Put", adp.Put(ctx, obj, 0, strings.NewReader(content), block.PutOpts{}))
 			}
+
 			// test Remove with remove empty folders
 			obj := makePointer(tt.path)
 			if err := adp.Remove(ctx, obj); (err != nil) != tt.wantErr {
 				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			tree := dumpPathTree(t, adp.Path())
+
+			// list and compare
+			var tree []string
+			if err := filepath.Walk(adp.Path(), func(p string, info fs.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				rel := strings.TrimPrefix(p, adp.Path())
+				tree = append(tree, rel)
+				return nil
+			}); err != nil {
+				t.Fatal("Walk failed", err)
+			}
 			if diff := deep.Equal(tt.wantTree, tree); diff != nil {
 				t.Errorf("Remove() tree diff = %s", diff)
 			}

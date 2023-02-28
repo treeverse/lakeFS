@@ -2,7 +2,11 @@ package esti
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -22,7 +26,10 @@ const (
 )
 
 func TestImport(t *testing.T) {
+	const defaultExpectedContentLength = 1024
+
 	importPath := ""
+	expectedContentLength := defaultExpectedContentLength
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	switch blockstoreType {
 	case block.BlockstoreTypeS3:
@@ -31,6 +38,9 @@ func TestImport(t *testing.T) {
 		importPath = gsImportPath
 	case block.BlockstoreTypeAzure:
 		importPath = azureImportPath
+	case block.BlockstoreTypeLocal:
+		importPath = setupLocalImportPath(t)
+		expectedContentLength = 0
 	default:
 		t.Skip("import isn't supported for non-production block adapters")
 	}
@@ -57,19 +67,54 @@ func TestImport(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		testImport(t, ctx, repoName, importPath)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importFilesToCheck)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importFilesToCheck, expectedContentLength)
 	})
 
 	t.Run("parent", func(t *testing.T) {
+		if blockstoreType == block.BlockstoreTypeLocal {
+			t.Skip("local always assumes import path is dir")
+		}
 		// import without the directory separator as suffix to include the parent directory
 		importPathParent := strings.TrimSuffix(importPath, "/")
 		testImport(t, ctx, repoName, importPathParent)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importFilesToCheck)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importFilesToCheck, expectedContentLength)
 	})
 }
 
-func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, prefix string, importFilesToCheck []string) {
-	const expectedContentLength = 1024
+func setupLocalImportPath(t *testing.T) string {
+	const dirPerm = 0o755
+	importDir := filepath.Join(t.TempDir(), "import-test-data")
+	if err := os.Mkdir(importDir, dirPerm); err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 7; i++ {
+		prefix := "prefix-" + strconv.Itoa(i+1)
+		// make dirs once
+		dirs := []string{
+			filepath.Join(importDir, prefix),
+			filepath.Join(importDir, "nested", prefix),
+		}
+		for _, dir := range dirs {
+			if err := os.MkdirAll(dir, dirPerm); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for n := 0; n < 2100; n++ {
+			name := fmt.Sprintf("file%06d", n+1)
+			const filePerm = 0o644
+			for _, dir := range dirs {
+				fn := filepath.Join(dir, name)
+				if err := os.WriteFile(fn, []byte(fn), filePerm); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+	}
+	return "local://" + importDir
+}
+
+func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, prefix string, importFilesToCheck []string, expectedContentLength int) {
 	for _, k := range importFilesToCheck {
 		// try to read some values from that ingested branch
 		objPath := prefix + k
@@ -78,7 +123,9 @@ func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, pre
 		})
 		require.NoError(t, err, "get object failed: %s", objPath)
 		require.Equal(t, http.StatusOK, objResp.StatusCode(), "get object %s", objPath)
-		require.Equal(t, expectedContentLength, int(objResp.HTTPResponse.ContentLength), "object content length %s", objPath)
+		if expectedContentLength > 0 {
+			require.Equal(t, expectedContentLength, int(objResp.HTTPResponse.ContentLength), "object content length %s", objPath)
+		}
 	}
 	hasMore := true
 	after := api.PaginationAfter("")

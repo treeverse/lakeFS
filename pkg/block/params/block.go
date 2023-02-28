@@ -18,7 +18,10 @@ type AdapterConfig interface {
 type Mem struct{}
 
 type Local struct {
-	Path string
+	Path                    string
+	ImportEnabled           bool
+	ImportHidden            bool
+	AllowedExternalPrefixes []string
 }
 
 type S3 struct {
@@ -30,12 +33,14 @@ type S3 struct {
 	ServerSideEncryption          string
 	ServerSideEncryptionKmsKeyID  string
 	PreSignedExpiry               time.Duration
+	DisablePreSigned              bool
 }
 
 type GS struct {
-	CredentialsFile string
-	CredentialsJSON string
-	PreSignedExpiry time.Duration
+	CredentialsFile  string
+	CredentialsJSON  string
+	PreSignedExpiry  time.Duration
+	DisablePreSigned bool
 }
 
 type Azure struct {
@@ -43,4 +48,5 @@ type Azure struct {
 	StorageAccessKey string
 	TryTimeout       time.Duration
 	PreSignedExpiry  time.Duration
+	DisablePreSigned bool
 }

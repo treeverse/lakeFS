@@ -33,6 +33,7 @@ components:
       type: apiKey
       in: cookie
       name: oidc_auth_session
+
   parameters:
     PaginationPrefix:
       in: query
@@ -92,6 +93,12 @@ components:
             $ref: "#/components/schemas/Error"
     PreconditionFailed:
       description: Precondition Failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Forbidden
       content:
         application/json:
           schema:
@@ -175,6 +182,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Repository"
+
+    FindMergeBaseResult:
+      type: object
+      required:
+        - source_commit_id
+        - destination_commit_id
+        - base_commit_id
+      properties:
+        source_commit_id:
+          type: string
+          description: "The commit ID of the merge source"
+        destination_commit_id:
+          type: string
+          description: "The commit ID of the merge destination"
+        base_commit_id:
+          type: string
+          description: "The commit ID of the merge base"
 
     MergeResultSummary:
       type: object
@@ -386,6 +410,41 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
+    OtfDiffEntry:
+      type: object
+      required:
+        - id
+        - operation
+        - timestamp
+        - operation_content
+        - operation_type
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: integer
+        operation:
+          type: string
+        operation_content:
+          type: object
+          description: free form content describing the returned operation diff
+        operation_type:
+          type: string
+          enum: [ create, update, delete ]
+          description: the operation category (CUD)
+
+    OtfDiffList:
+      type: object
+      required:
+        - results
+      properties:
+        diff_type:
+          type: string
+          enum: [ created, dropped, changed ]
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/OtfDiffEntry"
 
     ResetCreation:
       type: object
@@ -653,14 +712,6 @@ components:
           enum: [initialized, not_initialized, comm_prefs_done]
         login_config:
           $ref: "#/components/schemas/LoginConfig"
-        oidc_enabled:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
-        oidc_default_login:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
     AccessKeyCredentials:
       type: object
       properties:
@@ -909,6 +960,7 @@ components:
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
         - pre_sign_support
+        - import_support
       properties:
         blockstore_type:
           type: string
@@ -919,6 +971,8 @@ components:
         default_namespace_prefix:
           type: string
         pre_sign_support:
+          type: boolean
+        import_support:
           type: boolean
 
     VersionConfig:
@@ -1344,21 +1398,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
-  /oidc/callback:
-    get:
-      deprecated: true
-      description: "Deprecated: embedded OIDC support is now deprecated"
-      tags:
-        - auth
-      operationId: oauthCallback
-      security: []
-      responses:
-        302:
-          description: successfully got token
-        401:
-          description: failed to exchange authorization code for token
-        default:
-          $ref: "#/components/responses/ServerError"
   /auth/login:
     post:
       tags:
@@ -2181,6 +2220,57 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: left_ref
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: right_ref
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: table_path
+        required: true
+        description: a path to the table location under the specified ref.
+        schema:
+          type: string
+      - in: query
+        name: type
+        required: true
+        description: the type of otf
+        schema:
+          type: string
+    get:
+      tags:
+        - experimental
+        - otf diff
+      operationId: otfDiff
+      summary: perform otf diff
+      responses:
+        200:
+          description: diff list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtfDiffList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/refs/dump:
     parameters:
       - in: path
@@ -2519,6 +2609,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2570,6 +2662,8 @@ paths:
           description: branch deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2676,6 +2770,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -2692,6 +2788,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - refs
+      operationId: findMergeBase
+      summary: find the merge base for 2 references
+      responses:
+        200:
+          description: Found the merge base
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindMergeBaseResult"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3086,6 +3202,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -3211,6 +3329,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         412:
@@ -3227,6 +3347,8 @@ paths:
           description: object deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -3264,6 +3386,8 @@ paths:
                 $ref: "#/components/schemas/ObjectErrorList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:

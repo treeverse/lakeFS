@@ -20,7 +20,7 @@ import {linkToPath} from "../../../lib/api";
 import "../../../styles/ipynb.css";
 
 
-interface ObjectViewerPathParams {
+type ObjectViewerPathParams = {
     objectName: string;
     repoId: string;
 }
@@ -84,7 +84,7 @@ const FileObjectsViewerPage = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sizeBytes = parseInt((response as any)?.headers.get('Content-Length'))
         content = <FileContents
-            repoId={repoId}
+            repoId={repoId || ''}
             refId={refId}
             path={path}
             fileExtension={fileExtension}
@@ -104,7 +104,7 @@ const FileObjectsViewerPage = () => {
     );
 };
 
-export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes, showFullNavigator = true, usePresigned= false}) => {
+export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes = -1, showFullNavigator = true, usePresigned= false}) => {
 
     const objectUrl = linkToPath(repoId, refId, path, usePresigned);
 
