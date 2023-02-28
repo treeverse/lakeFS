@@ -32,6 +32,5 @@ jobs:
           fi
 
       - name: Dispatch lakeFS release trigger for Playground
-        uses: peter-evans/repository-dispatch@v2
         run: |
           echo ${{ steps.check_version.outputs.is_valid
