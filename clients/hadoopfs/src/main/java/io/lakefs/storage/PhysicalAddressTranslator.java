@@ -2,6 +2,7 @@ package io.lakefs.storage;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.regex.Pattern;
 
 public class PhysicalAddressTranslator {
     private String blockstoreType;
@@ -11,10 +12,10 @@ public class PhysicalAddressTranslator {
         this.blockstoreType = blockstoreType;
         this.validityRegex = validityRegex;
     }
-    
+
     // translate a URI in lakeFS storage namespace syntax into a Hadoop FileSystem URI
     public URI translate(URI uri) throws URISyntaxException {
-        if (!uri.toString().matches(validityRegex)) {
+        if(!Pattern.compile(validityRegex).matcher(uri.toString()).find()) {
             throw new RuntimeException(String.format("URI %s does not match blockstore namespace regex %s", uri.toString(),
             validityRegex));
         }

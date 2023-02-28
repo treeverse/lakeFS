@@ -154,7 +154,7 @@ public class LakeFSFileSystemTest {
         configApi = mock(ConfigApi.class, Answers.RETURNS_SMART_NULLS);
         when(lfsClient.getConfigApi()).thenReturn(configApi);
         when(configApi.getStorageConfig())
-            .thenReturn(new StorageConfig().blockstoreType("s3").blockstoreNamespaceValidityRegex("^s3://.*$"));
+            .thenReturn(new StorageConfig().blockstoreType("s3").blockstoreNamespaceValidityRegex("^s3://"));
         when(repositoriesApi.getRepository("repo"))
             .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
 
