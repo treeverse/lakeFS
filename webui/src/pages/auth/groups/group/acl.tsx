@@ -73,17 +73,17 @@ const GroupRepositoriesList = ({ groupId }) => {
                         headers={['Repository']}
                         actions={[{
                             key: 'Remove',
-                            buttonFn: (repoId, props) =><ConfirmationButton
-                                                            size="sm"
-                                                            variant="outline-danger"
-                                                            msg={<span>Are you sure you{'\''}d like to remove permissions for repository <strong>{repoId}</strong> from group <strong>{groupId}</strong>?</span>}
-                                                            onConfirm={() => {
-                                                                acl.repositories = without(acl.repositories, repoId);
-                                                                updateACL(acl).then(() => { setRefresh(!refresh); setAPIError(null); })
-                                                                    .catch(e => setAPIError(e));
-                                                            }}>
-                                                            Remove
-                                                        </ConfirmationButton>
+                            buttonFn: (repoId) =><ConfirmationButton
+                                                     size="sm"
+                                                     variant="outline-danger"
+                                                     msg={<span>Are you sure you{'\''}d like to remove permissions for repository <strong>{repoId}</strong> from group <strong>{groupId}</strong>?</span>}
+                                                     onConfirm={() => {
+                                                         acl.repositories = without(acl.repositories, repoId);
+                                                         updateACL(acl).then(() => { setRefresh(!refresh); setAPIError(null); })
+                                                             .catch(e => setAPIError(e));
+                                                     }}>
+                                                     Remove
+                                                 </ConfirmationButton>
                         }]}
                         results={acl?.repositories}
                         emptyState={allRepositories ? <></> : <>&empty;</>}
