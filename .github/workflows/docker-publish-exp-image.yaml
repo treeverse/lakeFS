@@ -22,18 +22,51 @@ jobs:
           # This is used to fetch all the history in order to get the latest tag (for step "Extract Version")
           fetch-depth: 0
 
-      - name: Determine if version is a production release
-        id: check_version
-        run: |
-          if [[ ${{ inputs.name }} =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            echo "is_valid=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_valid=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.17.1'
 
-      - name: Dispatch lakeFS release trigger for Playground
-        run: |
-          echo "::group::My title"
-          echo "${{ steps.check_version.outputs.is_valid }}"
-          echo "${{ inputs.name }}"
-          echo "::endgroup::"
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+        id: go
+
+      - name: Extract version
+        shell: bash
+        run: echo "tag=$(echo $(git describe --abbrev=1 --tags)-$(echo ${{ inputs.name }}))" >> $GITHUB_OUTPUT
+        id: version
+
+      - name: Generate code
+        run: make gen VERSION=${{ steps.version.outputs.tag }}
+
+      - name: Checks validator
+        run: make checks-validator
+        env:
+          GOLANGCI_LINT_FLAGS: --out-format github-actions
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push lakefs
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          target: lakefs
+          push: true
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          tags: |
+            treeverse/lakefs:${{ steps.version.outputs.tag }}

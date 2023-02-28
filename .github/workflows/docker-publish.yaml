@@ -94,10 +94,10 @@ jobs:
       - name: Determine if version is a production release
         id: check_version
         run: |
-          if [[ ${{  steps.version.outputs.tag }} =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            echo "name=is_valid::true" >> $GITHUB_OUTPUT
+          if [[ ${{ steps.version.outputs.tag }} =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "is_valid=true" >> $GITHUB_OUTPUT
           else
-            echo "name=is_valid::false" >> $GITHUB_OUTPUT
+            echo "is_valid=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Dispatch lakeFS release trigger for Playground
