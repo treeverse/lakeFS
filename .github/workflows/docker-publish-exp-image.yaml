@@ -30,6 +30,7 @@ jobs:
           else
             echo "name=is_valid::false" >> $GITHUB_OUTPUT
           fi
+          echo $GITHUB_OUTPUT
 
       - name: Dispatch lakeFS release trigger for Playground
         uses: peter-evans/repository-dispatch@v2
