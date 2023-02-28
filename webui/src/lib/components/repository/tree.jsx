@@ -91,6 +91,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, usePresigned = fals
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
+              presign={usePresigned}
             >
               <DownloadIcon /> Download
             </PathLink>

@@ -154,6 +154,7 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                             path={path}
                             fileExtension={fileExtension}
                             contentType={contentType}
+                            usePresigned={usePresigned}
                             sizeBytes={sizeBytes}/>
                     </Box>
                 </Card.Body>

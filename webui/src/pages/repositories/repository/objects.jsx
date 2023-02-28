@@ -172,7 +172,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             inProgress: true
         })
         try {
-            await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
+            await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0], config.pre_sign_support)
             setUploadState({...initialState})
             onDone()
         } catch (error) {
@@ -265,7 +265,7 @@ const TreeContainer = ({
                            refreshToken
                        }) => {
     const {results, error, loading, nextPage} = useAPIWithPagination(() => {
-        return objects.list(repo.id, reference.id, path, after)
+        return objects.list(repo.id, reference.id, path, after, config.pre_sign_support)
     }, [repo.id, reference.id, path, after, refreshToken]);
     const initialState = {
         inProgress: false,

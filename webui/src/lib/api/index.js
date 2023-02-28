@@ -579,8 +579,8 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
-        const query = qs({prefix: tree, amount, after, readUncommitted, delimiter});
+    async list(repoId, ref, tree, after = "", presign= false, amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
+        const query = qs({prefix: tree, amount, after, readUncommitted, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -588,11 +588,11 @@ class Objects {
         return await response.json();
     }
 
-    async upload(repoId, branchId, path, fileObject) {
+    async upload(repoId, branchId, path, fileObject, presign= false) {
         const data = new FormData();
         data.append('content', fileObject);
         window.data = data;
-        const query = qs({path});
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
             method: 'POST',
             body: data,
@@ -614,8 +614,8 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path) {
-        const query = qs({path});
+    async get(repoId, ref, path, presign= false) {
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
         });

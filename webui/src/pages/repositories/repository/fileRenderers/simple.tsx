@@ -33,9 +33,9 @@ export const UnsupportedFileType: FC<RendererComponent> = ({path, fileExtension,
 }
 
 
-export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, refId, path, onReady }) => {
+export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, refId, path, usePresigned, onReady }) => {
     const {response, error, loading} = useAPI(
-        async () => await objects.get(repoId, refId, path),
+        async () => await objects.get(repoId, refId, path, usePresigned),
         [repoId, refId, path]
     );
     if (loading) {
