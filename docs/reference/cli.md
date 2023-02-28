@@ -1,6 +1,6 @@
 ---
 layout: default
-title: CLI (lakectl)
+title: lakectl (lakeFS command-line tool)
 description: lakeFS comes with its own native CLI client. Here you can see the complete command reference.
 parent: Reference
 nav_order: 20
@@ -9,7 +9,7 @@ redirect_from:
   - ./commands.html
 ---
 
-# `lakectl` CLI Reference
+# `lakectl` (lakeFS command-line tool)
 {:.no_toc}
 
 lakectl is a command-line tool for managing and administering lakeFS.
