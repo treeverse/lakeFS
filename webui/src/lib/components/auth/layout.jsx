@@ -8,9 +8,11 @@ import Card from "react-bootstrap/Card";
 
 import Layout from "../layout";
 import {Link} from "../nav";
+import {useLoginConfigContext} from "../../hooks/conf";
 
 
 export const AuthLayout = ({ children, activeTab }) => {
+    const simplified = useLoginConfigContext()?.RBAC === 'simplified';
     return (
         <Layout>
             <Container fluid="xl">
@@ -37,9 +39,10 @@ export const AuthLayout = ({ children, activeTab }) => {
                                     <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
                                         Groups
                                     </Link>
-                                    <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
-                                        Policies
-                                    </Link>
+        {!simplified &&
+         <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
+         Policies
+         </Link>}
                                 </Nav>
                             </Card.Body>
                         </Card>
