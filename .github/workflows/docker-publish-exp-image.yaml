@@ -35,4 +35,5 @@ jobs:
         run: |
           echo "::group::My title"
           echo "${{ steps.check_version.outputs.is_valid }}"
+          echo "${{ inputs.name }}"
           echo "::endgroup::"
