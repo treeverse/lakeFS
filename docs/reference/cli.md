@@ -9,7 +9,7 @@ redirect_from:
   - ./commands.html
 ---
 
-# `lakectl` (lakeFS command-line tool)
+# lakectl (lakeFS command-line tool)
 {:.no_toc}
 
 lakectl is a command-line tool for managing and administering lakeFS.
