@@ -364,12 +364,11 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                     {(!!actions && actions.length > 0) && (
                         <td>
                             <span className="row-hover">
-                                {actions.map(action => (
-                                    <span key={`${keyFn(row)}-${action.key}`}>
-                                        {action.buttonFn(row)}
-                                    </span>
-                                ))}
-                            </span>
+                                {actions.map(action => (<span key={`${keyFn(row)}-${action.key}`}>
+                                                            {action.buttonFn(row)}
+                                                        </span>)
+                                            )}
+                             </span>
                         </td>
                     )}
                 </tr>
@@ -456,7 +455,7 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
                 </MuiButton>
             </DialogActions>
         </Dialog>
-    )
+    );
 };
 
 
@@ -473,5 +472,18 @@ export const ExperimentalOverlayTooltip = ({children, show = true, placement="au
         >
             {children}
         </OverlayTrigger>
-    ) : <></>
-}
+    ) : <></>;
+};
+
+
+export const GrayOut = ({enabled=true, children}) => {
+    if (enabled) {
+        children = (<div>
+                        <div className={'gray-out overlay'}/>
+                        {children}
+                    </div>);
+    }
+    return <div style={{position: 'relative'}}>
+               {children}
+           </div>;
+};
