@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+
 import javax.annotation.Nonnull;
 
 import java.io.BufferedOutputStream;
@@ -60,6 +62,7 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
+    private String blockstoreType;
     private static File emptyFile = new File("/dev/null");
 
     // Currently bulk deletes *must* receive a single-threaded executor!
@@ -72,13 +75,20 @@ public class LakeFSFileSystem extends FileSystem {
             }
         });
 
-    private URI translateUri(URI uri) throws java.net.URISyntaxException {
-        switch (uri.getScheme()) {
+    private URI translateUri(URI uri) throws java.net.URISyntaxException, ApiException {
+        String regex = lfsClient.getConfigApi().getStorageConfig().getBlockstoreNamespaceValidityRegex();
+        if (!uri.toString().matches(regex)) {
+            throw new RuntimeException(String.format("URI %s does not match blockstore namespace regex %s", uri.toString(),
+                    regex));
+        }
+        switch (blockstoreType) {
             case "s3":
                 return new URI("s3a", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(),
                         uri.getFragment());
+            case "azure":
+                // TODO(johnnyaug) - translate https:// style to abfs://
             default:
-                throw new RuntimeException(String.format("unsupported URI scheme %s, lakeFS FileSystem currently supports translating s3 => s3a only", uri.getScheme()));
+                throw new RuntimeException(String.format("lakeFS has unsupported blockstore type %s", blockstoreType));
         }
     }
 
@@ -111,21 +121,30 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
 
         listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
+        try {
+            blockstoreType = lfsClient.getConfigApi().getStorageConfig().getBlockstoreType();
+        } catch (ApiException e) {
+            throw new IOException("Failed to get lakeFS blockstore type", e);
+        }
+        
+        // based on path get underlying FileSystem
+        Path path = new Path(name);
+        ObjectLocation objectLoc = pathToObjectLocation(path);
+        RepositoriesApi repositoriesApi = lfsClient.getRepositoriesApi();
+        try {
+            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
+            String storageNamespace = repository.getStorageNamespace();
+            URI storageURI = URI.create(storageNamespace);
+            Path physicalPath = new Path(translateUri(storageURI));
+            fsForConfig = physicalPath.getFileSystem(conf);
+        } catch (ApiException | URISyntaxException e) {
+            LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
+        }
     }
 
     @FunctionalInterface
     private interface BiFunctionWithIOException<U, V, R> {
         R apply(U u, V v) throws IOException;
-    }
-
-    /**
-     * @return FileSystem suitable for the translated physical address
-     */
-    protected <R> R withFileSystemAndTranslatedPhysicalPath(String physicalAddress, BiFunctionWithIOException<FileSystem, Path, R> f) throws java.net.URISyntaxException, IOException {
-        URI uri = translateUri(new URI(physicalAddress));
-        Path path = new Path(uri.toString());
-        FileSystem fs = path.getFileSystem(conf);
-        return f.apply(fs, path);
     }
 
     @Override
@@ -148,7 +167,7 @@ public class LakeFSFileSystem extends FileSystem {
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
         OPERATIONS_LOG.trace("open({})", path);
         try {
-            ObjectsApi objects = lfsClient.getObjects();
+            ObjectsApi objects = lfsClient.getObjectsApi();
             ObjectLocation objectLoc = pathToObjectLocation(path);
             ObjectStats stats = objects.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(),
                     false, true);
@@ -226,7 +245,7 @@ public class LakeFSFileSystem extends FileSystem {
     private FSDataOutputStream createDataOutputStream(BiFunctionWithIOException<FileSystem, Path, OutputStream> createStream,
                                                       ObjectLocation objectLoc)
             throws ApiException, URISyntaxException, IOException {
-        StagingApi staging = lfsClient.getStaging();
+        StagingApi staging = lfsClient.getStagingApi();
         StagingLocation stagingLoc = staging.getPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(),
                 objectLoc.getPath(), true);
         URL presignedUrl = new URL(stagingLoc.getPresignedUrl());
@@ -435,7 +454,7 @@ public class LakeFSFileSystem extends FileSystem {
             dstObjectLoc = dstObjectLoc.toDirectory();
         }
 
-        ObjectsApi objects = lfsClient.getObjects();
+        ObjectsApi objects = lfsClient.getObjectsApi();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
 
         if (!fallbackToStage) {
@@ -549,7 +568,7 @@ public class LakeFSFileSystem extends FileSystem {
     private BulkDeleter newDeleter(String repository, String branch) throws IOException {
         // Use a different client -- a different thread waits for its calls,
         // *late*.
-        ObjectsApi objectsApi = clientFactory.newClient().getObjects();
+        ObjectsApi objectsApi = clientFactory.newClient().getObjectsApi();
         return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
                     return objectsApi.deleteObjects(repository, branch, pathList);
@@ -559,7 +578,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     private boolean deleteHelper(ObjectLocation loc) throws IOException {
         try {
-            ObjectsApi objectsApi = lfsClient.getObjects();
+            ObjectsApi objectsApi = lfsClient.getObjectsApi();
             objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
         } catch (ApiException e) {
             // This condition mimics s3a behaviour in https://github.com/apache/hadoop/blob/874c055e73293e0f707719ebca1819979fb211d8/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
@@ -619,7 +638,7 @@ public class LakeFSFileSystem extends FileSystem {
             return;
         }
         try {
-            ObjectsApi objects = lfsClient.getObjects();
+            ObjectsApi objects = lfsClient.getObjectsApi();
             objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
@@ -634,7 +653,7 @@ public class LakeFSFileSystem extends FileSystem {
     public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
         OPERATIONS_LOG.trace("list_status({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
-        ObjectsApi objectsApi = lfsClient.getObjects();
+        ObjectsApi objectsApi = lfsClient.getObjectsApi();
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
@@ -735,7 +754,7 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     void linkPhysicalAddress(ObjectLocation objectLoc, StagingMetadata stagingMetadata) throws IOException, ApiException {
-        StagingApi staging = lfsClient.getStaging();
+        StagingApi staging = lfsClient.getStagingApi();
         staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);
     }
 
@@ -756,7 +775,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
             throw new FileNotFoundException(path + " not found");
         }
-        ObjectsApi objectsApi = lfsClient.getObjects();
+        ObjectsApi objectsApi = lfsClient.getObjectsApi();
         // get object status on path
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
@@ -787,38 +806,34 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Nonnull
     private LakeFSFileStatus convertObjectStatsToFileStatus(ObjectLocation objectLocation, ObjectStats objectStat) throws IOException {
-        try {
-            long length = 0;
-            Long sizeBytes = objectStat.getSizeBytes();
-            if (sizeBytes != null) {
-                length = sizeBytes;
-            }
-            long modificationTime = 0;
-            Long mtime = objectStat.getMtime();
-            if (mtime != null) {
-                modificationTime = TimeUnit.SECONDS.toMillis(mtime);
-            }
-            Path filePath = new Path(ObjectLocation.formatPath(objectLocation.getScheme(), objectLocation.getRepository(),
-                    objectLocation.getRef(), objectStat.getPath()));
-            String physicalAddress = objectStat.getPhysicalAddress();
-            boolean isDir = isDirectory(objectStat);
-            boolean isEmptyDirectory = isDir && objectStat.getPathType() == ObjectStats.PathTypeEnum.OBJECT;
-            long blockSize = isDir
-                    ? 0
-                    : withFileSystemAndTranslatedPhysicalPath(physicalAddress, FileSystem::getDefaultBlockSize);
-            LakeFSFileStatus.Builder builder =
-                    new LakeFSFileStatus.Builder(filePath)
-                            .length(length)
-                            .isdir(isDir)
-                            .isEmptyDirectory(isEmptyDirectory)
-                            .blockSize(blockSize)
-                            .mTime(modificationTime)
-                            .checksum(objectStat.getChecksum())
-                            .physicalAddress(physicalAddress);
-            return builder.build();
-        } catch (java.net.URISyntaxException e) {
-            throw new IOException("uri", e);
+        long length = 0;
+        Long sizeBytes = objectStat.getSizeBytes();
+        if (sizeBytes != null) {
+            length = sizeBytes;
         }
+        long modificationTime = 0;
+        Long mtime = objectStat.getMtime();
+        if (mtime != null) {
+            modificationTime = TimeUnit.SECONDS.toMillis(mtime);
+        }
+        Path filePath = new Path(ObjectLocation.formatPath(objectLocation.getScheme(), objectLocation.getRepository(),
+                objectLocation.getRef(), objectStat.getPath()));
+        String physicalAddress = objectStat.getPhysicalAddress();
+        boolean isDir = isDirectory(objectStat);
+        boolean isEmptyDirectory = isDir && objectStat.getPathType() == ObjectStats.PathTypeEnum.OBJECT;
+        long blockSize = isDir
+                ? 0
+                : getDefaultBlockSize(); // TODO why not?
+        LakeFSFileStatus.Builder builder =
+                new LakeFSFileStatus.Builder(filePath)
+                        .length(length)
+                        .isdir(isDir)
+                        .isEmptyDirectory(isEmptyDirectory)
+                        .blockSize(blockSize)
+                        .mTime(modificationTime)
+                        .checksum(objectStat.getChecksum())
+                        .physicalAddress(physicalAddress);
+        return builder.build();
     }
 
     /**
@@ -840,7 +855,7 @@ public class LakeFSFileSystem extends FileSystem {
             return isBranchExists(objectLoc.getRepository(), objectLoc.getRef());
         }
 
-        ObjectsApi objects = lfsClient.getObjects();
+        ObjectsApi objects = lfsClient.getObjectsApi();
         /*
          * path "exists" in Hadoop if one of these holds:
          *
@@ -910,7 +925,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     private boolean isBranchExists(String repository, String branch) throws IOException {
         try {
-            BranchesApi branches = lfsClient.getBranches();
+            BranchesApi branches = lfsClient.getBranchesApi();
             branches.getBranch(repository, branch);
             return true;
         } catch (ApiException e) {
@@ -977,7 +992,7 @@ public class LakeFSFileSystem extends FileSystem {
             String listingPath = this.objectLocation.getPath();
             do {
                 try {
-                    ObjectsApi objectsApi = lfsClient.getObjects();
+                    ObjectsApi objectsApi = lfsClient.getObjectsApi();
                     ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef(), false, false, nextOffset, amount, delimiter, objectLocation.getPath());
                     chunk = resp.getResults();
                     pos = 0;

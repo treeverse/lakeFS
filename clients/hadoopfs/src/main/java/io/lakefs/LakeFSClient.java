@@ -13,10 +13,11 @@ import java.io.IOException;
 public class LakeFSClient {
     private static final String BASIC_AUTH = "basic_auth";
 
-    private final ObjectsApi objects;
-    private final StagingApi staging;
-    private final RepositoriesApi repositories;
-    private final BranchesApi branches;
+    private final ObjectsApi objectsApi;
+    private final StagingApi stagingApi;
+    private final RepositoriesApi repositoriesApi;
+    private final BranchesApi branchesApi;
+    private final ConfigApi configApi;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
         String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
@@ -40,21 +41,27 @@ public class LakeFSClient {
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
 
-        this.objects = new ObjectsApi(apiClient);
-        this.staging = new StagingApi(apiClient);
-        this.repositories = new RepositoriesApi(apiClient);
-        this.branches = new BranchesApi(apiClient);
+        this.objectsApi = new ObjectsApi(apiClient);
+        this.stagingApi = new StagingApi(apiClient);
+        this.repositoriesApi = new RepositoriesApi(apiClient);
+        this.branchesApi = new BranchesApi(apiClient);
+        this.configApi = new ConfigApi(apiClient);
     }
 
-    public ObjectsApi getObjects() {
-        return objects;
+    public ObjectsApi getObjectsApi() {
+        return objectsApi;
     }
 
-    public StagingApi getStaging() {
-        return staging;
+    public StagingApi getStagingApi() {
+        return stagingApi;
     }
 
-    public RepositoriesApi getRepositories() { return repositories; }
+    public RepositoriesApi getRepositoriesApi() { return repositoriesApi; }
 
-    public BranchesApi getBranches() { return branches; }
+    public BranchesApi getBranchesApi() { return branchesApi; }
+
+    public ConfigApi getConfigApi() {
+        return configApi;
+    }
+
 }
