@@ -30,13 +30,8 @@ jobs:
           else
             echo "name=is_valid::false" >> $GITHUB_OUTPUT
           fi
-          echo $GITHUB_OUTPUT
 
       - name: Dispatch lakeFS release trigger for Playground
         uses: peter-evans/repository-dispatch@v2
-        if: ${{ steps.check_version.outputs.is_valid == true }}
-        with:
-          token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
-          repository: ${{ secrets.REPOSITORY_NAME }}
-          event-type: lakefs-image-release
-          client-payload: '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
+        run: |
+          echo ${{ steps.check_version.outputs.is_valid
