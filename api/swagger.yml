@@ -33,6 +33,7 @@ components:
       type: apiKey
       in: cookie
       name: oidc_auth_session
+
   parameters:
     PaginationPrefix:
       in: query
@@ -386,6 +387,41 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
+    OtfDiffEntry:
+      type: object
+      required:
+        - version
+        - operation
+        - timestamp
+        - operation_content
+        - operation_type
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: integer
+        operation:
+          type: string
+        operation_content:
+          type: object
+          description: free form content describing the returned operation diff
+        operation_type:
+          type: string
+          enum: [ create, update, delete ]
+          description: the operation category (CUD)
+
+    OtfDiffList:
+      type: object
+      required:
+        - results
+      properties:
+        diff_type:
+          type: string
+          enum: [ created, dropped, changed ]
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/OtfDiffEntry"
 
     ResetCreation:
       type: object
@@ -653,14 +689,6 @@ components:
           enum: [initialized, not_initialized, comm_prefs_done]
         login_config:
           $ref: "#/components/schemas/LoginConfig"
-        oidc_enabled:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
-        oidc_default_login:
-          deprecated: true
-          type: boolean
-          description: "Deprecated: embedded OIDC support is now deprecated"
     AccessKeyCredentials:
       type: object
       properties:
@@ -1344,21 +1372,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentUser"
 
-  /oidc/callback:
-    get:
-      deprecated: true
-      description: "Deprecated: embedded OIDC support is now deprecated"
-      tags:
-        - auth
-      operationId: oauthCallback
-      security: []
-      responses:
-        302:
-          description: successfully got token
-        401:
-          description: failed to exchange authorization code for token
-        default:
-          $ref: "#/components/responses/ServerError"
   /auth/login:
     post:
       tags:
@@ -2178,6 +2191,57 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: left_ref
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: right_ref
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: table_path
+        required: true
+        description: a path to the table location under the specified ref.
+        schema:
+          type: string
+      - in: query
+        name: type
+        required: true
+        description: the type of otf
+        schema:
+          type: string
+    get:
+      tags:
+        - experimental
+        - otf diff
+      operationId: otfDiff
+      summary: perform otf diff
+      responses:
+        200:
+          description: diff list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtfDiffList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
         default:
           $ref: "#/components/responses/ServerError"
 

@@ -46,7 +46,7 @@
             <artifactId>maven-gpg-plugin</artifactId>
 	    <version>1.5</version> <!-- must match java/pom.xml -->
 	    <configuration>
-	      <keyname>C2F054455909C25FE818EE9B93488CAD47AEC27B</keyname>
+	      <keyname>F638279A7281EE8EAE58C4B98D3CFE7E7D0262DA</keyname>
 	    </configuration>
 	    <executions>
               <execution>

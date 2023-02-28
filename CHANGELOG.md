@@ -6,6 +6,10 @@ Deprecated:
 - Authorization using Role-Based Access Control
 - LDAP Embedded Support
 
+## Upcoming (ASSIGN NEXT VERSION NUMBER to release!)
+
+- Deprecate embedded support for LDAP Authentication (#5262)
+
 ## v0.93.0
 
 :new: What's new:

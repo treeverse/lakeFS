@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/treeverse/lakefs/pkg/plugins"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -17,23 +19,6 @@ var (
 
 var allowedProtocols = []plugin.Protocol{
 	plugin.ProtocolGRPC,
-}
-
-// PluginIdentity identifies the plugin's version and executable location.
-type PluginIdentity struct {
-	ProtocolVersion uint
-	// ExecutableLocation is the full path to the plugin server's executable location
-	ExecutableLocation string
-	// ExecutableArgs is the argument list for the provided plugin executable - optional
-	ExecutableArgs []string
-	// ExecutableEnvVars is the environment variable list for the provided plugin executable - optional
-	ExecutableEnvVars []string
-}
-
-// PluginHandshake includes handshake properties for the plugin.
-type PluginHandshake struct {
-	Key   string
-	Value string
 }
 
 // Handler is an interface used to handle the different plugin implementation.
@@ -64,28 +49,27 @@ func NewManager[T any]() *Manager[T] {
 }
 
 type HCPluginProperties struct {
-	ID        PluginIdentity
-	Handshake PluginHandshake
+	ID        plugins.PluginIdentity
+	Handshake plugins.PluginHandshake
 	P         plugin.Plugin
 }
 
 // RegisterPlugin registers a new plugin client with the corresponding plugin type.
-func (m *Manager[T]) RegisterPlugin(name string, pp HCPluginProperties) {
-	id := pp.ID
-	auth := pp.Handshake
-	p := pp.P
+func (m *Manager[T]) RegisterPlugin(name string, props HCPluginProperties) {
+	id := props.ID
+
 	hc := plugin.HandshakeConfig{
 		ProtocolVersion:  id.ProtocolVersion,
-		MagicCookieKey:   auth.Key,
-		MagicCookieValue: auth.Value,
+		MagicCookieKey:   props.Handshake.Key,
+		MagicCookieValue: props.Handshake.Value,
 	}
 	cmd := exec.Command(id.ExecutableLocation, id.ExecutableArgs...) // #nosec G204
 	cmd.Env = id.ExecutableEnvVars
-	c := newPluginClient(name, p, hc, cmd)
+	c := newPluginClient(name, props.P, hc, cmd)
 	cp := &HCPluginProperties{
 		ID:        id,
-		Handshake: auth,
-		P:         p,
+		Handshake: props.Handshake,
+		P:         props.P,
 	}
 	m.pluginApplicationClients.Insert(name, c, cp)
 }

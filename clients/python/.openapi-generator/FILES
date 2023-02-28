@@ -24,6 +24,7 @@ docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
 docs/Error.md
+docs/ExperimentalApi.md
 docs/ForgotPasswordRequest.md
 docs/GarbageCollectionConfig.md
 docs/GarbageCollectionPrepareRequest.md
@@ -57,6 +58,9 @@ docs/ObjectStats.md
 docs/ObjectStatsList.md
 docs/ObjectUserMetadata.md
 docs/ObjectsApi.md
+docs/OtfDiffApi.md
+docs/OtfDiffEntry.md
+docs/OtfDiffList.md
 docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
@@ -103,10 +107,12 @@ lakefs_client/api/auth_api.py
 lakefs_client/api/branches_api.py
 lakefs_client/api/commits_api.py
 lakefs_client/api/config_api.py
+lakefs_client/api/experimental_api.py
 lakefs_client/api/health_check_api.py
 lakefs_client/api/import_api.py
 lakefs_client/api/metadata_api.py
 lakefs_client/api/objects_api.py
+lakefs_client/api/otf_diff_api.py
 lakefs_client/api/refs_api.py
 lakefs_client/api/repositories_api.py
 lakefs_client/api/retention_api.py
@@ -166,6 +172,8 @@ lakefs_client/model/object_stage_creation.py
 lakefs_client/model/object_stats.py
 lakefs_client/model/object_stats_list.py
 lakefs_client/model/object_user_metadata.py
+lakefs_client/model/otf_diff_entry.py
+lakefs_client/model/otf_diff_list.py
 lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
@@ -229,6 +237,7 @@ test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
 test/test_error.py
+test/test_experimental_api.py
 test/test_forgot_password_request.py
 test/test_garbage_collection_config.py
 test/test_garbage_collection_prepare_request.py
@@ -262,6 +271,9 @@ test/test_object_stats.py
 test/test_object_stats_list.py
 test/test_object_user_metadata.py
 test/test_objects_api.py
+test/test_otf_diff_api.py
+test/test_otf_diff_entry.py
+test/test_otf_diff_list.py
 test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py

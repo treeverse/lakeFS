@@ -346,6 +346,10 @@ const ObjectsBrowser = ({config, configError}) => {
     const [showImport, setShowImport] = useState(false);
     const [refreshToken, setRefreshToken] = useState(false);
     const refresh = () => setRefreshToken(!refreshToken);
+    const parts = path && path.split("/") || [];
+    const searchSuffix = parts.pop();
+    let searchPrefix = parts.join("/");
+    searchPrefix = searchPrefix && searchPrefix + "/"
 
     if (loading || !config) return <Loading/>;
     if (error || configError) return <RepoError error={error || configError}/>;
@@ -371,13 +375,15 @@ const ObjectsBrowser = ({config, configError}) => {
                 <ActionGroup orientation="right">
                     <PrefixSearchWidget
                         text="Search by Prefix"
-                        defaultValue={path}
+                        key={path}
+                        defaultValue={searchSuffix}
                         onFilter={prefix => {
-                            const query = {}
-                            if (prefix) query.path = prefix
-                            if (reference) query.ref = reference.id
-                            const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
-                            router.push(url)
+                            const query = {path: ""};
+                            if (searchPrefix !== undefined) query.path = searchPrefix;
+                            if (prefix) query.path += prefix;
+                            if (reference) query.ref = reference.id;
+                            const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}};
+                            router.push(url);
                         }}/>
                     <RefreshButton onClick={refresh}/>
                     <UploadButton
