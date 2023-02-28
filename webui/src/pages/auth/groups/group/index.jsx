@@ -1,7 +1,6 @@
 import React from "react";
 
 import {Navigate, Route, Routes} from "react-router-dom";
-import {useLoginConfigContext} from "../../../../lib/hooks/conf";
 import {useRouter} from "../../../../lib/hooks/router";
 import GroupMembersPage from "./members";
 import GroupPoliciesPage from "./policies";
