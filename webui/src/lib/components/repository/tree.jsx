@@ -74,17 +74,6 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, usePresigned = fals
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
-          {entry.path_type === "object" && usePresigned && (
-              <PathLink
-                  path={entry.path}
-                  reference={reference}
-                  repoId={repo.id}
-                  as={Dropdown.Item}
-                  presign={true}
-              >
-                <LinkIcon /> Get Presigned URL
-              </PathLink>
-          )}
           {entry.path_type === "object" && (
             <PathLink
               path={entry.path}
