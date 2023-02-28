@@ -33,4 +33,4 @@ jobs:
 
       - name: Dispatch lakeFS release trigger for Playground
         run: |
-          echo ${{ steps.check_version.outputs.is_valid
+          echo ${{ steps.check_version.outputs.is_valid }}
