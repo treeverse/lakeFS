@@ -16,7 +16,7 @@ lakectl is a command-line tool for managing and administering lakeFS.
 
 {% include toc.html %}
 
-## Installing `lakectl` locally
+## Installing lakectl locally
 
 `lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux. You can also run it from Docker - see [below](#runninglakectlfromdocker).
 
