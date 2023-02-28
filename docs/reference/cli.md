@@ -12,9 +12,9 @@ redirect_from:
 # `lakectl` CLI Reference
 {:.no_toc}
 
-lakectl is the lakeFS command-line tool.
+lakectl is a command-line tool for managing and administering lakeFS.
 
-{% include toc.html h_max=2 %}
+{% include toc.html %}
 
 ## Installing `lakectl` locally
 
