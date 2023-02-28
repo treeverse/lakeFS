@@ -584,7 +584,7 @@ public class LakeFSFileSystem extends FileSystem {
      * 
      * @param f path to start for empty directory markers
      */
-    void deleteEmptyDirectoryMarkers(Path f) {
+    public void deleteEmptyDirectoryMarkers(Path f) {
         while (true) {
             try {
                 ObjectLocation objectLocation = pathToObjectLocation(f);
