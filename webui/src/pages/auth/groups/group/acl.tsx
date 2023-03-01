@@ -33,7 +33,9 @@ const GroupRepositoriesList = ({ groupId }) => {
     const [apiError, setAPIError] = useState(null);
 
     const {response: acl, loading, error: getError} = useAPI(
-        async() => ({repositories: [], ...await auth.getACL(groupId)}),
+        async() => {
+            return ({repositories: [], ...await auth.getACL(groupId)});
+        },
         [groupId, refresh]);
 
     const hasACL = !!acl?.permission;
@@ -43,19 +45,32 @@ const GroupRepositoriesList = ({ groupId }) => {
     if (acl) {
         acl.repositories ||= [];
     }
-    const allRepositories = acl?.all_repositories;
-    console.log('all repos', allRepositories, acl);
 
     useEffect(() => {
         setAPIError(null);
     }, [refresh]);
 
-    const updateACL = useCallback((newACL) => {
-        if (newACL.repositories) {
-            newACL.repositories = sortedUniq(newACL.repositories.sort());
-        }
-        return auth.putACL(groupId, newACL);
-    }, [groupId]);
+    const removeRepoFromACL = useCallback((acl, groupId, repoId) => {
+        acl.repositories = sortedUniq(without(acl.repositories, repoId).sort());
+        return auth.putACL(groupId, acl)
+            .then(() => { setRefresh(!refresh); setAPIError(null); })
+            .catch(e => setAPIError(e));
+    });
+
+    const addReposToACL = useCallback((acl, groupId, repoIds) => {
+        acl.repositories = sortedUniq(acl.repositories.concat(repoIds).sort());
+        return auth.putACL(groupId, acl)
+            .then(() => { setRefresh(!refresh); setAPIError(null); })
+            .catch(e => setAPIError(e))
+            .finally(() => setShowAddModal(false));
+    });
+
+    const setAllReposOnACL = useCallback((acl, groupId, all) => {
+        acl.all_repositories = all;
+        return auth.putACL(groupId, acl)
+            .then(() => { setRefresh(!refresh); setAPIError(null); })
+            .catch(e => setAPIError(e));
+    });
 
     const content = loading ? <Loading/> :
           getError ?  <Error error={getError}/> :
@@ -63,7 +78,7 @@ const GroupRepositoriesList = ({ groupId }) => {
                {apiError && <Error error={apiError}/>}
 
                {hasACL &&
-                <GrayOut enabled={allRepositories}>
+                <GrayOut enabled={acl?.all_repositories}>
                     <DataTable
                         keyFn={identity}
                         rowFn={(repoId) => {
@@ -79,15 +94,13 @@ const GroupRepositoriesList = ({ groupId }) => {
                                                      variant="outline-danger"
                                                      msg={<span>Are you sure you{'\''}d like to remove permissions for repository <strong>{repoId}</strong> from group <strong>{groupId}</strong>?</span>}
                                                      onConfirm={() => {
-                                                         acl.repositories = without(acl.repositories, repoId);
-                                                         updateACL(acl).then(() => { setRefresh(!refresh); setAPIError(null); })
-                                                             .catch(e => setAPIError(e));
+                                                         removeRepoFromACL(acl, groupId, repoId)
                                                      }}>
                                                      Remove
                                                  </ConfirmationButton>
                         }]}
                         results={acl?.repositories}
-                        emptyState={allRepositories ? <></> : <>&empty;</>}
+                        emptyState={acl?.all_repositories ? <></> : <>&empty;</>}
                     />
                 </GrayOut>
                }
@@ -102,12 +115,7 @@ const GroupRepositoriesList = ({ groupId }) => {
                     searchFn={prefix => repositories.list(prefix, "", 20)
                               .then(res => res.results.filter(r => !acl.repositories?.includes(r.id)))}
                     onHide={() => setShowAddModal(false)}
-                    onAttach={(selected) => {
-                        acl.repositories = acl.repositories.concat(selected);
-                        updateACL(acl).then(() => { setRefresh(!refresh); setAPIError(null); })
-                            .catch(e => setAPIError(e))
-                            .finally(() => setShowAddModal(false));
-                    }}/>
+                    onAttach={(selected) => addReposToACL(acl, groupId, selected)}/>
                 }
             </>
         );
@@ -117,18 +125,15 @@ const GroupRepositoriesList = ({ groupId }) => {
             <GroupHeader groupId={groupId} page={'acl'}/>
 
             {hasACL &&
-             <Form.Check defaultChecked={allRepositories}
+             <Form.Check defaultChecked={acl?.all_repositories}
                          disabled={!hasACL}
                          type="checkbox"
                          label="All repositories"
-                         onChange={(ev) => {
-                             acl.all_repositories = ev.target.checked;
-                             updateACL(acl).catch(e => setAPIError(e)).then(() => setRefresh(!refresh));
-                         }}/>}
+                         onChange={(ev) => setAllReposOnACL(acl, groupId, ev.target.checked)}/>}
 
             <ActionsBar>
                 <ActionGroup orientation="left">
-                    <GrayOut enabled={allRepositories}>
+                    <GrayOut enabled={acl?.all_repositories}>
                         <Button variant="success" onClick={() => setShowAddModal(true)}>Add Repositories</Button>
                     </GrayOut>
                 </ActionGroup>
