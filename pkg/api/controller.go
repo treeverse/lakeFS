@@ -2466,9 +2466,9 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		AdditionalProperties: map[string]string(commit.Metadata),
 	}
 	response := Commit{
+		Id:           commit.Reference,
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
-		Id:           commitID,
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
 		Metadata:     &metadata,
