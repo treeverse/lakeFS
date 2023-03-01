@@ -1,8 +1,6 @@
 package io.lakefs;
 
-import static io.lakefs.Constants.DEFAULT_LIST_AMOUNT;
-import static io.lakefs.Constants.LIST_AMOUNT_KEY_SUFFIX;
-import static io.lakefs.Constants.SEPARATOR;
+import static io.lakefs.Constants.*;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -59,6 +57,7 @@ import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.StorageConfig;
 import io.lakefs.storage.CreateOutputStreamParams;
 import io.lakefs.storage.PhysicalAddressTranslator;
+import io.lakefs.storage.PresignedStorageAccessStrategy;
 import io.lakefs.storage.SimpleStorageAccessStrategy;
 import io.lakefs.storage.StorageAccessStrategy;
 import io.lakefs.utils.ObjectLocation;
@@ -139,7 +138,11 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (ApiException e) {
             throw new IOException("Failed to get lakeFS blockstore type", e);
         }
-        storageAccessStrategy = new SimpleStorageAccessStrategy(this, lfsClient, conf, physicalAddressTranslator);
+        if (FSConfiguration.getBoolean(conf, uri.getScheme(), PRESIGNED_MODE_KEY_SUFFIX, false)) {
+            storageAccessStrategy = new PresignedStorageAccessStrategy(this, lfsClient);
+        } else {
+            storageAccessStrategy = new SimpleStorageAccessStrategy(this, lfsClient, conf, physicalAddressTranslator);
+        }
         // based on path get underlying FileSystem
         Path path = new Path(name);
         ObjectLocation objectLoc = pathToObjectLocation(path);
