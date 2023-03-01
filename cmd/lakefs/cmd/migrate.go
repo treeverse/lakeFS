@@ -7,7 +7,12 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	auth_migrate "github.com/treeverse/lakefs/pkg/auth/migrate"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // migrateCmd represents the migrate command
@@ -50,6 +55,43 @@ func mustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
 		os.Exit(1)
 	}
 	return version
+}
+
+var authCmd = &cobra.Command{
+	Use:   "auth-acl",
+	Short: "Apply RBAC-to-ACL migration",
+	Run: func(cmd *cobra.Command, args []string) {
+		logger := logging.FromContext(cmd.Context()).WithField("phase", "migrate")
+		cfg := loadConfig()
+		kvParams, err := cfg.DatabaseParams()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
+			os.Exit(1)
+		}
+		ctx := cmd.Context()
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
+			os.Exit(1)
+		}
+		defer kvStore.Close()
+
+		authService := auth.NewAuthService(
+			kvStore,
+			crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+			nil,
+			cfg.Auth.Cache,
+			logger.WithField("service", "auth_service"),
+		)
+		reallyUpdate, _ := cmd.Flags().GetBool("yes")
+		err = auth_migrate.RBACToACL(cmd.Context(), authService, reallyUpdate, func(warn error) {
+			fmt.Printf("WARNING: %s", warn.Error())
+		})
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to upgrade RBAC policies to ACLs: %s\n", err)
+			os.Exit(1)
+		}
+	},
 }
 
 var upCmd = &cobra.Command{
@@ -104,6 +146,7 @@ func init() {
 	migrateCmd.AddCommand(versionCmd)
 	migrateCmd.AddCommand(upCmd)
 	migrateCmd.AddCommand(gotoCmd)
+	migrateCmd.AddCommand(authCmd)
 	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")
 	_ = gotoCmd.Flags().Bool("force", false, "force migrate")

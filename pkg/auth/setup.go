@@ -95,6 +95,16 @@ var statementByName = map[string]model.Statement{
 
 		Effect: model.StatementEffectAllow,
 	},
+	"RepoManagementRead": {
+		Action: []string{
+			"ci:Read*",
+			"retention:Get*",
+			"branches:Get*",
+			"fs:ReadConfig",
+		},
+
+		Effect: model.StatementEffectAllow,
+	},
 	"AuthManageOwnCredentials": {
 		Action: []string{
 			permissions.CreateCredentialsAction,
@@ -104,6 +114,25 @@ var statementByName = map[string]model.Statement{
 		},
 		Effect: model.StatementEffectAllow,
 	},
+}
+
+// GetActionsForPolicyType returns the actions for police type typ.
+func GetActionsForPolicyType(typ string) ([]string, error) {
+	statement, ok := statementByName[typ]
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrStatementNotFound, typ)
+	}
+	actions := make([]string, len(statement.Action))
+	copy(actions, statement.Action)
+	return actions, nil
+}
+
+func GetActionsForPolicyTypeOrDie(typ string) []string {
+	ret, err := GetActionsForPolicyType(typ)
+	if err != nil {
+		panic(err)
+	}
+	return ret
 }
 
 // MakeStatementForPolicyType returns statements for policy type typ,
@@ -181,18 +210,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		{
 			CreatedAt:   ts,
 			DisplayName: "RepoManagementReadAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"ci:Read*",
-						"retention:Get*",
-						"branches:Get*",
-						"fs:ReadConfig",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
+			Statement:   MakeStatementForPolicyTypeOrDie("RepoManagementRead", all),
 		},
 		{
 			CreatedAt:   ts,
