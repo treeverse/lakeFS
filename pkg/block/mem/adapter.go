@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -273,27 +272,6 @@ func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 		ETag:          hexCode,
 		ContentLength: int64(len(data)),
 	}, nil
-}
-
-func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	a.mutex.RLock()
-	defer a.mutex.RUnlock()
-
-	// Walk function should be performed in a lexicographical order
-	keys := make([]string, 0)
-	for k := range a.data {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		if strings.HasPrefix(k, walkOpt.Prefix) {
-			if err := walkFn(k); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {

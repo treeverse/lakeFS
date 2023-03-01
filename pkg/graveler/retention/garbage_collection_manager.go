@@ -53,6 +53,7 @@ func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNames
 	return qk.Format(), nil
 }
 
+// GetUncommittedLocation return full path to underlying storage path to store uncommitted information
 func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(uncommittedFilePrefixTemplate, m.committedBlockStoragePrefix, runID)
 	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)

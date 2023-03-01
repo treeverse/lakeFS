@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect} from "react";
+import Layout from "../../lib/components/layout";
 import {useState} from "react";
 import {API_ENDPOINT, setup, SETUP_STATE_NOT_INITIALIZED, SETUP_STATE_INITIALIZED, SETUP_STATE_COMMUNICATION_PERFS_DONE} from "../../lib/api";
 import {useRouter} from "../../lib/hooks/router";
@@ -48,11 +49,13 @@ const SetupContents = () => {
 
     if (setupData && setupData.access_key_id) {
         return (
-            <SetupComplete
-                accessKeyId={setupData.access_key_id}
-                secretAccessKey={setupData.secret_access_key}
-                apiEndpoint={API_ENDPOINT}
-            />
+            <Layout logged={false}>
+                <SetupComplete
+                    accessKeyId={setupData.access_key_id}
+                    secretAccessKey={setupData.secret_access_key}
+                    apiEndpoint={API_ENDPOINT}
+                    />
+            </Layout>
         );
     }
 
@@ -63,11 +66,13 @@ const SetupContents = () => {
         case SETUP_STATE_COMMUNICATION_PERFS_DONE:
         case SETUP_STATE_NOT_INITIALIZED:
                 return (
-                <UserConfiguration
-                    onSubmit={onSubmitUserConfiguration}
-                    setupError={setupError}
-                    disabled={disabled}
-                />
+                    <Layout logged={false}>
+                        <UserConfiguration
+                            onSubmit={onSubmitUserConfiguration}
+                            setupError={setupError}
+                            disabled={disabled}
+                            />
+                    </Layout>
             );
         default:
             return null;

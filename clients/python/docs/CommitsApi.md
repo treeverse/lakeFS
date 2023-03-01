@@ -127,6 +127,7 @@ Name | Type | Description  | Notes
 **201** | commit |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 **0** | Internal Server Error |  -  |

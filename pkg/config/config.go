@@ -45,17 +45,6 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// LDAP holds configuration for authenticating on an LDAP server.
-type LDAP struct {
-	ServerEndpoint    string `mapstructure:"server_endpoint"`
-	BindDN            string `mapstructure:"bind_dn"`
-	BindPassword      string `mapstructure:"bind_password"`
-	DefaultUserGroup  string `mapstructure:"default_user_group"`
-	UsernameAttribute string `mapstructure:"username_attribute"`
-	UserBaseDN        string `mapstructure:"user_base_dn"`
-	UserFilter        string `mapstructure:"user_filter"`
-}
-
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
@@ -163,8 +152,17 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP *LDAP
-		OIDC OIDC
+		RemoteAuthenticator struct {
+			// Enabled if set true will enable remote authentication
+			Enabled bool `mapstructure:"enabled"`
+			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+			Endpoint string `mapstructure:"endpoint"`
+			// DefaultUserGroup is the default group for the users authenticated by the remote service
+			DefaultUserGroup string `mapstructure:"default_user_group"`
+			// RequestTimeout timeout for remote authentication requests
+			RequestTimeout time.Duration `mapstructure:"request_timeout"`
+		} `mapstructure:"remote_authenticator"`
+		OIDC OIDC `mapstructure:"oidc"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`

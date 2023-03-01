@@ -403,6 +403,23 @@ func (mr *MockVersionControllerMockRecorder) DiffUncommitted(ctx, repository, br
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffUncommitted", reflect.TypeOf((*MockVersionController)(nil).DiffUncommitted), ctx, repository, branchID)
 }
 
+// FindMergeBase mocks base method.
+func (m *MockVersionController) FindMergeBase(ctx context.Context, repository *graveler.RepositoryRecord, from, to graveler.Ref) (*graveler.CommitRecord, *graveler.CommitRecord, *graveler.Commit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindMergeBase", ctx, repository, from, to)
+	ret0, _ := ret[0].(*graveler.CommitRecord)
+	ret1, _ := ret[1].(*graveler.CommitRecord)
+	ret2, _ := ret[2].(*graveler.Commit)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
+}
+
+// FindMergeBase indicates an expected call of FindMergeBase.
+func (mr *MockVersionControllerMockRecorder) FindMergeBase(ctx, repository, from, to interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMergeBase", reflect.TypeOf((*MockVersionController)(nil).FindMergeBase), ctx, repository, from, to)
+}
+
 // GCGetUncommittedLocation mocks base method.
 func (m *MockVersionController) GCGetUncommittedLocation(repository *graveler.RepositoryRecord, runID string) (string, error) {
 	m.ctrl.T.Helper()

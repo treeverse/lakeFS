@@ -48,16 +48,6 @@ message GarbageCollectionRules {
   map<string, int32> branch_retention_days = 2;
 }
 
-message GarbageCollectionRunMetadata {
-  string run_id = 1;
-  // Location of expired commits CSV file on object store
-  string commits_csv_location = 2;
-  // Location of where to write expired addresses on object store
-  string address_location = 3;
-  // Location of uncommitted objects parquet file on object store
-  string uncommitted_location = 4;
-}
-
 enum BranchProtectionBlockedAction {
   STAGING_WRITE = 0;
   COMMIT = 1;

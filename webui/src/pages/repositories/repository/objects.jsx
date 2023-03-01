@@ -20,7 +20,7 @@ import Col from "react-bootstrap/Col";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects} from "../../../lib/api";
+import {config, objects, refs} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -53,6 +53,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
+    const [metadataFields, setMetadataFields] = useState([])
 
     const sourceRef = useRef(null);
     const destRef = useRef(null);
@@ -68,12 +69,25 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         setImportPhase(ImportPhase.NotStarted);
         setIsImportEnabled(false);
         setNumberOfImportedObjects(0);
+        setMetadataFields([]);
     }
 
     const hide = () => {
-        if (ImportPhase.InProgress === importPhase) return;
+        if (ImportPhase.InProgress === importPhase || ImportPhase.Merging === importPhase) return;
         resetState()
         onHide()
+    };
+
+    const doMerge = async () => {
+        setImportPhase(ImportPhase.Merging);
+        try {
+            await refs.merge(repoId, importBranch, currBranch);
+            onDone();
+            hide();
+        } catch (error) {
+            setImportPhase(ImportPhase.MergeFailed);
+            setImportError(error);
+        }
     };
 
     const doImport = async () => {
@@ -83,6 +97,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
             setNumberOfImportedObjects(numObj);
         }
         try {
+            const metadata = {};
+            metadataFields.forEach(pair => metadata[pair.key] = pair.value)
             await runImport(
                 updateStateFromImport,
                 destRef.current.value,
@@ -90,7 +106,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 sourceRef.current.value,
                 importBranch,
                 repoId,
-                referenceId
+                referenceId,
+                metadata
             );
             onDone();
         } catch (error) {
@@ -109,7 +126,9 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 </Modal.Header>
                 <Modal.Body>
                     {
-                        (importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) &&
+                        (importPhase === ImportPhase.NotStarted ||
+                            importPhase === ImportPhase.Failed  ||
+                            importPhase === ImportPhase.MergeFailed) &&
                         <ImportForm
                             config={config}
                             pathStyle={pathStyle}
@@ -121,6 +140,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                             path={path}
                             commitMsgRef={commitMsgRef}
                             shouldAddPath={true}
+                            metadataFields={metadataFields}
+                            setMetadataFields={setMetadataFields}
                             err={importError}
                         />
                     }
@@ -138,9 +159,14 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
                         Cancel
                     </Button>
-                    {
-                        <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
-                    }
+
+                    <ExecuteImportButton
+                        importPhase={importPhase}
+                        importFunc={doImport}
+                        mergeFunc={doMerge}
+                        doneFunc={onDone}
+                        isEnabled={isImportEnabled}/>
+
                 </Modal.Footer>
             </Modal>
         </>
@@ -402,7 +428,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                     <ImportButton
                         onClick={() => setShowImport(true)}
-                        enabled={config.blockstore_type.import_support}
+                        enabled={config.import_support}
                     />
                     <ImportModal
                         config={config}

@@ -549,6 +549,8 @@ td .form-group {
 .import-num-objects {
   display: inline-flex;
   color: green;
+  font-weight: bolder;
+  margin: 0 2px;
 }
 
 .import-text {
@@ -602,11 +604,6 @@ td .form-group {
   margin-right: 8px;
 }
 
-.object-viewer-buttons {
-  width: 20%;
-  text-align: right;
-  margin-right: 5px;
-}
 
 .object-viewer-sql-input.form-control {
   background-color: #333333;
@@ -663,7 +660,7 @@ td.table-operation-type {
   padding-left: 30px;
 }
 
-td.table-version, td.table-version-placeholder {
+td.table-id, td.table-id-placeholder {
   text-align: left;
   width: 8%;
 }

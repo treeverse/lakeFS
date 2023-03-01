@@ -258,30 +258,6 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 	return f, nil
 }
 
-func (l *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	p, err := l.getPath(block.ObjectPointer{
-		StorageNamespace: walkOpt.StorageNamespace,
-		Identifier:       walkOpt.Prefix,
-		IdentifierType:   block.IdentifierTypeRelative,
-	})
-	if err != nil {
-		return err
-	}
-	err = filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		return walkFn(path)
-	})
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	return err
-}
-
 func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
 	p, err := l.getPath(obj)
 	if err != nil {
