@@ -35,7 +35,7 @@ export const linkToPath = (repoId, branchId, path, presign=false) => {
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
 };
 
-const qs = (queryParts) => {
+export const qs = (queryParts) => {
     const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
     return new URLSearchParams(parts).toString();
 };

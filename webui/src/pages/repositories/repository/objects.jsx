@@ -360,7 +360,7 @@ const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
             error={error}
             loading={loading}
             showFullNavigator={false}
-            usePresigned={config.pre_sign_support}
+            presign={config.pre_sign_support}
         />
     );
 }

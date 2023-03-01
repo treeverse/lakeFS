@@ -40,7 +40,7 @@ interface FileContentsProps {
     fileExtension: string;
     sizeBytes: number;
     showFullNavigator?: boolean;
-    usePresigned?: boolean;
+    presign?: boolean;
 }
 
 
@@ -104,9 +104,9 @@ const FileObjectsViewerPage = () => {
     );
 };
 
-export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes = -1, showFullNavigator = true, usePresigned= false}) => {
+export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loading, error, contentType = null, fileExtension='', sizeBytes = -1, showFullNavigator = true, presign= false}) => {
 
-    const objectUrl = linkToPath(repoId, refId, path, usePresigned);
+    const objectUrl = linkToPath(repoId, refId, path, presign);
 
     if (loading || error) {
         return <></>;
@@ -154,8 +154,8 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
                             path={path}
                             fileExtension={fileExtension}
                             contentType={contentType}
-                            usePresigned={usePresigned}
-                            sizeBytes={sizeBytes}/>
+                            sizeBytes={sizeBytes}
+                            presign={presign}/>
                     </Box>
                 </Card.Body>
             </Card>

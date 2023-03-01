@@ -45,7 +45,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete, usePresigned = false }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -80,7 +80,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, usePresigned = fals
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
-              presign={usePresigned}
+              presign={presign}
             >
               <DownloadIcon /> Download
             </PathLink>
@@ -507,7 +507,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
         reference={reference}
         entry={entry}
         onDelete={onDelete}
-        usePresigned={config.config.pre_sign_support}
+        presign={config.config.pre_sign_support}
       />
     );
   }
