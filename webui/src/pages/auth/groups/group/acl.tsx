@@ -3,7 +3,8 @@ import React, {useCallback, useEffect, useState} from "react";
 import Button from "react-bootstrap/Button";
 import Form from 'react-bootstrap/Form';
 
-import {sortedUniq, without} from 'lodash';
+import sortedUniq from 'lodash/sortedUniq';
+import without from 'lodash/without';
 
 import {GroupHeader} from "../../../../lib/components/auth/nav";
 import {AuthLayout} from "../../../../lib/components/auth/layout";
