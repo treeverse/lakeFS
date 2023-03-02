@@ -2,7 +2,7 @@ package local
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/matoous/go-nanoid/v2"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 )

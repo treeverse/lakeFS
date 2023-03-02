@@ -182,7 +182,7 @@ func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
 	}
 	if l.removeEmptyDir {
 		dir := filepath.Dir(p)
-		repoRoot := strings.TrimLeft(obj.StorageNamespace, StoragePrefix)
+		repoRoot := obj.StorageNamespace[len(StoragePrefix):]
 		removeEmptyDirUntil(dir, path.Join(l.path, repoRoot))
 	}
 	return nil
