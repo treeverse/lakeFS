@@ -115,8 +115,8 @@ const GroupRepositoriesList = ({ groupId }) => {
                     addText={'Add to group'}
                     searchFn={prefix => repositories.list(prefix, "", 20)
                               .then(res => res.results.filter(r => !acl.repositories?.includes(r.id)))}
-                    onHide={() => setShowAddModal(false)}
-                    onAttach={(selected) => addReposToACL(acl, groupId, selected)}/>
+                    onHide={setShowAddModal.bind(null, false)}
+                    onAttach={(selected) => addReposToACL.bind(acl, groupId, selected)}/>
                 }
             </>
         );
@@ -135,7 +135,7 @@ const GroupRepositoriesList = ({ groupId }) => {
             <ActionsBar>
                 <ActionGroup orientation="left">
                     <WrapIf Component={GrayOut} enabled={acl?.all_repositories}>
-                        <Button variant="success" onClick={() => setShowAddModal(true)}>Add Repositories</Button>
+                        <Button variant="success" onClick={setShowAddModal.bind(null, true)}>Add Repositories</Button>
                     </WrapIf>
                 </ActionGroup>
 
