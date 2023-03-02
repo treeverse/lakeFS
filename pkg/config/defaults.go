@@ -20,6 +20,7 @@ func setDefaults(local bool) {
 		viper.SetDefault("database.type", "local")
 		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
 		viper.SetDefault(BlockstoreTypeKey, "local")
+		viper.SetDefault("blockstore.default_namespace_prefix", "local://")
 	}
 
 	viper.SetDefault("listen_address", DefaultListenAddress)
