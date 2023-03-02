@@ -14,6 +14,8 @@ type GarbageCollectionCommits struct {
 	active  []graveler.CommitID
 }
 
+var commitNotFound = errors.New("commit not found")
+
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
 // Upon completion, the given startingPointIterator is closed.
@@ -25,9 +27,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		commitRecord        *graveler.CommitRecord
 		branchRetentionDays int32
 		previousThreshold   time.Time
-		commitNotFound      error
 	)
-	commitNotFound = errors.New("commit not found")
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
 	for _, commitID := range previouslyExpired {
