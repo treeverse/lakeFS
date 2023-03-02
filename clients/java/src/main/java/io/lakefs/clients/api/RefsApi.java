@@ -30,6 +30,7 @@ import java.io.IOException;
 import io.lakefs.clients.api.model.CommitList;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.FindMergeBaseResult;
 import io.lakefs.clients.api.model.Merge;
 import io.lakefs.clients.api.model.MergeResult;
 import io.lakefs.clients.api.model.RefsDump;
@@ -372,6 +373,154 @@ public class RefsApi {
         return localVarCall;
     }
     /**
+     * Build call for findMergeBase
+     * @param repository  (required)
+     * @param sourceRef source ref (required)
+     * @param destinationBranch destination branch name (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Found the merge base </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call findMergeBaseCall(String repository, String sourceRef, String destinationBranch, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "sourceRef" + "\\}", localVarApiClient.escapeString(sourceRef.toString()))
+            .replaceAll("\\{" + "destinationBranch" + "\\}", localVarApiClient.escapeString(destinationBranch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call findMergeBaseValidateBeforeCall(String repository, String sourceRef, String destinationBranch, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling findMergeBase(Async)");
+        }
+        
+        // verify the required parameter 'sourceRef' is set
+        if (sourceRef == null) {
+            throw new ApiException("Missing the required parameter 'sourceRef' when calling findMergeBase(Async)");
+        }
+        
+        // verify the required parameter 'destinationBranch' is set
+        if (destinationBranch == null) {
+            throw new ApiException("Missing the required parameter 'destinationBranch' when calling findMergeBase(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = findMergeBaseCall(repository, sourceRef, destinationBranch, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * find the merge base for 2 references
+     * 
+     * @param repository  (required)
+     * @param sourceRef source ref (required)
+     * @param destinationBranch destination branch name (required)
+     * @return FindMergeBaseResult
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Found the merge base </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public FindMergeBaseResult findMergeBase(String repository, String sourceRef, String destinationBranch) throws ApiException {
+        ApiResponse<FindMergeBaseResult> localVarResp = findMergeBaseWithHttpInfo(repository, sourceRef, destinationBranch);
+        return localVarResp.getData();
+    }
+
+    /**
+     * find the merge base for 2 references
+     * 
+     * @param repository  (required)
+     * @param sourceRef source ref (required)
+     * @param destinationBranch destination branch name (required)
+     * @return ApiResponse&lt;FindMergeBaseResult&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Found the merge base </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<FindMergeBaseResult> findMergeBaseWithHttpInfo(String repository, String sourceRef, String destinationBranch) throws ApiException {
+        okhttp3.Call localVarCall = findMergeBaseValidateBeforeCall(repository, sourceRef, destinationBranch, null);
+        Type localVarReturnType = new TypeToken<FindMergeBaseResult>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * find the merge base for 2 references (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param sourceRef source ref (required)
+     * @param destinationBranch destination branch name (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Found the merge base </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call findMergeBaseAsync(String repository, String sourceRef, String destinationBranch, final ApiCallback<FindMergeBaseResult> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = findMergeBaseValidateBeforeCall(repository, sourceRef, destinationBranch, _callback);
+        Type localVarReturnType = new TypeToken<FindMergeBaseResult>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
      * Build call for logCommits
      * @param repository  (required)
      * @param ref  (required)
@@ -560,6 +709,7 @@ public class RefsApi {
         <tr><td> 200 </td><td> merge completed </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
@@ -638,6 +788,7 @@ public class RefsApi {
         <tr><td> 200 </td><td> merge completed </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
@@ -664,6 +815,7 @@ public class RefsApi {
         <tr><td> 200 </td><td> merge completed </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
@@ -692,6 +844,7 @@ public class RefsApi {
         <tr><td> 200 </td><td> merge completed </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>

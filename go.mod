@@ -67,7 +67,6 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.15.0 // indirect
-	github.com/coreos/go-oidc/v3 v3.2.0
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 )
@@ -151,7 +150,6 @@ require (
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	gonum.org/v1/gonum v0.9.3 // indirect
-	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
 
 require (

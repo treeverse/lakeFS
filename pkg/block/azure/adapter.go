@@ -36,8 +36,9 @@ const (
 )
 
 type Adapter struct {
-	clientCache     *ClientCache
-	preSignedExpiry time.Duration
+	clientCache      *ClientCache
+	preSignedExpiry  time.Duration
+	disablePreSigned bool
 }
 
 func NewAdapter(params params.Azure) (*Adapter, error) {
@@ -51,8 +52,9 @@ func NewAdapter(params params.Azure) (*Adapter, error) {
 		return nil, err
 	}
 	return &Adapter{
-		clientCache:     cache,
-		preSignedExpiry: preSignedExpiry,
+		clientCache:      cache,
+		preSignedExpiry:  preSignedExpiry,
+		disablePreSigned: params.DisablePreSigned,
 	}, nil
 }
 
@@ -141,23 +143,6 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 	return ResolveBlobURLInfoFromURL(parsedKey)
 }
 
-func resolveNamespacePrefix(lsOpts block.WalkOpts) (PrefixURLInfo, error) {
-	qualifiedPrefix, err := resolveBlobURLInfo(block.ObjectPointer{
-		StorageNamespace: lsOpts.StorageNamespace,
-		Identifier:       lsOpts.Prefix,
-	})
-	if err != nil {
-		return PrefixURLInfo{}, err
-	}
-
-	return PrefixURLInfo{
-		StorageAccountName: qualifiedPrefix.StorageAccountName,
-		ContainerURL:       qualifiedPrefix.ContainerURL,
-		ContainerName:      qualifiedPrefix.ContainerName,
-		Prefix:             qualifiedPrefix.BlobURL,
-	}, nil
-}
-
 func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
 	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
@@ -211,6 +196,10 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	permissions := sas.BlobPermissions{Read: true}
 	if mode == block.PreSignModeWrite {
 		permissions = sas.BlobPermissions{
@@ -223,6 +212,10 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 }
 
 func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
@@ -292,44 +285,6 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 		return nil, err
 	}
 	return downloadResponse.Body, nil
-}
-
-func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	var err error
-	defer reportMetrics("Walk", time.Now(), nil, &err)
-
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	containerClient, err := a.clientCache.NewContainerClient(qualifiedPrefix.StorageAccountName, qualifiedPrefix.ContainerName)
-	if err != nil {
-		return err
-	}
-
-	var marker *string
-	for {
-		listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
-			Prefix: &qualifiedPrefix.Prefix,
-			Marker: marker,
-		})
-
-		for listBlob.More() {
-			resp, err := listBlob.NextPage(ctx)
-			if err != nil {
-				return err
-			}
-			for _, blobInfo := range resp.Segment.BlobItems {
-				if err := walkFn(*blobInfo.Name); err != nil {
-					return err
-				}
-			}
-			if marker = resp.NextMarker; marker == nil {
-				return nil
-			}
-		}
-	}
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
@@ -594,11 +549,13 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.StorageNamespaceInfo{
-		ValidityRegex:  `^https?://`,
-		Example:        "https://mystorageaccount.blob.core.windows.net/mycontainer/",
-		PreSignSupport: true,
+	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
+	info.ValidityRegex = `^https?://`
+	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
+	if a.disablePreSigned {
+		info.PreSignSupport = false
 	}
+	return info
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

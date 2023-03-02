@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **String** |  |  [optional]
+**id** | **String** |  | 
 **timestamp** | **Integer** |  | 
 **operation** | **String** |  | 
 **operationContent** | **Object** | free form content describing the returned operation diff | 

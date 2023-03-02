@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
-	"github.com/go-ldap/ldap/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -25,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
+	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -56,42 +55,6 @@ const (
 
 type Shutter interface {
 	Shutdown(context.Context) error
-}
-
-func newLDAPAuthenticator(cfg *config.LDAP, service auth.Service) *auth.LDAPAuthenticator {
-	const (
-		connectionTimeout = 15 * time.Second
-		requestTimeout    = 7 * time.Second
-	)
-	group := cfg.DefaultUserGroup
-	if group == "" {
-		group = auth.ViewersGroup
-	}
-	return &auth.LDAPAuthenticator{
-		AuthService:       service,
-		BindDN:            cfg.BindDN,
-		BindPassword:      cfg.BindPassword,
-		DefaultUserGroup:  group,
-		UsernameAttribute: cfg.UsernameAttribute,
-		MakeLDAPConn: func(_ context.Context) (*ldap.Conn, error) {
-			c, err := ldap.DialURL(
-				cfg.ServerEndpoint,
-				ldap.DialWithDialer(&net.Dialer{Timeout: connectionTimeout}),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("dial %s: %w", cfg.ServerEndpoint, err)
-			}
-			c.SetTimeout(requestTimeout)
-			// TODO(ariels): Support StartTLS (& other TLS configuration).
-			return c, nil
-		},
-		BaseSearchRequest: ldap.SearchRequest{
-			BaseDN:     cfg.UserBaseDN,
-			Scope:      ldap.ScopeWholeSubtree,
-			Filter:     cfg.UserFilter,
-			Attributes: []string{cfg.UsernameAttribute},
-		},
-	}
 }
 
 var runCmd = &cobra.Command{
@@ -172,7 +135,7 @@ var runCmd = &cobra.Command{
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		blockstoreType := cfg.BlockstoreType()
-		if blockstoreType == "local" || blockstoreType == "mem" {
+		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
@@ -228,12 +191,15 @@ var runCmd = &cobra.Command{
 			auth.NewBuiltinAuthenticator(authService),
 		}
 
-		if cfg.Auth.LDAP != nil {
-			logger.
-				WithField("feature", "LDAP").
-				Warn("Enabling LDAP on lakeFS server, but this functionality is deprecated")
-			middlewareAuthenticator = append(middlewareAuthenticator, newLDAPAuthenticator(cfg.Auth.LDAP, authService))
+		// remote authenticator setup
+		if cfg.Auth.RemoteAuthenticator.Enabled {
+			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(cfg.Auth.RemoteAuthenticator), authService, logger)
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create remote authenticator")
+			}
+			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
+
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID)
@@ -244,8 +210,7 @@ var runCmd = &cobra.Command{
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
 		if err != nil {
-			fmt.Printf("%s: %s\n", mismatchedReposFlagName, err)
-			os.Exit(1)
+			logger.WithError(err).Fatal(mismatchedReposFlagName)
 		}
 		if !allowForeign {
 			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
@@ -431,6 +396,7 @@ func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger l
 	if _, err := adapter.Get(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       dummyFile,
+		IdentifierType:   block.IdentifierTypeRelative,
 	}, -1); err != nil {
 		logger.WithFields(logging.Fields{
 			"path":              dummyFile,

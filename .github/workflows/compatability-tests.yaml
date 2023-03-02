@@ -120,7 +120,7 @@ jobs:
       matrix:
         # Removing a version from this list means the published client is no longer compatible with
         # that lakeFS version.
-        lakefs_version: [ 0.89.1, 0.90.0, 0.91.0, 0.92.0, 0.93.0 ]
+        lakefs_version: [ 0.89.1, 0.90.0, 0.91.0, 0.92.0, 0.93.0, 0.94.1 ]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ matrix.lakefs_version }}

@@ -38,8 +38,11 @@ It is sometimes referred as multi-table transactions. That is, lakeFS offers tra
 
 <!---Learn more about cross-collection consistency here (link to CCC blog) -->
 
+### Data Lake Governance ###
+The goal of data lake governance is to apply policies, standards and processes. on the data. This allows creating high-quality data and ensuring that it’s used appropriately across the organization. Data lake governance improves the data quality and increases data usage for business decision-making, leading to operational improvements, better-informed business strategies, and stronger financial performance. lakeFS offers advanced data lake management features such as: [Role-Based Access Control](../reference/authorization.md), [Branch Aware Managed Garbage Collection](../howto/garbage-collection.md), [Data Lineage and Audit log](../audit.md).
+
 ### Data Lifecycle Management
-In data-intensive applications, data should be managed through its entire lifecycle similar to how teams manage code. By doing so, we could leverage the best practices and tools from application lifecycle management (like CI/CD operations) and apply them to data. lakeFS offers data lifecycle management via [isolated data development environments](../use_cases/iso_env.md) instead of shared buckets.
+In data-intensive applications, data should be managed through its entire lifecycle similar to how teams manage code. By doing so, we could leverage the best practices and tools from application lifecycle management (like CI/CD operations) and apply them to data. lakeFS offers data lifecycle management via [isolated data development environments](../use_cases/etl_testing.md) instead of shared buckets.
 
 ### Data Pipeline Reproducibility
 Reproducibility in data pipelines is the ability to repeat a process. An example of this is recreating an issue that occurred in the production pipeline. Reproducibility allows for the controlled manufacture of an error to debug and troubleshoot it at a later point in time. Reproducing a data pipeline issue is a challenge that most data engineers face on a daily basis. Learn more about how lakeFS supports data pipeline [reproducibility](../use_cases/reproducibility.md). Other use cases include running ad-hoc queries (useful for data science), review, and backfill.
