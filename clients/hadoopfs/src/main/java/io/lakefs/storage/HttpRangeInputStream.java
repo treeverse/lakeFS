@@ -12,9 +12,9 @@ import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 
 public class HttpRangeInputStream extends FSInputStream {
-    private static final int BUFFER_SIZE = 1024 * 1024;
+    private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
     private final String url;
-
+    private final int bufferSize;
 
     private long start = Long.MAX_VALUE;
     private long pos;
@@ -22,9 +22,14 @@ public class HttpRangeInputStream extends FSInputStream {
     private byte[] rangeContent;
 
     private boolean closed;
-
+    
     public HttpRangeInputStream(String url) throws IOException {
+        this(url, DEFAULT_BUFFER_SIZE);
+    }
+
+    public HttpRangeInputStream(String url, int bufferSize) throws IOException {
         this.url = url;
+        this.bufferSize = bufferSize;
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Range", "bytes=0-0");
@@ -37,13 +42,13 @@ public class HttpRangeInputStream extends FSInputStream {
     }
 
     private void updateInputStream(long targetPos) throws MalformedURLException, IOException {
-        if (targetPos >= start && targetPos < start + BUFFER_SIZE) {
+        if (targetPos >= start && targetPos < start + bufferSize) {
             // no need to update the stream
             return;
         }
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setRequestMethod("GET");
-        long rangeEnd = Math.min(targetPos + BUFFER_SIZE, len);
+        long rangeEnd = Math.min(targetPos + bufferSize, len);
         connection.setRequestProperty("Range", "bytes=" + targetPos + "-" + rangeEnd);
         rangeContent = new byte[(int) (rangeEnd - targetPos)];
         InputStream inputStream = connection.getInputStream();
