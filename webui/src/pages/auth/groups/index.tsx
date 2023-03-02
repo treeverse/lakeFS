@@ -33,14 +33,14 @@ const permissions = {
 };
 
 type ACLPermissionButtonProps = {
-    start?: string;
+    initialValue?: string;
     onSelect?: (newPermission: string) => unknown;
     variant?: string;
 }
 
-const ACLPermission = ({start, onSelect, variant}: ACLPermissionButtonProps) => {
-    const [value, setValue] = useState(start);
-    const [title, setTitle] = useState(permissions[start] || '(unknown)');
+const ACLPermission: React.FC<ACLPermissionButtonProps> = ({initialValue, onSelect, variant}) => {
+    const [value, setValue] = useState(initialValue);
+    const [title, setTitle] = useState(permissions[initialValue] || '(unknown)');
     variant ||= 'secondary';
     return (<Dropdown variant={variant} onSelect={
         (p) => {
@@ -160,7 +160,7 @@ const GroupsContainer = () => {
                     <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                         {group.id}
                     </Link>,
-                    group.acl ? <ACLPermission start={group.acl.permission} onSelect={
+                    group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
                         ((permission) => auth.putACL(group.id, {...group.acl, permission})
                             .then(() => setPutACLError(null), (e) => setPutACLError(e)))
                     }/> : <></>,
