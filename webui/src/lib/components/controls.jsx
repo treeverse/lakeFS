@@ -475,15 +475,14 @@ export const ExperimentalOverlayTooltip = ({children, show = true, placement="au
     ) : <></>;
 };
 
-
-export const GrayOut = ({enabled=true, children}) => {
-    if (enabled) {
-        children = (<div>
-                        <div className={'gray-out overlay'}/>
-                        {children}
-                    </div>);
-    }
-    return <div style={{position: 'relative'}}>
-               {children}
+export const GrayOut = ({children}) =>
+    <div style={{position: 'relative'}}>
+               <div>
+                   <div className={'gray-out overlay'}/>
+                   {children}
+               </div>
            </div>;
-};
+
+
+export const WrapIf = ({enabled, Component, children}) => (
+    enabled ? <Component>{children}</Component> : children);

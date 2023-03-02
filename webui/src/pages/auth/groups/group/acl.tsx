@@ -19,7 +19,8 @@ import {
     GrayOut,
     Loading,
     Error,
-    RefreshButton
+    RefreshButton,
+    WrapIf,
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
@@ -78,7 +79,7 @@ const GroupRepositoriesList = ({ groupId }) => {
                {apiError && <Error error={apiError}/>}
 
                {hasACL &&
-                <GrayOut enabled={acl?.all_repositories}>
+                <WrapIf Component={GrayOut} enabled={acl?.all_repositories}>
                     <DataTable
                         keyFn={identity}
                         rowFn={(repoId) => {
@@ -102,7 +103,7 @@ const GroupRepositoriesList = ({ groupId }) => {
                         results={acl?.repositories}
                         emptyState={acl?.all_repositories ? <></> : <>&empty;</>}
                     />
-                </GrayOut>
+                </WrapIf>
                }
 
                {showAddModal &&
@@ -133,9 +134,9 @@ const GroupRepositoriesList = ({ groupId }) => {
 
             <ActionsBar>
                 <ActionGroup orientation="left">
-                    <GrayOut enabled={acl?.all_repositories}>
+                    <WrapIf Component={GrayOut} enabled={acl?.all_repositories}>
                         <Button variant="success" onClick={() => setShowAddModal(true)}>Add Repositories</Button>
-                    </GrayOut>
+                    </WrapIf>
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
