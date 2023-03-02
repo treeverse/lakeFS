@@ -96,6 +96,10 @@ func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID gravele
 	return r.refManager.GetCommit(ctx, r.repository, commitID)
 }
 
+func (r *RepositoryCommitGetter) ListCommits(ctx context.Context) (graveler.CommitIterator, error) {
+	return r.refManager.ListCommits(ctx, r.repository)
+}
+
 func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
 	return &GarbageCollectionManager{
 		blockAdapter:                blockAdapter,

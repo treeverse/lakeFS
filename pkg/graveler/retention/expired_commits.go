@@ -2,6 +2,7 @@ package retention
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -19,7 +20,12 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
-	now := time.Now()
+	var (
+		commitRecord        *graveler.CommitRecord
+		branchRetentionDays int32
+		previousThreshold   time.Time
+	)
+
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
 	for _, commitID := range previouslyExpired {
@@ -27,13 +33,28 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	}
 	activeMap := make(map[graveler.CommitID]struct{})
 	expiredMap := make(map[graveler.CommitID]struct{})
+
+	commitsIterator, err := commitGetter.ListCommits(ctx)
+	if err != nil {
+		return nil, err
+	}
+	commitsMap := make(map[graveler.CommitID]*graveler.Commit)
+	count := 0
+	defer commitsIterator.Close()
+	for commitsIterator.Next() {
+		commitRecord = commitsIterator.Value()
+		commitsMap[commitRecord.CommitID] = commitRecord.Commit
+		count += 1
+	}
+
+	now := time.Now()
 	defer startingPointIterator.Close()
 	for startingPointIterator.Next() {
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		commit, err := commitGetter.GetCommit(ctx, startingPoint.CommitID)
-		if err != nil {
-			return nil, err
+		commit, ok := commitsMap[startingPoint.CommitID]
+		if !ok {
+			return nil, fmt.Errorf("could not find commit %s", startingPoint.CommitID)
 		}
 		if startingPoint.BranchID == "" {
 			// not a branch HEAD - add a hypothetical HEAD as its parent
@@ -42,7 +63,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				Parents:      []graveler.CommitID{startingPoint.CommitID},
 			}
 		} else {
-			if branchRetentionDays, ok := rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
+			if branchRetentionDays, ok = rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
 				retentionDays = int(branchRetentionDays)
 			}
 			activeMap[startingPoint.CommitID] = struct{}{}
@@ -58,23 +79,23 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			if commit.Version < graveler.CommitVersionParentSwitch {
 				nextCommitID = commit.Parents[len(commit.Parents)-1]
 			}
-			if _, ok := previouslyExpiredMap[nextCommitID]; ok {
+			if _, ok = previouslyExpiredMap[nextCommitID]; ok {
 				// commit was already expired in a previous run
 				break
 			}
-			if previousThreshold, ok := processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
+			if previousThreshold, ok = processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
 				// was already here with earlier expiration date
 				break
 			}
 			if commit.CreationDate.After(branchExpirationThreshold) {
 				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
-			} else if _, ok := activeMap[nextCommitID]; !ok {
+			} else if _, ok = activeMap[nextCommitID]; !ok {
 				expiredMap[nextCommitID] = struct{}{}
 			}
-			commit, err = commitGetter.GetCommit(ctx, nextCommitID)
-			if err != nil {
-				return nil, err
+			commit, ok = commitsMap[nextCommitID]
+			if !ok {
+				return nil, fmt.Errorf("could not find commit %s", startingPoint.CommitID)
 			}
 			processed[nextCommitID] = branchExpirationThreshold
 		}
