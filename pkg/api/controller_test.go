@@ -728,6 +728,59 @@ func TestController_GetCommitHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("branch commit", func(t *testing.T) {
+		ctx := context.Background()
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+		testutil.Must(t, err)
+		reference1, err := deps.catalog.GetBranchReference(ctx, repo, "main")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if reference1 != commit1.Reference {
+			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
+		}
+		resp, err := clt.GetCommitWithResponse(ctx, repo, "main")
+		verifyResponseOK(t, resp, err)
+		if resp.JSON200 == nil {
+			t.Fatal("GetCommit expected to return 200 with response")
+		}
+		if resp.JSON200.Id != commit1.Reference {
+			t.Fatalf("GetCommit ID=%s, expected=%s", resp.JSON200.Id, commit1.Reference)
+		}
+		if resp.JSON200.Committer != DefaultUserID {
+			t.Fatalf("unexpected commit id %s, expected %s", resp.JSON200.Committer, DefaultUserID)
+		}
+	})
+
+	t.Run("tag commit", func(t *testing.T) {
+		ctx := context.Background()
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+		testutil.Must(t, err)
+		_, err = deps.catalog.CreateTag(ctx, repo, "tag1", commit1.Reference)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := clt.GetCommitWithResponse(ctx, repo, "tag1")
+		verifyResponseOK(t, resp, err)
+		if resp.JSON200 == nil {
+			t.Fatal("GetCommit expected to return 200 with response")
+		}
+		if resp.JSON200.Id != commit1.Reference {
+			t.Fatalf("GetCommit ID=%s, expected=%s", resp.JSON200.Id, commit1.Reference)
+		}
+		if resp.JSON200.Committer != DefaultUserID {
+			t.Fatalf("unexpected commit id %s, expected %s", resp.JSON200.Committer, DefaultUserID)
+		}
+	})
+
 	t.Run("initial commit", func(t *testing.T) {
 		// validate a new repository's initial commit existence and structure
 		ctx := context.Background()
