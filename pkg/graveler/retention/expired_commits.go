@@ -2,6 +2,7 @@ package retention
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,8 +25,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		commitRecord        *graveler.CommitRecord
 		branchRetentionDays int32
 		previousThreshold   time.Time
+		commitNotFound      error
 	)
-
+	commitNotFound = errors.New("commit not found")
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
 	for _, commitID := range previouslyExpired {
@@ -54,7 +56,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		retentionDays := int(rules.DefaultRetentionDays)
 		commit, ok := commitsMap[startingPoint.CommitID]
 		if !ok {
-			return nil, fmt.Errorf("could not find commit %s", startingPoint.CommitID)
+			return nil, fmt.Errorf("%w- %s", commitNotFound, startingPoint.CommitID)
 		}
 		if startingPoint.BranchID == "" {
 			// not a branch HEAD - add a hypothetical HEAD as its parent
@@ -95,7 +97,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			}
 			commit, ok = commitsMap[nextCommitID]
 			if !ok {
-				return nil, fmt.Errorf("could not find commit %s", startingPoint.CommitID)
+				return nil, fmt.Errorf("%w- %s", commitNotFound, startingPoint.CommitID)
 			}
 			processed[nextCommitID] = branchExpirationThreshold
 		}
