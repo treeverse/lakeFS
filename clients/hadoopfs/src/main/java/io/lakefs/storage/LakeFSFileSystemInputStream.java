@@ -1,47 +1,70 @@
 package io.lakefs.storage;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.io.InputBuffer;
 
 // TODO this class is only for POC
-public class LakeFSFileSystemInputStream  extends FSInputStream {
-    private InputBuffer in;
-    private byte[] content;
+public class LakeFSFileSystemInputStream extends FSInputStream {
+    private boolean closed;
+    final private InputBuffer inputBuffer;
+    final private byte[] content;
     
     public LakeFSFileSystemInputStream(InputStream in, int contentLength) throws IOException {
         content = new byte[contentLength];
         IOUtils.readFully(in, content);
-        this.in = new InputBuffer();
-        this.in.reset(content, contentLength);
+        this.inputBuffer = new InputBuffer();
+        this.inputBuffer.reset(content, contentLength);
     }
 
     @Override
-    public void seek(long pos) throws IOException {
-        in.reset(content, (int)pos, content.length);
+    public synchronized void seek(long pos) throws IOException {
+        if (closed) {
+            throw new IOException("Stream closed");
+        }
+        if (pos < 0) {
+            throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK
+                + " " + pos);
+          }
+        inputBuffer.reset(content, (int)pos, content.length - (int)pos);
     }
 
     @Override
-    public long getPos() throws IOException {
-        return in.getPosition();
+    public synchronized long getPos() throws IOException {
+        return inputBuffer.getPosition();
+    }
+
+    public synchronized int available() throws IOException {
+        if (closed) {
+            throw new IOException("Stream closed");
+        }
+        return inputBuffer.getLength() - inputBuffer.getPosition();
     }
 
     @Override
-    public boolean seekToNewSource(long targetPos) throws IOException {        
+    public synchronized boolean seekToNewSource(long targetPos) throws IOException {        
         return false;
     }
 
     @Override
-    public int read() throws IOException {
-        return in.read();
+    public synchronized int read() throws IOException {
+        if (closed) {
+            throw new IOException("Stream closed");
+        }
+        return inputBuffer.read();
     }
 
     @Override
-    public void close() throws IOException {
-        in.close();
+    public synchronized void close() throws IOException {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        inputBuffer.close();
     }
-  
 }
