@@ -41,12 +41,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		return nil, err
 	}
 	commitsMap := make(map[graveler.CommitID]*graveler.Commit)
-	count := 0
 	defer commitsIterator.Close()
 	for commitsIterator.Next() {
 		commitRecord = commitsIterator.Value()
 		commitsMap[commitRecord.CommitID] = commitRecord.Commit
-		count += 1
 	}
 
 	now := time.Now()
