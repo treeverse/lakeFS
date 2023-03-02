@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,9 +18,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/exp/slices"
 )
+
+const StoragePrefix = block.BlockstoreTypeLocal + "://"
 
 type Adapter struct {
 	path                    string
@@ -33,8 +37,29 @@ var (
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
-	ErrForbidden             = errors.New("forbidden")
 )
+
+type QualifiedKey struct {
+	block.QualifiedKey
+	path string
+}
+
+func (qk QualifiedKey) Format() string {
+	p := path.Join(qk.path, qk.GetStorageNamespace(), qk.GetKey())
+	return qk.GetStorageType().Scheme() + "://" + p
+}
+
+func (qk QualifiedKey) GetStorageType() block.StorageType {
+	return qk.QualifiedKey.GetStorageType()
+}
+
+func (qk QualifiedKey) GetStorageNamespace() string {
+	return qk.QualifiedKey.GetStorageNamespace()
+}
+
+func (qk QualifiedKey) GetKey() string {
+	return qk.QualifiedKey.GetKey()
+}
 
 func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 	return func(a *Adapter) {
@@ -45,6 +70,12 @@ func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 func WithImportEnabled(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.importEnabled = b
+	}
+}
+
+func WithRemoveEmptyDir(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.removeEmptyDir = b
 	}
 }
 
@@ -82,20 +113,19 @@ func (l *Adapter) verifyRelPath(p string) error {
 }
 
 func (l *Adapter) getPath(ptr block.ObjectPointer) (string, error) {
-	const prefix = block.BlockstoreTypeLocal + "://"
-	if strings.HasPrefix(ptr.Identifier, prefix) {
+	if strings.HasPrefix(ptr.Identifier, StoragePrefix) {
 		// check abs path
-		p := ptr.Identifier[len(prefix):]
-		if err := l.verifyAbsPath(p); err != nil {
+		p := ptr.Identifier[len(StoragePrefix):]
+		if err := VerifyAbsPath(p, l.path, l.allowedExternalPrefixes); err != nil {
 			return "", err
 		}
 		return p, nil
 	}
 	// relative path
-	if !strings.HasPrefix(ptr.StorageNamespace, prefix) {
+	if !strings.HasPrefix(ptr.StorageNamespace, StoragePrefix) {
 		return "", fmt.Errorf("%w: storage namespace", ErrBadPath)
 	}
-	p := path.Join(l.path, ptr.StorageNamespace[len(prefix):], ptr.Identifier)
+	p := path.Join(l.path, ptr.StorageNamespace[len(StoragePrefix):], ptr.Identifier)
 	if err := l.verifyRelPath(p); err != nil {
 		return "", err
 	}
@@ -152,7 +182,8 @@ func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
 	}
 	if l.removeEmptyDir {
 		dir := filepath.Dir(p)
-		removeEmptyDirUntil(dir, l.path)
+		repoRoot := strings.TrimLeft(obj.StorageNamespace, StoragePrefix)
+		removeEmptyDirUntil(dir, path.Join(l.path, repoRoot))
 	}
 	return nil
 }
@@ -256,6 +287,22 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 		return nil, err
 	}
 	return f, nil
+}
+
+func (l *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
+	if err := block.ValidateStorageType(uri, block.StorageTypeLocal); err != nil {
+		return nil, err
+	}
+
+	err := VerifyAbsPath(uri.Path, l.path, l.allowedExternalPrefixes)
+	if err != nil {
+		return nil, err
+	}
+	return NewLocalWalker(params.Local{
+		Path:                    l.path,
+		ImportEnabled:           l.importEnabled,
+		AllowedExternalPrefixes: l.allowedExternalPrefixes,
+	}), nil
 }
 
 func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
@@ -487,24 +534,36 @@ func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
+func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
+	qk, err := block.ResolveNamespace(storageNamespace, key, identifierType)
+	if err != nil {
+		return qk, err
+	}
+
+	return QualifiedKey{
+		QualifiedKey: qk,
+		path:         l.path,
+	}, nil
+}
+
 func (l *Adapter) RuntimeStats() map[string]string {
 	return nil
 }
 
-func (l *Adapter) verifyAbsPath(p string) error {
+func VerifyAbsPath(absPath, adapterPath string, allowedPrefixes []string) error {
 	// check we have a valid abs path
-	if !path.IsAbs(p) || path.Clean(p) != p {
+	if !path.IsAbs(absPath) || path.Clean(absPath) != absPath {
 		return ErrBadPath
 	}
 	// point to storage namespace
-	if strings.HasPrefix(p, l.path) {
+	if strings.HasPrefix(absPath, adapterPath) {
 		return nil
 	}
 	// allowed places
-	if !slices.ContainsFunc(l.allowedExternalPrefixes, func(prefix string) bool {
-		return strings.HasPrefix(p, prefix)
+	if !slices.ContainsFunc(allowedPrefixes, func(prefix string) bool {
+		return strings.HasPrefix(absPath, prefix)
 	}) {
-		return ErrForbidden
+		return block.ErrForbidden
 	}
 	return nil
 }

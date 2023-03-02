@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -27,22 +28,26 @@ func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader 
 	return err
 }
 
-func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	if expectedSize < 0 {
 		return nil, io.ErrUnexpectedEOF
 	}
 	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
+func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
+	return nil, nil
+}
+
+func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
 	return "", block.ErrOperationNotSupported
 }
 
-func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
+func (a *Adapter) Exists(_ context.Context, _ block.ObjectPointer) (bool, error) {
 	return true, nil
 }
 
-func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (a *Adapter) GetRange(_ context.Context, _ block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -66,7 +71,7 @@ func (a *Adapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	h := sha256.New()
 	code := h.Sum(nil)
 	etag := hex.EncodeToString(code)
@@ -75,7 +80,7 @@ func (a *Adapter) UploadCopyPart(_ context.Context, sourceObj, destinationObj bl
 	}, nil
 }
 
-func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _ int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	n := endPosition - startPosition
 	if n < 0 {
 		return nil, io.ErrUnexpectedEOF
@@ -88,7 +93,7 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationO
 	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	uid := uuid.New()
 	uploadID := hex.EncodeToString(uid[:])
 	return &block.CreateMultiPartUploadResponse{
@@ -96,7 +101,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
@@ -150,6 +155,10 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info.PreSignSupport = false
 	info.ImportSupport = false
 	return info
+}
+
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
+	return block.ResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

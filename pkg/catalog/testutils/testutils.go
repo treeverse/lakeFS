@@ -10,11 +10,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/kv"
-
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -168,7 +168,7 @@ func NewFakeWalker(count, max int, uriPrefix, expectedAfter, expectedContinuatio
 }
 
 type FakeWalker struct {
-	Entries                         []store.ObjectStoreEntry
+	Entries                         []block.ObjectStoreEntry
 	curr                            int
 	Max                             int
 	uriPrefix                       string
@@ -184,7 +184,7 @@ const (
 )
 
 func (w *FakeWalker) createEntries(count int) {
-	ents := make([]store.ObjectStoreEntry, count)
+	ents := make([]block.ObjectStoreEntry, count)
 
 	// Use same sequence to overcome Graveler ability to create small ranges.
 	// Calling test functions rely on Graveler to not break on the first 1000 entries.
@@ -196,7 +196,7 @@ func (w *FakeWalker) createEntries(count int) {
 	for i := 0; i < count; i++ {
 		relativeKey := testutil.RandomString(randGen, randomKeyLength)
 		fullkey := w.uriPrefix + "/" + relativeKey
-		ents[i] = store.ObjectStoreEntry{
+		ents[i] = block.ObjectStoreEntry{
 			RelativeKey: relativeKey,
 			FullKey:     fullkey,
 			Address:     w.expectedFromSourceURIWithPrefix + "/" + relativeKey,
@@ -213,7 +213,7 @@ func (w *FakeWalker) createEntries(count int) {
 
 var errUnexpectedValue = errors.New("unexpected value")
 
-func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkOptions, walkFn func(e store.ObjectStoreEntry) error) error {
+func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	if w.expectedAfter != op.After {
 		return fmt.Errorf("(after) expected %s, got %s: %w", w.expectedAfter, op.After, errUnexpectedValue)
 	}
@@ -243,12 +243,12 @@ func (w *FakeWalker) Walk(_ context.Context, storageURI *url.URL, op store.WalkO
 
 const ContinuationTokenOpaque = "FakeContToken"
 
-func (w *FakeWalker) Marker() store.Mark {
+func (w *FakeWalker) Marker() block.Mark {
 	token := ""
 	if w.curr < len(w.Entries)-1 {
 		token = ContinuationTokenOpaque
 	}
-	return store.Mark{
+	return block.Mark{
 		LastKey:           w.Entries[w.curr].FullKey,
 		HasMore:           w.curr < len(w.Entries)-1,
 		ContinuationToken: token,

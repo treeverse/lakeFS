@@ -7,4 +7,5 @@ var (
 	ErrOperationNotSupported = errors.New("operation not supported")
 	ErrAsyncCopyFailed       = errors.New("async copy failed")
 	ErrBadIndex              = errors.New("bad index")
+	ErrForbidden             = errors.New("forbidden")
 )

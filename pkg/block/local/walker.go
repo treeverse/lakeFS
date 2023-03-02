@@ -1,8 +1,8 @@
-package store
+package local
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -14,44 +14,46 @@ import (
 	"sort"
 	"strings"
 
-	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/matoous/go-nanoid/v2"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"golang.org/x/exp/slices"
 )
 
 const cacheDirName = "_lakefs_cache"
 
-type LocalWalker struct {
-	mark            Mark
+type Walker struct {
+	mark            block.Mark
 	importHidden    bool
 	allowedPrefixes []string
 	cacheLocation   string
+	path            string
 }
 
-func NewLocalWalker(params params.Local) *LocalWalker {
+func NewLocalWalker(params params.Local) *Walker {
 	// without Path, we do not keep cache - will make walker very slow
 	var cacheLocation string
 	if params.Path != "" {
 		cacheLocation = filepath.Join(params.Path, cacheDirName)
 	}
-	return &LocalWalker{
-		mark:            Mark{HasMore: true},
+	return &Walker{
+		mark:            block.Mark{HasMore: true},
 		importHidden:    params.ImportHidden,
 		allowedPrefixes: params.AllowedExternalPrefixes,
 		cacheLocation:   cacheLocation,
+		path:            params.Path,
 	}
 }
 
-func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (l *Walker) Walk(_ context.Context, storageURI *url.URL, options block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	if storageURI.Scheme != "local" {
 		return path.ErrBadPattern
 	}
 	root := path.Join(storageURI.Host, storageURI.Path)
-	if err := l.verifyAbsPath(root); err != nil {
+	if err := VerifyAbsPath(root, l.path, l.allowedPrefixes); err != nil {
 		return err
 	}
 
-	var entries []*ObjectStoreEntry
+	var entries []*block.ObjectStoreEntry
 	// verify and use cache - location is stored in continuation token
 	if options.ContinuationToken != "" && strings.HasPrefix(options.ContinuationToken, l.cacheLocation) {
 		cacheData, err := os.ReadFile(options.ContinuationToken)
@@ -81,7 +83,7 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 			}
 			const dirPerm = 0o755
 			_ = os.MkdirAll(l.cacheLocation, dirPerm)
-			cacheName := filepath.Join(l.cacheLocation, nanoid.Must()+"-import.json")
+			cacheName := filepath.Join(l.cacheLocation, gonanoid.Must()+"-import.json")
 			const cachePerm = 0o644
 			if err := os.WriteFile(cacheName, jsonData, cachePerm); err != nil {
 				return err
@@ -113,12 +115,12 @@ func (l *LocalWalker) Walk(_ context.Context, storageURI *url.URL, options WalkO
 			return err
 		}
 	}
-	l.mark = Mark{}
+	l.mark = block.Mark{}
 	return nil
 }
 
-func (l *LocalWalker) scanEntries(root string, options WalkOptions) ([]*ObjectStoreEntry, error) {
-	var entries []*ObjectStoreEntry
+func (l *Walker) scanEntries(root string, options block.WalkOptions) ([]*block.ObjectStoreEntry, error) {
+	var entries []*block.ObjectStoreEntry
 	if err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -146,7 +148,7 @@ func (l *LocalWalker) scanEntries(root string, options WalkOptions) ([]*ObjectSt
 			return err
 		}
 		// etag is calculated during iteration
-		ent := &ObjectStoreEntry{
+		ent := &block.ObjectStoreEntry{
 			FullKey:     key,
 			RelativeKey: filepath.ToSlash(relativePath),
 			Address:     addr,
@@ -164,7 +166,7 @@ func (l *LocalWalker) scanEntries(root string, options WalkOptions) ([]*ObjectSt
 	return entries, nil
 }
 
-func calcFileETag(ent ObjectStoreEntry) (string, error) {
+func calcFileETag(ent block.ObjectStoreEntry) (string, error) {
 	f, err := os.Open(ent.FullKey)
 	if err != nil {
 		return "", err
@@ -179,18 +181,6 @@ func calcFileETag(ent ObjectStoreEntry) (string, error) {
 	return etag, nil
 }
 
-func (l *LocalWalker) verifyAbsPath(root string) error {
-	if !filepath.IsAbs(root) {
-		return ErrBadPath
-	}
-	if !slices.ContainsFunc(l.allowedPrefixes, func(prefix string) bool {
-		return strings.HasPrefix(root, prefix)
-	}) {
-		return ErrForbidden
-	}
-	return nil
-}
-
-func (l *LocalWalker) Marker() Mark {
+func (l *Walker) Marker() block.Mark {
 	return l.mark
 }

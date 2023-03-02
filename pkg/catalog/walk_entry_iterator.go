@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -23,7 +24,7 @@ type walkEntryIterator struct {
 
 // Mark stands for pagination information when listing objects from the blockstore.
 // It is used for server-client communication on the status of range ingestion.
-type Mark store.Mark
+type Mark block.Mark
 
 type EntryWithMarker struct {
 	EntryRecord
@@ -54,10 +55,10 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prep
 		defer close(it.done)
 		defer close(it.entries)
 
-		err := it.walker.Walk(ctx, store.WalkOptions{
+		err := it.walker.Walk(ctx, block.WalkOptions{
 			After:             after,
 			ContinuationToken: continuationToken,
-		}, func(e store.ObjectStoreEntry) error {
+		}, func(e block.ObjectStoreEntry) error {
 			if it.closed.Load() {
 				return ErrItClosed
 			}

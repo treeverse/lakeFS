@@ -17,7 +17,6 @@ require (
 	github.com/georgysavva/scany v0.2.7
 	github.com/getkin/kin-openapi v0.53.0
 	github.com/go-chi/chi/v5 v5.0.0
-	github.com/go-ldap/ldap/v3 v3.4.1
 	github.com/go-openapi/swag v0.19.14
 	github.com/go-test/deep v1.0.7
 	github.com/gobwas/glob v0.2.3
@@ -156,7 +155,6 @@ require (
 require (
 	4d63.com/gochecknoglobals v0.1.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/Azure/go-ntlmssp v0.0.0-20200615164410-66371956d46c // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
@@ -193,7 +191,6 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-asn1-ber/asn1-ber v1.5.1 // indirect
 	github.com/go-critic/go-critic v0.6.5 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-toolsmith/astcast v1.0.0 // indirect

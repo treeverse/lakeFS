@@ -3,6 +3,7 @@ package blocktest
 import (
 	"context"
 	"io"
+	"net/url"
 	"sort"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 func TestAdapter(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
@@ -143,7 +145,11 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 			if err := adapter.Remove(ctx, obj); (err != nil) != tt.wantErr {
 				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			tree := dumpPathTree(t, ctx, adapter, storageNamespace, tt.name)
+
+			qk, err := adapter.ResolveNamespace(storageNamespace, tt.name, block.IdentifierTypeRelative)
+			require.NoError(t, err)
+
+			tree := dumpPathTree(t, ctx, adapter, qk)
 			if diff := deep.Equal(tt.wantTree, tree); diff != nil {
 				t.Errorf("Remove() tree diff = %s", diff)
 			}
@@ -151,20 +157,26 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 	}
 }
 
-func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, storageNamespace, root string) []string {
+func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QK) []string {
 	t.Helper()
 	tree := make([]string, 0)
 
-	err := adapter.Walk(ctx, block.WalkOpts{
-		StorageNamespace: storageNamespace,
-		Prefix:           root,
-	}, func(id string) error {
-		_, p, _ := strings.Cut(id, root)
+	uri, err := url.Parse(qk.Format())
+	require.NoError(t, err)
+
+	w, err := adapter.GetWalker(uri)
+	require.NoError(t, err)
+
+	walker := store.NewWrapper(w, uri)
+	require.NoError(t, err)
+
+	err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+		_, p, _ := strings.Cut(e.Address, uri.String())
 		tree = append(tree, p)
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("walking on '%s': %s", root, err)
+		t.Fatalf("walking on '%s': %s", uri.String(), err)
 	}
 	sort.Strings(tree)
 	return tree

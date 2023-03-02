@@ -62,8 +62,8 @@ func TestResolveNamespace(t *testing.T) {
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeGS,
-				StorageNamespace: "foo",
-				Key:              "bla/bar/baz",
+				StorageNamespace: "foo/bla",
+				Key:              "bar/baz",
 			},
 		},
 		{
@@ -74,8 +74,8 @@ func TestResolveNamespace(t *testing.T) {
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeGS,
-				StorageNamespace: "foo",
-				Key:              "bla/bar/baz",
+				StorageNamespace: "foo/bla",
+				Key:              "bar/baz",
 			},
 		},
 		{
@@ -86,8 +86,8 @@ func TestResolveNamespace(t *testing.T) {
 			ExpectedErr:      nil,
 			Expected: block.QualifiedKey{
 				StorageType:      block.StorageTypeGS,
-				StorageNamespace: "foo",
-				Key:              "bla//bar/baz",
+				StorageNamespace: "foo/bla",
+				Key:              "/bar/baz",
 			},
 		},
 		{
@@ -107,7 +107,7 @@ func TestResolveNamespace(t *testing.T) {
 			DefaultNamespace: "memzzzz://foo/",
 			Key:              "bar/baz",
 			Type:             block.IdentifierTypeRelative,
-			ExpectedErr:      block.ErrInvalidNamespace,
+			ExpectedErr:      block.ErrInvalidStorageType,
 			Expected:         block.QualifiedKey{},
 		},
 		{
@@ -123,7 +123,7 @@ func TestResolveNamespace(t *testing.T) {
 			DefaultNamespace: "s3://foo/",
 			Key:              "s4://bar/baz",
 			Type:             block.IdentifierTypeFull,
-			ExpectedErr:      block.ErrInvalidNamespace,
+			ExpectedErr:      block.ErrInvalidStorageType,
 			Expected:         block.QualifiedKey{},
 		},
 		{
@@ -160,7 +160,6 @@ func TestResolveNamespace(t *testing.T) {
 				}
 			})
 		}
-
 	}
 }
 

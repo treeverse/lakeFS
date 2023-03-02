@@ -28,14 +28,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -302,7 +300,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	address := c.PathProvider.NewPath()
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -359,18 +357,16 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	// write metadata
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
+	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
 	blockStoreType := c.BlockAdapter.BlockstoreType()
-	if qk.StorageType.BlockstoreType() != blockStoreType {
-		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s",
-			qk.StorageType.BlockstoreType(),
-			blockStoreType,
-		))
+	expectedType := qk.GetStorageType().BlockstoreType()
+	if expectedType != blockStoreType {
+		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s", expectedType, blockStoreType))
 		return
 	}
 
@@ -1830,8 +1826,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		log.Debug("Not found")
 		cb(w, r, http.StatusNotFound, err)
 
-	case errors.Is(err, store.ErrForbidden),
-		errors.Is(err, local.ErrForbidden),
+	case errors.Is(err, block.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch):
 		cb(w, r, http.StatusForbidden, err)
 
@@ -1846,7 +1841,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
-		errors.Is(err, graveler.ErrInvalidMergeStrategy):
+		errors.Is(err, graveler.ErrInvalidMergeStrategy),
+		errors.Is(err, block.ErrInvalidStorageType),
+		errors.Is(err, block.ErrInvalidNamespace):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -2246,7 +2243,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		identifierType = block.IdentifierTypeRelative
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
+	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -2281,7 +2278,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 	// write metadata
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
+	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -2387,7 +2384,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -2863,7 +2860,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		}
 		// loop all entries enter to map[path] physicalAddress
 		for _, entry := range entries {
-			qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+			qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 			if err != nil {
 				writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("error while resolving address: %s", err))
 				return
@@ -3195,7 +3192,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 
 	objList := make([]ObjectStats, 0, len(res))
 	for _, entry := range res {
-		qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+		qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
@@ -3288,7 +3285,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	qk, err := block.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

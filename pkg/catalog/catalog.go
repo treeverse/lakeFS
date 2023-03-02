@@ -2173,6 +2173,10 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	return err
 }
 
+func (c *Catalog) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
+	return c.BlockAdapter.ResolveNamespace(storageNamespace, key, identifierType)
+}
+
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
 	b := NewDBEntryBuilder().
 		CommonLevel(commonPrefix).

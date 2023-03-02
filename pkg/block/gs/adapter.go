@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"time"
 
@@ -80,7 +81,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	if err != nil {
 		return qualifiedKey, err
 	}
-	if qualifiedKey.StorageType != block.StorageTypeGS {
+	if qualifiedKey.GetStorageType() != block.StorageTypeGS {
 		return qualifiedKey, block.ErrInvalidNamespace
 	}
 	return qualifiedKey, nil
@@ -94,8 +95,8 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return err
 	}
 	w := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
+		Bucket(qualifiedKey.GetStorageNamespace()).
+		Object(qualifiedKey.GetKey()).
 		NewWriter(ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
@@ -115,15 +116,22 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	if err != nil {
 		return nil, err
 	}
-	r, err := a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).NewReader(ctx)
+	r, err := a.client.Bucket(qualifiedKey.GetStorageNamespace()).Object(qualifiedKey.GetKey()).NewReader(ctx)
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
+		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.GetStorageNamespace(), qualifiedKey.GetKey())
 		return nil, err
 	}
 	return r, nil
+}
+
+func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
+	if err := block.ValidateStorageType(uri, block.StorageTypeGS); err != nil {
+		return nil, err
+	}
+	return NewGCSWalker(a.client), nil
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
@@ -147,7 +155,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		Method:  method,
 		Expires: a.newPreSignedTime(),
 	}
-	k, err := a.client.Bucket(qualifiedKey.StorageNamespace).SignedURL(qualifiedKey.Key, opts)
+	k, err := a.client.Bucket(qualifiedKey.GetStorageNamespace()).SignedURL(qualifiedKey.GetKey(), opts)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("error generating pre-signed URL")
 		return "", err
@@ -166,7 +174,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	if err != nil {
 		return false, err
 	}
-	_, err = a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).Attrs(ctx)
+	_, err = a.client.Bucket(qualifiedKey.GetStorageNamespace()).Object(qualifiedKey.GetKey()).Attrs(ctx)
 	if isErrNotFound(err) {
 		return false, nil
 	}
@@ -184,14 +192,14 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		return nil, err
 	}
 	r, err := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
+		Bucket(qualifiedKey.GetStorageNamespace()).
+		Object(qualifiedKey.GetKey()).
 		NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
+		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.GetStorageNamespace(), qualifiedKey.GetKey())
 		return nil, err
 	}
 	return r, nil
@@ -206,8 +214,8 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		return props, err
 	}
 	_, err = a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
+		Bucket(qualifiedKey.GetStorageNamespace()).
+		Object(qualifiedKey.GetKey()).
 		Attrs(ctx)
 	if err != nil {
 		return props, err
@@ -223,11 +231,11 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 		return err
 	}
 	err = a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
+		Bucket(qualifiedKey.GetStorageNamespace()).
+		Object(qualifiedKey.GetKey()).
 		Delete(ctx)
 	if err != nil {
-		return fmt.Errorf("Object(%q).Delete: %w", qualifiedKey.Key, err)
+		return fmt.Errorf("Object(%q).Delete: %w", qualifiedKey.GetKey(), err)
 	}
 	return nil
 }
@@ -243,8 +251,8 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err != nil {
 		return fmt.Errorf("resolve source: %w", err)
 	}
-	destinationObjectHandle := a.client.Bucket(qualifiedDestinationKey.StorageNamespace).Object(qualifiedDestinationKey.Key)
-	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
+	destinationObjectHandle := a.client.Bucket(qualifiedDestinationKey.GetStorageNamespace()).Object(qualifiedDestinationKey.GetKey())
+	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.GetStorageNamespace()).Object(qualifiedSourceKey.GetKey())
 	_, err = destinationObjectHandle.CopierFrom(sourceObjectHandle).Run(ctx)
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)
@@ -259,14 +267,14 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, err
 	}
-	uploadID := qualifiedKey.Key
+	uploadID := qualifiedKey.GetKey()
 	// we keep a marker file to identify multipart in progress
 	objName := formatMultipartMarkerFilename(uploadID)
 	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
+		Bucket(qualifiedKey.GetStorageNamespace()).
 		Object(objName)
 	w := o.NewWriter(ctx)
-	_, err = io.WriteString(w, qualifiedKey.Key)
+	_, err = io.WriteString(w, qualifiedKey.GetKey())
 	if err != nil {
 		return nil, fmt.Errorf("io.WriteString: %w", err)
 	}
@@ -277,8 +285,8 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	// log information
 	a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
-		"qualified_ns":  qualifiedKey.StorageNamespace,
-		"qualified_key": qualifiedKey.Key,
+		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
+		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
 	}).Debug("created multipart upload")
 	return &block.CreateMultiPartUploadResponse{
@@ -295,7 +303,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
+		Bucket(qualifiedKey.GetStorageNamespace()).
 		Object(objName)
 	w := o.NewWriter(ctx)
 	_, err = io.Copy(w, reader)
@@ -324,14 +332,14 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
+		Bucket(qualifiedKey.GetStorageNamespace()).
 		Object(objName)
 
 	qualifiedSourceKey, err := resolveNamespace(sourceObj)
 	if err != nil {
 		return nil, fmt.Errorf("resolve source: %w", err)
 	}
-	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
+	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.GetStorageNamespace()).Object(qualifiedSourceKey.GetKey())
 
 	attrs, err := o.CopierFrom(sourceObjectHandle).Run(ctx)
 	if err != nil {
@@ -351,7 +359,7 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
+		Bucket(qualifiedKey.GetStorageNamespace()).
 		Object(objName)
 
 	reader, err := a.GetRange(ctx, sourceObj, startPosition, endPosition)
@@ -389,7 +397,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	if err != nil {
 		return err
 	}
-	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
+	bucket := a.client.Bucket(qualifiedKey.GetStorageNamespace())
 
 	// delete all related files by listing the prefix
 	it := bucket.Objects(ctx, &storage.Query{
@@ -402,10 +410,10 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.StorageNamespace, err)
+			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.GetStorageNamespace(), err)
 		}
 		if err := bucket.Object(attrs.Name).Delete(ctx); err != nil {
-			return fmt.Errorf("bucket(%s).object(%s).Delete(): %w", qualifiedKey.StorageNamespace, attrs.Name, err)
+			return fmt.Errorf("bucket(%s).object(%s).Delete(): %w", qualifiedKey.GetStorageNamespace(), attrs.Name, err)
 		}
 	}
 	return nil
@@ -420,13 +428,13 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
-		"qualified_ns":  qualifiedKey.StorageNamespace,
-		"qualified_key": qualifiedKey.Key,
+		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
+		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
 	})
 
 	// list bucket parts and validate request match
-	bucketParts, err := a.listMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, uploadID)
+	bucketParts, err := a.listMultipartUploadParts(ctx, qualifiedKey.GetStorageNamespace(), uploadID)
 	if err != nil {
 		return nil, err
 	}
@@ -443,14 +451,14 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}
 
 	// compose target object
-	targetAttrs, err := a.composeMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, uploadID, parts)
+	targetAttrs, err := a.composeMultipartUploadParts(ctx, qualifiedKey.GetStorageNamespace(), uploadID, parts)
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, err
 	}
 
 	// delete marker
-	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
+	bucket := a.client.Bucket(qualifiedKey.GetStorageNamespace())
 	objMarker := bucket.Object(formatMultipartMarkerFilename(uploadID))
 	if err := objMarker.Delete(ctx); err != nil {
 		a.log(ctx).WithError(err).Warn("Failed to delete multipart upload marker")
@@ -560,6 +568,10 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 		info.PreSignSupport = false
 	}
 	return info
+}
+
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
+	return block.ResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
@@ -151,5 +152,8 @@ type Interface interface {
 	SetLinkAddress(ctx context.Context, repository, token string) error
 	VerifyLinkAddress(ctx context.Context, repository, token string) error
 	DeleteExpiredLinkAddresses(ctx context.Context)
+
+	ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error)
+
 	io.Closer
 }

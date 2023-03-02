@@ -1,4 +1,4 @@
-package store
+package s3
 
 import (
 	"context"
@@ -10,36 +10,22 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/pkg/block"
 )
 
-func getS3Client(s3EndpointURL string) (*session.Session, error) {
-	var config aws.Config
-	if s3EndpointURL != "" {
-		config = aws.Config{
-			Endpoint:         aws.String(s3EndpointURL),
-			Region:           aws.String("us-east-1"), // Needs region for validation as it is AWS client
-			S3ForcePathStyle: aws.Bool(true),
-		}
-	}
-	return session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Config:            config,
-	})
-}
-
-type S3Walker struct {
+type Walker struct {
 	s3   s3iface.S3API
-	mark Mark
+	mark block.Mark
 }
 
-func NewS3Walker(sess *session.Session) *S3Walker {
-	return &S3Walker{
+func NewS3Walker(sess *session.Session) *Walker {
+	return &Walker{
 		s3:   s3.New(sess),
-		mark: Mark{HasMore: true},
+		mark: block.Mark{HasMore: true},
 	}
 }
 
-func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	var continuation *string
 	const maxKeys = 1000
 	prefix := strings.TrimLeft(storageURI.Path, "/")
@@ -78,7 +64,7 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 		for _, record := range result.Contents {
 			key := aws.StringValue(record.Key)
 			addr := fmt.Sprintf("s3://%s/%s", bucket, key)
-			ent := ObjectStoreEntry{
+			ent := block.ObjectStoreEntry{
 				FullKey:     key,
 				RelativeKey: strings.TrimPrefix(key, basePath),
 				Address:     addr,
@@ -97,13 +83,13 @@ func (s *S3Walker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions
 		}
 		continuation = result.NextContinuationToken
 	}
-	s.mark = Mark{
+	s.mark = block.Mark{
 		LastKey: "",
 		HasMore: false,
 	}
 	return nil
 }
 
-func (s *S3Walker) Marker() Mark {
+func (s *Walker) Marker() block.Mark {
 	return s.mark
 }
