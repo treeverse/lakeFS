@@ -10,12 +10,12 @@ import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.io.InputBuffer;
 
 // TODO this class is only for POC
-public class LakeFSFileSystemInputStream extends FSInputStream {
+public class LakeFSNaiveInputStream extends FSInputStream {
     private boolean closed;
     final private InputBuffer inputBuffer;
     final private byte[] content;
     
-    public LakeFSFileSystemInputStream(InputStream in, int contentLength) throws IOException {
+    public LakeFSNaiveInputStream(InputStream in, int contentLength) throws IOException {
         content = new byte[contentLength];
         IOUtils.readFully(in, content);
         this.inputBuffer = new InputBuffer();

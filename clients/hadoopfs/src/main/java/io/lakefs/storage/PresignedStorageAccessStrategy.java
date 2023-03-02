@@ -53,8 +53,6 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
         ObjectStats stats = objectsApi.statObject(objectLocation.getRepository(), objectLocation.getRef(),
                 objectLocation.getPath(),
                 false, true);
-        HttpURLConnection connection = (HttpURLConnection) new URL(stats.getPhysicalAddress()).openConnection();
-        return new FSDataInputStream(
-                new LakeFSFileSystemInputStream(connection.getInputStream(), connection.getContentLength()));
+        return new FSDataInputStream(new HttpRangeInputStream(stats.getPhysicalAddress()));
     }
 }
