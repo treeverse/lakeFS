@@ -7,16 +7,20 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 
 public class HttpRangeInputStream extends FSInputStream {
-    private static final int BUFFER_SIZE = 3;
-    private long rangeStart = Long.MAX_VALUE;
-    private long pos;
-    private InputStream in;
+    private static final int BUFFER_SIZE = 1024 * 1024;
     private final String url;
+
+
+    private long start = Long.MAX_VALUE;
+    private long pos;
     private long len = 0;
+    private byte[] rangeContent;
+
     private boolean closed;
 
     public HttpRangeInputStream(String url) throws IOException {
@@ -29,27 +33,23 @@ public class HttpRangeInputStream extends FSInputStream {
             // empty file
             return;
         }
-        try {
-            len = Long.parseLong(contentRangeHeader.substring("bytes 0-0/".length()));
-        } catch (NumberFormatException e) {
-            // empty file
-        }
+        len = Long.parseLong(contentRangeHeader.substring("bytes 0-0/".length()));
     }
 
     private void updateInputStream(long targetPos) throws MalformedURLException, IOException {
-        if (targetPos >= rangeStart && targetPos < rangeStart + BUFFER_SIZE) {
+        if (targetPos >= start && targetPos < start + BUFFER_SIZE) {
             // no need to update the stream
             return;
-        }
-        if (in != null) {
-            in.close();
         }
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setRequestMethod("GET");
         long rangeEnd = Math.min(targetPos + BUFFER_SIZE, len);
         connection.setRequestProperty("Range", "bytes=" + targetPos + "-" + rangeEnd);
-        in = connection.getInputStream();
-        rangeStart = targetPos;
+        rangeContent = new byte[(int) (rangeEnd - targetPos)];
+        InputStream inputStream = connection.getInputStream();
+        IOUtils.readFully(inputStream, rangeContent);
+        inputStream.close();
+        start = targetPos;
     }
 
     @Override
@@ -93,8 +93,9 @@ public class HttpRangeInputStream extends FSInputStream {
             return -1;
         }
         updateInputStream(pos);
+        int res = rangeContent[(int) (pos - start)] & 0xff;
         pos++;
-        return in.read();
+        return res;
     }
 
     @Override
@@ -103,9 +104,5 @@ public class HttpRangeInputStream extends FSInputStream {
             return;
         }
         closed = true;
-        if (in == null) {
-            return;
-        }
-        in.close();
     }
 }
