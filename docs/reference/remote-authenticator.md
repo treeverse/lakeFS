@@ -17,16 +17,16 @@ The new lakeFS authentication flow is detailed the diagram below.
 
 ```mermaid
 sequenceDiagram
-    participant lakeFS Client
-    participant lakeFS Server
-    participant Remote Authenticator
-    participant IdP
-    lakeFS Client ->> lakeFS Server:
-    lakeFS Server ->> Remote Authenticator:
-    Remote Authenticator ->> IdP:
-    IdP ->> Remote Authenticator:
-    Remote Authenticator ->> lakeFS Server:
-    lakeFS Server ->> lakeFS Client: auth JWT
+    participant A as lakeFS Client
+    participant B as lakeFS Server
+    participant C as Remote Authenticator
+    participant D as IdP
+    A->>B:
+    B->>C:
+    C->>D:
+    D->>C:
+    C->>B:
+    B->>A: auth JWT
 ```
 
 The Remote Authenticator's job is to abstract away the complexities of existing infrasturucture and implement a standard interface, which lakeFS can use to resolve user identity and manage access to lakeFS. This loose coupling allows you to implement Remote Authenticator to work with any existing identity backend without needing to provide lakeFS with direct access to your identity infrastructure.
