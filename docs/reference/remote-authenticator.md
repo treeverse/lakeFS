@@ -21,11 +21,11 @@ sequenceDiagram
     participant lakeFS Server
     participant Remote Authenticator
     participant IdP
-    lakeFS Client ->> lakeFS Server
-    lakeFS Server ->> Remote Authenticator
-    Remote Authenticator ->> IdP
-    IdP ->> Remote Authenticator
-    Remote Authenticator ->> lakeFS Server
+    lakeFS Client ->> lakeFS Server:
+    lakeFS Server ->> Remote Authenticator:
+    Remote Authenticator ->> IdP:
+    IdP ->> Remote Authenticator:
+    Remote Authenticator ->> lakeFS Server:
     lakeFS Server ->> lakeFS Client: auth JWT
 ```
 
