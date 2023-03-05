@@ -1,17 +1,17 @@
+use std::cmp::max;
 use std::collections::HashMap;
-use std::fmt::Error;
 use std::io::{self, Write};
 use std::net::SocketAddr;
 
 use deltalake::delta::DeltaTable;
 use deltalake::DeltaDataTypeVersion;
+use futures::join;
 use portpicker;
 use serde_json::{Map, Value};
 use tonic::{Code, Request, Response, Status, transport::Server};
 
 use differ::{DiffRequest, DiffResponse, GatewayConfig, table_differ_server::{TableDiffer, TableDifferServer}};
 
-use crate::delta_ops::OpTypes;
 use crate::differ::{DiffProps, HistoryRequest, HistoryResponse, TableOperation, TablePath};
 
 mod delta_ops;
@@ -21,6 +21,7 @@ pub mod differ {
     include!("diff.rs");
 }
 
+// The std::hash::Hash implementation is used to compare two table operations (commits)
 impl std::hash::Hash for TableOperation {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
@@ -36,61 +37,108 @@ pub struct DifferService {}
 
 #[tonic::async_trait]
 impl TableDiffer for DifferService {
+    /*
+    table_diff will compare two states of a given table over two branches in the following way:
+    1. If the destination table (the one which the source table branch is compared to) isn't found
+       then it's assumed that the table has been created, and all of its Delta Log will be returned as an answer.
+    2. If the source table (the one which the user asked to compare to some destination table) isn't found
+       then it's assumed that the table has been dropped.
+    3. If both tables are found:
+        A. If the right table's version is bigger than the left table's version: add all versions of the right tables that are bigger than
+           the left table to the returned answer.
+        B. Mark the latest common version as the start of the comparison algorithm.
+        C. Mark the earliest common version as the end of the comparison algorithm.
+        D. Compare the versions (commits) of the tables starting from the version found on step 'B':
+            a. If the "commit info"s (Delta's commits) are different, add the right table's commit info to the result.
+            b. Else, a common commit was found and the diff is complete.
+     */
     async fn table_diff(&self, request: Request<DiffRequest>) -> Result<Response<DiffResponse>, Status> {
         let r = request.into_inner();
-        let s3_gateway_config_req: GatewayConfig = r.gateway_config.unwrap();
+        let s3_gateway_config_req: GatewayConfig = r.gateway_config.expect("Missing S3 compatible gateway configurations");
+        let diff_props: DiffProps = r.props.expect("Missing diff properties");
+        let left_table_path: TablePath = diff_props.left_table_path.expect("Missing left table's path");
+        let right_table_path: TablePath = diff_props.right_table_path.expect("Missing right table's path");
+
         let s3_config_map: HashMap<String, String> = utils::construct_storage_config(s3_gateway_config_req);
+        let left_table_res =
+            delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, &left_table_path);
+        let right_table_res =
+            delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, &right_table_path);
 
-        let diff_props: DiffProps = r.props.unwrap();
+        // Get the base path, or return a default table path (with all fields initialized to their default type values)
+        let base_path = diff_props.base_table_path.unwrap_or(TablePath{ r#ref: "".to_string(), path: "".to_string() });
+        let base_table_res =
+            delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, &base_path);
 
-        let left_table_path: TablePath = diff_props.left_table_path.unwrap();
-        let right_table_path: TablePath = diff_props.right_table_path.unwrap();
-        // let base_table_path: Option<TablePath> = diff_props.base_table_path;
-        let left_table_res: Result<DeltaTable, Status> =
-            delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, left_table_path).await;
-        let right_table_res: Result<DeltaTable, Status> =
-            delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, right_table_path).await;
+        let (left_table_res, right_table_res, base_table_res) =
+            join!(left_table_res, right_table_res, base_table_res);
 
-        // Both tables not found
-        if right_table_res.is_err() && left_table_res.is_err() {
-            return Err(Status::new(Code::NotFound,
-                                   format!("{:?}, {:?}", left_table_res.unwrap_err(),
-                                           right_table_res.unwrap_err())
-            ));
+        if right_table_res.is_err() || left_table_res.is_err() {
+            return handle_table_err(left_table_res, right_table_res, base_table_res).await;
         }
-        // If the table exists on the left ref but doesn't exist on the right ref -> table dropped.
-        if right_table_res.is_err() && left_table_res.is_ok() {
-            return Ok(Response::new(DiffResponse { entries: vec![], diff_type: differ::DiffType::Dropped as i32 }));
-        }
+
         let mut right_table = right_table_res?;
-
-        // If the table exists on the right, but doesn't exist on the left -> table created.
-        if left_table_res.is_err() {
-            let hist = delta_ops::history(&mut right_table, None).await?;
-            let ans = reverse_and_create_table_ops(hist, right_table.version());
-            return Ok(Response::new(DiffResponse { entries: ans, diff_type: differ::DiffType::Created as i32 }))
-        }
         let mut left_table= left_table_res?;
-
-        // todo: if base table exists, use it's version to start the comparison instead of going from most recent to oldest.
-        // let mut base_table: Option<DeltaTable> = None;
-        // if let Some(table_path) = base_table_path {
-        //     base_table = Option::from(delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, table_path).await?);
-        // }
-
-        let left_table_history = delta_ops::history(&mut left_table, None).await?;
-        let right_table_history = delta_ops::history(&mut right_table, None).await?;
-
-        let mut left_history_version = HistoryAndVersion{ history: left_table_history, version: left_table.version() };
-        let mut right_history_version = HistoryAndVersion{ history: right_table_history, version: right_table.version() };
-
-        let ans = compare(&mut left_history_version,  &mut right_history_version).unwrap();
-        return Ok(Response::new(DiffResponse { entries: ans, diff_type: differ::DiffType::Changed as i32 }))
+        let mut base_table= base_table_res.ok();
+        return run_diff(&mut left_table, &mut right_table, &mut base_table).await;
     }
 
     async fn show_history(&self, _request: Request<HistoryRequest>) -> Result<Response<HistoryResponse>, Status> {
         todo!()
     }
+}
+
+async fn handle_table_err(left_table_res: Result<DeltaTable, Status>,
+                          right_table_res: Result<DeltaTable, Status>,
+                          base_table_res: Result<DeltaTable, Status>) -> Result<Response<DiffResponse>, Status> {
+
+    return match (&left_table_res, &right_table_res) {
+        (Ok(_), Err(status)) => {
+            // right table wasn't found, but it exists on the base: table dropped
+            if matches!(status.code(), Code::NotFound) && base_table_res.is_ok() {
+                Ok(Response::new(DiffResponse { entries: vec![], diff_type: i32::from(differ::DiffType::Dropped) }))
+            } else {
+                Err(right_table_res.unwrap_err())
+            }
+        },
+        (Err(status), Ok(_)) => {
+            // left table wasn't found, and it doesn't exist on the base: table created
+            if matches!(status.code(), Code::NotFound) {
+                if base_table_res.is_err() && matches!(base_table_res.as_ref().unwrap_err().code(), Code::NotFound) {
+                    let mut right_table = right_table_res.unwrap();
+                    let hist = delta_ops::history(&mut right_table, None).await?;
+                    let ans = show_history(hist, right_table.version())?;
+                    Ok(Response::new(DiffResponse { entries: ans, diff_type: i32::from(differ::DiffType::Created) }))
+                } else if base_table_res.is_ok() { // The table existed on the base branch
+                    let mut right_table = right_table_res.unwrap();
+                    let mut base_table = base_table_res.unwrap();
+                    run_diff(&mut base_table, &mut right_table, &mut None).await
+                } else { // There was other kind of error with the base branch
+                    Err(base_table_res.unwrap_err())
+                }
+            } else {
+                Err(left_table_res.unwrap_err())
+            }
+        },
+        // If both are erroneous, return one of the return codes
+        _ => Err(left_table_res.unwrap_err())
+    }
+}
+
+async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable, base_table: &mut Option<DeltaTable>) -> Result<Response<DiffResponse>, Status> {
+    let left_table_history = delta_ops::history(left_table, None);
+    let right_table_history = delta_ops::history(right_table, None);
+
+    let (left_table_history, right_table_history) = join!(left_table_history, right_table_history);
+
+    let mut left_history_version = HistoryAndVersion{ history: left_table_history?, version: left_table.version() };
+    let mut right_history_version = HistoryAndVersion{ history: right_table_history?, version: right_table.version() };
+    let min_version = match base_table {
+        None => 0,
+        Some(table) => table.version()
+    };
+    let diff = compare(&mut left_history_version,  &mut right_history_version, min_version).unwrap();
+    return Ok(Response::new(DiffResponse { entries: diff, diff_type: i32::from(differ::DiffType::Changed) }))
 }
 
 struct HistoryAndVersion {
@@ -99,32 +147,33 @@ struct HistoryAndVersion {
 }
 
 impl HistoryAndVersion {
+    // For instance: table version is 51, history length is 10 (due to compaction)-> returned early version = 42
     fn get_earliest_version(&self) -> i64 {
         self.version + 1 - i64::try_from(self.history.len()).unwrap()
     }
 
-    fn get_lower_limit(&self, other: &HistoryAndVersion) -> i64 {
+    fn get_common_available_ancestor(&self, other: &HistoryAndVersion) -> i64 {
         let self_early = self.get_earliest_version();
-        let other_early = self.get_earliest_version();
-        if self_early > other.version { self_early } else { other_early }
+        let other_early = other.get_earliest_version();
+        max(self_early, other_early)
     }
 }
 
-fn reverse_and_create_table_ops(mut hist: Vec<Map<String, Value>>, table_version: DeltaDataTypeVersion) -> Vec<TableOperation> {
+fn show_history(mut hist: Vec<Map<String, Value>>, table_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
     hist.reverse();
-    let ops = OpTypes::new();
     let mut ans: Vec<TableOperation> = Vec::with_capacity(hist.len());
     for m in hist {
-        let table_op = utils::construct_table_op(&m, table_version, &ops);
+        let table_op = construct_table_ops(&m, table_version)?;
         ans.push(table_op);
     }
-    return ans;
+    Ok(ans)
 }
 
 fn compare(left_history_version: &mut HistoryAndVersion,
-           right_history_version: &mut HistoryAndVersion,) -> Result<Vec<TableOperation>, Error> {
+           right_history_version: &mut HistoryAndVersion,
+           min_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
     // The lower limit of the two (earliest common version):
-    let lower_limit = right_history_version.get_lower_limit(&left_history_version);
+    let common_ancestor = max(right_history_version.get_common_available_ancestor(&left_history_version), min_version);
     let mut table_op_list: Vec<TableOperation> = vec![];
 
     let right_table_version = right_history_version.version;
@@ -136,7 +185,6 @@ fn compare(left_history_version: &mut HistoryAndVersion,
     right_history_version.history.reverse();
     let mut left_commit_slice = &left_history_version.history[..];
     let mut right_commit_slice = &right_history_version.history[..];
-    let ops = OpTypes::new();
 
     // If the right table's version is bigger than the left table's version, add all commits until reaching the same version as the left table.
     if right_table_version > left_table_version {
@@ -148,7 +196,7 @@ fn compare(left_history_version: &mut HistoryAndVersion,
             }
             match commit_info {
                 _operation_content => {
-                    let d = utils::construct_table_op(commit_info, curr_version, &ops);
+                    let d = construct_table_ops(commit_info, curr_version)?;
                     table_op_list.push(d)
                 }
             }
@@ -157,31 +205,37 @@ fn compare(left_history_version: &mut HistoryAndVersion,
     } else { // If left table's version is bigger, start running over the left log from the right table's version.
         left_commit_slice = &left_history_version.history[(left_table_version - right_table_version) as usize..];
     }
-    compare_table_slices(left_commit_slice, right_commit_slice, curr_version, lower_limit, table_op_list)
+    compare_table_slices(left_commit_slice, right_commit_slice, curr_version, common_ancestor, table_op_list)
 }
 
 fn compare_table_slices(left_commit_slice: &[Map<String, Value>],
                         right_commit_slice: &[Map<String, Value>],
                         mut curr_version: DeltaDataTypeVersion,
-                        lower_limit: DeltaDataTypeVersion,
-                        mut table_op_list: Vec<TableOperation>) -> Result<Vec<TableOperation>, Error> {
-    let ops = OpTypes::new();
-    let mut i: usize = 0; // iterating through the vector while 'curr_version' is the real version of the
-    while i < left_commit_slice.len() && i < right_commit_slice.len() && curr_version >= lower_limit {
+                        common_ancestor: DeltaDataTypeVersion,
+                        mut table_op_list: Vec<TableOperation>) -> Result<Vec<TableOperation>, Status> {
+    let mut i: usize = 0; // iterating through the vector while 'curr_version' is the version of the current commit
+    while i < left_commit_slice.len() && i < right_commit_slice.len() && curr_version >= common_ancestor {
         let left_commit_info = left_commit_slice.get(i).unwrap();
         let right_commit_info = right_commit_slice.get(i).unwrap();
-        let l_op = utils::construct_table_op(left_commit_info, curr_version, &ops);
-        let r_op = utils::construct_table_op(right_commit_info, curr_version, &ops);
+        let l_op = construct_table_ops(left_commit_info, curr_version)?;
+        let r_op = construct_table_ops(right_commit_info, curr_version)?;
 
         if r_op == l_op {
             return Ok(table_op_list);
         } else {
-            table_op_list.push(l_op);
+            table_op_list.push(r_op);
         }
         curr_version -= 1;
         i += 1;
     }
     Ok(table_op_list)
+}
+
+fn construct_table_ops(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
+    return match utils::construct_table_op(commit_info, version) {
+        Ok(table_ops) => Ok(table_ops),
+        Err(e) => Err(Status::new(Code::Aborted, format!("Creating operation history aborted due to:\n{:?}", e)))
+    };
 }
 
 #[tokio::main]

@@ -866,6 +866,8 @@ name = "delta_diff_server"
 version = "0.1.0"
 dependencies = [
  "deltalake",
+ "futures",
+ "lazy_static",
  "portpicker",
  "prost",
  "prost-types",
