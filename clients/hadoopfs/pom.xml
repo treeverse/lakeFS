@@ -196,8 +196,10 @@ To export to S3:
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
         <hadoop.version>2.7.7</hadoop.version>
+        <finalName>${project.artifactId}-${project.version}</finalName>
     </properties>
     <build>
+        <finalName>${finalName}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

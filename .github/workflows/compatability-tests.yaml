@@ -50,7 +50,7 @@ jobs:
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
         run: |
-          mvn -Passembly -Djar.finalName=client -DskipTests --batch-mode --update-snapshots package
+          mvn -Passembly -DfinalName=client -DskipTests --batch-mode --update-snapshots package
 
       - name: Store client assembly
         uses: actions/upload-artifact@v3
