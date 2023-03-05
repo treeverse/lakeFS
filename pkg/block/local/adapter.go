@@ -28,6 +28,10 @@ type Adapter struct {
 	importEnabled           bool
 }
 
+const (
+	DefaultNamespacePrefix = "local://data"
+)
+
 var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
@@ -480,6 +484,7 @@ func (l *Adapter) BlockstoreType() string {
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 	info.PreSignSupport = false
+	info.DefaultNamespacePrefix = DefaultNamespacePrefix
 	info.ImportSupport = l.importEnabled
 	return info
 }
