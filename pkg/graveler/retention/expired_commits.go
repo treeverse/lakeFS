@@ -55,14 +55,11 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if err != nil {
 		return nil, err
 	}
-	isIncremental := len(previouslyExpired) > 0
 	commitsMap := make(map[graveler.CommitID]CommitNode)
-	if !isIncremental {
-		defer commitsIterator.Close()
-		for commitsIterator.Next() {
-			commitRecord := commitsIterator.Value()
-			commitsMap[commitRecord.CommitID] = NewCommitNode(commitRecord.CommitID, commitRecord.Commit.CreationDate, commitRecord.Commit.Parents, commitRecord.Commit.Version)
-		}
+	defer commitsIterator.Close()
+	for commitsIterator.Next() {
+		commitRecord := commitsIterator.Value()
+		commitsMap[commitRecord.CommitID] = NewCommitNode(commitRecord.CommitID, commitRecord.Commit.CreationDate, commitRecord.Commit.Parents, commitRecord.Commit.Version)
 	}
 
 	now := time.Now()
@@ -70,18 +67,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	for startingPointIterator.Next() {
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		if isIncremental {
-			var commit *graveler.Commit
-			commit, err = commitGetter.GetCommit(ctx, startingPoint.CommitID)
-			if err != nil {
-				return nil, err
-			}
-			commitNode = NewCommitNode(startingPoint.CommitID, commit.CreationDate, commit.Parents, commit.Version)
-		} else {
-			commitNode, ok = commitsMap[startingPoint.CommitID]
-			if !ok {
-				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
-			}
+		commitNode, ok = commitsMap[startingPoint.CommitID]
+		if !ok {
+			return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
 		}
 		if startingPoint.BranchID == "" {
 			// not a branch HEAD - add a hypothetical HEAD as its parent
@@ -122,18 +110,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			} else if _, ok = activeMap[nextCommitID]; !ok {
 				expiredMap[nextCommitID] = struct{}{}
 			}
-			if isIncremental {
-				var commit *graveler.Commit
-				commit, err = commitGetter.GetCommit(ctx, nextCommitID)
-				if err != nil {
-					return nil, err
-				}
-				commitNode = NewCommitNode(startingPoint.CommitID, commit.CreationDate, commit.Parents, commit.Version)
-			} else {
-				commitNode, ok = commitsMap[startingPoint.CommitID]
-				if !ok {
-					return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
-				}
+			commitNode, ok = commitsMap[startingPoint.CommitID]
+			if !ok {
+				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
 			}
 			processed[nextCommitID] = branchExpirationThreshold
 		}

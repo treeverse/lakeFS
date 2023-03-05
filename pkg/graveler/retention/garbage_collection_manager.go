@@ -92,10 +92,6 @@ type RepositoryCommitGetter struct {
 	repository *graveler.RepositoryRecord
 }
 
-func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID graveler.CommitID) (*graveler.Commit, error) {
-	return r.refManager.GetCommit(ctx, r.repository, commitID)
-}
-
 func (r *RepositoryCommitGetter) ListCommits(ctx context.Context) (graveler.CommitIterator, error) {
 	return r.refManager.ListCommits(ctx, r.repository)
 }
