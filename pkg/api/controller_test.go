@@ -1416,13 +1416,14 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	})
 
 	t.Run("create branch conflict with commit", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "repo8", onBlock(deps, "foo1"), "main")
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
 		testutil.Must(t, err)
 
-		log, err := deps.catalog.GetCommit(ctx, "repo8", "main")
+		log, err := deps.catalog.GetCommit(ctx, repo, "main")
 		testutil.Must(t, err)
 
-		resp, err := clt.CreateBranchWithResponse(ctx, "repo6", api.CreateBranchJSONRequestBody{
+		resp, err := clt.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 			Name:   log.Reference,
 			Source: "main",
 		})
@@ -1430,7 +1431,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			t.Fatal("CreateBranch failed with error:", err)
 		}
 		if resp.JSON409 == nil {
-			t.Fatal("CreateBranch expected conflict")
+			t.Fatal("CreateBranch expected conflict, got", resp.Status())
 		}
 	})
 }
