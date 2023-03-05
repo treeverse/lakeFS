@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -120,6 +121,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
+	logging.Default().Info("done after ", time.Since(now))
+	logging.Default().Info("active commits- ", len(activeMap))
+	logging.Default().Info("non-active commits- ", len(expiredMap))
+	logging.Default().Info("total commits- ", len(commitsMap))
 	return &GarbageCollectionCommits{active: commitSetToSlice(activeMap), expired: commitSetToSlice(expiredMap)}, nil
 }
 
