@@ -597,7 +597,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.9.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -658,7 +658,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.9.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -737,7 +737,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.9.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
@@ -939,7 +939,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3.9.0
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
