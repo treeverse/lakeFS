@@ -294,7 +294,7 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	}
 	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
 	if err != nil {
-		t.Fatalf("Failed ot list objects (bucket: %s, prefix: %s): %s", bucket, prefix, err)
+		t.Fatalf("Failed to list objects (bucket: %s, prefix: %s): %s", bucket, prefix, err)
 	}
 
 	// sorted list of objects found on repository - before ugc
@@ -331,7 +331,7 @@ func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket,
 	}
 	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
 	if err != nil {
-		t.Fatalf("Failed ot list objects (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
+		t.Fatalf("Failed to list objects (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
 	}
 
 	if len(listOutput.CommonPrefixes) == 0 {
