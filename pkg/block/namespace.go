@@ -71,12 +71,6 @@ type QK interface {
 	GetKey() string
 }
 
-type QualifiedPrefix struct {
-	StorageType      StorageType
-	StorageNamespace string
-	Prefix           string
-}
-
 func (qk QualifiedKey) Format() string {
 	return qk.StorageType.Scheme() + "://" + formatPathWithNamespace(qk.StorageNamespace, qk.Key)
 }
@@ -129,20 +123,6 @@ func formatPathWithNamespace(namespacePath, keyPath string) string {
 		return strings.TrimPrefix(keyPath, "/")
 	}
 	return namespacePath + "/" + keyPath
-}
-
-func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, error) {
-	// behaviour for key and prefix is the same
-	key, err := resolveRelative(defaultNamespace, prefix)
-	if err != nil {
-		return QualifiedPrefix{}, fmt.Errorf("resolving namespace: %w", err)
-	}
-
-	return QualifiedPrefix{
-		StorageType:      key.StorageType,
-		StorageNamespace: key.StorageNamespace,
-		Prefix:           key.Key,
-	}, nil
 }
 
 func ResolveNamespace(defaultNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {

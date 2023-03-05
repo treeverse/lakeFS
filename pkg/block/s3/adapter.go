@@ -134,7 +134,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return a.managerUpload(ctx, qualifiedKey, reader, opts)
 	}
 
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	putObject := s3.PutObjectInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -168,7 +168,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		return nil, err
 	}
 
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
@@ -287,7 +287,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		return nil, err
 	}
 	log := a.log(ctx).WithField("operation", "GetObject")
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -328,7 +328,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 	var preSignedURL string
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	if mode == block.PreSignModeWrite {
 		putObjectInput := &s3.PutObjectInput{
@@ -361,7 +361,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		return false, err
 	}
 	log := a.log(ctx).WithField("operation", "HeadObject")
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -387,7 +387,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		return nil, err
 	}
 	log := a.log(ctx).WithField("operation", "GetObjectRange")
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -416,7 +416,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return block.Properties{}, err
 	}
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	headObjectParams := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -436,7 +436,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	if err != nil {
 		return err
 	}
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	deleteObjectParams := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -464,7 +464,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 		return nil, err
 	}
 
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
@@ -525,7 +525,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 		return err
 	}
 
-	destBucket, destKey := extractParamsFromQK(qualifiedDestinationKey)
+	destBucket, destKey := ExtractParamsFromQK(qualifiedDestinationKey)
 	copyObjectParams := &s3.CopyObjectInput{
 		Bucket:     aws.String(destBucket),
 		Key:        aws.String(destKey),
@@ -551,7 +551,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, err
 	}
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3.CreateMultipartUploadInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -591,7 +591,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 	if err != nil {
 		return err
 	}
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(bucket),
 		Key:      aws.String(key),
@@ -626,7 +626,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	if err != nil {
 		return nil, err
 	}
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(bucket),
 		Key:             aws.String(key),
@@ -722,7 +722,7 @@ func (a *Adapter) managerUpload(ctx context.Context, qualifiedKey block.Qualifie
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	uploader := s3manager.NewUploaderWithClient(client)
 
-	bucket, key := extractParamsFromQK(qualifiedKey)
+	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3manager.UploadInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -757,7 +757,7 @@ func extractAmzServerSideHeader(header http.Header) http.Header {
 	return h
 }
 
-func extractParamsFromQK(qk block.QualifiedKey) (string, string) {
+func ExtractParamsFromQK(qk block.QualifiedKey) (string, string) {
 	bucket, prefix, _ := strings.Cut(qk.GetStorageNamespace(), "/")
 	key := prefix + "/" + qk.GetKey()
 
