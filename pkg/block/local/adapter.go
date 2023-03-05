@@ -29,7 +29,7 @@ type Adapter struct {
 }
 
 const (
-	DefaultNamespacePrefix = "local://data"
+	DefaultNamespacePrefix = "local:/"
 )
 
 var (
