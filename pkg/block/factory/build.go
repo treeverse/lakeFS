@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/mitchellh/go-homedir"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -128,7 +129,11 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
-		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
+		credPath, err := homedir.Expand(params.CredentialsFile)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, option.WithCredentialsFile(credPath))
 	} else if params.CredentialsJSON != "" {
 		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), googleAuthCloudPlatform)
 		if err != nil {
