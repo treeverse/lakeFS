@@ -662,7 +662,6 @@ jobs:
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
-          cache: "sbt"
 
       - name: Package Spark App
         working-directory: test/spark/app
@@ -741,7 +740,6 @@ jobs:
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
-          cache: "sbt"
 
       - name: Package Spark App
         working-directory: test/spark/app
