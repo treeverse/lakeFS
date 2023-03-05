@@ -21,11 +21,11 @@ sequenceDiagram
     participant B as lakeFS Server
     participant C as Remote Authenticator
     participant D as IdP
-    A->>B:
-    B->>C:
-    C->>D:
-    D->>C:
-    C->>B:
+    A->>B: Submit login form
+    B->>C: POST user credentials
+    C->>D: Auth request
+    D->>C: Auth response
+    C->>B: Auth response
     B->>A: auth JWT
 ```
 
