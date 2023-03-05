@@ -28,6 +28,8 @@ const (
 
 	// BranchWriteMaxTries is the number of times to repeat the set operation if the staging token changed
 	BranchWriteMaxTries = 3
+
+	DefaultRetantionDays = 14
 )
 
 // Basic Types
@@ -1353,7 +1355,7 @@ func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repository *Re
 }
 
 func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (*GarbageCollectionRunMetadata, error) {
-	rules := GarbageCollectionRules{DefaultRetentionDays: 14}
+	rules := GarbageCollectionRules{DefaultRetentionDays: DefaultRetantionDays}
 	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repository.StorageNamespace, previousRunID)
 	if err != nil {
 		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
