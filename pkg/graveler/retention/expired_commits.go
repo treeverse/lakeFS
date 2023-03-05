@@ -14,7 +14,23 @@ type GarbageCollectionCommits struct {
 	active  []graveler.CommitID
 }
 
-var commitNotFound = errors.New("commit not found")
+type CommitNode struct {
+	CommitID     graveler.CommitID
+	CreationDate time.Time
+	ParentsIDs   []graveler.CommitID
+	Version      graveler.CommitVersion
+}
+
+func NewCommitNode(commitID graveler.CommitID, creationDate time.Time, parentsIDs []graveler.CommitID, version graveler.CommitVersion) CommitNode {
+	return CommitNode{
+		CommitID:     commitID,
+		CreationDate: creationDate,
+		ParentsIDs:   parentsIDs,
+		Version:      version,
+	}
+}
+
+var ErrCommitNotFound = errors.New("commit not found")
 
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
@@ -24,9 +40,8 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	var (
-		commitRecord        *graveler.CommitRecord
-		branchRetentionDays int32
-		previousThreshold   time.Time
+		commitNode CommitNode
+		ok         bool
 	)
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
@@ -40,11 +55,14 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if err != nil {
 		return nil, err
 	}
-	commitsMap := make(map[graveler.CommitID]*graveler.Commit)
-	defer commitsIterator.Close()
-	for commitsIterator.Next() {
-		commitRecord = commitsIterator.Value()
-		commitsMap[commitRecord.CommitID] = commitRecord.Commit
+	isIncremental := len(previouslyExpired) > 0
+	commitsMap := make(map[graveler.CommitID]CommitNode)
+	if !isIncremental {
+		defer commitsIterator.Close()
+		for commitsIterator.Next() {
+			commitRecord := commitsIterator.Value()
+			commitsMap[commitRecord.CommitID] = NewCommitNode(commitRecord.CommitID, commitRecord.Commit.CreationDate, commitRecord.Commit.Parents, commitRecord.Commit.Version)
+		}
 	}
 
 	now := time.Now()
@@ -52,17 +70,27 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	for startingPointIterator.Next() {
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		commit, ok := commitsMap[startingPoint.CommitID]
-		if !ok {
-			return nil, fmt.Errorf("%w- %s", commitNotFound, startingPoint.CommitID)
+		if isIncremental {
+			var commit *graveler.Commit
+			commit, err = commitGetter.GetCommit(ctx, startingPoint.CommitID)
+			if err != nil {
+				return nil, err
+			}
+			commitNode = NewCommitNode(startingPoint.CommitID, commit.CreationDate, commit.Parents, commit.Version)
+		} else {
+			commitNode, ok = commitsMap[startingPoint.CommitID]
+			if !ok {
+				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
+			}
 		}
 		if startingPoint.BranchID == "" {
 			// not a branch HEAD - add a hypothetical HEAD as its parent
-			commit = &graveler.Commit{
-				CreationDate: commit.CreationDate,
-				Parents:      []graveler.CommitID{startingPoint.CommitID},
+			commitNode = CommitNode{
+				CreationDate: time.Now(),
+				ParentsIDs:   []graveler.CommitID{startingPoint.CommitID},
 			}
 		} else {
+			var branchRetentionDays int32
 			if branchRetentionDays, ok = rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
 				retentionDays = int(branchRetentionDays)
 			}
@@ -73,29 +101,39 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		if startingPoint.BranchID != "" {
 			processed[startingPoint.CommitID] = now.AddDate(0, 0, -retentionDays)
 		}
-		for len(commit.Parents) > 0 {
+		for len(commitNode.ParentsIDs) > 0 {
 			// every branch retains only its main ancestry, acquired by recursively taking the first parent:
-			nextCommitID := commit.Parents[0]
-			if commit.Version < graveler.CommitVersionParentSwitch {
-				nextCommitID = commit.Parents[len(commit.Parents)-1]
+			nextCommitID := commitNode.ParentsIDs[0]
+			if commitNode.Version < graveler.CommitVersionParentSwitch {
+				nextCommitID = commitNode.ParentsIDs[len(commitNode.ParentsIDs)-1]
 			}
 			if _, ok = previouslyExpiredMap[nextCommitID]; ok {
 				// commit was already expired in a previous run
 				break
 			}
+			var previousThreshold time.Time
 			if previousThreshold, ok = processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
 				// was already here with earlier expiration date
 				break
 			}
-			if commit.CreationDate.After(branchExpirationThreshold) {
+			if commitNode.CreationDate.After(branchExpirationThreshold) {
 				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
 			} else if _, ok = activeMap[nextCommitID]; !ok {
 				expiredMap[nextCommitID] = struct{}{}
 			}
-			commit, ok = commitsMap[nextCommitID]
-			if !ok {
-				return nil, fmt.Errorf("%w- %s", commitNotFound, startingPoint.CommitID)
+			if isIncremental {
+				var commit *graveler.Commit
+				commit, err = commitGetter.GetCommit(ctx, nextCommitID)
+				if err != nil {
+					return nil, err
+				}
+				commitNode = NewCommitNode(startingPoint.CommitID, commit.CreationDate, commit.Parents, commit.Version)
+			} else {
+				commitNode, ok = commitsMap[startingPoint.CommitID]
+				if !ok {
+					return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
+				}
 			}
 			processed[nextCommitID] = branchExpirationThreshold
 		}
