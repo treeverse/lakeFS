@@ -39,10 +39,6 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
-	var (
-		commitNode CommitNode
-		ok         bool
-	)
 	processed := make(map[graveler.CommitID]time.Time)
 	previouslyExpiredMap := make(map[graveler.CommitID]bool)
 	for _, commitID := range previouslyExpired {
@@ -67,7 +63,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	for startingPointIterator.Next() {
 		startingPoint := startingPointIterator.Value()
 		retentionDays := int(rules.DefaultRetentionDays)
-		commitNode, ok = commitsMap[startingPoint.CommitID]
+		commitNode, ok := commitsMap[startingPoint.CommitID]
 		if !ok {
 			return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
 		}
