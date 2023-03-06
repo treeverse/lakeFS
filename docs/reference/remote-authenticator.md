@@ -9,7 +9,7 @@ has_children: false
 
 # Remote Authenticator
 
-Remote Authenticator is lakeFS's pluggable architecture, which allows you to integrate any existing organizational identity policies and infrastructure into lakeFS's authentication mechanism. This flexibility will allow you to fulfill any security requirement without the need to allow lakeFS direct access to your identity infrastructure.
+Remote Authenticator is lakeFS's pluggable architecture, which allows you to integrate any existing organizational identity policies and infrastructure into lakeFS's authentication mechanism. This flexibility will enable you to fulfill any security requirement without allowing lakeFS direct access to your identity infrastructure.
 
 ## Architecture
 
@@ -29,7 +29,7 @@ sequenceDiagram
     B->>A: auth JWT
 ```
 
-The Remote Authenticator's job is to abstract away the complexities of existing infrasturucture and implement a standard interface, which lakeFS can use to resolve user identity and manage access to lakeFS. This loose coupling allows you to implement Remote Authenticator to work with any existing identity backend without needing to provide lakeFS with direct access to your identity infrastructure.
+The Remote Authenticator's job is to abstract away the complexities of existing infrastructure and implement a standard interface, which lakeFS can use to resolve user identity and manage access to lakeFS. This loose coupling allows you to implement Remote Authenticator to work with any existing identity backend without providing lakeFS with direct access to your identity infrastructure.
 
 ## The Interface
 
@@ -70,11 +70,11 @@ and return a JSON response like this:
 }
 ```
 
-If the Remote Authenticator returns any HTTP status in the 2xx range, lakeFS considers this a successful authentication. Any HTTP status < 200 or > 300 is considered a failed authentication. If the Remote Authenticator returns a non-empty value for the `external_user_identifier` property along with a success HTTP status, lakeFS will use this external identifier in place of the internal lakeFS user identifier anywhere in the UI where a username is shown.
+If the Remote Authenticator returns any HTTP status in the 2xx range, lakeFS considers this a successful authentication. Any HTTP status < 200 or > 300 is considered a failed authentication. If the Remote Authenticator returns a non-empty value for the `external_user_identifier` property along with a success HTTP status, lakeFS will use this external identifier instead of the internal lakeFS user identifier anywhere in the UI where a username is shown.
 
 ## Sample Implementation
 
-To assist with implementing a Remote Authenticator, below you can find a sample Remote Authenticator implemented using [node](https://nodejs.org/) and [express](https://expressjs.com/) and written in TypeScript. Obviously, this is an example implementation, which doesn't integrate with any real IdP, but can serve as a starting point for reference. A fully functional implementation can be done with any programming language and/or platform of your choise and can integrate with any existing IdP infrastructure you are currently running.
+To assist with implementing a Remote Authenticator, below you can find a sample Remote Authenticator implemented using [node](https://nodejs.org/) and [express](https://expressjs.com/) and written in TypeScript. This example implementation doesn't integrate with any real IdP but can serve as a starting point for reference. A fully functional implementation can be done with any programming language and platform of your choice and can integrate with any existing IdP infrastructure you are currently running.
 
 ```TypeScript
 import dotenv from "dotenv";
