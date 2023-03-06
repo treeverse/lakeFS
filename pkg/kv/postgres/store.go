@@ -44,7 +44,7 @@ const (
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
 	DefaultPartitions   = 100
-	DefaultScanPageSize = 10000
+	DefaultScanPageSize = 1000
 )
 
 //nolint:gochecknoinits
