@@ -169,7 +169,7 @@ func resolveRelative(defaultNamespace, key string) (QualifiedKey, error) {
 
 	return QualifiedKey{
 		StorageType:      storageType,
-		StorageNamespace: strings.TrimRight(parsedNS.Host+parsedNS.Path, "/"),
+		StorageNamespace: strings.TrimSuffix(parsedNS.Host+parsedNS.Path, "/"),
 		Key:              key,
 	}, nil
 }

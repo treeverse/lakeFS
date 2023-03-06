@@ -546,8 +546,8 @@ func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string,
 	}
 	bucket, prefix, _ := strings.Cut(qk.GetStorageNamespace(), "/")
 	key := qk.GetKey()
-	if len(prefix) > 0 {
-		key += "/" + prefix
+	if len(prefix) > 0 { // Avoid situations where prefix is empty or "/"
+		key = prefix + "/" + key
 	}
 	return bucket, key, nil
 }

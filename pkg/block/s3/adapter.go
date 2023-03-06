@@ -759,7 +759,9 @@ func extractAmzServerSideHeader(header http.Header) http.Header {
 
 func ExtractParamsFromQK(qk block.QualifiedKey) (string, string) {
 	bucket, prefix, _ := strings.Cut(qk.GetStorageNamespace(), "/")
-	key := prefix + "/" + qk.GetKey()
-
+	key := qk.GetKey()
+	if len(prefix) > 0 { // Avoid situations where prefix is empty or "/"
+		key = prefix + "/" + key
+	}
 	return bucket, key
 }
