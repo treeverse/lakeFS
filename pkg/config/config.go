@@ -196,8 +196,8 @@ type Config struct {
 		} `mapstructure:"ui_config"`
 	}
 	Blockstore struct {
-		Type                   string `mapstructure:"type" validate:"required"`
-		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
+		Type                   string  `mapstructure:"type" validate:"required"`
+		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
 		Local                  *struct {
 			Path                    string   `mapstructure:"path"`
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
