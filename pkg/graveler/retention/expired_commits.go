@@ -21,8 +21,8 @@ type CommitNode struct {
 	Version      graveler.CommitVersion
 }
 
-func NewCommitNode(commitID graveler.CommitID, creationDate time.Time, parentsIDs []graveler.CommitID, version graveler.CommitVersion) CommitNode {
-	return CommitNode{
+func NewCommitNode(commitID graveler.CommitID, creationDate time.Time, parentsIDs []graveler.CommitID, version graveler.CommitVersion) *CommitNode {
+	return &CommitNode{
 		CommitID:     commitID,
 		CreationDate: creationDate,
 		ParentsIDs:   parentsIDs,
@@ -51,7 +51,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if err != nil {
 		return nil, err
 	}
-	commitsMap := make(map[graveler.CommitID]CommitNode)
+	commitsMap := make(map[graveler.CommitID]*CommitNode)
 	defer commitsIterator.Close()
 	for commitsIterator.Next() {
 		commitRecord := commitsIterator.Value()
@@ -69,8 +69,8 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		}
 		if startingPoint.BranchID == "" {
 			// not a branch HEAD - add a hypothetical HEAD as its parent
-			commitNode = CommitNode{
-				CreationDate: time.Now(),
+			commitNode = &CommitNode{
+				CreationDate: commitNode.CreationDate,
 				ParentsIDs:   []graveler.CommitID{startingPoint.CommitID},
 			}
 		} else {
@@ -106,9 +106,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			} else if _, ok = activeMap[nextCommitID]; !ok {
 				expiredMap[nextCommitID] = struct{}{}
 			}
-			commitNode, ok = commitsMap[startingPoint.CommitID]
+			commitNode, ok = commitsMap[nextCommitID]
 			if !ok {
-				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
+				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, nextCommitID)
 			}
 			processed[nextCommitID] = branchExpirationThreshold
 		}
