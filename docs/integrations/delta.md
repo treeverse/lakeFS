@@ -15,11 +15,28 @@ has_children: false
 lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS repository to reap the benefits of both technologies. Specifically:
 
 1. ACID operations can now span across many Delta tables.
-1. [CI/CD hooks](../use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
-1. lakeFS supports zero-copy branching for quick experimentation with full isolation.
+2. [CI/CD hooks](../use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
+3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
 {% include toc.html %}
 
+## lakeFS Delta diff 
+
+Using lakeFS, you can compare different versions of Delta tables, view the table operations done since the tables diverged and 
+their details.
+
+
+For example, comparing branches "dev" and "main", we can see that **movies** table has changed and on "dev" since the branches diverged. 
+Expanding the delete operation, we learn that all movies with rating < 4 were deleted from the table on dev branch.
+
+
+![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
+![movies_table_operations.png](../assets/img/delta-diff-operations.png)
+
+
+**Notes** 
+* lakeFS Delta diff is available from vXXX(Change this after releasing) on the lakeFS UI.  
+* lakeFS Delta diff is available for the time period the table history is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)).
 
 ## Configuration
 
