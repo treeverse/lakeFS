@@ -6,7 +6,7 @@
 
 :new: What's new:
 
-- Added Remote Authenticator service to replace embedded LDAP authenticator (#5285)
+- [Breaking Change] Added Remote Authenticator service to replace embedded LDAP authenticator (#5285)
 - Verify authenticity of tokens provided by external IdPs (#5385)
 - Support merge directly from the import wizard (#5352)
 - Include source IP in logs (#5216)
