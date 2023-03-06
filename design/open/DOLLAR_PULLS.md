@@ -82,10 +82,6 @@ create a new run using the updated branch head and update the associated run id.
 * Add new branch protection rule for $PULLS
 * Modify relevant APIs and add check for $PULLS branch protection rule
 
-### Commit
-
-On commit, we will need to go over all the $PULLS where the given branch is the source branch and update them accordingly
-
 ### Merge
 
 * Add checks for $PULLS state
