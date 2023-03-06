@@ -21,12 +21,20 @@ private object local {
 }
 
 class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
-    val it: Iterator[PebbleEntry],
+    val reader: SSTableReader[Proto],
+    it: Iterator[PebbleEntry],
     companion: GeneratedMessageCompanion[Proto]
 ) extends Iterator[Item[Proto]] {
   // TODO(ariels): explicitly make it closeable, and figure out how to close it when used by
   //     Spark.
-  override def hasNext: Boolean = it.hasNext
+  override def hasNext: Boolean = {
+    // HACK(barak): close the reader on last item
+    if (it.hasNext) {
+      return true
+    }
+    reader.close()
+    false
+  }
 
   override def next(): Item[Proto] = {
     val entry = it.next
@@ -62,12 +70,12 @@ object SSTableReader {
     localFile
   }
 
-  def forMetaRange(configuration: Configuration, metaRangeURL: String) = {
+  def forMetaRange(configuration: Configuration, metaRangeURL: String): SSTableReader[RangeData] = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
     new SSTableReader(localFile, RangeData.messageCompanion)
   }
 
-  def forRange(configuration: Configuration, rangeURL: String) = {
+  def forRange(configuration: Configuration, rangeURL: String): SSTableReader[Entry] = {
     val localFile: File = copyToLocal(configuration, rangeURL)
     new SSTableReader(localFile, Entry.messageCompanion)
   }
@@ -88,14 +96,14 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
     file.delete()
   }
 
-  def getProperties(): Map[String, Array[Byte]] = {
+  def getProperties: Map[String, Array[Byte]] = {
     val bytes = reader.iterate(reader.length - BlockParser.footerLength, BlockParser.footerLength)
     val footer = BlockParser.readFooter(bytes)
-    BlockParser.readProperties(reader, footer).map(kv => (new String(kv._1.toArray) -> kv._2)).toMap
+    BlockParser.readProperties(reader, footer).map(kv => new String(kv._1.toArray) -> kv._2)
   }
 
   def newIterator(): SSTableIterator[Proto] = {
     val it = BlockParser.entryIterator(reader)
-    new SSTableIterator(it, companion)
+    new SSTableIterator(this, it, companion)
   }
 }

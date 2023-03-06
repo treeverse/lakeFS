@@ -3,6 +3,7 @@ package io.treeverse.clients
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
+import org.apache.commons.io.IOUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
@@ -98,9 +99,10 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     sstableReader = new SSTableReader(localFile.getAbsolutePath, companion)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
-      val props = sstableReader.getProperties()
+      val props = sstableReader.getProperties
       logger.debug(s"Props: $props")
-      if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
+      if (new String(props("type")) != "ranges" || props.contains("entity")) {
+        IOUtils.closeQuietly(sstableReader)
         return
       }
     }
@@ -155,7 +157,6 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     val commitID = conf.get(LAKEFS_CONF_JOB_COMMIT_ID_KEY)
-    val sourceName = conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY)
     val apiClient = ApiClient.get(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
