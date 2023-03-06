@@ -86,6 +86,12 @@ This reference uses `.` to denote the nesting of values.
 * `auth.remote_authenticator.endpoint` `(string : required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
 * `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
 * `auth.remote_authenticator.request_timeout` `(duration : 10s)` - If specified, timeout for remote authentication requests.
+* `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+* `auth.cookie_auth_verification.default_initial_groups` (string[] : [])` - By default, users will be assigned to these groups
+* `auth.cookie_auth_verification.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.cookie_auth_verification.default_initial_groups` is also set. 
+* `auth.cookie_auth_verification.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.cookie_auth_verification.external_user_id_claim_name` - `(string : )` - If specified, the value from the claim with this name will be used as the user's id name.
+* `auth.cookie_auth_verification.auth_source` - `(string : )` - If specified, user will be labeled with this auth source.
 * `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
 * `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set. 
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
