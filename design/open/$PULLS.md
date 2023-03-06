@@ -24,7 +24,7 @@ The $PULLS object will contain the following data:
 
 ### $PULLS States
 
-$PULLS will have to following states:
+$PULLS will have the following states:
 
 * `OPEN`
 * `CLOSED`
