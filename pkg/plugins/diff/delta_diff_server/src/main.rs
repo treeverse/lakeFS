@@ -79,8 +79,7 @@ impl TableDiffer for DifferService {
 
         let mut right_table = right_table_res?;
         let mut left_table= left_table_res?;
-        let mut base_table= base_table_res.ok();
-        return run_diff(&mut left_table, &mut right_table, &mut base_table).await;
+        return run_diff(&mut left_table, &mut right_table).await;
     }
 
     async fn show_history(&self, _request: Request<HistoryRequest>) -> Result<Response<HistoryResponse>, Status> {
@@ -112,7 +111,7 @@ async fn handle_table_err(left_table_res: Result<DeltaTable, Status>,
                 } else if base_table_res.is_ok() { // The table existed on the base branch
                     let mut right_table = right_table_res.unwrap();
                     let mut base_table = base_table_res.unwrap();
-                    run_diff(&mut base_table, &mut right_table, &mut None).await
+                    run_diff(&mut base_table, &mut right_table).await
                 } else { // There was other kind of error with the base branch
                     Err(base_table_res.unwrap_err())
                 }
@@ -125,7 +124,7 @@ async fn handle_table_err(left_table_res: Result<DeltaTable, Status>,
     }
 }
 
-async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable, base_table: &mut Option<DeltaTable>) -> Result<Response<DiffResponse>, Status> {
+async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable) -> Result<Response<DiffResponse>, Status> {
     let left_table_history = delta_ops::history(left_table, None);
     let right_table_history = delta_ops::history(right_table, None);
 
@@ -133,11 +132,7 @@ async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable, bas
 
     let mut left_history_version = HistoryAndVersion{ history: left_table_history?, version: left_table.version() };
     let mut right_history_version = HistoryAndVersion{ history: right_table_history?, version: right_table.version() };
-    let min_version = match base_table {
-        None => 0,
-        Some(table) => table.version()
-    };
-    let diff = compare(&mut left_history_version,  &mut right_history_version, min_version).unwrap();
+    let diff = compare(&mut left_history_version,  &mut right_history_version).unwrap();
     return Ok(Response::new(DiffResponse { entries: diff, diff_type: i32::from(differ::DiffType::Changed) }))
 }
 
@@ -170,10 +165,9 @@ fn show_history(mut hist: Vec<Map<String, Value>>, table_version: DeltaDataTypeV
 }
 
 fn compare(left_history_version: &mut HistoryAndVersion,
-           right_history_version: &mut HistoryAndVersion,
-           min_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
+           right_history_version: &mut HistoryAndVersion) -> Result<Vec<TableOperation>, Status> {
     // The lower limit of the two (earliest common version):
-    let common_ancestor = max(right_history_version.get_common_available_ancestor(&left_history_version), min_version);
+    let common_ancestor = right_history_version.get_common_available_ancestor(&left_history_version);
     let mut table_op_list: Vec<TableOperation> = vec![];
 
     let right_table_version = right_history_version.version;
