@@ -11,6 +11,7 @@ servers:
 
 security:
   - jwt_token: []
+  - saml_auth: []
 
 components:
   securitySchemes:
@@ -18,7 +19,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
+    saml_auth:
+      type: apiKey
+      in: cookie
+      name: saml_auth_session
+      
   parameters:
     PaginationPrefix:
       in: query

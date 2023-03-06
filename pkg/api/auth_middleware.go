@@ -20,10 +20,12 @@ import (
 )
 
 const (
-	TokenSessionKeyName     = "token"
-	InternalAuthSessionName = "internal_auth_session"
-	IDTokenClaimsSessionKey = "id_token_claims"
-	OIDCAuthSessionName     = "oidc_auth_session"
+	TokenSessionKeyName       = "token"
+	InternalAuthSessionName   = "internal_auth_session"
+	IDTokenClaimsSessionKey   = "id_token_claims"
+	OIDCAuthSessionName       = "oidc_auth_session"
+	SAMLTokenClaimsSessionKey = "saml_token_claims"
+	SAMLAuthSessionName       = "saml_auth_session"
 )
 
 // extractSecurityRequirements using Swagger returns an array of security requirements set for the request.
@@ -39,7 +41,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -52,11 +54,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
+
 			if err != nil {
 				writeError(w, r, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
 			if err != nil {
 				writeError(w, r, http.StatusUnauthorized, err)
 				return
@@ -79,12 +82,14 @@ func checkSecurityRequirements(r *http.Request,
 	authService auth.Service,
 	sessionStore sessions.Store,
 	oidcConfig *config.OIDC,
+	cookieAuthConfig *config.CookieAuthVerification,
 ) (*model.User, error) {
 	ctx := r.Context()
 	var user *model.User
 	var err error
 
 	logger = logger.WithContext(ctx)
+
 	for _, securityRequirement := range securityRequirements {
 		for provider := range securityRequirement {
 			switch provider {
@@ -125,11 +130,18 @@ func checkSecurityRequirements(r *http.Request,
 					return nil, err
 				}
 				user, err = userFromOIDC(ctx, logger, authService, oidcSession, oidcConfig)
+			case "saml_auth":
+				samlSession, err := sessionStore.Get(r, SAMLAuthSessionName)
+				if err != nil {
+					return nil, err
+				}
+				user, err = userFromSAML(ctx, logger, authService, samlSession, cookieAuthConfig)
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")
 				return nil, ErrAuthenticatingRequest
 			}
+
 			if err != nil {
 				return nil, err
 			}
@@ -148,11 +160,107 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 	return user
 }
 
+// userFromSAML returns a user from an existing SAML session.
+// If the user doesn't exist on the lakeFS side, it is created.
+// This function does not make any calls to an external provider.
+func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *config.CookieAuthVerification) (*model.User, error) {
+	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidc_encoding.Claims)
+
+	if idTokenClaims == nil {
+		return nil, nil
+	}
+
+	if !ok {
+		logger.WithField("claims", authSession.Values[SAMLTokenClaimsSessionKey]).Error("failed decoding tokens")
+		return nil, ErrAuthenticatingRequest
+	}
+
+	logger.WithField("claims", idTokenClaims).Debug("success decoding token claims")
+
+	idKey := cookieAuthConfig.ExternalUserIDClaimName
+	externalID, ok := idTokenClaims[idKey].(string)
+	if !ok {
+		logger.WithField(idKey, idTokenClaims[idKey]).Error("failed type assertion for sub claim")
+		return nil, ErrAuthenticatingRequest
+	}
+
+	log := logger.WithField("external_id", externalID)
+
+	for claimName, expectedValue := range cookieAuthConfig.ValidateIDTokenClaims {
+		actualValue, ok := idTokenClaims[claimName]
+		if !ok || actualValue != expectedValue {
+			log.WithFields(logging.Fields{
+				"claim_name":     claimName,
+				"actual_value":   actualValue,
+				"expected_value": expectedValue,
+				"missing":        !ok,
+			}).Error("authentication failed on validating ID token claims")
+			return nil, ErrAuthenticatingRequest
+		}
+	}
+
+	// update user
+	// TODO(isan) consolidate userFromOIDC and userFromSAML below here internal db handling code
+	friendlyName := ""
+	if cookieAuthConfig.FriendlyNameClaimName != "" {
+		friendlyName, _ = idTokenClaims[cookieAuthConfig.FriendlyNameClaimName].(string)
+	}
+	log = log.WithField("friendly_name", friendlyName)
+
+	user, err := authService.GetUserByExternalID(ctx, externalID)
+	if err == nil {
+		log.Info("user found returning success ")
+		return enhanceWithFriendlyName(user, friendlyName), nil
+	}
+
+	if !errors.Is(err, auth.ErrNotFound) {
+		log.WithError(err).Error("failed while searching if user exists in database")
+		return nil, ErrAuthenticatingRequest
+	}
+	log.Info("user not found; creating them")
+
+	u := model.User{
+		CreatedAt:  time.Now().UTC(),
+		Source:     cookieAuthConfig.AuthSource,
+		Username:   externalID,
+		ExternalID: &externalID,
+	}
+
+	_, err = authService.CreateUser(ctx, &u)
+	if err != nil {
+		if !errors.Is(err, auth.ErrAlreadyExists) {
+			log.WithError(err).Error("failed to create external user in database")
+			return nil, ErrAuthenticatingRequest
+		}
+		// user already exists - get it:
+		user, err = authService.GetUserByExternalID(ctx, externalID)
+		if err != nil {
+			log.WithError(err).Error("failed to get external user from database")
+			return nil, ErrAuthenticatingRequest
+		}
+		return enhanceWithFriendlyName(user, friendlyName), nil
+	}
+	initialGroups := cookieAuthConfig.DefaultInitialGroups
+	if userInitialGroups, ok := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName].(string); ok {
+		initialGroups = strings.Split(userInitialGroups, ",")
+	}
+	for _, g := range initialGroups {
+		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+		if err != nil {
+			log.WithError(err).Error("Failed to add external user to group")
+		}
+	}
+	return enhanceWithFriendlyName(&u, friendlyName), nil
+}
+
 // userFromOIDC returns a user from an existing OIDC session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
 func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
 	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc_encoding.Claims)
+	if idTokenClaims == nil {
+		return nil, nil
+	}
 	if !ok || idTokenClaims == nil {
 		return nil, ErrAuthenticatingRequest
 	}
@@ -161,7 +269,6 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		logger.WithField("sub", idTokenClaims["sub"]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
-
 	for claimName, expectedValue := range oidcConfig.ValidateIDTokenClaims {
 		actualValue, ok := idTokenClaims[claimName]
 		if !ok || actualValue != expectedValue {
@@ -174,7 +281,6 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			return nil, ErrAuthenticatingRequest
 		}
 	}
-
 	friendlyName := ""
 	if oidcConfig.FriendlyNameClaimName != "" {
 		friendlyName, _ = idTokenClaims[oidcConfig.FriendlyNameClaimName].(string)
