@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -166,22 +167,19 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 // This function does not make any calls to an external provider.
 func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *config.CookieAuthVerification) (*model.User, error) {
 	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidc_encoding.Claims)
-
 	if idTokenClaims == nil {
 		return nil, nil
 	}
-
 	if !ok {
-		logger.WithField("claims", authSession.Values[SAMLTokenClaimsSessionKey]).Error("failed decoding tokens")
-		return nil, ErrAuthenticatingRequest
+		logger.WithField("claims", authSession.Values[SAMLTokenClaimsSessionKey]).Debug("failed decoding tokens")
+		return nil, fmt.Errorf("getting token claims: %w", ErrAuthenticatingRequest)
 	}
-
-	logger.WithField("claims", idTokenClaims).Debug("success decoding token claims")
+	logger.WithField("claims", idTokenClaims).Debug("Success decoding token claims")
 
 	idKey := cookieAuthConfig.ExternalUserIDClaimName
 	externalID, ok := idTokenClaims[idKey].(string)
 	if !ok {
-		logger.WithField(idKey, idTokenClaims[idKey]).Error("failed type assertion for sub claim")
+		logger.WithField(idKey, idTokenClaims[idKey]).Error("Failed type assertion for sub claim")
 		return nil, ErrAuthenticatingRequest
 	}
 
@@ -210,15 +208,14 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 
 	user, err := authService.GetUserByExternalID(ctx, externalID)
 	if err == nil {
-		log.Info("user found returning success ")
+		log.Info("Found user")
 		return enhanceWithFriendlyName(user, friendlyName), nil
 	}
-
 	if !errors.Is(err, auth.ErrNotFound) {
-		log.WithError(err).Error("failed while searching if user exists in database")
+		log.WithError(err).Error("Failed while searching if user exists in database")
 		return nil, ErrAuthenticatingRequest
 	}
-	log.Info("user not found; creating them")
+	log.Info("User not found; creating them")
 
 	u := model.User{
 		CreatedAt:  time.Now().UTC(),
@@ -230,7 +227,7 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
-			log.WithError(err).Error("failed to create external user in database")
+			log.WithError(err).Error("Failed to create external user in database")
 			return nil, ErrAuthenticatingRequest
 		}
 		// user already exists - get it:
