@@ -44,7 +44,8 @@ class ExperimentalApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}',
                 'operation_id': 'otf_diff',

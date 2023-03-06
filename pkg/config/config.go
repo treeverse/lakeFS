@@ -45,6 +45,23 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
+// TODO(isan) consolidate with OIDC
+// CookieAuthVerification is related to auth based on a cookie set by an external service
+type CookieAuthVerification struct {
+	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
+	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
+	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
+	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
+	// InitialGroupsClaimName comma separated list of groups to add to the user on the lakeFS side
+	InitialGroupsClaimName string `mapstructure:"initial_groups_claim_name"`
+	// FriendlyNameClaimName is the claim name to use as the user's friendly name in places like the UI
+	FriendlyNameClaimName string `mapstructure:"friendly_name_claim_name"`
+	// ExternalUserIDClaimName is the claim name to use as the user identifier with an IDP
+	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
+	// AuthSource tag each user with label of the IDP
+	AuthSource string `mapstructure:"auth_source"`
+}
+
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
@@ -162,7 +179,8 @@ type Config struct {
 			// RequestTimeout timeout for remote authentication requests
 			RequestTimeout time.Duration `mapstructure:"request_timeout"`
 		} `mapstructure:"remote_authenticator"`
-		OIDC OIDC `mapstructure:"oidc"`
+		OIDC                   OIDC                   `mapstructure:"oidc"`
+		CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
