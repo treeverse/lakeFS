@@ -131,7 +131,8 @@ func checkSecurityRequirements(r *http.Request,
 				}
 				user, err = userFromOIDC(ctx, logger, authService, oidcSession, oidcConfig)
 			case "saml_auth":
-				samlSession, err := sessionStore.Get(r, SAMLAuthSessionName)
+				var samlSession *sessions.Session
+				samlSession, err = sessionStore.Get(r, SAMLAuthSessionName)
 				if err != nil {
 					return nil, err
 				}
