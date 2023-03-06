@@ -52,8 +52,12 @@ When a user makes a request to perform that action, the following process takes 
 Each policy attached to a user or a group has an `Effect` - either `allow` or `deny`.
 During evaluation of a request, `deny` would take precedence over any other `allow` policy.
 
-This helps us compose policies together. For example, we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
+If no permissions exist than the action will be blocked, making no permission the equivilent of `deny`. 
 
+This helps us compose policies together. For example: 
+
+* we could attach a very permissive policy to a user and use `deny` rules to then selectively restrict what that user can do.
+* Since `deny` is stronger than `allow`, you could specify `fs:*` `allow` with `fs:Write*` `deny` to a user with the net effect that the user will be able to do all fs commands _except_ write commands.
 
 ## Resource naming - ARNs
 
