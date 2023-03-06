@@ -2,6 +2,20 @@
 
 ## UNRELEASED
 
+## v0.95.0
+
+:new: What's new:
+
+- Added Remote Authenticator service to replace embedded LDAP authenticator (#5285)
+- Verify authenticity of tokens provided by external IdPs (#5385)
+- Support merge directly from the import wizard (#5352)
+- Include source IP in logs (#5216)
+
+:bug: Bugs fixed:
+
+- Include refs for tag/branch in `GetCommit` response (#5369)
+- Fix object URI wrapping for long URIs (#5274)
+
 ## v0.94.1
 
 Bugs fixed:
