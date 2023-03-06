@@ -2,10 +2,10 @@ package retention
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type GarbageCollectionCommits struct {
