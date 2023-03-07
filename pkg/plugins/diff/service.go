@@ -3,8 +3,12 @@ package tablediff
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/plugins"
 
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
 )
@@ -93,15 +97,6 @@ type Service struct {
 	l              sync.Mutex
 }
 
-// NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
-func NewService() (*Service, func()) {
-	service := &Service{
-		pluginHandler:  internal.NewManager[Differ](),
-		closeFunctions: make(map[string]func()),
-	}
-	return service, service.Close
-}
-
 func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Params) (Response, error) {
 	d, closeClient, err := s.pluginHandler.LoadPluginClient(diffType)
 	if err != nil {
@@ -134,5 +129,39 @@ func (s *Service) appendClosingFunction(diffType string, f func()) {
 	defer s.l.Unlock()
 	if _, ok := s.closeFunctions[diffType]; !ok {
 		s.closeFunctions[diffType] = f
+	}
+}
+
+// NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
+func NewService(diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps, pluginsPath string) (*Service, func()) {
+	service := &Service{
+		pluginHandler:  internal.NewManager[Differ](),
+		closeFunctions: make(map[string]func()),
+	}
+	registerPlugins(service, diffProps, pluginProps, pluginsPath)
+	return service, service.Close
+}
+
+func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps, pluginsPath string) {
+	if !strings.HasSuffix(pluginsPath, "/") {
+		pluginsPath = pluginsPath + "/"
+	}
+	for n, p := range diffProps {
+		pluginName := p.PluginName
+		// If the requested plugin wasn't configured with a path, it will be defined under the default location
+		pluginPath := pluginsPath + pluginName
+		pluginVersion := 1 // default version
+		if props, ok := pluginProps[pluginName]; ok {
+			pluginPath = props.Path
+			if props.Version != nil {
+				pluginVersion = *props.Version
+			}
+		}
+
+		if strings.ToLower(n) == "delta" {
+			pid := plugins.PluginIdentity{ProtocolVersion: uint(pluginVersion), ExecutableLocation: pluginPath}
+			pa := plugins.PluginHandshake{}
+			RegisterDeltaLakeDiffPlugin(service, pid, pa)
+		}
 	}
 }
