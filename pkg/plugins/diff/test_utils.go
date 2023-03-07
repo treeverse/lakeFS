@@ -3,6 +3,7 @@ package tablediff
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
@@ -14,6 +15,8 @@ var ErrDiffFailed = errors.New("failed")
 const (
 	diffType             = "aDiff"
 	ControllerTestPlugin = "controller"
+	PluginPath           = "plugin_path"
+	PluginVersion        = "plugin_version"
 )
 
 type MockHandler struct {
@@ -21,7 +24,7 @@ type MockHandler struct {
 }
 
 func (mh *MockHandler) RegisterPlugin(name string, pp internal.HCPluginProperties) {
-	mh.differs[name] = TestDiffer{}
+	mh.differs[name] = TestDiffer{pp}
 }
 func (mh *MockHandler) LoadPluginClient(name string) (Differ, func(), error) {
 	d, ok := mh.differs[name]
@@ -40,9 +43,11 @@ func NewMockHandler() *MockHandler {
 	return &mh
 }
 
-type TestDiffer struct{}
+type TestDiffer struct {
+	props internal.HCPluginProperties
+}
 
-func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
+func (td TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 	e := ErrorFromContext(ctx)
 	if e != nil {
 		return Response{}, e
@@ -50,7 +55,17 @@ func (ed TestDiffer) Diff(ctx context.Context, p Params) (Response, error) {
 
 	r := Response{
 		DiffType: DiffTypeChanged,
-		Diffs:    generateDiffs(),
+		Diffs: []DiffEntry{
+			{
+				Version:   "v0",
+				Timestamp: time.Unix(0, 0),
+				Operation: "op",
+				OperationContent: map[string]string{
+					PluginPath:    td.props.ID.ExecutableLocation,
+					PluginVersion: strconv.Itoa(int(td.props.ID.ProtocolVersion)),
+				},
+			},
+		},
 	}
 	return r, nil
 }
