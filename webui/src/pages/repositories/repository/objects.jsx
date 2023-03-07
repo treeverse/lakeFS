@@ -376,8 +376,8 @@ const NoGCRulesWarning = ({ repoId }) => {
 
     const {response} = useAPI(async() => {
         const repo = await repositories.get(repoId)
-        if (repo.storage_namespace.startsWith('s3:') ||
-            repo.storage_namespace.startsWith(':')) {
+        if (!repo.storage_namespace.startsWith('s3:') &&
+            !repo.storage_namespace.startsWith('http')) {
             return false;
         }
         const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), 'days');
