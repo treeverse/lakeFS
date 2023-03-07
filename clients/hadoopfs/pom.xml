@@ -82,6 +82,33 @@ To export to S3:
             </build>
         </profile>
         <profile>
+            <id>contract-tests-hadoop3-presigned</id>
+            <properties>
+                <exclude.tests>io/lakefs/contract/hadoop2/**</exclude.tests>
+                <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
+                <hadoop.version>3.1.4</hadoop.version>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.12.4</version>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <lakefs.presigned_mode>true</lakefs.presigned_mode>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+                <resources>
+                    <resource>
+                        <directory>${contract_tests.resource_dir}</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
             <id>release</id>
             <build>
                 <plugins>

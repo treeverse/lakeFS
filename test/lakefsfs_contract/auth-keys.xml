@@ -40,4 +40,8 @@
         <description>Specific endpoint to use for STS requests.</description>
         <value>sts.amazonaws.com</value>
     </property>
+    <property>
+        <name>fs.lakefs.presigned.mode</name>
+        <value>${lakefs.presigned_mode}</value>
+    </property>
 </configuration>
