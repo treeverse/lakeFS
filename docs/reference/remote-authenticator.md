@@ -23,8 +23,8 @@ sequenceDiagram
     participant D as IdP
     A->>B: Submit login form
     B->>C: POST user credentials
-    C->>D: Auth request
-    D->>C: Auth response
+    C->>D: IdP request
+    D->>C: IdP response
     C->>B: Auth response
     B->>A: auth JWT
 ```
@@ -57,12 +57,12 @@ A Remote Authenticator implementation should expose a single endpoint, which rec
 
 ```JSON
 {
-    "username": "testy.mctestface@testing.com",
+    "username": "testy.mctestface@example.com",
     "password": "Password1"
 }
 ```
 
-and return a JSON response like this:
+and returns a JSON response like this:
 
 ```JSON
 {
@@ -109,7 +109,7 @@ app.post(
 
     // 👇🏻 This is where you would implement your own authentication logic
     if (
-      username === "testy.mctestface@testing.com" &&
+      username === "testy.mctestface@example.com" &&
       password === "Password1"
     ) {
       return res.status(StatusCodes.OK).json({
@@ -128,13 +128,13 @@ app.listen(port, () => {
 });
 ```
 
-Assuming you'd be running this service on the sub-domain `idp.testing.com`, you're corresponding lakeFS configuration would look like this:
+Assuming you'd be running this service on the sub-domain `idp.example.com`, you're corresponding lakeFS configuration would look like this:
 
 ```yaml
 auth:
     remote_authenticator:
         enabled: true
-        endpoint: https://idp.testing.com/auth
+        endpoint: https://idp.example.com/auth
         default_user_group: "Developers"
     ui_config:
         logout_url: /logout
