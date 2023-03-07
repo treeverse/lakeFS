@@ -36,7 +36,7 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
                 objectLocation.getRef(),
                 objectLocation.getPath(), true);
         URL presignedUrl = new URL(stagingLocation.getPresignedUrl());
-        System.out.println("presignedUrl: " + presignedUrl);
+        System.out.println("presignedUrl: " + presignedUrl); // TODO(johnnyaug) remove this print
         HttpURLConnection connection = (HttpURLConnection) presignedUrl.openConnection();
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/octet-stream"); // TODO be better than this

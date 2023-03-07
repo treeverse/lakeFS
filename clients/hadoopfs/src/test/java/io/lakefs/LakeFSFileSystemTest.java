@@ -47,14 +47,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-public class LakeFSFileSystemTest {
-    private static final Long UNUSED_FILE_SIZE = 1L;
-    private static final Long UNUSED_MTIME = 0L;
-    private static final String UNUSED_CHECKSUM = "unused";
+public abstract class LakeFSFileSystemTest {
+    static final Long UNUSED_FILE_SIZE = 1L;
+    static final Long UNUSED_MTIME = 0L;
+    static final String UNUSED_CHECKSUM = "unused";
 
-    private static final Long STATUS_FILE_SIZE = 2L;
-    private static final Long STATUS_MTIME = 0L;
-    private static final String STATUS_CHECKSUM = "status";
+    static final Long STATUS_FILE_SIZE = 2L;
+    static final Long STATUS_MTIME = 0L;
+    static final String STATUS_CHECKSUM = "status";
 
     protected Configuration conf;
     protected final LakeFSFileSystem fs = new LakeFSFileSystem();
@@ -85,7 +85,13 @@ public class LakeFSFileSystemTest {
         withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
         withEnv("MINIO_UPDATE", "off").
         withExposedPorts(9000);
+    
+    abstract void initConfiguration();
+    
+    abstract void mockStatObject(String repo, String branch, String key, String physicalKey, Long sizeBytes) throws ApiException;
 
+    abstract StagingLocation mockGetPhysicalAddress(String repo, String branch, String key, String physicalKey) throws ApiException;
+    
     protected static String makeS3BucketName() {
         String slug = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR,
                                                "abcdefghijklmnopqrstuvwxyz-0123456789".toCharArray(), 14);
@@ -127,7 +133,7 @@ public class LakeFSFileSystemTest {
         s3Client.createBucket(cbr);
 
         conf = new Configuration(false);
-
+        initConfiguration();
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
 
         conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
@@ -502,9 +508,7 @@ public class LakeFSFileSystemTest {
 
         mockNonExistingPath(new ObjectLocation("lakefs", "repo", "main", "sub1/sub2/create.me"));
 
-        StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/create"));
-        when(stagingApi.getPhysicalAddress("repo", "main", "sub1/sub2/create.me", false))
-                .thenReturn(stagingLocation);
+        StagingLocation stagingLocation = mockGetPhysicalAddress("repo", "main", "sub1/sub2/create.me", "repo-base/create");
 
         // mock sub1/sub2 was an empty directory
         ObjectLocation sub2Loc = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
@@ -564,9 +568,7 @@ public class LakeFSFileSystemTest {
         } while(testPath != null && !testPath.isRoot());
 
         // physical address to directory marker object
-        StagingLocation stagingLocation = new StagingLocation().token("foo").physicalAddress(s3Url("/repo-base/emptyDir"));
-        when(stagingApi.getPhysicalAddress("repo", "main", "dir1/dir2/dir3/", false))
-                .thenReturn(stagingLocation);
+        StagingLocation stagingLocation = mockGetPhysicalAddress("repo", "main", "dir1/dir2/dir3/", "repo-base/emptyDir");
 
         // call mkdirs
         Path p = new Path("lakefs://repo/main/dir1/dir2/dir3");
@@ -592,23 +594,13 @@ public class LakeFSFileSystemTest {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
 
-        String key = "/repo-base/open";
+        String physicalKey = "/repo-base/open";
 
         // Write physical file to S3.
         ObjectMetadata s3Metadata = new ObjectMetadata();
         s3Metadata.setContentLength(contentsBytes.length);
-        s3Client.putObject(new PutObjectRequest(s3Bucket, key, new ByteArrayInputStream(contentsBytes), s3Metadata));
-
-        Path p = new Path("lakefs://repo/main/read.me");
-        when(objectsApi.statObject("repo", "main", "read.me", false, false)).
-            thenReturn(new ObjectStats().
-                       path(p.toString()).
-                       pathType(PathTypeEnum.OBJECT).
-                       physicalAddress(s3Url(key)).
-                       checksum(UNUSED_CHECKSUM).
-                       mtime(UNUSED_MTIME).
-                       sizeBytes((long)contentsBytes.length));
-
+        s3Client.putObject(new PutObjectRequest(s3Bucket, physicalKey, new ByteArrayInputStream(contentsBytes), s3Metadata));
+        mockStatObject("repo", "main", "read.me", physicalKey, (long)contentsBytes.length);
         try (InputStream in = fs.open(p)) {
             String actual = IOUtils.toString(in);
             Assert.assertEquals(contents, actual);
