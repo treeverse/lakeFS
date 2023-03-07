@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -33,14 +34,33 @@ var (
 	ErrAddedActions    = errors.New("added actions")
 	ErrEmpty           = errors.New("empty")
 	ErrWidened         = errors.New("resource widened")
+	ErrPolicyExists    = errors.New("policy exists")
 
 	allPermissions = []model.ACLPermission{"", acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
 )
 
+// CheckPolicyACLName fails if policy name is named as an ACL policy (start
+// with ACLPolicyPrefix) but is not an ACL policy.
+func CheckPolicyACLName(ctx context.Context, svc auth.Service, name string) error {
+	if !acl.IsACLPolicyName(name) {
+		return nil
+	}
+
+	_, err := svc.GetGroup(ctx, name)
+	switch {
+	case errors.Is(err, auth.ErrNotFound):
+		return nil
+	case err == nil:
+		return fmt.Errorf("%s: %w", name, ErrPolicyExists)
+	default:
+		return fmt.Errorf("check policy name %s: %w", name, err)
+	}
+}
+
 // RBACToACL translates all groups on svc to use ACLs instead of RBAC
 // policies.  It updates svc only if doUpdate.  It calls warn to report
 // increased permissions.
-func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, warnFunc func(error)) error {
+func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Time, warnFunc func(error)) error {
 	mig := NewACLsMigrator(svc, doUpdate)
 
 	groups, _, err := svc.ListGroups(ctx, &model.PaginationParams{Amount: maxGroups + 1})
@@ -58,7 +78,7 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, warnFunc fu
 		if len(policies) > maxGroupPolicies {
 			return fmt.Errorf("group %+v: %w (got %d)", group, ErrTooManyPolicies, len(policies))
 		}
-		acl, warn, err := mig.NewACLForPolicies(ctx, policies)
+		newACL, warn, err := mig.NewACLForPolicies(ctx, policies)
 		if err != nil {
 			return fmt.Errorf("create ACL for group %+v: %w", group, err)
 		}
@@ -69,13 +89,26 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, warnFunc fu
 		log := logging.FromContext(ctx)
 		log.WithFields(logging.Fields{
 			"group": group.DisplayName,
-			"acl":   fmt.Sprintf("%+v", acl),
+			"acl":   fmt.Sprintf("%+v", newACL),
 		}).Info("Computed ACL")
+
+		aclPolicyName := acl.ACLPolicyName(group.DisplayName)
+		err = CheckPolicyACLName(ctx, svc, aclPolicyName)
+		if err != nil {
+			if !doUpdate {
+				return err
+			}
+			warnFunc(err)
+		}
+		policyExists := errors.Is(err, ErrPolicyExists)
+		if doUpdate {
+			err = acl.WriteGroupACL(ctx, svc, group.DisplayName, *newACL, now, policyExists)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	if doUpdate {
-		panic("BUG(ariels): CREATE ACL & UPDATE GROUP!")
-	}
 	return nil
 }
 

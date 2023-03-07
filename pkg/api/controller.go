@@ -672,7 +672,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 		},
 	}
 
-	statements, err := acl.ACLToStatement(newACL)
+	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -739,7 +739,6 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 		writeResponse(w, r, http.StatusInternalServerError, "failed to detach some policies")
 		return
 	}
-
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 

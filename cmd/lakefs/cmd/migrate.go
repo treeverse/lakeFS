@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -63,6 +64,7 @@ var authCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.FromContext(cmd.Context()).WithField("phase", "migrate")
 		cfg := loadConfig()
+		now := time.Now()
 		kvParams, err := cfg.DatabaseParams()
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
@@ -84,7 +86,7 @@ var authCmd = &cobra.Command{
 			logger.WithField("service", "auth_service"),
 		)
 		reallyUpdate, _ := cmd.Flags().GetBool("yes")
-		err = auth_migrate.RBACToACL(cmd.Context(), authService, reallyUpdate, func(warn error) {
+		err = auth_migrate.RBACToACL(cmd.Context(), authService, reallyUpdate, now, func(warn error) {
 			fmt.Printf("WARNING: %s", warn.Error())
 		})
 		if err != nil {
