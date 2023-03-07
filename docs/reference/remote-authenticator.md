@@ -128,7 +128,7 @@ app.listen(port, () => {
 });
 ```
 
-Assuming you'd be running this service on the sub-domain `idp.example.com`, you're corresponding lakeFS configuration would look like this:
+To run this service on the sub-domain `idp.example.com`, use a lakeFS configuration that looks like this:
 
 ```yaml
 auth:
