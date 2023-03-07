@@ -146,7 +146,7 @@ func NewService(diffProps map[string]config.DiffProps, pluginProps map[string]co
 
 func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps, pluginsPath string) {
 	if !strings.HasSuffix(pluginsPath, "/") {
-		pluginsPath = pluginsPath + "/"
+		pluginsPath += "/"
 	}
 	for n, p := range diffProps {
 		pluginName := p.PluginName
