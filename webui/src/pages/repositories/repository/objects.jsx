@@ -9,7 +9,7 @@ import {
     Error,
     Loading,
     PrefixSearchWidget,
-    RefreshButton, Warning,
+    RefreshButton,
     Warnings
 } from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
