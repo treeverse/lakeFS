@@ -70,7 +70,7 @@ and returns a JSON response like this:
 }
 ```
 
-If the Remote Authenticator returns any HTTP status in the 2xx range, lakeFS considers this a successful authentication. Any HTTP status < 200 or > 300 is considered a failed authentication. If the Remote Authenticator returns a non-empty value for the `external_user_identifier` property along with a success HTTP status, lakeFS will use this external identifier instead of the internal lakeFS user identifier anywhere in the UI where a username is shown.
+If the Remote Authenticator returns any HTTP status in the 2xx range, lakeFS considers this a successful authentication. Any HTTP status < 200 or > 300 is considered a failed authentication. If the Remote Authenticator returns a non-empty value for the `external_user_identifier` property along with a success HTTP status, lakeFS will show this identifier instead of an internal lakeFS user identifier in the UI.
 
 ## Sample Implementation
 
