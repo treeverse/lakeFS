@@ -12,7 +12,7 @@ use tonic::{Code, Request, Response, Status, transport::Server};
 
 use differ::{DiffRequest, DiffResponse, GatewayConfig, table_differ_server::{TableDiffer, TableDifferServer}};
 
-use crate::differ::{DiffProps, HistoryRequest, HistoryResponse, TableOperation, TablePath};
+use crate::differ::{DiffProps, DiffType, HistoryRequest, HistoryResponse, TableOperation, TablePath};
 
 mod delta_ops;
 mod utils;
@@ -38,7 +38,7 @@ pub struct DifferService {}
 #[tonic::async_trait]
 impl TableDiffer for DifferService {
     /*
-    table_diff will compare two states of a given table over two branches in the following way:
+    table_diff will compare two states of a given table over two refs in the following way:
     1. If the destination table (the one which the source table branch is compared to) isn't found
        then it's assumed that the table has been created, and all of its Delta Log will be returned as an answer.
     2. If the source table (the one which the user asked to compare to some destination table) isn't found
@@ -70,11 +70,29 @@ impl TableDiffer for DifferService {
         let base_table_res =
             delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, &base_path);
 
-        let (left_table_res, right_table_res, base_table_res) =
+        let (mut left_table_res, right_table_res, base_table_res) =
             join!(left_table_res, right_table_res, base_table_res);
 
         if right_table_res.is_err() || left_table_res.is_err() {
-            return handle_table_err(left_table_res, right_table_res, base_table_res).await;
+            match get_diff_type(&left_table_res, &right_table_res, &base_table_res).await {
+                Ok(diff_type) => {
+                    match diff_type {
+                        DiffType::Dropped => {
+                            return Ok(Response::new(DiffResponse { entries: vec![], diff_type: i32::from(DiffType::Dropped) }))
+                        }
+                        DiffType::Created => {
+                            let mut right_table = right_table_res.unwrap();
+                            let hist = delta_ops::history(&mut right_table, None).await?;
+                            let ans = show_history(hist, right_table.version())?;
+                            return Ok(Response::new(DiffResponse { entries: ans, diff_type: i32::from(DiffType::Created) }))
+                        }
+                        DiffType::Changed => {
+                            left_table_res = base_table_res;
+                        }
+                    }
+                }
+                Err(e) => return Err(e)
+            }
         }
 
         let mut right_table = right_table_res?;
@@ -87,40 +105,34 @@ impl TableDiffer for DifferService {
     }
 }
 
-async fn handle_table_err(left_table_res: Result<DeltaTable, Status>,
-                          right_table_res: Result<DeltaTable, Status>,
-                          base_table_res: Result<DeltaTable, Status>) -> Result<Response<DiffResponse>, Status> {
-
-    return match (&left_table_res, &right_table_res) {
+async fn get_diff_type(left_table_res: &Result<DeltaTable, Status>,
+                       right_table_res: &Result<DeltaTable, Status>,
+                       base_table_res: &Result<DeltaTable, Status>) -> Result<DiffType, Status> {
+    return match (left_table_res, right_table_res) {
         (Ok(_), Err(status)) => {
             // right table wasn't found, but it exists on the base: table dropped
             if matches!(status.code(), Code::NotFound) && base_table_res.is_ok() {
-                Ok(Response::new(DiffResponse { entries: vec![], diff_type: i32::from(differ::DiffType::Dropped) }))
+                Ok(DiffType::Dropped)
             } else {
-                Err(right_table_res.unwrap_err())
+                Err(status.clone())
             }
         },
         (Err(status), Ok(_)) => {
             // left table wasn't found, and it doesn't exist on the base: table created
             if matches!(status.code(), Code::NotFound) {
                 if base_table_res.is_err() && matches!(base_table_res.as_ref().unwrap_err().code(), Code::NotFound) {
-                    let mut right_table = right_table_res.unwrap();
-                    let hist = delta_ops::history(&mut right_table, None).await?;
-                    let ans = show_history(hist, right_table.version())?;
-                    Ok(Response::new(DiffResponse { entries: ans, diff_type: i32::from(differ::DiffType::Created) }))
+                    Ok(DiffType::Created)
                 } else if base_table_res.is_ok() { // The table existed on the base branch
-                    let mut right_table = right_table_res.unwrap();
-                    let mut base_table = base_table_res.unwrap();
-                    run_diff(&mut base_table, &mut right_table).await
+                    Ok(DiffType::Changed)
                 } else { // There was other kind of error with the base branch
-                    Err(base_table_res.unwrap_err())
+                    Err(base_table_res.as_ref().unwrap_err().clone())
                 }
             } else {
-                Err(left_table_res.unwrap_err())
+                Err(left_table_res.as_ref().unwrap_err().clone())
             }
         },
         // If both are erroneous, return one of the return codes
-        _ => Err(left_table_res.unwrap_err())
+        _ => Err(left_table_res.as_ref().unwrap_err().clone())
     }
 }
 
@@ -133,7 +145,7 @@ async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable) -> 
     let mut left_history_version = HistoryAndVersion{ history: left_table_history?, version: left_table.version() };
     let mut right_history_version = HistoryAndVersion{ history: right_table_history?, version: right_table.version() };
     let diff = compare(&mut left_history_version,  &mut right_history_version).unwrap();
-    return Ok(Response::new(DiffResponse { entries: diff, diff_type: i32::from(differ::DiffType::Changed) }))
+    return Ok(Response::new(DiffResponse { entries: diff, diff_type: i32::from(DiffType::Changed) }))
 }
 
 struct HistoryAndVersion {
@@ -157,8 +169,8 @@ impl HistoryAndVersion {
 fn show_history(mut hist: Vec<Map<String, Value>>, table_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
     hist.reverse();
     let mut ans: Vec<TableOperation> = Vec::with_capacity(hist.len());
-    for m in hist {
-        let table_op = construct_table_ops(&m, table_version)?;
+    for commit in hist {
+        let table_op = construct_table_op(&commit, table_version)?;
         ans.push(table_op);
     }
     Ok(ans)
@@ -190,7 +202,7 @@ fn compare(left_history_version: &mut HistoryAndVersion,
             }
             match commit_info {
                 _operation_content => {
-                    let d = construct_table_ops(commit_info, curr_version)?;
+                    let d = construct_table_op(commit_info, curr_version)?;
                     table_op_list.push(d)
                 }
             }
@@ -211,8 +223,8 @@ fn compare_table_slices(left_commit_slice: &[Map<String, Value>],
     while i < left_commit_slice.len() && i < right_commit_slice.len() && curr_version >= common_ancestor {
         let left_commit_info = left_commit_slice.get(i).unwrap();
         let right_commit_info = right_commit_slice.get(i).unwrap();
-        let l_op = construct_table_ops(left_commit_info, curr_version)?;
-        let r_op = construct_table_ops(right_commit_info, curr_version)?;
+        let l_op = construct_table_op(left_commit_info, curr_version)?;
+        let r_op = construct_table_op(right_commit_info, curr_version)?;
 
         if r_op == l_op {
             return Ok(table_op_list);
@@ -225,7 +237,7 @@ fn compare_table_slices(left_commit_slice: &[Map<String, Value>],
     Ok(table_op_list)
 }
 
-fn construct_table_ops(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
+fn construct_table_op(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
     return match utils::construct_table_op(commit_info, version) {
         Ok(table_ops) => Ok(table_ops),
         Err(e) => Err(Status::new(Code::Aborted, format!("Creating operation history aborted due to:\n{:?}", e)))
