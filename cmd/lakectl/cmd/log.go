@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -37,6 +39,7 @@ var logCmd = &cobra.Command{
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
 		limit := MustBool(cmd.Flags().GetBool("limit"))
+		dot := MustBool(cmd.Flags().GetBool("dot"))
 		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
 		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
 
@@ -59,6 +62,11 @@ var logCmd = &cobra.Command{
 		if len(prefixesList) > 0 {
 			logCommitsParams.Prefixes = &prefixesList
 		}
+
+		if dot {
+			fmt.Printf("digraph {\n\trankdir=\"BT\"\n")
+		}
+
 		for pagination.HasMore {
 			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -80,11 +88,34 @@ var logCmd = &cobra.Command{
 					After:   pagination.NextOffset,
 				},
 			}
-			Write(commitsTemplate, data)
+			if dot {
+				for _, commit := range resp.JSON200.Results {
+					isMerge := len(commit.Parents) > 1
+					label := fmt.Sprintf("%s<br/> %s",
+						commit.Id[:8],
+						strings.ReplaceAll(commit.Message, "\"", "\\\""))
+					if isMerge {
+						label = fmt.Sprintf("<b>%s</b>", label)
+					}
+					url := strings.TrimSuffix(strings.TrimSuffix(
+						cfg.Values.Server.EndpointURL, "/api/v1"), "/")
+					fmt.Printf("\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
+						commit.Id, url, branchURI.Repository, commit.Id, label)
+					for _, parent := range commit.Parents {
+						fmt.Printf("\t\"%s\" -> \"%s\";\n", parent, commit.Id)
+					}
+				}
+			} else {
+				Write(commitsTemplate, data)
+			}
 			if amount != 0 {
 				// user request only one page
 				break
 			}
+		}
+
+		if dot {
+			fmt.Print("\n}\n")
 		}
 	},
 }
@@ -95,6 +126,7 @@ func init() {
 	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
 	logCmd.Flags().Bool("limit", false, "limit result just to amount. By default, returns whether more items are available.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	logCmd.Flags().Bool("dot", false, "return results in a dotgraph format")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
