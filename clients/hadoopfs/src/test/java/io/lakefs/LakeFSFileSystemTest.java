@@ -600,6 +600,8 @@ public abstract class LakeFSFileSystemTest {
         ObjectMetadata s3Metadata = new ObjectMetadata();
         s3Metadata.setContentLength(contentsBytes.length);
         s3Client.putObject(new PutObjectRequest(s3Bucket, physicalKey, new ByteArrayInputStream(contentsBytes), s3Metadata));
+
+        Path p = new Path("lakefs://repo/main/read.me");
         mockStatObject("repo", "main", "read.me", physicalKey, (long)contentsBytes.length);
         try (InputStream in = fs.open(p)) {
             String actual = IOUtils.toString(in);

@@ -26,9 +26,8 @@ public class LakeFSFileSystemClassicModeTest extends LakeFSFileSystemTest {
     @Override
     void mockStatObject(String repo, String branch, String key, String physicalKey, Long sizeBytes)
             throws ApiException {
-        Path p = new Path("lakefs://" + repo + "/" + branch + "/" + key);
         when(objectsApi.statObject(repo, branch, key, false, false))
-                .thenReturn(new ObjectStats().path(p.toString()).pathType(PathTypeEnum.OBJECT)
+                .thenReturn(new ObjectStats().path("lakefs://" + repo + "/" + branch + "/" + key).pathType(PathTypeEnum.OBJECT)
                         .physicalAddress(s3Url(physicalKey)).checksum(UNUSED_CHECKSUM).mtime(UNUSED_MTIME)
                         .sizeBytes((long) sizeBytes));
     }
