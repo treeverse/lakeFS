@@ -310,6 +310,13 @@ To export to S3:
 	  <version>1.16.0</version>
 	  <scope>test</scope>
 	</dependency>
+    <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver -->
+    <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>mockwebserver</artifactId>
+        <version>4.10.0</version>
+        <scope>test</scope>
+    </dependency>
 
 	<!--
 	     https://stackoverflow.com/questions/35569092/java-lang-classnotfoundexception-com-fasterxml-jackson-annotation-jsonincludev

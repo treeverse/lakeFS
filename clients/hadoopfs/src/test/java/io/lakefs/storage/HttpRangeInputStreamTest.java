@@ -9,6 +9,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSExceptionMessages;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,6 +50,11 @@ public class HttpRangeInputStreamTest {
         server.start(1080);
     }
 
+    @After
+    public void tearDown() throws Exception {
+        server.shutdown();
+    }
+
     @Test
     public void testReadBigBuffer() throws IOException {
         HttpUrl url = server.url("/100");
@@ -63,7 +69,6 @@ public class HttpRangeInputStreamTest {
         Assert.assertEquals(100, stream.getPos());
         Assert.assertEquals(0, stream.available());
 
-        System.out.println(new String(buffer));
         stream.close();
     }
 
@@ -80,8 +85,6 @@ public class HttpRangeInputStreamTest {
         IOUtils.readFully(stream, buffer);
         Assert.assertEquals(100, stream.getPos());
         Assert.assertEquals(0, stream.available());
-
-        System.out.println(new String(buffer));
         stream.close();
     }
 
