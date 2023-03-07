@@ -13,7 +13,7 @@ Remote Authenticator is a pluggable architecture for lakeFS which allows you to 
 
 ## Architecture
 
-The new lakeFS authentication flow is detailed the diagram below.
+The lakeFS authentication flow is detailed the diagram below.
 
 ```mermaid
 sequenceDiagram
