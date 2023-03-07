@@ -225,7 +225,7 @@ fn compare_table_slices(left_commit_slice: &[Map<String, Value>],
     Ok(table_op_list)
 }
 
-fn construct_table_ops(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
+fn construct_table_op(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
     return match utils::construct_table_op(commit_info, version) {
         Ok(table_ops) => Ok(table_ops),
         Err(e) => Err(Status::new(Code::Aborted, format!("Creating operation history aborted due to:\n{:?}", e)))
