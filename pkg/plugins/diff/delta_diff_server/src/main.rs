@@ -38,7 +38,7 @@ pub struct DifferService {}
 #[tonic::async_trait]
 impl TableDiffer for DifferService {
     /*
-    table_diff will compare two states of a given table over two branches in the following way:
+    table_diff will compare two states of a given table over two refs in the following way:
     1. If the destination table (the one which the source table branch is compared to) isn't found
        then it's assumed that the table has been created, and all of its Delta Log will be returned as an answer.
     2. If the source table (the one which the user asked to compare to some destination table) isn't found
