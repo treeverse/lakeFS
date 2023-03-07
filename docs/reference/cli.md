@@ -2259,6 +2259,7 @@ lakectl log <branch uri> [flags]
 ```
       --after string         show results after this value (used for pagination)
       --amount int           number of results to return. By default, all results are returned
+      --dot                  return results in a dotgraph format
   -h, --help                 help for log
       --limit                limit result just to amount. By default, returns whether more items are available.
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
