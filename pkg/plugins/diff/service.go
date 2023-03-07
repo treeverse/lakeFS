@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/logging"
+
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/plugins"
 
@@ -162,6 +164,10 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 			pid := plugins.PluginIdentity{ProtocolVersion: uint(pluginVersion), ExecutableLocation: pluginPath}
 			pa := plugins.PluginHandshake{}
 			RegisterDeltaLakeDiffPlugin(service, pid, pa)
+		} else {
+			logging.Default().Warnf("failed to register a plugin for an unknown diff type: '%s'", n)
+			return
 		}
+		logging.Default().Infof("successfully registered a plugin for diff type: '%s'", n)
 	}
 }
