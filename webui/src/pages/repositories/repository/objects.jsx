@@ -368,7 +368,7 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
 
 const NoGCRulesWarning = ({ repoId }) => {
     const storageKey = `show_gc_warning_${repoId}`;
-    const [show,setShow] = useState(window.localStorage.getItem(storageKey) !== "false")
+    const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== "false")
     const closeAndRemember = useCallback(() => {
         window.localStorage.setItem(storageKey, "false")
         setShow(false)
