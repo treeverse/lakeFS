@@ -9,7 +9,7 @@ has_children: false
 
 # Remote Authenticator
 
-Remote Authenticator is lakeFS's pluggable architecture, which allows you to integrate any existing organizational identity policies and infrastructure into lakeFS's authentication mechanism. This flexibility will enable you to fulfill any security requirement without allowing lakeFS direct access to your identity infrastructure.
+Remote Authenticator is a pluggable architecture for lakeFS which allows you to integrate any existing organizational identity policies and infrastructure into the  authentication mechanism of lakeFS. This flexibility will enable you to fulfill any security requirement without allowing lakeFS direct access to your identity infrastructure.
 
 ## Architecture
 
