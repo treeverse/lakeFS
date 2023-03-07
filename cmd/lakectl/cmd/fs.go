@@ -526,7 +526,7 @@ var fsDownloadCmd = &cobra.Command{
 					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, prefix))
 					err := downloadHelper(ctx, client, transport, src, dst)
 					if err == nil {
-						fmt.Printf("Download: %s to %s\n", src.String(), dst)
+						fmt.Printf("Successfully downloaded %s to %s\n", src.String(), dst)
 					} else {
 						_, _ = fmt.Fprintf(os.Stderr, "Download failed: %s to %s - %s\n", src.String(), dst, err)
 						atomic.AddInt64(&errCounter, 1)

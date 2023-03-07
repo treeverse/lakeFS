@@ -47,7 +47,8 @@ class ImportApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/metaranges',
                 'operation_id': 'create_meta_range',
@@ -108,7 +109,8 @@ class ImportApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/branches/ranges',
                 'operation_id': 'ingest_range',

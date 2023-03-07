@@ -51,7 +51,8 @@ class ConfigApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/config/garbage-collection',
                 'operation_id': 'get_garbage_collection_config',
@@ -98,7 +99,8 @@ class ConfigApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/config/version',
                 'operation_id': 'get_lake_fs_version',
@@ -187,7 +189,8 @@ class ConfigApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/config/storage',
                 'operation_id': 'get_storage_config',
