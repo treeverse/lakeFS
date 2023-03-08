@@ -566,6 +566,7 @@ export const URINavigator = ({
   relativeTo = "",
   pathURLBuilder = buildPathURL,
   isPathToFile = false,
+  inObjectsBrowser = false
 }) => {
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
@@ -621,18 +622,22 @@ export const URINavigator = ({
           })}
         </div>
       </span>
-      <span className="object-viewer-buttons">
-          <ClipboardButton
-              text={`lakefs://${repo.id}/${reference.id}/${path}`}
-              variant="outline-primary"
-              size="sm"
-              onSuccess={noop}
-              onError={noop}
-              className={"me-1"}
-              tooltip={"copy URI to clipboard"}
-              hidden={isPathToFile}
-              disabled={isPathToFile}/>
-      </span>
+      {
+        inObjectsBrowser
+          ? <span className="object-viewer-buttons">
+              <ClipboardButton
+                  text={`lakefs://${repo.id}/${reference.id}/${path}`}
+                  variant="outline-primary"
+                  size="sm"
+                  onSuccess={noop}
+                  onError={noop}
+                  className={"me-1"}
+                  tooltip={"copy URI to clipboard"}
+                  hidden={isPathToFile}
+                  disabled={isPathToFile}/>
+          </span>
+            : <></>
+      }
     </span>
   );
 };
@@ -748,7 +753,7 @@ export const Tree = ({
     <div className="tree-container">
       <Card>
         <Card.Header>
-          <URINavigator path={path} repo={repo} reference={reference} />
+          <URINavigator path={path} repo={repo} reference={reference} inObjectsBrowser={true}/>
         </Card.Header>
         <Card.Body>{body}</Card.Body>
       </Card>

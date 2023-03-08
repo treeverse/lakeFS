@@ -119,10 +119,9 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
         id: refId,
         type: RefTypeCommit,
     }
-
-    const titleComponent = showFullNavigator ?
-        (<URINavigator path={path} repo={repo} reference={reference} isPathToFile={true} />) :
-        (<span>{path}</span>);
+    const titleComponent = showFullNavigator
+        ? <URINavigator path={path} repo={repo} reference={reference} isPathToFile={true}/>
+        : <span>{path}</span>;
 
     return (
             <Card className={'file-content-card'}>
