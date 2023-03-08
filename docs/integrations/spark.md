@@ -18,7 +18,7 @@ redirect_from:
 # Using lakeFS with Spark
 {: .no_toc }
 
-There are two ways to use lakeFS with Spark
+There are two ways to use lakeFS with Spark:
 
 * Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): Highly scalable, data flows directly from client to storage.
 * Using the [S3 gateway](#use-the-s3-gateway): Scalable and simpler to set up.
