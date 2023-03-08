@@ -36,12 +36,11 @@ Expanding the delete operation, we learn that all movies with a rating < 4 were 
 **Note:** 
 The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
 
-## Configuration
+## Spark Configuration
 
-Most commonly, you interact with Delta tables in a Spark environment - given the native integration between Delta Lake and Spark.
+_Given the native integration between Delta Lake and Spark, it's most common that you'll interact with Delta tables in a Spark environment._
 
-To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md).
-
+To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md) environment.
 
 Once set, you can interact with Delta tables using regular Spark path URIs. Make sure that you include the lakeFS repository and branch name:
 
@@ -49,17 +48,17 @@ Once set, you can interact with Delta tables using regular Spark path URIs. Make
 df.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-table")
 ```
 
-Note: If using the Databricks Analytics Platform, see the [integration guide](./spark.md) for configuring a Databricks cluster to use lakeFS.
+Note: If using the Databricks Analytics Platform, see the [integration guide](./spark.md#installation) for configuring a Databricks cluster to use lakeFS.
 
-## Limitations
+## Best Practices
 
-The [Delta log](https://databricks.com/blog/2019/08/21/diving-into-delta-lake-unpacking-the-transaction-log.html) is an auto-generated sequence of text files used to keep track of transactions on a Delta table sequentially. Writing to one Delta table from multiple lakeFS branches is possible, but note that it would result in conflicts if later attempting to merge one branch into the other. For this reason, production workflows should ideally write to a single lakeFS branch that could then be safely merged into `main`. 
+Production workflows should ideally write to a single lakeFS branch that could then be safely merged into `main`. This is because the [Delta log](https://databricks.com/blog/2019/08/21/diving-into-delta-lake-unpacking-the-transaction-log.html) is an auto-generated sequence of text files used to keep track of transactions on a Delta table sequentially. Writing to one Delta table from multiple lakeFS branches is possible, but note that it would result in conflicts if later attempting to merge one branch into the other.
 
 ### When running lakeFS inside your VPC (on AWS)
 
 When lakeFS runs inside your private network, your Databricks cluster needs to be able to access it. 
 This can be done by setting up a VPC peering between the two VPCs 
-(the one where lakeFS runs and the one where Databricks runs). For this to work on DeltaLake tables, you would also have to disable multi-cluster writes with:
+(the one where lakeFS runs and the one where Databricks runs). For this to work on Delta Lake tables, you would also have to disable multi-cluster writes with:
 
 ```
 spark.databricks.delta.multiClusterWrites.enabled false
