@@ -252,6 +252,7 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	}{
 		{"exists", "exists", true},
 		{"nested_exists", "nested/and/exists", true},
+		{"nested_exists", "nested/and/../and/exists", falsee},
 		{"simple_missing", "missing", false},
 		{"nested_missing", "nested/down", false},
 		{"nested_deep_missing", "nested/quite/deeply/and/missing", false},
