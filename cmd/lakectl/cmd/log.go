@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"strings"
@@ -27,6 +29,14 @@ Metadata:
 {{ end -}}
 {{ end }}{{ if .Pagination  }}
 {{.Pagination | paginate }}{{ end }}`
+
+// escapeDot escapes a string to match the graphviz dot-graph syntax
+// based on: https://graphviz.org/doc/info/lang.html
+func escapeDot(s string) string {
+	var buf bytes.Buffer
+	_ = xml.EscapeText(&buf, []byte(s))
+	return buf.String()
+}
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
@@ -91,9 +101,7 @@ var logCmd = &cobra.Command{
 			if dot {
 				for _, commit := range resp.JSON200.Results {
 					isMerge := len(commit.Parents) > 1
-					label := fmt.Sprintf("%s<br/> %s",
-						commit.Id[:8],
-						strings.ReplaceAll(commit.Message, "\"", "\\\""))
+					label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], escapeDot(commit.Message))
 					if isMerge {
 						label = fmt.Sprintf("<b>%s</b>", label)
 					}
