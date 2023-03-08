@@ -32,12 +32,12 @@ export const SettingsLayout = ({ children, activeTab }) => {
                                 </Nav>
                                 <Nav variant="pills" className="flex-column">
                                     <Link component={Nav.Link} href={{pathname: '/repositories/:repoId/settings/retention', params: {repoId }}} active={activeTab === 'retention'}>
-                                        Retention
+                                        Garbage Collection
                                     </Link>
                                 </Nav>
                                 <Nav variant="pills" className="flex-column">
                                     <Link component={Nav.Link} href={{pathname: '/repositories/:repoId/settings/branches', params: {repoId }}} active={activeTab === 'branches'}>
-                                        Branches
+                                        Branch Protection
                                     </Link>
                                 </Nav>
                             </Card.Body>
