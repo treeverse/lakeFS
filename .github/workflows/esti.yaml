@@ -704,7 +704,7 @@ jobs:
 
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
-        run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
+        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark 2.x thick client
         timeout-minutes: 8
@@ -784,7 +784,7 @@ jobs:
 
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
-        run: mvn -Passembly -Djar.finalName=client --batch-mode --update-snapshots package
+        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark 3.x thick client
         timeout-minutes: 8

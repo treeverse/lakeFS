@@ -88,6 +88,12 @@ configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
 
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
@@ -318,6 +324,13 @@ Class | Method | HTTP request | Description
 
 - **Type**: API key
 - **API key parameter name**: oidc_auth_session
+- **Location**: 
+
+
+## saml_auth
+
+- **Type**: API key
+- **API key parameter name**: saml_auth_session
 - **Location**: 
 
 

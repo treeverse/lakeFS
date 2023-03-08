@@ -16,6 +16,7 @@ security:
   - basic_auth: []
   - cookie_auth: []
   - oidc_auth: []
+  - saml_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -33,7 +34,10 @@ components:
       type: apiKey
       in: cookie
       name: oidc_auth_session
-
+    saml_auth:
+      type: apiKey
+      in: cookie
+      name: saml_auth_session
   parameters:
     PaginationPrefix:
       in: query

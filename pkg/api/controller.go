@@ -1276,11 +1276,15 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
+	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
+	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
+		defaultNamespacePrefix = c.Config.Blockstore.DefaultNamespacePrefix
+	}
 	response := StorageConfig{
 		BlockstoreType:                   c.Config.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
-		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),
+		DefaultNamespacePrefix:           defaultNamespacePrefix,
 		PreSignSupport:                   info.PreSignSupport,
 		ImportSupport:                    info.ImportSupport,
 	}
@@ -2463,9 +2467,9 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		AdditionalProperties: map[string]string(commit.Metadata),
 	}
 	response := Commit{
+		Id:           commit.Reference,
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
-		Id:           commitID,
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
 		Metadata:     &metadata,

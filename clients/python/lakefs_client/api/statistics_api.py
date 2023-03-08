@@ -44,7 +44,8 @@ class StatisticsApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/statistics',
                 'operation_id': 'post_stats_events',
