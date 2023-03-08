@@ -3989,7 +3989,7 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 		ol = append(ol, OtfDiffEntry{
 			Operation:        entry.Operation,
 			OperationContent: content,
-			Timestamp:        int(entry.Timestamp.UnixMilli()),
+			Timestamp:        int(entry.Timestamp.Unix()),
 			Id:               id,
 			OperationType:    entry.OperationType,
 		})
