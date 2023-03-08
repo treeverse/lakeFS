@@ -3990,7 +3990,7 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 			Operation:        entry.Operation,
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.Unix()),
-			Id:               &id,
+			Id:               id,
 			OperationType:    entry.OperationType,
 		})
 	}
