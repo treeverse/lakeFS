@@ -4,8 +4,7 @@ import {
     ChevronDownIcon,
     ChevronRightIcon, CircleSlashIcon,
     ClockIcon,
-    FileDiffIcon, FileDirectoryIcon,
-    GraphIcon,
+    FileDirectoryIcon,
     HistoryIcon, PencilIcon, PlusIcon, TableIcon, TrashIcon, DiffIcon
 } from "@primer/octicons-react";
 import ChangeSummary from "./ChangeSummary";
@@ -18,15 +17,13 @@ import {TreeRowType} from "../../../constants";
 class RowAction {
     /**
      * @param {JSX.Element} icon
-     * @param {string} tooltip
-     * @param {boolean} visible
+     * @param {string} text
      * @param {()=>void} onClick
      */
-    constructor(icon, tooltip, visible, onClick) {
-        this.tooltip = tooltip
-        this.visible = visible
-        this.onClick = onClick
+    constructor(icon, text, onClick) {
         this.icon = icon
+        this.text = text
+        this.onClick = onClick
     }
 }
 
@@ -36,15 +33,15 @@ class RowAction {
 const ChangeRowActions = ({actions}) => <>
     {
         actions.map(action => (
-            <><OverlayTrigger placement="bottom" overlay={<Tooltip>{action.tooltip}</Tooltip>}>
-                <Button variant="link" disabled={false} style={{visibility: action.visible ? "visible" : ""}}
-                      onClick={(e) => {
-                          e.preventDefault();
-                          action.onClick()
-                      }}>
-                    {action.icon}
-                </Button>
-            </OverlayTrigger>&#160;&#160;</>
+            <Button variant="link" disabled={false}
+                  onClick={(e) => {
+                      e.preventDefault();
+                      action.onClick()
+                  }}>
+                {action.icon
+                    ? action.icon
+                    : action.text}
+            </Button>
         ))}
 </>;
 
@@ -56,10 +53,10 @@ export const ObjectTreeEntryRow = ({entry, relativeTo = "", diffExpanded, depth 
 
     const rowActions = []
     if (onClickExpandDiff) {
-        rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
+        rowActions.push(new RowAction(null, diffExpanded ? "Hide object changes" : "Show object changes", onClickExpandDiff))
     }
     if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", () => {
             setShowRevertConfirm(true)
         }))
     }
@@ -80,9 +77,9 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
-    rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
+    rowActions.push(new RowAction(null, showSummary ? "Hide change summary" : "Calculate change summary", () => setShowSummary(!showSummary)))
     if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", () => {
             setShowRevertConfirm(true)
         }))
     }
@@ -103,9 +100,9 @@ export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, de
     const diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Table}/>
 
     const rowActions = []
-    rowActions.push(new RowAction(<DiffIcon/>, "Show table changes", true, onClickExpandDiff))
+    rowActions.push(new RowAction(null, "Show table changes", onClickExpandDiff))
     if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", () => {
             setShowRevertConfirm(true)
         }))
     }
@@ -125,16 +122,16 @@ const PrefixExpansionSection = ({dirExpanded, onClick}) => {
 const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, rowActions,
                       showRevertConfirm, setShowRevertConfirm, pathSection, onRevert, dirExpanded, onExpand, ...rest}) => {
     return (<tr {...rest}>
-            <td className="pl-4 col-auto p-2">{diffIndicator}</td>
-            <td className="col-9 tree-path">
+            <td className="entry-type-indicator">{diffIndicator}</td>
+            <td className="tree-path">
                         <span style={{marginLeft: (depth * 20) + "px"}}>
                             {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand}/>}
                             {loading ? <ClockIcon/> : ""}
                             {pathSection}
                         </span>
             </td>
-            <td className={"col-2 p-0 text-right"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
-            <td className={"col-1 change-entry-row-actions"}>
+            <td className={"change-summary"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
+            <td className={"change-entry-row-actions"}>
                 <ChangeRowActions actions={rowActions} />
                 <ConfirmationModal show={showRevertConfirm} onHide={setShowRevertConfirm}
                                    msg={`Are you sure you wish to revert "${entry.path}" (${entry.type})?`}
