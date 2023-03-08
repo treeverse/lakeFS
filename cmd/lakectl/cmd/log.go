@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/xml"
 	"fmt"
+	"html"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -29,14 +29,6 @@ Metadata:
 {{ end -}}
 {{ end }}{{ if .Pagination  }}
 {{.Pagination | paginate }}{{ end }}`
-
-// escapeDot escapes a string to match the graphviz dot-graph syntax
-// based on: https://graphviz.org/doc/info/lang.html
-func escapeDot(s string) string {
-	var buf bytes.Buffer
-	_ = xml.EscapeText(&buf, []byte(s))
-	return buf.String()
-}
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
@@ -102,14 +94,14 @@ var logCmd = &cobra.Command{
 			if dot {
 				for _, commit := range resp.JSON200.Results {
 					isMerge := len(commit.Parents) > 1
-					label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], escapeDot(commit.Message))
+					label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], html.EscapeString(commit.Message))
 					if isMerge {
 						label = fmt.Sprintf("<b>%s</b>", label)
 					}
-					url := strings.TrimSuffix(strings.TrimSuffix(
+					baseUrl := strings.TrimSuffix(strings.TrimSuffix(
 						cfg.Values.Server.EndpointURL, "/api/v1"), "/")
 					fmt.Printf("\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
-						commit.Id, url, branchURI.Repository, commit.Id, label)
+						commit.Id, baseUrl, url.PathEscape(branchURI.Repository), commit.Id, label)
 					for _, parent := range commit.Parents {
 						fmt.Printf("\t\"%s\" -> \"%s\";\n", parent, commit.Id)
 					}
