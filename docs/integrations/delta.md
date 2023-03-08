@@ -20,13 +20,13 @@ lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS 
 
 {% include toc.html %}
 
-## Viewing Delta table changes in lakeFS
+## Beta: Viewing Delta table changes in lakeFS 
 
 Using lakeFS, you can compare different versions of Delta tables, view the table operations done since the tables diverged and their details.
 
 
-For example, comparing branches `dev` and `main`, we can see that _movies_ table has changed on `dev` since the branches diverged. 
-Expanding the delete operation, we learn that all movies with rating < 4 were deleted from the table on the `dev` branch.
+For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged. 
+Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
 
 
 ![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
@@ -34,7 +34,7 @@ Expanding the delete operation, we learn that all movies with rating < 4 were de
 
 
 **Note:** 
-The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)).
+The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
 
 ## Configuration
 
