@@ -75,6 +75,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			// not a branch HEAD - add a hypothetical HEAD as its parent
 			commitNode = CommitNode{
 				CreationDate: commitNode.CreationDate,
+				MainParent:   startingPoint.CommitID,
 			}
 		} else {
 			var branchRetentionDays int32
