@@ -104,7 +104,7 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.R
 }
 
 func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
-	return nil, nil
+	return nil, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
 func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
