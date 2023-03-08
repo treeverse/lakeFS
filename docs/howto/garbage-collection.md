@@ -182,7 +182,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.6.1/lakefs-spark-client-312-hadoop3-assembly-0.6.1.jar \
+  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.6.2/lakefs-spark-client-312-hadoop3-assembly-0.6.2.jar \
   example-repo
   ```
 
@@ -409,13 +409,9 @@ Similar to the described [above](#gc-job-options).
 {: .no_toc }
 
 The uncommitted GC job has several limitations in its Beta version: 
-1. No writes to lakeFS during the execution of the job. Objects written to lakeFS
-during the job run may or may not be detected by the job. It can lead to unexpected behaviour 
-including the deletion of newly written data. Avoid any write operation while the job is 
-running, like `UploadObject`, `CopyObject`, `StageObject`, `LinkPhysicalAddress` or 
-any other non-read operation.
-2. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
-3. Scale may be limited, see performance results below.
+1. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
+1. Scale may be limited, see performance results below.
+1. [Issue](https://github.com/treeverse/lakeFS/issues/5088) associated to commit during copy object.
 
 #### Next steps
 {: .no_toc }

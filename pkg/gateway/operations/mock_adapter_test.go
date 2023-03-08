@@ -50,10 +50,6 @@ func (a *mockAdapter) Get(_ context.Context, obj block.ObjectPointer, expectedSi
 	return nil, nil
 }
 
-func (a *mockAdapter) Walk(_ context.Context, _ block.WalkOpts, _ block.WalkFunc) error {
-	return nil
-}
-
 func (a *mockAdapter) GetRange(_ context.Context, _ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }
@@ -105,6 +101,7 @@ func (a *mockAdapter) BlockstoreType() string {
 func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo("mock")
 	info.PreSignSupport = false
+	info.ImportSupport = false
 	return info
 }
 

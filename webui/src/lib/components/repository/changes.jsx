@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 
 import {
     ArrowLeftIcon,
-    ClockIcon, DiffIcon, InfoIcon
+    ClockIcon, DiffIcon, InfoIcon, PlusIcon, XIcon
 } from "@primer/octicons-react";
 
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
@@ -18,6 +18,9 @@ import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {refs, statistics} from "../../api";
 import {DeltaLakeDiff} from "./TableDiff";
+import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -178,7 +181,7 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: ""});
 
@@ -194,7 +197,12 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 ? <Button className="action-bar"
                                           variant="secondary"
                                           disabled={false}
-                                          onClick={() => setTableDiffState( {isShown: false, expandedTablePath: ""})}>
+                                          onClick={() => {
+                                              setTableDiffState( {isShown: false, expandedTablePath: ""})
+                                              if (setIsTableMerge) {
+                                                  setIsTableMerge(false);
+                                              }
+                                          }}>
                                     <ArrowLeftIcon/> Back to object comparison
                                   </Button>
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
@@ -221,7 +229,12 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     setTableDiffExpanded={() => setTableDiffState({isShown: true,  expandedTablePath: entry.path})}
+                                                     setTableDiffExpanded={() => {
+                                                         setTableDiffState({isShown: true,  expandedTablePath: entry.path})
+                                                         if (setIsTableMerge) {
+                                                             setIsTableMerge(true);
+                                                         }
+                                                     }}
                                                  />);
                                 })}
                                 {!!nextPage &&
@@ -269,4 +282,60 @@ const ExperimentalDeltaDiffButton = ({showButton = false}) => {
             </Button>
         </ExperimentalOverlayTooltip>
     </>
+}
+
+export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
+    const onChangeKey = useCallback((i) => {
+        return e => {
+            console.log(e)
+            const key = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key}, ...prev.slice(i+1)]);
+            e.preventDefault()
+        };
+    }, [setMetadataFields]);
+
+    const onChangeValue = useCallback((i) => {
+        return e => {
+            const value = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i),  {...prev[i], value}, ...prev.slice(i+1)]);
+        };
+    }, [setMetadataFields]);
+
+    const onRemovePair = useCallback((i) => {
+        return () => setMetadataFields(prev => [...prev.slice(0, i), ...prev.slice(i + 1)])
+    }, [setMetadataFields])
+
+    const onAddPair = useCallback(() => {
+        setMetadataFields(prev => [...prev, {key: "", value: ""}])
+    }, [setMetadataFields])
+
+    return (
+        <div className="mt-3 mb-3">
+            {metadataFields.map((f, i) => {
+                return (
+                    <Form.Group key={`commit-metadata-field-${i}`} className="mb-3">
+                        <Row>
+                            <Col md={{span: 5}}>
+                                <Form.Control type="text" placeholder="Key" defaultValue={f.key} onChange={onChangeKey(i)}/>
+                            </Col>
+                            <Col md={{span: 5}}>
+                                <Form.Control type="text" placeholder="Value" defaultValue={f.value}  onChange={onChangeValue(i)}/>
+                            </Col>
+                            <Col md={{span: 1}}>
+                                <Form.Text>
+                                    <Button size="sm" variant="secondary" onClick={onRemovePair(i)}>
+                                        <XIcon/>
+                                    </Button>
+                                </Form.Text>
+                            </Col>
+                        </Row>
+                    </Form.Group>
+                )
+            })}
+            <Button onClick={onAddPair} size="sm" variant="secondary">
+                <PlusIcon/>{' '}
+                Add Metadata field
+            </Button>
+        </div>
+    )
 }

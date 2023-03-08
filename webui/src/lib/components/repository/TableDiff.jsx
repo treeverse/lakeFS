@@ -1,9 +1,9 @@
 import React, {useState} from "react";
 import Table from "react-bootstrap/Table";
-import {ChevronDownIcon, ChevronRightIcon} from "@primer/octicons-react";
+import {ChevronDownIcon, ChevronRightIcon, InfoIcon} from "@primer/octicons-react";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
-import {OtfType} from "../../../constants";
+import {OtfDiffType, OtfType} from "../../../constants";
 import {useAPI} from "../../hooks/api";
 import {repositories} from "../../api";
 import {Error, Loading} from "../controls";
@@ -16,12 +16,14 @@ export const DeltaLakeDiff = ({repo, leftRef, rightRef, tablePath}) => {
     if (!loading && error) return <Error error={error}/>;
 
     const otfDiffs = response.results;
+    const diffType = response.diff_type;
     return <>
-        {(otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
+        {(OtfDiffType.Dropped !== diffType && otfDiffs.length === 0) ?  <Alert variant="info" style={{margin: 0+"px"}}>No changes</Alert> :
             <Table className="table-diff" size="md">
                 <tbody>
+                <TableDiffTypeRow diffType={diffType}/>
                 {
-                    response.results.map(otfDiff => {
+                    otfDiffs.map(otfDiff => {
                         return <OtfDiffRow key={otfDiff.timestamp + "-diff-row"} otfDiff={otfDiff}/>;
                     })
                 }
@@ -29,6 +31,17 @@ export const DeltaLakeDiff = ({repo, leftRef, rightRef, tablePath}) => {
             </Table>
         }
     </>
+}
+
+const TableDiffTypeRow = ({diffType}) => {
+    if (OtfDiffType.Changed === diffType) {
+        return "";
+    }
+    return <tr>
+        <td className="table-diff-type pl-lg-10 col-10"><InfoIcon/> Table {diffType}</td>
+        <td className="table-id-placeholder col-sm-auto"></td>
+        <td className="operation-expansion-placeholder col-sm-auto"></td>
+    </tr>
 }
 
 const OtfDiffRow = ({otfDiff}) => {
@@ -45,7 +58,7 @@ const OtfDiffRow = ({otfDiff}) => {
 const OperationMetadataRow = ({otfDiff, operationExpanded, onExpand, ...rest}) => {
     return <tr {...rest}>
         <td className={"table-operation-type pl-lg-10 col-10"}>{otfDiff.operation}</td>
-        <td className="table-version col-sm-auto">Version = {otfDiff.version}</td>
+        <td className="table-id col-sm-auto">Version = {otfDiff.id}</td>
         <td className="operation-expansion col-sm-auto">
             <OperationExpansionSection operationExpanded={operationExpanded} onExpand={onExpand}/>
         </td>

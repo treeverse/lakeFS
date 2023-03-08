@@ -9,3 +9,9 @@ export enum TreeItemType {
 export enum OtfType {
     Delta = "delta",
 }
+export enum OtfDiffType {
+    Created = "created",
+    Dropped = "dropped",
+    Changed = "changed",
+}
+

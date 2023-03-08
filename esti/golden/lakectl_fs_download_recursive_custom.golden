@@ -1,5 +1,5 @@
-Download: lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.0 to ${DEST}/${FILE_PREFIX}.0
-Download: lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.1 to ${DEST}/${FILE_PREFIX}.1
-Download: lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.2 to ${DEST}/${FILE_PREFIX}.2
-Download: lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.3 to ${DEST}/${FILE_PREFIX}.3
-Download: lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.4 to ${DEST}/${FILE_PREFIX}.4
+Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.0 to ${DEST}/${FILE_PREFIX}.0
+Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.1 to ${DEST}/${FILE_PREFIX}.1
+Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.2 to ${DEST}/${FILE_PREFIX}.2
+Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.3 to ${DEST}/${FILE_PREFIX}.3
+Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.4 to ${DEST}/${FILE_PREFIX}.4

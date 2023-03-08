@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -37,19 +38,19 @@ func TestMergeAndList(t *testing.T) {
 	ref := string(createBranchResp.Body)
 	logger.WithField("branchRef", ref).Info("Branch created")
 
-	objs := doMergeAndListIteration(t, logger, ctx, repo, branch, checksums, 1)
+	objs := doMergeAndListIteration(t, logger, ctx, repo, branch, graveler.MergeStrategySrcWinsStr, checksums, 1)
 	for _, obj := range objs {
 		_, ok := checksums[obj.Checksum]
 		require.True(t, ok, "file doesn't exist in main but should, obj: %s", obj)
 	}
-	objs = doMergeAndListIteration(t, logger, ctx, repo, branch, checksums, 2)
+	objs = doMergeAndListIteration(t, logger, ctx, repo, branch, graveler.MergeStrategyDestWinsStr, checksums, 2)
 	for _, obj := range objs {
 		_, ok := checksums[obj.Checksum]
 		require.True(t, ok, "file doesn't exist in main but should, obj: %s", obj)
 	}
 }
 
-func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Context, repo string, branch string, checksums map[string]string, iteration int) []api.ObjectStats {
+func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Context, repo, branch, strategy string, checksums map[string]string, iteration int) []api.ObjectStats {
 	const addedFiles = 10
 	for i := 0; i < addedFiles; i++ {
 		p := fmt.Sprintf("%d.txt", i)
@@ -66,10 +67,19 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	require.NoError(t, err, "failed to commit changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
+	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
 	require.NoError(t, err, "failed to merge branches")
 	require.Equal(t, http.StatusOK, mergeRes.StatusCode())
 	logger.WithFields(logging.Fields{"iteration": iteration, "mergeResult": mergeRes}).Info("Merged successfully")
+
+	res, err := client.GetCommitWithResponse(ctx, repo, mergeRes.JSON200.Reference)
+	require.NoError(t, err, "failed to get commit")
+	require.NotNil(t, res.JSON200)
+	metadata := res.JSON200.Metadata
+	val, ok := metadata.AdditionalProperties[graveler.MergeStrategyMetadataKey]
+	require.True(t, ok)
+	require.Equal(t, strategy, val)
+
 	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
 	require.NoError(t, err, "failed to list objects")
 	require.Equal(t, http.StatusOK, resp.StatusCode())

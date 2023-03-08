@@ -21,9 +21,6 @@ import (
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=graveler.go -destination=mock/graveler.go -package=mock
 
 const (
-	MergeStrategySrcWins  = "source-wins"
-	MergeStrategyDestWins = "dest-wins"
-
 	BranchUpdateMaxInterval = 5 * time.Second
 	BranchUpdateMaxTries    = 10
 
@@ -111,8 +108,21 @@ type MergeStrategy int
 const (
 	MergeStrategyNone MergeStrategy = iota
 	MergeStrategyDest
-	MergeStrategySource
+	MergeStrategySrc
+
+	MergeStrategyNoneStr     = "default"
+	MergeStrategyDestWinsStr = "dest-wins"
+	MergeStrategySrcWinsStr  = "source-wins"
+
+	MergeStrategyMetadataKey = ".lakefs.merge.strategy"
 )
+
+// mergeStrategyString String representation for MergeStrategy consts. Pay attention to the order!
+var mergeStrategyString = []string{
+	MergeStrategyNoneStr,
+	MergeStrategyDestWinsStr,
+	MergeStrategySrcWinsStr,
+}
 
 // MetaRangeAddress is the URI of a metarange file.
 type MetaRangeAddress string
@@ -307,14 +317,14 @@ const (
 
 // Commit represents commit metadata (author, time, MetaRangeID)
 type Commit struct {
-	Version      CommitVersion `db:"version"`
-	Committer    string        `db:"committer"`
-	Message      string        `db:"message"`
-	MetaRangeID  MetaRangeID   `db:"meta_range_id"`
-	CreationDate time.Time     `db:"creation_date"`
-	Parents      CommitParents `db:"parents"`
-	Metadata     Metadata      `db:"metadata"`
-	Generation   int           `db:"generation"`
+	Version      CommitVersion
+	Committer    string
+	Message      string
+	MetaRangeID  MetaRangeID
+	CreationDate time.Time
+	Parents      CommitParents
+	Metadata     Metadata
+	Generation   int
 }
 
 func NewCommit() Commit {
@@ -398,6 +408,14 @@ type CommitParams struct {
 	Metadata Metadata
 	// SourceMetaRange - If exists, use it directly. Fail if branch has uncommitted changes
 	SourceMetaRange *MetaRangeID
+}
+
+type GarbageCollectionRunMetadata struct {
+	RunID string
+	// Location of expired commits CSV file on object store
+	CommitsCSVLocation string
+	// Location of where to write expired addresses on object store
+	AddressLocation string
 }
 
 type KeyValueStore interface {
@@ -519,6 +537,9 @@ type VersionController interface {
 	// Compare returns the difference between the commit where 'left' was last synced into 'right', and the most recent commit of `right`.
 	// This is similar to a three-dot (from...to) diff in git.
 	Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error)
+
+	// FindMergeBase returns the 'from' commit, the 'to' commit and the merge base commit of 'from' and 'to' commits.
+	FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error)
 
 	// SetHooksHandler set handler for all graveler hooks
 	SetHooksHandler(handler HooksHandler)
@@ -1363,8 +1384,8 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository 
 	}
 
 	return &GarbageCollectionRunMetadata{
-		RunId:              runID,
-		CommitsCsvLocation: commitsLocation,
+		RunID:              runID,
+		CommitsCSVLocation: commitsLocation,
 		AddressLocation:    addressLocation,
 	}, err
 }
@@ -2254,7 +2275,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		if !empty {
 			return nil, fmt.Errorf("%s: %w", destination, ErrDirtyBranch)
 		}
-		fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, source, Ref(destination))
+		fromCommit, toCommit, baseCommit, err := g.FindMergeBase(ctx, repository, source, Ref(destination))
 		if err != nil {
 			return nil, err
 		}
@@ -2265,14 +2286,21 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			"source_meta_range":      fromCommit.MetaRangeID,
 			"destination_meta_range": toCommit.MetaRangeID,
 			"base_meta_range":        baseCommit.MetaRangeID,
+			"strategy":               strategy,
 		}).Trace("Merge")
-		mergeStrategy := MergeStrategyNone
-		if strategy == MergeStrategyDestWins {
+
+		var mergeStrategy MergeStrategy
+		switch strategy {
+		case MergeStrategyDestWinsStr:
 			mergeStrategy = MergeStrategyDest
+		case MergeStrategySrcWinsStr:
+			mergeStrategy = MergeStrategySrc
+		case "":
+			mergeStrategy = MergeStrategyNone
+		default:
+			return nil, ErrInvalidMergeStrategy
 		}
-		if strategy == MergeStrategySrcWins {
-			mergeStrategy = MergeStrategySource
-		}
+
 		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
@@ -2291,6 +2319,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			commit.Generation = fromCommit.Generation + 1
 		}
 		commit.Metadata = commitParams.Metadata
+		commit.Metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
@@ -2435,7 +2464,7 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 }
 
-func (g *Graveler) getCommitsForMerge(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
+func (g *Graveler) FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
 	fromCommit, err := g.dereferenceCommit(ctx, repository, from)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get commit by ref %s: %w", from, err)
@@ -2455,7 +2484,7 @@ func (g *Graveler) getCommitsForMerge(ctx context.Context, repository *Repositor
 }
 
 func (g *Graveler) Compare(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {
-	fromCommit, toCommit, baseCommit, err := g.getCommitsForMerge(ctx, repository, right, left)
+	fromCommit, toCommit, baseCommit, err := g.FindMergeBase(ctx, repository, right, left)
 	if err != nil {
 		return nil, err
 	}

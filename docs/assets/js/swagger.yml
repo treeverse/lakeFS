@@ -16,6 +16,7 @@ security:
   - basic_auth: []
   - cookie_auth: []
   - oidc_auth: []
+  - saml_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -33,7 +34,10 @@ components:
       type: apiKey
       in: cookie
       name: oidc_auth_session
-
+    saml_auth:
+      type: apiKey
+      in: cookie
+      name: saml_auth_session
   parameters:
     PaginationPrefix:
       in: query
@@ -93,6 +97,12 @@ components:
             $ref: "#/components/schemas/Error"
     PreconditionFailed:
       description: Precondition Failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Forbidden
       content:
         application/json:
           schema:
@@ -176,6 +186,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Repository"
+
+    FindMergeBaseResult:
+      type: object
+      required:
+        - source_commit_id
+        - destination_commit_id
+        - base_commit_id
+      properties:
+        source_commit_id:
+          type: string
+          description: "The commit ID of the merge source"
+        destination_commit_id:
+          type: string
+          description: "The commit ID of the merge destination"
+        base_commit_id:
+          type: string
+          description: "The commit ID of the merge base"
 
     MergeResultSummary:
       type: object
@@ -390,7 +417,7 @@ components:
     OtfDiffEntry:
       type: object
       required:
-        - version
+        - id
         - operation
         - timestamp
         - operation_content
@@ -937,6 +964,7 @@ components:
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
         - pre_sign_support
+        - import_support
       properties:
         blockstore_type:
           type: string
@@ -947,6 +975,8 @@ components:
         default_namespace_prefix:
           type: string
         pre_sign_support:
+          type: boolean
+        import_support:
           type: boolean
 
     VersionConfig:
@@ -2583,6 +2613,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2634,6 +2666,8 @@ paths:
           description: branch deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -2740,6 +2774,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -2756,6 +2792,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - refs
+      operationId: findMergeBase
+      summary: find the merge base for 2 references
+      responses:
+        200:
+          description: Found the merge base
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindMergeBaseResult"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3150,6 +3206,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -3275,6 +3333,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         412:
@@ -3291,6 +3351,8 @@ paths:
           description: object deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
@@ -3328,6 +3390,8 @@ paths:
                 $ref: "#/components/schemas/ObjectErrorList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:

@@ -35,7 +35,7 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize i
 }
 
 func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", nil
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
@@ -86,10 +86,6 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, destinationO
 	return &block.UploadPartResponse{
 		ETag: etag,
 	}, nil
-}
-
-func (a *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	return nil
 }
 
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
@@ -152,6 +148,7 @@ func (a *Adapter) BlockstoreType() string {
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 	info.PreSignSupport = false
+	info.ImportSupport = false
 	return info
 }
 

@@ -1,6 +1,11 @@
 # Changelog
 
-## v0.6.1 - 2022-01-30
+## v0.6.2 - 2023-02-23
+
+Bug fix:
+* Add exponential backoff retry to the S3 client
+
+## v0.6.1 - 2023-01-30
 
 What's new:
 * Upgrade lakeFS client to v0.91.0
