@@ -34,7 +34,7 @@ Metadata:
 
 type dotWriter struct {
 	w            io.Writer
-	repositoryId string
+	repositoryID string
 }
 
 func (d *dotWriter) Start() {
@@ -46,7 +46,7 @@ func (d *dotWriter) End() {
 }
 
 func (d *dotWriter) Write(commits []api.Commit) {
-	repoId := url.PathEscape(d.repositoryId)
+	repoId := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
 		isMerge := len(commit.Parents) > 1
 		label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], html.EscapeString(commit.Message))
@@ -101,7 +101,7 @@ var logCmd = &cobra.Command{
 
 		graph := &dotWriter{
 			w:            os.Stdout,
-			repositoryId: branchURI.Ref,
+			repositoryID: branchURI.Ref,
 		}
 		if dot {
 			graph.Start()
