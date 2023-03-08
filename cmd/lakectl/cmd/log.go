@@ -46,17 +46,17 @@ func (d *dotWriter) End() {
 }
 
 func (d *dotWriter) Write(commits []api.Commit) {
-	repoId := url.PathEscape(d.repositoryID)
+	repoID := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
 		isMerge := len(commit.Parents) > 1
 		label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], html.EscapeString(commit.Message))
 		if isMerge {
 			label = fmt.Sprintf("<b>%s</b>", label)
 		}
-		baseUrl := strings.TrimSuffix(strings.TrimSuffix(
+		baseURL := strings.TrimSuffix(strings.TrimSuffix(
 			cfg.Values.Server.EndpointURL, "/api/v1"), "/")
 		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
-			commit.Id, baseUrl, repoId, commit.Id, label)
+			commit.Id, baseURL, repoID, commit.Id, label)
 		for _, parent := range commit.Parents {
 			_, _ = fmt.Fprintf(d.w, "\t\"%s\" -> \"%s\";\n", parent, commit.Id)
 		}
