@@ -10,11 +10,11 @@ has_children: false
 # Using lakeFS with Delta Lake
 {: .no_toc }
 
-[Delta Lake](https://delta.io/) is an open file format designed to improve performance and provide transactional guarantees to data lake tables.
+[Delta Lake](https://delta.io/) Delta Lake is an open-source storage framework designed to improve performance and provide transactional guarantees to data lake tables.
 
-lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS repository to reap the benefits of both technologies. Specifically:
+Because lakeFS is format-agnostic, you can save data in Delta format within a lakeFS repository and benefit from the advantages of both technologies.  Specifically:
 
-1. ACID operations can now span across many Delta tables.
+1. ACID operations can span across many Delta tables.
 2. [CI/CD hooks](../use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
 3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
@@ -22,8 +22,7 @@ lakeFS is format-agnostic, so you can save data in Delta format within a lakeFS 
 
 ## Beta: Viewing Delta table changes in lakeFS 
 
-Using lakeFS, you can compare different versions of Delta tables, view the table operations done since the tables diverged and their details.
-
+Using lakeFS you can compare different versions of Delta tables, view the table operations that have been done since the tables diverged, and the details of those operations.
 
 For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged. 
 Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
@@ -32,9 +31,9 @@ Expanding the delete operation, we learn that all movies with a rating < 4 were 
 ![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
 ![movies_table_operations.png](../assets/img/delta-diff-operations.png)
 
-
 **Note:** 
 The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
+{: .note }
 
 ## Spark Configuration
 

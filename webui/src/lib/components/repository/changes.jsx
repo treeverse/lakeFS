@@ -202,7 +202,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                           }}>
                                     <ArrowLeftIcon/> Back to object comparison
                                   </Button>
-                                : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
+                                : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can use lakeFS to
                                     compare Delta Lake tables. <a href="https://docs.lakefs.io/integrations/delta.html">Learn more.</a> </Alert></div>
                     }
                     <Card>
