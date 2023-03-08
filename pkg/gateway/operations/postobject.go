@@ -52,7 +52,11 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	address := o.PathProvider.NewPath()
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
-	resp, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: address}, req, opts)
+	resp, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       address,
+	}, req, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not create multipart upload")
 		_ = o.EncodeError(w, req, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
@@ -107,7 +111,11 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	}
 	normalizeMultipartUploadCompletion(&multipartList)
 	resp, err := o.BlockStore.CompleteMultiPartUpload(req.Context(),
-		block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName},
+		block.ObjectPointer{
+			StorageNamespace: o.Repository.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       objName,
+		},
 		uploadID,
 		&multipartList)
 	if err != nil {

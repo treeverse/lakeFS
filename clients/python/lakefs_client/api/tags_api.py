@@ -46,7 +46,8 @@ class TagsApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags',
                 'operation_id': 'create_tag',
@@ -107,7 +108,8 @@ class TagsApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags/{tag}',
                 'operation_id': 'delete_tag',
@@ -167,7 +169,8 @@ class TagsApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags/{tag}',
                 'operation_id': 'get_tag',
@@ -227,7 +230,8 @@ class TagsApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/repositories/{repository}/tags',
                 'operation_id': 'list_tags',

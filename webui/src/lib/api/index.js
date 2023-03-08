@@ -479,17 +479,19 @@ class Repositories {
     }
 
     async otfDiff(repoId, leftRef, rightRef, tablePath = "", type) {
-        //TODO (Tals): enable while connecting with endpoint
-        // const query = qs({tablePath, type});
-        // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
-        // if (response.status !== 200) {
-        //     //TODO (Tals): improve error handling
-        //     throw new NotFoundError(`table ${tablePath} not found`);
-        // }
-        // return response.json();
-        // const mockRes = '{"results": []}'
-        const mockRes = '{"type": "changed", "results": [{"version": "1", "timestamp": 1515491537026, "operation": "INSERT", "operation_content": {"mode": "Append","partitionBy": "[]"}, "operation_type": "create"}, {"version": "2", "timestamp": 1515491537346, "operation": "DELETE", "operation_content": {"mode": "Append","partitionBy": "[]"}, "operation_type": "delete"}, {"version": "14", "timestamp": 1674393286223, "operation": "DELETE", "operation_content": {"predicate": "[\\"(spark_catalog.delta.lakefs://meetup-repo/experiment-2-branch/raw/.`rating` < 4.0D) aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\"]"}, "operation_type": "delete"}]}'
-        return JSON.parse(mockRes);
+        const query = qs({table_path: tablePath, type});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
+        if (response.status !== 200) {
+            switch (response.status) {
+                case 401:
+                    throw new AuthorizationError('user unauthorized');
+                case 404:
+                    throw new NotFoundError(`table ${tablePath} not found`);
+                default:
+                    throw new Error(await extractError(response));
+            }
+        }
+        return response.json();
     }
 }
 
@@ -592,8 +594,8 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true, delimiter = "/") {
-        const query = qs({prefix: tree, amount, after, readUncommitted, delimiter});
+    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
+        const query = qs({prefix: tree, amount, after, delimiter});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -902,7 +904,7 @@ class Config {
             case 200:
                 cfg = await response.json();
                 cfg.warnings = []
-                if (cfg.blockstore_type === 'local' || cfg.blockstore_type === 'mem') {
+                if (cfg.blockstore_type === 'mem') {
                     cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
                 }
                 return cfg;

@@ -174,4 +174,44 @@ To install lakeFS with Helm:
 </div>
 </div>
 
+## Local Blockstore
+
+You can configure a block adapter to a POSIX compatible storage location shared by all lakeFS instances. 
+Using the shared storage location, both data and metadata will be stored there.
+
+Using the local blockstore import and allowing lakeFS access to a specific prefix, it is possible to import files from a shared location.
+Import is not enabled by default, as it doesn't assume the local path is shared and there is a security concern about accessing a path outside the specified in the blockstore configuration.
+Enabling is done by `blockstore.local.import_enabled` and `blockstore.local.allowed_external_prefixes` as described in the [configuration reference](../reference/configuration.md).
+
+### Sample configuration using local blockstore
+
+```yaml
+database:
+  type: "postgres"
+  postgres:
+    connection_string: "[DATABASE_CONNECTION_STRING]"
+  
+auth:
+  encrypt:
+    # replace this with a randomly-generated string. Make sure to keep it safe!
+    secret_key: "[ENCRYPTION_SECRET_KEY]"
+
+blockstore:
+  type: local
+  local:
+    path: /shared/location/lakefs_data    # location where data and metadata kept by lakeFS
+    import_enabled: true                  # required to be true to enable import files
+                                          # from `allowed_external_prefixes` locations
+    allowed_external_prefixes:
+      - /shared/location/files_to_import  # location with files we can import into lakeFS, require access from lakeFS
+```
+
+### Limitations
+
+- Using a local adapter on a shared location is relativly new and not battle-tested yet
+- lakeFS doesn't control the way a shared location is managed across machines
+- Import works only for folders
+- Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
+
+
 {% include_relative includes/setup.md %}

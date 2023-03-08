@@ -33,8 +33,9 @@ var (
 )
 
 type Adapter struct {
-	client          *storage.Client
-	preSignedExpiry time.Duration
+	client           *storage.Client
+	preSignedExpiry  time.Duration
+	disablePreSigned bool
 }
 
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
@@ -43,6 +44,14 @@ func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 			a.preSignedExpiry = block.DefaultPreSignExpiryDuration
 		} else {
 			a.preSignedExpiry = v
+		}
+	}
+}
+
+func WithDisablePreSigned(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSigned = false
 		}
 	}
 }
@@ -75,17 +84,6 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 		return qualifiedKey, block.ErrInvalidNamespace
 	}
 	return qualifiedKey, nil
-}
-
-func resolveNamespacePrefix(lsOpts block.WalkOpts) (block.QualifiedPrefix, error) {
-	qualifiedPrefix, err := block.ResolveNamespacePrefix(lsOpts.StorageNamespace, lsOpts.Prefix)
-	if err != nil {
-		return qualifiedPrefix, err
-	}
-	if qualifiedPrefix.StorageType != block.StorageTypeGS {
-		return qualifiedPrefix, block.ErrInvalidNamespace
-	}
-	return qualifiedPrefix, nil
 }
 
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
@@ -129,8 +127,13 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
 	var err error
 	defer reportMetrics("GetPreSignedURL", time.Now(), nil, &err)
+
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
@@ -150,35 +153,6 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 	return k, nil
-}
-
-func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	var err error
-	defer reportMetrics("Walk", time.Now(), nil, &err)
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	iter := a.client.
-		Bucket(qualifiedPrefix.StorageNamespace).
-		Objects(ctx, &storage.Query{Prefix: qualifiedPrefix.Prefix})
-
-	for {
-		attrs, err := iter.Next()
-
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedPrefix.StorageNamespace, err)
-		}
-
-		if err := walkFn(attrs.Name); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func isErrNotFound(err error) bool {
@@ -581,7 +555,11 @@ func (a *Adapter) BlockstoreType() string {
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
-	return block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
+	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
+	if a.disablePreSigned {
+		info.PreSignSupport = false
+	}
+	return info
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

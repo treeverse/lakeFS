@@ -48,9 +48,11 @@ func (s StorageType) Scheme() string {
 }
 
 type StorageNamespaceInfo struct {
-	ValidityRegex  string // regex pattern that could be used to validate the namespace
-	Example        string // example of a valid namespace
-	PreSignSupport bool
+	ValidityRegex          string // regex pattern that could be used to validate the namespace
+	Example                string // example of a valid namespace
+	DefaultNamespacePrefix string // when a repo is created from the UI, suggest a default storage namespace under this prefix
+	PreSignSupport         bool
+	ImportSupport          bool
 }
 
 type QualifiedKey struct {
@@ -181,5 +183,6 @@ func DefaultStorageNamespaceInfo(scheme string) StorageNamespaceInfo {
 		ValidityRegex:  DefaultValidationRegex(scheme),
 		Example:        DefaultExample(scheme),
 		PreSignSupport: true,
+		ImportSupport:  true,
 	}
 }

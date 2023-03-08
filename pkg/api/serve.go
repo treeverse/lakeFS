@@ -76,7 +76,7 @@ func Serve(
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC, &cfg.Auth.CookieAuthVerification),
 		MetricsMiddleware(swagger),
 	)
 	controller := NewController(

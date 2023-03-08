@@ -91,12 +91,20 @@ jobs:
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
 
-      - name: Trigger playground deploy
+      - name: Determine if version is a production release
+        id: check_version
         run: |
-          curl \
-          -X POST \
-          -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}"\
-          -H "Accept: application/vnd.github+json" \
-          -H "Content-Type: application/json" \
-          https://api.github.com/repos/${{ secrets.REPOSITORY_NAME }}/actions/workflows/${{ secrets.WORKFLOW_ID }}/dispatches \
-          --data '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
+          if [[ ${{ steps.version.outputs.tag }} =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "is_valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Dispatch lakeFS release trigger for Playground
+        uses: peter-evans/repository-dispatch@v2
+        if: ${{ steps.check_version.outputs.is_valid == 'true' }}
+        with:
+          token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
+          repository: ${{ secrets.REPOSITORY_NAME }}
+          event-type: lakefs-image-release
+          client-payload: '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
