@@ -3,6 +3,19 @@
 This proposal tries to bridge between two proposals: [pull-request](pull-request.md) and [checks](https://github.com/treeverse/lakeFS/blob/280c5b741df5e1e051958b8adde826364c6df614/design/open/branch_checks.md)
 and provide long-running CI/CD processes while laying the foundation for future "pull-request" like feature.
 
+## Goals
+
+* Allow long CI/CD processes
+* Enable branch protection feature for merge 
+
+## Non-Goals
+
+* Collaboration
+  * Reviews / change requests
+  * Discussions
+  * Approvals
+* Required actions
+
 ## How it will work
 
 Introduce a new entity called $PULLS at the repository level. The $PULLS entity is identified by a source branch and destination branch. 
@@ -68,12 +81,13 @@ When performing a merge with a $PULLS id, perform the following preliminary chec
 
 ### Re-run Actions
 
-In the event of failed actions run, it will be possible to re-run the job via the Actions view
-TBD: How to update runID of $PULLS instance on re-run
-TBD: Re-run of `on-pull` should be in the context of the branch and not of the specific ref. This is in contrast to how we would like to re-run
-all other types of hooks which should run on the same reference.  
-**Optional solution:** Do not implement re-run in actions context, instead implement rerun on $PULLS which will in fact,
-create a new run using the updated branch head and update the associated run id.
+PUT `/api/v1/repositories/{repository}/branches/{sourceBranch}/$PULLS/{destinationBranch}/{id}`
+
+In the event of failed actions run, it will be possible to re-run the job via the $PULLS context.
+This will in fact - create a new trigger for the `on-pull` hook, and update the $PULLS instance with a new run ID.
+By "re-running" the actions via the $PULLS, we are able to decouple the $PULLS feature from the hooks re-run requirement,
+which can be implemented in the future.
+
 
 ## Required Changes
 
@@ -81,6 +95,7 @@ create a new run using the updated branch head and update the associated run id.
 
 * Add new branch protection rule for $PULLS
 * Modify relevant APIs and add check for $PULLS branch protection rule
+* UI: On Add, provide options to select rules. Allow editing of rules.
 
 ### Merge
 
