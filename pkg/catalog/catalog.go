@@ -1038,7 +1038,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 		return nil, err
 	}
 	catalogCommitLog := &CommitLog{
-		Reference:    reference,
+		Reference:    commitID.String(),
 		Committer:    commit.Committer,
 		Message:      commit.Message,
 		CreationDate: commit.CreationDate,

@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from "react";
-
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import * as dayjs from 'dayjs'
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
@@ -17,10 +17,11 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Alert from "react-bootstrap/Alert";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, extractError, objects, refs, staging} from "../../../lib/api";
+import {config, objects, refs, staging, retention, repositories, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -39,6 +40,7 @@ import { getContentType, getFileExtension, FileContents } from "./objectViewer";
 
 
 const README_FILE_NAME = 'README.md';
+const REPOSITORY_AGE_BEFORE_GC = 14;
 
 const ImportButton = ({variant = "success", enabled = false, onClick}) => {
     return (
@@ -375,6 +377,49 @@ const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
     );
 }
 
+const NoGCRulesWarning = ({ repoId }) => {
+    const storageKey = `show_gc_warning_${repoId}`;
+    const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== "false")
+    const closeAndRemember = useCallback(() => {
+        window.localStorage.setItem(storageKey, "false")
+        setShow(false)
+    }, [repoId])
+
+    const {response} = useAPI(async() => {
+        const repo = await repositories.get(repoId)
+        if (!repo.storage_namespace.startsWith('s3:') &&
+            !repo.storage_namespace.startsWith('http')) {
+            return false;
+        }
+        const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), 'days');
+        if (createdAgo > REPOSITORY_AGE_BEFORE_GC) {
+            try {
+                await retention.getGCPolicy(repoId);
+            } catch (e) {
+                if (e instanceof NotFoundError) {
+                    return true
+                }
+            }
+        }
+        return false;
+    }, [repoId]);
+
+    if (show && response) {
+        return (
+            <Alert
+                variant="warning"
+                onClose={closeAndRemember}
+                dismissible>
+                <strong>Warning</strong>: No garbage collection rules configured for this repository.
+                {' '}
+                <a href="https://docs.lakefs.io/howto/garbage-collection.html" target="_blank" rel="noreferrer">Learn More</a>.
+
+            </Alert>
+        )
+    }
+    return <></>;
+}
+
 const ObjectsBrowser = ({config, configError}) => {
     const router = useRouter();
     const {path, after} = router.query;
@@ -455,6 +500,8 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                 </ActionGroup>
             </ActionsBar>
+
+            <NoGCRulesWarning repoId={repo.id}/>
 
             <Box sx={{display: 'flex', flexDirection: 'column', gap: '10px', mb: '30px'}}>
                 <TreeContainer
