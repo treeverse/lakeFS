@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"html"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -29,6 +31,37 @@ Metadata:
 {{ end -}}
 {{ end }}{{ if .Pagination  }}
 {{.Pagination | paginate }}{{ end }}`
+
+type dotWriter struct {
+	w            io.Writer
+	repositoryId string
+}
+
+func (d *dotWriter) Start() {
+	_, _ = fmt.Fprintf(d.w, "digraph {\n\trankdir=\"BT\"\n")
+}
+
+func (d *dotWriter) End() {
+	_, _ = fmt.Fprint(d.w, "\n}\n")
+}
+
+func (d *dotWriter) Write(commits []api.Commit) {
+	repoId := url.PathEscape(d.repositoryId)
+	for _, commit := range commits {
+		isMerge := len(commit.Parents) > 1
+		label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], html.EscapeString(commit.Message))
+		if isMerge {
+			label = fmt.Sprintf("<b>%s</b>", label)
+		}
+		baseUrl := strings.TrimSuffix(strings.TrimSuffix(
+			cfg.Values.Server.EndpointURL, "/api/v1"), "/")
+		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
+			commit.Id, baseUrl, repoId, commit.Id, label)
+		for _, parent := range commit.Parents {
+			_, _ = fmt.Fprintf(d.w, "\t\"%s\" -> \"%s\";\n", parent, commit.Id)
+		}
+	}
+}
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
@@ -66,8 +99,12 @@ var logCmd = &cobra.Command{
 			logCommitsParams.Prefixes = &prefixesList
 		}
 
+		graph := &dotWriter{
+			w:            os.Stdout,
+			repositoryId: branchURI.Ref,
+		}
 		if dot {
-			fmt.Printf("digraph {\n\trankdir=\"BT\"\n")
+			graph.Start()
 		}
 
 		for pagination.HasMore {
@@ -91,24 +128,13 @@ var logCmd = &cobra.Command{
 					After:   pagination.NextOffset,
 				},
 			}
+
 			if dot {
-				for _, commit := range resp.JSON200.Results {
-					isMerge := len(commit.Parents) > 1
-					label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], html.EscapeString(commit.Message))
-					if isMerge {
-						label = fmt.Sprintf("<b>%s</b>", label)
-					}
-					baseUrl := strings.TrimSuffix(strings.TrimSuffix(
-						cfg.Values.Server.EndpointURL, "/api/v1"), "/")
-					fmt.Printf("\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
-						commit.Id, baseUrl, url.PathEscape(branchURI.Repository), commit.Id, label)
-					for _, parent := range commit.Parents {
-						fmt.Printf("\t\"%s\" -> \"%s\";\n", parent, commit.Id)
-					}
-				}
+				graph.Write(data.Commits)
 			} else {
 				Write(commitsTemplate, data)
 			}
+
 			if amount != 0 {
 				// user request only one page
 				break
@@ -116,7 +142,7 @@ var logCmd = &cobra.Command{
 		}
 
 		if dot {
-			fmt.Print("\n}\n")
+			graph.End()
 		}
 	},
 }
