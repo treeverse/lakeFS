@@ -2253,6 +2253,13 @@ Show log of commits for a given branch
 lakectl log <branch uri> [flags]
 ```
 
+#### Examples
+{:.no_toc}
+
+```
+lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
+```
+
 #### Options
 {:.no_toc}
 
