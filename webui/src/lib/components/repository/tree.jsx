@@ -75,6 +75,18 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
 
         <Dropdown.Menu>
           {entry.path_type === "object" && (
+              <Dropdown.Item
+                  onClick={(e) => {
+                    copyTextToClipboard(
+                        entry.physical_address
+                    );
+                    e.preventDefault();
+                  }}
+              >
+                <LinkIcon /> Copy Presigned URL
+              </Dropdown.Item>
+          )}
+          {entry.path_type === "object" && (
             <PathLink
               path={entry.path}
               reference={reference}

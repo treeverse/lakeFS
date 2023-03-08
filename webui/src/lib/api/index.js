@@ -604,11 +604,11 @@ class Objects {
         return await response.json();
     }
 
-    async upload(repoId, branchId, path, fileObject, presign= false) {
+    async upload(repoId, branchId, path, fileObject) {
         const data = new FormData();
         data.append('content', fileObject);
         window.data = data;
-        const query = qs({path, presign});
+        const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
             method: 'POST',
             body: data,
@@ -1023,6 +1023,31 @@ class Statistics {
     }
 }
 
+class Staging {
+    async get(repoId, branchId, path, presign= false) {
+        const query = qs({path, presign});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
+            method: 'GET'
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async link(repoId, branchId, path, staging, checksum, sizeBytes) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
+            method: 'PUT',
+            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes})
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+}
+
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const tags = new Tags();
@@ -1039,3 +1064,4 @@ export const ranges = new Ranges();
 export const metaRanges = new MetaRanges();
 export const templates = new Templates();
 export const statistics = new Statistics();
+export const staging = new Staging();

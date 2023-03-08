@@ -20,7 +20,7 @@ import Col from "react-bootstrap/Col";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects, refs} from "../../../lib/api";
+import {config, extractError, objects, refs, staging} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -198,7 +198,17 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             inProgress: true
         })
         try {
-            await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0], config.pre_sign_support)
+            let getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support);
+
+            const putResp = await fetch(getResp.presigned_url, {
+                method: 'PUT',
+                mode: 'cors',
+                body: fileRef.current.files[0]
+            });
+
+            let etag = putResp.headers.get('ETag').replace(/["]/g, '')
+            await staging.link(repo.id, reference.id, textRef.current.value, getResp, etag, fileRef.current.files[0].size);
+
             setUploadState({...initialState})
             onDone()
         } catch (error) {
