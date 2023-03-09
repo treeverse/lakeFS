@@ -34,7 +34,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target ${{ matrix.target }} --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+          args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
 
   rust-releaser-unix:
     runs-on: ubuntu-20.04
@@ -56,7 +56,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target ${{ matrix.target }} --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+          args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
 
   rust-releaser-windows:
     runs-on: windows-2022
@@ -78,7 +78,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target ${{ matrix.target }} --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+          args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
 
 #  goreleaser:
 #    runs-on: ubuntu-20.04
