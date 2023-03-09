@@ -32,7 +32,9 @@ const SetupContents = () => {
         }
         setDisabled(true);
         try {
-            await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            if (currentStep === SETUP_STATE_NOT_INITIALIZED) {
+               await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            }
             const response = await setup.lakeFS(adminUser);
             setSetupError(null);
             setSetupData(response);
