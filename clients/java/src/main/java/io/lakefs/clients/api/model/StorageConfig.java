@@ -49,6 +49,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT)
   private Boolean preSignSupport;
 
+  public static final String SERIALIZED_NAME_PRE_SIGN_SUPPORT_UI = "pre_sign_support_ui";
+  @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT_UI)
+  private Boolean preSignSupportUi;
+
   public static final String SERIALIZED_NAME_IMPORT_SUPPORT = "import_support";
   @SerializedName(SERIALIZED_NAME_IMPORT_SUPPORT)
   private Boolean importSupport;
@@ -169,6 +173,29 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig preSignSupportUi(Boolean preSignSupportUi) {
+    
+    this.preSignSupportUi = preSignSupportUi;
+    return this;
+  }
+
+   /**
+   * Get preSignSupportUi
+   * @return preSignSupportUi
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public Boolean getPreSignSupportUi() {
+    return preSignSupportUi;
+  }
+
+
+  public void setPreSignSupportUi(Boolean preSignSupportUi) {
+    this.preSignSupportUi = preSignSupportUi;
+  }
+
+
   public StorageConfig importSupport(Boolean importSupport) {
     
     this.importSupport = importSupport;
@@ -206,12 +233,13 @@ public class StorageConfig {
         Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex) &&
         Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix) &&
         Objects.equals(this.preSignSupport, storageConfig.preSignSupport) &&
+        Objects.equals(this.preSignSupportUi, storageConfig.preSignSupportUi) &&
         Objects.equals(this.importSupport, storageConfig.importSupport);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, importSupport);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport);
   }
 
   @Override
@@ -223,6 +251,7 @@ public class StorageConfig {
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
     sb.append("    defaultNamespacePrefix: ").append(toIndentedString(defaultNamespacePrefix)).append("\n");
     sb.append("    preSignSupport: ").append(toIndentedString(preSignSupport)).append("\n");
+    sb.append("    preSignSupportUi: ").append(toIndentedString(preSignSupportUi)).append("\n");
     sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
     sb.append("}");
     return sb.toString();

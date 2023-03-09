@@ -57,6 +57,7 @@ type Adapter struct {
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
 	disablePreSigned             bool
+	disablePreSignedUI           bool
 }
 
 func WithStreamingChunkSize(sz int) func(a *Adapter) {
@@ -93,6 +94,14 @@ func WithDisablePreSigned(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
 			a.disablePreSigned = true
+		}
+	}
+}
+
+func WithDisablePreSignedUI(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSignedUI = true
 		}
 	}
 }
@@ -659,6 +668,9 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
+	}
+	if !a.disablePreSignedUI {
+		info.PreSignSupportUI = true
 	}
 	return info
 }

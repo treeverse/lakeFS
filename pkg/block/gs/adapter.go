@@ -33,9 +33,10 @@ var (
 )
 
 type Adapter struct {
-	client           *storage.Client
-	preSignedExpiry  time.Duration
-	disablePreSigned bool
+	client             *storage.Client
+	preSignedExpiry    time.Duration
+	disablePreSigned   bool
+	disablePreSignedUI bool
 }
 
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
@@ -52,6 +53,14 @@ func WithDisablePreSigned(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
 			a.disablePreSigned = false
+		}
+	}
+}
+
+func WithDisablePreSignedUI(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSignedUI = false
 		}
 	}
 }
@@ -558,6 +567,9 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
+	}
+	if a.disablePreSignedUI {
+		info.PreSignSupportUI = false
 	}
 	return info
 }

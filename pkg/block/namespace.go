@@ -52,6 +52,7 @@ type StorageNamespaceInfo struct {
 	Example                string // example of a valid namespace
 	DefaultNamespacePrefix string // when a repo is created from the UI, suggest a default storage namespace under this prefix
 	PreSignSupport         bool
+	PreSignSupportUI       bool
 	ImportSupport          bool
 }
 
