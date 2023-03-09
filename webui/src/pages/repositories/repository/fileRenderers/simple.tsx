@@ -85,11 +85,6 @@ export const IpynbRenderer: FC<RendererComponentWithText> = ({ text }) => {
     );
 };
 
-// const qs = (queryParts: {[key: string]: string}) => {
-//     const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
-//     return new URLSearchParams(parts).toString();
-// };
-
 export const ImageRenderer: FC<RendererComponent> = ({ repoId, refId,  path , presign}) => {
     const query = qs({path, presign});
     return (
