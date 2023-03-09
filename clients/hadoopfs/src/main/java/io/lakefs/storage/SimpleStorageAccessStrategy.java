@@ -28,7 +28,8 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
     private LakeFSClient lfsClient;
     private Configuration conf;
 
-    public SimpleStorageAccessStrategy(LakeFSFileSystem lakeFSFileSystem, LakeFSClient lfsClient, Configuration conf, PhysicalAddressTranslator physicalAddressTranslator) {
+    public SimpleStorageAccessStrategy(LakeFSFileSystem lakeFSFileSystem, LakeFSClient lfsClient,
+            Configuration conf, PhysicalAddressTranslator physicalAddressTranslator) {
         this.lakeFSFileSystem = lakeFSFileSystem;
         this.lfsClient = lfsClient;
         this.conf = conf;
@@ -36,15 +37,15 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
     }
 
     @Override
-    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation, CreateOutputStreamParams params)
-            throws ApiException, IOException {
+    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
+            CreateOutputStreamParams params) throws ApiException, IOException {
         StagingApi staging = lfsClient.getStagingApi();
         StagingLocation stagingLocation = staging.getPhysicalAddress(objectLocation.getRepository(),
                 objectLocation.getRef(), objectLocation.getPath(), false);
         URI physicalUri;
         try {
-            physicalUri = physicalAddressTranslator
-                    .translate(new URI(Objects.requireNonNull(stagingLocation.getPhysicalAddress())));
+            physicalUri = physicalAddressTranslator.translate(
+                    new URI(Objects.requireNonNull(stagingLocation.getPhysicalAddress())));
         } catch (URISyntaxException e) {
             throw new IOException("Failed to parse object phystical address", e);
         }
@@ -52,8 +53,8 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
         FileSystem physicalFs = physicalPath.getFileSystem(conf);
         OutputStream physicalOut;
         if (params != null) {
-            physicalOut = physicalFs.create(physicalPath, params.overwrite, params.bufferSize, params.replication,
-                    params.blockSize);
+            physicalOut = physicalFs.create(physicalPath, false, params.bufferSize,
+                    physicalFs.getDefaultReplication(physicalPath), params.blockSize);
         } else {
             physicalOut = physicalFs.create(physicalPath);
         }
@@ -65,10 +66,11 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
     }
 
     @Override
-    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation) throws ApiException, IOException {
+    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation)
+            throws ApiException, IOException {
         ObjectsApi objects = lfsClient.getObjectsApi();
-        ObjectStats stats = objects.statObject(objectLocation.getRepository(), objectLocation.getRef(),
-                objectLocation.getPath(), false, false);
+        ObjectStats stats = objects.statObject(objectLocation.getRepository(),
+                objectLocation.getRef(), objectLocation.getPath(), false, false);
         URI physicalUri;
         try {
             physicalUri = physicalAddressTranslator

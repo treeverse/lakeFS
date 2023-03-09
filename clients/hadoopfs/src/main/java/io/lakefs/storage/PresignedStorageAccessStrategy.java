@@ -23,36 +23,38 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
     private LakeFSFileSystem lakeFSFileSystem;
     private LakeFSClient lfsClient;
 
-    public PresignedStorageAccessStrategy(LakeFSFileSystem lakeFSFileSystem, LakeFSClient lfsClient) {
+    public PresignedStorageAccessStrategy(LakeFSFileSystem lakeFSFileSystem,
+            LakeFSClient lfsClient) {
         this.lakeFSFileSystem = lakeFSFileSystem;
         this.lfsClient = lfsClient;
     }
 
     @Override
-    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation, CreateOutputStreamParams params)
-            throws ApiException, IOException {
+    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
+            CreateOutputStreamParams params) throws ApiException, IOException {
+        // TODO(johnnyaug) respect params
         StagingApi stagingApi = lfsClient.getStagingApi();
-        StagingLocation stagingLocation = stagingApi.getPhysicalAddress(objectLocation.getRepository(),
-                objectLocation.getRef(),
-                objectLocation.getPath(), true);
+        StagingLocation stagingLocation =
+                stagingApi.getPhysicalAddress(objectLocation.getRepository(),
+                        objectLocation.getRef(), objectLocation.getPath(), true);
         URL presignedUrl = new URL(stagingLocation.getPresignedUrl());
         System.out.println("presignedUrl: " + presignedUrl); // TODO(johnnyaug) remove this print
         HttpURLConnection connection = (HttpURLConnection) presignedUrl.openConnection();
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/octet-stream");
         connection.setRequestMethod("PUT");
-        OutputStream out = new LakeFSFileSystemOutputStream(lakeFSFileSystem, lfsClient, connection, objectLocation,
-                stagingLocation);
+        OutputStream out = new LakeFSFileSystemOutputStream(lakeFSFileSystem, lfsClient, connection,
+                objectLocation, stagingLocation);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
 
     @Override
-    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation) throws ApiException, MalformedURLException, IOException {
+    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation)
+            throws ApiException, MalformedURLException, IOException {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
-        ObjectStats stats = objectsApi.statObject(objectLocation.getRepository(), objectLocation.getRef(),
-                objectLocation.getPath(),
-                false, true);
+        ObjectStats stats = objectsApi.statObject(objectLocation.getRepository(),
+                objectLocation.getRef(), objectLocation.getPath(), false, true);
         return new FSDataInputStream(new HttpRangeInputStream(stats.getPhysicalAddress()));
     }
 }

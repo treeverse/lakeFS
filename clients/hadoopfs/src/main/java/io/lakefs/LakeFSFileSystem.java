@@ -235,10 +235,10 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectLocation objectLoc = pathToObjectLocation(path);
             return storageAccessStrategy.createDataOutputStream(objectLoc,
                     new CreateOutputStreamParams()
-                            .overwrite(true)
                             .bufferSize(bufferSize)
-                            .replication(replication)
-                            .blockSize(blockSize).progress(progress));
+                            .blockSize(blockSize)
+                            .progress(progress)
+                    );
         } catch (ApiException e) {
             throw new IOException("staging.getPhysicalAddress: " + e.getResponseBody(), e);
         }
