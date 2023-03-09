@@ -2,15 +2,15 @@
 As mentioned in our [Security Update](https://docs.lakefs.io/posts/security_update.html#whats-changing) the coming lakeFS version introduces a simplified authorization mechanism based on ACLs.
 
 ### Permissions
-In the ACL model Every group will have a permission attached to it,
-lakeFS provides the following permissions:
+The new ACL model defines permissions at the group level, 
+we'll review the new permissions compared to their previous representation:
 
-| Permission | Allows | Existing Group |
+| Permission | Allows                                     | Previous Group Name       |
 |------------|--------------------------------------------|---------------------------|
-| **Read** | Read operations, creating access keys. | Viewers |
-| **Write** | Allows all data read and write operations. | Developers |
-| **Super** | Allows all operations except auth. | SuperUsers (with changes) |
-| **Admin** | Allows all operations. | Admins |
+| **Read**   | Read operations, creating access keys.     | Viewers                   |
+| **Write**  | Allows all data read and write operations. | Developers                |
+| **Super**  | Allows all operations except auth.         | SuperUsers (with changes) |
+| **Admin**  | Allows all operations.                     | Admins                    |
 
 ### Scopes
 
@@ -40,14 +40,14 @@ group]( ../assets/img/ACL-groups-with-perms.png)
 
 ### The migration
 
-Upgrading the lakeFS version will require running a migrating to our ACL authorization model in case:
-- One or more of the basic poicies was modified
-- New policies where defined
-- Users have attached policies
+Upgrading the lakeFS version will require migrating to the new ACL authorization model in case:
+- One or more of the basic policies was modified
+- New policies were created
+- Users have attached policies directly
 
 In order to run the migration run:
 ```
-TODO - Add the command
+lakefs migrate auth-acl
 ```
 
 The command defaults to dry-run,
