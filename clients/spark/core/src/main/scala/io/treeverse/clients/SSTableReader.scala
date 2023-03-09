@@ -56,6 +56,8 @@ object SSTableReader {
     val p = new Path(url)
     val fs = p.getFileSystem(configuration)
     val localFile = File.createTempFile("lakefs.", ".sstable")
+    // Cleanup the local file - using the same technic as other data sources:
+    // https://github.com/apache/spark/blob/c0b1735c0bfeb1ff645d146e262d7ccd036a590e/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/text/TextFileFormat.scala#L123
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
 
     // TODO(#2403): Implement a BlockReadable on top of AWS
