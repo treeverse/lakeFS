@@ -1,14 +1,16 @@
-import React, {FC, FormEvent, useCallback, useEffect, useRef, useState} from "react";
-import {Error, Loading} from "../../../../lib/components/controls";
+import React, {FC, FormEvent, useCallback, useEffect, useState} from "react";
 import {getConnection} from "./duckdb";
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as arrow from 'apache-arrow';
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {DatabaseIcon} from "@primer/octicons-react";
+import {ChevronRightIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
-import {RendererComponent} from "./types";
 import Table from "react-bootstrap/Table";
+
+import {SQLEditor} from "./editor";
+import {RendererComponent} from "./types";
+import {Error, Loading} from "../../../../lib/components/controls";
 
 
 const MAX_RESULTS_RETURNED = 1000;
@@ -36,16 +38,18 @@ LIMIT 20`
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(false)
 
-    const sql = useRef<HTMLTextAreaElement>(null);
-
     const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setShouldSubmit(prev => !prev)
     }, [setShouldSubmit])
 
+    const [sql, setSql] = useState(initialQuery);
+    const sqlChangeHandler = useCallback((data: React.SetStateAction<string>) => {
+        setSql(data)
+    }, [setSql])
+
     useEffect(() => {
-        if (!sql || !sql.current)
-            return
+        if (!sql) return
         const runQuery = async (sql: string) => {
             setLoading(true)
             setError(null)
@@ -72,13 +76,13 @@ LIMIT 20`
                     await conn.close()
             }
         }
-        runQuery(sql.current.value).catch(console.error);
+        runQuery(sql).catch(console.error);
     }, [repoId, refId, path, shouldSubmit])
 
     let content;
     const button = (
         <Button type="submit" variant="success" disabled={loading}>
-            <DatabaseIcon /> {" "}
+            <ChevronRightIcon /> {" "}
             { loading ? "Executing..." : "Execute" }
         </Button>
     );
@@ -142,16 +146,28 @@ LIMIT 20`
     return (
         <div>
             <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-2 mt-2" controlId="objectQuery">
-                    <Form.Control as="textarea" className="object-viewer-sql-input" rows={5} defaultValue={initialQuery} spellCheck={false} ref={sql} autoComplete="off"/>
-
-                    <Form.Text className="text-muted align-right">
-                        Powered by <a href="https://duckdb.org/2021/10/29/duckdb-wasm.html" target="_blank" rel="noreferrer">DuckDB-WASM</a>.
-                        For a full SQL reference, see the <a href="https://duckdb.org/docs/sql/statements/select" target="_blank" rel="noreferrer">DuckDB Documentation</a>
-                    </Form.Text>
-
+                <Form.Group className="mt-2 mb-1" controlId="objectQuery">
+                    <SQLEditor initialValue={initialQuery} onChange={sqlChangeHandler}/>
                 </Form.Group>
-                {button}
+
+
+                <div className="d-flex mb-4">
+                    <div className="d-flex flex-fill justify-content-start">
+                        {button}
+                    </div>
+
+                    <div className="d-flex justify-content-end">
+                        <p className="text-muted text-end powered-by">
+                            <small>
+                                Powered by <a href="https://duckdb.org/2021/10/29/duckdb-wasm.html" target="_blank" rel="noreferrer">DuckDB-WASM</a>.
+                                For a full SQL reference, see the <a href="https://duckdb.org/docs/sql/statements/select" target="_blank" rel="noreferrer">DuckDB Documentation</a>
+                            </small>
+                        </p>
+                    </div>
+
+                </div>
+
+
             </Form>
             <div className="mt-3">
                 {content}
@@ -185,3 +201,5 @@ const DataRow: FC<{ value: any }> = ({ value }) => {
 
     return <td>{""  + value}</td>;
 }
+
+

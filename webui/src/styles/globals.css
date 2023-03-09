@@ -588,7 +588,7 @@ td .form-group {
 
 .file-content-heading {
   background-color: #FBFBFB;
-  padding: 5px;
+  padding: 10px;
 }
 
 .file-content-body {
@@ -615,10 +615,26 @@ td .form-group {
   background-color: #333333;
   color: #FFFFFF;
 }
+
+.powered-by {
+  line-height: .8em;
+  font-size: .8em;
+  font-style: italic;
+
+}
+
 .object-viewer-sql-results {
   overflow: auto;
   font-size: .75rem;
   max-height: 400px;
+}
+.object-viewer-sql-results th {
+  font-size: .9rem;
+  padding: 5px 10px;
+}
+.object-viewer-sql-results th small {
+  font-size: .7rem;
+  color: #888;
 }
 
 .image-container {
