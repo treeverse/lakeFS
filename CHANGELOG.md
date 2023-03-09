@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+## v0.96.1
+
+:bug: Bugs fixed:
+
+- Fix registration form (#5420)
+- 
 ## v0.96.0
 
 :new: What's new:
