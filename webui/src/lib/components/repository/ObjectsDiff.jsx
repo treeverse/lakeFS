@@ -5,6 +5,7 @@ import ReactDiffViewer, {DiffMethod} from "react-diff-viewer-continued";
 import {Error, Loading} from "../controls";
 import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
+import {InfoIcon} from "@primer/octicons-react";
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = ["txt", "csv", "tsv"];
@@ -65,7 +66,7 @@ function readableObject(path) {
 const NoContentDiff = ({left, right, diffType}) => {
     return <div>
         <span><StatDiff left={left} right={right} diffType={diffType}/></span>
-        <span><Alert variant="light">lakeFS supports content diff for .tsv, .csv, and .txt file formats only</Alert></span>
+        <span><Alert variant="light"><InfoIcon/> lakeFS supports content diff for .tsv, .csv, and .txt file formats only</Alert></span>
     </div>;
 }
 
