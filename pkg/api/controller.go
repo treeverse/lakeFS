@@ -688,8 +688,8 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 	}
 
 	policyJSON, err := json.MarshalIndent(policy, "", "  ")
-	if err != nil {
-		panic(err)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
 	}
 
 	c.Logger.
