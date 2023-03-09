@@ -1129,7 +1129,8 @@ class AuthApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/acl',
                 'operation_id': 'get_group_acl',
@@ -1933,7 +1934,8 @@ class AuthApi(object):
                     'basic_auth',
                     'cookie_auth',
                     'jwt_token',
-                    'oidc_auth'
+                    'oidc_auth',
+                    'saml_auth'
                 ],
                 'endpoint_path': '/auth/groups/{groupId}/acl',
                 'operation_id': 'set_group_acl',
