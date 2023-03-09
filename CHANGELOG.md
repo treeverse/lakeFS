@@ -2,6 +2,18 @@
 
 ## UNRELEASED
 
+## v0.96.0
+
+:new: What's new:
+
+- lakectl: output commit log as dotgraph (#5397)
+- Improve GC prepare-commits call performance (#5377)
+- UI: Warn when no gc rules are defined for long living repos (#5400)
+
+:bug: Bugs fixed:
+
+- Fix inconsistent setup state (#5410)
+
 ## v0.95.0
 
 :new: What's new:
