@@ -180,6 +180,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                               params: params,
                                               query: {ref: reference.id, prefix: query.path ?? ""},
                                           }}}/>
+    const changesTreeMessage = <p>Showing changes for branch <strong>{reference.id}</strong></p>
     const committedRef = reference.id + "@"
     const uncommittedRef = reference.id
 
@@ -229,7 +230,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                   repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                   getMore={getMoreUncommittedChanges}
                                   loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
-                                  onNavigate={onNavigate} onRevert={onRevert}/>
+                                  onNavigate={onNavigate} onRevert={onRevert} changesTreeMessage={changesTreeMessage}/>
         </>
     )
 }

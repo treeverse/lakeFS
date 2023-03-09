@@ -259,13 +259,19 @@
 .tree-path .octicon {
   color: #007bff;
   margin-right: 5px;
-  font-size: .9rem;
+  font-size: .875rem;
 }
 
 .diff-removed .tree-path,
 .diff-removed .tree-path .octicon,
 .diff-removed .diff-indicator .octicon {
   color: #808080;
+}
+
+td.tree-path {
+  padding: 0px;
+  text-align: left;
+  width: 30%;
 }
 
 .diff-changed {
@@ -343,13 +349,18 @@
 .table .change-entry-row .change-entry-row-actions .btn-link,
 .table .tree-entry-row .change-entry-row-actions .btn-link {
   visibility: hidden;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
+  padding: 5px;
 }
 .table .change-entry-row:hover .change-entry-row-actions .btn-link,
-.table .tree-entry-row:hover .change-entry-row-actions .btn-link,
+.table .tree-entry-row .change-entry-row-actions .btn-link,
 .table .tree-entry-row:focus .change-entry-row-actions .btn-link {
   visibility: visible;
   display: inline-block;
+}
+
+td.change-entry-row-actions {
+  width: 12%;
 }
 
 .tree-container {
@@ -447,6 +458,12 @@ td .form-group {
 
 .change-summary .arrow {
   visibility: hidden;
+}
+
+td.change-summary {
+  padding: 0px;
+  text-align: right;
+  width: 10%;
 }
 
 .color-fg-added {
@@ -681,5 +698,10 @@ td.table-operation-details {
 td.table-diff-type {
   padding: 10px;
   font-size: medium;
+}
+
+td.entry-type-indicator {
+  width: 1%;
+  padding: 2px;
 }
 
