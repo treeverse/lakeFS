@@ -14,6 +14,7 @@ security:
 - basic_auth: []
 - cookie_auth: []
 - oidc_auth: []
+- saml_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -5595,11 +5596,11 @@ components:
           - delete
           type: string
       required:
+      - id
       - operation
       - operation_content
       - operation_type
       - timestamp
-      - version
       type: object
     OtfDiffList:
       example:
@@ -6877,5 +6878,9 @@ components:
     oidc_auth:
       in: cookie
       name: oidc_auth_session
+      type: apiKey
+    saml_auth:
+      in: cookie
+      name: saml_auth_session
       type: apiKey
 

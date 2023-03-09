@@ -147,8 +147,8 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	}
 
 	writeResponse(w, r, http.StatusCreated, PrepareGCUncommittedResponse{
-		RunId:                 uncommittedInfo.Metadata.RunId,
-		GcUncommittedLocation: uncommittedInfo.Metadata.UncommittedLocation,
+		RunId:                 uncommittedInfo.RunID,
+		GcUncommittedLocation: uncommittedInfo.Location,
 		ContinuationToken:     nextContinuationToken,
 	})
 }
@@ -1280,11 +1280,15 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
+	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
+	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
+		defaultNamespacePrefix = c.Config.Blockstore.DefaultNamespacePrefix
+	}
 	response := StorageConfig{
 		BlockstoreType:                   c.Config.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
-		DefaultNamespacePrefix:           swag.String(c.Config.Blockstore.DefaultNamespacePrefix),
+		DefaultNamespacePrefix:           defaultNamespacePrefix,
 		PreSignSupport:                   info.PreSignSupport,
 		ImportSupport:                    info.ImportSupport,
 	}
@@ -2466,9 +2470,9 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		AdditionalProperties: map[string]string(commit.Metadata),
 	}
 	response := Commit{
+		Id:           commit.Reference,
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
-		Id:           commitID,
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
 		Metadata:     &metadata,
@@ -2556,9 +2560,9 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		return
 	}
 	writeResponse(w, r, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRunMetadata.CommitsCsvLocation,
+		GcCommitsLocation:   gcRunMetadata.CommitsCSVLocation,
 		GcAddressesLocation: gcRunMetadata.AddressLocation,
-		RunId:               gcRunMetadata.RunId,
+		RunId:               gcRunMetadata.RunID,
 	})
 }
 
@@ -3981,12 +3985,12 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 		for k, v := range entry.OperationContent {
 			content[k] = v
 		}
-		v := entry.Version
+		id := entry.ID
 		ol = append(ol, OtfDiffEntry{
 			Operation:        entry.Operation,
 			OperationContent: content,
-			Timestamp:        int(entry.Timestamp.UnixMilli()),
-			Id:               &v,
+			Timestamp:        int(entry.Timestamp.Unix()),
+			Id:               id,
 			OperationType:    entry.OperationType,
 		})
 	}
@@ -4188,6 +4192,8 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		ev.UserID = user.Username
 	}
 
+	sourceIP := httputil.SourceIP(r)
+
 	c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,
@@ -4196,6 +4202,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"source_ref": ev.SourceRef,
 		"user_id":    ev.UserID,
 		"client":     ev.Client,
+		"source_ip":  sourceIP,
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
 }

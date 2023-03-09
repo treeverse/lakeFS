@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -44,7 +45,11 @@ func TestUncommittedGC(t *testing.T) {
 	ticker := time.NewTicker(time.Second)
 	var durObjects []string
 	done := make(chan bool)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case <-done:
@@ -67,6 +72,7 @@ func TestUncommittedGC(t *testing.T) {
 	}
 	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 	done <- true
+	wg.Wait()
 
 	validateUncommittedGC(t, durObjects)
 }

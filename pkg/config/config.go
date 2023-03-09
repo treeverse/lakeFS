@@ -45,15 +45,21 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// LDAP holds configuration for authenticating on an LDAP server.
-type LDAP struct {
-	ServerEndpoint    string `mapstructure:"server_endpoint"`
-	BindDN            string `mapstructure:"bind_dn"`
-	BindPassword      string `mapstructure:"bind_password"`
-	DefaultUserGroup  string `mapstructure:"default_user_group"`
-	UsernameAttribute string `mapstructure:"username_attribute"`
-	UserBaseDN        string `mapstructure:"user_base_dn"`
-	UserFilter        string `mapstructure:"user_filter"`
+// TODO(isan) consolidate with OIDC
+// CookieAuthVerification is related to auth based on a cookie set by an external service
+type CookieAuthVerification struct {
+	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
+	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
+	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
+	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
+	// InitialGroupsClaimName comma separated list of groups to add to the user on the lakeFS side
+	InitialGroupsClaimName string `mapstructure:"initial_groups_claim_name"`
+	// FriendlyNameClaimName is the claim name to use as the user's friendly name in places like the UI
+	FriendlyNameClaimName string `mapstructure:"friendly_name_claim_name"`
+	// ExternalUserIDClaimName is the claim name to use as the user identifier with an IDP
+	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
+	// AuthSource tag each user with label of the IDP
+	AuthSource string `mapstructure:"auth_source"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -163,8 +169,18 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP *LDAP
-		OIDC OIDC
+		RemoteAuthenticator struct {
+			// Enabled if set true will enable remote authentication
+			Enabled bool `mapstructure:"enabled"`
+			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+			Endpoint string `mapstructure:"endpoint"`
+			// DefaultUserGroup is the default group for the users authenticated by the remote service
+			DefaultUserGroup string `mapstructure:"default_user_group"`
+			// RequestTimeout timeout for remote authentication requests
+			RequestTimeout time.Duration `mapstructure:"request_timeout"`
+		} `mapstructure:"remote_authenticator"`
+		OIDC                   OIDC                   `mapstructure:"oidc"`
+		CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
@@ -180,8 +196,8 @@ type Config struct {
 		} `mapstructure:"ui_config"`
 	}
 	Blockstore struct {
-		Type                   string `mapstructure:"type" validate:"required"`
-		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
+		Type                   string  `mapstructure:"type" validate:"required"`
+		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
 		Local                  *struct {
 			Path                    string   `mapstructure:"path"`
 			ImportEnabled           bool     `mapstructure:"import_enabled"`

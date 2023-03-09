@@ -3,14 +3,11 @@ import React, {useRef, useState} from "react";
 import {
     GitCommitIcon,
     HistoryIcon,
-    PlusIcon,
-    XIcon
 } from "@primer/octicons-react";
 
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 
@@ -22,7 +19,7 @@ import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../l
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangesTreeContainer} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {RepoError} from "./error";
@@ -67,44 +64,7 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
                             <Form.Control type="text" placeholder="Commit Message" ref={textRef}/>
                         </Form.Group>
 
-                        {metadataFields.map((f, i) => {
-                            return (
-                                <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`} className="mb-3">
-                                    <Row>
-                                        <Col md={{span: 5}}>
-                                            <Form.Control type="text" placeholder="Key" defaultValue={f.key}
-                                                          onChange={(e) => {
-                                                              metadataFields[i].key = e.currentTarget.value;
-                                                              setMetadataFields(metadataFields);
-                                                          }}/>
-                                        </Col>
-                                        <Col md={{span: 5}}>
-                                            <Form.Control type="text" placeholder="Value" defaultValue={f.value}
-                                                          onChange={(e) => {
-                                                              metadataFields[i].value = e.currentTarget.value;
-                                                              setMetadataFields(metadataFields);
-                                                          }}/>
-                                        </Col>
-                                        <Col md={{span: 1}}>
-                                            <Form.Text>
-                                                <Button size="sm" variant="secondary" onClick={() => {
-                                                    setMetadataFields([...metadataFields.slice(0, i), ...metadataFields.slice(i + 1)]);
-                                                }}>
-                                                    <XIcon/>
-                                                </Button>
-                                            </Form.Text>
-                                        </Col>
-                                    </Row>
-                                </Form.Group>
-                            )
-                        })}
-
-                        <Button onClick={() => {
-                            setMetadataFields([...metadataFields, {key: "", value: ""}]);
-                        }} size="sm" variant="secondary">
-                            <PlusIcon/>{' '}
-                            Add Metadata field
-                        </Button>
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
                     </Form>
                     {(alertText) ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
                 </Modal.Body>

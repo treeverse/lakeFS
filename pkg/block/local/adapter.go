@@ -28,6 +28,10 @@ type Adapter struct {
 	importEnabled           bool
 }
 
+const (
+	DefaultNamespacePrefix = "local:/"
+)
+
 var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
@@ -258,16 +262,6 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 	return f, nil
 }
 
-func (l *Adapter) Walk(_ context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	p := filepath.Clean(path.Join(l.path, walkOpt.StorageNamespace, walkOpt.Prefix))
-	return filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		return walkFn(p)
-	})
-}
-
 func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
 	p, err := l.getPath(obj)
 	if err != nil {
@@ -490,6 +484,7 @@ func (l *Adapter) BlockstoreType() string {
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 	info.PreSignSupport = false
+	info.DefaultNamespacePrefix = DefaultNamespacePrefix
 	info.ImportSupport = l.importEnabled
 	return info
 }
