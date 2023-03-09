@@ -115,7 +115,7 @@ func MakeStatementForPolicyType(typ string, resources []string) (model.Statement
 	}
 	statements := make(model.Statements, len(resources))
 	for i, resource := range resources {
-		if statements[i].Resource == "" {
+		if statement.Resource == "" {
 			statements[i] = statement
 			statements[i].Resource = resource
 		}
