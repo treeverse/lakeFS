@@ -1,4 +1,4 @@
-name: goreleaser
+name: releaser
 
 on:
   release:
@@ -11,38 +11,111 @@ permissions:
   contents: write
 
 jobs:
-  goreleaser:
-    runs-on: ubuntu-20.04
+  rust-releaser-mac:
+    runs-on: macos-12
+    defaults:
+      run:
+        working-directory: pkg/plugins/diff/delta_diff_server
+    strategy:
+      matrix:
+        target:
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
         with:
-          node-version: '16.17.1'
-
-      - name: Setup Go
-        uses: actions/setup-go@v3
+          path: target
+          key:
+      - uses: actions-rs/toolchain@v1
         with:
-          go-version: 1.19.2
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - uses: actions-rs/cargo@v1
         with:
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          command: build
+          args: --target ${{ matrix.target }}
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+  rust-releaser-unix:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        target:
+          - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-gnu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target ${{ matrix.target }}
+          
+  rust-releaser-windows:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        target:
+          - x86_64-pc-windows-msvc
+          - aarch64-pc-windows-msvc
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target ${{ matrix.target }}
 
-      - name: Make lakectl public
-        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
-
+#  goreleaser:
+#    runs-on: ubuntu-20.04
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Setup NodeJS
+#        uses: actions/setup-node@v3
+#        with:
+#          node-version: '16.17.1'
+#
+#      - name: Setup Go
+#        uses: actions/setup-go@v3
+#        with:
+#          go-version: 1.19.2
+#
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v1.7.0
+#        with:
+#          aws-region: us-east-1
+#          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+#
+#      - name: Run GoReleaser
+#        uses: goreleaser/goreleaser-action@v3
+#        with:
+#          version: latest
+#          args: build #release --rm-dist
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Make lakectl public
+#        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
