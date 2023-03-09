@@ -6,6 +6,7 @@ import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+import org.apache.spark.TaskContext
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
 import java.io.{ByteArrayInputStream, Closeable, DataInputStream, File}
@@ -21,20 +22,12 @@ private object local {
 }
 
 class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
-    val reader: SSTableReader[Proto],
-    it: Iterator[PebbleEntry],
-    companion: GeneratedMessageCompanion[Proto]
+    val it: Iterator[PebbleEntry],
+    val companion: GeneratedMessageCompanion[Proto]
 ) extends Iterator[Item[Proto]] {
   // TODO(ariels): explicitly make it closeable, and figure out how to close it when used by
   //     Spark.
-  override def hasNext: Boolean = {
-    // HACK(barak): close the reader on last item
-    if (it.hasNext) {
-      return true
-    }
-    reader.close()
-    false
-  }
+  override def hasNext: Boolean = it.hasNext
 
   override def next(): Item[Proto] = {
     val entry = it.next
@@ -63,10 +56,10 @@ object SSTableReader {
     val p = new Path(url)
     val fs = p.getFileSystem(configuration)
     val localFile = File.createTempFile("lakefs.", ".sstable")
-    localFile.deleteOnExit()
+    TaskContext.get().addTaskCompletionListener(_ => localFile.delete())
     // TODO(#2403): Implement a BlockReadable on top of AWS
     //     FSDataInputStream, use that.
-    fs.copyToLocalFile(p, new Path(localFile.getAbsolutePath))
+    fs.copyToLocalFile(false, p, new Path(localFile.getAbsolutePath), true)
     localFile
   }
 
@@ -82,8 +75,8 @@ object SSTableReader {
 }
 
 class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
-    file: java.io.File,
-    companion: GeneratedMessageCompanion[Proto]
+    val file: java.io.File,
+    val companion: GeneratedMessageCompanion[Proto]
 ) extends Closeable {
   private val fp = new java.io.RandomAccessFile(file, "r")
   private val reader = new BlockReadableFile(fp)
@@ -93,7 +86,6 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
 
   def close(): Unit = {
     fp.close()
-    file.delete()
   }
 
   def getProperties: Map[String, Array[Byte]] = {
@@ -104,6 +96,6 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
 
   def newIterator(): SSTableIterator[Proto] = {
     val it = BlockParser.entryIterator(reader)
-    new SSTableIterator(this, it, companion)
+    new SSTableIterator(it, companion)
   }
 }
