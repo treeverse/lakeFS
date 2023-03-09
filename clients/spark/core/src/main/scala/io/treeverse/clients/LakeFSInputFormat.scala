@@ -86,7 +86,8 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
     localFile = File.createTempFile("lakefs.", ".range")
-    TaskContext.get().addTaskCompletionListener(_ => localFile.delete())
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
+
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)

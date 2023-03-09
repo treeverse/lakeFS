@@ -56,7 +56,8 @@ object SSTableReader {
     val p = new Path(url)
     val fs = p.getFileSystem(configuration)
     val localFile = File.createTempFile("lakefs.", ".sstable")
-    TaskContext.get().addTaskCompletionListener(_ => localFile.delete())
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
+
     // TODO(#2403): Implement a BlockReadable on top of AWS
     //     FSDataInputStream, use that.
     fs.copyToLocalFile(false, p, new Path(localFile.getAbsolutePath), true)
