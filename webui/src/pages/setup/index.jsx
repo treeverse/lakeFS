@@ -43,7 +43,7 @@ const SetupContents = () => {
         } finally {
             setDisabled(false);
         }
-    }, [setDisabled, setSetupError, setup]);
+    }, [setDisabled, setSetupError, setup, currentStep]);
 
     if (loading) {
         return null;
