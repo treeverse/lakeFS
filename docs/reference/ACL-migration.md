@@ -31,13 +31,6 @@ The group list initially would be
 | **Admin**   | Admin              | \<Creation date> | All          |
 
 
-In the UI:
-
-![Groups page has a dropdown to edit permission for each
-group]( ../assets/img/ACL-groups-with-perms.png)
-
-
-
 ### The migration
 
 Upgrading the lakeFS version will require migrating to the new ACL authorization model
