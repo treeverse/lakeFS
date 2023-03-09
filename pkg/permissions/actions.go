@@ -1,4 +1,5 @@
-//go:generate go run github.com/treeverse/lakefs/cmd/tools/extract_actions ./actions.go ./actions.gen.go
+//go:generate go run --tags generate ./codegen ./actions.go ./actions.gen.go
+
 package permissions
 
 import (
