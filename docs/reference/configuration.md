@@ -126,7 +126,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.azure.disable_pre_signed_ui` `(bool: false)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI. For it to work, need to add [cors permissions](https://learn.microsoft.com/en-us/rest/api/storageservices/cross-origin-resource-sharing--cors--support-for-the-azure-storage-services) to the bucket:
+* `blockstore.azure.disable_pre_signed_ui` `(bool: false)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI. For it to work, need to add [cors permissions](https://learn.microsoft.com/en-us/rest/api/storageservices/cross-origin-resource-sharing--cors--support-for-the-azure-storage-services) to the blob:
    ```xml
   <Cors>
       <CorsRule>  
