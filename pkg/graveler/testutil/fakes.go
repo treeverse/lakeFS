@@ -228,6 +228,7 @@ type AddedCommitData struct {
 type RefsFake struct {
 	ListRepositoriesRes graveler.RepositoryIterator
 	ListBranchesRes     graveler.BranchIterator
+	ListCommitsRes      graveler.CommitIterator
 	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
 	addressTokenIter    graveler.AddressTokenIterator
@@ -265,7 +266,7 @@ func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.Repository
 }
 
 func (m *RefsFake) ListCommits(_ context.Context, _ *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
-	return nil, nil
+	return m.ListCommitsRes, nil
 }
 
 func (m *RefsFake) GCCommitIterator(_ context.Context, _ *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
