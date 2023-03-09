@@ -27,9 +27,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Protoc
-        uses: Noelware/setup-protoc@v1
+        uses: Noelware/setup-protoc@1.0.2
         with:
-          version: '3.x'
+          version: '3.9.1'
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
