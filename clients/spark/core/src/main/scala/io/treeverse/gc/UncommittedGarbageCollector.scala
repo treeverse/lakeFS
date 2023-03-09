@@ -168,6 +168,7 @@ object UncommittedGarbageCollector {
           }
 
         uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
+        uncommittedDF = uncommittedDF.repartition(uncommittedDF.col("address"))
         runID = uncommittedGCRunInfo.runID
 
         // Process committed
@@ -178,6 +179,7 @@ object UncommittedGarbageCollector {
 
         addressesToDelete = dataDF
           .select("address")
+          .repartition(dataDF.col("address"))
           .except(committedDF)
           .except(uncommittedDF)
       }
@@ -230,6 +232,12 @@ object UncommittedGarbageCollector {
       expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID)
+    println(s"Report for mark_id=$runID path=$reportDst")
+
+    val cachedAddresses = expiredAddresses.cache()
+    cachedAddresses.write.parquet(s"$reportDst/deleted")
+    cachedAddresses.write.text(s"$reportDst/deleted.text")
+
     val summary =
       writeJsonSummary(reportDst,
                        runID,
@@ -239,11 +247,7 @@ object UncommittedGarbageCollector {
                        success,
                        expiredAddresses.count()
                       )
-    println(s"Report for mark_id=$runID summary=$summary")
-
-    val cachedAddresses = expiredAddresses.cache()
-    cachedAddresses.write.parquet(s"$reportDst/deleted")
-    cachedAddresses.write.text(s"$reportDst/deleted.text")
+    println(s"Report summary=$summary")
   }
 
   private def formatRunPath(storageNamespace: String, runID: String): String = {
