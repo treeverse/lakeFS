@@ -29,7 +29,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
-          version: '22.1'
+          version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
