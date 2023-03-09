@@ -26,11 +26,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: target
-          key:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -62,7 +57,7 @@ jobs:
         with:
           command: build
           args: --target ${{ matrix.target }}
-          
+
   rust-releaser-windows:
     runs-on: windows-2022
     strategy:
