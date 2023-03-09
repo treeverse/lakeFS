@@ -58,9 +58,9 @@ func CheckPolicyACLName(ctx context.Context, svc auth.Service, name string) erro
 }
 
 // RBACToACL translates all groups on svc to use ACLs instead of RBAC
-// policies.  It updates svc only if doUpdate.  It calls warn to report
-// increased permissions.
-func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Time, warnFunc func(error)) error {
+// policies.  It updates svc only if doUpdate.  It calls messageFunc to
+// report increased permissions.
+func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Time, messageFunc func(string, model.ACL, error)) error {
 	mig := NewACLsMigrator(svc, doUpdate)
 
 	groups, _, err := svc.ListGroups(ctx, &model.PaginationParams{Amount: maxGroups + 1})
@@ -71,6 +71,8 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Ti
 		return fmt.Errorf("%w (got %d)", ErrTooManyGroups, len(groups))
 	}
 	for _, group := range groups {
+		var warnings error
+
 		policies, _, err := svc.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{Amount: maxGroupPolicies + 1})
 		if err != nil {
 			return fmt.Errorf("list group %+v policies: %w", group, err)
@@ -83,7 +85,7 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Ti
 			return fmt.Errorf("create ACL for group %+v: %w", group, err)
 		}
 		if warn != nil {
-			warnFunc(warn)
+			warnings = multierror.Append(warnings, warn)
 		}
 
 		log := logging.FromContext(ctx)
@@ -98,7 +100,7 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Ti
 			if !doUpdate {
 				return err
 			}
-			warnFunc(err)
+			warnings = multierror.Append(warnings, warn)
 		}
 		policyExists := errors.Is(err, ErrPolicyExists)
 		if doUpdate {
@@ -107,6 +109,8 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Ti
 				return err
 			}
 		}
+
+		messageFunc(group.DisplayName, *newACL, warnings)
 	}
 
 	return nil
@@ -156,24 +160,24 @@ func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*mode
 	repositories := make(map[string]struct{}, 0)
 	allRepositories := false
 
+	allAllowedActions := make(map[string]struct{})
 	for _, p := range policies {
 		if p.ACL.Permission != "" {
-			return nil, warn, fmt.Errorf("policy %s: %w", p.DisplayName, ErrAlreadyHasACL)
+			warn = multierror.Append(warn, fmt.Errorf("policy %s: %w", p.DisplayName, ErrAlreadyHasACL))
 		}
 
 		for _, s := range p.Statement {
 			if s.Effect != model.StatementEffectAllow {
 				warn = multierror.Append(warn, fmt.Errorf("ignore policy %s statement %+v: %w", p.DisplayName, s, ErrNotAllowed))
 			}
-			sp, addedActions, err := mig.ComputePermission(ctx, s.Action)
+			sp, err := mig.ComputePermission(ctx, s.Action)
+			for _, allowedAction := range expandMatchingActions(s.Action) {
+				allAllowedActions[allowedAction] = struct{}{}
+			}
 			if err != nil {
 				return nil, warn, fmt.Errorf("convert policy %s statement %+v: %w", p.DisplayName, s, err)
 			}
 
-			if len(addedActions) > 0 {
-				w := fmt.Errorf("%w: %s", ErrAddedActions, strings.Join(addedActions, ", "))
-				warn = multierror.Append(warn, w)
-			}
 			if BroaderPermission(sp, acl.Permission) {
 				acl.Permission = sp
 			}
@@ -184,6 +188,7 @@ func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*mode
 			}
 			if all {
 				allRepositories = true
+				repositories = nil
 			}
 			if !allRepositories {
 				for _, r := range added {
@@ -192,17 +197,33 @@ func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*mode
 			}
 		}
 	}
+	addedActions := mig.ComputeAddedActions(acl.Permission, allAllowedActions)
+	if len(addedActions) > 0 {
+		warn = multierror.Append(warn, fmt.Errorf("%w: %s", ErrAddedActions, strings.Join(addedActions, ", ")))
+	}
 
 	if allRepositories {
 		acl.Repositories.All = true
 	} else {
-		rs := make([]string, len(repositories))
+		rs := make([]string, 0, len(repositories))
 		for r := range repositories {
 			rs = append(rs, r)
 		}
 		acl.Repositories.List = rs
 	}
 	return acl, warn, err
+}
+
+func expandMatchingActions(patterns []string) []string {
+	ret := make([]string, 0, len(patterns))
+	for _, action := range permissions.Actions {
+		for _, pattern := range patterns {
+			if wildcard.Match(pattern, action) {
+				ret = append(ret, action)
+			}
+		}
+	}
+	return ret
 }
 
 func someActionMatches(action string, availableActions map[string]struct{}) bool {
@@ -253,7 +274,7 @@ func (mig *ACLsMigrator) GetMinPermission(action string) model.ACLPermission {
 
 // ComputePermission returns ACL permission for actions and the actions that
 // applying that permission will add to it.
-func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string) (model.ACLPermission, []string, error) {
+func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string) (model.ACLPermission, error) {
 	log := logging.FromContext(ctx)
 	permission := model.ACLPermission("")
 	for _, action := range actions {
@@ -273,11 +294,16 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 		}
 	}
 	if permission == model.ACLPermission("") {
-		return permission, nil, fmt.Errorf("%w actions", ErrEmpty)
+		return permission, fmt.Errorf("%w actions", ErrEmpty)
 	}
 
+	return permission, nil
+}
+
+// ComputeAddedActions returns the list of actions that permission allows
+// that are not in alreadyAllowedActions.
+func (mig *ACLsMigrator) ComputeAddedActions(permission model.ACLPermission, alreadyAllowedActions map[string]struct{}) []string {
 	var (
-		extraActions      []string
 		allAllowedActions map[string]struct{}
 	)
 	switch permission {
@@ -291,23 +317,20 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 	default:
 		allAllowedActions = mig.Actions[acl.ACLAdmin]
 	}
-	for allowedAction := range allAllowedActions {
-		// action _added_ if none of actions match it
-		matched := false
-		for _, a := range actions {
-			if wildcard.Match(a, allowedAction) {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			extraActions = append(extraActions, allowedAction)
+	addedActions := make(map[string]struct{}, len(allAllowedActions))
+	for _, action := range permissions.Actions {
+		if someActionMatches(action, allAllowedActions) && !someActionMatches(action, alreadyAllowedActions) {
+			addedActions[action] = struct{}{}
 		}
 	}
-	return permission, extraActions, nil
+	addedActionsSlice := make([]string, 0, len(addedActions))
+	for action := range addedActions {
+		addedActionsSlice = append(addedActionsSlice, action)
+	}
+	return addedActionsSlice
 }
 
-// GetRepository returns the repositories to which resource refers, rounding
+// GetRepositories returns the repositories to which resource refers, rounding
 // up.
 //
 //   - It ignores all ARNs except "arn:lakefs:fs:::repository/.
@@ -353,11 +376,10 @@ func (mig *ACLsMigrator) GetRepositories(resource string) ([]string, bool, error
 	if !strings.ContainsAny(repo, "*?") {
 		repos = []string{repo}
 	} else {
-		all = true
-
-		if repo != "*" {
+		if repo != "*" && !all {
 			widened = append(widened, "all repositories allowed")
 		}
+		all = true
 	}
 	if widened == nil {
 		return repos, all, nil

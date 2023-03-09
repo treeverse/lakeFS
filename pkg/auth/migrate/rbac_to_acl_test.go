@@ -15,7 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/migrate"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/testutil"
-	"github.com/treeverse/lakefs/pkg/auth/wildcard"
+	//	"github.com/treeverse/lakefs/pkg/auth/wildcard"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
@@ -110,37 +110,10 @@ func TestComputePermission(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			permission, addedActions, err := mig.ComputePermission(ctx, tt.Actions)
+			permission, err := mig.ComputePermission(ctx, tt.Actions)
 
 			if permission != tt.Permission {
 				t.Errorf("Got permission %s when expecting %s", permission, tt.Permission)
-			}
-
-			// Verify added actions.  Getting this correct can
-			// be hard and is of lower value to users, because
-			// wildcards make life hard.  But we do what we can
-			// :-)
-
-			for _, addedAction := range addedActions {
-				// Every added action is not covered by the
-				// passed-in actions.
-				for _, action := range tt.Actions {
-					if wildcard.Match(action, addedAction) {
-						t.Errorf("Added action %s matches passed-in action %s", addedAction, action)
-					}
-				}
-				// Every added action is covered by the
-				// actions for the returned permission.
-				ok := false
-				for action := range mig.Actions[permission] {
-					if wildcard.Match(action, addedAction) {
-						ok = true
-						break
-					}
-				}
-				if !ok {
-					t.Errorf("No action in %v matches added action %s", mig.Actions[permission], addedAction)
-				}
 			}
 
 			if !errors.Is(err, tt.Err) {
