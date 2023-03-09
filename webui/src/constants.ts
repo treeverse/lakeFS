@@ -14,4 +14,9 @@ export enum OtfDiffType {
     Dropped = "dropped",
     Changed = "changed",
 }
+export enum TreeRowType {
+    Object,
+    Prefix,
+    Table
+}
 
