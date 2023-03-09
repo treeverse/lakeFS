@@ -5,7 +5,7 @@ import {
     ChevronRightIcon, CircleSlashIcon,
     ClockIcon,
     FileDirectoryIcon,
-    HistoryIcon, PencilIcon, PlusIcon, TableIcon, TrashIcon
+    HistoryIcon, PencilIcon, FileIcon, TableIcon, TrashIcon
 } from "@primer/octicons-react";
 import ChangeSummary from "./ChangeSummary";
 import {ConfirmationModal} from "../modals";
@@ -129,9 +129,9 @@ const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, r
             <td className="entry-type-indicator">{diffIndicator}</td>
             <td className="tree-path">
                         <span style={{marginLeft: (depth * 20) + "px"}}>
+                            {pathSection}
                             {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand}/>}
                             {loading ? <ClockIcon/> : ""}
-                            {pathSection}
                         </span>
             </td>
             <td className={"change-summary"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
@@ -200,7 +200,7 @@ export const DiffIndicationIcon = ({entry, rowType}) => {
                 tooltipText = "Removed";
                 break;
             case 'added':
-                diffIcon = <PlusIcon/>;
+                diffIcon = <FileIcon/>;
                 tooltipId = "tooltip-added";
                 tooltipText = "Added";
                 break;
