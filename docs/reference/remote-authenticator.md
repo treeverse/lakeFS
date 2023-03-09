@@ -53,7 +53,7 @@ auth:
 
 A Remote Authenticator implementation should expose a single endpoint, which expects the following JSON request:
 
-```JSON
+```json
 {
     "username": "testy.mctestface@example.com",
     "password": "Password1"
@@ -62,7 +62,7 @@ A Remote Authenticator implementation should expose a single endpoint, which exp
 
 and returns a JSON response like this:
 
-```JSON
+```json
 {
     "external_user_identifier": "TestyMcTestface"
 }
@@ -70,7 +70,7 @@ and returns a JSON response like this:
 
 ### Example Responses
 
-```HTTP
+```http
 ### Request
 POST https://remote-authenticator.example.com/auth
 Content-Type: application/json
