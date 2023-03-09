@@ -566,7 +566,7 @@ export const URINavigator = ({
   relativeTo = "",
   pathURLBuilder = buildPathURL,
   isPathToFile = false,
-  inObjectsBrowser = false
+  hasCopyButton = false
 }) => {
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
@@ -623,7 +623,7 @@ export const URINavigator = ({
         </div>
       </span>
       {
-        inObjectsBrowser
+        hasCopyButton
           ? <span className="object-viewer-buttons">
               <ClipboardButton
                   text={`lakefs://${repo.id}/${reference.id}/${path}`}
@@ -753,7 +753,7 @@ export const Tree = ({
     <div className="tree-container">
       <Card>
         <Card.Header>
-          <URINavigator path={path} repo={repo} reference={reference} inObjectsBrowser={true}/>
+          <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true}/>
         </Card.Header>
         <Card.Body>{body}</Card.Body>
       </Card>
