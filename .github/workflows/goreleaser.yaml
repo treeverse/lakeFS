@@ -40,8 +40,14 @@ jobs:
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: release
           args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: delta-${{ matrix.target }}
+          path: pkg/plugins/diff/delta_diff_server/release/delta
+          if-no-files-found: error
 
   rust-releaser-unix:
     runs-on: ubuntu-20.04
@@ -69,8 +75,14 @@ jobs:
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: release
           args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: delta-${{ matrix.target }}
+          path: pkg/plugins/diff/delta_diff_server/release/delta
+          if-no-files-found: error
 
   rust-releaser-windows:
     runs-on: windows-2022
@@ -98,8 +110,14 @@ jobs:
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: release
           args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: delta-${{ matrix.target }}
+          path: pkg/plugins/diff/delta_diff_server/release/delta
+          if-no-files-found: error
 
 #  goreleaser:
 #    runs-on: ubuntu-20.04
