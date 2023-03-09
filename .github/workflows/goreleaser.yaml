@@ -16,9 +16,6 @@ permissions:
 jobs:
   rust-releaser-mac:
     runs-on: macos-12
-    defaults:
-      run:
-        working-directory: pkg/plugins/diff/delta_diff_server
     strategy:
       matrix:
         target:
@@ -35,6 +32,7 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       - uses: actions-rs/cargo@v1
+        working-directory: pkg/plugins/diff/delta_diff_server
         with:
           command: build
           args: --target ${{ matrix.target }}
@@ -57,6 +55,7 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       - uses: actions-rs/cargo@v1
+        working-directory: pkg/plugins/diff/delta_diff_server
         with:
           command: build
           args: --target ${{ matrix.target }}
@@ -79,6 +78,7 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       - uses: actions-rs/cargo@v1
+        working-directory: pkg/plugins/diff/delta_diff_server
         with:
           command: build
           args: --target ${{ matrix.target }}
