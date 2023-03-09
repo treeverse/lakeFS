@@ -65,7 +65,7 @@ function readableObject(path) {
 const NoContentDiff = ({left, right, diffType}) => {
     return <div>
         <span><StatDiff left={left} right={right} diffType={diffType}/></span>
-        <span><Alert variant="warning">Unsupported format for content diff</Alert></span>
+        <span><Alert variant="warning">lakeFS supports content diff for .tsv, .csv, and .txt file formats only</Alert></span>
     </div>;
 }
 
