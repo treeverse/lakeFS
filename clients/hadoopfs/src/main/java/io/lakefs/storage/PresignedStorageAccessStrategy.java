@@ -39,7 +39,7 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
         System.out.println("presignedUrl: " + presignedUrl); // TODO(johnnyaug) remove this print
         HttpURLConnection connection = (HttpURLConnection) presignedUrl.openConnection();
         connection.setDoOutput(true);
-        connection.setRequestProperty("Content-Type", "application/octet-stream"); // TODO be better than this
+        connection.setRequestProperty("Content-Type", "application/octet-stream");
         connection.setRequestMethod("PUT");
         OutputStream out = new LakeFSFileSystemOutputStream(lakeFSFileSystem, lfsClient, connection, objectLocation,
                 stagingLocation);
