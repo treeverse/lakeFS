@@ -181,7 +181,8 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
+                                         changesTreeMessage= ""}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
@@ -208,6 +209,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
                                     compare Delta Lake tables</Alert></div>
                     }
+                    <div>{changesTreeMessage}</div>
                     <Card>
                         <Card.Header>
                             {tableDiffState.isShown
