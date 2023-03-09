@@ -1,6 +1,9 @@
 name: releaser
 
 on:
+  push:
+    branches:
+      - feature/delta/releaser
   release:
     types: [published]
 
