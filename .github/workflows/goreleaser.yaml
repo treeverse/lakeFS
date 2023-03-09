@@ -27,9 +27,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Protoc
-        uses: Noelware/setup-protoc@1.0.2
+        uses: arduino/setup-protoc@v1
         with:
-          version: '3.9.1'
+          version: '22.1'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
