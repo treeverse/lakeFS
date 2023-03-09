@@ -58,6 +58,7 @@ class ParallelDataLister extends DataLister with Serializable {
       listPath(configMapper, slicePath).toSeq
         .map(s => (s.path, s.lastModified))
     })
+
     val objectsDF = slices
       .map(_.path)
       .toSeq
