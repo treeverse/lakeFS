@@ -738,9 +738,6 @@ func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, upd
 
 	if update { // update policy only if it already exists
 		_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, policyKey, &model.PolicyData{})
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = ErrNotFound
-		}
 		if err != nil {
 			return err
 		}
