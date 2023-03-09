@@ -154,7 +154,7 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
                 });
             }
         }
-    }, [leftResult, rightResult]);
+    }, [leftResult, rightResult, entry]);
     return treeItemType;
 }
 
