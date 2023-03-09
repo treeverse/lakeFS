@@ -43,6 +43,11 @@ LIMIT 20`
         setShouldSubmit(prev => !prev)
     }, [setShouldSubmit])
 
+    const handleRun = useCallback(() => {
+        setShouldSubmit(prev => !prev)
+    }, [setShouldSubmit])
+
+
     const [sql, setSql] = useState(initialQuery);
     const sqlChangeHandler = useCallback((data: React.SetStateAction<string>) => {
         setSql(data)
@@ -147,7 +152,7 @@ LIMIT 20`
         <div>
             <Form onSubmit={handleSubmit}>
                 <Form.Group className="mt-2 mb-1" controlId="objectQuery">
-                    <SQLEditor initialValue={initialQuery} onChange={sqlChangeHandler}/>
+                    <SQLEditor initialValue={initialQuery} onChange={sqlChangeHandler} onRun={handleRun}/>
                 </Form.Group>
 
 
