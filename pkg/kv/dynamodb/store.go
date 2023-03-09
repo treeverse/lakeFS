@@ -285,11 +285,11 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		case kv.PrecondConditionalExists: // update only if exists
 			input.ConditionExpression = aws.String("attribute_exists(" + ItemValue + ")")
 
-		default: // update just in case the previous value was same as predicate value
+		default: // update only if predicate matches current stored value
 			predicateCondition := expression.Name(ItemValue).Equal(expression.Value(valuePredicate.([]byte)))
 			conditionExpression, err := expression.NewBuilder().WithCondition(predicateCondition).Build()
 			if err != nil {
-				return fmt.Errorf("build expression: %w", err)
+				return fmt.Errorf("build condition expression: %w", err)
 			}
 			input.ExpressionAttributeNames = conditionExpression.Names()
 			input.ExpressionAttributeValues = conditionExpression.Values()
