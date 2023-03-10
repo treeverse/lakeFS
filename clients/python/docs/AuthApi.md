@@ -3408,6 +3408,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     group_id = "groupId_example" # str | 
     acl = ACL(
         permission="permission_example",
+        all_repositories=True,
         repositories=[
             "repositories_example",
         ],

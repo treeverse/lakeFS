@@ -244,6 +244,24 @@ class Auth {
         return response.json();
     }
 
+    async getACL(groupId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/acl`);
+        if (response.status !== 200) {
+            throw new Error(`could not get ACL for group ${groupId}: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+
+    async putACL(groupId, acl) {
+        const response = await apiRequest(`/auth/groups/${groupId}/acl`, {
+            method: 'POST',
+            body: JSON.stringify(acl),
+        });
+        if (response.status !== 201) {
+            throw new Error(`could not set ACL for group ${groupId}: ${await extractError(response)}`);
+        }
+    }
+
     async addUserToGroup(userId, groupId) {
         const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, {method: 'PUT'});
         if (response.status !== 201) {
