@@ -267,10 +267,15 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 			if diffs := deep.Equal(acl, &tt.ACL); diffs != nil {
 				t.Errorf("Bad ACL: %s", diffs)
 			}
-			fullWarning := warn.Error()
-			for _, expectedWarning := range tt.Warnings {
-				if !strings.Contains(fullWarning, expectedWarning) {
-					t.Errorf("Got warnings %v, which did not include expected warning %s", fullWarning, expectedWarning)
+			if len(tt.Warnings) > 0 {
+				if warn == nil {
+					t.Fatalf("No warnings returned when expecting %v", tt.Warnings)
+				}
+				fullWarning := warn.Error()
+				for _, expectedWarning := range tt.Warnings {
+					if !strings.Contains(fullWarning, expectedWarning) {
+						t.Errorf("Got warnings %v, which did not include expected warning %s", fullWarning, expectedWarning)
+					}
 				}
 			}
 		})
