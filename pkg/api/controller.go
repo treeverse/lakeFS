@@ -677,68 +677,6 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 		return
 	}
 
-	policy := &model.Policy{
-		CreatedAt:   time.Now(),
-		DisplayName: aclPolicyName,
-		Statement:   statements,
-		ACL:         newACL,
-	}
-
-	policyJSON, err := json.MarshalIndent(policy, "", "  ")
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	c.Logger.
-		WithContext(ctx).
-		WithField("group", groupID).
-		WithField("policy", fmt.Sprintf("%+v", policy)).
-		WithField("policyJSON", string(policyJSON)).
-		Debug("Set policy derived from ACL")
-
-	err = c.Auth.WritePolicy(ctx, policy, true)
-	if errors.Is(err, auth.ErrNotFound) {
-		c.Logger.
-			WithContext(ctx).
-			WithField("group", groupID).
-			Info("Define an ACL for the first time because none was defined (bad migrate?)")
-		err = c.Auth.WritePolicy(ctx, policy, false)
-	}
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	existingPolicies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
-		Amount: -1,
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	err = c.Auth.AttachPolicyToGroup(ctx, aclPolicyName, groupID)
-	if !errors.Is(err, auth.ErrAlreadyExists) && c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	ok := true
-	for _, existingPolicy := range existingPolicies {
-		if existingPolicy.DisplayName != aclPolicyName {
-			err = c.Auth.DetachPolicyFromGroup(ctx, existingPolicy.DisplayName, groupID)
-			if err != nil {
-				ok = false
-				c.Logger.
-					WithContext(ctx).
-					WithField("group", groupID).
-					WithField("policy", existingPolicy.DisplayName).
-					WithError(err).
-					Warn("failed to detach policy")
-			}
-		}
-	}
-	if !ok {
-		writeResponse(w, r, http.StatusInternalServerError, "failed to detach some policies")
-		return
-	}
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
