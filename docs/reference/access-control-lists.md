@@ -16,12 +16,12 @@ ACLs were introduced in their current form in v0.97 of lakeFS as part of [change
 You can attach Permissions and scope them to groups in the Groups page.
 There are 4 default groups, named after the 4 permissions. Each group is global (applies for all repositories).
 
-| Group ID    | Default Permission | Repositories |
+| Group ID    | Allows | Repositories |
 |-------------|--------------------|--------------|
-| **Read**    | Read               | All          |
-| **Write**   | Write              | All          |
-| **Super**   | Super              | All          |
-| **Admin**   | Admin              | All          |
+| **Read**    | Read operations, creating access keys               | All          |
+| **Write**   | Allows all data read and write operations.              | All          |
+| **Super**   | Allows all operations except auth.              | All          |
+| **Admin**   | Allows all operations.              | All          |
 
 
 ## Scopes
