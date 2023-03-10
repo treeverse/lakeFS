@@ -41,6 +41,7 @@ class ACL(
         
         class properties:
             permission = schemas.StrSchema
+            all_repositories = schemas.BoolSchema
             
             
             class repositories(
@@ -66,6 +67,7 @@ class ACL(
                     return super().__getitem__(i)
             __annotations__ = {
                 "permission": permission,
+                "all_repositories": all_repositories,
                 "repositories": repositories,
             }
     
@@ -75,12 +77,15 @@ class ACL(
     def __getitem__(self, name: typing_extensions.Literal["permission"]) -> MetaOapg.properties.permission: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["all_repositories"]) -> MetaOapg.properties.all_repositories: ...
+    
+    @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["repositories"]) -> MetaOapg.properties.repositories: ...
     
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["permission", "repositories", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["permission", "all_repositories", "repositories", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -89,12 +94,15 @@ class ACL(
     def get_item_oapg(self, name: typing_extensions.Literal["permission"]) -> MetaOapg.properties.permission: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["all_repositories"]) -> typing.Union[MetaOapg.properties.all_repositories, schemas.Unset]: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["repositories"]) -> typing.Union[MetaOapg.properties.repositories, schemas.Unset]: ...
     
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["permission", "repositories", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["permission", "all_repositories", "repositories", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -102,6 +110,7 @@ class ACL(
         cls,
         *_args: typing.Union[dict, frozendict.frozendict, ],
         permission: typing.Union[MetaOapg.properties.permission, str, ],
+        all_repositories: typing.Union[MetaOapg.properties.all_repositories, bool, schemas.Unset] = schemas.unset,
         repositories: typing.Union[MetaOapg.properties.repositories, list, tuple, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
         **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
@@ -110,6 +119,7 @@ class ACL(
             cls,
             *_args,
             permission=permission,
+            all_repositories=all_repositories,
             repositories=repositories,
             _configuration=_configuration,
             **kwargs,

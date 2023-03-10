@@ -41,7 +41,7 @@ const PoliciesContainer = () => {
 
     useEffect(() => { setSelected([]); }, [after, refresh]);
 
-    const showRBACWarning = useLoginConfigContext()?.RBAC === 'simplified';
+    const {RBAC: rbac} = useLoginConfigContext();
 
     if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
@@ -75,7 +75,7 @@ const PoliciesContainer = () => {
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
-            {showRBACWarning && <Warning>
+            {rbac === 'simplified' && <Warning>
                                 <b>Deprecation Notice:</b> RBAC (Role-Based Access Control) is being deprecated
                                 and will be replaced by ACL (Access Control Lists) in future releases.
                                 For more information on the transition from RBAC to ACL, please visit

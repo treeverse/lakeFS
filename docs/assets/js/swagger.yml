@@ -1000,14 +1000,17 @@ components:
           description: |
             Permission level to give this ACL.  "Read", "Write", "Super" and
             "Admin" are all supported.
+        all_repositories:
+          type: boolean
+          description: |
+            If true, this ACL applies to all repositories, including those
+            added in future.  Permission "Admin" allows changing ACLs, so
+            this is necessarily true for that permission.
         repositories:
           type: array
           items:
             type: string
-          description: |
-            Apply this ACL only to these repositories.  If missing then the
-            ACL applies to all repositories.  Admins can directly change
-            permissions so irrelevant restriction to them.
+          description: Apply this ACL only to these repositories.
 
     StorageConfig:
       type: object
