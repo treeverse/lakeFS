@@ -9,19 +9,22 @@ redirect_from:
   - ./commands.html
 ---
 
+{% comment %}
+This file (cli.md) is automagically generated from the Go code files under cmd/lakectl. 
+Any changes made directly to the Markdown file will be overwritten, and should instead be made to the
+relevant Go files. 
+{% endcomment %}
+
 # lakectl (lakeFS command-line tool)
 {:.no_toc}
-
-lakectl is a command-line tool for managing and administering lakeFS.
 
 {% include toc.html %}
 
 ## Installing lakectl locally
 
-`lakectl` is available for Linux, macOS, and Windows. You can also [run it using Docker](#runninglakectlfromdocker).
+`lakectl` is available for Linux, macOS, and Windows. You can also [run it using Docker](#running-lakectl-from-docker).
 
 [Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
-
 
 ### Configuring credentials and API endpoint
 
@@ -46,10 +49,11 @@ controls `server.endpoint_url`.
 
 ## Running lakectl from Docker
 
-If you'd rather run `lakectl` from a Docker container you can do so by passing configuration elements as environment variables. Here is an example: 
+If you'd rather run `lakectl` from a Docker container you can do so by passing configuration elements as environment variables. 
+Here is an example: 
 
 ```bash
-$ docker run --rm --interactive --tty \
+docker run --rm --pull always \
           -e LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE \
           -e LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=xxxxx
           -e LAKECTL_SERVER_ENDPOINT_URL=https://host.us-east-2.lakefscloud.io/ \
@@ -57,10 +61,44 @@ $ docker run --rm --interactive --tty \
           repo list
 ```
 
-_Bear in mind that if you are running lakeFS itself locally you will need to account for this in your networking configuration of the Docker container. That is to say, `localhost` to a Docker container is itself, not the host machine on which it is running._
+_Bear in mind that if you are running lakeFS itself locally you will need to account for this in your networking configuration of 
+the Docker container. That is to say, `localhost` to a Docker container is itself, not the host machine on which it is running._
 
 ## Command Reference
+### lakectl
 
+A cli tool to explore manage and work with lakeFS
+
+#### Synopsis
+{:.no_toc}
+
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
+
+#### Options
+{:.no_toc}
+
+```
+      --base-uri string      base URI used for lakeFS address parse
+  -c, --config string        config file (default is $HOME/.lakectl.yaml)
+  -h, --help                 help for lakectl
+      --log-format string    set logging output format
+      --log-level string     set logging level (default "none")
+      --log-output strings   set logging output(s)
+      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --verbose              run in verbose mode
+```
+
+**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
+{: .note .note-warning }
+
+#### Example usage
+{:.no_toc}
+
+```shell
+$ export LAKECTL_BASE_URI="lakefs://my-repo/my-branch"
+# Once set, use relative lakefs uri's:
+$ lakectl fs ls /path
+```
 
 ### lakectl abuse
 
