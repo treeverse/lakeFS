@@ -54,6 +54,10 @@ public class ACL {
   @SerializedName(SERIALIZED_NAME_PERMISSION)
   private String permission;
 
+  public static final String SERIALIZED_NAME_ALL_REPOSITORIES = "all_repositories";
+  @SerializedName(SERIALIZED_NAME_ALL_REPOSITORIES)
+  private Boolean allRepositories;
+
   public static final String SERIALIZED_NAME_REPOSITORIES = "repositories";
   @SerializedName(SERIALIZED_NAME_REPOSITORIES)
   private List<String> repositories = new ArrayList<>();
@@ -83,6 +87,28 @@ public class ACL {
   }
 
 
+  public ACL allRepositories(Boolean allRepositories) {
+    
+    this.allRepositories = allRepositories;
+    return this;
+  }
+
+   /**
+   * If true, this ACL applies to all repositories, including those added in future.  Permission \&quot;Admin\&quot; allows changing ACLs, so this is necessarily true for that permission. 
+   * @return allRepositories
+  **/
+  @javax.annotation.Nullable
+
+  public Boolean getAllRepositories() {
+    return allRepositories;
+  }
+
+
+  public void setAllRepositories(Boolean allRepositories) {
+    this.allRepositories = allRepositories;
+  }
+
+
   public ACL repositories(List<String> repositories) {
     
     this.repositories = repositories;
@@ -98,7 +124,7 @@ public class ACL {
   }
 
    /**
-   * Apply this ACL only to these repositories.  If missing then the ACL applies to all repositories.  Admins can directly change permissions so irrelevant restriction to them. 
+   * Apply this ACL only to these repositories.
    * @return repositories
   **/
   @javax.annotation.Nullable
@@ -124,12 +150,13 @@ public class ACL {
     }
     ACL ACL = (ACL) o;
     return Objects.equals(this.permission, ACL.permission) &&
+        Objects.equals(this.allRepositories, ACL.allRepositories) &&
         Objects.equals(this.repositories, ACL.repositories);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(permission, repositories);
+    return Objects.hash(permission, allRepositories, repositories);
   }
 
   @Override
@@ -137,6 +164,7 @@ public class ACL {
     StringBuilder sb = new StringBuilder();
     sb.append("class ACL {\n");
     sb.append("    permission: ").append(toIndentedString(permission)).append("\n");
+    sb.append("    allRepositories: ").append(toIndentedString(allRepositories)).append("\n");
     sb.append("    repositories: ").append(toIndentedString(repositories)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -161,6 +189,7 @@ public class ACL {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("permission");
+    openapiFields.add("all_repositories");
     openapiFields.add("repositories");
 
     // a set of required properties/fields (JSON key names)

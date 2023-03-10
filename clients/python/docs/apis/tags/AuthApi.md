@@ -5349,6 +5349,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     }
     body = ACL(
         permission="permission_example",
+        all_repositories=True,
         repositories=[
             "repositories_example"
         ],

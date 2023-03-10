@@ -9,6 +9,18 @@
   --color-bg-conflict: #fff3cd;
 }
 
+.gray-out {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
 .main-app {
   margin: 15px;
 }
