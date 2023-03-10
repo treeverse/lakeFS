@@ -534,12 +534,12 @@ lakectl auth groups acl help [command] [flags]
 
 ### lakectl auth groups acl set
 
-Set ACL of group id
+Set ACL of group
 
 #### Synopsis
 {:.no_toc}
 
-Set ACL of group id.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.
+Set ACL of group.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.
 
 ```
 lakectl auth groups acl set [flags]
@@ -730,6 +730,105 @@ lakectl auth groups members remove [flags]
 
 
 
+### lakectl auth groups policies
+
+Manage group policies
+
+#### Synopsis
+{:.no_toc}
+
+Manage group policies.  Requires an external authorization server with matching support.
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for policies
+```
+
+
+
+### lakectl auth groups policies attach
+
+Attach a policy to a group
+
+```
+lakectl auth groups policies attach [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help            help for attach
+      --id string       User identifier
+      --policy string   Policy identifier
+```
+
+
+
+### lakectl auth groups policies detach
+
+Detach a policy from a group
+
+```
+lakectl auth groups policies detach [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help            help for detach
+      --id string       User identifier
+      --policy string   Policy identifier
+```
+
+
+
+### lakectl auth groups policies help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type policies help [path to command] for full details.
+
+```
+lakectl auth groups policies help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth groups policies list
+
+List policies for the given group
+
+```
+lakectl auth groups policies list [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --id string      Group identifier
+      --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
+  -h, --help           help for list
+```
+
+
+
 ### lakectl auth help
 
 Help about any command
@@ -749,6 +848,116 @@ lakectl auth help [command] [flags]
 
 ```
   -h, --help   help for help
+```
+
+
+
+### lakectl auth policies
+
+Manage policies
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for policies
+```
+
+
+
+### lakectl auth policies create
+
+Create a policy
+
+```
+lakectl auth policies create [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                        help for create
+      --id string                   Policy identifier
+      --statement-document string   JSON statement document path (or "-" for stdin)
+```
+
+
+
+### lakectl auth policies delete
+
+Delete a policy
+
+```
+lakectl auth policies delete [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help        help for delete
+      --id string   Policy identifier
+```
+
+
+
+### lakectl auth policies help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type policies help [path to command] for full details.
+
+```
+lakectl auth policies help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth policies list
+
+List policies
+
+```
+lakectl auth policies list [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
+  -h, --help           help for list
+```
+
+
+
+### lakectl auth policies show
+
+Show a policy
+
+```
+lakectl auth policies show [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help        help for show
+      --id string   Policy identifier
 ```
 
 
@@ -986,6 +1195,106 @@ lakectl auth users list [flags]
 {:.no_toc}
 
 ```
+      --amount int     how many results to return (default 100)
+      --after string   show results after this value (used for pagination)
+  -h, --help           help for list
+```
+
+
+
+### lakectl auth users policies
+
+Manage user policies
+
+#### Synopsis
+{:.no_toc}
+
+Manage user policies.  Requires an external authorization server with matching support.
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for policies
+```
+
+
+
+### lakectl auth users policies attach
+
+Attach a policy to a user
+
+```
+lakectl auth users policies attach [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help            help for attach
+      --id string       Username (email for password-based users)
+      --policy string   Policy identifier
+```
+
+
+
+### lakectl auth users policies detach
+
+Detach a policy from a user
+
+```
+lakectl auth users policies detach [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help            help for detach
+      --id string       Username (email for password-based users)
+      --policy string   Policy identifier
+```
+
+
+
+### lakectl auth users policies help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type policies help [path to command] for full details.
+
+```
+lakectl auth users policies help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth users policies list
+
+List policies for the given user
+
+```
+lakectl auth users policies list [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --effective      List all distinct policies attached to the user, including by group memberships
+      --id string      Username (email for password-based users)
       --amount int     how many results to return (default 100)
       --after string   show results after this value (used for pagination)
   -h, --help           help for list
