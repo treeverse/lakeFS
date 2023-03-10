@@ -59,6 +59,9 @@ const GroupRepositoriesList = ({ groupId }) => {
     });
 
     const addReposToACL = useCallback((acl, groupId, repoIds) => {
+        if (acl.repositories === undefined) {
+            acl.repositories = [];
+        }
         acl.repositories = sortedUniq(acl.repositories.concat(repoIds).sort());
         return auth.putACL(groupId, acl)
             .then(() => { setRefresh(!refresh); setAPIError(null); })
@@ -116,7 +119,7 @@ const GroupRepositoriesList = ({ groupId }) => {
                     searchFn={prefix => repositories.list(prefix, "", 20)
                               .then(res => res.results.filter(r => !acl.repositories?.includes(r.id)))}
                     onHide={setShowAddModal.bind(null, false)}
-                    onAttach={(selected) => addReposToACL.bind(acl, groupId, selected)}/>
+                    onAttach={addReposToACL.bind(null, acl, groupId)}/>
                 }
             </>
         );

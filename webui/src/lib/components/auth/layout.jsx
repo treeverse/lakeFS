@@ -12,7 +12,7 @@ import {useLoginConfigContext} from "../../hooks/conf";
 
 
 export const AuthLayout = ({ children, activeTab }) => {
-    const simplified = useLoginConfigContext()?.RBAC === 'simplified';
+    const {RBAC: rbac} = useLoginConfigContext();
     return (
         <Layout>
             <Container fluid="xl">
@@ -39,7 +39,7 @@ export const AuthLayout = ({ children, activeTab }) => {
                                     <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
                                         Groups
                                     </Link>
-        {!simplified &&
+        {rbac !== 'simplified' &&
          <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
          Policies
          </Link>}

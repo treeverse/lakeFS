@@ -29,13 +29,13 @@ export const UserNav = ({ userId, page = 'groups' }) => {
 
 
 export const GroupNav = ({ groupId, page = 'groups' }) => {
-    const simplified = useLoginConfigContext()?.RBAC === 'simplified';
+    const {RBAC: rbac} = useLoginConfigContext();
     return (
         <Nav justify variant="tabs">
             <Link component={NavItem} active={page === 'members'} href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
                 Group Memberships
             </Link>
-            {simplified ?
+            {rbac === 'simplified' ?
              <Link component={NavItem} active={page === 'acl'} href={{pathname: '/auth/groups/:groupId/acl', params: {groupId}}}>ACL</Link> :
              <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}}>
                 Attached Policies
