@@ -821,6 +821,10 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupPoliciesParams) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
@@ -874,6 +878,10 @@ func serializePolicy(p *model.Policy) Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -892,6 +900,10 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -911,6 +923,10 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListPoliciesAction,
@@ -946,6 +962,10 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body CreatePolicyJSONRequestBody) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreatePolicyAction,
@@ -988,6 +1008,10 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeletePolicyAction,
@@ -1010,6 +1034,10 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadPolicyAction,
@@ -1034,6 +1062,10 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.UpdatePolicyAction,
@@ -1376,6 +1408,10 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params ListUserPoliciesParams) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
@@ -1417,6 +1453,10 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -1435,6 +1475,10 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
