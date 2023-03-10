@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -24,6 +28,17 @@ var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green
 
 {{ "Keep these somewhere safe since you will not be able to see the secret key again" | yellow }}
 `
+
+var policyDetailsTemplate = `
+ID: {{ .ID | bold }}
+Creation Date: {{  .CreationDate | date }}
+Statements:
+{{ .StatementDoc | json }}
+
+`
+
+var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
+` + policyDetailsTemplate
 
 var permissionTemplate = "Group {{ .Group }}:{{ .Permission }}\n"
 
@@ -133,6 +148,75 @@ var authUsersGroupsList = &cobra.Command{
 
 		pagination := resp.JSON200.Pagination
 		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
+	},
+}
+
+var authUsersPolicies = &cobra.Command{
+	Use:   "policies",
+	Short: "Manage user policies",
+	Long:  "Manage user policies.  Requires an external authorization server with matching support.",
+}
+
+var authUsersPoliciesList = &cobra.Command{
+	Use:   "list",
+	Short: "List policies for the given user",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+		effective, _ := cmd.Flags().GetBool("effective")
+
+		clt := getClient()
+
+		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &api.ListUserPoliciesParams{
+			After:     api.PaginationAfterPtr(after),
+			Amount:    api.PaginationAmountPtr(amount),
+			Effective: &effective,
+		})
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		policies := resp.JSON200.Results
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(*policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+			}
+		}
+
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
+	},
+}
+
+var authUsersPoliciesAttach = &cobra.Command{
+	Use:   "attach",
+	Short: "Attach a policy to a user",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+		resp, err := clt.AttachPolicyToUserWithResponse(cmd.Context(), id, policy)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		Fmt("Policy attached successfully\n")
+	},
+}
+
+var authUsersPoliciesDetach = &cobra.Command{
+	Use:   "detach",
+	Short: "Detach a policy from a user",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+
+		Fmt("Policy detached successfully\n")
 	},
 }
 
@@ -360,6 +444,202 @@ var authGroupsRemoveMember = &cobra.Command{
 	},
 }
 
+var authGroupsPolicies = &cobra.Command{
+	Use:   "policies",
+	Short: "Manage group policies",
+	Long:  "Manage group policies.  Requires an external authorization server with matching support.",
+}
+
+var authGroupsPoliciesList = &cobra.Command{
+	Use:   "list",
+	Short: "List policies for the given group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+
+		clt := getClient()
+
+		resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &api.ListGroupPoliciesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		policies := resp.JSON200.Results
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(*policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.Id, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+			}
+		}
+
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
+	},
+}
+
+var authGroupsPoliciesAttach = &cobra.Command{
+	Use:   "attach",
+	Short: "Attach a policy to a group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+
+		Fmt("Policy attached successfully\n")
+	},
+}
+
+var authGroupsPoliciesDetach = &cobra.Command{
+	Use:   "detach",
+	Short: "Detach a policy from a group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+
+		Fmt("Policy detached successfully\n")
+	},
+}
+
+// policies
+var authPolicies = &cobra.Command{
+	Use:   "policies",
+	Short: "Manage policies",
+}
+
+var authPoliciesList = &cobra.Command{
+	Use:   "list",
+	Short: "List policies",
+	Run: func(cmd *cobra.Command, args []string) {
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+
+		clt := getClient()
+
+		resp, err := clt.ListPoliciesWithResponse(cmd.Context(), &api.ListPoliciesParams{
+			After:  api.PaginationAfterPtr(after),
+			Amount: api.PaginationAmountPtr(amount),
+		})
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		policies := resp.JSON200.Results
+		rows := make([][]interface{}, len(policies))
+		for i, policy := range policies {
+			ts := time.Unix(*policy.CreationDate, 0).String()
+			rows[i] = []interface{}{policy.Id, ts}
+		}
+		pagination := resp.JSON200.Pagination
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, &pagination, amount)
+	},
+}
+
+var authPoliciesCreate = &cobra.Command{
+	Use:   "create",
+	Short: "Create a policy",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		document, _ := cmd.Flags().GetString("statement-document")
+		clt := getClient()
+
+		var err error
+		var fp io.ReadCloser
+		if document == "-" {
+			fp = os.Stdin
+		} else {
+			fp, err = os.Open(document)
+			if err != nil {
+				DieFmt("could not open policy document: %v", err)
+			}
+			defer func() {
+				_ = fp.Close()
+			}()
+		}
+
+		var doc StatementDoc
+		err = json.NewDecoder(fp).Decode(&doc)
+		if err != nil {
+			DieFmt("could not parse statement JSON document: %v", err)
+		}
+		resp, err := clt.CreatePolicyWithResponse(cmd.Context(), api.CreatePolicyJSONRequestBody{
+			Id:        id,
+			Statement: doc.Statement,
+		})
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		if resp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		createdPolicy := resp.JSON201
+		Write(policyCreatedTemplate, struct {
+			ID           string
+			CreationDate int64
+			StatementDoc StatementDoc
+		}{
+			ID:           createdPolicy.Id,
+			CreationDate: *createdPolicy.CreationDate,
+			StatementDoc: StatementDoc{createdPolicy.Statement},
+		})
+	},
+}
+
+type StatementDoc struct {
+	Statement []api.Statement `json:"statement"`
+}
+
+var authPoliciesShow = &cobra.Command{
+	Use:   "show",
+	Short: "Show a policy",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		clt := getClient()
+
+		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		policy := *resp.JSON200
+		Write(policyDetailsTemplate, struct {
+			ID           string
+			CreationDate int64
+			StatementDoc StatementDoc
+		}{
+			ID:           policy.Id,
+			CreationDate: *policy.CreationDate,
+			StatementDoc: StatementDoc{Statement: policy.Statement},
+		})
+	},
+}
+
+var authPoliciesDelete = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a policy",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		clt := getClient()
+
+		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		Fmt("Policy deleted successfully\n")
+	},
+}
+
 var aclGroupCmd = &cobra.Command{
 	Use:   "acl [sub-command]",
 	Short: "Manage ACLs",
@@ -397,8 +677,8 @@ var aclGroupACLGet = &cobra.Command{
 
 var aclGroupACLSet = &cobra.Command{
 	Use:   "set",
-	Short: "Set ACL of group id",
-	Long:  `Set ACL of group id.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.`,
+	Short: "Set ACL of group",
+	Long:  `Set ACL of group.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		permission, _ := cmd.Flags().GetString("permission")
@@ -447,6 +727,25 @@ func init() {
 
 	authUsersGroups.AddCommand(authUsersGroupsList)
 
+	authUsersPoliciesList.Flags().Bool("effective", false,
+		"List all distinct policies attached to the user, including by group memberships")
+	authUsersPoliciesList.Flags().String("id", "", "Username (email for password-based users)")
+	_ = authUsersPoliciesList.MarkFlagRequired("id")
+
+	authUsersPoliciesAttach.Flags().String("id", "", "Username (email for password-based users)")
+	_ = authUsersPoliciesAttach.MarkFlagRequired("id")
+	authUsersPoliciesAttach.Flags().String("policy", "", "Policy identifier")
+	_ = authUsersPoliciesAttach.MarkFlagRequired("policy")
+
+	authUsersPoliciesDetach.Flags().String("id", "", "Username (email for password-based users)")
+	_ = authUsersPoliciesDetach.MarkFlagRequired("id")
+	authUsersPoliciesDetach.Flags().String("policy", "", "Policy identifier")
+	_ = authUsersPoliciesDetach.MarkFlagRequired("policy")
+
+	authUsersPolicies.AddCommand(authUsersPoliciesList)
+	authUsersPolicies.AddCommand(authUsersPoliciesAttach)
+	authUsersPolicies.AddCommand(authUsersPoliciesDetach)
+
 	authUsersCredentialsList.Flags().String("id", "", "Username (email for password-based users, default: current user)")
 
 	authUsersCredentialsCreate.Flags().String("id", "", "Username (email for password-based users, default: current user)")
@@ -462,6 +761,7 @@ func init() {
 	authUsers.AddCommand(authUsersCreate)
 	authUsers.AddCommand(authUsersDelete)
 	authUsers.AddCommand(authUsersList)
+	authUsers.AddCommand(authUsersPolicies)
 	authUsers.AddCommand(authUsersGroups)
 	authUsers.AddCommand(authUsersCredentials)
 
@@ -489,6 +789,23 @@ func init() {
 	authGroupsMembers.AddCommand(authGroupsRemoveMember)
 	authGroupsMembers.AddCommand(authGroupsListMembers)
 
+	authGroupsPoliciesList.Flags().String("id", "", "Group identifier")
+	_ = authGroupsPoliciesList.MarkFlagRequired("id")
+
+	authGroupsPoliciesAttach.Flags().String("id", "", "User identifier")
+	_ = authGroupsPoliciesAttach.MarkFlagRequired("id")
+	authGroupsPoliciesAttach.Flags().String("policy", "", "Policy identifier")
+	_ = authGroupsPoliciesAttach.MarkFlagRequired("policy")
+
+	authGroupsPoliciesDetach.Flags().String("id", "", "User identifier")
+	_ = authGroupsPoliciesDetach.MarkFlagRequired("id")
+	authGroupsPoliciesDetach.Flags().String("policy", "", "Policy identifier")
+	_ = authGroupsPoliciesDetach.MarkFlagRequired("policy")
+
+	authGroupsPolicies.AddCommand(authGroupsPoliciesList)
+	authGroupsPolicies.AddCommand(authGroupsPoliciesAttach)
+	authGroupsPolicies.AddCommand(authGroupsPoliciesDetach)
+
 	aclGroupACLGet.Flags().String("id", "", "Group identifier")
 	_ = aclGroupACLGet.MarkFlagRequired("id")
 
@@ -506,15 +823,36 @@ func init() {
 	authGroups.AddCommand(authGroupsCreate)
 	authGroups.AddCommand(authGroupsList)
 	authGroups.AddCommand(authGroupsMembers)
+	authGroups.AddCommand(authGroupsPolicies)
 	authGroups.AddCommand(aclGroupCmd)
-
 	authCmd.AddCommand(authGroups)
+
+	// policies
+	authPoliciesCreate.Flags().String("id", "", "Policy identifier")
+	_ = authPoliciesCreate.MarkFlagRequired("id")
+	authPoliciesCreate.Flags().String("statement-document", "", "JSON statement document path (or \"-\" for stdin)")
+	_ = authPoliciesCreate.MarkFlagRequired("statement-document")
+
+	authPoliciesDelete.Flags().String("id", "", "Policy identifier")
+	_ = authPoliciesDelete.MarkFlagRequired("id")
+
+	authPoliciesShow.Flags().String("id", "", "Policy identifier")
+	_ = authPoliciesShow.MarkFlagRequired("id")
+
+	authPolicies.AddCommand(authPoliciesDelete)
+	authPolicies.AddCommand(authPoliciesCreate)
+	authPolicies.AddCommand(authPoliciesShow)
+	authPolicies.AddCommand(authPoliciesList)
+	authCmd.AddCommand(authPolicies)
 
 	// main auth cmd
 	rootCmd.AddCommand(authCmd)
 	addPaginationFlags(authUsersList)
 	addPaginationFlags(authUsersGroupsList)
+	addPaginationFlags(authUsersPoliciesList)
 	addPaginationFlags(authUsersCredentialsList)
 	addPaginationFlags(authGroupsList)
 	addPaginationFlags(authGroupsListMembers)
+	addPaginationFlags(authGroupsPoliciesList)
+	addPaginationFlags(authPoliciesList)
 }
