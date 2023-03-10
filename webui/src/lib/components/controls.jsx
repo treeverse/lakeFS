@@ -456,7 +456,7 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
                 </MuiButton>
             </DialogActions>
         </Dialog>
-    )
+    );
 };
 
 
@@ -473,5 +473,17 @@ export const ExperimentalOverlayTooltip = ({children, show = true, placement="au
         >
             {children}
         </OverlayTrigger>
-    ) : <></>
-}
+    ) : <></>;
+};
+
+export const GrayOut = ({children}) =>
+    <div style={{position: 'relative'}}>
+               <div>
+                   <div className={'gray-out overlay'}/>
+                   {children}
+               </div>
+           </div>;
+
+
+export const WrapIf = ({enabled, Component, children}) => (
+    enabled ? <Component>{children}</Component> : children);

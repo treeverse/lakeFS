@@ -48,6 +48,14 @@ public class ACLTest {
     }
 
     /**
+     * Test the property 'allRepositories'
+     */
+    @Test
+    public void allRepositoriesTest() {
+        // TODO: test allRepositories
+    }
+
+    /**
      * Test the property 'repositories'
      */
     @Test
