@@ -107,4 +107,4 @@ jobs:
           token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
           repository: ${{ secrets.REPOSITORY_NAME }}
           event-type: lakefs-image-release
-          client-payload: '{"ref":"main", "inputs": { "lakefs_image": ${{ steps.version.outputs.tag }} }}'
+          client-payload: '{"ref":"main", "inputs": { "lakefs_image": "${{ steps.version.outputs.tag }}" }}'
