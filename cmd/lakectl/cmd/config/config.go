@@ -15,30 +15,30 @@ import (
 // make sure *all* fields have a `mapstructure:"..."` tag, to simplify future refactoring.
 type configuration struct {
 	Credentials struct {
-		AccessKeyID     string `mapstructure:"access_key_id"`
-		SecretAccessKey string `mapstructure:"secret_access_key"`
+		AccessKeyID     config.OnlyString `mapstructure:"access_key_id"`
+		SecretAccessKey config.OnlyString `mapstructure:"secret_access_key"`
 	}
 	Server struct {
-		EndpointURL string `mapstructure:"endpoint_url"`
+		EndpointURL config.OnlyString `mapstructure:"endpoint_url"`
 	}
 	Metastore struct {
-		Type string `mapstructure:"type"`
+		Type config.OnlyString `mapstructure:"type"`
 		Hive struct {
-			URI           string `mapstructure:"uri"`
-			DBLocationURI string `mapstructure:"db_location_uri"`
+			URI           config.OnlyString `mapstructure:"uri"`
+			DBLocationURI config.OnlyString `mapstructure:"db_location_uri"`
 		} `mapstructure:"hive"`
 		Glue struct {
 			// TODO(ariels): Refactor credentials to share with server side.
-			Profile         string `mapstructure:"profile"`
-			CredentialsFile string `mapstructure:"credentials_file"`
-			DBLocationURI   string `mapstructure:"db_location_uri"`
+			Profile         config.OnlyString `mapstructure:"profile"`
+			CredentialsFile config.OnlyString `mapstructure:"credentials_file"`
+			DBLocationURI   config.OnlyString `mapstructure:"db_location_uri"`
 			Credentials     *struct {
-				AccessKeyID     string `mapstructure:"access_key_id"`
-				AccessSecretKey string `mapstructure:"access_secret_key"`
-				SessionToken    string `mapstructure:"session_token"`
+				AccessKeyID     config.OnlyString `mapstructure:"access_key_id"`
+				AccessSecretKey config.OnlyString `mapstructure:"access_secret_key"`
+				SessionToken    config.OnlyString `mapstructure:"session_token"`
 			} `mapstructure:"credentials"`
 
-			Region    string            `mapstructure:"region"`
+			Region    config.OnlyString `mapstructure:"region"`
 			CatalogID config.OnlyString `mapstructure:"catalog_id"`
 		}
 		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
@@ -99,26 +99,26 @@ func (c *Config) Err() error {
 
 func (c *Config) GetMetastoreAwsConfig() *aws.Config {
 	cfg := &aws.Config{
-		Region: aws.String(c.Values.Metastore.Glue.Region),
+		Region: aws.String(string(c.Values.Metastore.Glue.Region)),
 	}
 	if c.Values.Metastore.Glue.Profile != "" || c.Values.Metastore.Glue.CredentialsFile != "" {
 		cfg.Credentials = credentials.NewSharedCredentials(
-			c.Values.Metastore.Glue.CredentialsFile,
-			c.Values.Metastore.Glue.Profile,
+			string(c.Values.Metastore.Glue.CredentialsFile),
+			string(c.Values.Metastore.Glue.Profile),
 		)
 	}
 	if c.Values.Metastore.Glue.Credentials != nil {
 		cfg.Credentials = credentials.NewStaticCredentials(
-			c.Values.Metastore.Glue.Credentials.AccessKeyID,
-			c.Values.Metastore.Glue.Credentials.AccessSecretKey,
-			c.Values.Metastore.Glue.Credentials.SessionToken,
+			string(c.Values.Metastore.Glue.Credentials.AccessKeyID),
+			string(c.Values.Metastore.Glue.Credentials.AccessSecretKey),
+			string(c.Values.Metastore.Glue.Credentials.SessionToken),
 		)
 	}
 	return cfg
 }
 
 func (c *Config) GetMetastoreHiveURI() string {
-	return c.Values.Metastore.Hive.URI
+	return string(c.Values.Metastore.Hive.URI)
 }
 
 func (c *Config) GetMetastoreGlueCatalogID() string {
@@ -126,15 +126,15 @@ func (c *Config) GetMetastoreGlueCatalogID() string {
 }
 
 func (c *Config) GetMetastoreType() string {
-	return c.Values.Metastore.Type
+	return string(c.Values.Metastore.Type)
 }
 
 func (c *Config) GetHiveDBLocationURI() string {
-	return c.Values.Metastore.Hive.DBLocationURI
+	return string(c.Values.Metastore.Hive.DBLocationURI)
 }
 
 func (c *Config) GetGlueDBLocationURI() string {
-	return c.Values.Metastore.Glue.DBLocationURI
+	return string(c.Values.Metastore.Glue.DBLocationURI)
 }
 
 func (c *Config) GetFixSparkPlaceholder() bool {
