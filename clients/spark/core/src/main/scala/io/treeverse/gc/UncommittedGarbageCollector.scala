@@ -158,7 +158,6 @@ object UncommittedGarbageCollector {
         var uncommittedDF =
           if (uncommittedGCRunInfo.uncommittedLocation != "") {
             try {
-              
               val uncommittedLocation =
                 ApiClient
                   .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
