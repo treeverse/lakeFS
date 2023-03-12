@@ -154,7 +154,7 @@ Running instructions:
 <div class="tabs">
   <ul>
     <li><a href="#aws-option">On AWS</a></li>
-   <li><a href="#azure-option">On Azure</a></li>
+    <li><a href="#azure-option">On Azure</a></li>
   </ul>
   <div markdown="1" id="aws-option">
 You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run the following command to make the garbage collector start running:
