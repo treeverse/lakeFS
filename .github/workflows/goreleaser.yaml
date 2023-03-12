@@ -40,7 +40,7 @@ jobs:
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
-          command: release
+          command: build --release
           args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -75,7 +75,7 @@ jobs:
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
-          command: release
+          command: build --release
           args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -110,7 +110,7 @@ jobs:
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
-          command: release
+          command: build --release
           args: --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
       - name: Upload artifact
         uses: actions/upload-artifact@v3
