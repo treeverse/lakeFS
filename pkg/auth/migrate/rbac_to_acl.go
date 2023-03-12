@@ -105,7 +105,9 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Ti
 		policyExists := errors.Is(err, ErrPolicyExists)
 		if doUpdate {
 			err = acl.WriteGroupACL(ctx, svc, group.DisplayName, *newACL, now, policyExists)
-			if err != nil {
+			if errors.Is(err, auth.ErrAlreadyExists) {
+				warnings = multierror.Append(warnings, err)
+			} else if err != nil {
 				return err
 			}
 		}
