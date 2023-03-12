@@ -157,12 +157,10 @@ object UncommittedGarbageCollector {
 
         val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
         var uncommittedDF =
-        // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
+          // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
           if (
             uncommittedGCRunInfo.uncommittedLocation != "" || !fs.exists(
-              Path.mergePaths(new Path(formatRunPath(storageNamespace, runID)),
-                              new Path(uncommittedGCRunInfo.uncommittedLocation)
-                             )
+              new Path(uncommittedGCRunInfo.uncommittedLocation)
             )
           ) {
             val uncommittedLocation =
