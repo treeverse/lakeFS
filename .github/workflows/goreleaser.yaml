@@ -26,14 +26,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Cache Rust crates
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - name: Cache Rust
         id: cache-rust
         uses: actions/cache@v3
         env:
-          cache-name: cache-rust-crates
+          cache-name: cache-rust
         with:
           path: |
             pkg/plugins/diff/delta_diff_server/target/release/deps
+            ~/.cargo/registry
+            ~/.cargo/git
           key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
           restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
             ${{ matrix.target }}-build-
@@ -49,12 +57,6 @@ jobs:
         with:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
@@ -79,14 +81,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Cache Rust crates
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - name: Cache Rust
         id: cache-rust
         uses: actions/cache@v3
         env:
-          cache-name: cache-rust-crates
+          cache-name: cache-rust
         with:
           path: |
             pkg/plugins/diff/delta_diff_server/target/release/deps
+            ~/.cargo/registry
+            ~/.cargo/git
           key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
           restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
             ${{ matrix.target }}-build-
@@ -102,12 +112,6 @@ jobs:
         with:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
@@ -132,14 +136,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Cache Rust crates
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - name: Cache Rust
         id: cache-rust
         uses: actions/cache@v3
         env:
-          cache-name: cache-rust-crates
+          cache-name: cache-rust
         with:
           path: |
             pkg/plugins/diff/delta_diff_server/target/release/deps
+            %userprofile%/.cargo/registry
+            %userprofile%/.cargo/git
           key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
           restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
             ${{ matrix.target }}-build-
@@ -155,12 +167,6 @@ jobs:
         with:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
       - name: Run Cargo
         uses: actions-rs/cargo@v1
         with:
