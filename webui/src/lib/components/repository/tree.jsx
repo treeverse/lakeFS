@@ -623,6 +623,7 @@ export const URINavigator = ({
         })}
         </div>
       <div className="object-viewer-buttons">
+        {hasCopyButton &&
         <ClipboardButton
             text={`lakefs://${repo.id}/${reference.id}/${path}`}
             variant="link"
@@ -630,7 +631,7 @@ export const URINavigator = ({
             onSuccess={noop}
             onError={noop}
             className={"me-1"}
-            tooltip={"copy URI to clipboard"}/>
+            tooltip={"copy URI to clipboard"}/>}
         {(downloadUrl) && (
           <a
               href={downloadUrl}
