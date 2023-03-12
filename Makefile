@@ -268,3 +268,8 @@ help:  ## Show Help menu
 
 # helpers
 gen: gen-ui gen-api clients gen-docs
+
+delta-plugin:
+	CARGOCMD=$(or $(shell which cargo), $(error "Missing dependency - no cargo in PATH"))
+	$(CARGOCMD) clean --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+	$(CARGOCMD) build --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
