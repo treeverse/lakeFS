@@ -157,13 +157,29 @@ object UncommittedGarbageCollector {
 
         var uncommittedDF =
           if (uncommittedGCRunInfo.uncommittedLocation != "") {
-            val uncommittedLocation =
-              ApiClient
-                .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
-                .toString
-            spark.read.parquet(uncommittedLocation)
+            try {
+              
+              val uncommittedLocation =
+                ApiClient
+                  .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
+                  .toString
+              spark.read.parquet(uncommittedLocation)
+            } catch {
+              // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
+              case e: org.apache.spark.sql.AnalysisException =>
+                if (!e.message.contains("Path does not exist")) {
+                  throw e
+                }
+                println(
+                  "WARN: Uncommitted file list (" + uncommittedGCRunInfo.uncommittedLocation + ") not found - assuming no uncommitted data"
+                )
+                // in case of no uncommitted entries
+                spark.emptyDataFrame.withColumn("physical_address", lit(""))
+              case e: Exception => throw e
+            }
+
           } else {
-            // in case of no uncommitted entries
+            // in case of no uncommitted entries, lakefs server should return an empty uncommittedLocation
             spark.emptyDataFrame.withColumn("physical_address", lit(""))
           }
 
