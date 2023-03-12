@@ -219,12 +219,10 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		// start API server
-		hd, _ := os.UserHomeDir()
-		defaultPluginsPath := fmt.Sprintf("%s/.lakefs/plugins/", hd)
-		otfDiffService, closeOtfService := tablediff.NewService(cfg.Diff, cfg.Plugins, defaultPluginsPath)
+		otfDiffService, closeOtfService := tablediff.NewService(cfg.Diff, cfg.Plugins)
 		defer closeOtfService()
 
+		// start API server
 		apiHandler := api.Serve(
 			cfg,
 			c,

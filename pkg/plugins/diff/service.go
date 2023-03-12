@@ -7,11 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
-
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/plugins"
-
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
 )
 
@@ -135,23 +133,20 @@ func (s *Service) appendClosingFunction(diffType string, f func()) {
 }
 
 // NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
-func NewService(diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps, pluginsPath string) (*Service, func()) {
+func NewService(diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps) (*Service, func()) {
 	service := &Service{
 		pluginHandler:  internal.NewManager[Differ](),
 		closeFunctions: make(map[string]func()),
 	}
-	registerPlugins(service, diffProps, pluginProps, pluginsPath)
+	registerPlugins(service, diffProps, pluginProps)
 	return service, service.Close
 }
 
-func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps, pluginsPath string) {
-	if !strings.HasSuffix(pluginsPath, "/") {
-		pluginsPath += "/"
-	}
+func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps) {
 	for n, p := range diffProps {
 		pluginName := p.PluginName
 		// If the requested plugin wasn't configured with a path, it will be defined under the default location
-		pluginPath := pluginsPath + pluginName
+		pluginPath := config.DefaultPluginLocation(pluginName)
 		pluginVersion := 1 // default version
 		if props, ok := pluginProps[pluginName]; ok {
 			pluginPath = props.Path

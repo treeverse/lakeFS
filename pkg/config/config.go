@@ -83,6 +83,7 @@ type PluginProps struct {
 	Version *int   `mapstructure:"version"`
 }
 
+// DiffProps struct holds the properties that define the details necessary to run a diff.
 type DiffProps struct {
 	PluginName string `mapstructure:"plugin"`
 }
