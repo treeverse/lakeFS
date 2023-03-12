@@ -160,8 +160,8 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 			pa := plugins.PluginHandshake{}
 			RegisterDeltaLakeDiffPlugin(service, pid, pa)
 		} else {
-			logging.Default().Warnf("failed to register a plugin for an unknown diff type: '%s'", n)
-			return
+			logging.Default().Errorf("failed to register a plugin for an unknown diff type: '%s'", n)
+			continue
 		}
 		logging.Default().Infof("successfully registered a plugin for diff type: '%s'", n)
 	}
