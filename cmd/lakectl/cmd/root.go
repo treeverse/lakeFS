@@ -103,12 +103,12 @@ func getClient() *api.ClientWithResponses {
 
 	accessKeyID := cfg.Values.Credentials.AccessKeyID
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Values.Server.EndpointURL
+	serverEndpoint := string(cfg.Values.Server.EndpointURL)
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
