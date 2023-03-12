@@ -642,10 +642,7 @@ class Objects {
     }
 
     async getPresignedUrlForDownload(repoId, ref, path) {
-        const query = qs({path, presign: true});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query, {
-            method: 'GET',
-        });
+        const response = await this.getStat(repoId, ref, path, true);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -668,8 +665,8 @@ class Objects {
         }
     }
 
-    async getStat(repoId, ref, path) {
-        const query = qs({path});
+    async getStat(repoId, ref, path, presign = false) {
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
