@@ -22,7 +22,7 @@ describe("imageUriReplacer", async () => {
   let mockObjects: any;
 
   beforeEach(() => {
-    mockObjects = { objects };
+    mockObjects = objects;
   });
 
   afterEach(() => {
