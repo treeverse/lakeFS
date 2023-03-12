@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.3 - 2023-03-09
+
+Bug fix:
+* UGC repartition by addresses to handle large repositories
+* UGC use task context to delete temporary files
+* UGC copy metadata to local without crc files
+
 ## v0.6.2 - 2023-02-23
 
 Bug fix:

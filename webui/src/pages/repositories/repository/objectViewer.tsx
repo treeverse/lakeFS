@@ -121,7 +121,7 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
     const titleComponent = showFullNavigator ?
         (<URINavigator path={path} repo={repo} reference={reference} isPathToFile={true} downloadUrl={objectUrl} />) :
         (<span>{path}</span>);
-
+    
     return (
             <Card className={'file-content-card'}>
                 <Card.Header className={'file-content-heading'}>

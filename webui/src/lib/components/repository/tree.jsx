@@ -568,6 +568,7 @@ export const URINavigator = ({
   relativeTo = "",
   pathURLBuilder = buildPathURL,
   isPathToFile = false,
+  hasCopyButton = false
 }) => {
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
@@ -754,7 +755,7 @@ export const Tree = ({
     <div className="tree-container">
       <Card>
         <Card.Header>
-          <URINavigator path={path} repo={repo} reference={reference} />
+          <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true}/>
         </Card.Header>
         <Card.Body>{body}</Card.Body>
       </Card>

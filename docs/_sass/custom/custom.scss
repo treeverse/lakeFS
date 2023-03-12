@@ -898,7 +898,13 @@ th, td {
 }
 /*overridden*/
 div.highlighter-rouge{
-  border-radius: 4px;
+	border-radius: 4px;
+	&:hover {
+		> button {
+			cursor: pointer;
+			opacity: 0.5;
+		}
+	}
 }
 
 .highlighter-rouge{

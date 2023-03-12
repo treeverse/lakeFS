@@ -11,7 +11,7 @@ trait BlockReadable {
   /** Return a new block.
    *
    *  @param offset from start.
-   *  @param buffer to read into.
+   *  @param size to read into.
    */
   def readBlock(offset: Long, size: Long): IndexedBytes
 
