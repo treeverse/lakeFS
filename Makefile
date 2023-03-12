@@ -2,7 +2,6 @@ GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
-CARGOCMD=$(or $(shell which cargo), $(error "Missing dependency - no cargo in PATH"))
 
 UID_GID := $(shell id -u):$(shell id -g)
 
@@ -266,5 +265,6 @@ help:  ## Show Help menu
 gen: gen-ui gen-api clients gen-docs
 
 delta-plugin:
+	CARGOCMD=$(or $(shell which cargo), $(error "Missing dependency - no cargo in PATH"))
 	$(CARGOCMD) clean --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
 	$(CARGOCMD) build --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
