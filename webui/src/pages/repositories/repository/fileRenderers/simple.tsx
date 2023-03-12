@@ -56,7 +56,7 @@ export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, 
     )
 }
 
-export const MarkdownRenderer: FC<RendererComponentWithText> = ({text}) => {
+export const MarkdownRenderer: FC<RendererComponentWithText> = ({text, repoId, refId}) => {
     // We need to pass the text to remark, and then to react-markdown
     // because react-markdown doesn't support async plugins.
     // There is an open issue and PR for this:
@@ -65,7 +65,10 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({text}) => {
     const [uriReplacedText, setUriReplacedText] = useState<string>(text);
     useEffect(() => {
         const replaceUris = async () => {
-            const result = await remark().use([imageUriReplacer]).process(text);
+            const result = await remark().use(imageUriReplacer, {
+                repo: repoId,
+                branch: refId,
+            }).process(text);
             setUriReplacedText(result.toString());
         };
         replaceUris();

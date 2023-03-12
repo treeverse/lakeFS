@@ -643,11 +643,7 @@ class Objects {
 
     async getPresignedUrlForDownload(repoId, ref, path) {
         const response = await this.getStat(repoId, ref, path, true);
-        if (response.status !== 200) {
-            throw new Error(await extractError(response));
-        }
-        const responseJson = await response.json();
-        return responseJson?.physical_address;
+        return response?.physical_address;
     }
 
     async head(repoId, ref, path) {

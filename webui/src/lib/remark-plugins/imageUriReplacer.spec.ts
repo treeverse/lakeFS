@@ -49,9 +49,14 @@ Text and whatever and hey look at this image:
 ![lakefs://image.png](https://www.example.com/${TEST_FILE_NAME})
 `;
 
-    const result = await remark().use(imageUriReplacer).process(markdown);
-    expect(mockObjects.getPresignedUrl).toHaveBeenCalledTimes(1);
-    expect(mockObjects.getPresignedUrl).toHaveBeenCalledWith(
+    const result = await remark()
+      .use(imageUriReplacer, {
+        repo: TEST_REPO,
+        branch: TEST_BRANCH,
+      })
+      .process(markdown);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledTimes(1);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledWith(
       TEST_REPO,
       TEST_BRANCH,
       TEST_FILE_NAME
@@ -72,7 +77,85 @@ Text and whatever and hey look at this image:
 ![lakefs://image.png](https://www.example.com/${ADDITIONAL_PATH}/${TEST_FILE_NAME})
 `;
 
-    const result = await remark().use(imageUriReplacer).process(markdown);
+    const result = await remark()
+      .use([
+        imageUriReplacer,
+        {
+          repo: TEST_REPO,
+          branch: TEST_BRANCH,
+        },
+      ])
+      .process(markdown);
+    expect(result.toString()).toEqual(markdownWithReplacedImage);
+  });
+
+  test("Supports relative paths w/o leading slash", async () => {
+    mockObjects.getPresignedUrlForDownload.mockImplementation(
+      async (repo: string, branch: string, path: string) => {
+        expect(repo).toEqual(TEST_REPO);
+        expect(branch).toEqual(TEST_BRANCH);
+        return `https://www.example.com/${path}`;
+      }
+    );
+    const markdown = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](${TEST_FILE_NAME})
+`;
+
+    const markdownWithReplacedImage = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](https://www.example.com/${TEST_FILE_NAME})
+`;
+
+    const result = await remark()
+      .use(imageUriReplacer, {
+        repo: TEST_REPO,
+        branch: TEST_BRANCH,
+      })
+      .process(markdown);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledTimes(1);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledWith(
+      TEST_REPO,
+      TEST_BRANCH,
+      `${TEST_FILE_NAME}`
+    );
+    expect(result.toString()).toEqual(markdownWithReplacedImage);
+  });
+
+  test("Supports relative paths w/ leading slash", async () => {
+    mockObjects.getPresignedUrlForDownload.mockImplementation(
+      async (repo: string, branch: string, path: string) => {
+        expect(repo).toEqual(TEST_REPO);
+        expect(branch).toEqual(TEST_BRANCH);
+        return `https://www.example.com/${path}`;
+      }
+    );
+    const markdown = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](/${TEST_FILE_NAME})
+`;
+
+    const markdownWithReplacedImage = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](https://www.example.com/${TEST_FILE_NAME})
+`;
+
+    const result = await remark()
+      .use(imageUriReplacer, {
+        repo: TEST_REPO,
+        branch: TEST_BRANCH,
+      })
+      .process(markdown);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledTimes(1);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledWith(
+      TEST_REPO,
+      TEST_BRANCH,
+      `${TEST_FILE_NAME}`
+    );
     expect(result.toString()).toEqual(markdownWithReplacedImage);
   });
 
@@ -90,7 +173,12 @@ Text and whatever and hey look at this image:
 ![lakefs://image.png](lakefs://${TEST_REPO}/${TEST_BRANCH}/${ADDITIONAL_PATH}/${TEST_FILE_NAME})
 `;
 
-    const result = await remark().use(imageUriReplacer).process(markdown);
+    const result = await remark()
+      .use(imageUriReplacer, {
+        repo: TEST_REPO,
+        branch: TEST_BRANCH,
+      })
+      .process(markdown);
     expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledTimes(1);
     expect(result.toString()).toEqual(markdown);
   });
