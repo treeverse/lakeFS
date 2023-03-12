@@ -155,28 +155,21 @@ object UncommittedGarbageCollector {
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
 
+        val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
         var uncommittedDF =
-          if (uncommittedGCRunInfo.uncommittedLocation != "") {
-            try {
-              val uncommittedLocation =
-                ApiClient
-                  .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
-                  .toString
-              spark.read.parquet(uncommittedLocation)
-            } catch {
-              // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
-              case e: org.apache.spark.sql.AnalysisException =>
-                if (!e.message.contains("Path does not exist")) {
-                  throw e
-                }
-                println(
-                  "WARN: Uncommitted file list (" + uncommittedGCRunInfo.uncommittedLocation + ") not found - assuming no uncommitted data"
-                )
-                // in case of no uncommitted entries
-                spark.emptyDataFrame.withColumn("physical_address", lit(""))
-              case e: Exception => throw e
-            }
-
+        // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
+          if (
+            uncommittedGCRunInfo.uncommittedLocation != "" || !fs.exists(
+              Path.mergePaths(new Path(formatRunPath(storageNamespace, runID)),
+                              new Path(uncommittedGCRunInfo.uncommittedLocation)
+                             )
+            )
+          ) {
+            val uncommittedLocation =
+              ApiClient
+                .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
+                .toString
+            spark.read.parquet(uncommittedLocation)
           } else {
             // in case of no uncommitted entries, lakefs server should return an empty uncommittedLocation
             spark.emptyDataFrame.withColumn("physical_address", lit(""))
@@ -198,14 +191,15 @@ object UncommittedGarbageCollector {
           .except(committedDF)
           .except(uncommittedDF)
       }
+      var jobID = runID
       if (shouldSweep) {
         if (shouldMark) { // get the expired addresses from the mark id run
           markedAddresses = addressesToDelete
-          println("deleting marked addresses: " + runID)
         } else {
+          jobID = markID
           markedAddresses = readMarkedAddresses(storageNamespace, markID)
-          println("deleting marked addresses: " + markID)
         }
+        println("deleting marked addresses from job: " + jobID)
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
         val region = getRegion(args)
