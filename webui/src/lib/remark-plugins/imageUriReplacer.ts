@@ -17,7 +17,7 @@ const imageUriReplacer: Plugin<[], Root> = () => async (tree) => {
   for (const image of images) {
     const [repo, branch, ...path] = image.url.split("/").slice(2);
     const promise = objects
-      .getPresignedUrl(repo, branch, path.join("/"))
+      .getPresignedUrlForDownload(repo, branch, path.join("/"))
       .then((res: string) => {
         image.url = res;
       })

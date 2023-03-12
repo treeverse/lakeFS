@@ -12,7 +12,7 @@ const ADDITIONAL_PATH = "additional/path";
 vi.mock("../api", () => {
   const mockObjects = {
     objects: {
-      getPresignedUrl: vi.fn(),
+      getPresignedUrlForDownload: vi.fn(),
     },
   };
   return mockObjects;
@@ -30,7 +30,7 @@ describe("imageUriReplacer", async () => {
   });
 
   test("Basic replacement", async () => {
-    mockObjects.getPresignedUrl.mockImplementation(
+    mockObjects.getPresignedUrlForDownload.mockImplementation(
       async (repo: string, branch: string, path: string) => {
         expect(repo).toEqual(TEST_REPO);
         expect(branch).toEqual(TEST_BRANCH);
@@ -81,7 +81,7 @@ Text and whatever and hey look at this image:
     vi.spyOn(console, "error").mockImplementation(() => {
       //noop
     });
-    mockObjects.getPresignedUrl.mockImplementation(async () => {
+    mockObjects.getPresignedUrlForDownload.mockImplementation(async () => {
       throw new Error("API error");
     });
     const markdown = `# README
@@ -91,7 +91,7 @@ Text and whatever and hey look at this image:
 `;
 
     const result = await remark().use(imageUriReplacer).process(markdown);
-    expect(mockObjects.getPresignedUrl).toHaveBeenCalledTimes(1);
+    expect(mockObjects.getPresignedUrlForDownload).toHaveBeenCalledTimes(1);
     expect(result.toString()).toEqual(markdown);
   });
 });

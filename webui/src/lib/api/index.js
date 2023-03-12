@@ -641,7 +641,7 @@ class Objects {
         return response.text()
     }
 
-    async getPresignedUrl(repoId, ref, path) {
+    async getPresignedUrlForDownload(repoId, ref, path) {
         const query = qs({path, presign: true});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query, {
             method: 'GET',
