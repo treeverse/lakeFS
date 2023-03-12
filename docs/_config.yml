@@ -11,7 +11,7 @@ aux_links_new_tab: true
 logo: '/assets/logo.svg'
 logo_link: 'https://lakefs.io'
 
-remote_theme: pmarsceill/just-the-docs
+remote_theme: pmarsceill/just-the-docs@v0.4.1
 
 
 
