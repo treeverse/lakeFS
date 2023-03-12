@@ -62,7 +62,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     const headers = new Headers({
         ...defaultAPIHeaders,
         ...additionalHeaders,
-    })
+    });
     const response = await fetch(`${API_ENDPOINT}${uri}`, {headers, ...requestData});
 
     // check if we're missing credentials
@@ -639,6 +639,18 @@ class Objects {
         }
 
         return response.text()
+    }
+
+    async getPresignedUrl(repoId, ref, path) {
+        const query = qs({path, presign: true});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query, {
+            method: 'GET',
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        const responseJson = await response.json();
+        return responseJson?.physical_address;
     }
 
     async head(repoId, ref, path) {
