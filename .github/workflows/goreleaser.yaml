@@ -46,7 +46,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta
+          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff
           if-no-files-found: error
 
   rust-releaser-unix:
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta
+          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff
           if-no-files-found: error
 
   rust-releaser-windows:
@@ -116,7 +116,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta
+          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff
           if-no-files-found: error
 
   download-arts:
