@@ -63,14 +63,14 @@ func Test_registerPlugins(t *testing.T) {
 	}
 	testCases := []struct {
 		description string
-		diffType    string
+		diffTypes   []string
 		pluginName  string
 		args        args
 		expectedErr error
 	}{
 		{
 			description: "register delta diff plugin - default path and version - success",
-			diffType:    "delta",
+			diffTypes:   []string{"delta"},
 			args: args{
 				service: NewMockService(),
 				diffProps: map[string]config.DiffProps{
@@ -83,7 +83,7 @@ func Test_registerPlugins(t *testing.T) {
 		},
 		{
 			description: "register delta diff plugin - custom path and version - success",
-			diffType:    "delta",
+			diffTypes:   []string{"delta"},
 			pluginName:  pluginName,
 			args: args{
 				service: NewMockService(),
@@ -101,12 +101,18 @@ func Test_registerPlugins(t *testing.T) {
 			},
 		},
 		{
-			description: "register unknown diff plugin - default path - failure",
-			diffType:    "unknown",
+			description: "register unknown diff plugins - default path - failure",
+			diffTypes:   []string{"unknown1", "unknown2", "unknown3"},
 			args: args{
 				service: NewMockService(),
 				diffProps: map[string]config.DiffProps{
-					"unknown": {
+					"unknown1": {
+						PluginName: pluginName,
+					},
+					"unknown2": {
+						PluginName: pluginName,
+					},
+					"unknown3": {
 						PluginName: pluginName,
 					},
 				},
@@ -114,36 +120,60 @@ func Test_registerPlugins(t *testing.T) {
 			},
 			expectedErr: ErrNotFound,
 		},
+		{
+			description: "register delta and unknown diff plugin - custom path and version - success for delta",
+			diffTypes:   []string{"delta"},
+			pluginName:  pluginName,
+			args: args{
+				service: NewMockService(),
+				diffProps: map[string]config.DiffProps{
+					"unknown": {
+						PluginName: "doesntmatter",
+					},
+					"delta": {
+						PluginName: pluginName,
+					},
+				},
+				pluginProps: map[string]config.PluginProps{
+					pluginName: {
+						Path:    customPluginPath,
+						Version: &customPluginVersion,
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			registerPlugins(tc.args.service, tc.args.diffProps, tc.args.pluginProps)
-			client, _, err := tc.args.service.pluginHandler.LoadPluginClient(tc.diffType)
-			if err != nil && !errors.Is(err, tc.expectedErr) {
-				t.Errorf("'%s' failed: %s", tc.description, err)
-			}
-			if client != nil {
-				diffs, err := client.Diff(context.Background(), Params{})
+			for _, dt := range tc.diffTypes {
+				client, _, err := tc.args.service.pluginHandler.LoadPluginClient(dt)
 				if err != nil && !errors.Is(err, tc.expectedErr) {
 					t.Errorf("'%s' failed: %s", tc.description, err)
 				}
-				pluginDetails := diffs.Diffs[0].OperationContent
-				tcPath := config.DefaultPluginLocation(tc.args.diffProps[tc.diffType].PluginName)
-				if tc.args.pluginProps[tc.pluginName].Path != "" {
-					tcPath = tc.args.pluginProps[tc.pluginName].Path
-				}
-				if pluginDetails[PluginPath] != tcPath {
-					t.Errorf("'%s' failed: incorrect plugin path. got '%s' instead of  '%s'",
-						tc.description,
-						pluginDetails[PluginPath],
-						tcPath)
-				}
-				tcVersion := tc.args.pluginProps[tc.pluginName].Version
-				if tcVersion != nil && pluginDetails[PluginVersion] != strconv.Itoa(*tcVersion) {
-					t.Errorf("'%s' failed: incorrect plugin version. got '%s' instead of  '%s'",
-						tc.description,
-						pluginDetails[PluginVersion],
-						strconv.Itoa(*tcVersion))
+				if client != nil {
+					diffs, err := client.Diff(context.Background(), Params{})
+					if err != nil && !errors.Is(err, tc.expectedErr) {
+						t.Errorf("'%s' failed: %s", tc.description, err)
+					}
+					pluginDetails := diffs.Diffs[0].OperationContent
+					tcPath := config.DefaultPluginLocation(tc.args.diffProps[dt].PluginName)
+					if tc.args.pluginProps[tc.pluginName].Path != "" {
+						tcPath = tc.args.pluginProps[tc.pluginName].Path
+					}
+					if pluginDetails[PluginPath] != tcPath {
+						t.Errorf("'%s' failed: incorrect plugin path. got '%s' instead of  '%s'",
+							tc.description,
+							pluginDetails[PluginPath],
+							tcPath)
+					}
+					tcVersion := tc.args.pluginProps[tc.pluginName].Version
+					if tcVersion != nil && pluginDetails[PluginVersion] != strconv.Itoa(*tcVersion) {
+						t.Errorf("'%s' failed: incorrect plugin version. got '%s' instead of  '%s'",
+							tc.description,
+							pluginDetails[PluginVersion],
+							strconv.Itoa(*tcVersion))
+					}
 				}
 			}
 		})
