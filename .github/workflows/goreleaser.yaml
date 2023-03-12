@@ -170,7 +170,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff
+          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff.exe
           if-no-files-found: error
 
   download-arts:
