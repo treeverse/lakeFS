@@ -3600,7 +3600,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	verifyPrepareGarbageCollection := func(t *testing.T, repo string, expectedCalls int) {
+	verifyPrepareGarbageCollection := func(t *testing.T, repo string, expectedCalls int, expectUncommittedData bool) {
 		t.Helper()
 		var (
 			calls int
@@ -3618,9 +3618,17 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			if resp.JSON201.RunId == "" {
 				t.Errorf("PrepareGarbageCollectionUncommitted empty RunID, value expected")
 			}
-			if resp.JSON201.GcUncommittedLocation == "" {
-				t.Errorf("PrepareGarbageCollectionUncommitted empty GcUncommittedLocation, value expected")
+
+			if expectUncommittedData {
+				if resp.JSON201.GcUncommittedLocation == "" {
+					t.Errorf("PrepareGarbageCollectionUncommitted empty GcUncommittedLocation, value expected")
+				}
+			} else {
+				if resp.JSON201.GcUncommittedLocation != "" {
+					t.Errorf("PrepareGarbageCollectionUncommitted empty GcUncommittedLocation, no value expected")
+				}
 			}
+
 			token = resp.JSON201.ContinuationToken
 			if token == nil || *token == "" {
 				break
@@ -3662,7 +3670,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
-		verifyPrepareGarbageCollection(t, repo, 1)
+		verifyPrepareGarbageCollection(t, repo, 1, true)
 	})
 
 	t.Run("committed_data", func(t *testing.T) {
@@ -3678,7 +3686,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		if _, err := deps.catalog.Commit(ctx, repo, "main", "committed objects", "some_user", nil, nil, nil); err != nil {
 			t.Fatalf("failed to commit objects: %s", err)
 		}
-		verifyPrepareGarbageCollection(t, repo, 1)
+		verifyPrepareGarbageCollection(t, repo, 1, false)
 	})
 
 	t.Run("uncommitted_copy", func(t *testing.T) {
@@ -3698,7 +3706,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 				})
 			verifyResponseOK(t, copyResp, err)
 		}
-		verifyPrepareGarbageCollection(t, repo, 1)
+		verifyPrepareGarbageCollection(t, repo, 1, true)
 	})
 }
 

@@ -621,8 +621,11 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 					require.Equal(t, runID, result.RunID)
 				}
 
-				// read parquet information if data was stored to location
-				if result.Location != "" && result.Filename != "" {
+				if tt.numRecords+tt.numTracked == 0 {
+					require.Equal(t, "", result.Location)
+					require.Equal(t, "", result.Filename)
+				} else {
+					// read parquet information if data was stored to location
 					objLocation, err := url.JoinPath(result.Location, result.Filename)
 					require.NoError(t, err)
 					addresses := readPhysicalAddressesFromParquetObject(t, ctx, c, objLocation)
@@ -751,13 +754,14 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
 
-	test.GarbageCollectionManager.EXPECT().
-		GetUncommittedLocation(gomock.Any(), gomock.Any()).
-		Times(expectedCalls).
-		DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
-			return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
-		})
-
+	if numRecords+numTracked > 0 {
+		test.GarbageCollectionManager.EXPECT().
+			GetUncommittedLocation(gomock.Any(), gomock.Any()).
+			Times(expectedCalls).
+			DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+				return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
+			})
+	}
 	repoPartition := graveler.RepoPartition(repository)
 	test.KVStore.EXPECT().Scan(gomock.Any(), []byte(repoPartition), gomock.Any()).AnyTimes().Return(cUtils.NewFakeKVEntryIterator(trackedEntries), nil)
 
