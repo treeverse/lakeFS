@@ -60,7 +60,6 @@ func Test_registerPlugins(t *testing.T) {
 		service     *Service
 		diffProps   map[string]config.DiffProps
 		pluginProps map[string]config.PluginProps
-		pluginsPath string
 	}
 	testCases := []struct {
 		description string
@@ -80,7 +79,6 @@ func Test_registerPlugins(t *testing.T) {
 					},
 				},
 				pluginProps: nil,
-				pluginsPath: "defaultPath",
 			},
 		},
 		{
@@ -100,7 +98,6 @@ func Test_registerPlugins(t *testing.T) {
 						Version: &customPluginVersion,
 					},
 				},
-				pluginsPath: "defaultPath",
 			},
 		},
 		{
@@ -114,14 +111,13 @@ func Test_registerPlugins(t *testing.T) {
 					},
 				},
 				pluginProps: nil,
-				pluginsPath: "defaultPath",
 			},
 			expectedErr: ErrNotFound,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			registerPlugins(tc.args.service, tc.args.diffProps, tc.args.pluginProps, tc.args.pluginsPath)
+			registerPlugins(tc.args.service, tc.args.diffProps, tc.args.pluginProps)
 			client, _, err := tc.args.service.pluginHandler.LoadPluginClient(tc.diffType)
 			if err != nil && !errors.Is(err, tc.expectedErr) {
 				t.Errorf("'%s' failed: %s", tc.description, err)
@@ -132,7 +128,7 @@ func Test_registerPlugins(t *testing.T) {
 					t.Errorf("'%s' failed: %s", tc.description, err)
 				}
 				pluginDetails := diffs.Diffs[0].OperationContent
-				tcPath := tc.args.pluginsPath + "/" + tc.args.diffProps[tc.diffType].PluginName
+				tcPath := config.DefaultPluginLocation(tc.args.diffProps[tc.diffType].PluginName)
 				if tc.args.pluginProps[tc.pluginName].Path != "" {
 					tcPath = tc.args.pluginProps[tc.pluginName].Path
 				}
