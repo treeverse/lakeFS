@@ -25,7 +25,6 @@
     "http-proxy-middleware": "^1.1.1",
     "lodash": "^4.17.21",
     "prismjs": "^1.29.0",
-    "mdast": "^3.0.0",
     "query-string": "^7.1.1",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.0",
@@ -45,9 +44,11 @@
     "validator": "^13.7.0"
   },
   "devDependencies": {
+    "@babel/eslint-parser": "^7.19.1",
     "@rollup/plugin-replace": "^4.0.0",
     "@types/bootstrap": "^5.2.6",
     "@types/lodash": "^4.14.185",
+    "@types/mdast": "^3.0.10",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.9",
     "@types/react-router-dom": "^5.3.3",
@@ -58,7 +59,6 @@
     "@typescript-eslint/parser": "^5.38.0",
     "@vitejs/plugin-react": "^3.0.0",
     "@vitejs/plugin-react-swc": "^3.0.1",
-    "babel-eslint": "^10.1.0",
     "browserslist": "^4.21.4",
     "cross-env": "^7.0.3",
     "eslint-plugin-compat": "^4.0.2",
