@@ -119,6 +119,21 @@ jobs:
           path: pkg/plugins/diff/delta_diff_server/release/delta
           if-no-files-found: error
 
+  download-arts:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/download-artifact@v3
+      with:
+        path: path/to/artifacts
+
+    - name: Display structure of downloaded files
+      run: ls -R
+      working-directory: path/to/artifacts
+      
+    - name: 'Echo download path'
+      run: echo ${{steps.download.outputs.download-path}}
 #  goreleaser:
 #    runs-on: ubuntu-20.04
 #    steps:
@@ -126,6 +141,11 @@ jobs:
 #        uses: actions/checkout@v3
 #        with:
 #          fetch-depth: 0
+#
+#      - name: Download Delta plugin unix artifacts
+#        uses: actions/download-artifact@v3
+#        with:
+#          name:
 #
 #      - name: Setup NodeJS
 #        uses: actions/setup-node@v3
