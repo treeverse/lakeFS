@@ -5,6 +5,8 @@ parent: Reference
 description: lakeFS Audit Logs
 nav_order: 100
 has_children: false
+redirect_from:
+  - /audit.html
 ---
 
 The Audit logs feature is only available in [lakeFS Cloud](https://lakefs.cloud/).
