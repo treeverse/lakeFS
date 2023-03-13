@@ -142,7 +142,6 @@ object UncommittedGarbageCollector {
     if (!storageNamespace.endsWith("/")) {
       storageNamespace += "/"
     }
-    hc.set("fs.defaultFS", storageNamespace)
 
     try {
       if (shouldMark) {
@@ -161,10 +160,12 @@ object UncommittedGarbageCollector {
                           uncommittedURI.getPath,
                           null
                          )
-        val fs = org.apache.hadoop.fs.FileSystem.get(hc)
+
+        val uncommittedPath = new Path(uri)
+        val fs = uncommittedPath.getFileSystem(hc)
         var uncommittedDF =
           // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
-          if (uncommittedGCRunInfo.uncommittedLocation != "" && fs.exists(new Path(uri))) {
+          if (uncommittedGCRunInfo.uncommittedLocation != "" && fs.exists(uncommittedPath)) {
             val uncommittedLocation =
               ApiClient
                 .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
@@ -264,12 +265,12 @@ object UncommittedGarbageCollector {
   }
 
   def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val reportPath = formatRunPath(storageNamespace, markID) + "/summary.json"
-    val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    if (!fs.exists(new Path(reportPath))) {
+    val reportPath = new Path(formatRunPath(storageNamespace, markID) + "/summary.json")
+    val fs = reportPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
+    if (!fs.exists(reportPath)) {
       throw new FailedRunException(s"Mark ID ($markID) does not exist")
     }
-    val markedRunSummary = spark.read.json(reportPath)
+    val markedRunSummary = spark.read.json(reportPath.toString)
     if (!markedRunSummary.first.getAs[Boolean]("success")) {
       throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
