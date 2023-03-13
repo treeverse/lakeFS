@@ -5,7 +5,7 @@ import { getImageUrl } from "./imageUriReplacer";
 import imageUriReplacer from "./imageUriReplacer";
 
 const TEST_REPO = "test-repo";
-const TEST_REF = "test-branch";
+const TEST_REF = "test-ref";
 const TEST_FILE_NAME = "image.png";
 const ADDITIONAL_PATH = "additional/path";
 

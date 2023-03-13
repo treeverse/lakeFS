@@ -28,11 +28,11 @@ const imageUriReplacer: Plugin<[ImageUriReplacerOptions], Root> =
   (options) => (tree) => {
     visit(tree, "image", (node: Node & { url: string }) => {
       if (node.url.startsWith("lakefs://")) {
-        const [repo, branch, ...path] = node.url.split("/").slice(2);
-        node.url = getImageUrl(repo, branch, path.join("/"));
+        const [repo, ref, ...path] = node.url.split("/").slice(2);
+        node.url = getImageUrl(repo, ref, path.join("/"));
       } else if (!node.url.match(ABSOLUTE_URL_REGEX)) {
         // If the image is not an absolute URL, we assume it's a relative path
-        // and we prefix it with the repo and branch.'
+        // and we prefix it with the repo and ref.'
         if (node.url.startsWith("/")) {
           node.url = node.url.slice(1);
         }
