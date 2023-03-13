@@ -61,7 +61,7 @@ archives:
     - goos: windows
       format: zip
   files:
-    - src: '{{ .Env.DELTA_ARTIFACTS_LOCATION }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}-darwin/delta_diff*'
+    - src: '{{ .Env.DELTA_ARTIFACTS_LOCATION }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
       strip_parent: true
   name_template: "{{.ProjectName}}_{{.Version}}_{{ .Os }}_{{ .Arch }}"
   builds:

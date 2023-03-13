@@ -212,11 +212,11 @@ jobs:
         working-directory: ${{steps.download.outputs.download-path}}
         run: |
           mv delta-aarch64-apple-darwin delta-darwin-arm64
-          mv delta-x86_64-apple-darwin delta-darwin-amd64
+          mv delta-x86_64-apple-darwin delta-darwin-x86_64
           mv delta-aarch64-pc-windows-msvc delta-windows-arm64
-          mv delta-x86_64-pc-windows-msvc delta-windows-amd64
+          mv delta-x86_64-pc-windows-msvc delta-windows-x86_64
           mv delta-aarch64-unknown-linux-musl delta-linux-arm64
-          mv delta-x86_64-unknown-linux-musl delta-linux-amd64
+          mv delta-x86_64-unknown-linux-musl delta-linux-x86_64
 
       - name: Display structure of downloaded files
         run: ls -R
@@ -253,6 +253,6 @@ jobs:
       - name: Copy Dist
         run: |
           ls -R dist
-          aws s3 cp --recursive dist "s3://treeverse-jon-storage/goreleaser/"
+          aws s3 cp --recursive dist "s3://treeverse-jon-storage/goreleaser/${ github.event.head_commit.id }"
 #      - name: Make lakectl public
 #        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
