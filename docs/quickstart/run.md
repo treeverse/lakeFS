@@ -116,7 +116,7 @@ docker run --pull always -p 8000:8000 \
 
 You can try lakeFS:
 
-1. With the [lakeFS Playground](more_quickstart_options.md#with-the-lakefs-playground).
+1. Explore End-to-End examples with [lakeFS-sample repository](https://github.com/treeverse/lakeFS-samples).
 1. [On Kubernetes](more_quickstart_options.md#on-kubernetes-with-helm).
 1. By [running the binary directly](more_quickstart_options.md#using-the-binary).
 
