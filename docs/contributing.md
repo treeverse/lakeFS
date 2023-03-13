@@ -80,11 +80,15 @@ Run unit tests:
 make test
 ```
 
-Check that linting rules are passing:
+Check that linting rules are passing. 
 
 ```shell
 make checks-validator
 ```
+
+You will need diffutils to run this. On the Mac it can be installed with `brew install diffutils`
+{: .note .note-info }
+
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
 
 Run system-tests:
