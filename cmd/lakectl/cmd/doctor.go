@@ -100,9 +100,9 @@ var doctorCmd = &cobra.Command{
 		}
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate endpoint URL format."})
-		serverEndpoint := cfg.Values.Server.EndpointURL
-		if !strings.HasSuffix(string(serverEndpoint), api.BaseURL) {
-			Write(analyzingMessageTemplate, &UserMessage{Message: string("Suspicious URI format for server.endpoint_url: " + serverEndpoint)})
+		serverEndpoint := string(cfg.Values.Server.EndpointURL)
+		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
+			Write(analyzingMessageTemplate, &UserMessage{Message: "Suspicious URI format for server.endpoint_url: " + serverEndpoint})
 		} else {
 			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Couldn't find a problem with endpoint URL format."})
 		}
@@ -117,8 +117,8 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to get endpoint URL and parse it as a URL format."})
 	// getClient might die on url.Parse error, so check it first.
-	serverEndpoint := cfg.Values.Server.EndpointURL
-	_, err := url.Parse(string(serverEndpoint))
+	serverEndpoint := string(cfg.Values.Server.EndpointURL)
+	_, err := url.Parse(serverEndpoint)
 	if err != nil {
 		return &WrongEndpointURIError{Message: msgOnErrWrongEndpointURI, Details: err.Error()}
 	}
