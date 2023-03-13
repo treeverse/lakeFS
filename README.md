@@ -84,7 +84,7 @@ _Use this section to learn about lakeFS. For a production-suitable deployment, s
 
 You can try lakeFS:
 
-* Without installing, using the [lakeFS Playground](https://demo.lakefs.io).
+* Explore End-to-End applications with lakeFS by following the [lakeFS samples](https://github.com/treeverse/lakeFS-samples).
 * [On Kubernetes](https://docs.lakefs.io/quickstart/more_quickstart_options.html#on-kubernetes-with-helm).
 * By [running the binary directly](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
 
