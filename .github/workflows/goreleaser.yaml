@@ -32,20 +32,25 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
-      - name: Cache Rust
+      - name: Rust Cache
         id: cache-rust
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-rust
+        uses: Swatinem/rust-cache@v2.2.1
         with:
-          path: |
-            pkg/plugins/diff/delta_diff_server/target/release/deps
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
-            ${{ matrix.target }}-build-
-            ${{ matrix.target }}-
+          workspaces: pkg/plugins/diff/delta_diff_server -> target
+#      - name: Cache Rust
+#        id: cache-rust
+#        uses: actions/cache@v3
+#        env:
+#          cache-name: cache-rust
+#        with:
+#          path: |
+#            pkg/plugins/diff/delta_diff_server/target/release/deps
+#            ~/.cargo/registry
+#            ~/.cargo/git
+#          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
+#          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
+#            ${{ matrix.target }}-build-
+#            ${{ matrix.target }}-
       - if: ${{ steps.cache-rust.outputs.cache-hit != 'true' }}
         name: Cat the toml
         continue-on-error: true
@@ -87,20 +92,25 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
-      - name: Cache Rust
+      - name: Rust Cache
         id: cache-rust
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-rust
+        uses: Swatinem/rust-cache@v2.2.1
         with:
-          path: |
-            pkg/plugins/diff/delta_diff_server/target/release/deps
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
-            ${{ matrix.target }}-build-
-            ${{ matrix.target }}-
+          workspaces: pkg/plugins/diff/delta_diff_server -> target
+#      - name: Cache Rust
+#        id: cache-rust
+#        uses: actions/cache@v3
+#        env:
+#          cache-name: cache-rust
+#        with:
+#          path: |
+#            pkg/plugins/diff/delta_diff_server/target/release/deps
+#            ~/.cargo/registry
+#            ~/.cargo/git
+#          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
+#          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
+#            ${{ matrix.target }}-build-
+#            ${{ matrix.target }}-
       - if: ${{ steps.cache-rust.outputs.cache-hit != 'true' }}
         name: Cat the toml
         continue-on-error: true
@@ -142,20 +152,25 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
-      - name: Cache Rust
+      - name: Rust Cache
         id: cache-rust
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-rust
+        uses: Swatinem/rust-cache@v2.2.1
         with:
-          path: |
-            pkg/plugins/diff/delta_diff_server/target/release/deps
-            %userprofile%/.cargo/registry
-            %userprofile%/.cargo/git
-          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
-            ${{ matrix.target }}-build-
-            ${{ matrix.target }}-
+          workspaces: pkg/plugins/diff/delta_diff_server -> target
+#      - name: Cache Rust
+#        id: cache-rust
+#        uses: actions/cache@v3
+#        env:
+#          cache-name: cache-rust
+#        with:
+#          path: |
+#            pkg/plugins/diff/delta_diff_server/target/release/deps
+#            %userprofile%/.cargo/registry
+#            %userprofile%/.cargo/git
+#          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
+#          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
+#            ${{ matrix.target }}-build-
+#            ${{ matrix.target }}-
       - if: ${{ steps.cache-rust.outputs.cache-hit != 'true' }}
         name: Cat the toml
         continue-on-error: true
