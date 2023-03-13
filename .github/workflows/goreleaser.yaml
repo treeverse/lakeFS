@@ -179,61 +179,53 @@ jobs:
           path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff.exe
           if-no-files-found: error
 
-  download-arts:
+  goreleaser:
     runs-on: ubuntu-20.04
     needs: [rust-releaser-windows, rust-releaser-unix, rust-releaser-mac]
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - uses: actions/download-artifact@v3
-      id: download
-      with:
-        path: path/to/artifacts
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          path: delta/artifacts
 
-    - name: Display structure of downloaded files
-      run: ls -R
-      working-directory: path/to/artifacts
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: ${{steps.download.outputs.download-path}}
 
-    - name: Rename artifacts to match goreleaser artifacts
-      run: |
-        mv delta-aarch64-apple-darwin delta-darwin-arm64
-        mv delta-x86_64-apple-darwin delta-darwin-amd64
-        mv delta-aarch64-pc-windows-msvc delta-windows-arm64
-        mv delta-x86_64-pc-windows-msvc delta-windows-amd64
-        mv delta-aarch64-unknown-linux-musl delta-linux-arm64
-        mv delta-x86_64-unknown-linux-musl delta-linux-amd64
+      - name: Rename artifacts to match goreleaser artifacts
+        working-directory: ${{steps.download.outputs.download-path}}
+        run: |
+          mv delta-aarch64-apple-darwin delta-darwin-arm64
+          mv delta-x86_64-apple-darwin delta-darwin-amd64
+          mv delta-aarch64-pc-windows-msvc delta-windows-arm64
+          mv delta-x86_64-pc-windows-msvc delta-windows-amd64
+          mv delta-aarch64-unknown-linux-musl delta-linux-arm64
+          mv delta-x86_64-unknown-linux-musl delta-linux-amd64
 
-    - name: 'Echo download path'
-      run: echo ${{steps.download.outputs.download-path}}
-#  goreleaser:
-#    runs-on: ubuntu-20.04
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Download Delta plugin unix artifacts
-#        uses: actions/download-artifact@v3
-#        with:
-#          name:
-#
-#      - name: Setup NodeJS
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: '16.17.1'
-#
-#      - name: Setup Go
-#        uses: actions/setup-go@v3
-#        with:
-#          go-version: 1.19.2
-#
-#      - name: Configure AWS Credentials
-#        uses: aws-actions/configure-aws-credentials@v1.7.0
-#        with:
-#          aws-region: us-east-1
-#          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-#
+      - name: 'Echo download path'
+        run: echo ${{steps.download.outputs.download-path}}
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.17.1'
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
 #      - name: Run GoReleaser
 #        uses: goreleaser/goreleaser-action@v3
 #        with:
@@ -241,6 +233,7 @@ jobs:
 #          args: build #release --rm-dist
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          DELTA_ARTIFACTS_LOCATION: ${{steps.download.outputs.download-path}}
 #
 #      - name: Make lakectl public
 #        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
