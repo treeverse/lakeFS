@@ -5,7 +5,7 @@ import { getImageUrl } from "./imageUriReplacer";
 import imageUriReplacer from "./imageUriReplacer";
 
 const TEST_REPO = "test-repo";
-const TEST_BRANCH = "test-branch";
+const TEST_REF = "test-branch";
 const TEST_FILE_NAME = "image.png";
 const ADDITIONAL_PATH = "additional/path";
 
@@ -14,19 +14,19 @@ describe("imageUriReplacer", async () => {
     const markdown = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](lakefs://${TEST_REPO}/${TEST_BRANCH}/${TEST_FILE_NAME})
+![lakefs://image.png](lakefs://${TEST_REPO}/${TEST_REF}/${TEST_FILE_NAME})
 `;
 
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_BRANCH, TEST_FILE_NAME)})
+![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME)})
 `;
 
     const result = await remark()
       .use(imageUriReplacer, {
         repo: TEST_REPO,
-        branch: TEST_BRANCH,
+        ref: TEST_REF,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
@@ -36,7 +36,7 @@ Text and whatever and hey look at this image:
     const markdown = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](lakefs://${TEST_REPO}/${TEST_BRANCH}/${ADDITIONAL_PATH}/${TEST_FILE_NAME})
+![lakefs://image.png](lakefs://${TEST_REPO}/${TEST_REF}/${ADDITIONAL_PATH}/${TEST_FILE_NAME})
 `;
 
     const markdownWithReplacedImage = `# README
@@ -44,7 +44,7 @@ Text and whatever and hey look at this image:
 Text and whatever and hey look at this image:
 ![lakefs://image.png](${getImageUrl(
       TEST_REPO,
-      TEST_BRANCH,
+      TEST_REF,
       `${ADDITIONAL_PATH}/${TEST_FILE_NAME}`
     )})
 `;
@@ -54,7 +54,7 @@ Text and whatever and hey look at this image:
         imageUriReplacer,
         {
           repo: TEST_REPO,
-          branch: TEST_BRANCH,
+          ref: TEST_REF,
         },
       ])
       .process(markdown);
@@ -71,13 +71,13 @@ Text and whatever and hey look at this image:
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_BRANCH, TEST_FILE_NAME)})
+![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME)})
 `;
 
     const result = await remark()
       .use(imageUriReplacer, {
         repo: TEST_REPO,
-        branch: TEST_BRANCH,
+        ref: TEST_REF,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
@@ -93,13 +93,13 @@ Text and whatever and hey look at this image:
     const markdownWithReplacedImage = `# README
 
 Text and whatever and hey look at this image:
-![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_BRANCH, TEST_FILE_NAME)})
+![lakefs://image.png](${getImageUrl(TEST_REPO, TEST_REF, TEST_FILE_NAME)})
 `;
 
     const result = await remark()
       .use(imageUriReplacer, {
         repo: TEST_REPO,
-        branch: TEST_BRANCH,
+        ref: TEST_REF,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);

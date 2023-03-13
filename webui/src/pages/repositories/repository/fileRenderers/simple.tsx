@@ -59,7 +59,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({text, repoId, r
     return (
         <ReactMarkdown remarkPlugins={[[imageUriReplacer, {
             repo: repoId,
-            branch: refId,
+            ref: refId,
             }], remarkGfm, remarkHtml]} linkTarget={"_blank"}>
             {text}
         </ReactMarkdown>

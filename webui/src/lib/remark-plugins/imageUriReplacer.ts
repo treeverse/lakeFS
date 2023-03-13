@@ -5,7 +5,7 @@ import type { Plugin } from "unified";
 
 type ImageUriReplacerOptions = {
   repo: string;
-  branch: string;
+  ref: string;
 };
 
 const ABSOLUTE_URL_REGEX = /^(https?):\/\/.*/;
@@ -36,7 +36,7 @@ const imageUriReplacer: Plugin<[ImageUriReplacerOptions], Root> =
         if (node.url.startsWith("/")) {
           node.url = node.url.slice(1);
         }
-        node.url = getImageUrl(options.repo, options.branch, node.url);
+        node.url = getImageUrl(options.repo, options.ref, node.url);
       }
     });
   };
