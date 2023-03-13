@@ -248,7 +248,7 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DELTA_ARTIFACTS_LOCATION: ${{steps.download.outputs.download-path}}
+          DELTA_ARTIFACTS_LOCATION: delta/artifacts
 
       - name: Copy Dist
         run: |
