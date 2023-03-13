@@ -3,47 +3,42 @@ import type { Node } from "unist";
 import type { Root } from "mdast";
 import type { Plugin } from "unified";
 
-import { objects } from "../api";
-
 type ImageUriReplacerOptions = {
   repo: string;
   branch: string;
 };
 
 const ABSOLUTE_URL_REGEX = /^(https?):\/\/.*/;
+const qs = (queryParts: { [key: string]: string }) => {
+  const parts = Object.keys(queryParts).map((key) => [key, queryParts[key]]);
+  return new URLSearchParams(parts).toString();
+};
+export const getImageUrl = (
+  repo: string,
+  ref: string,
+  path: string
+): string => {
+  const query = qs({ path });
+  return `/api/v1/repositories/${encodeURIComponent(
+    repo
+  )}/refs/${encodeURIComponent(ref)}/objects?${query}`;
+};
 
 const imageUriReplacer: Plugin<[ImageUriReplacerOptions], Root> =
-  (options) => async (tree) => {
-    const images: Array<Node & { url: string }> = [];
+  (options) => (tree) => {
     visit(tree, "image", (node: Node & { url: string }) => {
       if (node.url.startsWith("lakefs://")) {
-        images.push(node);
+        const [repo, branch, ...path] = node.url.split("/").slice(2);
+        node.url = getImageUrl(repo, branch, path.join("/"));
       } else if (!node.url.match(ABSOLUTE_URL_REGEX)) {
         // If the image is not an absolute URL, we assume it's a relative path
         // and we prefix it with the repo and branch.'
         if (node.url.startsWith("/")) {
           node.url = node.url.slice(1);
         }
-        node.url = `lakefs://${options.repo}/${options.branch}/${node.url}`;
-        images.push(node);
+        node.url = getImageUrl(options.repo, options.branch, node.url);
       }
     });
-
-    const promises: Array<Promise<void>> = [];
-    for (const image of images) {
-      const [repo, branch, ...path] = image.url.split("/").slice(2);
-      const promise = objects
-        .getPresignedUrlForDownload(repo, branch, path.join("/"))
-        .then((res: string) => {
-          image.url = res;
-        })
-        .catch((err: Error) => {
-          console.error(err);
-        });
-      promises.push(promise);
-    }
-
-    await Promise.all(promises);
   };
 
 export default imageUriReplacer;

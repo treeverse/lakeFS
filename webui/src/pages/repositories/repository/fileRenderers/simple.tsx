@@ -1,11 +1,10 @@
-import React, {FC, useState, useEffect} from "react";
+import React, {FC} from "react";
 import Alert from "react-bootstrap/Alert";
 import {humanSize} from "../../../../lib/components/repository/tree";
 import {useAPI} from "../../../../lib/hooks/api";
 import {objects} from "../../../../lib/api";
 import {Error, Loading} from "../../../../lib/components/controls";
 import ReactMarkdown from "react-markdown";
-import {remark} from "remark";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
 import SyntaxHighlighter from "react-syntax-highlighter";
@@ -57,25 +56,12 @@ export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, 
 }
 
 export const MarkdownRenderer: FC<RendererComponentWithText> = ({text, repoId, refId}) => {
-    // We need to pass the text to remark, and then to react-markdown
-    // because react-markdown doesn't support async plugins.
-    // There is an open issue and PR for this:
-    // https://github.com/syntax-tree/unist-util-visit-parents/issues/8
-    // If/when it's merged, we can remove this code and use the plugin directly
-    const [uriReplacedText, setUriReplacedText] = useState<string>(text);
-    useEffect(() => {
-        const replaceUris = async () => {
-            const result = await remark().use(imageUriReplacer, {
-                repo: repoId,
-                branch: refId,
-            }).process(text);
-            setUriReplacedText(result.toString());
-        };
-        replaceUris();
-    }, [text]);
     return (
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]} linkTarget={"_blank"}>
-            {uriReplacedText}
+        <ReactMarkdown remarkPlugins={[[imageUriReplacer, {
+            repo: repoId,
+            branch: refId,
+            }], remarkGfm, remarkHtml]} linkTarget={"_blank"}>
+            {text}
         </ReactMarkdown>
     );
 
