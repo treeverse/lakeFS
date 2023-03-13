@@ -138,6 +138,7 @@ To render the documentation locally and preview changes you can run the Jeykll s
    ```sh
    docker run --rm \
               --name lakefs_docs \
+              -e TZ="Etc/UTC" \
               --publish 4000:4000 --publish 35729:35729 \
               --volume="$PWD/docs:/srv/jekyll:Z" \
               --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
