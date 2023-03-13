@@ -31,7 +31,7 @@ When granted to a group, permissions Read, Write, and Super may be scoped to a s
 Admin includes global abilities that apply across repos and cannot be scoped to a set of repositories
 
 
-## Plugable Authentication and Authorization
+## Pluggable Authentication and Authorization
 
 Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to an external authorization server, the existing RBAC GUI may continue to be used. It is not possible to use both types of GUI at the same time: Moving from RBAC to simplified may only be performed once and **will** lose configuration.
 
