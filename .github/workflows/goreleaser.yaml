@@ -194,6 +194,15 @@ jobs:
       run: ls -R
       working-directory: path/to/artifacts
 
+    - name: Rename artifacts to match goreleaser artifacts
+      run: |
+        mv delta-aarch64-apple-darwin delta-darwin-arm64
+        mv delta-x86_64-apple-darwin delta-darwin-amd64
+        mv delta-aarch64-pc-windows-msvc delta-windows-arm64
+        mv delta-x86_64-pc-windows-msvc delta-windows-amd64
+        mv delta-aarch64-unknown-linux-musl delta-linux-arm64
+        mv delta-x86_64-unknown-linux-musl delta-linux-amd64
+
     - name: 'Echo download path'
       run: echo ${{steps.download.outputs.download-path}}
 #  goreleaser:
