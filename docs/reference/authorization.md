@@ -52,7 +52,7 @@ When a user makes a request to perform that action, the following process takes 
 Each policy attached to a user or a group has an `Effect` - either `allow` or `deny`.
 During evaluation of a request, `deny` would take precedence over any other `allow` policy.
 
-If no permissions exist than the action will be blocked, making no permission the equivilent of `deny`. 
+The default if no permissions exist is to allow nothing.
 
 This helps us compose policies together. For example: 
 
