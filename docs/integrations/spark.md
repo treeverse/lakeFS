@@ -201,7 +201,9 @@ Amazon provides [S3 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.
 
 ### Usage
 
-Here's an example for reading a parquet file from lakeFS to a Spark DataFrame:
+Hadoop FileSystem paths use the `lakefs://` protocol, with paths taking the form `lakefs://<repository>/<ref>/path/to/object`.
+`<ref>` can be a branch, tag, or commit ID in lakeFS.
+Here's an example for reading a Parquet file from lakeFS to a Spark DataFrame:
 
 ```scala
 val repo = "example-repo"
