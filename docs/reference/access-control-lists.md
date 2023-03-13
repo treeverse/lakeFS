@@ -7,9 +7,12 @@ nav_order: 100
 has_children: false
 ---
 
-## Access Control Lists (ACL) in lakeFS
+# Access Control Lists (ACL)
+{: .no_toc }
 
-ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. 
+ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+
+{% include toc.html %}
 
 ## ACL
 
@@ -33,7 +36,9 @@ Admin includes global abilities that apply across repos and cannot be scoped to 
 
 ## Pluggable Authentication and Authorization
 
-Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to an external authorization server, the existing RBAC GUI may continue to be used. It is not possible to use both types of GUI at the same time: Moving from RBAC to simplified may only be performed once and **will** lose configuration.
+Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used.
+
+If you are using ACL then the lakeFS configuration element `auth.ui_config.RBAC` should be set to `simplified`.
 
 ## Previous versions of ACL in lakeFS
 
@@ -48,7 +53,7 @@ Here's how the current ACL model compares to to that prior to [the changes intro
 
 ### Migrating from the previous version of ACLs
 
-Upgrading the lakeFS version will require migrating to the new ACL authorization model
+Upgrading the lakeFS version will require migrating to the new ACL authorization model.
 
 In order to run the migration run:
 ```
@@ -67,4 +72,6 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
     4. The upgrade script unifies repositories: If a resource applies to a set of repositories with a wildcard, permissions are unified to all repositories. Otherwise they apply to the list of all repositories, in all the policies.
     5. The upgrade script unifies actions: it selects the least permission of Read, Write, Super that contains all of the allowed actions.
     
+Once you have completed the migration you should update the lakeFS server configuration for `auth.ui_config.RBAC` to `simplified`. Note that moving to `simplified` from `external` may only be performed once and **will** lose configuration.
+
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).
