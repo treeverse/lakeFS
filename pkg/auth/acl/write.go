@@ -14,6 +14,13 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+const (
+	ACLAdminsGroup  = "Admins"
+	ACLSupersGroup  = "Supers"
+	ACLWritersGroup = "Writers"
+	ACLReadersGroup = "Readers"
+)
+
 func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl model.ACL, creationTime time.Time, warnIfCreate bool) error {
 	log := logging.FromContext(ctx).WithField("group", groupName)
 

@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/migrate"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -203,10 +204,11 @@ func getPolicies(t *testing.T, ctx context.Context, svc auth.Service, name strin
 }
 
 func TestNewACLForPolicies_Generator(t *testing.T) {
+	now := time.Now()
 	ctx := context.Background()
 	svc := testutil.SetupService(t, ctx, []byte("shh..."))
 
-	err := auth.SetupBaseGroups(ctx, svc, time.Now())
+	err := setup.SetupRBACBaseGroups(ctx, svc, now)
 	if err != nil {
 		t.Fatal(err)
 	}

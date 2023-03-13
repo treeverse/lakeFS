@@ -1,12 +1,14 @@
-package auth
+package setup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -18,11 +20,7 @@ const (
 	ViewersGroup    = "Viewers"
 )
 
-var (
-	ErrStatementNotFound = errors.New("statement not found")
-)
-
-func createGroups(ctx context.Context, authService Service, groups []*model.Group) error {
+func createGroups(ctx context.Context, authService auth.Service, groups []*model.Group) error {
 	for _, group := range groups {
 		err := authService.CreateGroup(ctx, group)
 		if err != nil {
@@ -32,7 +30,7 @@ func createGroups(ctx context.Context, authService Service, groups []*model.Grou
 	return nil
 }
 
-func createPolicies(ctx context.Context, authService Service, policies []*model.Policy) error {
+func createPolicies(ctx context.Context, authService auth.Service, policies []*model.Policy) error {
 	for _, policy := range policies {
 		err := authService.WritePolicy(ctx, policy, false)
 		if err != nil {
@@ -42,154 +40,24 @@ func createPolicies(ctx context.Context, authService Service, policies []*model.
 	return nil
 }
 
-func attachPolicies(ctx context.Context, authService Service, groupID string, policyIDs []string) error {
-	for _, policyID := range policyIDs {
-		err := authService.AttachPolicyToGroup(ctx, policyID, groupID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// statementForPolicyType holds the Statement for a policy by its name,
-// without the required ARN.
-var statementByName = map[string]model.Statement{
-	"AllAccess": {
-		Action: []string{"fs:*", "auth:*", "ci:*", "retention:*", "branches:*"},
-		Effect: model.StatementEffectAllow,
-	},
-	"FSFullAccess": {
-		Action: []string{
-			"fs:*",
-		},
-		Effect: model.StatementEffectAllow,
-	},
-	"FSReadWrite": {
-		Action: []string{
-			permissions.ListRepositoriesAction,
-			permissions.ReadRepositoryAction,
-			permissions.ReadCommitAction,
-			permissions.ListBranchesAction,
-			permissions.ListTagsAction,
-			permissions.ListObjectsAction,
-			permissions.ReadObjectAction,
-			permissions.WriteObjectAction,
-			permissions.DeleteObjectAction,
-			permissions.RevertBranchAction,
-			permissions.ReadBranchAction,
-			permissions.ReadTagAction,
-			permissions.CreateBranchAction,
-			permissions.CreateTagAction,
-			permissions.DeleteBranchAction,
-			permissions.DeleteTagAction,
-			permissions.CreateCommitAction,
-		},
-		Effect: model.StatementEffectAllow,
-	},
-	"FSRead": {
-		Action: []string{
-			"fs:List*",
-			"fs:Read*",
-		},
-
-		Effect: model.StatementEffectAllow,
-	},
-	"RepoManagementRead": {
-		Action: []string{
-			"ci:Read*",
-			"retention:Get*",
-			"branches:Get*",
-			"fs:ReadConfig",
-		},
-
-		Effect: model.StatementEffectAllow,
-	},
-	"AuthManageOwnCredentials": {
-		Action: []string{
-			permissions.CreateCredentialsAction,
-			permissions.DeleteCredentialsAction,
-			permissions.ListCredentialsAction,
-			permissions.ReadCredentialsAction,
-		},
-		Effect: model.StatementEffectAllow,
-	},
-}
-
-// GetActionsForPolicyType returns the actions for police type typ.
-func GetActionsForPolicyType(typ string) ([]string, error) {
-	statement, ok := statementByName[typ]
-	if !ok {
-		return nil, fmt.Errorf("%w: %s", ErrStatementNotFound, typ)
-	}
-	actions := make([]string, len(statement.Action))
-	copy(actions, statement.Action)
-	return actions, nil
-}
-
-func GetActionsForPolicyTypeOrDie(typ string) []string {
-	ret, err := GetActionsForPolicyType(typ)
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}
-
-// MakeStatementForPolicyType returns statements for policy type typ,
-// limited to resources.
-func MakeStatementForPolicyType(typ string, resources []string) (model.Statements, error) {
-	statement, ok := statementByName[typ]
-	if !ok {
-		return nil, fmt.Errorf("%w: %s", ErrStatementNotFound, typ)
-	}
-	statements := make(model.Statements, len(resources))
-	for i, resource := range resources {
-		if statement.Resource == "" {
-			statements[i] = statement
-			statements[i].Resource = resource
-		}
-	}
-	return statements, nil
-}
-
-func MakeStatementForPolicyTypeOrDie(typ string, resources []string) model.Statements {
-	statements, err := MakeStatementForPolicyType(typ, resources)
-	if err != nil {
-		panic(err)
-	}
-	return statements
-}
-
-func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) error {
-	var err error
-
-	err = createGroups(ctx, authService, []*model.Group{
-		{CreatedAt: ts, DisplayName: AdminsGroup},
-		{CreatedAt: ts, DisplayName: SuperUsersGroup},
-		{CreatedAt: ts, DisplayName: DevelopersGroup},
-		{CreatedAt: ts, DisplayName: ViewersGroup},
-	})
-	if err != nil {
-		return err
-	}
-
+func CreateRBACBasePolicies(ctx context.Context, authService auth.Service, ts time.Time) error {
 	all := []string{permissions.All}
 
-	err = createPolicies(ctx, authService, []*model.Policy{
+	return createPolicies(ctx, authService, []*model.Policy{
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
-			Statement:   MakeStatementForPolicyTypeOrDie("FSFullAccess", all),
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("FSFullAccess", all),
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSReadWriteAll",
-			Statement:   MakeStatementForPolicyTypeOrDie("FSReadWrite", all),
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("FSReadWrite", all),
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSReadAll",
-			Statement:   MakeStatementForPolicyTypeOrDie("FSRead", all),
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("FSRead", all),
 		},
 		{
 			CreatedAt:   ts,
@@ -210,7 +78,7 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		{
 			CreatedAt:   ts,
 			DisplayName: "RepoManagementReadAll",
-			Statement:   MakeStatementForPolicyTypeOrDie("RepoManagementRead", all),
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("RepoManagementRead", all),
 		},
 		{
 			CreatedAt:   ts,
@@ -228,12 +96,38 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 		{
 			CreatedAt:   ts,
 			DisplayName: "AuthManageOwnCredentials",
-			Statement: MakeStatementForPolicyTypeOrDie(
+			Statement: auth.MakeStatementForPolicyTypeOrDie(
 				"AuthManageOwnCredentials",
 				[]string{permissions.UserArn("${user}")},
 			),
 		},
 	})
+}
+
+func attachPolicies(ctx context.Context, authService auth.Service, groupID string, policyIDs []string) error {
+	for _, policyID := range policyIDs {
+		err := authService.AttachPolicyToGroup(ctx, policyID, groupID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetupRBACBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
+	var err error
+
+	err = createGroups(ctx, authService, []*model.Group{
+		{CreatedAt: ts, DisplayName: AdminsGroup},
+		{CreatedAt: ts, DisplayName: SuperUsersGroup},
+		{CreatedAt: ts, DisplayName: DevelopersGroup},
+		{CreatedAt: ts, DisplayName: ViewersGroup},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = CreateRBACBasePolicies(ctx, authService, ts)
 	if err != nil {
 		return err
 	}
@@ -258,11 +152,46 @@ func SetupBaseGroups(ctx context.Context, authService Service, ts time.Time) err
 	return nil
 }
 
-func SetupAdminUser(ctx context.Context, authService Service, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
+func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
+	all := model.Repositories{All: true}
+
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLAdminsGroup}); err != nil {
+		return fmt.Errorf("setup: create base ACL group %s: %w", acl.ACLAdminsGroup, err)
+	}
+	if err := acl.WriteGroupACL(ctx, authService, acl.ACLAdminsGroup, model.ACL{Permission: acl.ACLAdmin, Repositories: all}, ts, true); err != nil {
+		return fmt.Errorf("setup: %w", err)
+	}
+
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLSupersGroup}); err != nil {
+		return fmt.Errorf("setup: create base ACL group %s: %w", acl.ACLSupersGroup, err)
+	}
+	if err := acl.WriteGroupACL(ctx, authService, acl.ACLSupersGroup, model.ACL{Permission: acl.ACLSuper, Repositories: all}, ts, true); err != nil {
+		return fmt.Errorf("setup: %w", err)
+	}
+
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLWritersGroup}); err != nil {
+		return fmt.Errorf("setup: create base ACL group %s: %w", acl.ACLWritersGroup, err)
+	}
+	if err := acl.WriteGroupACL(ctx, authService, acl.ACLWritersGroup, model.ACL{Permission: acl.ACLWrite, Repositories: all}, ts, true); err != nil {
+		return fmt.Errorf("setup: %w", err)
+	}
+
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLReadersGroup}); err != nil {
+		return fmt.Errorf("create base ACL group %s: %w", acl.ACLReadersGroup, err)
+	}
+	if err := acl.WriteGroupACL(ctx, authService, acl.ACLReadersGroup, model.ACL{Permission: acl.ACLRead, Repositories: all}, ts, true); err != nil {
+		return fmt.Errorf("setup: %w", err)
+	}
+
+	return nil
+}
+
+// BUG(ariels): read config, do it right!
+func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
 	// Setup the basic groups and policies
-	err := SetupBaseGroups(ctx, authService, now)
+	err := SetupBaseGroups(ctx, authService, cfg, now)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +199,7 @@ func SetupAdminUser(ctx context.Context, authService Service, superuser *model.S
 	return AddAdminUser(ctx, authService, superuser)
 }
 
-func AddAdminUser(ctx context.Context, authService Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
+func AddAdminUser(ctx context.Context, authService auth.Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
 	const adminGroupName = "Admins"
 
 	// verify admin group exists
@@ -306,11 +235,11 @@ func AddAdminUser(ctx context.Context, authService Service, user *model.Superuse
 	return creds, nil
 }
 
-func CreateInitialAdminUser(ctx context.Context, authService Service, metadataManger MetadataManager, username string) (*model.Credential, error) {
-	return CreateInitialAdminUserWithKeys(ctx, authService, metadataManger, username, nil, nil)
+func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string) (*model.Credential, error) {
+	return CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, metadataManger MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{User: model.User{
 		CreatedAt: time.Now(),
 		Username:  username,
@@ -320,7 +249,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, me
 		adminUser.SecretAccessKey = *secretAccessKey
 	}
 	// create first admin user
-	cred, err := SetupAdminUser(ctx, authService, adminUser)
+	cred, err := SetupAdminUser(ctx, authService, cfg, adminUser)
 	if err != nil {
 		return nil, err
 	}
@@ -330,4 +259,11 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService Service, me
 		logging.Default().WithError(err).Error("Failed the update setup timestamp")
 	}
 	return cred, err
+}
+
+func SetupBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
+	if cfg.IsAuthUISimplified() {
+		return SetupACLBaseGroups(ctx, authService, ts)
+	}
+	return SetupRBACBaseGroups(ctx, authService, ts)
 }
