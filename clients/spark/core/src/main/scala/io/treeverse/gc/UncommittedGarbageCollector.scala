@@ -142,6 +142,7 @@ object UncommittedGarbageCollector {
     if (!storageNamespace.endsWith("/")) {
       storageNamespace += "/"
     }
+    hc.set("fs.defaultFS", storageNamespace)
 
     try {
       if (shouldMark) {
@@ -154,15 +155,16 @@ object UncommittedGarbageCollector {
         // Process uncommitted
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
-
-        val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
+        val uncommittedURI = new URI(uncommittedGCRunInfo.uncommittedLocation)
+        val uri = new URI(new URI(storageNamespace).getScheme,
+                          uncommittedURI.getHost,
+                          uncommittedURI.getPath,
+                          null
+                         )
+        val fs = org.apache.hadoop.fs.FileSystem.get(hc)
         var uncommittedDF =
           // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
-          if (
-            uncommittedGCRunInfo.uncommittedLocation != "" || !fs.exists(
-              new Path(uncommittedGCRunInfo.uncommittedLocation)
-            )
-          ) {
+          if (uncommittedGCRunInfo.uncommittedLocation != "" && fs.exists(new Path(uri))) {
             val uncommittedLocation =
               ApiClient
                 .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
