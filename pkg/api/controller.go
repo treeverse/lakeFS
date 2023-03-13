@@ -1423,7 +1423,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-var errStorageNamespaceInUse = errors.New("lakeFS repositories can't share storage namespace. This includes re-using storage namespaces from repositories since deleted.")
+var errStorageNamespaceInUse = errors.New("lakeFS repositories can't share storage namespace. This includes re-using storage namespaces from repositories since deleted")
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
