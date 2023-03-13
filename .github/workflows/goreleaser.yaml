@@ -208,10 +208,6 @@ jobs:
         with:
           path: delta/artifacts
 
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: ${{steps.download.outputs.download-path}}
-
       - name: Rename artifacts to match goreleaser artifacts
         working-directory: ${{steps.download.outputs.download-path}}
         run: |
@@ -221,6 +217,10 @@ jobs:
           mv delta-x86_64-pc-windows-msvc delta-windows-amd64
           mv delta-aarch64-unknown-linux-musl delta-linux-arm64
           mv delta-x86_64-unknown-linux-musl delta-linux-amd64
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: ${{steps.download.outputs.download-path}}
 
       - name: 'Echo download path'
         run: echo ${{steps.download.outputs.download-path}}
@@ -241,14 +241,18 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
-#      - name: Run GoReleaser
-#        uses: goreleaser/goreleaser-action@v3
-#        with:
-#          version: latest
-#          args: build #release --rm-dist
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          DELTA_ARTIFACTS_LOCATION: ${{steps.download.outputs.download-path}}
-#
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+          args: release --snapshot --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DELTA_ARTIFACTS_LOCATION: ${{steps.download.outputs.download-path}}
+
+      - name: Copy Dist
+        run: |
+          ls -R dist
+          aws s3 cp --recursive dist "s3://treeverse-jon-storage/goreleaser/"
 #      - name: Make lakectl public
 #        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
