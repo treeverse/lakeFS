@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.6.4 - 2023-03-13
+
+Bug fix:
+* UGC handle no uncommitted data on repository (#5451)
+
 ## v0.6.3 - 2023-03-09
 
 Bug fix:
