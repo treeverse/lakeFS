@@ -555,7 +555,7 @@ With this configuration set, you read S3A paths with `example-repo` as the bucke
 
 ### Usage
 
-Here's an example for reading a parquet file from lakeFS to a Spark DataFrame:
+Here's an example for reading a Parquet file from lakeFS to a Spark DataFrame:
 
 ```scala
 val repo = "example-repo"
