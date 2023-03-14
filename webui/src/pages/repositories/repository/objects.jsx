@@ -46,10 +46,12 @@ const REPOSITORY_AGE_BEFORE_GC = 14;
 
 const ImportButton = ({variant = "success", onClick, config }) => {
     let tip = config.import_support ? "Import data from a remote source" :
-        "Unsupported for " + config.blockstore_type +" blockstore";
+        config.blockstore_type === "local" ?
+                "Import is not enabled for local blockstore" :
+                "Unsupported for " + config.blockstore_type +" blockstore";
 
     return (
-        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>}>
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>} >
             <span>
                 <Button variant={variant} disabled={!config.import_support} onClick={onClick} >
                     <BsCloudArrowUp/> Import
