@@ -8,7 +8,6 @@ has_children: false
 ---
 
 # Authentication 
-
 {: .no_toc }
 
 {% include toc.html %}
