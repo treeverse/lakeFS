@@ -747,6 +747,11 @@ jobs:
         working-directory: test/spark/app
         run: sbt sonnets-311/package
 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
@@ -770,11 +775,12 @@ jobs:
       - name: Test lakeFS S3 with Spark 3.x
         continue-on-error: true
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3/${{ steps.unique.outputs.value }}
-          REPOSITORY: gateway-test-spark3
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/spark
-        run: ./run-test.sh
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark3/${{ steps.unique.outputs.value }}
+            --reposiory gateway-test-spark3
+            --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
@@ -926,9 +932,9 @@ jobs:
     strategy:
       matrix:
         spark:
-          - project-variable: core3
-            project-suffix: 301
-            artifact-suffix: ""
+#          - project-variable: core3
+#            project-suffix: 301
+#            artifact-suffix: ""
           - project-variable: core312
             project-suffix: 312-hadoop3
             artifact-suffix: "-hadoop3"
