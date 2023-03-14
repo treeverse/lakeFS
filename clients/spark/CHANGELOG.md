@@ -4,6 +4,7 @@
 
 Bug fix:
 * UGC fix uncommitted exists change (#5467)
+* UGC fix list mark addresses
 
 ## v0.6.4 - 2023-03-13
 
