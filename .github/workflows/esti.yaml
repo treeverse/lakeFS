@@ -794,17 +794,16 @@ jobs:
 
       - name: Test lakeFS S3 with Spark 3.x thick client
         timeout-minutes: 8
-        env:
-          JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          USE_DIRECT_ACCESS: "true"
-          REPOSITORY: thick-client-test
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+        continue-on-error: true
         working-directory: test/spark
-        run: ./run-test.sh
-
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
+            --repository thick-client-test \
+            --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar \
+            --direct_access \
+            --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
+            --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
       - name: lakeFS Logs on Spark with client failure
         if: ${{ failure() }}
         continue-on-error: true

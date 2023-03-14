@@ -72,13 +72,13 @@ def main():
                          "spark.hadoop.fs.s3a.endpoint": "s3.docker.lakefs.io:8000",
                          "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"}
 
-    docker.compose.run("spark-submit",
-                       get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,
-                                            [f"{scheme}://{args.repository}/main/sonnets.txt",
-                                             f"{scheme}://{args.repository}/main/sonnets-wordcount"]),
-                       dependencies=False,
-                       remove=True,
-                       tty=False)
+    print(docker.compose.run("spark-submit",
+                             get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,
+                                                  [f"{scheme}://{args.repository}/main/sonnets.txt",
+                                                   f"{scheme}://{args.repository}/main/sonnets-wordcount"]),
+                             dependencies=False,
+                             remove=True,
+                             tty=False))
 
 
 if __name__ == '__main__':
