@@ -1,9 +1,6 @@
 name: releaser
 
 on:
-  push:
-    branches:
-      - feature/delta/releaser
   release:
     types: [published]
 
@@ -37,26 +34,6 @@ jobs:
         uses: Swatinem/rust-cache@v2.2.1
         with:
           workspaces: pkg/plugins/diff/delta_diff_server -> target
-#      - name: Cache Rust
-#        id: cache-rust
-#        uses: actions/cache@v3
-#        env:
-#          cache-name: cache-rust
-#        with:
-#          path: |
-#            pkg/plugins/diff/delta_diff_server/target/release/deps
-#            ~/.cargo/registry
-#            ~/.cargo/git
-#          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-#          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
-#            ${{ matrix.target }}-build-
-#            ${{ matrix.target }}-
-      - if: ${{ steps.cache-rust.outputs.cache-hit != 'true' }}
-        name: Cat the toml
-        continue-on-error: true
-        run: |
-          echo "A miss. Cargo's deps:\n"
-          cat pkg/plugins/diff/delta_diff_server/Cargo.toml
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -97,26 +74,6 @@ jobs:
         uses: Swatinem/rust-cache@v2.2.1
         with:
           workspaces: pkg/plugins/diff/delta_diff_server -> target
-#      - name: Cache Rust
-#        id: cache-rust
-#        uses: actions/cache@v3
-#        env:
-#          cache-name: cache-rust
-#        with:
-#          path: |
-#            pkg/plugins/diff/delta_diff_server/target/release/deps
-#            ~/.cargo/registry
-#            ~/.cargo/git
-#          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-#          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
-#            ${{ matrix.target }}-build-
-#            ${{ matrix.target }}-
-      - if: ${{ steps.cache-rust.outputs.cache-hit != 'true' }}
-        name: Cat the toml
-        continue-on-error: true
-        run: |
-          echo "A miss. Cargo's deps:\n"
-          cat pkg/plugins/diff/delta_diff_server/Cargo.toml
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -157,26 +114,6 @@ jobs:
         uses: Swatinem/rust-cache@v2.2.1
         with:
           workspaces: pkg/plugins/diff/delta_diff_server -> target
-#      - name: Cache Rust
-#        id: cache-rust
-#        uses: actions/cache@v3
-#        env:
-#          cache-name: cache-rust
-#        with:
-#          path: |
-#            pkg/plugins/diff/delta_diff_server/target/release/deps
-#            %userprofile%/.cargo/registry
-#            %userprofile%/.cargo/git
-#          key: ${{ matrix.target }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-#          restore-keys: ${{ matrix.target }}-build-${{ env.cache-name }}-
-#            ${{ matrix.target }}-build-
-#            ${{ matrix.target }}-
-      - if: ${{ steps.cache-rust.outputs.cache-hit != 'true' }}
-        name: Cat the toml
-        continue-on-error: true
-        run: |
-          echo "A miss. Cargo's deps:\n"
-          cat pkg/plugins/diff/delta_diff_server/Cargo.toml
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -218,13 +155,6 @@ jobs:
           mv delta-aarch64-unknown-linux-musl delta-linux-arm64
           mv delta-x86_64-unknown-linux-musl delta-linux-x86_64
 
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: ${{steps.download.outputs.download-path}}
-
-      - name: 'Echo download path'
-        run: echo ${{steps.download.outputs.download-path}}
-
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
@@ -245,14 +175,10 @@ jobs:
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: release --snapshot --clean
+          args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DELTA_ARTIFACTS_LOCATION: delta/artifacts
 
-      - name: Copy Dist
-        run: |
-          ls -R dist
-          aws s3 cp --recursive dist "s3://treeverse-jon-storage/goreleaser/${{ github.event.head_commit.id }}"
-#      - name: Make lakectl public
-#        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
+      - name: Make lakectl public
+        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
