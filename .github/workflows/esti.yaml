@@ -749,11 +749,10 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
-        working-directory: test/spark
         with:
           python-version: 3.11
           cache: 'pip'
-      - run: pip install -r requirements.txt
+      - run: pip install -r ./test/spark/requirements.txt
 
       - name: Generate uniquifying value
         id: unique
