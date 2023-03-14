@@ -18,16 +18,17 @@
 </p>
 
 
-## lakeFS is a data version control - Git for data
+## lakeFS is Data Version Control (Git for Data)
 
 lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
 With lakeFS you can build repeatable, atomic, and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
-lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
+lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, DuckDB, and Presto.
 
+To get started see [Getting Started](#getting-started) below.
 
-For more information, see the [official lakeFS documentation](https://docs.lakefs.io).
+For more information, see the [documentation](https://docs.lakefs.io).
 
 
 ## Capabilities
@@ -66,38 +67,38 @@ Rolling back returns data to a state in the past, before the error was present. 
 
 ## Getting Started
 
-### Using Docker
+You can spin up a standalone sandbox instance of lakeFS quickly under Docker by running the following:
 
-_Use this section to learn about lakeFS. For a production-suitable deployment, see the [docs](https://docs.lakefs.io/deploy/)._
-
-1. Ensure you have Docker installed on your computer.
-
-2. Run the following command:
-
-   ```bash
-   docker run --pull always --name lakefs -p 8000:8000 treeverse/lakefs run --local-settings
-   ```
-
-3. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser to set up an initial admin user.  You will use this user to log in and send API requests.
+```bash
+docker run --pull always \
+		   --name lakefs \
+		   -p 8000:8000 \
+		   treeverse/lakefs \
+		   	 run --local-settings
+```
 
 ### Other quickstart methods
 
-You can try lakeFS:
+If you don't want to use Docker you can [install and run lakeFS locally](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
 
-* Without installing, using the [lakeFS Playground](https://demo.lakefs.io).
-* [On Kubernetes](https://docs.lakefs.io/quickstart/more_quickstart_options.html#on-kubernetes-with-helm).
-* By [running the binary directly](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
+### What next after running it? 
 
-### Setting up a repository
+Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser and follow the prompts to set up an admin user. After that go ahead and [create your first repository](https://docs.lakefs.io/quickstart/repository).
 
-Once lakeFS is installed, you are ready to [create your first repository](https://docs.lakefs.io/quickstart/repository)!
+The [lakeFS samples](https://github.com/treeverse/lakeFS-samples) are a rich resource of examples of end-to-end applications that you can build with lakeFS.
+
+
+## Deploying lakeFS
+
+For a production-suitable deployments including on-premises with Kubernetes and on AWS, GCP, and Azure clouds see the [docs](https://docs.lakefs.io/deploy/). 
+
 
 ## Community
 
 Stay up to date and get lakeFS support via:
 
 - Share your lakeFS experience and get support on [our Slack](https://go.lakefs.io/JoinSlack).
-- Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS).
+- Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS) and [Mastodon](https://data-folks.masto.host/@lakeFS).
 - Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
 - Read more on data versioning and other data lake best practices in [our blog](https://lakefs.io/blog/data-version-control/).
 - Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.
