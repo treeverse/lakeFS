@@ -116,7 +116,7 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "tag=sha-sha-06b6e09" >> $GITHUB_OUTPUT
+        run: echo "tag=sha-06b6e09" >> $GITHUB_OUTPUT
         id: version
 #
 #      - name: Extract db schema version from ddl migration files
