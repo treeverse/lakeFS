@@ -84,3 +84,17 @@ func ValidateNonNegativeInt(v interface{}) error {
 	}
 	return nil
 }
+
+func ValidateNilOrNonNegativeInt(v interface{}) error {
+	i, ok := v.(*int)
+	if !ok {
+		panic(ErrInvalidType)
+	}
+	if i == nil {
+		return nil
+	}
+	if *i < 0 {
+		return ErrInvalidValue
+	}
+	return nil
+}

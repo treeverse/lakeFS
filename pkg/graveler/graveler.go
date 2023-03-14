@@ -524,6 +524,9 @@ type VersionController interface {
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error)
 
+	// CherryPick creates a patch to the commit given as 'ref', and applies it as a new commit on the given branch.
+	CherryPick(ctx context.Context, repository *RepositoryRecord, id BranchID, reference Ref, number *int, commitParams CommitParams) (CommitID, error)
+
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
 
@@ -2188,7 +2191,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 	if parentNumber > 0 {
 		// validate parent is in range:
 		if parentNumber > len(commitRecord.Parents) { // parent number is 1-based
-			return "", fmt.Errorf("%w: parent %d", ErrRevertParentOutOfRange, parentNumber)
+			return "", fmt.Errorf("%w: parent %d", ErrParentOutOfRange, parentNumber)
 		}
 		parentNumber--
 	}
@@ -2229,6 +2232,88 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		commit := NewCommit()
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
+		commit.MetaRangeID = metaRangeID
+		commit.Parents = []CommitID{branch.CommitID}
+		commit.Metadata = commitParams.Metadata
+		commit.Generation = branchCommit.Generation + 1
+		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
+		if err != nil {
+			return nil, fmt.Errorf("add commit: %w", err)
+		}
+
+		tokensToDrop = branch.SealedTokens
+		branch.SealedTokens = []StagingToken{}
+		branch.CommitID = commitID
+		return branch, nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("update branch: %w", err)
+	}
+
+	g.dropTokens(ctx, tokensToDrop...)
+	return commitID, nil
+}
+
+// CherryPick creates a new commit on the given branch, with the changes from the given commit.
+// If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
+func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, commitParams CommitParams) (CommitID, error) {
+	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
+	if err != nil {
+		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
+	}
+
+	pn := 1
+	if parentNumber == nil {
+		if len(commitRecord.Parents) > 1 {
+			return "", ErrCherryPickMergeNoParent
+		}
+	} else {
+		pn = *parentNumber
+	}
+	if pn > len(commitRecord.Parents) {
+		// validate parent is in range:
+		return "", fmt.Errorf("parent %d: %w", pn, ErrParentOutOfRange)
+	}
+	pn--
+
+	if err := g.prepareForCommitIDUpdate(ctx, repository, branchID); err != nil {
+		return "", err
+	}
+
+	var parentMetaRangeID MetaRangeID
+	if len(commitRecord.Parents) > 0 {
+		parentCommit, err := g.dereferenceCommit(ctx, repository, commitRecord.Parents[pn].Ref())
+		if err != nil {
+			return "", fmt.Errorf("get commit from ref %s: %w", commitRecord.Parents[pn], err)
+		}
+		parentMetaRangeID = parentCommit.MetaRangeID
+	}
+
+	var commitID CommitID
+	var tokensToDrop []StagingToken
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+		if empty, err := g.isSealedEmpty(ctx, repository, branch); err != nil {
+			return nil, err
+		} else if !empty {
+			return nil, fmt.Errorf("%s: %w", branchID, ErrDirtyBranch)
+		}
+
+		branchCommit, err := g.dereferenceCommit(ctx, repository, branch.CommitID.Ref())
+		if err != nil {
+			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
+		}
+		// merge from the parent to the top of the branch, with the given ref as the merge base:
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID,
+			commitRecord.MetaRangeID, parentMetaRangeID, MergeStrategyNone)
+		if err != nil {
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge: %w", err)
+			}
+			return nil, err
+		}
+		commit := NewCommit()
+		commit.Committer = commitParams.Committer
+		commit.Message = commitRecord.Message
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{branch.CommitID}
 		commit.Metadata = commitParams.Metadata

@@ -1399,6 +1399,32 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	return err
 }
 
+func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch string, params CherryPickParams) error {
+	branchID := graveler.BranchID(branch)
+	reference := graveler.Ref(params.Reference)
+	commitParams := graveler.CommitParams{
+		Committer: params.Committer,
+		Message:   fmt.Sprintf("Cherry pick %s", params.Reference),
+	}
+	parentNumber := params.ParentNumber
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: reference, Fn: graveler.ValidateRef},
+		{Name: "committer", Value: commitParams.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNonNegativeInt},
+	}); err != nil {
+		return err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, commitParams)
+	return err
+}
+
 func (c *Catalog) Diff(ctx context.Context, repositoryID string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	left := graveler.Ref(leftReference)
 	right := graveler.Ref(rightReference)

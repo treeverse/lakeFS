@@ -1850,6 +1850,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
+		errors.Is(err, graveler.ErrParentOutOfRange),
+		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
@@ -2432,6 +2434,45 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 	}
 	committer := user.Username
 	err = c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
+		Reference:    body.Ref,
+		Committer:    committer,
+		ParentNumber: body.ParentNumber,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body CherryPickJSONRequestBody, repository string, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.BranchArn(repository, branch),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadCommitAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "cherry_pick", r, repository, branch, body.Ref)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "user not found")
+		return
+	}
+	committer := user.Username
+	err = c.Catalog.CherryPick(ctx, repository, branch, catalog.CherryPickParams{
 		Reference:    body.Ref,
 		Committer:    committer,
 		ParentNumber: body.ParentNumber,

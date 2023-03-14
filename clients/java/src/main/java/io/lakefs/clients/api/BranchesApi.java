@@ -28,6 +28,7 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.BranchCreation;
+import io.lakefs.clients.api.model.CherryPickCreation;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Ref;
@@ -79,6 +80,153 @@ public class BranchesApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
+    /**
+     * Build call for cherryPick
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param cherryPickCreation  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call cherryPickCall(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = cherryPickCreation;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/cherry-pick"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call cherryPickValidateBeforeCall(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling cherryPick(Async)");
+        }
+        
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling cherryPick(Async)");
+        }
+        
+        // verify the required parameter 'cherryPickCreation' is set
+        if (cherryPickCreation == null) {
+            throw new ApiException("Missing the required parameter 'cherryPickCreation' when calling cherryPick(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = cherryPickCall(repository, branch, cherryPickCreation, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * Cherry-Pick the given reference commit into the given branch
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param cherryPickCreation  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void cherryPick(String repository, String branch, CherryPickCreation cherryPickCreation) throws ApiException {
+        cherryPickWithHttpInfo(repository, branch, cherryPickCreation);
+    }
+
+    /**
+     * Cherry-Pick the given reference commit into the given branch
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param cherryPickCreation  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> cherryPickWithHttpInfo(String repository, String branch, CherryPickCreation cherryPickCreation) throws ApiException {
+        okhttp3.Call localVarCall = cherryPickValidateBeforeCall(repository, branch, cherryPickCreation, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * Cherry-Pick the given reference commit into the given branch (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param cherryPickCreation  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call cherryPickAsync(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = cherryPickValidateBeforeCall(repository, branch, cherryPickCreation, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
     /**
      * Build call for createBranch
      * @param repository  (required)
