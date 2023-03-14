@@ -774,14 +774,12 @@ jobs:
 
       - name: Test lakeFS S3 with Spark 3.x
         continue-on-error: true
-        env:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark3/${{ steps.unique.outputs.value }}
-            --reposiory gateway-test-spark3
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark3/${{ steps.unique.outputs.value }} \
+            --reposiory gateway-test-spark3 \
             --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
         continue-on-error: true
