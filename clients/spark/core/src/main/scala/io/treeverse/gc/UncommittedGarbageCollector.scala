@@ -269,8 +269,9 @@ object UncommittedGarbageCollector {
       if (!fs.exists(deletedPath)) {
         println(s"Mark ID ($markID) does not contain deleted files")
         spark.emptyDataFrame.withColumn("address", lit(""))
+      } else {
+        spark.read.parquet(deletedPath.toString)
       }
-      spark.read.parquet(deletedPath.toString)
     }
   }
 
