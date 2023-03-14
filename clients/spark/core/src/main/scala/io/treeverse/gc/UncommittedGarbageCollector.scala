@@ -154,20 +154,14 @@ object UncommittedGarbageCollector {
         // Process uncommitted
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
-
-        val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
+        val uncommittedLocation = ApiClient
+          .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
+        val uncommittedPath = new Path(uncommittedLocation)
+        val fs = uncommittedPath.getFileSystem(hc)
         var uncommittedDF =
           // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
-          if (
-            uncommittedGCRunInfo.uncommittedLocation != "" || !fs.exists(
-              new Path(uncommittedGCRunInfo.uncommittedLocation)
-            )
-          ) {
-            val uncommittedLocation =
-              ApiClient
-                .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
-                .toString
-            spark.read.parquet(uncommittedLocation)
+          if (uncommittedGCRunInfo.uncommittedLocation != "" && fs.exists(uncommittedPath)) {
+            spark.read.parquet(uncommittedLocation.toString)
           } else {
             // in case of no uncommitted entries, lakefs server should return an empty uncommittedLocation
             spark.emptyDataFrame.withColumn("physical_address", lit(""))
@@ -262,12 +256,12 @@ object UncommittedGarbageCollector {
   }
 
   def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val reportPath = formatRunPath(storageNamespace, markID) + "/summary.json"
-    val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    if (!fs.exists(new Path(reportPath))) {
+    val reportPath = new Path(formatRunPath(storageNamespace, markID) + "/summary.json")
+    val fs = reportPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
+    if (!fs.exists(reportPath)) {
       throw new FailedRunException(s"Mark ID ($markID) does not exist")
     }
-    val markedRunSummary = spark.read.json(reportPath)
+    val markedRunSummary = spark.read.json(reportPath.toString)
     if (!markedRunSummary.first.getAs[Boolean]("success")) {
       throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
