@@ -45,7 +45,7 @@ const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
 
 const ImportButton = ({variant = "success", onClick, config }) => {
-    let tip = config.import_support ? "Import data from a remote source" :
+    const tip = config.import_support ? "Import data from a remote source" :
         config.blockstore_type === "local" ?
                 "Import is not enabled for local blockstore" :
                 "Unsupported for " + config.blockstore_type +" blockstore";
