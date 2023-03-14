@@ -13,7 +13,7 @@ def flatten(lst):
 def get_spark_submit_cmd(submit_flags, spark_config, jar_name, jar_args):
     cmd = ["spark-submit", "--master", "spark://spark:7077"]
     cmd.extend(submit_flags)
-    configs = flatten([['-c', f"{k}={v}"] for k,v in spark_config.items()])
+    configs = flatten([['-c', f"{k}={v}"] for k, v in spark_config.items()])
     cmd.extend(configs)
     cmd.extend(["--class", "Sonnets", f"/local/app/target/{jar_name}"])
     cmd.extend(jar_args)
@@ -73,7 +73,9 @@ def main():
                          "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"}
 
     docker.compose.run("spark-submit",
-                       get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar, [f"{scheme}://{args.repository}/main/sonnets.txt", f"{scheme}://{args.repository}/main/sonnets-wordcount"]),
+                       get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,
+                                            [f"{scheme}://{args.repository}/main/sonnets.txt",
+                                             f"{scheme}://{args.repository}/main/sonnets-wordcount"]),
                        dependencies=False,
                        remove=True,
                        tty=False)

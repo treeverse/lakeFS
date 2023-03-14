@@ -749,9 +749,12 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
+        working-directory: test/spark
         with:
           python-version: 3.11
           cache: 'pip'
+      - run: pip install -r requirements.txt
+
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
