@@ -92,6 +92,7 @@ services:
     profiles: ["command"]
     volumes:
       - ./:/local
+      - ../../clients/hadoopfs/target:/target
     env_file:
       - tester.env
     environment:
