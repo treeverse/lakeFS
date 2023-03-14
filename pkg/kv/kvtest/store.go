@@ -295,6 +295,26 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		}
 	})
 
+	t.Run("predicate_empty_slice", func(t *testing.T) {
+		key := uniqueKey("predicate-empty-slice")
+		val1 := []byte{}
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
+		if err != nil {
+			t.Fatalf("Set while testing predicate empty slice - key=%s value=%s: %s", key, val1, err)
+		}
+
+		res, err := store.Get(ctx, []byte(testPartitionKey), key)
+		if err != nil {
+			t.Fatalf("Get while testing predicate empty slice - key=%s: %s", key, err)
+		}
+
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, res.Predicate)
+		if err != nil {
+			t.Fatalf("SetIf with previous value while testing predicate empty slice - key=%s value=%s pred=%s: %s", key, val2, val1, err)
+		}
+	})
+
 	t.Run("update_if_exists", func(t *testing.T) {
 		key := uniqueKey("set-if-exists")
 		val1 := []byte("v1")

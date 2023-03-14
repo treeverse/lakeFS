@@ -1,13 +1,13 @@
 ---
 layout: default
-title: Audit
-description: lakeFS Cloud audit log
+title: Audit Logs
+parent: Reference
+description: lakeFS Audit Logs
 nav_order: 100
 has_children: false
 ---
 
-
-Audit logs is only available in [lakeFS cloud](https://lakefs.cloud/).
+The Audit logs feature is only available in [lakeFS Cloud](https://lakefs.cloud/).
 {: .note .note-info }
 
 # Audit log

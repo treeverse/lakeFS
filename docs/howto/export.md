@@ -59,7 +59,7 @@ The complete `spark-submit` command would look as follows:
 spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1 \
   --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
   --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
-  --packages io.lakefs:lakefs-spark-client-301_2.12:0.6.2 \
+  --packages io.lakefs:lakefs-spark-client-301_2.12:0.6.4 \
   --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/prefix \
   --branch=example-branch
 ```
@@ -201,12 +201,12 @@ The complete `docker run` command would look like:
 ```shell
 docker run \
     -e LAKEFS_ACCESS_KEY_ID=XXX -e LAKEFS_SECRET_ACCESS_KEY=YYY \
-	-e LAKEFS_ENDPOINT=https://<LAKEFS_ENDPOINT>/ \
-	-e AWS_ACCESS_KEY_ID=XXX -e AWS_SECRET_ACCESS_KEY=YYY \
-	treeverse/lakefs-rclone-export:latest \
-		example-repo \
-		s3://destination-bucket/prefix/ \
-		--branch="example-branch"
+   -e LAKEFS_ENDPOINT=https://<LAKEFS_ENDPOINT>/ \
+   -e AWS_ACCESS_KEY_ID=XXX -e AWS_SECRET_ACCESS_KEY=YYY \
+   treeverse/lakefs-rclone-export:latest \
+      example-repo \
+      s3://destination-bucket/prefix/ \
+      --branch="example-branch"
 ```
 
 **Note:** This feature uses [rclone](https://rclone.org/){: target="_blank"},

@@ -13,44 +13,13 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 // when padding a macro to a table function such as read_parquet() or read_csv().
 // so - string replacements it is.
 const URL_ENCODE_MACRO_SQL = `
-CREATE MACRO p_encode(s) AS
-    replace(
-        replace(
-            replace(
-                replace(
-                    replace(
-                        replace(
-                            replace(
-                                replace(
-                                    replace(
-                                        replace(
-                                            replace(
-                                                replace(
-                                                    replace(
-                                                        replace(
-                                                            replace(
-                                                                replace(
-                                                                    replace(
-                                                                        replace(
-                                                                            replace(s, '%', '%25'),
-                                                                            '/', '%2F'),
-                                                                        '?', '%3F'),
-                                                                    '#', '%23'),
-                                                                '[', '%5B'),
-                                                            ']', '%5D'),
-                                                        '@', '%40'),
-                                                    '!', '%21'),
-                                                '$', '%24'),
-                                            '&', '%26'),
-                                        '''', '%27'),
-                                    '(', '%28'),
-                                ')', '%29'),
-                            '+', '%2B'),
-                        ',', '%2C'),
-                    ';', '%3B'),
-                '=','%3D'),
-            ' ', '%20'),
-        ':', '%3A');
+CREATE MACRO p_encode(s) AS 
+    list_aggregate([
+        case when x in (':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '''', '(', ')', '*', '+', ',', ';', '=', '%', ' ') 
+            then printf('%%%X', unicode(x))  else x end
+        for x 
+        in string_split(s, '')
+    ], 'string_agg', '');
 `
 
 

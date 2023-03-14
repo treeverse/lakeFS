@@ -141,21 +141,20 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     let leftResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, rightDiffRefID));
     let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
     useEffect(() => {
-        if (entry.path_type === "object") {
-            setTreeItemType({ type: TreeItemType.Object, loading: false });
+        if (treeItemType.loading) {
+            if (entry.path_type === "object") {
+                setTreeItemType({ type: TreeItemType.Object, loading: false });
+            } else if (!leftResult.loading && !rightResult.loading) {
+                setTreeItemType({
+                    type:
+                        leftResult.response || rightResult.response
+                            ? TreeItemType.DeltaLakeTable
+                            : TreeItemType.Prefix,
+                    loading: false,
+                });
+            }
         }
-    }, [entry]);
-    useEffect(() => {
-        if (treeItemType.loading && !leftResult.loading && !rightResult.loading) {
-            setTreeItemType({
-                type:
-                    leftResult.response || rightResult.response
-                        ? TreeItemType.DeltaLakeTable
-                        : TreeItemType.Prefix,
-                loading: false,
-            });
-        }
-    }, [leftResult, rightResult]);
+    }, [leftResult, rightResult, entry]);
     return treeItemType;
 }
 
@@ -182,7 +181,8 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
+                                         changesTreeMessage= ""}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
@@ -209,6 +209,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
                                     compare Delta Lake tables</Alert></div>
                     }
+                    <div>{changesTreeMessage}</div>
                     <Card>
                         <Card.Header>
                             {tableDiffState.isShown

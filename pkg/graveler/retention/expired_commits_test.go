@@ -25,14 +25,6 @@ func newTestCommit(daysPassed int, parents ...graveler.CommitID) testCommit {
 	}
 }
 
-func newCommitSet(commitIDs []string) map[graveler.CommitID]bool {
-	res := make(map[graveler.CommitID]bool, 0)
-	for _, commitID := range commitIDs {
-		res[graveler.CommitID(commitID)] = true
-	}
-	return res
-}
-
 // findMainAncestryLeaves returns commits which are not the first parent of any child.
 func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[string]testCommit) []*graveler.CommitRecord {
 	var res []*graveler.CommitRecord
@@ -278,15 +270,14 @@ func TestExpiredCommits(t *testing.T) {
 				return branches[i].CommitID < branches[j].CommitID
 			})
 
-			commitMap := make(map[graveler.CommitID]*graveler.Commit)
-			previouslyExpired := newCommitSet(tst.previouslyExpired)
-			for commitID, testCommit := range tst.commits {
-				id := graveler.CommitID(commitID)
-				commitMap[id] = &graveler.Commit{Message: commitID, Parents: testCommit.parents, CreationDate: now.AddDate(0, 0, -testCommit.daysPassed), Version: graveler.CurrentCommitVersion}
-				if !previouslyExpired[id] {
-					refManagerMock.EXPECT().GetCommit(ctx, repositoryRecord, id).Return(commitMap[id], nil).MaxTimes(2)
-				}
+			var commitsRecords []*graveler.CommitRecord
+			for commitID, commit := range tst.commits {
+				commitsRecords = append(commitsRecords, &graveler.CommitRecord{CommitID: graveler.CommitID(commitID),
+					Commit: &graveler.Commit{Parents: commit.parents, CreationDate: now.AddDate(0, 0, -commit.daysPassed), Version: graveler.CurrentCommitVersion}})
 			}
+
+			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
+
 			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
 			for i := range tst.previouslyExpired {
 				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])

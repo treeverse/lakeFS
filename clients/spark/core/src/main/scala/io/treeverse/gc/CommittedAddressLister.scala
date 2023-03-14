@@ -50,7 +50,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
     storageScheme += ":"
 
     import spark.implicits._
-    df
+    val addressesDF = df
       .select("address_type", "address")
       .filter(row => {
         val (addrType, addr) = (row.getString(0), row.getString(1))
@@ -72,7 +72,9 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
           addr
         }
       })
-      .distinct()
       .toDF("address")
+    addressesDF
+      .repartition(addressesDF.col("address"))
+      .distinct()
   }
 }

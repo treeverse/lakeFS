@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"fmt"
+	"html"
+	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -26,17 +32,50 @@ Metadata:
 {{ end }}{{ if .Pagination  }}
 {{.Pagination | paginate }}{{ end }}`
 
+type dotWriter struct {
+	w            io.Writer
+	repositoryID string
+}
+
+func (d *dotWriter) Start() {
+	_, _ = fmt.Fprintf(d.w, "digraph {\n\trankdir=\"BT\"\n")
+}
+
+func (d *dotWriter) End() {
+	_, _ = fmt.Fprint(d.w, "\n}\n")
+}
+
+func (d *dotWriter) Write(commits []api.Commit) {
+	repoID := url.PathEscape(d.repositoryID)
+	for _, commit := range commits {
+		isMerge := len(commit.Parents) > 1
+		label := fmt.Sprintf("%s<br/> %s", commit.Id[:8], html.EscapeString(commit.Message))
+		if isMerge {
+			label = fmt.Sprintf("<b>%s</b>", label)
+		}
+		baseURL := strings.TrimSuffix(strings.TrimSuffix(
+			cfg.Values.Server.EndpointURL, "/api/v1"), "/")
+		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
+			commit.Id, baseURL, repoID, commit.Id, label)
+		for _, parent := range commit.Parents {
+			_, _ = fmt.Fprintf(d.w, "\t\"%s\" -> \"%s\";\n", parent, commit.Id)
+		}
+	}
+}
+
 // logCmd represents the log command
 var logCmd = &cobra.Command{
 	Use:               "log <branch uri>",
 	Short:             "Show log of commits",
 	Long:              "Show log of commits for a given branch",
+	Example:           "lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := MustInt(cmd.Flags().GetInt("amount"))
 		after := MustString(cmd.Flags().GetString("after"))
 		limit := MustBool(cmd.Flags().GetBool("limit"))
+		dot := MustBool(cmd.Flags().GetBool("dot"))
 		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
 		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
 
@@ -59,6 +98,15 @@ var logCmd = &cobra.Command{
 		if len(prefixesList) > 0 {
 			logCommitsParams.Prefixes = &prefixesList
 		}
+
+		graph := &dotWriter{
+			w:            os.Stdout,
+			repositoryID: branchURI.Ref,
+		}
+		if dot {
+			graph.Start()
+		}
+
 		for pagination.HasMore {
 			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -80,11 +128,21 @@ var logCmd = &cobra.Command{
 					After:   pagination.NextOffset,
 				},
 			}
-			Write(commitsTemplate, data)
+
+			if dot {
+				graph.Write(data.Commits)
+			} else {
+				Write(commitsTemplate, data)
+			}
+
 			if amount != 0 {
 				// user request only one page
 				break
 			}
+		}
+
+		if dot {
+			graph.End()
 		}
 	},
 }
@@ -95,6 +153,7 @@ func init() {
 	logCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned")
 	logCmd.Flags().Bool("limit", false, "limit result just to amount. By default, returns whether more items are available.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	logCmd.Flags().Bool("dot", false, "return results in a dotgraph format")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")

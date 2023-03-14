@@ -219,10 +219,10 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		// start API server
-		otfDiffService, closeOtfService := tablediff.NewService()
+		otfDiffService, closeOtfService := tablediff.NewService(cfg.Diff, cfg.Plugins)
 		defer closeOtfService()
 
+		// start API server
 		apiHandler := api.Serve(
 			cfg,
 			c,

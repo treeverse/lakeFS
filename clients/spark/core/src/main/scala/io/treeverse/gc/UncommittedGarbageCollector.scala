@@ -155,19 +155,26 @@ object UncommittedGarbageCollector {
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
 
+        val fs = org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
         var uncommittedDF =
-          if (uncommittedGCRunInfo.uncommittedLocation != "") {
+          // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
+          if (
+            uncommittedGCRunInfo.uncommittedLocation != "" || !fs.exists(
+              new Path(uncommittedGCRunInfo.uncommittedLocation)
+            )
+          ) {
             val uncommittedLocation =
               ApiClient
                 .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
                 .toString
             spark.read.parquet(uncommittedLocation)
           } else {
-            // in case of no uncommitted entries
+            // in case of no uncommitted entries, lakefs server should return an empty uncommittedLocation
             spark.emptyDataFrame.withColumn("physical_address", lit(""))
           }
 
         uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
+        uncommittedDF = uncommittedDF.repartition(uncommittedDF.col("address"))
         runID = uncommittedGCRunInfo.runID
 
         // Process committed
@@ -178,17 +185,19 @@ object UncommittedGarbageCollector {
 
         addressesToDelete = dataDF
           .select("address")
+          .repartition(dataDF.col("address"))
           .except(committedDF)
           .except(uncommittedDF)
       }
+      var jobID = runID
       if (shouldSweep) {
         if (shouldMark) { // get the expired addresses from the mark id run
           markedAddresses = addressesToDelete
-          println("deleting marked addresses: " + runID)
         } else {
+          jobID = markID
           markedAddresses = readMarkedAddresses(storageNamespace, markID)
-          println("deleting marked addresses: " + markID)
         }
+        println("deleting marked addresses from job: " + jobID)
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
         val region = getRegion(args)
@@ -230,6 +239,12 @@ object UncommittedGarbageCollector {
       expiredAddresses: DataFrame
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID)
+    println(s"Report for mark_id=$runID path=$reportDst")
+
+    val cachedAddresses = expiredAddresses.cache()
+    cachedAddresses.write.parquet(s"$reportDst/deleted")
+    cachedAddresses.write.text(s"$reportDst/deleted.text")
+
     val summary =
       writeJsonSummary(reportDst,
                        runID,
@@ -239,11 +254,7 @@ object UncommittedGarbageCollector {
                        success,
                        expiredAddresses.count()
                       )
-    println(s"Report for mark_id=$runID summary=$summary")
-
-    val cachedAddresses = expiredAddresses.cache()
-    cachedAddresses.write.parquet(s"$reportDst/deleted")
-    cachedAddresses.write.text(s"$reportDst/deleted.text")
+    println(s"Report summary=$summary")
   }
 
   private def formatRunPath(storageNamespace: String, runID: String): String = {

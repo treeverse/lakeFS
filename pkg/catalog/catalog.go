@@ -1832,6 +1832,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 }
 
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
+	var err error
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -1868,14 +1869,17 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, err
 	}
 
-	uncommittedLocation, err := c.Store.GCGetUncommittedLocation(repository, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Upload parquet file to object store
-	var name string
+	var (
+		uncommittedLocation string
+		name                string
+	)
 	if hasData {
+		uncommittedLocation, err = c.Store.GCGetUncommittedLocation(repository, runID)
+		if err != nil {
+			return nil, err
+		}
+
 		name, err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err

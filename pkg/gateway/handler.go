@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"golang.org/x/exp/slices"
 )
 
 type contextKey string
@@ -272,14 +273,11 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 }
 
 func selectContentType(acceptable []string) *string {
-	for _, acceptableTypes := range acceptable {
-		acceptable := commaSeparator.Split(acceptableTypes, -1)
-		for _, a := range acceptable {
-			switch a {
-			case contentTypeTextXML:
-				return &contentTypeTextXML
-			case contentTypeApplicationXML:
-				return &contentTypeApplicationXML
+	for _, supportedContentType := range []string{contentTypeApplicationXML, contentTypeTextXML} {
+		for _, acceptableTypes := range acceptable {
+			acceptable := commaSeparator.Split(acceptableTypes, -1)
+			if slices.Contains(acceptable, supportedContentType) {
+				return &supportedContentType
 			}
 		}
 	}
