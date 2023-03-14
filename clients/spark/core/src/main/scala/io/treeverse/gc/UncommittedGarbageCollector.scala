@@ -265,7 +265,13 @@ object UncommittedGarbageCollector {
     if (!markedRunSummary.first.getAs[Boolean]("success")) {
       throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
-      spark.read.parquet(s"$reportPath/deleted")
+      val deletedPath = new Path(formatRunPath(storageNamespace, markID) + "/deleted")
+      if (!fs.exists(deletedPath)) {
+        println(s"Mark ID ($markID) does not contain deleted files")
+        spark.emptyDataFrame.withColumn("address", lit(""))
+      } else {
+        spark.read.parquet(deletedPath.toString)
+      }
     }
   }
 
