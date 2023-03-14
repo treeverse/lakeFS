@@ -743,6 +743,10 @@ jobs:
           java-version: "8"
           cache: "sbt"
 
+      - name: Build Spark direct-access client
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
+
       - name: Package Spark App
         working-directory: test/spark/app
         run: sbt sonnets-311/package
@@ -787,10 +791,6 @@ jobs:
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
-
-      - name: Build Spark direct-access client
-        working-directory: clients/hadoopfs
-        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
 
       - name: Test lakeFS S3 with Spark 3.x thick client
         timeout-minutes: 8
