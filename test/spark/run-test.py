@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import lakefs_client
 from lakefs_client import models
@@ -79,9 +80,15 @@ def main():
                                    dependencies=False,
                                    remove=True,
                                    tty=False,
-                                   stream=True)
+                                   stream=True,
+                                   name="submit")
+
     for _, stream_content in generator:
         print(stream_content)
+    state = docker.container.inspect("submit").state
+    if state.exit_code != 0:
+        print(state.error)
+        sys.exit(state.state.exit_code)
 
 
 if __name__ == '__main__':
