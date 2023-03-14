@@ -12,6 +12,7 @@ import {githubGist as syntaxHighlightStyle} from "react-syntax-highlighter/dist/
 import {IpynbRenderer as NbRenderer} from "react-ipynb-renderer";
 import {guessLanguage} from "./index";
 import {RendererComponent, RendererComponentWithText, RendererComponentWithTextCallback} from "./types";
+import imageUriReplacer from "../../../../lib/remark-plugins/imageUriReplacer";
 
 
 export const ObjectTooLarge: FC<RendererComponent> = ({path, sizeBytes}) => {
@@ -54,9 +55,12 @@ export const TextDownloader: FC<RendererComponentWithTextCallback> = ({ repoId, 
     )
 }
 
-export const MarkdownRenderer: FC<RendererComponentWithText> = ({text}) => {
+export const MarkdownRenderer: FC<RendererComponentWithText> = ({text, repoId, refId}) => {
     return (
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkHtml]} linkTarget={"_blank"}>
+        <ReactMarkdown remarkPlugins={[[imageUriReplacer, {
+            repo: repoId,
+            ref: refId,
+            }], remarkGfm, remarkHtml]} linkTarget={"_blank"}>
             {text}
         </ReactMarkdown>
     );
