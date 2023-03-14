@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -13,8 +12,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-// Test Admin Policies: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
-func TestAdminPolicies(t *testing.T) {
+// Test Admin permissions: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
+func TestAdminPermissionss(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	adminClient := client
@@ -27,25 +26,14 @@ func TestAdminPolicies(t *testing.T) {
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
-	// adding policies to the group should succeed
-	pid := "TestPolicy"
-	resCreatePolicy, err := adminClient.CreatePolicyWithResponse(ctx, api.CreatePolicyJSONRequestBody{
-		CreationDate: api.Int64Ptr(time.Now().Unix()),
-		Id:           pid,
-		Statement: []api.Statement{
-			{
-				Action:   []string{"fs:ReadObject"},
-				Effect:   "allow",
-				Resource: "arn:lakefs:fs:::repository/foo/object/*",
-			},
-		},
+	// setting a group ACL should succeed
+	repositories := []string{"foo", "bar"}
+	resSetACL, err := adminClient.SetGroupACLWithResponse(ctx, gid, api.SetGroupACLJSONRequestBody{
+		Permission:   "Write",
+		Repositories: &repositories,
 	})
-	require.NoError(t, err, "Admin failed while creating policy")
-	require.Equal(t, http.StatusCreated, resCreatePolicy.StatusCode(), "Admin unexpectedly failed to create policy")
-
-	resAddPolicy, err := adminClient.AttachPolicyToGroupWithResponse(ctx, gid, pid)
-	require.NoError(t, err, "Admin failed while adding policy to group")
-	require.Equal(t, http.StatusCreated, resAddPolicy.StatusCode(), "Admin unexpectedly failed to add policy to group")
+	require.NoError(t, err, "Admin failed while setting group ACL")
+	require.Equal(t, http.StatusCreated, resSetACL.StatusCode(), "Admin unexpectedly failed to set group ACL")
 
 	// creating a new user should succeed
 	uid := "test-user"
@@ -66,134 +54,134 @@ func TestAdminPolicies(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resDeleteUser.StatusCode(), "Admin unexpectedly failed to delete the user")
 }
 
-// Test Super User Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
-func TestSuperUserPolicies(t *testing.T) {
+// Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
+func TestSuperPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "SuperUsers"
+	gid := "Supers"
 
-	// generate the SuperUser client
-	superUserClient := newClientFromGroup(t, ctx, logger, gid)
+	// generate the Super client
+	superClient := newClientFromGroup(t, ctx, logger, gid)
 
 	// listing the available branches should succeed
-	resListBranches, err := superUserClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
-	require.NoError(t, err, "SuperUser unexpectedly failed while listing branches of repository")
-	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "SuperUser unexpectedly failed to list branches of repository")
+	resListBranches, err := superClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
+	require.NoError(t, err, "Super unexpectedly failed while listing branches of repository")
+	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "Super unexpectedly failed to list branches of repository")
 
 	branches := resListBranches.JSON200.Results
 
 	// reading the commit of the main branch of the repo should succeed
-	resCommit, err := superUserClient.GetCommitWithResponse(ctx, repo, branches[0].CommitId)
-	require.NoError(t, err, "SuperUser unexpectedly failed while reading branch commit")
-	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "SuperUser unexpectedly failed to read branch commit")
+	resCommit, err := superClient.GetCommitWithResponse(ctx, repo, branches[0].CommitId)
+	require.NoError(t, err, "Super unexpectedly failed while reading branch commit")
+	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Super unexpectedly failed to read branch commit")
 
 	// creating a branch should succeed
 	branch1 := "feature-1"
-	resAddBranch, err := superUserClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	resAddBranch, err := superClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch1,
 		Source: mainBranch,
 	})
-	require.NoError(t, err, "SuperUser unexpectedly failed while testing create branch")
-	require.Equal(t, http.StatusCreated, resAddBranch.StatusCode(), "SuperUser unexpectedly failed to create branch")
+	require.NoError(t, err, "Super unexpectedly failed while testing create branch")
+	require.Equal(t, http.StatusCreated, resAddBranch.StatusCode(), "Super unexpectedly failed to create branch")
 
 	// merging a branch should succeed
-	resMerge, err := mergeAuthTest(t, superUserClient, ctx, repo, branch1)
-	require.NoError(t, err, "SuperUser failed while merging branches")
-	require.Equal(t, http.StatusOK, resMerge.StatusCode(), "SuperUser unexpectedly failed to merge branch")
+	resMerge, err := mergeAuthTest(t, superClient, ctx, repo, branch1)
+	require.NoError(t, err, "Super failed while merging branches")
+	require.Equal(t, http.StatusOK, resMerge.StatusCode(), "Super unexpectedly failed to merge branch")
 
 	// deleting the repository should succeed and result in no content response
-	resDeleteRepo, err := superUserClient.DeleteRepositoryWithResponse(ctx, repo)
-	require.NoError(t, err, "SuperUser failed while testing delete repository")
-	require.Equal(t, http.StatusNoContent, resDeleteRepo.StatusCode(), "SuperUser unexpectedly did not receive \"no content\" response while deleting repo")
+	resDeleteRepo, err := superClient.DeleteRepositoryWithResponse(ctx, repo)
+	require.NoError(t, err, "Super failed while testing delete repository")
+	require.Equal(t, http.StatusNoContent, resDeleteRepo.StatusCode(), "Super unexpectedly did not receive \"no content\" response while deleting repo")
 
 	// attempting to list the users should be unauthorized
-	resListUsers, err := superUserClient.ListUsersWithResponse(ctx, &api.ListUsersParams{})
-	require.NoError(t, err, "SuperUser failed while testing list users")
-	require.Equal(t, http.StatusUnauthorized, resListUsers.StatusCode(), "SuperUser unexpectedly did not receive unauthorized response while listing users")
+	resListUsers, err := superClient.ListUsersWithResponse(ctx, &api.ListUsersParams{})
+	require.NoError(t, err, "Super failed while testing list users")
+	require.Equal(t, http.StatusUnauthorized, resListUsers.StatusCode(), "Super unexpectedly did not receive unauthorized response while listing users")
 
-	// attempting to list the group policies should be unauthorized
-	resListPolicies, err := superUserClient.ListGroupPoliciesWithResponse(ctx, "Admins", &api.ListGroupPoliciesParams{})
-	require.NoError(t, err, "SuperUser failed while testing list Admin policies")
-	require.Equal(t, http.StatusUnauthorized, resListPolicies.StatusCode(), "SuperUser unexpectedly did not receive unauthorized response while listing Admin policies")
+	// attempting to get the group ACL should be unauthorized
+	resGetGroupACL, err := superClient.GetGroupACLWithResponse(ctx, "Admins")
+	require.NoError(t, err, "Super failed while testing get Admins ACL")
+	require.Equal(t, http.StatusUnauthorized, resGetGroupACL.StatusCode(), "Super unexpectedly did not receive unauthorized response while getting Admins ACL")
 }
 
-// Test Developer Policies: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
-func TestDeveloperPolicies(t *testing.T) {
+// Test Writer Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
+func TestWriterPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "Developers"
+	gid := "Writers"
 
-	// generate the Developer client
-	developerClient := newClientFromGroup(t, ctx, logger, gid)
+	// generate the Writer client
+	writerClient := newClientFromGroup(t, ctx, logger, gid)
 
 	// listing the available branches should succeed
-	resListBranches, err := developerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
-	require.NoError(t, err, "Developer failed while listing branches of repository")
-	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "Developer unexpectedly failed to list branches of repository")
+	resListBranches, err := writerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
+	require.NoError(t, err, "Writer failed while listing branches of repository")
+	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "Writer unexpectedly failed to list branches of repository")
 
 	branches := resListBranches.JSON200.Results
 
 	// reading the commit of the main branch of the repo should succeed
-	resCommit, err := developerClient.GetCommitWithResponse(ctx, repo, branches[0].CommitId)
-	require.NoError(t, err, "Developer failed while reading branch commit")
-	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Developer unexpectedly failed to read branch commit")
+	resCommit, err := writerClient.GetCommitWithResponse(ctx, repo, branches[0].CommitId)
+	require.NoError(t, err, "Writer failed while reading branch commit")
+	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Writer unexpectedly failed to read branch commit")
 
 	// creating a branch should succeed
 	branch1 := "feature-1"
-	resAddBranch, err := developerClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	resAddBranch, err := writerClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch1,
 		Source: mainBranch,
 	})
-	require.NoError(t, err, "Developer failed while testing create branch")
-	require.Equal(t, http.StatusCreated, resAddBranch.StatusCode(), "Developer unexpectedly failed to create branch")
+	require.NoError(t, err, "Writer failed while testing create branch")
+	require.Equal(t, http.StatusCreated, resAddBranch.StatusCode(), "Writer unexpectedly failed to create branch")
 
 	// merging a branch should succeed
-	resMerge, err := mergeAuthTest(t, developerClient, ctx, repo, branch1)
-	require.NoError(t, err, "Developer failed while merging branches")
-	require.Equal(t, http.StatusOK, resMerge.StatusCode(), "Developer unexpectedly failed to merge branch")
+	resMerge, err := mergeAuthTest(t, writerClient, ctx, repo, branch1)
+	require.NoError(t, err, "Writer failed while merging branches")
+	require.Equal(t, http.StatusOK, resMerge.StatusCode(), "Writer unexpectedly failed to merge branch")
 
 	// attempting to delete the repository should be unauthorized
-	resDeleteRepo, err := developerClient.DeleteRepositoryWithResponse(ctx, repo)
-	require.NoError(t, err, "Developer failed while testing delete repository")
-	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Developer unexpectedly did not receive unauthorized response while deleting repo")
+	resDeleteRepo, err := writerClient.DeleteRepositoryWithResponse(ctx, repo)
+	require.NoError(t, err, "Writer failed while testing delete repository")
+	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Writer unexpectedly did not receive unauthorized response while deleting repo")
 
 	// attempting to list the users should be unauthorized
-	resListUsers, err := developerClient.ListUsersWithResponse(ctx, &api.ListUsersParams{})
-	require.NoError(t, err, "Developer failed while testing list users")
-	require.Equal(t, http.StatusUnauthorized, resListUsers.StatusCode(), "Developer unexpectedly did not receive unauthorized response while listing users")
+	resListUsers, err := writerClient.ListUsersWithResponse(ctx, &api.ListUsersParams{})
+	require.NoError(t, err, "Writer failed while testing list users")
+	require.Equal(t, http.StatusUnauthorized, resListUsers.StatusCode(), "Writer unexpectedly did not receive unauthorized response while listing users")
 }
 
-// Test Viewer Policies: AuthManageOwnCredentials, FSReadAll
-func TestViewerPolicies(t *testing.T) {
+// Test Reader Permissions: AuthManageOwnCredentials, FSReadAll
+func TestReaderPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "Viewers"
+	gid := "Readers"
 
-	// generate the viewer client
-	viewerClient := newClientFromGroup(t, ctx, logger, gid)
+	// generate the reader client
+	readerClient := newClientFromGroup(t, ctx, logger, gid)
 
 	// listing the available branches should succeed
-	resListBranches, err := viewerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
-	require.NoError(t, err, "Viewer failed while listing branches of repository")
-	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "Viewer unexpectedly failed to list branches of repository")
+	resListBranches, err := readerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
+	require.NoError(t, err, "Reader failed while listing branches of repository")
+	require.Equal(t, http.StatusOK, resListBranches.StatusCode(), "Reader unexpectedly failed to list branches of repository")
 
 	branches := resListBranches.JSON200.Results
 
 	// reading the commit of the main branch of the repo should succeed
-	resCommit, err := viewerClient.GetCommitWithResponse(ctx, repo, branches[0].CommitId)
-	require.NoError(t, err, "Viewer failed while reading branch commit")
-	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Viewer unexpectedly failed to read branch commit")
+	resCommit, err := readerClient.GetCommitWithResponse(ctx, repo, branches[0].CommitId)
+	require.NoError(t, err, "Reader failed while reading branch commit")
+	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Reader unexpectedly failed to read branch commit")
 
 	// attempting to create a branch should be unauthorized
 	branch1 := "feature-1"
-	resAddBranch, err := viewerClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	resAddBranch, err := readerClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch1,
 		Source: mainBranch,
 	})
-	require.NoError(t, err, "Viewer failed while testing create branch")
-	require.Equal(t, http.StatusUnauthorized, resAddBranch.StatusCode(), "Viewer unexpectedly did not receive unauthorized response while creating branch")
+	require.NoError(t, err, "Reader failed while testing create branch")
+	require.Equal(t, http.StatusUnauthorized, resAddBranch.StatusCode(), "Reader unexpectedly did not receive unauthorized response while creating branch")
 
 	// attempting to delete the repository should be unauthorized
-	resDeleteRepo, err := viewerClient.DeleteRepositoryWithResponse(ctx, repo)
-	require.NoError(t, err, "Viewer failed while testing delete repository")
-	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Viewer unexpectedly did not receive unauthorized response while deleting repo")
+	resDeleteRepo, err := readerClient.DeleteRepositoryWithResponse(ctx, repo)
+	require.NoError(t, err, "Reader failed while testing delete repository")
+	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Reader unexpectedly did not receive unauthorized response while deleting repo")
 }
 
 // Creates a client with a user of the given group
@@ -215,10 +203,10 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 	require.NoError(t, err, "Failed to create credentials for user "+userId)
 	require.Equal(t, http.StatusCreated, r.StatusCode(), "Failed to create credentials for user "+userId)
 
-	viewerCredentials := r.JSON201
+	readerCredentials := r.JSON201
 
 	// create the new client
-	cli, err := testutil.NewClientFromCreds(logger, viewerCredentials.AccessKeyId, viewerCredentials.SecretAccessKey, endpointURL)
+	cli, err := testutil.NewClientFromCreds(logger, readerCredentials.AccessKeyId, readerCredentials.SecretAccessKey, endpointURL)
 	require.NoError(t, err, "failed to initialize client with group")
 
 	return cli
