@@ -645,6 +645,28 @@ jobs:
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
         run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
+
+  build-lakefs-hadoopfs:
+    name: Build lakeFS HadoopFS
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "adopt-hotspot"
+          java-version: "8"
+          cache: "sbt"
+      - name: Build lakeFS HadoopFS
+        working-directory: clients/hadoopfs
+        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
+      - name: Store lakeFS HadoopFS
+        uses: actions/upload-artifact@v3
+        with:
+          name: lakefs-hadoopfs
+          path: clients/hadoopfs/target/client.jar
+
   spark-prep:
     name: Prepare Spark Apps
     runs-on: ubuntu-20.04
@@ -669,7 +691,7 @@ jobs:
 
   spark2:
     name: Test lakeFS with Spark 2.x
-    needs: [spark-prep, deploy-image]
+    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -678,6 +700,12 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
+
+      - name: Download lakeFS HadoopFS
+        uses: actions/download-artifact@v3
+        with:
+          name: build-lakefs-hadoopfs
+          path: clients/hadoopfs/target
 
       - name: Download Spark App
         uses: actions/download-artifact@v3
@@ -719,10 +747,6 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
-      - name: Build Spark direct-access client
-        working-directory: clients/hadoopfs
-        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package
-
       - name: Test lakeFS S3 with Spark 2.x thick client
         timeout-minutes: 8
         env:
@@ -744,7 +768,7 @@ jobs:
 
   spark3:
     name: Test lakeFS with Spark 3.x
-    needs: deploy-image
+    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -754,15 +778,11 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v3
+      - name: Download lakeFS HadoopFS
+        uses: actions/download-artifact@v3
         with:
-          distribution: "adopt-hotspot"
-          java-version: "8"
-          cache: "sbt"
-
-      - name: Build Spark direct-access client
-        working-directory: clients/hadoopfs
-        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
+          name: build-lakefs-hadoopfs
+          path: clients/hadoopfs/target
 
       - name: Download Spark App
         uses: actions/download-artifact@v3
