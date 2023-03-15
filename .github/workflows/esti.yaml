@@ -645,15 +645,9 @@ jobs:
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
         run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
-
-  spark2:
-    name: Test lakeFS with Spark 2.x
-    needs: deploy-image
+  spark2-prep:
+    name: Prepare Spark App
     runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      SPARK_TAG: 2
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -667,6 +661,29 @@ jobs:
       - name: Package Spark App
         working-directory: test/spark/app
         run: sbt sonnets-246/package
+      - name: Store Spark App
+        uses: actions/upload-artifact@v3
+        with:
+          name: spark2-app
+          path: test/spark/sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+
+  spark2:
+    name: Test lakeFS with Spark 2.x
+    needs: [spark2-prep, deploy-image]
+    runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      SPARK_TAG: 2
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      - name: Download Spark App
+        uses: actions/download-artifact@v3
+        with:
+          name: spark2-app
+          path: test/spark/sonnets-246/target/sonnets-246/scala-2.11/
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
