@@ -1,15 +1,12 @@
 package io.lakefs;
 
-import static io.lakefs.LakeFSFileSystemTest.UNUSED_CHECKSUM;
-import static io.lakefs.LakeFSFileSystemTest.UNUSED_MTIME;
 import static org.mockito.Mockito.when;
-import org.apache.hadoop.fs.Path;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import io.lakefs.clients.api.model.StagingLocation;
 
-public class LakeFSFileSystemClassicModeTest extends LakeFSFileSystemTest {
+public class LakeFSFileSystemSimpleModeTest extends LakeFSFileSystemTest {
 
     @Override
     void initConfiguration() {}

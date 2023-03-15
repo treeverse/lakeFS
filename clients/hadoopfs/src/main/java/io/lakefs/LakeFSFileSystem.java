@@ -2,14 +2,12 @@ package io.lakefs;
 
 import static io.lakefs.Constants.*;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,10 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nonnull;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.CreateFlag;
@@ -41,7 +36,7 @@ import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import io.lakefs.Constants.AccessMode;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.BranchesApi;
 import io.lakefs.clients.api.ObjectsApi;
@@ -137,10 +132,13 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (ApiException e) {
             throw new IOException("Failed to get lakeFS blockstore type", e);
         }
-        if (FSConfiguration.getBoolean(conf, uri.getScheme(), PRESIGNED_MODE_KEY_SUFFIX, false)) {
+        AccessMode accessMode = AccessMode.fromValue(FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX, AccessMode.SIMPLE.getValue()));
+        if (accessMode == AccessMode.PRESIGNED) {
             storageAccessStrategy = new PresignedStorageAccessStrategy(this, lfsClient);
-        } else {
+        } else if (accessMode == AccessMode.SIMPLE) {
             storageAccessStrategy = new SimpleStorageAccessStrategy(this, lfsClient, conf, physicalAddressTranslator);
+        } else {
+            throw new IOException("Invalid access mode: " + accessMode);
         }
         // based on path get underlying FileSystem
         Path path = new Path(name);

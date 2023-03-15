@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.http.HttpStatus;
-import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.Answers;
 import org.slf4j.Logger;

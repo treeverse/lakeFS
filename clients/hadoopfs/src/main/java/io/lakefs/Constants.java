@@ -9,7 +9,30 @@ public class Constants {
     public static final String SECRET_KEY_KEY_SUFFIX = "secret.key";
     public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
     public static final String LIST_AMOUNT_KEY_SUFFIX = "list.amount";
-    public static final String PRESIGNED_MODE_KEY_SUFFIX = "presigned.mode";
+    public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
+
+    public static enum AccessMode {
+        SIMPLE("simple"),
+        PRESIGNED("presigned");
+        
+        private String value;
+        AccessMode(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public static AccessMode fromValue(String value) {
+            for (AccessMode mode : AccessMode.values()) {
+                if (mode.getValue().equals(value)) {
+                    return mode;
+                }
+            }
+            return null;
+        }
+    }
 
 
     public static final int DEFAULT_LIST_AMOUNT = 1000;

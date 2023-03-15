@@ -46,9 +46,4 @@ public final class FSConfiguration {
         String valueString = get(conf, scheme, keySuffix);
         return (valueString == null) ? defaultValue : Integer.parseInt(valueString);
     }
-    
-    public static boolean getBoolean(Configuration conf, String scheme, String keySuffix, boolean defaultValue) {
-        String valueString = get(conf, scheme, keySuffix);
-        return (valueString == null) ? defaultValue : Boolean.parseBoolean(valueString);
-    }
 }

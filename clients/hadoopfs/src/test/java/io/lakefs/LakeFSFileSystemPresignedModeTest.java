@@ -4,7 +4,6 @@ import static org.mockito.Mockito.when;
 import java.net.URL;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
-import org.apache.hadoop.fs.Path;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import io.lakefs.clients.api.ApiException;
@@ -15,7 +14,7 @@ import io.lakefs.clients.api.model.StagingLocation;
 public class LakeFSFileSystemPresignedModeTest extends LakeFSFileSystemTest {
 
     void initConfiguration() {
-        conf.set("fs.lakefs.presigned.mode", "true");
+        conf.set("fs.lakefs.access.mode", "presigned");
     }
 
     StagingLocation mockGetPhysicalAddress(String repo, String branch, String key,
