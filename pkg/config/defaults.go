@@ -1,8 +1,6 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/spf13/viper"
@@ -113,7 +111,5 @@ func setDefaults(local bool) {
 	viper.SetDefault("graveler.commit_cache.expiry", 10*time.Minute)
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
 
-	hd, _ := os.UserHomeDir()
-	pluginsPath := filepath.Join(hd, ".lakefs", "plugins")
-	viper.SetDefault("plugins.default_path", pluginsPath)
+	viper.SetDefault("plugins.default_path", "~/.lakefs/plugins")
 }

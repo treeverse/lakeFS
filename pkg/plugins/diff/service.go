@@ -3,11 +3,13 @@ package tablediff
 import (
 	"context"
 	"errors"
-	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mitchellh/go-homedir"
 
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -172,24 +174,22 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 
 func registerDefaultPlugins(service *Service, pluginsPath string) {
 	diffPluginsDir := diffPluginsDefaultPath(pluginsPath)
-	_ = filepath.WalkDir(diffPluginsDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			if path == diffPluginsDir {
-				logging.Default().Infof("no default plugin directory: %s", diffPluginsDir)
-			}
-			return nil
+	deltaPath := filepath.Join(diffPluginsDir, "delta")
+	_, err := os.Stat(deltaPath)
+
+	if err != nil {
+		if !os.IsNotExist(err) {
+			logging.Default().WithError(err).Error("failed to access delta lake diff plugin")
 		}
-		if !d.IsDir() {
-			if strings.ToLower(d.Name()) == "delta" {
-				pid := plugins.PluginIdentity{ProtocolVersion: 1, ExecutableLocation: path}
-				pa := plugins.PluginHandshake{}
-				RegisterDeltaLakeDiffPlugin(service, pid, pa)
-			}
-		}
-		return nil
-	})
+		return
+	}
+
+	pid := plugins.PluginIdentity{ProtocolVersion: 1, ExecutableLocation: deltaPath}
+	pa := plugins.PluginHandshake{}
+	RegisterDeltaLakeDiffPlugin(service, pid, pa)
 }
 
 func diffPluginsDefaultPath(pluginsPath string) string {
-	return filepath.Join(pluginsPath, "diff")
+	pp, _ := homedir.Expand(pluginsPath)
+	return filepath.Join(pp, "diff")
 }
