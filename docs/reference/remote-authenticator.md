@@ -68,10 +68,11 @@ and returns a JSON response like this:
 }
 ```
 
-### Example Responses
+### Example Request & Responses
+
+#### Request
 
 ```http
-### Request
 POST https://remote-authenticator.example.com/auth
 Content-Type: application/json
 
@@ -79,8 +80,10 @@ Content-Type: application/json
   "username": "testy.mctestface@example.com",
   "password": "Password1"
 }
+```
 
-### Successful Response
+#### Successful Response
+```http
 HTTP/1.1 200 OK
 Content-Type: application/json
 
@@ -88,15 +91,16 @@ Content-Type: application/json
 {
   "external_user_identifier": "TestyMcTestface"
 }
+```
 
-### Unauthorized Response
+#### Unauthorized Response
+```http
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
 
 {
   "external_user_identifier": ""
 }
-
 ```
 
 If the Remote Authenticator returns any HTTP status in the 2xx range, lakeFS considers this a successful authentication. Any HTTP status < 200 or > 300 is considered a failed authentication. If the Remote Authenticator returns a non-empty value for the `external_user_identifier` property along with a success HTTP status, lakeFS will show this identifier instead of an internal lakeFS user identifier in the UI.
@@ -105,7 +109,7 @@ If the Remote Authenticator returns any HTTP status in the 2xx range, lakeFS con
 
 Here is a sample Remote Authenticator implemented using [node](https://nodejs.org/) and [express](https://expressjs.com/) and written in TypeScript. This example implementation doesn't integrate with any real IdP but illustrates the expected request/response patterns that you need to implement.
 
-```TypeScript
+```javascript
 import dotenv from "dotenv";
 import express, { Express, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
