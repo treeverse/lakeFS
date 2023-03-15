@@ -3,6 +3,8 @@ package tablediff
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -133,7 +135,7 @@ func (s *Service) appendClosingFunction(diffType string, f func()) {
 }
 
 // NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
-func NewService(diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps) (*Service, func()) {
+func NewService(diffProps map[string]config.DiffProps, pluginProps config.Plugins) (*Service, func()) {
 	service := &Service{
 		pluginHandler:  internal.NewManager[Differ](),
 		closeFunctions: make(map[string]func()),
@@ -142,13 +144,14 @@ func NewService(diffProps map[string]config.DiffProps, pluginProps map[string]co
 	return service, service.Close
 }
 
-func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps map[string]config.PluginProps) {
+func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps config.Plugins) {
+	registerDefaultPlugins(service, pluginProps.DefaultPath)
 	for n, p := range diffProps {
 		pluginName := p.PluginName
 		// If the requested plugin wasn't configured with a path, it will be defined under the default location
-		pluginPath := config.DefaultPluginLocation(pluginName)
+		pluginPath := filepath.Join(diffPluginsDefaultPath(pluginProps.DefaultPath), pluginName)
 		pluginVersion := 1 // default version
-		if props, ok := pluginProps[pluginName]; ok {
+		if props, ok := pluginProps.Properties[pluginName]; ok {
 			pluginPath = props.Path
 			if props.Version != nil {
 				pluginVersion = *props.Version
@@ -165,4 +168,28 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 		}
 		logging.Default().Infof("successfully registered a plugin for diff type: '%s'", n)
 	}
+}
+
+func registerDefaultPlugins(service *Service, pluginsPath string) {
+	diffPluginsDir := diffPluginsDefaultPath(pluginsPath)
+	_ = filepath.WalkDir(diffPluginsDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if path == diffPluginsDir {
+				logging.Default().Infof("no default plugin directory: %s", diffPluginsDir)
+			}
+			return nil
+		}
+		if !d.IsDir() {
+			if strings.ToLower(d.Name()) == "delta" {
+				pid := plugins.PluginIdentity{ProtocolVersion: 1, ExecutableLocation: path}
+				pa := plugins.PluginHandshake{}
+				RegisterDeltaLakeDiffPlugin(service, pid, pa)
+			}
+		}
+		return nil
+	})
+}
+
+func diffPluginsDefaultPath(pluginsPath string) string {
+	return filepath.Join(pluginsPath, "diff")
 }
