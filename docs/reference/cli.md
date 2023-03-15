@@ -1589,6 +1589,39 @@ lakectl cat-sst <sst-file> [flags]
 
 
 
+### lakectl cherry-pick
+
+cherry-pick a ref into a branch
+
+#### Synopsis
+{:.no_toc}
+
+The commit will be applied to the branch as a new commit
+
+```
+lakectl cherry-pick <branch uri> <ref uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl cherry-pick lakefs://myrepo/main lakefs://myrepo/some-ref
+	          Cherry picks the commit represented by some-ref into the main branch
+              by applying all the changes between the commit and its parent on the destination branch.
+             
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                help for cherry-pick
+  -m, --parent-number int   the parent number (starting from 1) of the mainline. The cherry-pick will apply the change relative to the specified parent.
+```
+
+
+
 ### lakectl commit
 
 Commit changes on a given branch

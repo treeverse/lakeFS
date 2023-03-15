@@ -525,7 +525,7 @@ type VersionController interface {
 	Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error)
 
 	// CherryPick creates a patch to the commit given as 'ref', and applies it as a new commit on the given branch.
-	CherryPick(ctx context.Context, repository *RepositoryRecord, id BranchID, reference Ref, number *int, commitParams CommitParams) (CommitID, error)
+	CherryPick(ctx context.Context, repository *RepositoryRecord, id BranchID, reference Ref, number *int, committer string) (CommitID, error)
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
@@ -2256,7 +2256,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
-func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, commitParams CommitParams) (CommitID, error) {
+func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string) (CommitID, error) {
 	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 	if err != nil {
 		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
@@ -2312,12 +2312,19 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 			return nil, err
 		}
 		commit := NewCommit()
-		commit.Committer = commitParams.Committer
+		commit.Committer = committer
 		commit.Message = commitRecord.Message
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{branch.CommitID}
-		commit.Metadata = commitParams.Metadata
 		commit.Generation = branchCommit.Generation + 1
+
+		commit.Metadata = commitRecord.Metadata
+		if commit.Metadata == nil {
+			commit.Metadata = make(map[string]string)
+		}
+		commit.Metadata["cherry-pick-origin"] = string(commitRecord.CommitID)
+		commit.Metadata["cherry-pick-committer"] = commitRecord.Committer
+
 		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)

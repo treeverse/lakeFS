@@ -1402,17 +1402,13 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch string, params CherryPickParams) error {
 	branchID := graveler.BranchID(branch)
 	reference := graveler.Ref(params.Reference)
-	commitParams := graveler.CommitParams{
-		Committer: params.Committer,
-		Message:   fmt.Sprintf("Cherry pick %s", params.Reference),
-	}
 	parentNumber := params.ParentNumber
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 		{Name: "ref", Value: reference, Fn: graveler.ValidateRef},
-		{Name: "committer", Value: commitParams.Committer, Fn: validator.ValidateRequiredString},
-		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNonNegativeInt},
+		{Name: "committer", Value: params.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNilOrPositiveInt},
 	}); err != nil {
 		return err
 	}
@@ -1421,7 +1417,7 @@ func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch st
 		return err
 	}
 
-	_, err = c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, commitParams)
+	_, err = c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, params.Committer)
 	return err
 }
 
