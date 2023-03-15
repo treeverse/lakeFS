@@ -5,6 +5,9 @@ import replace from '@rollup/plugin-replace';
 // https://vitejs.dev/config/
 export default ({ command }) => {
   const baseConfig = {
+    test: {
+      environment: 'happy-dom',
+    },
     plugins: [
       replace({
           preventAssignment: true,
@@ -22,7 +25,7 @@ export default ({ command }) => {
   };
 
   // in development
-  if (command === 'serve') {
+  if (command === 'serve' || command === 'test') {
     return {
       ...baseConfig,
       server: {

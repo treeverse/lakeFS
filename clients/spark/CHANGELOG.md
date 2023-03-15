@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.5 - 2023-03-14
+
+Bug fix:
+* UGC fix uncommitted exists change (#5467)
+* UGC fix list mark addresses
+
 ## v0.6.4 - 2023-03-13
 
 Bug fix:
