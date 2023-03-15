@@ -39,7 +39,6 @@
     "remark": "^14.0.2",
     "remark-gfm": "^3.0.1",
     "remark-html": "^15.0.1",
-    "unist": "^8.0.11",
     "unist-util-visit": "^4.1.2",
     "validator": "^13.7.0"
   },
@@ -54,6 +53,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@types/react-syntax-highlighter": "^15.5.5",
     "@types/react-test-renderer": "^17.0.2",
+    "@types/unist": "^2.0.6",
     "@types/validator": "^13.7.7",
     "@typescript-eslint/eslint-plugin": "^5.38.0",
     "@typescript-eslint/parser": "^5.38.0",
