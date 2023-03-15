@@ -65,7 +65,7 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
     }
 
     @Override
-    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation)
+    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize)
             throws ApiException, IOException {
         ObjectsApi objects = lfsClient.getObjectsApi();
         ObjectStats stats = objects.statObject(objectLocation.getRepository(),
@@ -79,6 +79,6 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
         }
         Path physicalPath = new Path(physicalUri.toString());
         FileSystem physicalFs = physicalPath.getFileSystem(conf);
-        return physicalFs.open(physicalPath);
+        return physicalFs.open(physicalPath, bufSize);
     }
 }

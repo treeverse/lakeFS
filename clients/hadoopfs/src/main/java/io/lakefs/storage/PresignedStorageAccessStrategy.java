@@ -50,11 +50,11 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
     }
 
     @Override
-    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation)
+    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize)
             throws ApiException, MalformedURLException, IOException {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         ObjectStats stats = objectsApi.statObject(objectLocation.getRepository(),
                 objectLocation.getRef(), objectLocation.getPath(), false, true);
-        return new FSDataInputStream(new HttpRangeInputStream(stats.getPhysicalAddress()));
+        return new FSDataInputStream(new HttpRangeInputStream(stats.getPhysicalAddress(), bufSize));
     }
 }

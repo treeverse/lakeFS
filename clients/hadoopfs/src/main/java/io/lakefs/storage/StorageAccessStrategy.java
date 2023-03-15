@@ -15,5 +15,5 @@ public interface StorageAccessStrategy {
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation, CreateOutputStreamParams params)
             throws ApiException, IOException;
 
-    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation) throws ApiException, IOException;
+    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize) throws ApiException, IOException;
 }

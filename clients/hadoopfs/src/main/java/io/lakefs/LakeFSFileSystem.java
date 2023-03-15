@@ -183,7 +183,7 @@ public class LakeFSFileSystem extends FileSystem {
         OPERATIONS_LOG.trace("open({})", path);
         try {                        
             ObjectLocation objectLoc = pathToObjectLocation(path);
-            return storageAccessStrategy.createDataInputStream(objectLoc);
+            return storageAccessStrategy.createDataInputStream(objectLoc, bufSize);
         } catch (ApiException e) {
             throw translateException("open: " + path, e);
         }
