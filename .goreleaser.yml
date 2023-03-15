@@ -8,65 +8,65 @@ release:
   prerelease: true
   ids: [default]
 builds:
-- id: lakefs
-  main: ./cmd/lakefs
-  binary: lakefs
-  env:
-  - CGO_ENABLED=0
-  ldflags:
-  - -s -w -X github.com/treeverse/lakefs/pkg/version.Version={{.Version}}
-  goarch:
-  - amd64
-  - arm64
-  goos:
-  - darwin
-  - linux
-  - windows
-- id: lakectl
-  main: ./cmd/lakectl
-  binary: lakectl
-  env:
-  - CGO_ENABLED=0
-  ldflags:
-  - -s -w -X github.com/treeverse/lakefs/pkg/version.Version={{.Version}}
-  goarch:
-  - amd64
-  - arm64
-  goos:
-  - darwin
-  - linux
-  - windows
+  - id: lakefs
+    main: ./cmd/lakefs
+    binary: lakefs
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/treeverse/lakefs/pkg/version.Version={{.Version}}
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - darwin
+      - linux
+      - windows
+  - id: lakectl
+    main: ./cmd/lakectl
+    binary: lakectl
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/treeverse/lakefs/pkg/version.Version={{.Version}}
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - darwin
+      - linux
+      - windows
 archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
-  format_overrides:
-    - goos: windows
-      format: zip
-  format: binary
-  id: lakectl
-  name_template: "{{ .Os }}_{{ .Arch }}/lakectl"
-  builds:
-   - lakectl
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
-  id: release
-  format: tar.gz
-  format_overrides:
-    - goos: windows
-      format: zip
-  files:
-    - src: '{{ .Env.DELTA_ARTIFACTS_LOCATION }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
-      strip_parent: true
-  name_template: "{{.ProjectName}}_{{.Version}}_{{ .Os }}_{{ .Arch }}"
-  builds:
-   - lakefs
-   - lakectl
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    format: binary
+    id: lakectl
+    name_template: "{{ .Os }}_{{ .Arch }}/lakectl"
+    builds:
+      - lakectl
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
+    id: release
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - src: '{{ if index .Env "DELTA_ARTIFACTS_LOCATION"  }}{{ .Env.DELTA_ARTIFACTS_LOCATION }}{{ else }}.{{ end }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
+        strip_parent: true
+    name_template: "{{.ProjectName}}_{{.Version}}_{{ .Os }}_{{ .Arch }}"
+    builds:
+      - lakefs
+      - lakectl
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -75,12 +75,12 @@ changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
-blobs:
-- provider: s3
-  region: us-east-1
-  bucket: treeverse-clients-us-east
-  folder: "lakectl/{{.Version}}"
-  ids:
-   - lakectl
+      - '^docs:'
+      - '^test:'
+#blobs:
+#- provider: s3
+#  region: us-east-1
+#  bucket: treeverse-clients-us-east
+#  folder: "lakectl/{{.Version}}"
+#  ids:
+#   - lakectl
