@@ -262,7 +262,6 @@ GEM
       unf_ext
     unf_ext (0.0.7.7)
     unicode-display_width (1.7.0)
-    webrick (1.8.1)
     zeitwerk (2.4.2)
 
 PLATFORMS
@@ -271,7 +270,6 @@ PLATFORMS
 DEPENDENCIES
   github-pages
   just-the-docs
-  webrick (~> 1.8)
 
 BUNDLED WITH
    2.1.4
