@@ -36,8 +36,8 @@ services:
       - AWS_REGION
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
-    env_file:
-        - tester.env
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   spark:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
@@ -52,8 +52,8 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - METACLIENT_JAR
       - EXPORT_LOCATION
-    env_file:
-        - tester.env
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     ports:
       - 18080:8080
     extra_hosts:
@@ -78,8 +78,8 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
-    env_file:
-      - tester.env
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
@@ -93,8 +93,6 @@ services:
     volumes:
       - ./:/local
       - ../../clients/hadoopfs/target:/target
-    env_file:
-      - tester.env
     environment:
       - input
       - output
@@ -109,6 +107,8 @@ services:
       - AWS_REGION
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
