@@ -41,7 +41,7 @@
         <value>sts.amazonaws.com</value>
     </property>
     <property>
-        <name>fs.lakefs.presigned.mode</name>
-        <value>${lakefs.presigned_mode}</value>
+        <name>fs.lakefs.access.mode</name>
+        <value>${lakefs.access_mode}</value>
     </property>
 </configuration>

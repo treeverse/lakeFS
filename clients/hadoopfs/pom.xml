@@ -96,7 +96,7 @@ To export to S3:
                         <version>2.12.4</version>
                         <configuration>
                             <systemPropertyVariables>
-                                <lakefs.presigned_mode>true</lakefs.presigned_mode>
+                                <lakefs.access_mode>presigned</lakefs.access_mode>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
