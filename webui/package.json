@@ -20,6 +20,7 @@
     "@mui/material": "^5.11.1",
     "@primer/octicons-react": "^17.10.0",
     "@react-icons/all-files": "^4.1.0",
+    "@types/unist": "^2.0.6",
     "bootstrap": "^5.2.3",
     "dayjs": "^1.11.7",
     "http-proxy-middleware": "^1.1.1",
@@ -39,7 +40,6 @@
     "remark": "^14.0.2",
     "remark-gfm": "^3.0.1",
     "remark-html": "^15.0.1",
-    "unist": "^8.0.11",
     "unist-util-visit": "^4.1.2",
     "validator": "^13.7.0"
   },
