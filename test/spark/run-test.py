@@ -5,6 +5,8 @@ import lakefs_client
 from lakefs_client import models
 from lakefs_client.client import LakeFSClient
 from python_on_whales import docker
+ from lakefs_client.model.setup import Setup
+from lakefs_client.model.access_key_credentials import AccessKeyCredentials
 
 
 def flatten(lst):
@@ -45,10 +47,11 @@ def main():
                                     password=lakefs_secret_key,
                                     host='http://localhost:8000'))
 
+    lfs_client.config.setup(Setup("tester", key=AccessKeyCredentials(lakefs_access_key, lakefs_secret_key)))
     lfs_client.repositories.create_repository(
         models.RepositoryCreation(name=args.repository,
                                   storage_namespace=args.storage_namespace,
-                                  default_branch='main'))
+                                  default_branch='main',))
 
     with open('./app/data-sets/sonnets.txt', 'rb') as f:
         lfs_client.objects.upload_object(repository=args.repository, branch="main", path="sonnets.txt", content=f)

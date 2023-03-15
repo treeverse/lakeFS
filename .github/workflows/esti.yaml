@@ -615,10 +615,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Setup lakeFS for tests
-        working-directory: test/spark
-        run: ./setup-test.sh
-
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
@@ -634,7 +630,9 @@ jobs:
           #     a Docker container.  Bypass this somehow.
           ENDPOINT: "http://s3.local.lakefs.io:8000"
         working-directory: test/spark/s3a-multipart
-        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+        run: |
+          docker-compose exec -T lakefs sh -c 'lakefs setup --user-name tester --access-key-id ${secrets.TESTER_ACCESS_KEY_ID} --secret-access-key ${secrets.TESTER_SECRET_ACCESS_KEY}'
+          docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: lakeFS logs on failure
         if: ${{ failure() }}
@@ -732,10 +730,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Setup lakeFS for tests
-        working-directory: test/spark
-        run: ./setup-test.sh
-
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
@@ -816,10 +810,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
-      - name: Setup lakeFS for tests
-        working-directory: test/spark
-        run: ./setup-test.sh
 
       - name: Test lakeFS S3 with Spark 3.x
         working-directory: test/spark
@@ -1056,10 +1046,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
-      - name: Setup lakeFS for metadata client tests
-        working-directory: test/spark
-        run: ./setup-test.sh
 
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
