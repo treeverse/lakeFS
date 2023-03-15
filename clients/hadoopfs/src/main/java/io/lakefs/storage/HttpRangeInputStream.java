@@ -51,9 +51,9 @@ public class HttpRangeInputStream extends FSInputStream {
         long rangeEnd = Math.min(targetPos + bufferSize, len);
         connection.setRequestProperty("Range", "bytes=" + targetPos + "-" + rangeEnd);
         rangeContent = new byte[(int) (rangeEnd - targetPos)];
-        InputStream inputStream = connection.getInputStream();
-        IOUtils.readFully(inputStream, rangeContent);
-        inputStream.close();
+        try (InputStream inputStream = connection.getInputStream()) {
+            IOUtils.readFully(inputStream, rangeContent);
+        }
         start = targetPos;
     }
 
@@ -65,6 +65,10 @@ public class HttpRangeInputStream extends FSInputStream {
         if (targetPos < 0) {
             throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK
                     + " " + targetPos);
+        }
+        if (targetPos >= len) {
+            throw new EOFException(FSExceptionMessages.CANNOT_SEEK_PAST_EOF
+                    + " " + targetPos + " > " + len);
         }
         this.pos = targetPos;
     }
