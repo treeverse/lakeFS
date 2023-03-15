@@ -1,0 +1,138 @@
+/*
+    Mostly based on the "githubGist" theme provided by react-syntax-highlighter.
+    Ideally, we'd use it directly, but the logic to extract it from the javascript object
+     is not exposed in the API.
+*/
+
+.syntax-editor {
+    color: #393A34;
+    background-color: #fafafa;
+    font-family: var(--bs-font-monospace);
+    font-size: .9em;
+    direction: ltr;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    -moz-tab-size: 4;
+    -o-tab-size: 4;
+    tab-size: 4;
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none;
+    padding: 1em;
+    margin: .5em 0;
+    overflow: auto;
+    padding: 0.5em;
+    overflow-x: auto;
+    border: 1px solid #ddd;
+}
+
+.syntax-editor::-moz-selection,
+.syntax-editor::selection {
+    background: #b3d4fc;
+}
+.syntax-editor .token.comment {
+    color: #999988;
+    font-style: italic;
+}
+
+.syntax-editor .token.prolog {
+    color: #999988;
+    font-style: italic;
+}
+
+.syntax-editor .token.doctype {
+    color: #999988;
+    font-style: italic;
+}
+.syntax-editor .token.cdata {
+    color: #999988;
+    font-style: italic;
+}
+.syntax-editor .token.namespace {
+    opacity: .7;
+}
+.syntax-editor  .token.string {
+    color: #e3116c;
+}
+.syntax-editor  .token.attr-value {
+    color: #6f42c1;
+}
+.syntax-editor  .token.punctuation {
+    color: #df5000;
+}
+.syntax-editor  .token.operator {
+    color: #005cc5;
+}
+.syntax-editor  .token.entity {
+    color: #36acaa;
+}
+.syntax-editor  .token.url {
+    color: #36acaa;
+}
+.syntax-editor  .token.symbol {
+    color: #0086b3;
+}
+.syntax-editor  .token.number {
+    color: #005cc5;
+}
+.syntax-editor  .token.boolean {
+    color: #005cc5;
+}
+.syntax-editor  .token.variable {
+    color: #005cc5;
+}
+.syntax-editor  .token.constant {
+    color: #005cc5;
+}
+.syntax-editor  .token.property {
+    color: #005cc5;
+}
+.syntax-editor  .token.regex {
+    color: #005cc5;
+}
+.syntax-editor  .token.inserted {
+    color: #005cc5;
+}
+.syntax-editor  .token.atrule {
+    color: #00a4db;
+}
+.syntax-editor  .token.keyword {
+    color: #d73a49;
+}
+.syntax-editor  .token.attr-name {
+    color: #d73a49;
+}
+.language-autohotkey .token.selector {
+    color: #d73a49;
+}
+.syntax-editor  .token.function {
+    color: #9a050f;
+    font-weight: bold;
+}
+.syntax-editor  .token.deleted {
+    color: #9a050f;
+}
+.language-autohotkey .token.tag {
+    color: #9a050f;
+}
+.syntax-editor  .token.tag {
+    color: #d73a49;
+}
+.syntax-editor  .token.selector {
+    color: #d73a49;
+}
+.language-autohotkey .token.keyword {
+    color: #d73a49;
+}
+.syntax-editor  .token.important {
+    font-weight: bold;
+}
+.syntax-editor  .token.bold {
+    font-weight: bold;
+}
+.syntax-editor  .token.italic {
+    font-style: italic;
+}

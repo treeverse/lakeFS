@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -284,11 +285,15 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		case kv.PrecondConditionalExists: // update only if exists
 			input.ConditionExpression = aws.String("attribute_exists(" + ItemValue + ")")
 
-		default: // update just in case the previous value was same as predicate value
-			input.ConditionExpression = aws.String(ItemValue + " = :predicate")
-			input.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":predicate": {B: valuePredicate.([]byte)},
+		default: // update only if predicate matches current stored value
+			predicateCondition := expression.Name(ItemValue).Equal(expression.Value(valuePredicate.([]byte)))
+			conditionExpression, err := expression.NewBuilder().WithCondition(predicateCondition).Build()
+			if err != nil {
+				return fmt.Errorf("build condition expression: %w", err)
 			}
+			input.ExpressionAttributeNames = conditionExpression.Names()
+			input.ExpressionAttributeValues = conditionExpression.Values()
+			input.ConditionExpression = conditionExpression.Condition()
 		}
 	}
 

@@ -62,7 +62,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     const headers = new Headers({
         ...defaultAPIHeaders,
         ...additionalHeaders,
-    })
+    });
     const response = await fetch(`${API_ENDPOINT}${uri}`, {headers, ...requestData});
 
     // check if we're missing credentials
@@ -641,6 +641,11 @@ class Objects {
         return response.text()
     }
 
+    async getPresignedUrlForDownload(repoId, ref, path) {
+        const response = await this.getStat(repoId, ref, path, true);
+        return response?.physical_address;
+    }
+
     async head(repoId, ref, path) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
@@ -656,8 +661,8 @@ class Objects {
         }
     }
 
-    async getStat(repoId, ref, path) {
-        const query = qs({path});
+    async getStat(repoId, ref, path, presign = false) {
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));

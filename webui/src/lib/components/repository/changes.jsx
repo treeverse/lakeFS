@@ -39,7 +39,7 @@ import Col from "react-bootstrap/Col";
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
-                                depth=0, setTableDiffExpanded}) => {
+                                depth=0, setTableDiffExpanded, setTableDiffState, setIsTableMerge}) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -97,7 +97,8 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             results.map(child =>
                 (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                               internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                              relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={setTableDiffExpanded}/>))}
+                              relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={onTableDiffExpansion(child, setTableDiffState, setIsTableMerge)} setTableDiffState={setTableDiffState}
+                              setIsTableMerge={setIsTableMerge}/>))}
             {(!!nextPage || loading) &&
             <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                                 setAfterUpdated={setAfterUpdated}/>
@@ -140,21 +141,20 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     let leftResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, rightDiffRefID));
     let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
     useEffect(() => {
-        if (entry.path_type === "object") {
-            setTreeItemType({ type: TreeItemType.Object, loading: false });
+        if (treeItemType.loading) {
+            if (entry.path_type === "object") {
+                setTreeItemType({ type: TreeItemType.Object, loading: false });
+            } else if (!leftResult.loading && !rightResult.loading) {
+                setTreeItemType({
+                    type:
+                        leftResult.response || rightResult.response
+                            ? TreeItemType.DeltaLakeTable
+                            : TreeItemType.Prefix,
+                    loading: false,
+                });
+            }
         }
-    }, [entry]);
-    useEffect(() => {
-        if (treeItemType.loading && !leftResult.loading && !rightResult.loading) {
-            setTreeItemType({
-                type:
-                    leftResult.response || rightResult.response
-                        ? TreeItemType.DeltaLakeTable
-                        : TreeItemType.Prefix,
-                loading: false,
-            });
-        }
-    }, [leftResult, rightResult]);
+    }, [leftResult, rightResult, entry]);
     return treeItemType;
 }
 
@@ -181,9 +181,10 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
+                                         changesTreeMessage= ""}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
-    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: ""});
+    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
     if (results.length === 0) {
         return <div className="tree-container">
@@ -198,7 +199,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                           variant="secondary"
                                           disabled={false}
                                           onClick={() => {
-                                              setTableDiffState( {isShown: false, expandedTablePath: ""})
+                                              setTableDiffState( {isShown: false, expandedTablePath: "", expandedTableName: ""})
                                               if (setIsTableMerge) {
                                                   setIsTableMerge(false);
                                               }
@@ -208,11 +209,16 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
                                     compare Delta Lake tables</Alert></div>
                     }
+                    <div>{changesTreeMessage}</div>
                     <Card>
                         <Card.Header>
+                            {tableDiffState.isShown
+                                ? tableDiffState.expandedTableName
+                                :
                                 <span className="float-start">
                                     {(delimiter !== "") && uriNavigator}
                                 </span>
+                            }
                         </Card.Header>
                         <Card.Body>
                             {tableDiffState.isShown
@@ -229,12 +235,9 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     setTableDiffExpanded={() => {
-                                                         setTableDiffState({isShown: true,  expandedTablePath: entry.path})
-                                                         if (setIsTableMerge) {
-                                                             setIsTableMerge(true);
-                                                         }
-                                                     }}
+                                                     setTableDiffExpanded={onTableDiffExpansion(entry, setTableDiffState, setIsTableMerge)}
+                                                     setTableDiffState={setTableDiffState}
+                                                     setIsTableMerge={setIsTableMerge}
                                                  />);
                                 })}
                                 {!!nextPage &&
@@ -251,6 +254,15 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
 export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {
     return refs.diff(repo.id, leftRefId, rightRefId, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
 };
+
+const onTableDiffExpansion = (entry, setTableDiffState, setIsTableMerge) => () => {
+    const pathParts = entry.path.split('/');
+    const tableName = pathParts.pop() || pathParts.pop();  // handle trailing slash at the end of table name
+    setTableDiffState({isShown: true,  expandedTablePath: entry.path, expandedTableName: tableName})
+    if (setIsTableMerge) {
+        setIsTableMerge(true);
+    }
+}
 
 const ExperimentalDeltaDiffButton = ({showButton = false}) => {
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);

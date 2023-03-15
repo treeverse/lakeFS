@@ -77,6 +77,17 @@ type S3AuthInfo struct {
 	}
 }
 
+// PluginProps struct holds the properties needed to run a plugin
+type PluginProps struct {
+	Path    string `mapstructure:"path"`
+	Version *int   `mapstructure:"version"`
+}
+
+// DiffProps struct holds the properties that define the details necessary to run a diff.
+type DiffProps struct {
+	PluginName string `mapstructure:"plugin"`
+}
+
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -315,6 +326,8 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
+	Diff    map[string]DiffProps   `mapstructure:"diff"`
+	Plugins map[string]PluginProps `mapstructure:"plugins"`
 }
 
 func NewConfig() (*Config, error) {
