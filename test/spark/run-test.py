@@ -5,6 +5,7 @@ import lakefs_client
 from lakefs_client import models
 from lakefs_client.client import LakeFSClient
 from python_on_whales import docker
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 def flatten(lst):
@@ -20,6 +21,11 @@ def get_spark_submit_cmd(submit_flags, spark_config, jar_name, jar_args):
     cmd.extend(jar_args)
     return cmd
 
+
+@retry(wait=wait_fixed(1), stop=stop_after_attempt(7))
+def wait_for_setup(lfs_client):
+    setup_state = lfs_client.config.get_setup_state()
+    assert setup_state.state == 'initialized'
 
 def main():
     parser = argparse.ArgumentParser()
@@ -44,6 +50,7 @@ def main():
         lakefs_client.Configuration(username=lakefs_access_key,
                                     password=lakefs_secret_key,
                                     host='http://localhost:8000'))
+    wait_for_setup(lfs_client)
     lfs_client.repositories.create_repository(
         models.RepositoryCreation(name=args.repository,
                                   storage_namespace=args.storage_namespace,
