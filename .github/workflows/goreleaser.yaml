@@ -11,13 +11,29 @@ permissions:
   contents: write
 
 jobs:
-  rust-releaser-mac:
-    runs-on: macos-12
+  rust-releaser:
     strategy:
       matrix:
-        target:
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
+        builds:
+          - os: macos-12
+            target: x86_64-apple-darwin
+            exec_name: delta_diff
+          - os: macos-12
+            target: aarch64-apple-darwin
+            exec_name: delta_diff
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-musl
+            exec_name: delta_diff
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-musl
+            exec_name: delta_diff
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            exec_name: delta_diff.exe
+          - os: windows-2022
+            target: aarch64-pc-windows-msvc
+            exec_name: delta_diff.exe
+    runs-on: ${{ matrix.builds.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -27,7 +43,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.target }}
+          target: ${{ matrix.builds.target }}
           override: true
       - name: Rust Cache
         id: cache-rust
@@ -47,93 +63,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff
-          if-no-files-found: error
-
-  rust-releaser-unix:
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        target:
-          - aarch64-unknown-linux-musl
-          - x86_64-unknown-linux-musl
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
-      - name: Rust Cache
-        id: cache-rust
-        uses: Swatinem/rust-cache@v2.2.1
-        with:
-          workspaces: pkg/plugins/diff/delta_diff_server -> target
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: '3.x'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run Cargo
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff
-          if-no-files-found: error
-
-  rust-releaser-windows:
-    runs-on: windows-2022
-    strategy:
-      matrix:
-        target:
-          - x86_64-pc-windows-msvc
-          - aarch64-pc-windows-msvc
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
-      - name: Rust Cache
-        id: cache-rust
-        uses: Swatinem/rust-cache@v2.2.1
-        with:
-          workspaces: pkg/plugins/diff/delta_diff_server -> target
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: '3.x'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run Cargo
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: delta-${{ matrix.target }}
-          path: pkg/plugins/diff/delta_diff_server/target/release/delta_diff.exe
+          name: delta-${{ matrix.builds.target }}
+          path: pkg/plugins/diff/delta_diff_server/target/release/${{ matrix.builds.exec_name }}
           if-no-files-found: error
 
   goreleaser:
     runs-on: ubuntu-20.04
-    needs: [rust-releaser-windows, rust-releaser-unix, rust-releaser-mac]
+    needs: [rust-releaser]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
