@@ -118,10 +118,11 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 }
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
-	url := fmt.Sprintf(URLTemplate, params.StorageAccount)
-	// For testing purposes - override default url template
-	if params.URL != nil {
-		url = *params.URL
+	var url string
+	if params.TestEndpointURL != "" { // For testing purposes - override default url template
+		url = params.TestEndpointURL
+	} else {
+		url = fmt.Sprintf(URLTemplate, params.StorageAccount)
 	}
 
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}

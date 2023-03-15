@@ -3,7 +3,6 @@ package factory
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/mitchellh/go-homedir"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -28,8 +26,6 @@ import (
 
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
-
-var ErrInvalidBlockstoreType = errors.New("invalid blockstore type")
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -67,7 +63,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		return azure.NewAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
+			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 
@@ -129,11 +125,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
-		credPath, err := homedir.Expand(params.CredentialsFile)
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, option.WithCredentialsFile(credPath))
+		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
 	} else if params.CredentialsJSON != "" {
 		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), googleAuthCloudPlatform)
 		if err != nil {

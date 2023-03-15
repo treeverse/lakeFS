@@ -267,7 +267,7 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 }
 
 // listRepositoryUnderlyingStorage list on the repository storage namespace returns its objects, and the storage namespace
-func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.QualifiedKey) {
+func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.CommonQualifiedKey) {
 	// list all objects in the physical layer
 	repoResponse, err := client.GetRepositoryWithResponse(ctx, repo)
 	if err != nil {
@@ -279,7 +279,7 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 
 	// list committed files and keep the physical paths
 	storageNamespace := repoResponse.JSON200.StorageNamespace
-	qk, err := block.ResolveNamespace(storageNamespace, "", block.IdentifierTypeRelative)
+	qk, err := block.DefaultResolveNamespace(storageNamespace, "", block.IdentifierTypeRelative)
 	if err != nil {
 		t.Fatalf("Failed to resolve namespace '%s': %s", storageNamespace, err)
 	}

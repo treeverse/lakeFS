@@ -40,7 +40,7 @@ func TestExtraction(t *testing.T) {
 		{
 			name:        "No subdomains",
 			url:         parse("https://Rgeaccountblobcorewindowsnet/newcontainer/2023/"),
-			expectedErr: block.ErrInvalidNamespace,
+			expectedErr: block.ErrInvalidAddress,
 		},
 	}
 

@@ -86,6 +86,7 @@ func (l *Walker) Walk(_ context.Context, storageURI *url.URL, options block.Walk
 			cacheName := filepath.Join(l.cacheLocation, gonanoid.Must()+"-import.json")
 			const cachePerm = 0o644
 			if err := os.WriteFile(cacheName, jsonData, cachePerm); err != nil {
+				_ = os.Remove(cacheName)
 				return err
 			}
 			l.mark.ContinuationToken = cacheName

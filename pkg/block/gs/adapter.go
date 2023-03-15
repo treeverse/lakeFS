@@ -552,13 +552,13 @@ func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string,
 	return bucket, key, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	qualifiedKey, err := block.ResolveNamespace(storageNamespace, key, identifierType)
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	qualifiedKey, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 	if err != nil {
 		return qualifiedKey, err
 	}
 	if qualifiedKey.GetStorageType() != block.StorageTypeGS {
-		return qualifiedKey, block.ErrInvalidNamespace
+		return qualifiedKey, fmt.Errorf("expected storage type gs: %w", block.ErrInvalidAddress)
 	}
 	return qualifiedKey, nil
 }

@@ -2,8 +2,11 @@ package blocktest
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/url"
+	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -22,6 +25,7 @@ func TestAdapter(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_MultipartUpload", func(t *testing.T) { testAdapterMultipartUpload(t, adapter, storageNamespace) })
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
+	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
 }
 
 func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
@@ -158,7 +162,7 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 	}
 }
 
-func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QK) []string {
+func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {
 	t.Helper()
 	tree := make([]string, 0)
 
@@ -184,8 +188,8 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 }
 
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	// TODO niro: S3 requires minimal object size for multipart upload. Check if S3 emulator supports smaller files when enabling S3 adapter unit tests
 	ctx := context.Background()
-
 	cases := []struct {
 		name     string
 		path     string
@@ -229,6 +233,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 }
 
 func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	// TODO (niro): Test abs paths
 	ctx := context.Background()
 	contents := "exists"
 	err := adapter.Put(ctx, block.ObjectPointer{
@@ -252,7 +257,6 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	}{
 		{"exists", "exists", true},
 		{"nested_exists", "nested/and/exists", true},
-		{"nested_exists", "nested/and/../and/exists", falsee},
 		{"simple_missing", "missing", false},
 		{"nested_missing", "nested/down", false},
 		{"nested_deep_missing", "nested/quite/deeply/and/missing", false},
@@ -307,6 +311,82 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 				got, err := io.ReadAll(reader)
 				require.NoError(t, err)
 				require.Equal(t, tt.expected, string(got))
+			}
+		})
+	}
+}
+
+func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	testPrefix := "test_walker"
+	filesPerFolder := 5
+	contents := "test_file"
+	for i := 4; i >= 0; i-- {
+		for j := 4; j >= 0; j-- {
+			err := adapter.Put(ctx, block.ObjectPointer{
+				StorageNamespace: storageNamespace,
+				Identifier:       fmt.Sprintf("%s/folder_%d/test_file_%d", testPrefix, i, j),
+				IdentifierType:   block.IdentifierTypeRelative,
+			}, 0, strings.NewReader(contents), block.PutOpts{})
+			require.NoError(t, err)
+		}
+	}
+
+	err := adapter.Put(ctx, block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		Identifier:       fmt.Sprintf("%s/folder_0.txt", testPrefix),
+		IdentifierType:   block.IdentifierTypeRelative,
+	}, 0, strings.NewReader(contents), block.PutOpts{})
+	require.NoError(t, err)
+
+	cases := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "root",
+			prefix: "",
+		},
+		{
+			name:   "prefix",
+			prefix: "folder_1",
+		},
+	}
+	for _, tt := range cases {
+		qk, err := adapter.ResolveNamespace(storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
+		require.NoError(t, err)
+		uri, err := url.Parse(qk.Format())
+		require.NoError(t, err)
+		t.Run(tt.name, func(t *testing.T) {
+			reader, err := adapter.GetWalker(uri)
+			require.NoError(t, err)
+
+			var results []string
+			err = reader.Walk(ctx, uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+				results = append(results, e.RelativeKey)
+				return nil
+			})
+			require.NoError(t, err)
+			var prefix string
+			if tt.prefix == "" {
+				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
+					prefix = testPrefix
+				}
+
+				require.Equal(t, path.Join(prefix, "folder_0.txt"), results[0])
+				results = results[1:]
+				for i := 0; i < filesPerFolder; i++ {
+					for j := 0; j < filesPerFolder; j++ {
+						require.Equal(t, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)), results[i*filesPerFolder+j])
+					}
+				}
+			} else {
+				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
+					prefix = tt.prefix
+				}
+				for j := 0; j < filesPerFolder; j++ {
+					require.Equal(t, path.Join(prefix, fmt.Sprintf("test_file_%d", j)), results[j])
+				}
 			}
 		})
 	}

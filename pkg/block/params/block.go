@@ -49,6 +49,6 @@ type Azure struct {
 	TryTimeout       time.Duration
 	PreSignedExpiry  time.Duration
 	DisablePreSigned bool
-	// URL - For testing purposes, provide a custom URL to override the default URL template
-	URL *string
+	// TestEndpointURL - For testing purposes, provide a custom URL to override the default URL template
+	TestEndpointURL string
 }

@@ -300,7 +300,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	address := c.PathProvider.NewPath()
-	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -357,7 +357,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	// write metadata
-	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -366,7 +366,12 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	blockStoreType := c.BlockAdapter.BlockstoreType()
 	expectedType := qk.GetStorageType().BlockstoreType()
 	if expectedType != blockStoreType {
-		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid storage type: %s: current block adapter is %s", expectedType, blockStoreType))
+		c.Logger.WithContext(ctx).WithFields(logging.Fields{
+			"expected_type":   expectedType,
+			"blockstore_type": blockStoreType,
+		}).
+			Error("invalid blockstore type")
+		c.handleAPIError(ctx, w, r, fmt.Errorf("invalid blockstore type: %w", block.ErrInvalidAddress))
 		return
 	}
 
@@ -1386,7 +1391,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		case errors.As(err, &urlErr) && urlErr.Op == "parse":
 			retErr = err
 			reason = "bad_url"
-		case errors.Is(err, block.ErrInvalidNamespace):
+		case errors.Is(err, block.ErrInvalidAddress):
 			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
 			reason = "invalid_namespace"
 		case errors.Is(err, errStorageNamespaceInUse):
@@ -1846,8 +1851,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
-		errors.Is(err, block.ErrInvalidStorageType),
-		errors.Is(err, block.ErrInvalidNamespace):
+		errors.Is(err, block.ErrInvalidAddress):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -2247,7 +2251,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		identifierType = block.IdentifierTypeRelative
 	}
 
-	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -2282,7 +2286,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 		return
 	}
 	// write metadata
-	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -2388,7 +2392,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -2864,7 +2868,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		}
 		// loop all entries enter to map[path] physicalAddress
 		for _, entry := range entries {
-			qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+			qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 			if err != nil {
 				writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("error while resolving address: %s", err))
 				return
@@ -3196,7 +3200,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 
 	objList := make([]ObjectStats, 0, len(res))
 	for _, entry := range res {
-		qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+		qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
@@ -3289,7 +3293,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	qk, err := c.Catalog.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

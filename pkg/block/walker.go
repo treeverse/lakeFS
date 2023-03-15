@@ -29,11 +29,10 @@ type ObjectStoreEntry struct {
 }
 
 type WalkOptions struct {
-	// All walked items must be greater than After
+	// After - all walked items must be greater than After
 	After string
 
-	// ContinuationToken is passed to the client for efficient listing.
-	// Value is Opaque to the caller.
+	// ContinuationToken is passed to the client for efficient listing. Value is Opaque to the caller.
 	ContinuationToken string
 }
 

@@ -1705,12 +1705,18 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 		return nil, nil, err
 	}
 
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
+	uri, err := url.Parse(fromSourceURI)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	walker, err := c.BlockAdapter.GetWalker(uri)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
+	wrapper := store.NewWrapper(walker, uri)
 
-	it, err := NewWalkEntryIterator(ctx, walker, prepend, after, continuationToken)
+	it, err := NewWalkEntryIterator(ctx, wrapper, prepend, after, continuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
@@ -2170,11 +2176,8 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil
 	}
-	return err
-}
 
-func (c *Catalog) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	return c.BlockAdapter.ResolveNamespace(storageNamespace, key, identifierType)
+	return err
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {

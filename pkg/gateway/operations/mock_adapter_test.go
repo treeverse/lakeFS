@@ -110,8 +110,8 @@ func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func (a *mockAdapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	return block.ResolveNamespace(storageNamespace, key, identifierType)
+func (a *mockAdapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *mockAdapter) RuntimeStats() map[string]string {

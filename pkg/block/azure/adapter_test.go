@@ -21,11 +21,9 @@ func TestAzureAdapter(t *testing.T) {
 	adapter, err := azure.NewAdapter(params.Azure{
 		StorageAccount:   accountName,
 		StorageAccessKey: accountKey,
-		URL:              &blockURL,
+		TestEndpointURL:  blockURL,
 	})
-	if err != nil {
-		t.Fatal("Failed to create new adapter", err)
-	}
+	require.NoError(t, err, "create new adapter")
 
 	blocktest.TestAdapter(t, adapter, localPath, externalPath)
 }

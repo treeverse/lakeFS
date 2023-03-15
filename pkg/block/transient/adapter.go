@@ -36,7 +36,7 @@ func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer, expectedSize int
 }
 
 func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
-	return nil, nil
+	return nil, block.ErrOperationNotSupported
 }
 
 func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
@@ -157,8 +157,8 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	return block.ResolveNamespace(storageNamespace, key, identifierType)
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

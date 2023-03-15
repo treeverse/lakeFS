@@ -8,4 +8,5 @@ var (
 	ErrAsyncCopyFailed       = errors.New("async copy failed")
 	ErrBadIndex              = errors.New("bad index")
 	ErrForbidden             = errors.New("forbidden")
+	ErrInvalidAddress        = errors.New("invalid address")
 )

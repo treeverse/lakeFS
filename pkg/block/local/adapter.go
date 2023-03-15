@@ -44,7 +44,7 @@ var (
 )
 
 type QualifiedKey struct {
-	block.QualifiedKey
+	block.CommonQualifiedKey
 	path string
 }
 
@@ -54,15 +54,15 @@ func (qk QualifiedKey) Format() string {
 }
 
 func (qk QualifiedKey) GetStorageType() block.StorageType {
-	return qk.QualifiedKey.GetStorageType()
+	return qk.CommonQualifiedKey.GetStorageType()
 }
 
 func (qk QualifiedKey) GetStorageNamespace() string {
-	return qk.QualifiedKey.GetStorageNamespace()
+	return qk.CommonQualifiedKey.GetStorageNamespace()
 }
 
 func (qk QualifiedKey) GetKey() string {
-	return qk.QualifiedKey.GetKey()
+	return qk.CommonQualifiedKey.GetKey()
 }
 
 func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
@@ -116,7 +116,7 @@ func (l *Adapter) verifyRelPath(p string) error {
 	return nil
 }
 
-func (l *Adapter) getPath(ptr block.ObjectPointer) (string, error) {
+func (l *Adapter) extractParamsFromObj(ptr block.ObjectPointer) (string, error) {
 	if strings.HasPrefix(ptr.Identifier, StoragePrefix) {
 		// check abs path
 		p := ptr.Identifier[len(StoragePrefix):]
@@ -158,7 +158,7 @@ func (l *Adapter) Path() string {
 }
 
 func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 }
 
 func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func removeEmptyDirUntil(dir string, stopAt string) {
 }
 
 func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
-	source, err := l.getPath(sourceObj)
+	source, err := l.extractParamsFromObj(sourceObj)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	if err != nil {
 		return err
 	}
-	dest, err := l.getPath(destinationObj)
+	dest, err := l.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 }
 
 func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (l *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 }
 
 func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return false, err
 	}
@@ -328,7 +328,7 @@ func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int
 	if start < 0 || end <= 0 {
 		return nil, block.ErrBadIndex
 	}
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +349,7 @@ func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int
 }
 
 func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (block.Properties, error) {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -377,7 +377,7 @@ func isDirectoryWritable(pth string) bool {
 
 func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	if strings.Contains(obj.Identifier, "/") {
-		fullPath, err := l.getPath(obj)
+		fullPath, err := l.extractParamsFromObj(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -457,7 +457,7 @@ func computeETag(parts []block.MultipartPart) string {
 }
 
 func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, filenames []string) (int64, error) {
-	p, err := l.getPath(identifier)
+	p, err := l.extractParamsFromObj(identifier)
 	if err != nil {
 		return 0, err
 	}
@@ -510,7 +510,7 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 		StorageNamespace: obj.StorageNamespace,
 		Identifier:       uploadID,
 	}
-	globPathPattern, err := l.getPath(newObj)
+	globPathPattern, err := l.extractParamsFromObj(newObj)
 	if err != nil {
 		return nil, err
 	}
@@ -539,15 +539,15 @@ func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	qk, err := block.ResolveNamespace(storageNamespace, key, identifierType)
+func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	qk, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 	if err != nil {
 		return qk, err
 	}
 
 	return QualifiedKey{
-		QualifiedKey: qk,
-		path:         l.path,
+		CommonQualifiedKey: qk,
+		path:               l.path,
 	}, nil
 }
 

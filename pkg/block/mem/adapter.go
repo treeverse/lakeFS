@@ -294,8 +294,8 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	return block.ResolveNamespace(storageNamespace, key, identifierType)
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

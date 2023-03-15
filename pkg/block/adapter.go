@@ -148,6 +148,6 @@ type Adapter interface {
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
 	BlockstoreType() string
 	GetStorageNamespaceInfo() StorageNamespaceInfo
-	ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QK, error)
+	ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
 	RuntimeStats() map[string]string
 }

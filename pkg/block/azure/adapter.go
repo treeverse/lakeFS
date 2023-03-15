@@ -77,7 +77,7 @@ func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
 	const expectedHostParts = 2
 	hostParts := strings.SplitN(storageAccount.Host, ".", expectedHostParts)
 	if len(hostParts) != expectedHostParts {
-		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidNamespace)
+		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidAddress)
 	}
 
 	return hostParts[0], nil
@@ -94,7 +94,7 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 	trimmedPath := strings.Trim(pathURL.Path, "/")
 	pathParts := strings.Split(trimmedPath, "/")
 	if len(pathParts) == 0 {
-		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
+		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidAddress)
 	}
 
 	storageAccount, err := ExtractStorageAccount(pathURL)
@@ -574,8 +574,8 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	return block.ResolveNamespace(storageNamespace, key, identifierType)
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

@@ -123,18 +123,17 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	// for unknown size we assume we like to stream content, will use s3manager to perform the request.
+	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
+	if sizeBytes == -1 {
+		return a.managerUpload(ctx, obj, reader, opts)
+	}
+
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
 
-	// for unknown size we assume we like to stream content, will use s3manager to perform the request.
-	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
-	if sizeBytes == -1 {
-		return a.managerUpload(ctx, qualifiedKey, reader, opts)
-	}
-
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	putObject := s3.PutObjectInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -163,12 +162,11 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
@@ -282,12 +280,12 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	var err error
 	var sizeBytes int64
 	defer reportMetrics("Get", time.Now(), &sizeBytes, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	log := a.log(ctx).WithField("operation", "GetObject")
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-	log := a.log(ctx).WithField("operation", "GetObject")
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
+
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -320,7 +318,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	}
 
 	log := a.log(ctx).WithField("operation", "GetPreSignedURL")
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		log.WithField("namespace", obj.StorageNamespace).
 			WithField("identifier", obj.Identifier).
@@ -328,7 +326,6 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 	var preSignedURL string
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	if mode == block.PreSignModeWrite {
 		putObjectInput := &s3.PutObjectInput{
@@ -356,12 +353,12 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	log := a.log(ctx).WithField("operation", "HeadObject")
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return false, err
 	}
-	log := a.log(ctx).WithField("operation", "HeadObject")
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
+
 	input := s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -382,12 +379,11 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	var err error
 	var sizeBytes int64
 	defer reportMetrics("GetRange", time.Now(), &sizeBytes, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
 	log := a.log(ctx).WithField("operation", "GetObjectRange")
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -412,11 +408,11 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return block.Properties{}, err
 	}
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
+
 	headObjectParams := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -432,11 +428,10 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	deleteObjectParams := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -455,16 +450,16 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 }
 
 func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, byteRange *string) (*block.UploadPartResponse, error) {
-	qualifiedKey, err := resolveNamespace(destinationObj)
-	if err != nil {
-		return nil, err
-	}
 	srcKey, err := resolveNamespace(sourceObj)
 	if err != nil {
 		return nil, err
 	}
 
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(destinationObj)
+	if err != nil {
+		return nil, err
+	}
+
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
@@ -516,16 +511,16 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Copy", time.Now(), nil, &err)
-	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
-	if err != nil {
-		return err
-	}
 	qualifiedSourceKey, err := resolveNamespace(sourceObj)
 	if err != nil {
 		return err
 	}
 
-	destBucket, destKey := ExtractParamsFromQK(qualifiedDestinationKey)
+	destBucket, destKey, _, err := a.extractParamsFromObj(destinationObj)
+	if err != nil {
+		return err
+	}
+
 	copyObjectParams := &s3.CopyObjectInput{
 		Bucket:     aws.String(destBucket),
 		Key:        aws.String(destKey),
@@ -547,11 +542,11 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
+
 	input := &s3.CreateMultipartUploadInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -587,16 +582,16 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string) error {
 	var err error
 	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(bucket),
 		Key:      aws.String(key),
 		UploadId: aws.String(uploadID),
 	}
+
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	_, err = client.AbortMultipartUploadWithContext(ctx, input)
 	a.log(ctx).WithFields(logging.Fields{
@@ -622,11 +617,10 @@ func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUpl
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(bucket),
 		Key:             aws.String(key),
@@ -675,19 +669,19 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
+func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error) {
+	qualifiedKey, err := block.DefaultResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return qualifiedKey, err
 	}
 	if qualifiedKey.GetStorageType() != block.StorageTypeS3 {
-		return qualifiedKey, fmt.Errorf("expected storage type s3: %w", block.ErrInvalidNamespace)
+		return qualifiedKey, fmt.Errorf("expected storage type s3: %w", block.ErrInvalidAddress)
 	}
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QK, error) {
-	return block.ResolveNamespace(storageNamespace, key, identifierType)
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
@@ -718,11 +712,14 @@ func (a *Adapter) extractS3Server(resp *http.Response) {
 	a.respServer = server
 }
 
-func (a *Adapter) managerUpload(ctx context.Context, qualifiedKey block.QualifiedKey, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) managerUpload(ctx context.Context, obj block.ObjectPointer, reader io.Reader, opts block.PutOpts) error {
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		return err
+	}
+
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	uploader := s3manager.NewUploaderWithClient(client)
-
-	bucket, key := ExtractParamsFromQK(qualifiedKey)
 	input := &s3manager.UploadInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -755,6 +752,15 @@ func extractAmzServerSideHeader(header http.Header) http.Header {
 		}
 	}
 	return h
+}
+
+func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, block.QualifiedKey, error) {
+	qk, err := a.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
+	if err != nil {
+		return "", "", nil, err
+	}
+	bucket, key := ExtractParamsFromQK(qk)
+	return bucket, key, qk, nil
 }
 
 func ExtractParamsFromQK(qk block.QualifiedKey) (string, string) {
