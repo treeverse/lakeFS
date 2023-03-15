@@ -7,6 +7,7 @@ from lakefs_client.client import LakeFSClient
 from python_on_whales import docker
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.access_key_credentials import AccessKeyCredentials
+from lakefs_client.model.comm_prefs_input import CommPrefsInput
 
 
 def flatten(lst):
@@ -46,7 +47,7 @@ def main():
         lakefs_client.Configuration(username=lakefs_access_key,
                                     password=lakefs_secret_key,
                                     host='http://localhost:8000'))
-
+    lfs_client.config.setup_comm_prefs(CommPrefsInput(False, False, email="admin@localhost"))
     lfs_client.config.setup(Setup("tester", key=AccessKeyCredentials(lakefs_access_key, lakefs_secret_key)))
     lfs_client.repositories.create_repository(
         models.RepositoryCreation(name=args.repository,
