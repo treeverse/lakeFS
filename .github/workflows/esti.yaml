@@ -669,7 +669,7 @@ jobs:
 
   spark2:
     name: Test lakeFS with Spark 2.x
-    needs: [spark2-prep, deploy-image]
+    needs: [spark-prep, deploy-image]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
