@@ -645,8 +645,8 @@ jobs:
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
         run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
-  spark2-prep:
-    name: Prepare Spark App
+  spark-prep:
+    name: Prepare Spark Apps
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
@@ -660,12 +660,12 @@ jobs:
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt sonnets-246/package
+        run: sbt package
       - name: Store Spark App
         uses: actions/upload-artifact@v3
         with:
-          name: spark2-app
-          path: test/spark/app/target/sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+          name: spark-apps
+          path: test/spark/app/target/
 
   spark2:
     name: Test lakeFS with Spark 2.x
@@ -682,8 +682,8 @@ jobs:
       - name: Download Spark App
         uses: actions/download-artifact@v3
         with:
-          name: spark2-app
-          path: test/spark/app/target/sonnets-246/target/sonnets-246/scala-2.11/
+          name: spark-apps
+          path: test/spark/app/target/
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -764,9 +764,11 @@ jobs:
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
 
-      - name: Package Spark App
-        working-directory: test/spark/app
-        run: sbt sonnets-311/package
+      - name: Download Spark App
+        uses: actions/download-artifact@v3
+        with:
+          name: spark-apps
+          path: test/spark/app/target/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
