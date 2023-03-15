@@ -713,6 +713,13 @@ jobs:
           name: spark-apps
           path: test/spark/app/target/
 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+          cache: 'pip'
+      - run: pip install -r ./test/spark/requirements.txt
+
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -815,7 +822,6 @@ jobs:
         run: ./setup-test.sh
 
       - name: Test lakeFS S3 with Spark 3.x
-        continue-on-error: true
         working-directory: test/spark
         run: |
           python ./run-test.py \
@@ -830,7 +836,6 @@ jobs:
 
       - name: Test lakeFS S3 with Spark 3.x thick client
         timeout-minutes: 8
-        continue-on-error: true
         working-directory: test/spark
         run: |
           python ./run-test.py \
