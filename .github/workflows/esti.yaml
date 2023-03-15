@@ -686,7 +686,7 @@ jobs:
           path: test/spark/app/target/
 
   spark:
-    name: Test lakeFS with Spark ${{ matrix.spark.tag }.X
+    name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
     needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
     runs-on: ubuntu-20.04
     matrix:

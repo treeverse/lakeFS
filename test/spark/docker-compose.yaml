@@ -54,7 +54,7 @@ services:
     depends_on:
       lakefs:
         condition: service_healthy
-    entrypoint: ["/app/lakefs", "setup", "--user-name", "tester", "--access-key-id", "${TESTER_ACCESS_KEY_ID}", "--secret-access-key", "${TESTER_SECRET_ACCESS_KEY}"]
+    entrypoint: ["sh", "-c", "/app/lakefs setup --user-name tester --access-key-id $${TESTER_ACCESS_KEY_ID} --secret-access-key $${TESTER_SECRET_ACCESS_KEY}"]
   spark:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     environment:
