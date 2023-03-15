@@ -593,8 +593,8 @@ public abstract class LakeFSFileSystemTest {
     public void testOpen() throws IOException, ApiException {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
-
         String physicalKey = "/repo-base/open";
+        int readBufferSize = 5;
 
         // Write physical file to S3.
         ObjectMetadata s3Metadata = new ObjectMetadata();
@@ -603,7 +603,7 @@ public abstract class LakeFSFileSystemTest {
 
         Path p = new Path("lakefs://repo/main/read.me");
         mockStatObject("repo", "main", "read.me", physicalKey, (long)contentsBytes.length);
-        try (InputStream in = fs.open(p)) {
+        try (InputStream in = fs.open(p, readBufferSize)) {
             String actual = IOUtils.toString(in);
             Assert.assertEquals(contents, actual);
         }
