@@ -704,7 +704,7 @@ jobs:
       - name: Download lakeFS HadoopFS
         uses: actions/download-artifact@v3
         with:
-          name: build-lakefs-hadoopfs
+          name: lakefs-hadoopfs
           path: clients/hadoopfs/target
 
       - name: Download Spark App
@@ -781,7 +781,7 @@ jobs:
       - name: Download lakeFS HadoopFS
         uses: actions/download-artifact@v3
         with:
-          name: build-lakefs-hadoopfs
+          name: lakefs-hadoopfs
           path: clients/hadoopfs/target
 
       - name: Download Spark App
