@@ -88,7 +88,7 @@ def main():
     if state.exit_code != 0:
         print(state.error)
     docker.container.remove("submit")
-    sys.exit(state.state.exit_code)
+    sys.exit(state.exit_code)
 
 
 if __name__ == '__main__':
