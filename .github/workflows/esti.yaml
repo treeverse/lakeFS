@@ -692,6 +692,8 @@ jobs:
     strategy:
       matrix:
         spark:
+          - tag: 2
+            sonnet_jar: sonnets-311/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
           - tag: 3
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
     env:
