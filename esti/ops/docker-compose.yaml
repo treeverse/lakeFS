@@ -62,7 +62,7 @@ services:
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE
     working_dir: /lakefs
-    command:
+    entrypoint:
       - /bin/sh
       - -c
       - |
