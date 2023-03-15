@@ -184,7 +184,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=15000 lakefs
+        run: docker compose logs --tail=15000 lakefs
 
   compatibility-checks-server:
     name: Test lakeFS server FileSystem compatibility
@@ -266,7 +266,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=15000 lakefs
+        run: docker compose logs --tail=15000 lakefs
 
   notify-slack:
     name: Notify slack on workflow failures

@@ -1,15 +1,15 @@
 name: 'Start lakeFS for testing'
-description: 'Get generated code, authenticate to ECR, and run docker-compose up'
+description: 'Get generated code, authenticate to ECR, and run docker compose up'
 inputs:
   compose-flags:
-    description: flags to add to docker-compose up command
+    description: flags to add to docker compose up command
     required: false
     default: "-d"
   compose-file:
-    description: alternative path to docker-compose file
+    description: alternative path to compose file
     required: false
   compose-directory:
-    description: working directory for the docker-compose step
+    description: working directory for the Docker Compose step
     required: false
     default: "."
 runs:
@@ -32,12 +32,12 @@ runs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-    - name: Start docker-compose
+    - name: Start Docker Compose
       env:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
-        docker-compose ${flags} up ${{ inputs.compose-flags }}
+        docker compose ${flags} up ${{ inputs.compose-flags }}
       shell: bash
       working-directory: ${{ inputs.compose-directory }}
