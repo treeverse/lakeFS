@@ -20,6 +20,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.CreateFlag;
@@ -132,7 +133,7 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (ApiException e) {
             throw new IOException("Failed to get lakeFS blockstore type", e);
         }
-        AccessMode accessMode = AccessMode.fromValue(FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX, AccessMode.SIMPLE.getValue()));
+        AccessMode accessMode = AccessMode.fromValue(StringUtils.defaultIfBlank(FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX), AccessMode.SIMPLE.getValue()));
         if (accessMode == AccessMode.PRESIGNED) {
             storageAccessStrategy = new PresignedStorageAccessStrategy(this, lfsClient);
         } else if (accessMode == AccessMode.SIMPLE) {
