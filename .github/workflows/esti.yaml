@@ -732,33 +732,30 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
       - name: Test lakeFS S3 with Spark 2.x
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }}
-          REPOSITORY: gateway-test-spark2
-          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
-        run: ./run-test.sh
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }} \
+            --repository gateway-test-spark2 \
+            --sonnet_jar sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
-
-      - name: Test lakeFS S3 with Spark 2.x thick client
+      - name: Test lakeFS S3 with Spark 3.x thick client
         timeout-minutes: 8
-        env:
-          JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2-client/${{ steps.unique.outputs.value }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          USE_DIRECT_ACCESS: "true"
-          REPOSITORY: thick-client-test
-          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
         working-directory: test/spark
-        run: ./run-test.sh
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark2-client/${{ steps.unique.outputs.value }} \
+            --repository thick-client-test \
+            --sonnet_jar sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar \
+            --direct_access \
+            --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
+            --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
       - name: lakeFS Logs on Spark 2.x with client failure
         if: ${{ failure() }}
