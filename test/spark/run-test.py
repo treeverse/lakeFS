@@ -5,7 +5,7 @@ import lakefs_client
 from lakefs_client import models
 from lakefs_client.client import LakeFSClient
 from python_on_whales import docker
- from lakefs_client.model.setup import Setup
+from lakefs_client.model.setup import Setup
 from lakefs_client.model.access_key_credentials import AccessKeyCredentials
 
 
@@ -86,7 +86,7 @@ def main():
                                    name="submit")
 
     for _, stream_content in generator:
-        print(stream_content.decode())
+        print(stream_content.decode(), end="")
     state = docker.container.inspect("submit").state
     if state.exit_code != 0:
         print(state.error)
