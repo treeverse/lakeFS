@@ -689,10 +689,11 @@ jobs:
     name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
     needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
     runs-on: ubuntu-20.04
-    matrix:
-      spark:
-        - tag: 3
-          sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+    strategy:
+      matrix:
+        spark:
+          - tag: 3
+            sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
