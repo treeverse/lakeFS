@@ -665,7 +665,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: spark2-app
-          path: ./test/spark/sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+          path: ./test/spark/app/target/sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
 
   spark2:
     name: Test lakeFS with Spark 2.x
