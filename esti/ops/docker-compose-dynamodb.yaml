@@ -58,11 +58,11 @@ services:
       - ESTI_POST_MIGRATE
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
-    working_dir: /lakefs
     command:
       - /bin/sh
       - -c
       - |
+        cd /lakefs
         apk add --no-cache util-linux
         go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
     volumes:

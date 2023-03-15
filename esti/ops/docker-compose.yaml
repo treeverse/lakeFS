@@ -61,11 +61,11 @@ services:
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE
-    working_dir: /lakefs
     entrypoint:
       - /bin/sh
       - -c
       - |
+        cd /lakefs
         apk add --no-cache util-linux
         go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
     volumes:
