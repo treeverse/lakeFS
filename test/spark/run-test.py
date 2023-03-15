@@ -78,7 +78,6 @@ def main():
                                                         [f"{scheme}://{args.repository}/main/sonnets.txt",
                                                          f"{scheme}://{args.repository}/main/sonnets-wordcount"]),
                                    dependencies=False,
-                                   remove=True,
                                    tty=False,
                                    stream=True,
                                    name="submit")
