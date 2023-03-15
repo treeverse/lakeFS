@@ -631,7 +631,6 @@ jobs:
           ENDPOINT: "http://s3.local.lakefs.io:8000"
         working-directory: test/spark/s3a-multipart
         run: |
-          docker-compose exec -T lakefs sh -c "lakefs setup --user-name tester --access-key-id ${secrets.TESTER_ACCESS_KEY_ID} --secret-access-key ${secrets.TESTER_SECRET_ACCESS_KEY}"
           docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: lakeFS logs on failure
