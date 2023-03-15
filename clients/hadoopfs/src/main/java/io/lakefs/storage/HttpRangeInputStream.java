@@ -12,7 +12,7 @@ import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 
 public class HttpRangeInputStream extends FSInputStream {
-    private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024;
+    private static final int DEFAULT_BUFFER_SIZE_BYTES = 1024 * 1024;
     private final String url;
     private final int bufferSize;
 
@@ -24,7 +24,7 @@ public class HttpRangeInputStream extends FSInputStream {
     private boolean closed;
     
     public HttpRangeInputStream(String url) throws IOException {
-        this(url, DEFAULT_BUFFER_SIZE);
+        this(url, DEFAULT_BUFFER_SIZE_BYTES);
     }
 
     public HttpRangeInputStream(String url, int bufferSize) throws IOException {

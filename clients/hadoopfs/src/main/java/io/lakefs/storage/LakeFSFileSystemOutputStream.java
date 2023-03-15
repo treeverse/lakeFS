@@ -18,6 +18,14 @@ import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
 import io.lakefs.utils.ObjectLocation;
 
+/**
+ * Handle writes into a storage URL.
+ * Will set the request Content-Length header.
+ * When closed, links the address in lakeFS.
+ * 
+ * TODO(johnnyaug): do not hold everything in memory
+ * TODO(johnnyaug): support multipart uploads
+ */
 public class LakeFSFileSystemOutputStream extends OutputStream {
     private final HttpURLConnection connection;
     private final ByteArrayOutputStream buffer;

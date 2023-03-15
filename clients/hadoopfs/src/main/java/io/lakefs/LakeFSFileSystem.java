@@ -87,7 +87,6 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
-    private String blockstoreType;
     private PhysicalAddressTranslator physicalAddressTranslator;
     private StorageAccessStrategy storageAccessStrategy;
     private static File emptyFile = new File("/dev/null");
@@ -1028,24 +1027,5 @@ public class LakeFSFileSystem extends FileSystem {
         } else {
             return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        Path p = new Path("lakefs://example-repo/main/2.txt");
-        Configuration conf = new Configuration();
-        conf.set("fs.lakefs.access.key", System.getenv("LAKEFS_ACCESS_KEY_ID"));
-        conf.set("fs.lakefs.secret.key", System.getenv("LAKEFS_SECRET_ACCESS_KEY"));
-        conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
-        conf.set("fs.lakefs.endpoint", System.getenv("LAKEFS_ENDPOINT"));
-        // conf.set("fs.s3a.access.key", System.getenv("AWS_ACCESS_KEY_ID"));
-        // conf.set("fs.s3a.secret.key", System.getenv("AWS_SECRET_ACCESS_KEY"));
-        FileSystem fs = p.getFileSystem(conf);
-        FSDataOutputStream os = fs.create(p);
-        BufferedOutputStream bos = new BufferedOutputStream(os);
-        bos.write("gasdjklfdsajlkf".getBytes());
-        bos.flush();
-        bos.close();
-
-        System.out.println(IOUtils.toString(fs.open(p), StandardCharsets.UTF_8));
     }
 }

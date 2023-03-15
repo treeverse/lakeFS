@@ -2,7 +2,6 @@ package io.lakefs.storage;
 
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
-import io.lakefs.MetadataClient;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;

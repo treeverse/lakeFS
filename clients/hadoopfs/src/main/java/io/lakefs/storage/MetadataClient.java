@@ -1,4 +1,4 @@
-package io.lakefs;
+package io.lakefs.storage;
 
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -34,7 +34,7 @@ public class MetadataClient {
      * @return ObjectMetadata filled with Etag and content length
      * @throws IOException case etag can't be extracted by s3 or file status
      */
-    public ObjectMetadata getObjectMetadata(URI physicalUri) throws IOException {
+    ObjectMetadata getObjectMetadata(URI physicalUri) throws IOException {
         String bucket = physicalUri.getHost();
         String key = physicalUri.getPath().substring(1);
 

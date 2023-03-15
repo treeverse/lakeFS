@@ -14,7 +14,6 @@ import org.apache.hadoop.fs.Path;
 
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
-import io.lakefs.MetadataClient;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.StagingApi;
