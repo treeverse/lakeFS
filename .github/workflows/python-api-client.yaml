@@ -1,0 +1,72 @@
+name: python-api-client
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs: 
+      tag:
+        description: Tag/version to publish
+        required: true
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
+    - name: Extract version
+      shell: bash
+      run: |
+        if [ "${{ github.event.inputs.tag }}" != "" ]; then
+          echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_OUTPUT
+        else
+          echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_OUTPUT
+        fi
+      id: version
+
+    - name: Python build and make package
+      run: make package-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+
+    - name: Python publish package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: clients/python/dist/
+        verbose: true
+
+    - name: Extract docs version
+      shell: bash
+      run: |
+        if [ "${{ github.event.inputs.tag }}" != "" ]; then
+          echo "tag=$(echo ${{ github.event.inputs.tag }} | cut -d. -f1-2)" >> $GITHUB_OUTPUT
+        else
+          echo "tag=$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" >> $GITHUB_OUTPUT
+        fi
+      id: docver
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1.79.0
+      with:
+        working-directory: clients/python
+        ruby-version: 2.6
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+    - name: Build release as latest
+      working-directory: clients/python
+      run: bundle exec jekyll build -d _site -b /
+
+    - name: Build release ${{ steps.docver.outputs.tag }}
+      working-directory: clients/python
+      run: bundle exec jekyll build -d _site/${{ steps.docver.outputs.tag }} -b /${{ steps.docver.outputs.tag }}
+
+    - name: Publish to docs repository
+      uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+      with:
+        source_file: clients/python/_site/.
+        destination_repo: treeverse/docs-lakefs-python
+        destination_folder: /
+        user_email: 'support@treeverse.io'
+        user_name: 'python-docs-action'

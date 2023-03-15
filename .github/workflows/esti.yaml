@@ -81,33 +81,33 @@ jobs:
     name: Build and push Docker image
     needs: [check-secrets, gen-code]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16-cores
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#
-#      - name: Setup NodeJS
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: "16.17.1"
-#
-#      - name: Setup Go
-#        uses: actions/setup-go@v3
-#        with:
-#          go-version: 1.19.2
-#        id: go
-#
-#      - name: Retrieve generated code
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: generated-code
-#          path: /tmp/
-#
-#      - name: Unpack generated code
-#        run: tar -xf /tmp/generated.tar.gz
-#
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.17.1"
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+        id: go
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xf /tmp/generated.tar.gz
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
@@ -116,66 +116,66 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "tag=sha-06b6e09" >> $GITHUB_OUTPUT
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
         id: version
-#
-#      - name: Extract db schema version from ddl migration files
-#        run: echo "dbschema_version=$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )" >> $GITHUB_OUTPUT
-#        id: schema
+
+      - name: Extract db schema version from ddl migration files
+        run: echo "dbschema_version=$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )" >> $GITHUB_OUTPUT
+        id: schema
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-#      - name: Export ECR parameters
-#        run: |
-#          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-#          echo "ECR_REPOSITORY_LAKEFS=lakefs" >> $GITHUB_ENV
-#
-#      - name: Login to GitHub Docker Registry
-#        uses: docker/login-action@v2
-#        with:
-#          registry: ghcr.io
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Pull last built docker image cache
-#        run: |
-#          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
-#          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
-#          true
-#
-#      - name: Build Docker image with cache and push
-#        run: |
-#          set -ex
-#          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2
-#          ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
-#          if [[ -n $GITHUB_REF ]]; then
-#              ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
-#          else
-#              ghr_ref_tag=''
-#          fi
-#          ecr_tag="-t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}"
-#          docker build . \
-#              ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
-#              --build-arg VERSION=${{ steps.version.outputs.tag }} \
-#              --label db-schema-version=${{ steps.schema.outputs.dbschema_version }} \
-#              --cache-from=${ghr}
-#          docker push ${ghr_build_tag#-t }
-#          if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
-#        env:
-#          DOCKER_BUILDKIT: "1"
-#
-#      - name: Push to Amazon ECR
-#        run: |
-#          set +e
-#          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
-#          if [ $? -eq 0 ]; then
-#            echo "Image exists"
-#          else
-#            echo "Image doesn't exist"
-#            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
-#          fi
+      - name: Export ECR parameters
+        run: |
+          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY_LAKEFS=lakefs" >> $GITHUB_ENV
+
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull last built docker image cache
+        run: |
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
+          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
+          true
+
+      - name: Build Docker image with cache and push
+        run: |
+          set -ex
+          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2
+          ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
+          if [[ -n $GITHUB_REF ]]; then
+              ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
+          else
+              ghr_ref_tag=''
+          fi
+          ecr_tag="-t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}"
+          docker build . \
+              ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
+              --build-arg VERSION=${{ steps.version.outputs.tag }} \
+              --label db-schema-version=${{ steps.schema.outputs.dbschema_version }} \
+              --cache-from=${ghr}
+          docker push ${ghr_build_tag#-t }
+          if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
+        env:
+          DOCKER_BUILDKIT: "1"
+
+      - name: Push to Amazon ECR
+        run: |
+          set +e
+          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
+          if [ $? -eq 0 ]; then
+            echo "Image exists"
+          else
+            echo "Image doesn't exist"
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+          fi
 
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
@@ -630,8 +630,7 @@ jobs:
           #     a Docker container.  Bypass this somehow.
           ENDPOINT: "http://s3.local.lakefs.io:8000"
         working-directory: test/spark/s3a-multipart
-        run: |
-          docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: lakeFS logs on failure
         if: ${{ failure() }}
