@@ -15,6 +15,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -184,6 +185,7 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+	logger := logging.FromContext(ctx)
 	commitGetter := &RepositoryCommitGetter{
 		refManager: m.refManager,
 		repository: repository,
@@ -205,7 +207,23 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}
-	b := &strings.Builder{}
+	logger.WithFields(logging.Fields{"num_active": len(gcCommits.active), "num-expired": len(gcCommits.expired)}).Info("Got GC commits")
+	runID := uuid.New().String()
+
+	runFile := "/tmp/gc-" + runID
+	b, err := os.Create(runFile)
+	if err != nil {
+		return "", fmt.Errorf("create %s for GC for run ID %s: %w", runFile, runID, err)
+	}
+	defer func() {
+		if b == nil {
+			return
+		}
+		err := b.Close()
+		if err != nil {
+			fmt.Printf("BUG BUG BUG writing gc commits: %v", err)
+		}
+	}()
 	csvWriter := csv.NewWriter(b)
 	err = csvWriter.Write([]string{"commit_id", "expired"}) // write headers
 	if err != nil {
@@ -228,18 +246,10 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	if err != nil {
 		return "", err
 	}
-	commitsStr := b.String()
-	runID := uuid.New().String()
-	csvLocation, err := m.GetCommitsCSVLocation(runID, repository.StorageNamespace)
+	err = b.Close()
+	b = nil
 	if err != nil {
-		return "", err
-	}
-	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		Identifier:     csvLocation,
-		IdentifierType: block.IdentifierTypeFull,
-	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("close %s for runID %s: %w", runFile, runID, err)
 	}
 	return runID, nil
 }
