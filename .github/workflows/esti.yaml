@@ -1155,6 +1155,7 @@ jobs:
 
       - name: Run lakeFS S3 to use with local API key
         env:
+          LAKEFS_ROOT: ../..
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_DATABASE_TYPE: postgres
@@ -1190,6 +1191,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_ROOT: ../..
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_DATABASE_TYPE: postgres
@@ -1229,6 +1231,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_ROOT: ../..
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
@@ -1272,6 +1275,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_ROOT: ../..
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
