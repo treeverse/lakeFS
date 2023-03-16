@@ -1,4 +1,27 @@
 version: '3.9'
+x-lakefs-common:
+  &lakefs-common
+  image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
+  environment:
+    - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io,s3.local.lakefs.io
+    - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+    - LAKEFS_DATABASE_TYPE=postgres
+    - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+    - LAKEFS_LOGGING_LEVEL=DEBUG
+    - LAKEFS_STATS_ENABLED=false
+    - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+    - LAKEFS_BLOCKSTORE_TYPE
+    - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+    - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
+    - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
+    - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
+    - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+    - AWS_REGION
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+    - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+    - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
 services:
   postgres:
     image: "postgres:11"
@@ -8,7 +31,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   lakefs:
-    image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
+    <<: *lakefs-common
     ports:
       - "8000:8000"
     networks:
@@ -19,26 +42,19 @@ services:
     volumes:
       - ./lakectl-tester.yaml:/home/lakefs/.lakectl.yaml
       - .:/local
-    environment:
-      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io,s3.local.lakefs.io
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
-      - LAKEFS_DATABASE_TYPE=postgres
-      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - LAKEFS_LOGGING_LEVEL=DEBUG
-      - LAKEFS_STATS_ENABLED=false
-      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
-      - LAKEFS_BLOCKSTORE_TYPE
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
-      - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
-      - AWS_REGION
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-    env_file:
-        - tester.env
+    healthcheck:
+      test: /app/wait-for localhost:8000
+      timeout: 3s
+      start_period: 0s
+      interval: 3s
+      retries: 10
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+  lakefs-setup:
+    <<: *lakefs-common
+    depends_on:
+      lakefs:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "/app/lakefs setup --user-name tester --access-key-id $${TESTER_ACCESS_KEY_ID} --secret-access-key $${TESTER_SECRET_ACCESS_KEY}"]
   spark:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     environment:
@@ -52,8 +68,8 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - METACLIENT_JAR
       - EXPORT_LOCATION
-    env_file:
-        - tester.env
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     ports:
       - 18080:8080
     extra_hosts:
@@ -78,8 +94,8 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
-    env_file:
-      - tester.env
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
@@ -92,8 +108,7 @@ services:
     profiles: ["command"]
     volumes:
       - ./:/local
-    env_file:
-      - tester.env
+      - ../../clients/hadoopfs/target:/target
     environment:
       - input
       - output
@@ -108,6 +123,8 @@ services:
       - AWS_REGION
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
+      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
