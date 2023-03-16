@@ -15,7 +15,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/migrate"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/testutil"
-	//	"github.com/treeverse/lakefs/pkg/auth/wildcard"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 

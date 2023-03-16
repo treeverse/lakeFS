@@ -364,10 +364,11 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                     {(!!actions && actions.length > 0) && (
                         <td>
                             <span className="row-hover">
-                                {actions.map(action => (<span key={`${keyFn(row)}-${action.key}`}>
-                                                            {action.buttonFn(row)}
-                                                        </span>)
-                                            )}
+                                {actions.map(action => (
+                                    <span key={`${keyFn(row)}-${action.key}`}>
+                                        {action.buttonFn(row)}
+                                    </span>
+                                ))}
                              </span>
                         </td>
                     )}
