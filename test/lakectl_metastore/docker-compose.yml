@@ -99,4 +99,4 @@ services:
       - ./etc/lakectl:/usr/local/bin/lakectl
       - ./dbt-entrypoint.sh:/usr/app/entrypoint.sh
       - ./wait-for-trino.sh:/usr/app/wait-for-trino.sh
-    entrypoint: /usr/app/entrypoint.sh
+    entrypoint: ["sh", "-c", "/usr/app/entrypoint.sh"]
