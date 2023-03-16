@@ -176,7 +176,7 @@ jobs:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
+            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }} \
             --repository thick-client-test \
             --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar \
             --direct_access \
@@ -261,7 +261,7 @@ jobs:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
+            --storage_namespace s3://esti-system-testing/compatibility/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }} \
             --repository thick-client-test \
             --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar \
             --direct_access \
