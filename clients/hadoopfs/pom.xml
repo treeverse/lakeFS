@@ -236,9 +236,6 @@ To export to S3:
                     <excludes>
                         <exclude>${exclude.tests}</exclude>
                     </excludes>
-                    <systemPropertyVariables>
-                        <lakefs.access_mode></lakefs.access_mode>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

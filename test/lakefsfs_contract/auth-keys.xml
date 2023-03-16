@@ -33,15 +33,11 @@
     </property>
     <property>
         <name>fs.lakefs.endpoint</name>
-        <value>http://10.5.0.55:8000/api/v1</value>
+        <value>http://localhost:8000/api/v1</value>
     </property>
     <property>
         <name>test.sts.endpoint</name>
         <description>Specific endpoint to use for STS requests.</description>
         <value>sts.amazonaws.com</value>
-    </property>
-    <property>
-        <name>fs.lakefs.access.mode</name>
-        <value>${lakefs.access_mode}</value>
     </property>
 </configuration>
