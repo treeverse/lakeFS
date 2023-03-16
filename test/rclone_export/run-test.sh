@@ -6,7 +6,7 @@ REPOSITORY=${REPOSITORY:-example}
 
 docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_one.txt --source /local/file_one.txt
 
-docker compose run --rm --entrypoint 'sh -c python lakefs_export.py' lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch="main"
+docker compose run --rm --entrypoint "sh -c \"python lakefs_export.py ${REPOSITORY} ${EXPORT_LOCATION} --branch=main\"" lakefs-export
 
 # Validate export
 lakectl_out=$(mktemp)
