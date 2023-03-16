@@ -42,7 +42,7 @@ def main():
 
     args = parser.parse_args()
     if args.client_version:
-        submit_flags = ["--packages", "io.lakefs:hadoop-lakefs-assembly:{args.client_version}"]
+        submit_flags = ["--packages", f"io.lakefs:hadoop-lakefs-assembly:{args.client_version}"]
     else:
         submit_flags = ["--jars", "/target/client.jar"]
 
