@@ -20,10 +20,29 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import org.threeten.bp.OffsetDateTime;
+import java.time.OffsetDateTime;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import io.lakefs.clients.api.JSON;
 
 /**
  * HookRun
@@ -101,6 +120,8 @@ public class HookRun {
   @SerializedName(SERIALIZED_NAME_STATUS)
   private StatusEnum status;
 
+  public HookRun() {
+  }
 
   public HookRun hookRunId(String hookRunId) {
     
@@ -113,7 +134,6 @@ public class HookRun {
    * @return hookRunId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getHookRunId() {
     return hookRunId;
@@ -136,7 +156,6 @@ public class HookRun {
    * @return action
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getAction() {
     return action;
@@ -159,7 +178,6 @@ public class HookRun {
    * @return hookId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getHookId() {
     return hookId;
@@ -182,7 +200,6 @@ public class HookRun {
    * @return startTime
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public OffsetDateTime getStartTime() {
     return startTime;
@@ -205,7 +222,6 @@ public class HookRun {
    * @return endTime
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
 
   public OffsetDateTime getEndTime() {
     return endTime;
@@ -228,7 +244,6 @@ public class HookRun {
    * @return status
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public StatusEnum getStatus() {
     return status;
@@ -238,6 +253,7 @@ public class HookRun {
   public void setStatus(StatusEnum status) {
     this.status = status;
   }
+
 
 
   @Override
@@ -287,5 +303,117 @@ public class HookRun {
     return o.toString().replace("\n", "\n    ");
   }
 
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>();
+    openapiFields.add("hook_run_id");
+    openapiFields.add("action");
+    openapiFields.add("hook_id");
+    openapiFields.add("start_time");
+    openapiFields.add("end_time");
+    openapiFields.add("status");
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>();
+    openapiRequiredFields.add("hook_run_id");
+    openapiRequiredFields.add("action");
+    openapiRequiredFields.add("hook_id");
+    openapiRequiredFields.add("start_time");
+    openapiRequiredFields.add("status");
+  }
+
+ /**
+  * Validates the JSON Object and throws an exception if issues found
+  *
+  * @param jsonObj JSON Object
+  * @throws IOException if the JSON Object is invalid with respect to HookRun
+  */
+  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
+      if (jsonObj == null) {
+        if (!HookRun.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in HookRun is not found in the empty JSON string", HookRun.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Entry<String, JsonElement> entry : entries) {
+        if (!HookRun.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `HookRun` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : HookRun.openapiRequiredFields) {
+        if (jsonObj.get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
+        }
+      }
+      if (!jsonObj.get("hook_run_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `hook_run_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("hook_run_id").toString()));
+      }
+      if (!jsonObj.get("action").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `action` to be a primitive type in the JSON string but got `%s`", jsonObj.get("action").toString()));
+      }
+      if (!jsonObj.get("hook_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `hook_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("hook_id").toString()));
+      }
+      if (!jsonObj.get("status").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!HookRun.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'HookRun' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<HookRun> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(HookRun.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<HookRun>() {
+           @Override
+           public void write(JsonWriter out, HookRun value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public HookRun read(JsonReader in) throws IOException {
+             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
+             validateJsonObject(jsonObj);
+             return thisAdapter.fromJsonTree(jsonObj);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+ /**
+  * Create an instance of HookRun given an JSON string
+  *
+  * @param jsonString JSON string
+  * @return An instance of HookRun
+  * @throws IOException if the JSON string is invalid with respect to HookRun
+  */
+  public static HookRun fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, HookRun.class);
+  }
+
+ /**
+  * Convert an instance of HookRun to an JSON string
+  *
+  * @return JSON string
+  */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
+  }
 }
 

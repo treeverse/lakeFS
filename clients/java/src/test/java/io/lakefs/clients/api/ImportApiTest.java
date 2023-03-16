@@ -19,8 +19,8 @@ import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
 import io.lakefs.clients.api.model.MetaRangeCreationResponse;
 import io.lakefs.clients.api.model.StageRangeCreation;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,42 +30,35 @@ import java.util.Map;
 /**
  * API tests for ImportApi
  */
-@Ignore
+@Disabled
 public class ImportApiTest {
 
     private final ImportApi api = new ImportApi();
 
-    
     /**
      * create a lakeFS metarange file from the given ranges
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void createMetaRangeTest() throws ApiException {
         String repository = null;
         MetaRangeCreation metaRangeCreation = null;
-                MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
+        MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
         // TODO: test validations
     }
-    
+
     /**
      * create a lakeFS range file from the source uri
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void ingestRangeTest() throws ApiException {
         String repository = null;
         StageRangeCreation stageRangeCreation = null;
-                IngestRangeCreationResponse response = api.ingestRange(repository, stageRangeCreation);
+        IngestRangeCreationResponse response = api.ingestRange(repository, stageRangeCreation);
         // TODO: test validations
     }
-    
+
 }
