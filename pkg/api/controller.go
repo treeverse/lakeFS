@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -667,7 +668,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 	newACL := model.ACL{
 		Permission: model.ACLPermission(body.Permission),
 		Repositories: model.Repositories{
-			All:  *body.AllRepositories,
+			All:  swag.BoolValue(body.AllRepositories),
 			List: *body.Repositories,
 		},
 	}
@@ -3779,9 +3780,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	}
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
 	} else {
-		cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
