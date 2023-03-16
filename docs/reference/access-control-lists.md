@@ -72,6 +72,6 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
     4. The upgrade script unifies repositories: If a resource applies to a set of repositories with a wildcard, permissions are unified to all repositories. Otherwise they apply to the list of all repositories, in all the policies.
     5. The upgrade script unifies actions: it selects the least permission of Read, Write, Super that contains all of the allowed actions.
     
-Once you have completed the migration you should update the lakeFS server configuration for `auth.ui_config.RBAC` to `simplified`. Note that moving to `simplified` from `external` may only be performed once and **will** lose configuration.
+Once you have completed the migration you should update the lakeFS server configuration for `auth.ui_config.RBAC` to `simplified`. Note that moving to `simplified` from `external` may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).
