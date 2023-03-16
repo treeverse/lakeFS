@@ -151,7 +151,8 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 			var b strings.Builder
 			for _, row := range tab.Rows {
 				for ic, cell := range row {
-					b.WriteString(fmt.Sprintf("%v", cell))
+					callValue := fmt.Sprintf("%s", cell)
+					b.WriteString(callValue)
 					if ic < len(row)-1 {
 						b.WriteString("\t")
 					}
