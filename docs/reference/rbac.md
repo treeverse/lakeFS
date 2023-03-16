@@ -1,21 +1,24 @@
 ---
 layout: default
-title: Role Based Access Control (RBAC)
-description: This section covers authorization (using RBAC)  of your lakeFS server.
+title: Role-Based Access Control (RBAC)
+description: This section covers authorization (using RBAC) of your lakeFS server.
 parent: Reference
 nav_order: 65
 has_children: false
+redirect_from:
+  - /reference/authorization.html
 ---
 
 
-# Role Based Access Control (RBAC)
+# Role-Based Access Control (RBAC)
 {: .no_toc }
 
-{% include toc.html %}
 
 {: .note}
-> RBAC is only available in [lakeFS cloud](https://lakefs.cloud). This scalable fully-managed lakeFS service is also SOC 2 compliant.<br/>
-> A simpler ACL-based authorization mechanism is planned for open-source lakeFS. For more details see [this announcement](/posts/security_update.html). 
+> RBAC is only available when lakeFS is configured with a [remote authenticator](remote-authenticator.html). <br/>[lakeFS cloud](https://lakefs.cloud) is a scalable and fully-managed lakeFS service which includes this remote authenticator functionality and is also SOC 2 compliant.<br/>
+> If you do not want to use RBAC then a simpler [ACL-based authorization mechanism](access-control-lists.html) is available. 
+
+{% include toc.html %}
 
 ## RBAC Model
 
@@ -370,3 +373,8 @@ Policy                     | Admins | SuperUsers | Developers| Viewers|
 [`FSReadWriteAll`](#fsreadwriteall)           |        |            |     ✅    |       |
 [`FSReadAll`](#fsreadall)                |        |            |           |   ✅  |
 
+## Pluggable Authentication and Authorization
+
+Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used. If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.RBAC` should be set to `external`.
+
+If you are using self-managed lakeFS and do not have a [remote authentication server](remote-authenticator.html) then you should set `auth.ui_config.RBAC` to `simplified` and refer to the [access control list](access-control-lists.md) documentation instead.
