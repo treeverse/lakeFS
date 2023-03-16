@@ -154,7 +154,12 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 		pluginPath := filepath.Join(diffPluginsDefaultPath(pluginProps.DefaultPath), pluginName)
 		pluginVersion := 1 // default version
 		if props, ok := pluginProps.Properties[pluginName]; ok {
-			pluginPath = props.Path
+			pp, err := homedir.Expand(props.Path)
+			if err != nil {
+				logging.Default().Errorf("failed to register a plugin for an invalid path: '%s'", props.Path)
+				continue
+			}
+			pluginPath = pp
 			if props.Version != nil {
 				pluginVersion = *props.Version
 			}
