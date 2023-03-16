@@ -44,7 +44,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
+    const disableDeltaDiff = JSON.parse(localStorage.getItem(`disable_delta_diff`));
 
     const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
@@ -90,7 +90,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             }
         </>
 
-    } else if (itemType.type === TreeItemType.Prefix || !enableDeltaDiff) {
+    } else if (itemType.type === TreeItemType.Prefix || disableDeltaDiff) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
@@ -183,7 +183,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
                                          changesTreeMessage= ""}) => {
-    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
+    const enableDeltaDiff = !JSON.parse(localStorage.getItem(`disable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
     if (results.length === 0) {
@@ -192,9 +192,8 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
         </div>
     } else {
         return <div className="tree-container">
-                    {!enableDeltaDiff
-                        ? <ExperimentalDeltaDiffButton showButton={showExperimentalDeltaDiffButton}/>
-                        : tableDiffState.isShown
+                    {enableDeltaDiff &&
+                        tableDiffState.isShown
                                 ? <Button className="action-bar"
                                           variant="secondary"
                                           disabled={false}

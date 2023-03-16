@@ -9,7 +9,7 @@ import {objects} from "../lib/api";
  * @return true if the path is a delat table root, false otherwise.
  */
 export async function isDeltaLakeTable(entry, repo, ref) {
-    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
+    const enableDeltaDiff = !JSON.parse(localStorage.getItem(`disable_delta_diff`));
 
     if (entry.path_type === "object") {
         return
