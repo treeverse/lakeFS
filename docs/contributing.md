@@ -35,14 +35,15 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 
 1. Install the required dependencies for your OS:
    1. [Git](https://git-scm.com/downloads)
-   1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
-   1. [Docker](https://docs.docker.com/get-docker/)
-   1. [Go](https://golang.org/doc/install)
-   1. [Node.js & npm](https://www.npmjs.com/get-npm)
-   1. [Maven](https://maven.apache.org/) to build and test Spark client codes.
-   1. Java 8
-     * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
-   1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
+   2. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
+   3. [Docker](https://docs.docker.com/get-docker/)
+   4. [Go](https://golang.org/doc/install)
+   5. [Node.js & npm](https://www.npmjs.com/get-npm)
+   6. [Maven](https://maven.apache.org/) to build and test Spark client codes.
+   7. Java 8
+      * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
+   8. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
+   9. [Rust & Cargo](https://www.rust-lang.org/tools/install) to build the Delta Lake diff plugin.
 
 1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS). 
 
