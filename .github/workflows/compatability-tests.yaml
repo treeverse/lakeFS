@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - fix_compatibility_tests
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
