@@ -36,6 +36,8 @@ var (
 	ErrWidened         = errors.New("resource widened")
 	ErrPolicyExists    = errors.New("policy exists")
 
+	// allPermissions lists all permissions, from most restrictive to
+	// most permissive.  It includes "" for some edge cases.
 	allPermissions = []model.ACLPermission{"", acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
 )
 
@@ -97,9 +99,6 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 		aclPolicyName := acl.ACLPolicyName(group.DisplayName)
 		err = CheckPolicyACLName(ctx, svc, aclPolicyName)
 		if err != nil {
-			if !doUpdate {
-				return err
-			}
 			warnings = multierror.Append(warnings, warn)
 		}
 		policyExists := errors.Is(err, ErrPolicyExists)
@@ -173,11 +172,11 @@ func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*mode
 				warn = multierror.Append(warn, fmt.Errorf("ignore policy %s statement %+v: %w", p.DisplayName, s, ErrNotAllowed))
 			}
 			sp, err := mig.ComputePermission(ctx, s.Action)
-			for _, allowedAction := range expandMatchingActions(s.Action) {
-				allAllowedActions[allowedAction] = struct{}{}
-			}
 			if err != nil {
 				return nil, warn, fmt.Errorf("convert policy %s statement %+v: %w", p.DisplayName, s, err)
+			}
+			for _, allowedAction := range expandMatchingActions(s.Action) {
+				allAllowedActions[allowedAction] = struct{}{}
 			}
 
 			if BroaderPermission(sp, acl.Permission) {
