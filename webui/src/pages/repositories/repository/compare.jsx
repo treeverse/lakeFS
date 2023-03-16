@@ -112,7 +112,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
             You’ll need to use two different sources to get a valid comparison.
         </Alert>
     )
-    else content = <ChangesTreeContainer results={results} showExperimentalDeltaDiffButton={true} delimiter={delimiter}
+    else content = <ChangesTreeContainer results={results} delimiter={delimiter}
                                          uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
                                          repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                          getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
