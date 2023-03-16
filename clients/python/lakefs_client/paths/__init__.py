@@ -40,6 +40,7 @@ class PathValues(str, enum.Enum):
     REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_COMMITS = "/repositories/{repository}/branches/{branch}/commits"
     REPOSITORIES_REPOSITORY_BRANCHES_BRANCH = "/repositories/{repository}/branches/{branch}"
     REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_REVERT = "/repositories/{repository}/branches/{branch}/revert"
+    REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_CHERRYPICK = "/repositories/{repository}/branches/{branch}/cherry-pick"
     REPOSITORIES_REPOSITORY_REFS_SOURCE_REF_MERGE_DESTINATION_BRANCH = "/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}"
     REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_DIFF = "/repositories/{repository}/branches/{branch}/diff"
     REPOSITORIES_REPOSITORY_REFS_LEFT_REF_DIFF_RIGHT_REF = "/repositories/{repository}/refs/{leftRef}/diff/{rightRef}"

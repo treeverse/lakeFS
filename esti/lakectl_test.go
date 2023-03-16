@@ -529,3 +529,52 @@ func TestLakectlImport(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/another/import/ --merge", false, "lakectl_import_and_merge", vars)
 }
+
+func TestLakectlCherryPick(t *testing.T) {
+	SkipTestIfAskedTo(t)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// upload some data
+	const totalObjects = 2
+	for i := 0; i < totalObjects; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	}
+
+	t.Run("default", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
+			"REPO":    repoName,
+			"STORAGE": storage,
+			"BRANCH":  mainBranch,
+			"PATH":    "data/ro",
+			"FILE":    "ro_1k.0",
+		})
+	})
+
+	t.Run("pre-sign", func(t *testing.T) {
+		storageResp, err := client.GetStorageConfigWithResponse(context.Background())
+		if err != nil {
+			t.Fatalf("GetStorageConfig failed: %s", err)
+		}
+		if storageResp.JSON200 == nil {
+			t.Fatalf("GetStorageConfig failed with stats: %s", storageResp.Status())
+		}
+		if !storageResp.JSON200.PreSignSupport {
+			t.Skip("No pre-sign support for this storage")
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1", false, "lakectl_stat_pre_sign", map[string]string{
+			"REPO":    repoName,
+			"STORAGE": storage,
+			"BRANCH":  mainBranch,
+			"PATH":    "data/ro",
+			"FILE":    "ro_1k.1",
+		})
+	})
+}

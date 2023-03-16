@@ -41,20 +41,17 @@ public class BranchesApiTest {
     /**
      * Cherry-Pick the given reference commit into the given branch
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void cherryPickTest() throws ApiException {
         String repository = null;
         String branch = null;
         CherryPickCreation cherryPickCreation = null;
-                api.cherryPick(repository, branch, cherryPickCreation);
+        api.cherryPick(repository, branch, cherryPickCreation);
         // TODO: test validations
     }
-    
+
     /**
      * create branch
      *

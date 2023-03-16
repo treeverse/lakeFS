@@ -100,12 +100,25 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call cherryPickCall(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = cherryPickCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/cherry-pick"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -125,33 +138,32 @@ public class BranchesApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call cherryPickValidateBeforeCall(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling cherryPick(Async)");
         }
-        
+
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling cherryPick(Async)");
         }
-        
+
         // verify the required parameter 'cherryPickCreation' is set
         if (cherryPickCreation == null) {
             throw new ApiException("Missing the required parameter 'cherryPickCreation' when calling cherryPick(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = cherryPickCall(repository, branch, cherryPickCreation, _callback);
-        return localVarCall;
+        return cherryPickCall(repository, branch, cherryPickCreation, _callback);
 
     }
 

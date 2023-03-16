@@ -2743,7 +2743,7 @@ paths:
       summary: Cherry-Pick the given reference commit into the given branch
       tags:
       - branches
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     get:
@@ -5706,11 +5706,11 @@ components:
         parent_number: 0
       properties:
         ref:
-          description: the commit to cherry-pick, given by a ref
+          description: "the commit to cherry-pick, given by a ref"
           type: string
         parent_number:
-          description: when cherry-picking a merge commit, the parent number (starting
-            from 1) relative to which to perform the diff.
+          description: "when cherry-picking a merge commit, the parent number (starting\
+            \ from 1) relative to which to perform the diff."
           type: integer
       required:
       - ref

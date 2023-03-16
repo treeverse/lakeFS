@@ -1591,7 +1591,7 @@ lakectl cat-sst <sst-file> [flags]
 
 ### lakectl cherry-pick
 
-cherry-pick a ref into a branch
+Cherry-Pick a ref into a branch
 
 #### Synopsis
 {:.no_toc}
