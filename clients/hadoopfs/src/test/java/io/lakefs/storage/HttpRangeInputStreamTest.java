@@ -137,10 +137,8 @@ public class HttpRangeInputStreamTest {
     public void testSeekAfterEnd() throws IOException {
         HttpUrl url = server.url("/100");
         HttpRangeInputStream stream = new HttpRangeInputStream(url.toString(), 7);
-
-        Exception exception = Assert.assertThrows(EOFException.class, () -> stream.seek(101));
-        Assert.assertTrue(String.format("Exception message should contain %s", FSExceptionMessages.CANNOT_SEEK_PAST_EOF),
-                exception.getMessage().contains(FSExceptionMessages.CANNOT_SEEK_PAST_EOF));
+        stream.seek(101);
+        Assert.assertEquals(-1, stream.read());
         stream.close();
     }
 
