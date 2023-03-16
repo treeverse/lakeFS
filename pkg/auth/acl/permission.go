@@ -75,18 +75,30 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 		if err != nil {
 			return nil, err
 		}
-		statements = append(statements, ownCredentialsStatement...)
+
+		ciStatement, err := auth.MakeStatementForPolicyType("RepoManagementRead", all)
+		if err != nil {
+			return nil, fmt.Errorf("%s: get RepoManagementRead: %w", acl.Permission, ErrBadACLPermission)
+		}
+
+		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
 	case ACLSuper:
 		statements, err = auth.MakeStatementForPolicyType("FSFullAccess", repoARNs)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
+			return nil, fmt.Errorf("%s: get FSFullAccess: %w", acl.Permission, ErrBadACLPermission)
 		}
 
 		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", ownUserARN)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: get AuthManageOwnCredentials: %w", acl.Permission, ErrBadACLPermission)
 		}
-		statements = append(statements, ownCredentialsStatement...)
+
+		ciStatement, err := auth.MakeStatementForPolicyType("RepoManagementRead", all)
+		if err != nil {
+			return nil, fmt.Errorf("%s: get RepoManagementRead: %w", acl.Permission, ErrBadACLPermission)
+		}
+
+		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
 	case ACLAdmin:
 		statements, err = auth.MakeStatementForPolicyType("AllAccess", []string{permissions.All})
 		if err != nil {

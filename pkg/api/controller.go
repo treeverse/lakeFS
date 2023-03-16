@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -669,76 +670,13 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 	newACL := model.ACL{
 		Permission: model.ACLPermission(body.Permission),
 		Repositories: model.Repositories{
-			All:  *body.AllRepositories,
+			All:  swag.BoolValue(body.AllRepositories),
 			List: *body.Repositories,
 		},
 	}
 
-	statements, err := acl.ACLToStatement(newACL)
+	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
 	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	policy := &model.Policy{
-		CreatedAt:   time.Now(),
-		DisplayName: aclPolicyName,
-		Statement:   statements,
-		ACL:         newACL,
-	}
-
-	policyJSON, err := json.MarshalIndent(policy, "", "  ")
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	c.Logger.
-		WithContext(ctx).
-		WithField("group", groupID).
-		WithField("policy", fmt.Sprintf("%+v", policy)).
-		WithField("policyJSON", string(policyJSON)).
-		Debug("Set policy derived from ACL")
-
-	err = c.Auth.WritePolicy(ctx, policy, true)
-	if errors.Is(err, auth.ErrNotFound) {
-		c.Logger.
-			WithContext(ctx).
-			WithField("group", groupID).
-			Info("Define an ACL for the first time because none was defined (bad migrate?)")
-		err = c.Auth.WritePolicy(ctx, policy, false)
-	}
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	existingPolicies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
-		Amount: -1,
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	err = c.Auth.AttachPolicyToGroup(ctx, aclPolicyName, groupID)
-	if !errors.Is(err, auth.ErrAlreadyExists) && c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	ok := true
-	for _, existingPolicy := range existingPolicies {
-		if existingPolicy.DisplayName != aclPolicyName {
-			err = c.Auth.DetachPolicyFromGroup(ctx, existingPolicy.DisplayName, groupID)
-			if err != nil {
-				ok = false
-				c.Logger.
-					WithContext(ctx).
-					WithField("group", groupID).
-					WithField("policy", existingPolicy.DisplayName).
-					WithError(err).
-					Warn("failed to detach policy")
-			}
-		}
-	}
-	if !ok {
-		writeResponse(w, r, http.StatusInternalServerError, "failed to detach some policies")
 		return
 	}
 
@@ -3890,9 +3828,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	}
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
 	} else {
-		cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)

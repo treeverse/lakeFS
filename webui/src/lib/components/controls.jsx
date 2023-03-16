@@ -367,7 +367,7 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                                         {action.buttonFn(row)}
                                     </span>
                                 ))}
-                            </span>
+                             </span>
                         </td>
                     )}
                 </tr>

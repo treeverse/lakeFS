@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/mock"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	auth_testutil "github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -55,14 +56,6 @@ func TestMain(m *testing.M) {
 	logging.SetLevel("panic")
 	code := m.Run()
 	os.Exit(code)
-}
-
-func setupService(t *testing.T, ctx context.Context) *auth.AuthService {
-	t.Helper()
-	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
 }
 
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
@@ -219,7 +212,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := setupService(t, ctx)
+	authService := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -287,7 +280,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := setupService(t, ctx)
+	authService := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -371,7 +364,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := setupService(t, ctx)
+	authService := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -641,7 +634,7 @@ func TestACL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			s := setupService(t, ctx)
+			s := auth_testutil.SetupService(t, ctx, someSecret)
 			userID := make(map[model.ACLPermission]string, len(hierarchy))
 			for _, aclPermission := range hierarchy {
 				tt.ACL.Permission = aclPermission
