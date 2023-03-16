@@ -60,7 +60,7 @@ func CheckPolicyACLName(ctx context.Context, svc auth.Service, name string) erro
 // RBACToACL translates all groups on svc to use ACLs instead of RBAC
 // policies.  It updates svc only if doUpdate.  It calls messageFunc to
 // report increased permissions.
-func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Time, messageFunc func(string, model.ACL, error)) error {
+func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTime time.Time, messageFunc func(string, model.ACL, error)) error {
 	mig := NewACLsMigrator(svc, doUpdate)
 
 	groups, _, err := svc.ListGroups(ctx, &model.PaginationParams{Amount: maxGroups + 1})
@@ -104,7 +104,7 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, now time.Ti
 		}
 		policyExists := errors.Is(err, ErrPolicyExists)
 		if doUpdate {
-			err = acl.WriteGroupACL(ctx, svc, group.DisplayName, *newACL, now, policyExists)
+			err = acl.WriteGroupACL(ctx, svc, group.DisplayName, *newACL, creationTime, policyExists)
 			if errors.Is(err, auth.ErrAlreadyExists) {
 				warnings = multierror.Append(warnings, err)
 			} else if err != nil {

@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl model.ACL, now time.Time, warnIfCreate bool) error {
+func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl model.ACL, creationTime time.Time, warnIfCreate bool) error {
 	log := logging.FromContext(ctx).WithField("group", groupName)
 
 	statements, err := ACLToStatement(acl)
@@ -25,7 +25,7 @@ func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl 
 	aclPolicyName := ACLPolicyName(groupName)
 
 	policy := &model.Policy{
-		CreatedAt:   now,
+		CreatedAt:   creationTime,
 		DisplayName: aclPolicyName,
 		Statement:   statements,
 		ACL:         acl,
