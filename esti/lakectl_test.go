@@ -541,40 +541,62 @@ func TestLakectlCherryPick(t *testing.T) {
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
+	branch1 := "branch1"
+	branch2 := "branch2"
+	branchVars := map[string]string{
+		"REPO":          repoName,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   "branch1",
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branch1+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+	branchVars["DEST_BRANCH"] = "branch2"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branch2+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+
 	// upload some data
-	const totalObjects = 2
-	for i := 0; i < totalObjects; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	vars["BRANCH"] = branch1
+	for i := 1; i <= 3; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/%d", i)
+		commitMessage := fmt.Sprintf("commit %d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+branch1+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		commitVars := map[string]string{
+			"REPO":    repoName,
+			"BRANCH":  branch1,
+			"MESSAGE": commitMessage,
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+branch1+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", commitVars)
 	}
 
-	t.Run("default", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
+	vars["BRANCH"] = branch2
+	for i := 3; i <= 5; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/%d", i)
+		commitMessage := fmt.Sprintf("commit %d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+branch2+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		commitVars := map[string]string{
 			"REPO":    repoName,
-			"STORAGE": storage,
+			"BRANCH":  branch2,
+			"MESSAGE": commitMessage,
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+branch2+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", commitVars)
+	}
+
+	t.Run("success", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+branch1, false, "lakectl_cherry_pick", map[string]string{
+			"REPO":    repoName,
 			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
-			"FILE":    "ro_1k.0",
+			"MESSAGE": "commit 3",
+		})
+
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+branch2+"~1", false, "lakectl_cherry_pick", map[string]string{
+			"REPO":    repoName,
+			"BRANCH":  mainBranch,
+			"MESSAGE": "commit 4",
 		})
 	})
 
-	t.Run("pre-sign", func(t *testing.T) {
-		storageResp, err := client.GetStorageConfigWithResponse(context.Background())
-		if err != nil {
-			t.Fatalf("GetStorageConfig failed: %s", err)
-		}
-		if storageResp.JSON200 == nil {
-			t.Fatalf("GetStorageConfig failed with stats: %s", storageResp.Status())
-		}
-		if !storageResp.JSON200.PreSignSupport {
-			t.Skip("No pre-sign support for this storage")
-		}
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1", false, "lakectl_stat_pre_sign", map[string]string{
-			"REPO":    repoName,
-			"STORAGE": storage,
-			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
-			"FILE":    "ro_1k.1",
-		})
+	t.Run("conflict", func(t *testing.T) {
+		RunCmdAndVerifyFailure(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch2+" lakefs://"+repoName+"/"+branch1, false,
+			fmt.Sprintf("Branch: lakefs://%s/%s\nupdate branch: conflict found\n409 Conflict\n", repoName, branch2), nil)
 	})
 }

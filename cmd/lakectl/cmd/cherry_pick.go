@@ -36,14 +36,18 @@ var cherryPick = &cobra.Command{
 		}
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
-		if hasParentNumber && parentNumber <= 0 {
-			Die("parent number must be non-negative, if specified", 1)
+		if hasParentNumber {
+			if parentNumber <= 0 {
+				Die("parent number must be non-negative, if specified", 1)
+			}
+		} else {
+			parentNumber = 1
 		}
 
 		clt := getClient()
 		resp, err := clt.CherryPickWithResponse(cmd.Context(), branch.Repository, branch.Ref, api.CherryPickJSONRequestBody{
 			Ref:          ref.Ref,
-			ParentNumber: &parentNumber, // TODO: handle default value 0
+			ParentNumber: &parentNumber,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 

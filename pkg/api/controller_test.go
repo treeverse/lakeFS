@@ -3395,6 +3395,8 @@ func TestController_CherryPick(t *testing.T) {
 	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "branch3", "main")
 	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch4", "main")
+	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch1", "main")
 	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch2", "main")
@@ -3420,6 +3422,10 @@ func TestController_CherryPick(t *testing.T) {
 
 	testutil.MustDo(t, "create entry bar8", deps.catalog.CreateEntry(ctx, repo, "branch3", catalog.DBEntry{Path: "foo/bar8", PhysicalAddress: "bar8addr", CreationDate: time.Now(), Size: 8, Checksum: "cksum8"}))
 	_, err = deps.catalog.Commit(ctx, repo, "branch3", "message8", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, repo, "branch4", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr4", CreationDate: time.Now(), Size: 24, Checksum: "cksum24"}))
+	_, err = deps.catalog.Commit(ctx, repo, "branch4", "message4", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
 	_, err = deps.catalog.Merge(ctx, repo, "branch3", "branch1", DefaultUserID,
@@ -3534,6 +3540,14 @@ func TestController_CherryPick(t *testing.T) {
 		testutil.Must(t, err)
 		if cherryResponse.JSON400 == nil {
 			t.Error("expected to get bad request")
+		}
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		resp, err := clt.CherryPickWithResponse(ctx, repo, "branch4", api.CherryPickJSONRequestBody{Ref: commit2.Reference})
+		testutil.Must(t, err)
+		if resp.JSON409 == nil {
+			t.Error("expected to get a conflict")
 		}
 	})
 }
