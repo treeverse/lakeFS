@@ -22,7 +22,7 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 
 ## Beta: Viewing Delta Lake table changes in lakeFS 
 
-### Enabling Delta Lake tables diff
+### Enable the Delta Lake tables diff
 
 The Delta Lake diff functionality is enabled using a binary plugin. This binary plugin can be found as part of the latest lakeFS
 [release](https://github.com/treeverse/lakeFS/releases/latest), and can also be built locally using the `make delta-plugin` command
