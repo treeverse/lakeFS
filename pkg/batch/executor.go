@@ -15,15 +15,15 @@ type Executer interface {
 	Execute() (interface{}, error)
 }
 
-type BatchTracker interface {
-	// Batched is called when a request is added to an existing batch.
-	Batched()
+type ExecuterFunc func() (interface{}, error)
+
+func (b ExecuterFunc) Execute() (interface{}, error) {
+	return b()
 }
 
-type BatchFn func() (interface{}, error)
-
-func (b BatchFn) Execute() (interface{}, error) {
-	return b()
+type Tracker interface {
+	// Batched is called when a request is added to an existing batch.
+	Batched()
 }
 
 type DelayFn func(dur time.Duration)
@@ -32,7 +32,7 @@ type Batcher interface {
 	BatchFor(ctx context.Context, key string, dur time.Duration, exec Executer) (interface{}, error)
 }
 
-type nonBatchingExecutor struct{}
+type NoOpBatchingExecutor struct{}
 
 // contextKey used to keep values on context.Context
 type contextKey string
@@ -40,7 +40,7 @@ type contextKey string
 // SkipBatchContextKey existence on a context will eliminate the request batching
 const SkipBatchContextKey contextKey = "skip_batch"
 
-func (n *nonBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec Executer) (interface{}, error) {
+func (n *NoOpBatchingExecutor) BatchFor(_ context.Context, _ string, _ time.Duration, exec Executer) (interface{}, error) {
 	return exec.Execute()
 }
 
@@ -88,8 +88,8 @@ type Executor struct {
 	Delay        DelayFn
 }
 
-func NopExecutor() *nonBatchingExecutor {
-	return &nonBatchingExecutor{}
+func NopExecutor() *NoOpBatchingExecutor {
+	return &NoOpBatchingExecutor{}
 }
 
 func NewExecutor(logger logging.Logger) *Executor {
@@ -110,8 +110,8 @@ func (e *Executor) BatchFor(_ context.Context, key string, timeout time.Duration
 		exec:       exec,
 		onResponse: cb,
 	}
-	response := <-cb
-	return response.v, response.err
+	res := <-cb
+	return res.v, res.err
 }
 
 func (e *Executor) Run(ctx context.Context) {
@@ -129,7 +129,7 @@ func (e *Executor) Run(ctx context.Context) {
 					e.execs <- req.key
 				}(req)
 			} else {
-				if b, ok := req.exec.(BatchTracker); ok {
+				if b, ok := req.exec.(Tracker); ok {
 					b.Batched()
 				}
 				e.waitingOnKey[req.key] = append(e.waitingOnKey[req.key], req)
@@ -145,7 +145,7 @@ func (e *Executor) Run(ctx context.Context) {
 					e.Logger.WithFields(logging.Fields{
 						"waiters": len(waiters),
 						"key":     key,
-					}).Trace("dispatched BatchFn")
+					}).Trace("dispatched execute result")
 				}
 				for _, waiter := range waiters {
 					waiter.onResponse <- &response{v, err}
