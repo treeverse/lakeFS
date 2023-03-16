@@ -182,7 +182,6 @@ jobs:
             --direct_access \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
             --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
       - name: lakeFS Logs on Spark with client failure
         if: ${{ failure() }}
         continue-on-error: true
@@ -266,8 +265,8 @@ jobs:
             --sonnet_jar sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar \
             --direct_access \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
-            --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
+            --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }} \
+            --client_version ${{ matrix.client_version }}
       - name: lakeFS Logs on Spark with client failure
         if: ${{ failure() }}
         continue-on-error: true
