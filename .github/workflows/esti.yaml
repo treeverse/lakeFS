@@ -1065,6 +1065,7 @@ jobs:
           compose-file: esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_ROOT: ${GITHUB_WORKSPACE}/lakeFS/
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -1121,7 +1122,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          LAKEFS_ROOT: $(pwd)
+          LAKEFS_ROOT: ${GITHUB_WORKSPACE}/lakeFS/
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
