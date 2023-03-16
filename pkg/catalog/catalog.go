@@ -1705,18 +1705,12 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 		return nil, nil, err
 	}
 
-	uri, err := url.Parse(fromSourceURI)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	walker, err := c.BlockAdapter.GetWalker(uri)
+	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
-	wrapper := store.NewWrapper(walker, uri)
 
-	it, err := NewWalkEntryIterator(ctx, wrapper, prepend, after, continuationToken)
+	it, err := NewWalkEntryIterator(ctx, walker, prepend, after, continuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
