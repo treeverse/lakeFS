@@ -313,23 +313,26 @@ object GarbageCollector {
                         GARBAGE_COLLECTOR_SOURCE_NAME
                        )
     val apiClient = ApiClient.get(apiConf)
-    val storageType = apiClient.getBlockstoreType()
+    //    val storageType = apiClient.getBlockstoreType()
+    val storageType = "s3"
 
     validateArgsByStorageType(storageType, args)
 
     val repo = args(0)
 
-    val gcRules: String =
-      try {
-        apiClient.getGarbageCollectionRules(repo)
-      } catch {
-        case e: Throwable =>
-          e.printStackTrace()
-          println("No GC rules found for repository: " + repo)
-          // Exiting with a failure status code because users should not really run gc on repos without GC rules.
-          sys.exit(2)
-      }
+    // val gcRules: String =
+    //   try {
+    //     apiClient.getGarbageCollectionRules(repo)
+    //   } catch {
+    //     case e: Throwable =>
+    //       e.printStackTrace()
+    //       println("No GC rules found for repository: " + repo)
+    //       // Exiting with a failure status code because users should not really run gc on repos without GC rules.
+    //       sys.exit(2)
+    //   }
     // Spark operators will need to generate configured FileSystems to read
+    val gcRules = "(manual: 3 days)"
+
     // ranges and metaranges.  They will not have a JobContext to let them
     // do that.  Transmit (all) Hadoop filesystem configuration values to
     // let them generate a (close-enough) Hadoop configuration to build the
@@ -429,18 +432,17 @@ object GarbageCollector {
     val previousRunID =
       "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
 
-    var prepareResult: GarbageCollectionPrepareResponse = null
+    val prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
     var gcAddressesLocation = ""
     if (runIDToReproduce == "") {
-      prepareResult = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
-      runID = prepareResult.getRunId
-      gcCommitsLocation =
-        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
+      runID = "runid-xyzzy-" + UUID.randomUUID().toString
+      gcCommitsLocation = "s3a://treeverse-ariels-gc-out/mgc/abee78f0-c36c-11ed-bfcf-ac82472b428d/gc.csv"
+//        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
       println("gcCommitsLocation: " + gcCommitsLocation)
-      gcAddressesLocation =
-        ApiClient.translateURI(new URI(prepareResult.getGcAddressesLocation), storageType).toString
+      gcAddressesLocation = "s3a://treeverse-ariels-gc-out/mgc/abee78f0-c36c-11ed-bfcf-ac82472b428d/addresses"
+//        ApiClient.translateURI(new URI(prepareResult.getGcAddressesLocation), storageType).toString
       println("gcAddressesLocation: " + gcAddressesLocation)
     } else {
       // reproducing a previous run
@@ -594,9 +596,10 @@ object GarbageCollector {
         // we create new bulkRemovers.
         val bulkRemover =
           BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+        // iter
+        //   .grouped(bulkSize)
+        //   .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
         iter
-          .grouped(bulkSize)
-          .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
       })
   }
 

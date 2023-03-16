@@ -71,12 +71,14 @@ object BulkRemoverFactory {
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
       println(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
-      val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
+      return Seq.empty
 
-      val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
-      val s3Client = getS3Client(hc, bucket, region, S3NumRetries)
-      val res = s3Client.deleteObjects(delObjReq)
-      res.getDeletedObjects.asScala.map(_.getKey())
+//      val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
+
+      // val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
+      // val s3Client = getS3Client(hc, bucket, region, S3NumRetries)
+      // val res = s3Client.deleteObjects(delObjReq)
+      // res.getDeletedObjects.asScala.map(_.getKey())
     }
 
     private def getS3Client(
@@ -102,41 +104,42 @@ object BulkRemoverFactory {
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
       println(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
-      val removeKeys = removeKeyNames.asJava
+      return Seq.empty
+      // val removeKeys = removeKeyNames.asJava
 
-      val blobBatchClient = getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
+      // val blobBatchClient = getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
 
-      val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URI]() {
-        def apply(response: Response[Void]): URI = {
-          if (response.getStatusCode == 200) {
-            response.getRequest.getUrl
-          }
-          new URI(EmptyString)
-        }
-      }
-      val uriToString = new java.util.function.Function[URI, String]() {
-        def apply(uri: URI): String = uri.toString
-      }
-      val isNonEmptyString = new java.util.function.Predicate[String]() {
-        override def test(s: String): Boolean = !EmptyString.equals(s)
-      }
+      // val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URI]() {
+      //   def apply(response: Response[Void]): URI = {
+      //     if (response.getStatusCode == 200) {
+      //       response.getRequest.getUrl
+      //     }
+      //     new URI(EmptyString)
+      //   }
+      // }
+      // val uriToString = new java.util.function.Function[URI, String]() {
+      //   def apply(uri: URI): String = uri.toString
+      // }
+      // val isNonEmptyString = new java.util.function.Predicate[String]() {
+      //   override def test(s: String): Boolean = !EmptyString.equals(s)
+      // }
 
-      try {
-        val responses = blobBatchClient.deleteBlobs(removeKeys, DeleteSnapshotsOptionType.INCLUDE)
-        // TODO(Tals): extract uris of successfully deleted objects from response, the current version does not do that.
-        responses
-          .stream()
-          .map[URI](extractUrlIfBlobDeleted)
-          .map[String](uriToString)
-          .filter(isNonEmptyString)
-          .collect(Collectors.toList())
-          .asScala
-          .toSeq
-      } catch {
-        case e: Throwable =>
-          e.printStackTrace()
-          Seq.empty
-      }
+      // try {
+      //   val responses = blobBatchClient.deleteBlobs(removeKeys, DeleteSnapshotsOptionType.INCLUDE)
+      //   // TODO(Tals): extract uris of successfully deleted objects from response, the current version does not do that.
+      //   responses
+      //     .stream()
+      //     .map[URI](extractUrlIfBlobDeleted)
+      //     .map[String](uriToString)
+      //     .filter(isNonEmptyString)
+      //     .collect(Collectors.toList())
+      //     .asScala
+      //     .toSeq
+      // } catch {
+      //   case e: Throwable =>
+      //     e.printStackTrace()
+      //     Seq.empty
+      // }
     }
 
     private def getBlobBatchClient(
