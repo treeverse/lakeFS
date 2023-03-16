@@ -438,7 +438,7 @@ object GarbageCollector {
     var gcAddressesLocation = ""
     if (runIDToReproduce == "") {
       runID = "runid-xyzzy-" + UUID.randomUUID().toString
-      gcCommitsLocation = "s3a://treeverse-ariels-gc-out/mgc/abee78f0-c36c-11ed-bfcf-ac82472b428d/gc.csv"
+      gcCommitsLocation = "s3a://treeverse-ariels-gc-us/mgc/abee78f0-c36c-11ed-bfcf-ac82472b428d/gc.csv"
 //        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
       println("gcCommitsLocation: " + gcCommitsLocation)
       gcAddressesLocation = "s3a://treeverse-ariels-gc-out/mgc/abee78f0-c36c-11ed-bfcf-ac82472b428d/addresses"
