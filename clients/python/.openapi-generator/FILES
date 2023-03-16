@@ -26,6 +26,7 @@ docs/models/AuthCapabilities.md
 docs/models/AuthenticationToken.md
 docs/models/BranchCreation.md
 docs/models/BranchProtectionRule.md
+docs/models/CherryPickCreation.md
 docs/models/CommPrefsInput.md
 docs/models/Commit.md
 docs/models/CommitCreation.md
@@ -138,6 +139,8 @@ lakefs_client/model/branch_creation.py
 lakefs_client/model/branch_creation.pyi
 lakefs_client/model/branch_protection_rule.py
 lakefs_client/model/branch_protection_rule.pyi
+lakefs_client/model/cherry_pick_creation.py
+lakefs_client/model/cherry_pick_creation.pyi
 lakefs_client/model/comm_prefs_input.py
 lakefs_client/model/comm_prefs_input.pyi
 lakefs_client/model/commit.py
@@ -302,6 +305,7 @@ test/test_models/test_auth_capabilities.py
 test/test_models/test_authentication_token.py
 test/test_models/test_branch_creation.py
 test/test_models/test_branch_protection_rule.py
+test/test_models/test_cherry_pick_creation.py
 test/test_models/test_comm_prefs_input.py
 test/test_models/test_commit.py
 test/test_models/test_commit_creation.py

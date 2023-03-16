@@ -3378,6 +3378,180 @@ func TestController_RevertConflict(t *testing.T) {
 	}
 }
 
+func TestController_CherryPick(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+	_, err = deps.catalog.Commit(ctx, repo, "main", "message1", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch2", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch3", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "branch4", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch1", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch2", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch3", "main")
+	testutil.Must(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch4", "main")
+	testutil.Must(t, err)
+
+	testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}))
+	commit2, err := deps.catalog.Commit(ctx, repo, "branch1", "message2", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	testutil.MustDo(t, "create entry bar3", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar3", PhysicalAddress: "bar3addr", CreationDate: time.Now(), Size: 3, Checksum: "cksum3"}))
+	testutil.MustDo(t, "create entry bar4", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar4", PhysicalAddress: "bar4addr", CreationDate: time.Now(), Size: 4, Checksum: "cksum4"}))
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "message34", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	testutil.MustDo(t, "create entry bar6", deps.catalog.CreateEntry(ctx, repo, "branch2", catalog.DBEntry{Path: "foo/bar6", PhysicalAddress: "bar6addr", CreationDate: time.Now(), Size: 6, Checksum: "cksum6"}))
+	testutil.MustDo(t, "create entry bar7", deps.catalog.CreateEntry(ctx, repo, "branch2", catalog.DBEntry{Path: "foo/bar7", PhysicalAddress: "bar7addr", CreationDate: time.Now(), Size: 7, Checksum: "cksum7"}))
+	_, err = deps.catalog.Commit(ctx, repo, "branch2", "message34", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	testutil.MustDo(t, "create entry bar8", deps.catalog.CreateEntry(ctx, repo, "branch3", catalog.DBEntry{Path: "foo/bar8", PhysicalAddress: "bar8addr", CreationDate: time.Now(), Size: 8, Checksum: "cksum8"}))
+	_, err = deps.catalog.Commit(ctx, repo, "branch3", "message8", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, repo, "branch4", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr4", CreationDate: time.Now(), Size: 24, Checksum: "cksum24"}))
+	_, err = deps.catalog.Commit(ctx, repo, "branch4", "message4", DefaultUserID, nil, nil, nil)
+	testutil.Must(t, err)
+
+	_, err = deps.catalog.Merge(ctx, repo, "branch3", "branch1", DefaultUserID,
+		"merge message", catalog.Metadata{"foo": "bar"}, "")
+	testutil.Must(t, err)
+
+	t.Run("from branch", func(t *testing.T) {
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch1", api.CherryPickJSONRequestBody{Ref: "branch1"})
+		verifyResponseOK(t, cherryResponse, err)
+
+		// verify that the cherry-pick worked as expected
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch1", &api.GetObjectParams{Path: "foo/bar2"})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Error("expected to not find object foo/bar2 in dest-branch1 branch")
+		}
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch1", &api.GetObjectParams{Path: "foo/bar3"})
+		verifyResponseOK(t, cherryResponse, err)
+
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch1", &api.GetObjectParams{Path: "foo/bar4"})
+		verifyResponseOK(t, cherryResponse, err)
+	})
+
+	t.Run("from commit", func(t *testing.T) {
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch2", api.CherryPickJSONRequestBody{Ref: commit2.Reference, ParentNumber: swag.Int(1)})
+		verifyResponseOK(t, cherryResponse, err)
+
+		// verify that the cherry-pick worked as expected
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch2", &api.GetObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, cherryResponse, err)
+
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch2", &api.GetObjectParams{Path: "foo/bar3"})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Error("expected to not find object foo/bar3 in dest-branch2 branch")
+		}
+	})
+
+	t.Run("invalid parent id (too big)", func(t *testing.T) {
+		resp, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch1", api.CherryPickJSONRequestBody{Ref: commit2.Reference, ParentNumber: swag.Int(2)})
+		testutil.Must(t, err)
+		if resp.JSON400 == nil {
+			t.Error("expected to get bad request")
+		}
+	})
+
+	t.Run("invalid parent id (too small)", func(t *testing.T) {
+		resp, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch1", api.CherryPickJSONRequestBody{Ref: commit2.Reference, ParentNumber: swag.Int(0)})
+		testutil.Must(t, err)
+		if resp.JSON400 == nil {
+			t.Error("expected to get bad request")
+		}
+	})
+
+	t.Run("dirty branch", func(t *testing.T) {
+		// create branch with entry without commit
+		_, err := deps.catalog.CreateBranch(ctx, repo, "dirty", "main")
+		testutil.Must(t, err)
+		err = deps.catalog.CreateEntry(ctx, repo, "dirty", catalog.DBEntry{Path: "foo/bar5", PhysicalAddress: "bar50addr", CreationDate: time.Now(), Size: 5, Checksum: "cksum5"})
+		testutil.Must(t, err)
+
+		cherryPickResp, err := clt.CherryPickWithResponse(ctx, repo, "dirty", api.CherryPickJSONRequestBody{Ref: "branch1"})
+		testutil.Must(t, err)
+		if cherryPickResp.JSON400 == nil || cherryPickResp.JSON400.Message != graveler.ErrDirtyBranch.Error() {
+			t.Errorf("Cherry-Pick dirty branch should fail with ErrDirtyBranch, got %+v", cherryPickResp)
+		}
+	})
+
+	t.Run("from branch - merge commit - first parent", func(t *testing.T) {
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch4", api.CherryPickJSONRequestBody{Ref: "branch3", ParentNumber: swag.Int(1)})
+		verifyResponseOK(t, cherryResponse, err)
+		// verify that the cherry-pick worked as expected
+
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, cherryResponse, err)
+
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar3"})
+		verifyResponseOK(t, cherryResponse, err)
+
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar4"})
+		verifyResponseOK(t, cherryResponse, err)
+
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar8"})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Error("expected to not find object foo/bar8 in dest-branch4 branch")
+		}
+	})
+
+	t.Run("from branch - merge commit - second parent", func(t *testing.T) {
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch3", api.CherryPickJSONRequestBody{Ref: "branch3", ParentNumber: swag.Int(2)})
+		verifyResponseOK(t, cherryResponse, err)
+
+		// verify that the cherry-pick worked as expected
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch3", &api.GetObjectParams{Path: "foo/bar2"})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Error("expected to not find object foo/bar2 in dest-branch3 branch")
+		}
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch3", &api.GetObjectParams{Path: "foo/bar4"})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Error("expected to not find object foo/bar6 in dest-branch3 branch")
+		}
+
+		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch3", &api.GetObjectParams{Path: "foo/bar8"})
+		verifyResponseOK(t, cherryResponse, err)
+	})
+
+	t.Run("invalid parent id (too big)- merge commit", func(t *testing.T) {
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, repo, "dest-branch3", api.CherryPickJSONRequestBody{Ref: "branch3", ParentNumber: swag.Int(3)})
+		testutil.Must(t, err)
+		if cherryResponse.JSON400 == nil {
+			t.Error("expected to get bad request")
+		}
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		resp, err := clt.CherryPickWithResponse(ctx, repo, "branch4", api.CherryPickJSONRequestBody{Ref: commit2.Reference})
+		testutil.Must(t, err)
+		if resp.JSON409 == nil {
+			t.Error("expected to get a conflict")
+		}
+	})
+}
+
 func TestController_ExpandTemplate(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()

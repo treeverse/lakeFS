@@ -18,6 +18,7 @@ from lakefs_client.model.auth_capabilities import AuthCapabilities
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.branch_creation import BranchCreation
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
+from lakefs_client.model.cherry_pick_creation import CherryPickCreation
 from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation

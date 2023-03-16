@@ -1,0 +1,8 @@
+Branch: lakefs://${REPO}/${BRANCH}
+Commit for branch "${BRANCH}" completed.
+
+ID: <COMMIT_ID>
+Message: ${MESSAGE}
+Timestamp: <DATE> <TIME> <TZ>
+Parents: <COMMIT_ID>
+
