@@ -66,10 +66,6 @@ public class HttpRangeInputStream extends FSInputStream {
             throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK
                     + " " + targetPos);
         }
-        if (targetPos >= len) {
-            throw new EOFException(FSExceptionMessages.CANNOT_SEEK_PAST_EOF
-                    + " " + targetPos + " > " + len);
-        }
         this.pos = targetPos;
     }
 
