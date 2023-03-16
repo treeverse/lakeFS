@@ -57,10 +57,9 @@ func TestAdminPermissionss(t *testing.T) {
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "Supers"
 
 	// generate the Super client
-	superClient := newClientFromGroup(t, ctx, logger, gid)
+	superClient := newClientFromGroup(t, ctx, logger, "Supers")
 
 	// listing the available branches should succeed
 	resListBranches, err := superClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -107,10 +106,9 @@ func TestSuperPermissions(t *testing.T) {
 // Test Writer Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestWriterPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "Writers"
 
 	// generate the Writer client
-	writerClient := newClientFromGroup(t, ctx, logger, gid)
+	writerClient := newClientFromGroup(t, ctx, logger, "Writers")
 
 	// listing the available branches should succeed
 	resListBranches, err := writerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -152,10 +150,9 @@ func TestWriterPermissions(t *testing.T) {
 // Test Reader Permissions: AuthManageOwnCredentials, FSReadAll
 func TestReaderPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "Readers"
 
 	// generate the reader client
-	readerClient := newClientFromGroup(t, ctx, logger, gid)
+	readerClient := newClientFromGroup(t, ctx, logger, "Readers")
 
 	// listing the available branches should succeed
 	resListBranches, err := readerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})

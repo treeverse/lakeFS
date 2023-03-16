@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/permissions"
-
 	"errors"
 	"fmt"
+
+	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 var (

@@ -186,7 +186,6 @@ func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.T
 	return nil
 }
 
-// BUG(ariels): read config, do it right!
 func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
