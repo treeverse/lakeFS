@@ -69,6 +69,28 @@ WORKDIR /app
 COPY ./scripts/wait-for ./
 ENV PATH /app:$PATH
 COPY --from=build /build/lakefs /build/lakectl ./
+
+EXPOSE 8000/tcp
+
+# Setup user
+RUN addgroup --system lakefs && adduser --system lakefs --ingroup lakefs
+USER lakefs
+WORKDIR /home/lakefs
+
+ENTRYPOINT ["/app/lakefs"]
+CMD ["run"]
+
+# lakefs and plugins image
+FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakefs-plugins
+RUN apt-get update
+RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
+# Be Docker compose friendly (i.e. support wait-for)
+RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y netcat-openbsd
+
+WORKDIR /app
+COPY ./scripts/wait-for ./
+ENV PATH /app:$PATH
+COPY --from=build /build/lakefs /build/lakectl ./
 COPY --from=build-delta-diff-plugin /delta-diff/target/release/delta_diff ./
 
 EXPOSE 8000/tcp
