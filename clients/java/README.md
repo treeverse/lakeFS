@@ -12,8 +12,8 @@ lakeFS HTTP API
 ## Requirements
 
 Building the API client library requires:
-1. Java 1.7+
-2. Maven/Gradle
+1. Java 1.8+
+2. Maven (3.8.3+)/Gradle (7.2+)
 
 ## Installation
 
@@ -49,7 +49,14 @@ Add this dependency to your project's POM:
 Add this dependency to your project's build file:
 
 ```groovy
-compile "io.lakefs:api-client:0.1.0-SNAPSHOT"
+  repositories {
+    mavenCentral()     // Needed if the 'api-client' jar has been published to maven central.
+    mavenLocal()       // Needed if the 'api-client' jar has been published to the local maven repo.
+  }
+
+  dependencies {
+     implementation "io.lakefs:api-client:0.1.0-SNAPSHOT"
+  }
 ```
 
 ### Others
@@ -82,7 +89,7 @@ import io.lakefs.clients.api.ActionsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -95,10 +102,6 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -110,6 +113,10 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -131,7 +138,7 @@ public class Example {
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
@@ -250,6 +257,7 @@ Class | Method | HTTP request | Description
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)
  - [CurrentUser](docs/CurrentUser.md)
+ - [DeleteBranchProtectionRuleRequest](docs/DeleteBranchProtectionRuleRequest.md)
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
@@ -267,7 +275,6 @@ Class | Method | HTTP request | Description
  - [HookRunList](docs/HookRunList.md)
  - [ImportPagination](docs/ImportPagination.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
- - [InlineObject1](docs/InlineObject1.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
@@ -325,15 +332,15 @@ Authentication schemes defined for the API:
 
 - **Type**: HTTP basic authentication
 
+### jwt_token
+
+- **Type**: HTTP basic authentication
+
 ### cookie_auth
 
 - **Type**: API key
 - **API key parameter name**: internal_auth_session
 - **Location**: 
-
-### jwt_token
-
-- **Type**: HTTP basic authentication
 
 ### oidc_auth
 

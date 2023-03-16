@@ -21,8 +21,8 @@ import io.lakefs.clients.api.model.FindMergeBaseResult;
 import io.lakefs.clients.api.model.Merge;
 import io.lakefs.clients.api.model.MergeResult;
 import io.lakefs.clients.api.model.RefsDump;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,19 +32,15 @@ import java.util.Map;
 /**
  * API tests for RefsApi
  */
-@Ignore
+@Disabled
 public class RefsApiTest {
 
     private final RefsApi api = new RefsApi();
 
-    
     /**
      * diff references
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void diffRefsTest() throws ApiException {
@@ -56,49 +52,40 @@ public class RefsApiTest {
         String prefix = null;
         String delimiter = null;
         String type = null;
-                DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type);
+        DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type);
         // TODO: test validations
     }
-    
+
     /**
      * Dump repository refs (tags, commits, branches) to object store
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void dumpRefsTest() throws ApiException {
         String repository = null;
-                RefsDump response = api.dumpRefs(repository);
+        RefsDump response = api.dumpRefs(repository);
         // TODO: test validations
     }
-    
+
     /**
      * find the merge base for 2 references
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void findMergeBaseTest() throws ApiException {
         String repository = null;
         String sourceRef = null;
         String destinationBranch = null;
-                FindMergeBaseResult response = api.findMergeBase(repository, sourceRef, destinationBranch);
+        FindMergeBaseResult response = api.findMergeBase(repository, sourceRef, destinationBranch);
         // TODO: test validations
     }
-    
+
     /**
      * get commit log from ref. If both objects and prefixes are empty, return all commits.
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void logCommitsTest() throws ApiException {
@@ -109,17 +96,14 @@ public class RefsApiTest {
         List<String> objects = null;
         List<String> prefixes = null;
         Boolean limit = null;
-                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit);
+        CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit);
         // TODO: test validations
     }
-    
+
     /**
      * merge references
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void mergeIntoBranchTest() throws ApiException {
@@ -127,24 +111,21 @@ public class RefsApiTest {
         String sourceRef = null;
         String destinationBranch = null;
         Merge merge = null;
-                MergeResult response = api.mergeIntoBranch(repository, sourceRef, destinationBranch, merge);
+        MergeResult response = api.mergeIntoBranch(repository, sourceRef, destinationBranch, merge);
         // TODO: test validations
     }
-    
+
     /**
      * Restore repository refs (tags, commits, branches) from object store
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void restoreRefsTest() throws ApiException {
         String repository = null;
         RefsDump refsDump = null;
-                api.restoreRefs(repository, refsDump);
+        api.restoreRefs(repository, refsDump);
         // TODO: test validations
     }
-    
+
 }

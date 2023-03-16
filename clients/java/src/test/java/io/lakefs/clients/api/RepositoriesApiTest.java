@@ -15,13 +15,13 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.BranchProtectionRule;
+import io.lakefs.clients.api.model.DeleteBranchProtectionRuleRequest;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineObject1;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryList;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,120 +31,94 @@ import java.util.Map;
 /**
  * API tests for RepositoriesApi
  */
-@Ignore
+@Disabled
 public class RepositoriesApiTest {
 
     private final RepositoriesApi api = new RepositoriesApi();
 
-    
     /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void createBranchProtectionRuleTest() throws ApiException {
         String repository = null;
         BranchProtectionRule branchProtectionRule = null;
-                api.createBranchProtectionRule(repository, branchProtectionRule);
+        api.createBranchProtectionRule(repository, branchProtectionRule);
         // TODO: test validations
     }
-    
+
     /**
      * create repository
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void createRepositoryTest() throws ApiException {
         RepositoryCreation repositoryCreation = null;
         Boolean bare = null;
-                Repository response = api.createRepository(repositoryCreation, bare);
+        Repository response = api.createRepository(repositoryCreation, bare);
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void deleteBranchProtectionRuleTest() throws ApiException {
         String repository = null;
-        InlineObject1 inlineObject1 = null;
-                api.deleteBranchProtectionRule(repository, inlineObject1);
+        DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest = null;
+        api.deleteBranchProtectionRule(repository, deleteBranchProtectionRuleRequest);
         // TODO: test validations
     }
-    
+
     /**
      * delete repository
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void deleteRepositoryTest() throws ApiException {
         String repository = null;
-                api.deleteRepository(repository);
+        api.deleteRepository(repository);
         // TODO: test validations
     }
-    
+
     /**
      * get branch protection rules
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getBranchProtectionRulesTest() throws ApiException {
         String repository = null;
-                List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
+        List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
         // TODO: test validations
     }
-    
+
     /**
      * get repository
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getRepositoryTest() throws ApiException {
         String repository = null;
-                Repository response = api.getRepository(repository);
+        Repository response = api.getRepository(repository);
         // TODO: test validations
     }
-    
+
     /**
      * list repositories
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void listRepositoriesTest() throws ApiException {
         String prefix = null;
         String after = null;
         Integer amount = null;
-                RepositoryList response = api.listRepositories(prefix, after, amount);
+        RepositoryList response = api.listRepositories(prefix, after, amount);
         // TODO: test validations
     }
-    
+
 }

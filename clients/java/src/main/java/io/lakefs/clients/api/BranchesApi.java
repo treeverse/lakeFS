@@ -40,9 +40,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.ws.rs.core.GenericType;
 
 public class BranchesApi {
     private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
 
     public BranchesApi() {
         this(Configuration.getDefaultApiClient());
@@ -58,6 +61,22 @@ public class BranchesApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -79,11 +98,24 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call createBranchCall(String repository, BranchCreation branchCreation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = branchCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -92,7 +124,8 @@ public class BranchesApi {
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
         final String[] localVarAccepts = {
-            "text/html", "application/json"
+            "text/html",
+            "application/json"
         };
         final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
         if (localVarAccept != null) {
@@ -103,28 +136,27 @@ public class BranchesApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call createBranchValidateBeforeCall(String repository, BranchCreation branchCreation, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling createBranch(Async)");
         }
-        
+
         // verify the required parameter 'branchCreation' is set
         if (branchCreation == null) {
             throw new ApiException("Missing the required parameter 'branchCreation' when calling createBranch(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = createBranchCall(repository, branchCreation, _callback);
-        return localVarCall;
+        return createBranchCall(repository, branchCreation, _callback);
 
     }
 
@@ -219,12 +251,25 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call deleteBranchCall(String repository, String branch, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -241,31 +286,29 @@ public class BranchesApi {
         }
 
         final String[] localVarContentTypes = {
-            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deleteBranchValidateBeforeCall(String repository, String branch, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteBranch(Async)");
         }
-        
+
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling deleteBranch(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = deleteBranchCall(repository, branch, _callback);
-        return localVarCall;
+        return deleteBranchCall(repository, branch, _callback);
 
     }
 
@@ -356,12 +399,25 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call diffBranchCall(String repository, String branch, String after, Integer amount, String prefix, String delimiter, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/diff"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -394,31 +450,29 @@ public class BranchesApi {
         }
 
         final String[] localVarContentTypes = {
-            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call diffBranchValidateBeforeCall(String repository, String branch, String after, Integer amount, String prefix, String delimiter, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling diffBranch(Async)");
         }
-        
+
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling diffBranch(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = diffBranchCall(repository, branch, after, amount, prefix, delimiter, _callback);
-        return localVarCall;
+        return diffBranchCall(repository, branch, after, amount, prefix, delimiter, _callback);
 
     }
 
@@ -518,12 +572,25 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call getBranchCall(String repository, String branch, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -540,31 +607,29 @@ public class BranchesApi {
         }
 
         final String[] localVarContentTypes = {
-            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getBranchValidateBeforeCall(String repository, String branch, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getBranch(Async)");
         }
-        
+
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling getBranch(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = getBranchCall(repository, branch, _callback);
-        return localVarCall;
+        return getBranchCall(repository, branch, _callback);
 
     }
 
@@ -654,11 +719,24 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call listBranchesCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -687,26 +765,24 @@ public class BranchesApi {
         }
 
         final String[] localVarContentTypes = {
-            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listBranchesValidateBeforeCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling listBranches(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = listBranchesCall(repository, prefix, after, amount, _callback);
-        return localVarCall;
+        return listBranchesCall(repository, prefix, after, amount, _callback);
 
     }
 
@@ -801,12 +877,25 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call resetBranchCall(String repository, String branch, ResetCreation resetCreation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = resetCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -826,33 +915,32 @@ public class BranchesApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call resetBranchValidateBeforeCall(String repository, String branch, ResetCreation resetCreation, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling resetBranch(Async)");
         }
-        
+
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling resetBranch(Async)");
         }
-        
+
         // verify the required parameter 'resetCreation' is set
         if (resetCreation == null) {
             throw new ApiException("Missing the required parameter 'resetCreation' when calling resetBranch(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = resetBranchCall(repository, branch, resetCreation, _callback);
-        return localVarCall;
+        return resetBranchCall(repository, branch, resetCreation, _callback);
 
     }
 
@@ -942,12 +1030,25 @@ public class BranchesApi {
      </table>
      */
     public okhttp3.Call revertBranchCall(String repository, String branch, RevertCreation revertCreation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
         Object localVarPostBody = revertCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/revert"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
-            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -967,33 +1068,32 @@ public class BranchesApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call revertBranchValidateBeforeCall(String repository, String branch, RevertCreation revertCreation, final ApiCallback _callback) throws ApiException {
-        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling revertBranch(Async)");
         }
-        
+
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling revertBranch(Async)");
         }
-        
+
         // verify the required parameter 'revertCreation' is set
         if (revertCreation == null) {
             throw new ApiException("Missing the required parameter 'revertCreation' when calling revertBranch(Async)");
         }
-        
 
-        okhttp3.Call localVarCall = revertBranchCall(repository, branch, revertCreation, _callback);
-        return localVarCall;
+        return revertBranchCall(repository, branch, revertCreation, _callback);
 
     }
 

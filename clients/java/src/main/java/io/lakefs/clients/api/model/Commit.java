@@ -20,13 +20,32 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import io.lakefs.clients.api.JSON;
 
 /**
  * Commit
@@ -39,7 +58,7 @@ public class Commit {
 
   public static final String SERIALIZED_NAME_PARENTS = "parents";
   @SerializedName(SERIALIZED_NAME_PARENTS)
-  private List<String> parents = new ArrayList<String>();
+  private List<String> parents = new ArrayList<>();
 
   public static final String SERIALIZED_NAME_COMMITTER = "committer";
   @SerializedName(SERIALIZED_NAME_COMMITTER)
@@ -59,8 +78,10 @@ public class Commit {
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
-  private Map<String, String> metadata = null;
+  private Map<String, String> metadata = new HashMap<>();
 
+  public Commit() {
+  }
 
   public Commit id(String id) {
     
@@ -73,7 +94,6 @@ public class Commit {
    * @return id
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getId() {
     return id;
@@ -101,7 +121,6 @@ public class Commit {
    * @return parents
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public List<String> getParents() {
     return parents;
@@ -124,7 +143,6 @@ public class Commit {
    * @return committer
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getCommitter() {
     return committer;
@@ -147,7 +165,6 @@ public class Commit {
    * @return message
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getMessage() {
     return message;
@@ -170,7 +187,6 @@ public class Commit {
    * @return creationDate
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getCreationDate() {
     return creationDate;
@@ -193,7 +209,6 @@ public class Commit {
    * @return metaRangeId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public String getMetaRangeId() {
     return metaRangeId;
@@ -213,7 +228,7 @@ public class Commit {
 
   public Commit putMetadataItem(String key, String metadataItem) {
     if (this.metadata == null) {
-      this.metadata = new HashMap<String, String>();
+      this.metadata = new HashMap<>();
     }
     this.metadata.put(key, metadataItem);
     return this;
@@ -224,7 +239,6 @@ public class Commit {
    * @return metadata
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
 
   public Map<String, String> getMetadata() {
     return metadata;
@@ -234,6 +248,7 @@ public class Commit {
   public void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
   }
+
 
 
   @Override
@@ -285,5 +300,125 @@ public class Commit {
     return o.toString().replace("\n", "\n    ");
   }
 
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>();
+    openapiFields.add("id");
+    openapiFields.add("parents");
+    openapiFields.add("committer");
+    openapiFields.add("message");
+    openapiFields.add("creation_date");
+    openapiFields.add("meta_range_id");
+    openapiFields.add("metadata");
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>();
+    openapiRequiredFields.add("id");
+    openapiRequiredFields.add("parents");
+    openapiRequiredFields.add("committer");
+    openapiRequiredFields.add("message");
+    openapiRequiredFields.add("creation_date");
+    openapiRequiredFields.add("meta_range_id");
+  }
+
+ /**
+  * Validates the JSON Object and throws an exception if issues found
+  *
+  * @param jsonObj JSON Object
+  * @throws IOException if the JSON Object is invalid with respect to Commit
+  */
+  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
+      if (jsonObj == null) {
+        if (!Commit.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in Commit is not found in the empty JSON string", Commit.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Entry<String, JsonElement> entry : entries) {
+        if (!Commit.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `Commit` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Commit.openapiRequiredFields) {
+        if (jsonObj.get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
+        }
+      }
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      // ensure the required json array is present
+      if (jsonObj.get("parents") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("parents").isJsonArray()) {
+        throw new IllegalArgumentException(String.format("Expected the field `parents` to be an array in the JSON string but got `%s`", jsonObj.get("parents").toString()));
+      }
+      if (!jsonObj.get("committer").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `committer` to be a primitive type in the JSON string but got `%s`", jsonObj.get("committer").toString()));
+      }
+      if (!jsonObj.get("message").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));
+      }
+      if (!jsonObj.get("meta_range_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `meta_range_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("meta_range_id").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Commit.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Commit' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Commit> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Commit.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Commit>() {
+           @Override
+           public void write(JsonWriter out, Commit value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Commit read(JsonReader in) throws IOException {
+             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
+             validateJsonObject(jsonObj);
+             return thisAdapter.fromJsonTree(jsonObj);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+ /**
+  * Create an instance of Commit given an JSON string
+  *
+  * @param jsonString JSON string
+  * @return An instance of Commit
+  * @throws IOException if the JSON string is invalid with respect to Commit
+  */
+  public static Commit fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Commit.class);
+  }
+
+ /**
+  * Convert an instance of Commit to an JSON string
+  *
+  * @return JSON string
+  */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
+  }
 }
 

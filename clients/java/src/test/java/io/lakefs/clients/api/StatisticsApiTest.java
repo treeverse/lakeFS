@@ -16,8 +16,8 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.StatsEventsList;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,25 +27,21 @@ import java.util.Map;
 /**
  * API tests for StatisticsApi
  */
-@Ignore
+@Disabled
 public class StatisticsApiTest {
 
     private final StatisticsApi api = new StatisticsApi();
 
-    
     /**
      * post stats events, this endpoint is meant for internal use only
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
-                api.postStatsEvents(statsEventsList);
+        api.postStatsEvents(statsEventsList);
         // TODO: test validations
     }
-    
+
 }
