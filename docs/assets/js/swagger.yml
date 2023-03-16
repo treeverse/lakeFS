@@ -484,7 +484,9 @@ components:
           description: the commit to cherry-pick, given by a ref
         parent_number:
           type: integer
-          description: when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
+          description: |
+            when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
+            The destination branch is parent 1, which is the default behaviour.
 
     Commit:
       type: object
@@ -2770,8 +2772,12 @@ paths:
             schema:
               $ref: "#/components/schemas/CherryPickCreation"
       responses:
-        204:
-          description: successful cherry-pick
+        201:
+          description: the cherry-pick commit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commit"
         400:
           $ref: "#/components/responses/ValidationError"
         401:

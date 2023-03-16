@@ -25,6 +25,7 @@ import frozendict  # noqa: F401
 
 from lakefs_client import schemas  # noqa: F401
 
+from lakefs_client.model.commit import Commit
 from lakefs_client.model.error import Error
 from lakefs_client.model.cherry_pick_creation import CherryPickCreation
 
@@ -73,17 +74,24 @@ request_body_cherry_pick_creation = api_client.RequestBody(
     },
     required=True,
 )
+SchemaFor201ResponseBodyApplicationJson = Commit
 
 
 @dataclass
-class ApiResponseFor204(api_client.ApiResponse):
+class ApiResponseFor201(api_client.ApiResponse):
     response: urllib3.HTTPResponse
-    body: schemas.Unset = schemas.unset
+    body: typing.Union[
+        SchemaFor201ResponseBodyApplicationJson,
+    ]
     headers: schemas.Unset = schemas.unset
 
 
-_response_for_204 = api_client.OpenApiResponse(
-    response_cls=ApiResponseFor204,
+_response_for_201 = api_client.OpenApiResponse(
+    response_cls=ApiResponseFor201,
+    content={
+        'application/json': api_client.MediaType(
+            schema=SchemaFor201ResponseBodyApplicationJson),
+    },
 )
 SchemaFor400ResponseBodyApplicationJson = Error
 
@@ -197,7 +205,7 @@ class BaseApi(api_client.Api):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
     ]: ...
 
@@ -212,7 +220,7 @@ class BaseApi(api_client.Api):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
     ]: ...
 
@@ -240,7 +248,7 @@ class BaseApi(api_client.Api):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
@@ -343,7 +351,7 @@ class CherryPick(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
     ]: ...
 
@@ -358,7 +366,7 @@ class CherryPick(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
     ]: ...
 
@@ -386,7 +394,7 @@ class CherryPick(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...
@@ -426,7 +434,7 @@ class ApiForpost(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
     ]: ...
 
@@ -441,7 +449,7 @@ class ApiForpost(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: typing_extensions.Literal[False] = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
     ]: ...
 
@@ -469,7 +477,7 @@ class ApiForpost(BaseApi):
         timeout: typing.Optional[typing.Union[int, typing.Tuple]] = None,
         skip_deserialization: bool = ...,
     ) -> typing.Union[
-        ApiResponseFor204,
+        ApiResponseFor201,
         ApiResponseForDefault,
         api_client.ApiResponseWithoutDeserialization,
     ]: ...

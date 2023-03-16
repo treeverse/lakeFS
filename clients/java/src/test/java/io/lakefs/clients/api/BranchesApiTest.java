@@ -16,6 +16,7 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.BranchCreation;
 import io.lakefs.clients.api.model.CherryPickCreation;
+import io.lakefs.clients.api.model.Commit;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Ref;
@@ -48,7 +49,7 @@ public class BranchesApiTest {
         String repository = null;
         String branch = null;
         CherryPickCreation cherryPickCreation = null;
-        api.cherryPick(repository, branch, cherryPickCreation);
+        Commit response = api.cherryPick(repository, branch, cherryPickCreation);
         // TODO: test validations
     }
 

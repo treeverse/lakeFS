@@ -32,8 +32,9 @@ class TestRepositoriesRepositoryBranchesBranchCherryPick(ApiTestMixin, unittest.
     def tearDown(self):
         pass
 
-    response_status = 204
-    response_body = ''
+    response_status = 201
+
+
 
 
 

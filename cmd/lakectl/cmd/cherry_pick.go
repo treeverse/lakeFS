@@ -14,22 +14,22 @@ const (
 
 // lakectl cherry-pick lakefs://myrepo/main lakefs://myrepo/some-ref
 var cherryPick = &cobra.Command{
-	Use:   "cherry-pick <branch uri> <ref uri>",
+	Use:   "cherry-pick <source ref> <branch ref>",
 	Short: "Cherry-Pick a ref into a branch",
-	Long:  "The commit will be applied to the branch as a new commit",
-	Example: `lakectl cherry-pick lakefs://myrepo/main lakefs://myrepo/some-ref
-	          Cherry picks the commit represented by some-ref into the main branch
-              by applying all the changes between the commit and its parent on the destination branch.
-             `,
+	Long: `The commit will be applied to the branch as a new commit.
+Cherry picks the commit represented by some-ref into the main branch
+by applying all the changes between the commit and its parent on the destination branch.`,
+	Example: `lakectl cherry-pick lakefs://myrepo/some-ref lakefs://myrepo/main
+`,
+
 	Args: cobra.ExactArgs(cherryPickCmdArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		branch := MustParseBranchURI("branch", args[0])
+		ref := MustParseRefURI("ref", args[0])
+		branch := MustParseBranchURI("branch", args[1])
 		Fmt("Branch: %s\n", branch.String())
-
-		ref := MustParseRefURI("ref", args[1])
 
 		if branch.Repository != ref.Repository {
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
@@ -38,7 +38,7 @@ var cherryPick = &cobra.Command{
 		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
 		if hasParentNumber {
 			if parentNumber <= 0 {
-				Die("parent number must be non-negative, if specified", 1)
+				Die("parent number must be positive, if specified", 1)
 			}
 		} else {
 			parentNumber = 1
@@ -51,12 +51,10 @@ var cherryPick = &cobra.Command{
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
-		resp2, err := clt.GetCommitWithResponse(cmd.Context(), branch.Repository, branch.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp2, err, http.StatusOK)
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
-		}{Branch: branch, Commit: resp2.JSON200})
+		}{Branch: branch, Commit: resp.JSON201})
 	},
 }
 
@@ -64,5 +62,5 @@ var cherryPick = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(cherryPick)
 
-	cherryPick.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the mainline. The cherry-pick will apply the change relative to the specified parent.")
+	cherryPick.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.")
 }

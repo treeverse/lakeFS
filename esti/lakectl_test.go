@@ -582,13 +582,13 @@ func TestLakectlCherryPick(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+branch1, false, "lakectl_cherry_pick", map[string]string{
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch1+"lakefs://"+repoName+"/"+mainBranch, false, "lakectl_cherry_pick", map[string]string{
 			"REPO":    repoName,
 			"BRANCH":  mainBranch,
 			"MESSAGE": "commit 3",
 		})
 
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+branch2+"~1", false, "lakectl_cherry_pick", map[string]string{
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch2+"~1"+"lakefs://"+repoName+"/"+mainBranch, false, "lakectl_cherry_pick", map[string]string{
 			"REPO":    repoName,
 			"BRANCH":  mainBranch,
 			"MESSAGE": "commit 4",
@@ -596,7 +596,7 @@ func TestLakectlCherryPick(t *testing.T) {
 	})
 
 	t.Run("conflict", func(t *testing.T) {
-		RunCmdAndVerifyFailure(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch2+" lakefs://"+repoName+"/"+branch1, false,
+		RunCmdAndVerifyFailure(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch1+"lakefs://"+repoName+"/"+branch2, false,
 			fmt.Sprintf("Branch: lakefs://%s/%s\nupdate branch: conflict found\n409 Conflict\n", repoName, branch2), nil)
 	})
 }

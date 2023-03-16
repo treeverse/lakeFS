@@ -117,7 +117,7 @@ type Interface interface {
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
 
 	// CherryPick creates a patch to the given commit, and applies it as a new commit on the given branch.
-	CherryPick(ctx context.Context, repository, branch string, params CherryPickParams) error
+	CherryPick(ctx context.Context, repository, branch string, params CherryPickParams) (*CommitLog, error)
 
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)

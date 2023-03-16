@@ -2041,6 +2041,10 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	commitResponse(w, r, newCommit)
+}
+
+func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
 	newMetadata := Commit_Metadata{
 		AdditionalProperties: map[string]string(newCommit.Metadata),
 	}
@@ -2474,7 +2478,7 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body Che
 		return
 	}
 	committer := user.Username
-	err = c.Catalog.CherryPick(ctx, repository, branch, catalog.CherryPickParams{
+	newCommit, err := c.Catalog.CherryPick(ctx, repository, branch, catalog.CherryPickParams{
 		Reference:    body.Ref,
 		Committer:    committer,
 		ParentNumber: body.ParentNumber,
@@ -2482,7 +2486,8 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body Che
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusNoContent, nil)
+
+	commitResponse(w, r, newCommit)
 }
 
 func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository, commitID string) {

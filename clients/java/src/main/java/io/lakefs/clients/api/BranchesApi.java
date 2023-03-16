@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.BranchCreation;
 import io.lakefs.clients.api.model.CherryPickCreation;
+import io.lakefs.clients.api.model.Commit;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Ref;
@@ -91,7 +92,7 @@ public class BranchesApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -173,11 +174,12 @@ public class BranchesApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param cherryPickCreation  (required)
+     * @return Commit
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -185,8 +187,9 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void cherryPick(String repository, String branch, CherryPickCreation cherryPickCreation) throws ApiException {
-        cherryPickWithHttpInfo(repository, branch, cherryPickCreation);
+    public Commit cherryPick(String repository, String branch, CherryPickCreation cherryPickCreation) throws ApiException {
+        ApiResponse<Commit> localVarResp = cherryPickWithHttpInfo(repository, branch, cherryPickCreation);
+        return localVarResp.getData();
     }
 
     /**
@@ -195,12 +198,12 @@ public class BranchesApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param cherryPickCreation  (required)
-     * @return ApiResponse&lt;Void&gt;
+     * @return ApiResponse&lt;Commit&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -208,9 +211,10 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> cherryPickWithHttpInfo(String repository, String branch, CherryPickCreation cherryPickCreation) throws ApiException {
+    public ApiResponse<Commit> cherryPickWithHttpInfo(String repository, String branch, CherryPickCreation cherryPickCreation) throws ApiException {
         okhttp3.Call localVarCall = cherryPickValidateBeforeCall(repository, branch, cherryPickCreation, null);
-        return localVarApiClient.execute(localVarCall);
+        Type localVarReturnType = new TypeToken<Commit>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
@@ -225,7 +229,7 @@ public class BranchesApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> successful cherry-pick </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -233,10 +237,11 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call cherryPickAsync(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call cherryPickAsync(String repository, String branch, CherryPickCreation cherryPickCreation, final ApiCallback<Commit> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = cherryPickValidateBeforeCall(repository, branch, cherryPickCreation, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
+        Type localVarReturnType = new TypeToken<Commit>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
     /**

@@ -16,7 +16,7 @@ All URIs are relative to */api/v1*
 
 <a name="cherryPick"></a>
 # **cherryPick**
-> cherryPick(repository, branch, cherryPickCreation)
+> Commit cherryPick(repository, branch, cherryPickCreation)
 
 Cherry-Pick the given reference commit into the given branch
 
@@ -67,7 +67,8 @@ public class Example {
     String branch = "branch_example"; // String | 
     CherryPickCreation cherryPickCreation = new CherryPickCreation(); // CherryPickCreation | 
     try {
-      apiInstance.cherryPick(repository, branch, cherryPickCreation);
+      Commit result = apiInstance.cherryPick(repository, branch, cherryPickCreation);
+      System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#cherryPick");
       System.err.println("Status code: " + e.getCode());
@@ -89,7 +90,7 @@ public class Example {
 
 ### Return type
 
-null (empty response body)
+[**Commit**](Commit.md)
 
 ### Authorization
 
@@ -103,7 +104,7 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **204** | successful cherry-pick |  -  |
+| **201** | the cherry-pick commit |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |

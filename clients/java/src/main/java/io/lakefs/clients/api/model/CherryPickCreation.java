@@ -88,7 +88,7 @@ public class CherryPickCreation {
   }
 
    /**
-   * when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
+   * when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. 
    * @return parentNumber
   **/
   @javax.annotation.Nullable

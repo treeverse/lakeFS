@@ -16,7 +16,7 @@ Method | HTTP request | Description
 
 # **cherry_pick**
 <a name="cherry_pick"></a>
-> cherry_pick(repositorybranchcherry_pick_creation)
+> Commit cherry_pick(repositorybranchcherry_pick_creation)
 
 Cherry-Pick the given reference commit into the given branch
 
@@ -30,6 +30,7 @@ Cherry-Pick the given reference commit into the given branch
 ```python
 import lakefs_client
 from lakefs_client.apis.tags import branches_api
+from lakefs_client.model.commit import Commit
 from lakefs_client.model.error import Error
 from lakefs_client.model.cherry_pick_creation import CherryPickCreation
 from pprint import pprint
@@ -92,6 +93,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             path_params=path_params,
             body=body,
         )
+        pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->cherry_pick: %s\n" % e)
 ```
@@ -142,19 +144,25 @@ str,  | str,  |  |
 Code | Class | Description
 ------------- | ------------- | -------------
 n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization is True this response is returned
-204 | [ApiResponseFor204](#cherry_pick.ApiResponseFor204) | successful cherry-pick
+201 | [ApiResponseFor201](#cherry_pick.ApiResponseFor201) | the cherry-pick commit
 400 | [ApiResponseFor400](#cherry_pick.ApiResponseFor400) | Validation Error
 401 | [ApiResponseFor401](#cherry_pick.ApiResponseFor401) | Unauthorized
 404 | [ApiResponseFor404](#cherry_pick.ApiResponseFor404) | Resource Not Found
 409 | [ApiResponseFor409](#cherry_pick.ApiResponseFor409) | Conflict Found
 default | [ApiResponseForDefault](#cherry_pick.ApiResponseForDefault) | Internal Server Error
 
-#### cherry_pick.ApiResponseFor204
+#### cherry_pick.ApiResponseFor201
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 response | urllib3.HTTPResponse | Raw response |
-body | Unset | body was not defined |
+body | typing.Union[SchemaFor201ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
+
+# SchemaFor201ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Commit**](../../models/Commit.md) |  | 
+
 
 #### cherry_pick.ApiResponseFor400
 Name | Type | Description  | Notes
