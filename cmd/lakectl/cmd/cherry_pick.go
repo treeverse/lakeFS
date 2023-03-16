@@ -49,7 +49,7 @@ by applying all the changes between the commit and its parent on the destination
 			Ref:          ref.Ref,
 			ParentNumber: &parentNumber,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
