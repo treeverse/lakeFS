@@ -15,6 +15,8 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.BranchCreation;
+import io.lakefs.clients.api.model.CherryPickCreation;
+import io.lakefs.clients.api.model.Commit;
 import io.lakefs.clients.api.model.DiffList;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Ref;
@@ -36,6 +38,20 @@ import java.util.Map;
 public class BranchesApiTest {
 
     private final BranchesApi api = new BranchesApi();
+
+    /**
+     * Cherry-Pick the given reference commit into the given branch
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void cherryPickTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        CherryPickCreation cherryPickCreation = null;
+        Commit response = api.cherryPick(repository, branch, cherryPickCreation);
+        // TODO: test validations
+    }
 
     /**
      * create branch

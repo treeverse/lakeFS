@@ -35,6 +35,7 @@ from lakefs_client.apis.paths.repositories_repository_refs_ref_commits import Re
 from lakefs_client.apis.paths.repositories_repository_branches_branch_commits import RepositoriesRepositoryBranchesBranchCommits
 from lakefs_client.apis.paths.repositories_repository_branches_branch import RepositoriesRepositoryBranchesBranch
 from lakefs_client.apis.paths.repositories_repository_branches_branch_revert import RepositoriesRepositoryBranchesBranchRevert
+from lakefs_client.apis.paths.repositories_repository_branches_branch_cherry_pick import RepositoriesRepositoryBranchesBranchCherryPick
 from lakefs_client.apis.paths.repositories_repository_refs_source_ref_merge_destination_branch import RepositoriesRepositoryRefsSourceRefMergeDestinationBranch
 from lakefs_client.apis.paths.repositories_repository_branches_branch_diff import RepositoriesRepositoryBranchesBranchDiff
 from lakefs_client.apis.paths.repositories_repository_refs_left_ref_diff_right_ref import RepositoriesRepositoryRefsLeftRefDiffRightRef
@@ -104,6 +105,7 @@ PathToApi = typing_extensions.TypedDict(
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_COMMITS: RepositoriesRepositoryBranchesBranchCommits,
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH: RepositoriesRepositoryBranchesBranch,
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_REVERT: RepositoriesRepositoryBranchesBranchRevert,
+        PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_CHERRYPICK: RepositoriesRepositoryBranchesBranchCherryPick,
         PathValues.REPOSITORIES_REPOSITORY_REFS_SOURCE_REF_MERGE_DESTINATION_BRANCH: RepositoriesRepositoryRefsSourceRefMergeDestinationBranch,
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_DIFF: RepositoriesRepositoryBranchesBranchDiff,
         PathValues.REPOSITORIES_REPOSITORY_REFS_LEFT_REF_DIFF_RIGHT_REF: RepositoriesRepositoryRefsLeftRefDiffRightRef,
@@ -174,6 +176,7 @@ path_to_api = PathToApi(
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_COMMITS: RepositoriesRepositoryBranchesBranchCommits,
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH: RepositoriesRepositoryBranchesBranch,
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_REVERT: RepositoriesRepositoryBranchesBranchRevert,
+        PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_CHERRYPICK: RepositoriesRepositoryBranchesBranchCherryPick,
         PathValues.REPOSITORIES_REPOSITORY_REFS_SOURCE_REF_MERGE_DESTINATION_BRANCH: RepositoriesRepositoryRefsSourceRefMergeDestinationBranch,
         PathValues.REPOSITORIES_REPOSITORY_BRANCHES_BRANCH_DIFF: RepositoriesRepositoryBranchesBranchDiff,
         PathValues.REPOSITORIES_REPOSITORY_REFS_LEFT_REF_DIFF_RIGHT_REF: RepositoriesRepositoryRefsLeftRefDiffRightRef,
