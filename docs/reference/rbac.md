@@ -86,7 +86,7 @@ See below for a full reference of ARNs and actions.
 
 For the full list of actions and their required permissions see the following table:
 
-| Action name                        | required action                             |Resource                                                                | API endpoint                                                                      |S3 gateway operation                                                 |
+| Action name                        | required action                             | Resource                                                               | API endpoint                                                                      | S3 gateway operation                                                |
 |------------------------------------|---------------------------------------------|------------------------------------------------------------------------|-----------------------------------------------------------------------------------|---------------------------------------------------------------------|
 | List Repositories                  | `fs:ListRepositories`                       |`*`                                                                     | GET /repositories                                                                 |ListBuckets                                                          |
 | Get Repository                     | `fs:ReadRepository`                         |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repositoryId}                                                  |HeadBucket                                                           |
@@ -109,6 +109,9 @@ For the full list of actions and their required permissions see the following ta
 | Upload Object                      | `fs:WriteObject`                            |`arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`          | POST /repositories/{repositoryId}/branches/{branchId}/objects                     |PutObject, CreateMultipartUpload, UploadPart, CompleteMultipartUpload|
 | Delete Object                      | `fs:DeleteObject`                           |`arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`          | DELETE /repositories/{repositoryId}/branches/{branchId}/objects                   |DeleteObject, DeleteObjects, AbortMultipartUpload                    |
 | Revert Branch                      | `fs:RevertBranch`                           |`arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`           | PUT /repositories/{repositoryId}/branches/{branchId}                              |-                                                                    |
+| Get Branch Protection Rules        | `branches:GetBranchProtectionRules`         |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repository}/branch_protection                                  |-                                                                    |
+| Set Branch Protection Rules        | `branches:SetBranchProtectionRules`         |`arn:lakefs:fs:::repository/{repositoryId}`                             | POST /repositories/{repository}/branch_protection                                 |-                                                                    |
+| Delete Branch Protection Rules     | `branches:SetBranchProtectionRules`         |`arn:lakefs:fs:::repository/{repositoryId}`                             | DELETE /repositories/{repository}/branch_protection                               |-                                                                    |
 | Create User                        | `auth:CreateUser`                           |`arn:lakefs:auth:::user/{userId}`                                       | POST /auth/users                                                                  |-                                                                    |
 | List Users                         | `auth:ListUsers`                            |`*`                                                                     | GET /auth/users                                                                   |-                                                                    |
 | Get User                           | `auth:ReadUser`                             |`arn:lakefs:auth:::user/{userId}`                                       | GET /auth/users/{userId}                                                          |-                                                                    |
@@ -140,10 +143,10 @@ For the full list of actions and their required permissions see the following ta
 | Get Garbage Collection Rules       | `retention:GetGarbageCollectionRules`       |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repositoryId}/gc/rules                                         |-                                                                    |
 | Set Garbage Collection Rules       | `retention:SetGarbageCollectionRules`       |`arn:lakefs:fs:::repository/{repositoryId}`                             | POST /repositories/{repositoryId}/gc/rules                                        |-                                                                    |
 | Prepare Garbage Collection Commits | `retention:PrepareGarbageCollectionCommits` |`arn:lakefs:fs:::repository/{repositoryId}`                             | POST /repositories/{repositoryId}/gc/prepare_commits                              |-                                                                    |
-| List Repository Action Runs        | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET  /repositories/{repository}/actions/runs                                      |-                                                                    |
-| Get Action Run                     | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET  /repositories/{repository}/actions/runs/{run_id}                             |-                                                                    |
-| List Action Run Hooks              | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET  /repositories/{repository}/actions/runs/{run_id}/hooks                       |-                                                                    |
-| Get Action Run Hook Output         | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET  /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output  |-                                                                    |
+| List Repository Action Runs        | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repository}/actions/runs                                       |-                                                                    |
+| Get Action Run                     | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repository}/actions/runs/{run_id}                              |-                                                                    |
+| List Action Run Hooks              | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repository}/actions/runs/{run_id}/hooks                        |-                                                                    |
+| Get Action Run Hook Output         | `ci:ReadAction`                             |`arn:lakefs:fs:::repository/{repositoryId}`                             | GET /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output   |-                                                                    |
 
 Some APIs may require more than one action.For instance, in order to
 create a repository (`POST /repositories`), you need permission to
@@ -363,15 +366,15 @@ lakeFS has four preconfigured groups:
 
 They have the following policies granted to them: 
 
-Policy                     | Admins | SuperUsers | Developers| Viewers|
----------------------------|--------|------------|-----------|--------|
-[`FSFullAccess`](#fsfullaccess)             | ✅  |     ✅     |           |       |
-[`AuthFullAccess`](#authfullaccess)           |    ✅  |            |           |       |
-[`RepoManagementFullAccess`](#repomanagementfullaccess) |    ✅  |            |           |       |
-[`AuthManageOwnCredentials`](#authmanageowncredentials) |        |     ✅     |     ✅    |   ✅  |
-[`RepoManagementReadAll`](#repomanagementreadall)    |        |     ✅     |     ✅    |       |
-[`FSReadWriteAll`](#fsreadwriteall)           |        |            |     ✅    |       |
-[`FSReadAll`](#fsreadall)                |        |            |           |   ✅  |
+Policy                                                  | Admins | SuperUsers | Developers| Viewers |
+--------------------------------------------------------|--------|------------|-----------|---------|
+[`FSFullAccess`](#fsfullaccess)                         |   ✅   |     ✅     |           |         |
+[`AuthFullAccess`](#authfullaccess)                     |   ✅   |            |           |         | 
+[`RepoManagementFullAccess`](#repomanagementfullaccess) |   ✅   |            |           |         | 
+[`AuthManageOwnCredentials`](#authmanageowncredentials) |        |     ✅     |    ✅     |   ✅    |
+[`RepoManagementReadAll`](#repomanagementreadall)       |        |     ✅     |    ✅     |         |
+[`FSReadWriteAll`](#fsreadwriteall)                     |        |            |    ✅     |         |
+[`FSReadAll`](#fsreadall)                               |        |            |           |   ✅    |
 
 ## Pluggable Authentication and Authorization
 
