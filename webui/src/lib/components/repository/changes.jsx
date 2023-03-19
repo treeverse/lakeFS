@@ -1,22 +1,18 @@
 import React, {useCallback, useEffect, useState} from "react";
 
-import {
-    ArrowLeftIcon,
-    ClockIcon, DiffIcon, InfoIcon, PlusIcon, XIcon
-} from "@primer/octicons-react";
+import {ArrowLeftIcon, ClockIcon, InfoIcon, PlusIcon, XIcon} from "@primer/octicons-react";
 
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
-import {Error, ExperimentalOverlayTooltip} from "../controls";
+import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {TreeItemType} from "../../../constants";
 import * as tablesUtil from "../../../util/tablesUtil";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow, TableTreeEntryRow} from "./treeRows";
 import Alert from "react-bootstrap/Alert";
-import {ComingSoonModal} from "../modals";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {refs, statistics} from "../../api";
+import {refs} from "../../api";
 import {DeltaLakeDiff} from "./TableDiff";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -44,7 +40,6 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const disableDeltaDiff = JSON.parse(localStorage.getItem(`disable_delta_diff`));
 
     const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
@@ -90,7 +85,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             }
         </>
 
-    } else if (itemType.type === TreeItemType.Prefix || disableDeltaDiff) {
+    } else if (itemType.type === TreeItemType.Prefix) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
@@ -182,7 +177,6 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
                                          changesTreeMessage= ""}) => {
-    const enableDeltaDiff = !JSON.parse(localStorage.getItem(`disable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
     if (results.length === 0) {
@@ -191,8 +185,7 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
         </div>
     } else {
         return <div className="tree-container">
-                    {enableDeltaDiff &&
-                        tableDiffState.isShown
+                    {tableDiffState.isShown
                                 ? <Button className="action-bar"
                                           variant="secondary"
                                           disabled={false}

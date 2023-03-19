@@ -9,17 +9,11 @@ import {objects} from "../lib/api";
  * @return true if the path is a delat table root, false otherwise.
  */
 export async function isDeltaLakeTable(entry, repo, ref) {
-    const enableDeltaDiff = !JSON.parse(localStorage.getItem(`disable_delta_diff`));
-
     if (entry.path_type === "object") {
         return
     }
 
-    if (enableDeltaDiff) {
-        let response = await objects.list(repo.id, ref, entry.path + "_delta_log/")
-        if (response !== null && response.results.length !== 0) {
-            return true;
-        }
-    }
-    return false;
+    let response = await objects.list(repo.id, ref, entry.path + "_delta_log/")
+    return response !== null && response.results.length !== 0;
+
 }

@@ -347,7 +347,7 @@ td.tree-path {
 }
 
 .table .change-entry-row .change-entry-row-actions .btn-link,
-.table .tree-entry-row .change-entry-row-actions .btn-link .btn.btn-link:hover {
+.table .tree-entry-row .change-entry-row-actions .btn-link .btn-link:hover {
   visibility: hidden;
   font-size: 0.875rem;
   padding: 5px;
