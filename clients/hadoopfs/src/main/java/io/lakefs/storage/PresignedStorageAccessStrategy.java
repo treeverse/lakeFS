@@ -32,7 +32,6 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
     @Override
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
             CreateOutputStreamParams params) throws ApiException, IOException {
-        // TODO(johnnyaug) respect params
         StagingApi stagingApi = lfsClient.getStagingApi();
         StagingLocation stagingLocation =
                 stagingApi.getPhysicalAddress(objectLocation.getRepository(),
