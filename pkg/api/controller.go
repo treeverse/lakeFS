@@ -2295,8 +2295,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body St
 	}
 	// write metadata
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
