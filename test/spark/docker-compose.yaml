@@ -30,6 +30,17 @@ services:
     environment:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
+  dnsmasq:
+    image: strm/dnsmasq
+    volumes:
+      - ./dnsmasq.conf:/etc/dnsmasq.conf
+    ports:
+      - "53:53/udp"
+    cap_add:
+      - NET_ADMIN
+    networks:
+      default:
+        ipv4_address: 10.5.0.54
   lakefs:
     <<: *lakefs-common
     ports:
@@ -72,12 +83,8 @@ services:
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     ports:
       - 18080:8080
-    extra_hosts:
-      - "s3.docker.lakefs.io:10.5.0.55"
-      - "example.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
-      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
+    dns:
+      - 10.5.0.54
   spark-worker:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     ports:
@@ -96,13 +103,8 @@ services:
       - AWS_REGION
       - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    extra_hosts:
-      - "s3.docker.lakefs.io:10.5.0.55"
-      - "docker.lakefs.io:10.5.0.55"
-      - "example.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
-      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
+    dns:
+      - 10.5.0.54
   spark-submit:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     profiles: ["command"]
@@ -125,14 +127,8 @@ services:
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
       - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    extra_hosts:
-      - "s3.docker.lakefs.io:10.5.0.55"
-      - "docker.lakefs.io:10.5.0.55"
-      - "example.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
-      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
-
+    dns:
+      - 10.5.0.54
 networks:
   default:
     driver: bridge
