@@ -100,7 +100,7 @@ RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
 
-RUN mkdir -p /home/lakefs/.lakefs/plugins/ && ln -s /app/delta_diff /home/lakefs/.lakefs/plugins/delta
+RUN mkdir -p /home/lakefs/.lakefs/plugins/diff && ln -s /app/delta_diff /home/lakefs/.lakefs/plugins/diff/delta
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
