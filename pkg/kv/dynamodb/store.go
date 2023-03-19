@@ -122,8 +122,7 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
 		}
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return false, err
+		return false, handleClientError(operation, err)
 	}
 	return true, nil
 }
@@ -219,8 +218,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	const operation = "GetItem"
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("get item: %w", handleClientError(err))
+		return nil, fmt.Errorf("get item: %w", handleClientError(operation, err))
 	}
 	if result.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*result.ConsumedCapacity.CapacityUnits)
@@ -305,9 +303,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
 			return kv.ErrPredicateFailed
 		}
-
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("put item: %w", handleClientError(err))
+		return fmt.Errorf("put item: %w", handleClientError(operation, err))
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -332,8 +328,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	const operation = "DeleteItem"
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return fmt.Errorf("delete item: %w", handleClientError(err))
+		return fmt.Errorf("delete item: %w", handleClientError(operation, err))
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -405,20 +400,11 @@ func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
 	const operation = "Query"
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		dynamoFailures.WithLabelValues(operation).Inc()
-		return nil, fmt.Errorf("query: %w ", handleClientError(err))
+		return nil, fmt.Errorf("query: %w ", handleClientError(operation, err))
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
 	return queryOutput, nil
-}
-
-func handleClientError(err error) error {
-	var reqErr awserr.Error
-	if errors.As(err, &reqErr) && errors.Is(reqErr.OrigErr(), context.Canceled) {
-		return reqErr.OrigErr()
-	}
-	return err
 }
 
 func (s *Store) Close() {
@@ -517,4 +503,18 @@ func (s *Store) StopPeriodicCheck() {
 		s.wg.Wait()
 		s.cancel = nil
 	}
+}
+
+func handleClientError(operation string, err error) error {
+	// extract original error if needed
+	var reqErr awserr.Error
+	if errors.As(err, &reqErr) && errors.Is(reqErr.OrigErr(), context.Canceled) {
+		err = reqErr.OrigErr()
+	}
+
+	// count non cancellation errors
+	if !errors.Is(err, context.Canceled) {
+		dynamoFailures.WithLabelValues(operation).Inc()
+	}
+	return err
 }
