@@ -1943,6 +1943,7 @@ n/a | api_client.ApiResponseWithoutDeserialization | When skip_deserialization i
 201 | [ApiResponseFor201](#stage_object.ApiResponseFor201) | object metadata
 400 | [ApiResponseFor400](#stage_object.ApiResponseFor400) | Validation Error
 401 | [ApiResponseFor401](#stage_object.ApiResponseFor401) | Unauthorized
+403 | [ApiResponseFor403](#stage_object.ApiResponseFor403) | Forbidden
 404 | [ApiResponseFor404](#stage_object.ApiResponseFor404) | Resource Not Found
 default | [ApiResponseForDefault](#stage_object.ApiResponseForDefault) | Internal Server Error
 
@@ -1980,6 +1981,19 @@ body | typing.Union[SchemaFor401ResponseBodyApplicationJson, ] |  |
 headers | Unset | headers were not defined |
 
 # SchemaFor401ResponseBodyApplicationJson
+Type | Description  | Notes
+------------- | ------------- | -------------
+[**Error**](../../models/Error.md) |  | 
+
+
+#### stage_object.ApiResponseFor403
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+response | urllib3.HTTPResponse | Raw response |
+body | typing.Union[SchemaFor403ResponseBodyApplicationJson, ] |  |
+headers | Unset | headers were not defined |
+
+# SchemaFor403ResponseBodyApplicationJson
 Type | Description  | Notes
 ------------- | ------------- | -------------
 [**Error**](../../models/Error.md) |  | 

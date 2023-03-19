@@ -542,7 +542,17 @@ func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	qk, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 	if err != nil {
-		return qk, err
+		return nil, err
+	}
+
+	// Check if path allowed and return error if path is not allowed
+	_, err = l.extractParamsFromObj(block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		Identifier:       key,
+		IdentifierType:   identifierType,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return QualifiedKey{

@@ -36,6 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
@@ -4444,4 +4445,29 @@ func generateJWTToken(authService auth.Service, username string) *securityprovid
 	apiToken, _ := api.GenerateJWTLogin(secret, username, now, expires)
 	authProvider, _ := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
 	return authProvider
+}
+
+func TestController_LocalAdapter_StageObject(t *testing.T) {
+	p := t.TempDir()
+	forbiddenPath := "local:///not_allowed"
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
+	viper.Set("blockstore.local.path", p)
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	require.NoError(t, err)
+	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
+	require.NoError(t, err)
+
+	t.Run("stage_forbidden_address", func(t *testing.T) {
+		resp, err := clt.StageObjectWithResponse(ctx, repo, "main", &api.StageObjectParams{
+			Path: "some_path",
+		}, api.StageObjectJSONRequestBody{
+			PhysicalAddress: forbiddenPath,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON403)
+	})
 }
