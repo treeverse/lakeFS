@@ -80,7 +80,7 @@ type S3AuthInfo struct {
 // PluginProps struct holds the properties needed to run a plugin
 type PluginProps struct {
 	Path    string `mapstructure:"path"`
-	Version *int   `mapstructure:"version"`
+	Version int    `mapstructure:"version"`
 }
 
 // Plugins struct holds the plugins dir default location and a map of optional plugin location with higher precedence

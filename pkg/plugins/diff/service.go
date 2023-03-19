@@ -154,9 +154,14 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 		pluginPath := filepath.Join(diffPluginsDefaultPath(pluginProps.DefaultPath), pluginName)
 		pluginVersion := 1 // default version
 		if props, ok := pluginProps.Properties[pluginName]; ok {
-			pluginPath = props.Path
-			if props.Version != nil {
-				pluginVersion = *props.Version
+			pp, err := homedir.Expand(props.Path)
+			if err != nil {
+				logging.Default().Errorf("failed to register a plugin for an invalid path: '%s'", props.Path)
+				continue
+			}
+			pluginPath = pp
+			if props.Version != 0 {
+				pluginVersion = props.Version
 			}
 		}
 
@@ -176,7 +181,6 @@ func registerDefaultPlugins(service *Service, pluginsPath string) {
 	diffPluginsDir := diffPluginsDefaultPath(pluginsPath)
 	deltaPath := filepath.Join(diffPluginsDir, "delta")
 	_, err := os.Stat(deltaPath)
-
 	if err != nil {
 		if !os.IsNotExist(err) {
 			logging.Default().WithError(err).Error("failed to access delta lake diff plugin")

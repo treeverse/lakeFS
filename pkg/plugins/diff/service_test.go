@@ -99,7 +99,7 @@ func Test_registerPlugins(t *testing.T) {
 					Properties: map[string]config.PluginProps{
 						pluginName: {
 							Path:    customPluginPath,
-							Version: &customPluginVersion,
+							Version: customPluginVersion,
 						},
 					},
 				},
@@ -144,7 +144,7 @@ func Test_registerPlugins(t *testing.T) {
 					Properties: map[string]config.PluginProps{
 						pluginName: {
 							Path:    customPluginPath,
-							Version: &customPluginVersion,
+							Version: customPluginVersion,
 						},
 					},
 				},
@@ -176,11 +176,11 @@ func Test_registerPlugins(t *testing.T) {
 							tcPath)
 					}
 					tcVersion := tc.args.pluginProps.Properties[tc.pluginName].Version
-					if tcVersion != nil && pluginDetails[PluginVersion] != strconv.Itoa(*tcVersion) {
+					if tcVersion != 0 && pluginDetails[PluginVersion] != strconv.Itoa(tcVersion) {
 						t.Errorf("'%s' failed: incorrect plugin version. got '%s' instead of  '%s'",
 							tc.description,
 							pluginDetails[PluginVersion],
-							strconv.Itoa(*tcVersion))
+							strconv.Itoa(tcVersion))
 					}
 				}
 			}
