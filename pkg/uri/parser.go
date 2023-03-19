@@ -29,7 +29,7 @@ type URI struct {
 	// Ref represents the reference in the repository (commit, tag, branch, etc.)
 	Ref string
 	// Path is a path to an object (or prefix of such) in lakeFS. It *could* be null since there's a difference between
-	// 	an empty path ("lakefs://repo@branch/", and no path at all e.g. "lakefs://repo@branch").
+	// 	an empty path ("lakefs://repo/branch/", and no path at all e.g. "lakefs://repo/branch").
 	// 	Since path is the only URI part that is allowed to be empty, it is represented as a pointer.
 	Path *string
 }

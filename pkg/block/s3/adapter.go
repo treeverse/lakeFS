@@ -300,7 +300,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.GetStorageNamespace(), qualifiedKey.GetKey())
 		return nil, err
 	}
-	sizeBytes = *objectOutput.ContentLength
+	sizeBytes = aws.Int64Value(objectOutput.ContentLength)
 	return objectOutput.Body, nil
 }
 
@@ -401,7 +401,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		}).Error("failed to get S3 object range")
 		return nil, err
 	}
-	sizeBytes = *objectOutput.ContentLength
+	sizeBytes = aws.Int64Value(objectOutput.ContentLength)
 	return objectOutput.Body, nil
 }
 

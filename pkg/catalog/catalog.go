@@ -1399,6 +1399,49 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	return err
 }
 
+func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch string, params CherryPickParams) (*CommitLog, error) {
+	branchID := graveler.BranchID(branch)
+	reference := graveler.Ref(params.Reference)
+	parentNumber := params.ParentNumber
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: reference, Fn: graveler.ValidateRef},
+		{Name: "committer", Value: params.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNilOrPositiveInt},
+	}); err != nil {
+		return nil, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	commitID, err := c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, params.Committer)
+	if err != nil {
+		return nil, err
+	}
+
+	// in order to return commit log we need the commit creation time and parents
+	commit, err := c.Store.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		return nil, graveler.ErrCommitNotFound
+	}
+
+	catalogCommitLog := &CommitLog{
+		Reference:    commitID.String(),
+		Committer:    params.Committer,
+		Message:      commit.Message,
+		CreationDate: commit.CreationDate.UTC(),
+		MetaRangeID:  string(commit.MetaRangeID),
+		Metadata:     Metadata(commit.Metadata),
+	}
+	for _, parent := range commit.Parents {
+		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
+	}
+	return catalogCommitLog, nil
+}
+
 func (c *Catalog) Diff(ctx context.Context, repositoryID string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	left := graveler.Ref(leftReference)
 	right := graveler.Ref(rightReference)
@@ -1833,6 +1876,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 }
 
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
+	var err error
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -1869,14 +1913,17 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, err
 	}
 
-	uncommittedLocation, err := c.Store.GCGetUncommittedLocation(repository, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Upload parquet file to object store
-	var name string
+	var (
+		uncommittedLocation string
+		name                string
+	)
 	if hasData {
+		uncommittedLocation, err = c.Store.GCGetUncommittedLocation(repository, runID)
+		if err != nil {
+			return nil, err
+		}
+
 		name, err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err

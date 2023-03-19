@@ -41,6 +41,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -1842,6 +1843,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, graveler.ErrInvalidValue),
+		errors.Is(err, validator.ErrInvalidValue),
 		errors.Is(err, catalog.ErrPathRequiredValue),
 		errors.Is(err, graveler.ErrNoChanges),
 		errors.Is(err, permissions.ErrInvalidServiceName),
@@ -1850,6 +1852,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidRef),
 		errors.Is(err, actions.ErrParamConflict),
 		errors.Is(err, graveler.ErrDereferenceCommitWithStaging),
+		errors.Is(err, graveler.ErrParentOutOfRange),
+		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress):
 		log.Debug("Bad request")
@@ -2038,6 +2042,10 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	commitResponse(w, r, newCommit)
+}
+
+func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
 	newMetadata := Commit_Metadata{
 		AdditionalProperties: map[string]string(newCommit.Metadata),
 	}
@@ -2441,6 +2449,46 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body R
 		return
 	}
 	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body CherryPickJSONRequestBody, repository string, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.BranchArn(repository, branch),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadCommitAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "cherry_pick", r, repository, branch, body.Ref)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "user not found")
+		return
+	}
+	committer := user.Username
+	newCommit, err := c.Catalog.CherryPick(ctx, repository, branch, catalog.CherryPickParams{
+		Reference:    body.Ref,
+		Committer:    committer,
+		ParentNumber: body.ParentNumber,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	commitResponse(w, r, newCommit)
 }
 
 func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repository, commitID string) {
@@ -3990,7 +4038,7 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList 
 		ol = append(ol, OtfDiffEntry{
 			Operation:        entry.Operation,
 			OperationContent: content,
-			Timestamp:        int(entry.Timestamp.UnixMilli()),
+			Timestamp:        int(entry.Timestamp.Unix()),
 			Id:               id,
 			OperationType:    entry.OperationType,
 		})

@@ -250,7 +250,7 @@ class UncommittedGarbageCollectorSpec
     describe(".readMarkedAddresses") {
       it("should raise exception on failed run") {
         withSparkSession(_ => {
-          val runID = "failedRun"
+          val runID = "failed-run"
           val runPath =
             dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
           runPath.toFile.mkdirs()
@@ -275,9 +275,28 @@ class UncommittedGarbageCollectorSpec
           }
         })
       }
+      it("should not fail on run without deleted path") {
+        withSparkSession(_ => {
+          val runID = "no-deleted"
+          val runPath =
+            dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
+          runPath.toFile.mkdirs()
+          UncommittedGarbageCollector.writeJsonSummary(runPath.toString,
+                                                       runID,
+                                                       "",
+                                                       java.time.Clock.systemUTC.instant(),
+                                                       java.time.Clock.systemUTC.instant(),
+                                                       true,
+                                                       0
+                                                      )
+
+          val df = UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/", runID)
+          df.isEmpty should be(true)
+        })
+      }
       it("should raise exception on missing run") {
         withSparkSession(_ => {
-          val runID = "not_exist"
+          val runID = "not-exist"
           try {
             UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/",
                                                             runID

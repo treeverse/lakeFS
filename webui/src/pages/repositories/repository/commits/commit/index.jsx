@@ -38,8 +38,9 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const actionErrorDisplay = (actionError) ?
         <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
+    const commitSha = commit.id.substring(0, 12);
     const uriNavigator = <URINavigator path={prefix} reference={commit} repo={repo}
-                                       relativeTo={`${commit.id.substring(0, 12)}`}
+                                       relativeTo={`${commitSha}`}
                                        pathURLBuilder={(params, query) => {
                                            return {
                                                pathname: '/repositories/:repoId/commits/:commitId',
@@ -47,13 +48,15 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
                                                query: {prefix: query.path}
                                            }
                                        }}/>
+    const changesTreeMessage = <p>Showing changes for commit <strong>{commitSha}</strong></p>
     return (
         <>
             {actionErrorDisplay}
             <ChangesTreeContainer results={results} delimiter={delimiter} uriNavigator={uriNavigator} leftDiffRefID={commit.parents[0]}
                                   rightDiffRefID={commit.id} repo={repo} reference={commit} prefix={prefix}
                                   getMore={defaultGetMoreChanges(repo, commit.parents[0], commit.id, delimiter)}
-                                  loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}/>
+                                  loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
+                                  changesTreeMessage={changesTreeMessage}/>
         </>
     )
 };

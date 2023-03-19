@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -10,8 +12,7 @@ const (
 	DefaultListenAddress        = "0.0.0.0:8000"
 	DefaultLoggingLevel         = "INFO"
 	DefaultLoggingAuditLogLevel = "DEBUG"
-
-	BlockstoreTypeKey = "blockstore.type"
+	BlockstoreTypeKey           = "blockstore.type"
 )
 
 //nolint:gomnd
@@ -111,4 +112,9 @@ func setDefaults(local bool) {
 	viper.SetDefault("graveler.commit_cache.size", 50_000)
 	viper.SetDefault("graveler.commit_cache.expiry", 10*time.Minute)
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
+}
+
+func DefaultPluginLocation(pluginName string) string {
+	hd, _ := os.UserHomeDir()
+	return fmt.Sprintf("%s/.lakefs/plugins/%s", hd, pluginName)
 }

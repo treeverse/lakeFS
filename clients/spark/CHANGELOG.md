@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.6.5 - 2023-03-14
+
+Bug fix:
+* UGC fix uncommitted exists change (#5467)
+* UGC fix list mark addresses
+
+## v0.6.4 - 2023-03-13
+
+Bug fix:
+* UGC handle no uncommitted data on repository (#5451)
+
+## v0.6.3 - 2023-03-09
+
+Bug fix:
+* UGC repartition by addresses to handle large repositories
+* UGC use task context to delete temporary files
+* UGC copy metadata to local without crc files
+
 ## v0.6.2 - 2023-02-23
 
 Bug fix:

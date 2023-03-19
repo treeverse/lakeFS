@@ -93,7 +93,9 @@ func (bi *BranchSimpleIterator) Err() error {
 
 func (bi *BranchSimpleIterator) Close() {
 	bi.err = ErrIteratorClosed
-	bi.itr.Close()
+	if bi.itr != nil {
+		bi.itr.Close()
+	}
 }
 
 // BranchByCommitIterator iterates over repository's branches ordered by Commit ID. Currently, implemented as in-mem iterator
