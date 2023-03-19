@@ -25,5 +25,5 @@ func TestAzureAdapter(t *testing.T) {
 	})
 	require.NoError(t, err, "create new adapter")
 
-	blocktest.TestAdapter(t, adapter, localPath, externalPath)
+	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }

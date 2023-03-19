@@ -17,7 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
-func TestAdapter(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
+func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	t.Helper()
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })

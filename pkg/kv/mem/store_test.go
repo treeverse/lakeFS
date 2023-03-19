@@ -9,5 +9,5 @@ import (
 )
 
 func TestMemKV(t *testing.T) {
-	kvtest.TestDriver(t, mem.DriverName, kvparams.Config{})
+	kvtest.DriverTest(t, mem.DriverName, kvparams.Config{})
 }
