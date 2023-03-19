@@ -779,7 +779,7 @@ jobs:
         run: |
           python ./run-test.py \
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
-            --repository thick-client-test \
+            --repository thick-client-presigned-test \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --access_mode hadoopfs_presigned
       - name: lakeFS Logs on HadoopFS presigned test failure
