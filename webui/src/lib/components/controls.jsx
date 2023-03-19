@@ -84,9 +84,7 @@ export const Error = ({error, onDismiss = null, className = null}) => {
     if (onDismiss !== null) {
         return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
     }
-    if (err.stack) {
-        content = `${content}`
-    }
+    
     return (
         <Alert className={className} variant="danger">{content}</Alert>
     );
