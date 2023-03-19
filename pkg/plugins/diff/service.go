@@ -160,8 +160,8 @@ func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pl
 				continue
 			}
 			pluginPath = pp
-			if props.Version != nil {
-				pluginVersion = *props.Version
+			if props.Version != 0 {
+				pluginVersion = props.Version
 			}
 		}
 
