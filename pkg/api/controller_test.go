@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -4449,10 +4448,10 @@ func generateJWTToken(authService auth.Service, username string) *securityprovid
 }
 
 func TestController_LocalAdapter_StageObject(t *testing.T) {
-	path := os.TempDir()
+	p := t.TempDir()
 	forbiddenPath := "local:///not_allowed"
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
-	viper.Set("blockstore.local.path", path)
+	viper.Set("blockstore.local.path", p)
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
