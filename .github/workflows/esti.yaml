@@ -744,7 +744,7 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Test lakeFS S3 with Spark ${{ matrix.spark.tag }}.x
+      - name: Spark${{ matrix.spark.tag }} + S3 gateway
         working-directory: test/spark
         run: |
           python ./run-test.py \
@@ -757,7 +757,7 @@ jobs:
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
 
-      - name: Test lakeFS S3 with Spark 3.x thick client
+      - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS
         timeout-minutes: 8
         working-directory: test/spark
         run: |
@@ -765,15 +765,28 @@ jobs:
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
             --repository thick-client-test \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
-            --direct_access \
+            --access_mode hadoopfs \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
             --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-      - name: lakeFS Logs on Spark with client failure
+      - name: lakeFS Logs on HadoopFS test failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
-
+      - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS presigned
+        timeout-minutes: 8
+        working-directory: test/spark
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
+            --repository thick-client-test \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
+            --access_mode hadoopfs_presigned
+      - name: lakeFS Logs on HadoopFS presigned test failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=1000 lakefs
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image]
