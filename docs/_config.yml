@@ -17,18 +17,20 @@ remote_theme: pmarsceill/just-the-docs@v0.4.1
 
 # Aux links for the upper right navigation
 aux_links:
-  'Docs':
+  'Home':
     - 'https://docs.lakefs.io/'
   'Blog':
     - 'https://lakefs.io/blog/'
-  'Community':
-    - 'https://lakefs.io/community/'
+  'Guides':
+    - 'https://lakefs.io/guides/'  
+  'Slack':
+    - 'https://lakefs.io/slack/'
   'GitHub':
     - 'https://github.com/treeverse/lakeFS'
-
+    
 buttons:
-  'lakeFS Cloud':
-      - 'https://lakefs.io/cloud-registration/'
+  'Try without installing':
+    - 'https://demo.lakefs.io/'
 
 # FOOTER
 # use "footer_content" for simple footer
@@ -40,7 +42,7 @@ footer:
     - 'https://www.treeverse.io/'
 
 footer_links:
-  'Docs':
+  'Home':
     - 'https://docs.lakefs.io/'
   'Blog':
     - 'https://lakefs.io/blog/'
