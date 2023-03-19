@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Build delta diff binary
 FROM --platform=$BUILDPLATFORM rust:1.68-bullseye AS build-delta-diff-plugin
-RUN USER=root cargo new --bin delta-diff
+RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
 
 # 2. Copy our manifests
@@ -58,7 +58,7 @@ USER lakefs
 WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
-# lakefs image
+# lakefs and lakectl image
 FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakefs
 RUN apt-get update
 RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
@@ -80,7 +80,7 @@ WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
-# lakefs and plugins image
+# lakefs, lakectl, and plugins image
 FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakefs-plugins
 RUN apt-get update
 RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
