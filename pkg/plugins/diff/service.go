@@ -181,7 +181,6 @@ func registerDefaultPlugins(service *Service, pluginsPath string) {
 	diffPluginsDir := diffPluginsDefaultPath(pluginsPath)
 	deltaPath := filepath.Join(diffPluginsDir, "delta")
 	_, err := os.Stat(deltaPath)
-
 	if err != nil {
 		if !os.IsNotExist(err) {
 			logging.Default().WithError(err).Error("failed to access delta lake diff plugin")
