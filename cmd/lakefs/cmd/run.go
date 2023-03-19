@@ -57,7 +57,7 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-var errSimplifiedOrExternalAuth = errors.New(`Cannot set auth.ui_config.rbac to "external" without setting an external auth service`)
+var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to "external" without setting an external auth service`)
 
 func checkAuthModeSupport(cfg *config.Config) error {
 	switch {
