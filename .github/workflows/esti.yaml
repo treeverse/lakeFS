@@ -746,7 +746,6 @@ jobs:
         run: |
           python ./run-test.py \
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}/${{ steps.unique.outputs.value }} \
-            --repository gateway-test-spark${{ matrix.spark.tag }} \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }}
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
@@ -760,7 +759,6 @@ jobs:
         run: |
           python ./run-test.py \
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
-            --repository thick-client-test \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --direct_access \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
