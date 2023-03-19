@@ -160,5 +160,6 @@ type Interface interface {
 	SetLinkAddress(ctx context.Context, repository, token string) error
 	VerifyLinkAddress(ctx context.Context, repository, token string) error
 	DeleteExpiredLinkAddresses(ctx context.Context)
+
 	io.Closer
 }

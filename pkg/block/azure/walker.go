@@ -1,4 +1,4 @@
-package store
+package azure
 
 import (
 	"context"
@@ -9,21 +9,21 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
-	"github.com/treeverse/lakefs/pkg/block/azure"
+	"github.com/treeverse/lakefs/pkg/block"
 )
 
 var ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
 
-func NewAzureBlobWalker(svc *service.Client) (*AzureBlobWalker, error) {
-	return &AzureBlobWalker{
+func NewAzureBlobWalker(svc *service.Client) (*BlobWalker, error) {
+	return &BlobWalker{
 		client: svc,
-		mark:   Mark{HasMore: true},
+		mark:   block.Mark{HasMore: true},
 	}, nil
 }
 
-type AzureBlobWalker struct {
+type BlobWalker struct {
 	client *service.Client
-	mark   Mark
+	mark   block.Mark
 }
 
 // extractAzurePrefix takes a URL that looks like this: https://storageaccount.blob.core.windows.net/container/prefix
@@ -48,7 +48,7 @@ func getAzureBlobURL(containerURL *url.URL, blobName string) *url.URL {
 	return containerURL.ResolveReference(&relativePath)
 }
 
-func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
@@ -59,7 +59,7 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		basePath = prefix[:idx+1]
 	}
 
-	qk, err := azure.ResolveBlobURLInfoFromURL(containerURL)
+	qk, err := ResolveBlobURLInfoFromURL(containerURL)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 				continue
 			}
 			a.mark.LastKey = *blobInfo.Name
-			if err := walkFn(ObjectStoreEntry{
+			if err := walkFn(block.ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
@@ -97,13 +97,13 @@ func (a *AzureBlobWalker) Walk(ctx context.Context, storageURI *url.URL, op Walk
 		}
 	}
 
-	a.mark = Mark{
+	a.mark = block.Mark{
 		HasMore: false,
 	}
 
 	return nil
 }
 
-func (a *AzureBlobWalker) Marker() Mark {
+func (a *BlobWalker) Marker() block.Mark {
 	return a.mark
 }
