@@ -746,7 +746,7 @@ func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, upd
 		}
 		return nil
 	}
-	
+
 	// create policy only if it does not exist
 	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, policyKey, m, nil)
 	if err != nil {
