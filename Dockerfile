@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Build delta diff binary
 FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.17 AS build-delta-diff-plugin
 RUN apk add build-base && apk add pkgconfig && apk add libressl-dev
-RUN USER=root cargo new --bin delta-diff
+RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
 
 # 2. Copy our manifests
@@ -82,7 +82,8 @@ CMD ["run"]
 # lakefs image
 FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakefs-plugins
 
-RUN apk add libressl-dev && apk add libc6-compat
+RUN apk update
+RUN apk add libressl-dev && apk add libc6-compat && apk add build-base && apk add pkgconfig
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
 RUN apk add netcat-openbsd
