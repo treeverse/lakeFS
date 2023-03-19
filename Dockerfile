@@ -1,12 +1,11 @@
-FROM --platform=$BUILDPLATFORM golang:1.19.2-bullseye AS build
+FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine AS build
 
 ARG VERSION=dev
 
 WORKDIR /build
 
 # Packages required to build
-RUN apt-get update
-RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y build-essential
+RUN apk add --no-cache build-base
 
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
@@ -27,8 +26,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
 # Build delta diff binary
-FROM --platform=$BUILDPLATFORM rust:1.68-bullseye AS build-delta-diff-plugin
-RUN cargo new --bin delta-diff
+FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.17 AS build-delta-diff-plugin
+RUN apk add build-base && apk add pkgconfig && apk add libressl-dev
+RUN USER=root cargo new --bin delta-diff
 WORKDIR /delta-diff
 
 # 2. Copy our manifests
@@ -47,23 +47,22 @@ RUN rm ./target/release/deps/delta_diff*
 RUN cargo build --release
 
 # lakectl image
-FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakectl
-RUN apt-get update
-RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
+FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakectl
+RUN apk add -U --no-cache ca-certificates
 WORKDIR /app
 ENV PATH /app:$PATH
 COPY --from=build /build/lakectl ./
-RUN addgroup --system lakefs && adduser --system lakefs --ingroup lakefs
+RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
-# lakefs and lakectl image
-FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakefs
-RUN apt-get update
-RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
+# lakefs image
+FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakefs-lakectl
+
+RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
-RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y netcat-openbsd
+RUN apk add netcat-openbsd
 
 WORKDIR /app
 COPY ./scripts/wait-for ./
@@ -73,19 +72,20 @@ COPY --from=build /build/lakefs /build/lakectl ./
 EXPOSE 8000/tcp
 
 # Setup user
-RUN addgroup --system lakefs && adduser --system lakefs --ingroup lakefs
+RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
-# lakefs, lakectl, and plugins image
-FROM --platform=$BUILDPLATFORM debian:11.6-slim AS lakefs-plugins
-RUN apt-get update
-RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y ca-certificates
+# lakefs image
+FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakefs-plugins
+
+RUN apk add libressl-dev && apk add libc6-compat
+RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
-RUN apt-get install -o APT::Keep-Downloaded-Packages=false -y netcat-openbsd
+RUN apk add netcat-openbsd
 
 WORKDIR /app
 COPY ./scripts/wait-for ./
@@ -96,10 +96,11 @@ COPY --from=build-delta-diff-plugin /delta-diff/target/release/delta_diff ./
 EXPOSE 8000/tcp
 
 # Setup user
-RUN addgroup --system lakefs && adduser --system lakefs --ingroup lakefs
+RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
-RUN mkdir -p /home/lakefs/.lakefs/plugins/diff && ln -s /app/delta_diff /home/lakefs/.lakefs/plugins/diff/delta
+
+RUN mkdir -p /home/lakefs/.lakefs/plugins/ && ln -s /app/delta_diff /home/lakefs/.lakefs/plugins/delta
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
