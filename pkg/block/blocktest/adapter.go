@@ -234,8 +234,8 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 
 func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	// TODO (niro): Test abs paths
+	const contents = "exists"
 	ctx := context.Background()
-	contents := "exists"
 	err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       contents,
@@ -318,14 +318,17 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 
 func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	testPrefix := "test_walker"
-	filesPerFolder := 5
-	contents := "test_file"
-	for i := 4; i >= 0; i-- {
-		for j := 4; j >= 0; j-- {
+	const (
+		testPrefix      = "test_walker"
+		filesAndFolders = 5
+		contents        = "test_file"
+	)
+
+	for i := 0; i < filesAndFolders; i++ {
+		for j := 0; j < filesAndFolders; j++ {
 			err := adapter.Put(ctx, block.ObjectPointer{
 				StorageNamespace: storageNamespace,
-				Identifier:       fmt.Sprintf("%s/folder_%d/test_file_%d", testPrefix, i, j),
+				Identifier:       fmt.Sprintf("%s/folder_%d/test_file_%d", testPrefix, filesAndFolders-i-1, filesAndFolders-j-1),
 				IdentifierType:   block.IdentifierTypeRelative,
 			}, 0, strings.NewReader(contents), block.PutOpts{})
 			require.NoError(t, err)
@@ -351,6 +354,10 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 			name:   "prefix",
 			prefix: "folder_1",
 		},
+		{
+			name:   "prefix/",
+			prefix: "folder_2",
+		},
 	}
 	for _, tt := range cases {
 		qk, err := adapter.ResolveNamespace(storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
@@ -375,16 +382,16 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 
 				require.Equal(t, path.Join(prefix, "folder_0.txt"), results[0])
 				results = results[1:]
-				for i := 0; i < filesPerFolder; i++ {
-					for j := 0; j < filesPerFolder; j++ {
-						require.Equal(t, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)), results[i*filesPerFolder+j])
+				for i := 0; i < filesAndFolders; i++ {
+					for j := 0; j < filesAndFolders; j++ {
+						require.Equal(t, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)), results[i*filesAndFolders+j])
 					}
 				}
 			} else {
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
-				for j := 0; j < filesPerFolder; j++ {
+				for j := 0; j < filesAndFolders; j++ {
 					require.Equal(t, path.Join(prefix, fmt.Sprintf("test_file_%d", j)), results[j])
 				}
 			}
