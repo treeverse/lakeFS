@@ -1,6 +1,4 @@
 import argparse
-import random
-import string
 import sys
 
 import lakefs_client
@@ -32,6 +30,7 @@ def wait_for_setup(lfs_client):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--storage_namespace", default="local://", required=True)
+    parser.add_argument("--repository", default="example", required=True)
     parser.add_argument("--sonnet_jar", required=True)
     parser.add_argument("--client_version")
     parser.add_argument("--aws_access_key")
@@ -40,7 +39,6 @@ def main():
     parser.add_argument("--access_mode", choices=["s3_gateway", "hadoopfs", "hadoopfs_presigned"], default="s3_gateway")
     lakefs_access_key = 'AKIAIOSFODNN7EXAMPLE'
     lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-    repository = f"repo-{''.join(random.choice(string.ascii_lowercase) for i in range(10))}"
 
     args = parser.parse_args()
     if args.client_version:
@@ -54,12 +52,12 @@ def main():
                                     host='http://localhost:8000'))
     wait_for_setup(lfs_client)
     lfs_client.repositories.create_repository(
-        models.RepositoryCreation(name=repository,
+        models.RepositoryCreation(name=args.repository,
                                   storage_namespace=args.storage_namespace,
                                   default_branch='main',))
 
     with open('./app/data-sets/sonnets.txt', 'rb') as f:
-        lfs_client.objects.upload_object(repository=repository, branch="main", path="sonnets.txt", content=f)
+        lfs_client.objects.upload_object(repository=args.repository, branch="main", path="sonnets.txt", content=f)
     base_hadoopfs_config = {
         "spark.hadoop.fs.lakefs.impl": "io.lakefs.LakeFSFileSystem",
         "spark.driver.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
@@ -91,8 +89,8 @@ def main():
 
     generator = docker.compose.run("spark-submit",
                                    get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,
-                                                        [f"{scheme}://{repository}/main/sonnets.txt",
-                                                         f"{scheme}://{repository}/main/sonnets-wordcount"]),
+                                                        [f"{scheme}://{args.repository}/main/sonnets.txt",
+                                                         f"{scheme}://{args.repository}/main/sonnets-wordcount"]),
                                    dependencies=False,
                                    tty=False,
                                    stream=True,
