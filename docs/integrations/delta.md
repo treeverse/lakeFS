@@ -29,7 +29,7 @@ The Delta Lake diff functionality is enabled using a binary plugin. This binary 
 (run from lakeFS's repository root). After getting it, place it under `~/.lakefs/plugins/diff`.  
 lakeFS will look for a binary named `delta_diff` under `~/.lakefs/plugins/diff` if not configured otherwise.
 
-### Using the Delta Lake table diff
+### Using Delta Lake table diff
 
 Using lakeFS you can compare different versions of Delta tables, view the table operations that have been done since the tables diverged, and the details of those operations.
 
