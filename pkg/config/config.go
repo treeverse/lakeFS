@@ -238,6 +238,8 @@ type Config struct {
 			AuthMethod       string        `mapstructure:"auth_method"`
 			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
+			// TestEndpointURL for testing purposes
+			TestEndpointURL string `mapstructure:"test_endpoint_url"`
 		} `mapstructure:"azure"`
 		GS *struct {
 			S3Endpoint       string        `mapstructure:"s3_endpoint"`
@@ -522,8 +524,12 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 }
 
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
+	credPath, err := homedir.Expand(c.Blockstore.GS.CredentialsFile)
+	if err != nil {
+		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
+	}
 	return blockparams.GS{
-		CredentialsFile: c.Blockstore.GS.CredentialsFile,
+		CredentialsFile: credPath,
 		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
 		PreSignedExpiry: c.Blockstore.GS.PreSignedExpiry,
 	}, nil
@@ -538,6 +544,7 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
+		TestEndpointURL:  c.Blockstore.Azure.TestEndpointURL,
 	}, nil
 }
 

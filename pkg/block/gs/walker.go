@@ -1,4 +1,4 @@
-package store
+package gs
 
 import (
 	"context"
@@ -9,19 +9,20 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/treeverse/lakefs/pkg/block"
 	"google.golang.org/api/iterator"
 )
 
 type GCSWalker struct {
 	client *storage.Client
-	mark   Mark
+	mark   block.Mark
 }
 
 func NewGCSWalker(client *storage.Client) *GCSWalker {
 	return &GCSWalker{client: client}
 }
 
-func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	prefix := strings.TrimLeft(storageURI.Path, "/")
 	var basePath string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
@@ -48,11 +49,11 @@ func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 			continue
 		}
 
-		w.mark = Mark{
+		w.mark = block.Mark{
 			LastKey: attrs.Name,
 			HasMore: true,
 		}
-		if err := walkFn(ObjectStoreEntry{
+		if err := walkFn(block.ObjectStoreEntry{
 			FullKey:     attrs.Name,
 			RelativeKey: strings.TrimPrefix(attrs.Name, basePath),
 			Address:     fmt.Sprintf("gs://%s/%s", attrs.Bucket, attrs.Name),
@@ -63,7 +64,7 @@ func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 			return err
 		}
 	}
-	w.mark = Mark{
+	w.mark = block.Mark{
 		LastKey: "",
 		HasMore: false,
 	}
@@ -71,6 +72,6 @@ func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op WalkOption
 	return nil
 }
 
-func (w *GCSWalker) Marker() Mark {
+func (w *GCSWalker) Marker() block.Mark {
 	return w.mark
 }

@@ -1720,7 +1720,7 @@ func TestController_IngestRangeHandler(t *testing.T) {
 	t.Run("ingest directory marker", func(t *testing.T) {
 		ctx := context.Background()
 		w := testutils.NewFakeWalker(0, 1, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
-		w.Entries = []store.ObjectStoreEntry{
+		w.Entries = []block.ObjectStoreEntry{
 			{
 				RelativeKey: "",
 				FullKey:     uriPrefix + "/",

@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
@@ -78,7 +79,7 @@ var ingestCmd = &cobra.Command{
 			if err != nil {
 				DieFmt("error creating object-store walker: %v", err)
 			}
-			err = walker.Walk(ctx, store.WalkOptions{}, func(e store.ObjectStoreEntry) error {
+			err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 				if dryRun {
 					Fmt("%s\n", e)
 					return nil
