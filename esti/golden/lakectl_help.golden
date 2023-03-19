@@ -9,6 +9,7 @@ Available Commands:
   auth            Manage authentication and authorization
   branch          Create and manage branches within a repository
   branch-protect  Create and manage branch protection rules
+  cherry-pick     Cherry-Pick a ref into a branch
   commit          Commit changes on a given branch
   completion      Generate completion script
   config          Create/update local lakeFS configuration

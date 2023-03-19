@@ -474,6 +474,20 @@ components:
           type: integer
           description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
 
+    CherryPickCreation:
+      type: object
+      required:
+        - ref
+      properties:
+        ref:
+          type: string
+          description: the commit to cherry-pick, given by a ref
+        parent_number:
+          type: integer
+          description: |
+            when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
+            The destination branch is parent 1, which is the default behaviour.
+
     Commit:
       type: object
       required:
@@ -2719,6 +2733,51 @@ paths:
       responses:
         204:
           description: revert successful
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          description: Conflict Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/cherry-pick:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - branches
+      operationId: cherryPick
+      summary: Cherry-Pick the given reference commit into the given branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CherryPickCreation"
+      responses:
+        201:
+          description: the cherry-pick commit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commit"
         400:
           $ref: "#/components/responses/ValidationError"
         401:

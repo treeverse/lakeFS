@@ -618,10 +618,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Setup lakeFS for tests
-        working-directory: test/spark
-        run: ./setup-test.sh
-
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
@@ -637,7 +633,9 @@ jobs:
           #     a Docker container.  Bypass this somehow.
           ENDPOINT: "http://s3.local.lakefs.io:8000"
         working-directory: test/spark/s3a-multipart
-        run: docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+        run: |
+          docker wait $(docker compose ps -a lakefs-setup -q)
+          docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: lakeFS logs on failure
         if: ${{ failure() }}
@@ -649,14 +647,9 @@ jobs:
         working-directory: test/spark
         run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
 
-  spark2:
-    name: Test lakeFS with Spark 2.x
-    needs: deploy-image
+  build-lakefs-hadoopfs:
+    name: Build lakeFS HadoopFS
     runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      SPARK_TAG: 2
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -666,76 +659,18 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
-
-      - name: Package Spark App
-        working-directory: test/spark/app
-        run: sbt sonnets-246/package
-
-      - name: Start lakeFS for Spark tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-directory: test/spark
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
-      - name: Setup lakeFS for tests
-        working-directory: test/spark
-        run: ./setup-test.sh
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Test lakeFS S3 with Spark 2.x
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2/${{ steps.unique.outputs.value }}
-          REPOSITORY: gateway-test-spark2
-          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
-        working-directory: test/spark
-        run: ./run-test.sh
-
-      - name: lakeFS Logs on Spark with gateway failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
-
-      - name: Build Spark direct-access client
+      - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
-        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package
+        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
+      - name: Store lakeFS HadoopFS
+        uses: actions/upload-artifact@v3
+        with:
+          name: lakefs-hadoopfs
+          path: clients/hadoopfs/target/client.jar
 
-      - name: Test lakeFS S3 with Spark 2.x thick client
-        timeout-minutes: 8
-        env:
-          JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark2-client/${{ steps.unique.outputs.value }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          USE_DIRECT_ACCESS: "true"
-          REPOSITORY: thick-client-test
-          SONNET_JAR: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
-        working-directory: test/spark
-        run: ./run-test.sh
-
-      - name: lakeFS Logs on Spark 2.x with client failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
-
-  spark3:
-    name: Test lakeFS with Spark 3.x
-    needs: deploy-image
+  spark-prep:
+    name: Prepare Spark Apps
     runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      SPARK_TAG: 3
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -748,7 +683,50 @@ jobs:
 
       - name: Package Spark App
         working-directory: test/spark/app
-        run: sbt sonnets-311/package
+        run: sbt package
+      - name: Store Spark App
+        uses: actions/upload-artifact@v3
+        with:
+          name: spark-apps
+          path: test/spark/app/target/
+
+  spark:
+    name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
+    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        spark:
+          - tag: 2
+            sonnet_jar: sonnets-246/target/sonnets-246/scala-2.11/sonnets-246_2.11-0.1.0.jar
+          - tag: 3
+            sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      SPARK_TAG: ${{ matrix.spark.tag }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
+
+      - name: Download lakeFS HadoopFS
+        uses: actions/download-artifact@v3
+        with:
+          name: lakefs-hadoopfs
+          path: clients/hadoopfs/target
+
+      - name: Download Spark App
+        uses: actions/download-artifact@v3
+        with:
+          name: spark-apps
+          path: test/spark/app/target/
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+          cache: 'pip'
+      - run: pip install -r ./test/spark/requirements.txt
 
       - name: Generate uniquifying value
         id: unique
@@ -766,42 +744,30 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Setup lakeFS for tests
+      - name: Test lakeFS S3 with Spark ${{ matrix.spark.tag }}.x
         working-directory: test/spark
-        run: ./setup-test.sh
-
-      - name: Test lakeFS S3 with Spark 3.x
-        continue-on-error: true
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3/${{ steps.unique.outputs.value }}
-          REPOSITORY: gateway-test-spark3
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-        working-directory: test/spark
-        run: ./run-test.sh
-
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}/${{ steps.unique.outputs.value }} \
+            --repository gateway-test-spark${{ matrix.spark.tag }} \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }}
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
         run: docker-compose logs --tail=1000 lakefs
-
-      - name: Build Spark direct-access client
-        working-directory: clients/hadoopfs
-        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package
 
       - name: Test lakeFS S3 with Spark 3.x thick client
         timeout-minutes: 8
-        env:
-          JARS: clients/hadoopfs/
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3-client/${{ steps.unique.outputs.value }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          USE_DIRECT_ACCESS: "true"
-          REPOSITORY: thick-client-test
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/spark
-        run: ./run-test.sh
-
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
+            --repository thick-client-test \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
+            --direct_access \
+            --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
+            --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
       - name: lakeFS Logs on Spark with client failure
         if: ${{ failure() }}
         continue-on-error: true
@@ -1013,10 +979,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
-      - name: Setup lakeFS for metadata client tests
-        working-directory: test/spark
-        run: ./setup-test.sh
 
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}

@@ -185,6 +185,21 @@ func (mr *MockVersionControllerMockRecorder) AddCommit(ctx, repository, commit i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommit", reflect.TypeOf((*MockVersionController)(nil).AddCommit), ctx, repository, commit)
 }
 
+// CherryPick mocks base method.
+func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string) (graveler.CommitID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CherryPick", ctx, repository, id, reference, number, committer)
+	ret0, _ := ret[0].(graveler.CommitID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CherryPick indicates an expected call of CherryPick.
+func (mr *MockVersionControllerMockRecorder) CherryPick(ctx, repository, id, reference, number, committer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CherryPick", reflect.TypeOf((*MockVersionController)(nil).CherryPick), ctx, repository, id, reference, number, committer)
+}
+
 // Commit mocks base method.
 func (m *MockVersionController) Commit(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()

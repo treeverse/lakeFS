@@ -15,8 +15,8 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,26 +26,22 @@ import java.util.Map;
 /**
  * API tests for TemplatesApi
  */
-@Ignore
+@Disabled
 public class TemplatesApiTest {
 
     private final TemplatesApi api = new TemplatesApi();
 
-    
     /**
-     * 
-     *
      * fetch and expand template
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void expandTemplateTest() throws ApiException {
         String templateLocation = null;
         Map<String, String> params = null;
-                Object response = api.expandTemplate(templateLocation, params);
+        Object response = api.expandTemplate(templateLocation, params);
         // TODO: test validations
     }
-    
+
 }

@@ -94,7 +94,7 @@ func testReadAfterWrite(t *testing.T) {
 
 	// reader1 starts
 	go func() {
-		r1, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+		r1, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (interface{}, error) {
 			version, _ := db.Get("v")
 			return version, nil
 		}))
@@ -157,7 +157,7 @@ func testBatchExpiration(t *testing.T) {
 
 	// reader1 starts
 	go func() {
-		r1, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+		r1, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (interface{}, error) {
 			return "v1", nil
 		}))
 		if r1 != "v1" {
@@ -168,7 +168,7 @@ func testBatchExpiration(t *testing.T) {
 
 	go func() {
 		<-read1Done // ensure r2 starts after r1 has returned
-		r2, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.BatchFn(func() (interface{}, error) {
+		r2, _ := exec.BatchFor(context.Background(), "k", time.Millisecond*50, batch.ExecuterFunc(func() (interface{}, error) {
 			return "v2", nil
 		}))
 		if r2 != "v2" {

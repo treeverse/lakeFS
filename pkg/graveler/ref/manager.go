@@ -108,8 +108,8 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 
 func (m *Manager) getRepositoryBatch(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	key := fmt.Sprintf("GetRepository:%s", repositoryID)
-	repository, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		return m.getRepository(ctx, repositoryID)
+	repository, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+		return m.getRepository(context.Background(), repositoryID)
 	}))
 	if err != nil {
 		return nil, err
@@ -301,10 +301,10 @@ func (m *Manager) getBranchWithPredicate(ctx context.Context, repository *gravel
 		*graveler.Branch
 		kv.Predicate
 	}
-	result, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	result, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		key := graveler.BranchPath(branchID)
 		data := graveler.BranchData{}
-		pred, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(key), &data)
+		pred, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(key), &data)
 		if err != nil {
 			return nil, err
 		}
@@ -372,10 +372,10 @@ func (m *Manager) GCBranchIterator(ctx context.Context, repository *graveler.Rep
 
 func (m *Manager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {
 	key := fmt.Sprintf("GetTag:%s:%s", repository.RepositoryID, tagID)
-	commitID, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
+	commitID, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		tagKey := graveler.TagPath(tagID)
 		t := graveler.TagData{}
-		_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(tagKey), &t)
+		_, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(tagKey), &t)
 		if err != nil {
 			return nil, err
 		}
@@ -423,8 +423,8 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repository *graveler.Re
 		return m.GetCommit(ctx, repository, prefix)
 	}
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
-	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		it, err := NewOrderedCommitIterator(ctx, m.kvStore, repository, false)
+	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+		it, err := NewOrderedCommitIterator(context.Background(), m.kvStore, repository, false)
 		if err != nil {
 			return nil, err
 		}
@@ -469,8 +469,8 @@ func (m *Manager) GetCommit(ctx context.Context, repository *graveler.Repository
 
 func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommit:%s:%s", repository.RepositoryID, commitID)
-	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.BatchFn(func() (interface{}, error) {
-		return m.getCommit(commitID, ctx, repository)
+	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+		return m.getCommit(context.Background(), commitID, repository)
 	}))
 	if err != nil {
 		return nil, err
@@ -478,7 +478,7 @@ func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.Repos
 	return commit.(*graveler.Commit), nil
 }
 
-func (m *Manager) getCommit(commitID graveler.CommitID, ctx context.Context, repository *graveler.RepositoryRecord) (interface{}, error) {
+func (m *Manager) getCommit(ctx context.Context, commitID graveler.CommitID, repository *graveler.RepositoryRecord) (interface{}, error) {
 	commitKey := graveler.CommitPath(commitID)
 	c := graveler.CommitData{}
 	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(commitKey), &c)
