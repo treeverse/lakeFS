@@ -802,6 +802,7 @@ public class Example {
 | **201** | object metadata |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **0** | Internal Server Error |  -  |
 
