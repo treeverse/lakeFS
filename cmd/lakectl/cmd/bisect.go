@@ -100,11 +100,9 @@ var bisectStartCmd = &cobra.Command{
 		// resolve commits
 		if badURI != nil {
 			state.BadCommit = resolveCommitOrDie(ctx, client, badURI.Repository, badURI.Ref)
-			fmt.Println("BAD", state.BadCommit)
 		}
 		if goodURI != nil {
 			state.GoodCommit = resolveCommitOrDie(ctx, client, goodURI.Repository, goodURI.Ref)
-			fmt.Println("GOOD", state.GoodCommit)
 		}
 		// if we have both - load log
 		if err := state.Update(ctx, client); err != nil {
@@ -313,11 +311,11 @@ var bisectViewCmd = &cobra.Command{
 			Die(`You need to start by "bisect start"`, 1)
 		}
 
-		if state.BadCommit == "" || state.GoodCommit == "" || len(state.Commits) == 0 {
+		if len(state.Commits) == 0 {
 			state.PrintStatus()
 			return
 		}
-		Write(bisectCommitTemplate, state.Commits[:len(state.Commits)-1])
+		Write(bisectCommitTemplate, state.Commits)
 	},
 }
 
@@ -390,7 +388,7 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 }
 
 func (b *Bisect) SaveSelect(sel BisectSelect) error {
-	if len(b.Commits) < 3 {
+	if len(b.Commits) < 2 {
 		// nothing to search
 		return nil
 	}
