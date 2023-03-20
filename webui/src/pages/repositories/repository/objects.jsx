@@ -200,8 +200,8 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             inProgress: true
         })
         try {
-            if (config.pre_sign_support && config.pre_sign_support_ui) {
-                let getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support);
+            if (config.pre_sign_support_ui) {
+                const getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support);
 
                 const putResp = await fetch(getResp.presigned_url, {
                     method: 'PUT',
@@ -209,7 +209,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                     body: fileRef.current.files[0]
                 });
 
-                let etag = putResp.headers.get('ETag').replace(/["]/g, '')
+                const etag = putResp.headers.get('ETag').replace(/["]/g, '')
                 await staging.link(repo.id, reference.id, textRef.current.value, getResp, etag, fileRef.current.files[0].size);
             } else {
                 await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])

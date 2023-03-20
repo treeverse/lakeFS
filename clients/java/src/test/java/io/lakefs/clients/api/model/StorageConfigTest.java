@@ -81,11 +81,11 @@ public class StorageConfigTest {
     }
 
     /**
-     * Test the property 'preSignSupportUi'
+     * Test the property 'preSignSupportUI'
      */
     @Test
-    public void preSignSupportUiTest() {
-        // TODO: test preSignSupportUi
+    public void preSignSupportUITest() {
+        // TODO: test preSignSupportUI
     }
 
     /**

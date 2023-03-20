@@ -1290,7 +1290,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           defaultNamespacePrefix,
 		PreSignSupport:                   info.PreSignSupport,
-		PreSignSupportUi:                 info.PreSignSupportUI,
+		PreSignSupportUI:                 info.PreSignSupportUI,
 		ImportSupport:                    info.ImportSupport,
 	}
 	writeResponse(w, r, http.StatusOK, response)

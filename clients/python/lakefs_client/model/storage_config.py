@@ -101,7 +101,7 @@ class StorageConfig(ModelNormal):
         'blockstore_namespace_example': 'blockstore_namespace_example',  # noqa: E501
         'blockstore_namespace_validity_regex': 'blockstore_namespace_ValidityRegex',  # noqa: E501
         'pre_sign_support': 'pre_sign_support',  # noqa: E501
-        'pre_sign_support_ui': 'pre_sign_support_ui',  # noqa: E501
+        'pre_sign_support_ui': 'pre_sign_support_UI',  # noqa: E501
         'import_support': 'import_support',  # noqa: E501
         'default_namespace_prefix': 'default_namespace_prefix',  # noqa: E501
     }
