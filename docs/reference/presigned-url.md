@@ -12,18 +12,19 @@ has_children: false
 
 {% include toc.html %}
 
-By default, lakeFS will get and set objects using its server. lakeFS also support accessing objects using a presinged URL which allows direct access to the object.
-lakeFS assume by default your object storage support presinged URLs, if not it should be disabled in the configuration.
+lakeFS provides the option to access the data directly from the storage and not through lakeFS using presinged URL.
+lakeFS can generate a presigned URL to the object store by a user who has access to the object. The presigned URL can be used to access the object.
+lakeFS assume by default the object storage support presinged URLs, if not it should be disabled in the configuration.
 
 # Using presigned URLs in the UI
 
-For lakeFS to fetch objects through the UI using a presigned URL (instead of getting it with lakeFS) need to enable the presigned URL support UI in the lakeFS configuration and add cors permissions to the bucket.
+For the UI to fetch objects using a presigned URL to the object storage (instead through lakeFS), need to enable the presigned URL support UI in the lakeFS configuration and add CORS (Cross-Origin Resource Sharing) permissions to the bucket.
 
-**⚠️ Note** currently duckDB do not support presigned URL.
+**⚠️ Note** Currently DuckDB fetching data from lakeFS does not support fetching data using presigned URL.
 
 ### Example: [AWS S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enabling-cors-examples.html)
 
-   ```json
+```json
   [
     {
         "AllowedHeaders": [
@@ -41,12 +42,12 @@ For lakeFS to fetch objects through the UI using a presigned URL (instead of get
         ]
     }
   ]
-   ```
+```
 
 
 ### Example: [Google Storage](https://cloud.google.com/storage/docs/using-cors)
 
-   ```json
+```json
   [
     {
         "origin": ["lakefs.endpoint"],
@@ -56,7 +57,7 @@ For lakeFS to fetch objects through the UI using a presigned URL (instead of get
         "maxAgeSeconds": 3600
     }
    ]
-  ```
+```
 
 
 ### Example: [Azure blob storage](https://learn.microsoft.com/en-us/rest/api/storageservices/cross-origin-resource-sharing--cors--support-for-the-azure-storage-services)
@@ -71,5 +72,5 @@ For lakeFS to fetch objects through the UI using a presigned URL (instead of get
           <MaxAgeInSeconds>3600</MaxAgeInSeconds>  
       </CorsRule>  
   </Cors>
-  ```
+```
 
