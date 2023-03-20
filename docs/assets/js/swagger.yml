@@ -2764,7 +2764,7 @@ paths:
       tags:
         - branches
       operationId: cherryPick
-      summary: Cherry-Pick the given reference commit into the given branch
+      summary: Replay the changes from the given commit on the branch
       requestBody:
         required: true
         content:
