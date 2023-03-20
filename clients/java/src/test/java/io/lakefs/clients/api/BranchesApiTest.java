@@ -40,7 +40,7 @@ public class BranchesApiTest {
     private final BranchesApi api = new BranchesApi();
 
     /**
-     * Cherry-Pick the given reference commit into the given branch
+     * Replay the changes from the given commit on the branch
      *
      * @throws ApiException if the Api call fails
      */

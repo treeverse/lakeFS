@@ -2744,7 +2744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Cherry-Pick the given reference commit into the given branch
+      summary: Replay the changes from the given commit on the branch
       tags:
       - branches
       x-content-type: application/json
