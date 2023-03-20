@@ -13,7 +13,7 @@ import (
 )
 
 // Test Admin permissions: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
-func TestAdminPermissionss(t *testing.T) {
+func TestAdminPermissions(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	adminClient := client
@@ -57,7 +57,7 @@ func TestAdminPermissionss(t *testing.T) {
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
-	gid := "Supers"
+	gid := "SuperUsers"
 
 	// generate the Super client
 	superClient := newClientFromGroup(t, ctx, logger, gid)
