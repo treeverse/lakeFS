@@ -165,7 +165,7 @@ However, you can use GC options to break the GC job down into two stages:
 2. Sweep stage: GC will hard-delete objects marked by a previous mark-only GC run. 
 
 By breaking GC into these stages, you can pause and create a backup of the objects that GC is about to sweep and later 
-restore them. You can use the [GC backup and restore](#gc-backup-and-restore) utility to do that.   
+restore them. You can use the [GC backup and restore](#backup-and-restore) utility to do that.   
 
 ###### Mark only mode 
 {: .no_toc }

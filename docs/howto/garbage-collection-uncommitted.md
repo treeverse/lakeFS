@@ -9,6 +9,7 @@ has_children: false
 ---
 
 ## Garbage collection: uncommitted object <sup>BETA</sup>
+{: .no_toc }
 
 Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and
 take precautions before applying the actual delete ("sweep"), like copying the marked objects.
@@ -20,16 +21,16 @@ objects that will be collected as part of the uncommitted GC job:
 1. Objects that were uploaded to lakeFS and deleted.
 2. Objects that were uploaded to lakeFS and were overridden.
 
-While we tried to make the uncommitted GC a server-only solution, we couldn't find a sustainable way to achieve that.
-See discussion on the original [design PR](https://github.com/treeverse/lakeFS/pull/4015).
+{% include toc.html %}
+
+See discussion on the original [design PR](https://github.com/treeverse/lakeFS/pull/4015) to understand why we didn't go with a server-only solution.
 {: .note}
 
 The uncommitted GC will not clean:
-1. Committed objects. For committed objects cleanup see [above](#what-gets-collected)
-2. Everything mentioned in [what does not get collected](#what-does-_not_-get-collected)
+1. Committed objects. See [Committed Garbage Collection](./garbage-collection.md)
+2. Everything mentioned in [what does not get collected](./gc-internals.md#what-does-_not_-get-collected)
 
 ### Prerequisites
-{: .no_toc }
 
 1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0).
    If your version is lower, you should first upgrade.
@@ -90,21 +91,19 @@ The uncommitted GC will not clean:
    ```
 
 
-#### Uncommitted GC job options
+### Uncommitted GC job options
 {: .no_toc }
 
-Similar to the described [above](#gc-job-options).
+Similar to the [committed GC option](./garbage-collection.md#gc-job-options).
 
-#### Limitations
-{: .no_toc }
+### Limitations
 
 The uncommitted GC job has several limitations in its Beta version:
 1. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
 1. Scale may be limited, see performance results below.
 1. [Issue](https://github.com/treeverse/lakeFS/issues/5088) associated to commit during copy object.
 
-#### Next steps
-{: .no_toc }
+### Next steps
 
 The uncommitted GC is under development, next releases will include:
 
@@ -116,10 +115,10 @@ The uncommitted GC is under development, next releases will include:
     1. Better parallelization of the storage namespace traversal.
     2. Optimized Run: GC will only iterate over objects that were written to the
        repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
-4. Backup & Restore, similar to [committed data](#gc-backup-and-restore).
+4. Backup & Restore, similar to [committed GC](./garbage-collection.md#backup-and-restore).
 5. Support for non-S3 repositories.
 
-#### Performance
+### Performance
 {: .no_toc }
 
 The uncommitted GC job was tested on a repository with 1K branches,
