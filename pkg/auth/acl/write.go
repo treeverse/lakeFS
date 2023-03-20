@@ -68,7 +68,10 @@ func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl 
 	}
 
 	err = svc.AttachPolicyToGroup(ctx, aclPolicyName, groupName)
-	if err != nil && !errors.Is(err, auth.ErrAlreadyExists) {
+	if errors.Is(err, auth.ErrAlreadyExists) {
+		err = nil
+	}
+	if err != nil {
 		return fmt.Errorf("attach policy %s to group %s: %w", aclPolicyName, groupName, err)
 	}
 
