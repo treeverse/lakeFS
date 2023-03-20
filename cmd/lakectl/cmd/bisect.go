@@ -127,7 +127,7 @@ func (b *Bisect) PrintStatus() {
 		fmt.Printf("Found commit lakefs://%s/%s %s\n", b.Repository, commit.Id, commit.Message)
 	default:
 		steps := math.Log2(float64(commitCount))
-		h := commitCount >> 1
+		h := (commitCount >> 1) - 1
 		fmt.Printf("Bisecting: %d commits left to test after this (roughly %d steps)\n", h, int(steps))
 		commit := b.Commits[h]
 		fmt.Printf("Current commit lakefs://%s/%s %s\n", b.Repository, commit.Id, commit.Message)
