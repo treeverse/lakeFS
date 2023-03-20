@@ -9,6 +9,7 @@ use crate::differ::OperationType;
 use crate::differ::TablePath;
 
 pub(crate) async fn get_delta_table(config: &HashMap<String, String>, repo: &str, table_path: &TablePath) -> Result<DeltaTable, Status> {
+    eprintln!("Getting the Delta Tables");
     if repo.is_empty() || table_path.path.is_empty() || table_path.r#ref.is_empty() {
         return Err(Status::new(Code::InvalidArgument, "Missing path or namespace info"))
     }
@@ -18,6 +19,7 @@ pub(crate) async fn get_delta_table(config: &HashMap<String, String>, repo: &str
             Ok(table)
         },
         Err(err) => {
+            eprintln!("Delta Table fetch err: {:?}", err);
             return Err(convert_delta_error(err));
         }
     };
