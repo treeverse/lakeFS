@@ -1,38 +1,38 @@
 ---
 layout: default
-title: Garbage Collection
+title: Committed Objects
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
-parent: How-To
-nav_order: 20
+parent: Garbage Collection
+grand_parent: How-To
+nav_order: 10
 has_children: false
-redirect_from: ../reference/garbage-collection.html
+redirect_from: ["../reference/garbage-collection.html", "./howto/garbage-collection-index.html"]
 ---
 
-# Garbage Collection
+## Garbage Collection: committed objects
 {: .no_toc }
-
-Note: For managed garbage collection on top of a hosted lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
-{: .note }
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
 Reasons for this include cost-reduction and privacy policies.
 
-Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted (see more information [below](#considerations)).
-lakeFS provides a Spark program to hard-delete objects that have been deleted and whose retention period has ended according to the GC rules.
-The GC job does not remove any commits: you will still be able to use commits containing hard-deleted objects,
+Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted.
+lakeFS provides a Spark program to hard-delete objects whose retention period has ended according to the GC rules.
+
+This program does not remove any commits: you will still be able to use commits containing hard-deleted objects,
 but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
 
-**Note**
 At this point, lakeFS supports Garbage Collection only on S3 and Azure.  We have [concrete plans](https://github.com/treeverse/lakeFS/issues/3626) to extend the support to GCP.     
 {: .note}
 
-1. TOC
-{:toc .pb-5 }
+[lakeFS Cloud](https://lakefs.cloud) users enjoy a managed Garbage Collection service, and do not need to run this Spark program.
+{: .note }
 
-## Understanding Garbage Collection
+{% include toc.html %}
 
-For every branch, the GC job retains deletes objects for the number of days defined for the branch.
+### Understanding Garbage Collection
+
+For every branch, the GC job retains deleted objects for the number of days defined for the branch.
 In the absence of a branch-specific rule, the default rule for the repository is used.
 If an object is present in more than one branch ancestry, it's retained according to the rule with the largest number of days between those branches.
 That is, it's hard-deleted only after the retention period has ended for all relevant branches.
@@ -51,60 +51,9 @@ Example GC rules for a repository:
 In the above example, objects are retained for 14 days after deletion by default. However, if they are present in the branch `main`, they are retained for 21 days.
 Objects present in the `dev` branch (but not in any other branch) are retained for 7 days after they are deleted.
 
-### What gets collected
+### Configuring GC rules
 
-Because each object in lakeFS may be accessible from multiple branches, it
-might not be obvious which objects will be considered garbage and collected.
-
-Garbage collection is configured by specifying the number of days to retain
-objects on each branch. If a branch is configured to retain objects for a
-given number of days, any object that was accessible from the HEAD of a
-branch in that past number of days will be retained.
-
-The garbage collection process proceeds in three main phases:
-
-* **Discover which commits will retain their objects.**  For every branch,
-  the garbage collection job looks at the HEAD of the branch that many days
-  ago; every commit at or since that HEAD must be retained.
-
-  ![mermaid diagram](../assets/img/gc-sample-commits.png)
-  
-  Continuing the example, branch `main` retains for 21 days and branch `dev`
-  for 7. When running GC on 2022-03-31:
-
-  - 7 days ago, on 2022-03-24 the head of branch `dev` was `d:
-    2022-03-23`. So, that commit is retained (along with all more recent
-    commits on `dev`) but all older commits `d: *` will be collected.
-  - 21 days ago, on 2022-03-10, the head of branch `main` was
-    `2022-03-09`. So that commit is retained (along with all more recent
-    commits on `main`) but commits `2022-02-27` and `2022-03-01` will be
-    collected.
-
-* **Discover which objects need to be garbage collected.** Hold (_only_)
-  objects accessible on some retained commits.
-
-  In the example, all objects of commit `2022-03-12`, for instance, are
-  retained. This _includes_ objects added in previous commits. However,
-  objects added in commit `d: 2022-03-14` which were overwritten or
-  deleted in commit `d: 2022-03-20` are not visible in any retained commit
-  and will be garbage collected.
-  
-* **Garbage collect those objects by deleting them.** The data of any
-  deleted object will no longer be accessible. lakeFS retains all metadata
-  about the object, but attempting to read it via the lakeFS API or the S3
-  gateway will return HTTP status 410 ("Gone").
-
-### What does _not_ get collected
-
-Some objects will _not_ be collected regardless of configured GC rules:
-* Any object that is accessible from any branch's HEAD.
-* Objects stored outside the repository's [storage namespace](../understand/glossary.md#storage-namespace).
-  For example, objects imported using the lakeFS import UI are not collected.
-* Uncommitted objects, see [below](#Beta:-Deleting-uncommitted-objects),
-
-## Configuring GC rules
-
-### Using lakectl
+#### Using lakectl
 {: .no_toc }
 
 Use the `lakectl` CLI to define the GC rules: 
@@ -123,7 +72,7 @@ EOT
 lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json 
 ```
 
-### From the lakeFS UI
+#### From the lakeFS UI
 {: .no_toc }
 
 1. Navigate to the main page of your repository.
@@ -134,31 +83,19 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 ![GC Rules From UI]({{ site.baseurl }}/assets/img/gc_rules_from_ui.png)
 
 
-## Running the GC job
-
-The GC job is a Spark program that can be run using `spark-submit` (or using your preferred method of running Spark programs).
+### Running the GC job
+ 
+To run the job, use the following `spark-submit` command (or using your preferred method of running Spark programs).
 The job will hard-delete objects that were deleted and whose retention period has ended according to the GC rules.
-
-First, you'll have to download the lakeFS Spark client Uber-jar. The Uber-jar can be found on a public S3 location:
-
-For Spark 2.4.7: \
-`http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/${CLIENT_VERSION}/lakefs-spark-client-247-assembly-${CLIENT_VERSION}.jar`
-
-For Spark 3.0.1: \
-`http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/${CLIENT_VERSION}/lakefs-spark-client-301-assembly-${CLIENT_VERSION}.jar`
-
-`CLIENT_VERSION`s for Spark 2.4.7 can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-247), and for Spark 3.0.1 they can be found [here](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301).
-
-Running instructions:
 
 <div class="tabs">
   <ul>
-    <li><a href="#aws-option">On AWS</a></li>
+    <li><a href="#aws-option">On AWS (Spark 3.1.2 and higher)</a></li>
+    <li><a href="#aws-301-option">On AWS (Spark 3.0.1)</a></li>
+    <li><a href="#aws-247-option">On AWS (Spark 2.x)</a></li>
     <li><a href="#azure-option">On Azure</a></li>
   </ul>
   <div markdown="1" id="aws-option">
-You should specify the Uber-jar path instead of `<APPLICATION-JAR-PATH>` and run the following command to make the garbage collector start running:
-
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
   --packages org.apache.hadoop:hadoop-aws:2.7.7 \
@@ -167,14 +104,38 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  <APPLICATION-JAR-PATH> \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  example-repo us-east-1
+  ```
+  </div>
+  <div markdown="1" id="aws-301-option">
+  ```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+  -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
+  -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/0.6.5/lakefs-spark-client-301-assembly-0.6.5.jar \
+  example-repo us-east-1
+  ```
+  </div>
+  <div markdown="1" id="aws-247-option">
+  ```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+  -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
+  -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/0.6.5/lakefs-spark-client-247-assembly-0.6.5.jar \
   example-repo us-east-1
   ```
   </div>
 
   <div markdown="1" id="azure-option">
-You should run the following command to make the garbage collector start running:
-
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
   --packages org.apache.hadoop:hadoop-aws:3.2.1 \
@@ -182,25 +143,21 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
   example-repo
   ```
 
 **Notes:**
-* To run GC on Azure, use `lakefs-spark-client-312-hadoop3` only. This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but may work with other Spark versions and higher Hadoop versions. Specifically, this client was tested on Databricks runtime DBR 11.0 (Spark 3.3.0, 3.3.2).
-* GC on Azure is supported from Spark client version >= v0.2.0.
+* On Azure, GC was tested only on Spark 3.3.0, but may work with other Spark and Hadoop versions.
 * In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
 * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
-  
 </div>
 
-The list of expired objects is written in Parquet format in the storage
-namespace of the bucket under `_lakefs/retention/gc/addresses/mark_id=MARK_ID`, where MARK_ID identifies the run.
+You will find the list of objects hard-deleted by the job in the storage
+namespace of the repository. It is saved in Parquet format under `_lakefs/logs/gc/deleted_objects`.
 
-**Note:** if you are running lakeFS Spark client of version < v0.4.0, this file is located under `_lakefs/retention/gc/addresses/run_id=RUN_ID`,
-where RUN_ID identifies the run. 
-
-### GC job options
+#### GC job options
+{: .no_toc }
 
 By default, GC first creates a list of expired objects according to your retention rules and then hard-deletes those objects. 
 However, you can use GC options to break the GC job down into two stages: 
@@ -210,7 +167,8 @@ However, you can use GC options to break the GC job down into two stages:
 By breaking GC into these stages, you can pause and create a backup of the objects that GC is about to sweep and later 
 restore them. You can use the [GC backup and restore](#gc-backup-and-restore) utility to do that.   
 
-#### Mark only mode 
+###### Mark only mode 
+{: .no_toc }
 
 To make GC run the mark stage only, add the following properties to your spark-submit command:
 ```properties
@@ -223,7 +181,8 @@ Running in mark only mode, GC will write the addresses of the expired objects to
 * Mark only mode is only available from v0.4.0 of lakeFS Spark client.
 * The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated with v0.4.0.
 
-#### Sweep only mode
+###### Sweep only mode
+{: .no_toc }
 
 To make GC run the sweep stage only, add the following properties to your spark-submit command:
 ```properties
@@ -234,33 +193,7 @@ Running in sweep only mode, GC will hard-delete the expired objects marked by a 
 
 **Note:** Mark only mode is only available from v0.4.0 of lakeFS Spark client.
 
-#### Performance
-
-Garbage collection reads many commits.  It uses Spark to spread the load of
-reading the contents of all of these commits.  For very large jobs running
-on very large clusters, you may want to tweak this load.  To do this:
-
-* Add `-c spark.hadoop.lakefs.gc.range.num_partitions=RANGE_PARTITIONS`
-  (default 50) to spread the initial load of reading commits across more
-  Spark executors.
-* Add `-c spark.hadoop.lakefs.gc.address.num_partitions=RANGE_PARTITIONS`
-  (default 200) to spread the load of reading all objects included in a
-  commit across more Spark executors.
-
-Normally this should not be needed.
-
-#### Networking
-
-Garbage collection communicates with the lakeFS server.  Very large
-repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakefs consider increasing these timeouts:
-
-* Add `-c spark.hadoop.lakefs.api.read.timeout_seconds=TIMEOUT_IN_SECONDS`
-  (default 10) to allow lakeFS more time to respond to requests.
-* Add `-c
-  spark.hadoop.lakefs.api.connection.timeout_seconds=TIMEOUT_IN_SECONDS`
-  (default 10) to wait longer for lakeFS to accept connections.
-
-## Considerations
+### Considerations
 
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
    You should remove stale branches to prevent them from retaining old objects.
@@ -277,7 +210,7 @@ repositories may require increasing a read timeout.  If you run into timeout err
    1. Expanding the retention period of a branch.
    1. Creating a branch from an existing branch, where the new branch has a longer retention period.
 
-## GC backup and restore 
+### Backup and restore 
 
 GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start
 using the feature you may want to first gain confidence in the decisions GC makes. The GC backup and restore utility helps you do that. 
@@ -291,6 +224,7 @@ Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path which points to the l
 The `BACKUP_STORAGE_LOCATION` attribute points to a storage location outside your lakeFS storage namespace into which you want to save the backup.
 
 #### Backup command
+{: .no_toc }
 
 ```shell
 rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
@@ -298,6 +232,7 @@ rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/ad
 ```
 
 #### Restore command
+{: .no_toc }
 
 ```shell
 rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
@@ -305,6 +240,7 @@ rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/ad
 ```
 
 #### Example
+{: .no_toc }
 
 The following of commands used to backup/resource a configured remote 'azure' (Azure blob storage) to access example repository storange namespace `https://lakefs.blob.core.windows.net/repo/example/`:
 
@@ -317,124 +253,3 @@ rclone --include "*.txt" cat "azure://repo/example/_lakefs/retention/gc/addresse
 rclone --include "*.txt" cat "azure://tal/azure-br/_lakefs/retention/gc/addresses.text/mark_id=a64d1885-6202-431f-a0a3-8832e4a5865a/" | \
   rclone -P --no-traverse --files-from - copy azure://backup/repo-example/ azure://repo/example/
 ```
-
-## Beta: Deleting uncommitted objects
-
-Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and 
-take precautions before applying the actual delete ("sweep"), like copying the marked objects.
-{: .note }
-
-Deletion of objects that were never committed was always a difficulty for lakeFS, see
-[#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details. Examples for 
-objects that will be collected as part of the uncommitted GC job:
-1. Objects that were uploaded to lakeFS and deleted.
-2. Objects that were uploaded to lakeFS and were overridden.
-
-While we tried to make the uncommitted GC a server-only solution, we couldn't find a sustainable way to achieve that.
-See discussion on the original [design PR](https://github.com/treeverse/lakeFS/pull/4015). 
-{: .note}
-
-The uncommitted GC will not clean:
-1. Committed objects. For committed objects cleanup see [above](#what-gets-collected)
-2. Everything mentioned in [what does not get collected](#what-does-_not_-get-collected)
-
-### Prerequisites
-{: .no_toc }
-
-1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0). 
-If your version is lower, you should first upgrade.
-2. Read the [limitations](#limitations) section.
-3. Setup [rclone](https://rclone.org/) to access underlying bucket for backup and restore.
-
-
-### Running the uncommitted GC 
-
-1. Mark the files to delete - summary and report will be generated under `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/`.
-   By listing the bucket under 'uncommitted' the last entry represents the last mark ID of the uncommitted GC.
-   The GC job prints out "Report for mark_id=..." which includes the mark ID with the run summary.
-
-   ```bash
-   spark-submit \
-       --conf spark.hadoop.lakefs.gc.do_sweep=false \
-       --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
-       --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
-       --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
-       --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
-       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
-       --class io.treeverse.gc.UncommittedGarbageCollector \
-       --packages org.apache.hadoop:hadoop-aws:2.7.7 \
-       <APPLICATION-JAR-PATH> <REPOSITORY_NAME> <REGION>
-   ```
-
-2. Backup (optional but recommended) - when you start using the feature you may want to first gain confidence in the decisions uncommitted GC makes. Backup will copy the objects marked to be deleted for run ID to a specified location.
-   Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to lakeFS storage.
-   Note that the lakeFS and backup locations are specified as `remote:path` based on how rclone was configured.
-
-   ```shell
-   rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/deleted.text/" | \
-     rclone -P --no-traverse --files-from - copy <LAKEFS_STORAGE_NAMESPACE> <BACKUP_STORAGE_LOCATION>
-   ```
-
-4. Sweep - delete reported objects to delete based on mark ID
-
-   ```bash
-   spark-submit \
-       --conf spark.hadoop.lakefs.gc.mark_id=<MARK_ID> \
-       --conf spark.hadoop.lakefs.gc.do_mark=false \
-       --conf spark.hadoop.lakefs.api.url=<LAKEFS_ENDPOINT> \
-       --conf spark.hadoop.fs.s3a.access.key=<AWS_ACCESS_KEY_ID> \
-       --conf spark.hadoop.fs.s3a.secret.key=<AWS_SECRET_ACCESS_KEY> \
-       --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
-       --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
-       --class io.treeverse.gc.UncommittedGarbageCollector \
-       --packages org.apache.hadoop:hadoop-aws:2.7.7 \
-       <APPLICATION-JAR-PATH> <REPOSITORY_NAME> <REGION>
-   ```
-
-5. Restore - in any case we would like to undo and restore the data from from our backup. The following command will copy the objects back from the backup location using the information stored under the specific mark ID.
-   Note that the lakeFS and backup locations are specified as `remote:path` based on how rclone was configured.
-
-   ```shell
-   rclone --include "*.txt" cat "remote:<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/deleted.text/" | \
-     rclone -P --no-traverse --files-from - copy <BACKUP_STORAGE_LOCATION> <LAKEFS_STORAGE_NAMESPACE>
-   ```
-
-
-#### Uncommitted GC job options
-{: .no_toc }
-
-Similar to the described [above](#gc-job-options).
-
-#### Limitations
-{: .no_toc }
-
-The uncommitted GC job has several limitations in its Beta version: 
-1. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
-1. Scale may be limited, see performance results below.
-1. [Issue](https://github.com/treeverse/lakeFS/issues/5088) associated to commit during copy object.
-
-#### Next steps
-{: .no_toc }
-
-The uncommitted GC is under development, next releases will include:
-
-1. Incorporation of committed & uncommitted GC into a single job. We understand the friction
-of having 2 garbage collection jobs for a lakeFS installation and working to creating a
-single job for it.
-2. Removing the limitation of a read-only lakeFS during the job run.
-3. Performance improvements: 
-   1. Better parallelization of the storage namespace traversal.
-   2. Optimized Run: GC will only iterate over objects that were written to the
-repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
-4. Backup & Restore, similar to [committed data](#gc-backup-and-restore).
-5. Support for non-S3 repositories.
-
-#### Performance
-{: .no_toc }
-
-The uncommitted GC job was tested on a repository with 1K branches, 
-25K uncommitted objects and 2K commits.
-The storage namespace number of objects prior to the cleanup was 103K objects.
-The job ran on a Spark cluster with a single master and 2 workers of type [i3.2xlarge](https://aws.amazon.com/ec2/instance-types/i3/) 
-The job finished after 5 minutes deleting 15K objects.
-
