@@ -39,7 +39,7 @@ const GroupRepositoriesList = ({ groupId }) => {
         },
         [groupId, refresh]);
 
-    const hasACL = !!acl?.permission;
+    const hasACL = acl && 'permission' in acl;
     // acl is results with the repositories field populated at least by an
     // empty list.  Refresh after updating it on the backend, to ensure the
     // display and results catch up.

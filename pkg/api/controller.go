@@ -597,7 +597,27 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 		return
 	}
 
-	if len(policies) != 1 {
+	var acl model.ACL
+	switch len(policies) {
+	case 0: // Blank ACL is valid and allows nothing
+		break
+	case 1:
+		acl = policies[0].ACL
+		if len(acl.Permission) == 0 {
+			c.Logger.
+				WithContext(ctx).
+				WithField("policy", fmt.Sprintf("%+v", policies[0])).
+				WithField("acl", fmt.Sprintf("%+v", acl)).
+				WithField("group", groupID).
+				Warn("Policy attached to group has no ACL")
+			response := NotFoundOrNoACL{
+				Message: "Policy attached to group has no ACL",
+				NoAcl:   swag.Bool(true),
+			}
+			writeResponse(w, r, http.StatusNotFound, response)
+			return
+		}
+	default:
 		c.Logger.
 			WithContext(ctx).
 			WithField("num_policies", len(policies)).
@@ -611,25 +631,9 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 		return
 	}
 
-	acl := policies[0].ACL
-	if len(acl.Permission) == 0 {
-		c.Logger.
-			WithContext(ctx).
-			WithField("policy", fmt.Sprintf("%+v", policies[0])).
-			WithField("acl", fmt.Sprintf("%+v", acl)).
-			WithField("group", groupID).
-			Warn("Policy attached to group has no ACL")
-		response := NotFoundOrNoACL{
-			Message: "Policy attached to group has no ACL",
-			NoAcl:   swag.Bool(true),
-		}
-		writeResponse(w, r, http.StatusNotFound, response)
-		return
-	}
-
 	response := ACL{
 		Permission:      string(acl.Permission),
-		AllRepositories: &acl.Repositories.All,
+		AllRepositories: swag.Bool(acl.Repositories.All),
 		Repositories:    &acl.Repositories.List,
 	}
 

@@ -83,8 +83,8 @@ const GroupsContainer = () => {
     const after = (router.query.after) ? router.query.after : "";
     const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
         const groups = await auth.listGroups(after);
-	const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: await getACLMaybe(group.id)})));
-	return {...groups, results: enrichedResults};
+        const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: await getACLMaybe(group.id)})));
+        return {...groups, results: enrichedResults};
     }, [after, refresh]);
 
     useEffect(() => {
@@ -167,7 +167,7 @@ const GroupsContainer = () => {
                     <FormattedDate dateValue={group.creation_date}/>,
                     group.acl ? <span>{(group.acl.all_repositories ? '*' : group.acl.repositories.length)}</span> :
                         <span>n/a</span>
-                ]}/>
+            ]}/>
 
             <Paginator
                 nextPage={nextPage}

@@ -249,7 +249,11 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not get ACL for group ${groupId}: ${await extractError(response)}`);
         }
-        return response.json();
+        const ret = await response.json();
+        if (ret.repositories === null || ret.repositories === undefined) {
+            ret.repositories = [];
+        }
+        return ret;
     }
 
     async putACL(groupId, acl) {
