@@ -1309,7 +1309,7 @@ lakectl auth users policies list [flags]
 
 ### lakectl bisect
 
-A brief description of your command
+Binary search to find the commit that introduced a bug
 
 #### Options
 {:.no_toc}
@@ -1379,7 +1379,7 @@ lakectl bisect help [command] [flags]
 
 ### lakectl bisect log
 
-A brief description of your command
+Print out the current log of bisect
 
 ```
 lakectl bisect log [flags]
@@ -1433,7 +1433,7 @@ lakectl bisect run <command> [flags]
 Start a bisect session
 
 ```
-lakectl bisect start <repository> [bad commit] [good commit] [flags]
+lakectl bisect start <repository> <bad ref> <good ref> [flags]
 ```
 
 #### Options
@@ -1447,7 +1447,7 @@ lakectl bisect start <repository> [bad commit] [good commit] [flags]
 
 ### lakectl bisect view
 
-A brief description of your command
+Current bisect commits
 
 ```
 lakectl bisect view [flags]
