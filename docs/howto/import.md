@@ -21,20 +21,17 @@ redirect_from:
 To import using the UI, lakeFS must have permissions to list the objects in the source object store.
 {: .note }
 
-In your repository's main page, click the _Import_ button to open the import dialog:
+1. In your repository's main page, click the _Import_ button to open the import dialog:
+   ![img.png](../assets/img/UI-Import-Dialog.png)
+2. Under _Import from_, fill in the location on your object store you would like to import from.
+3. Fill in the import destination in lakeFS and a commit message.
+4. Once the import is completed, you can merge the changes from the import branch to the source branch.
 
-![Import dialog example configured with S3](../assets/img/UI-Import-Dialog.png)
+#### Notes
+{: .no_toc }
 
-On the first import to a branch, a dedicated branch named `_<branch_name>_imported` will be created.
-lakeFS will import all objects from _Source URI_ to the import branch under the given prefix.
-
-How long the import takes depends on the amount of imported objects, but will roughly be a few thousand objects per second.
-
-![img.png](../assets/img/ui-import-waiting.png)
-
-Once the import is completed, you can merge the changes from the import branch to the source branch.
-
-![img.png](../assets/img/ui-import-completed.png)
+* On the first import to a branch, a dedicated branch named `_<branch_name>_imported` will be created. lakeFS will import all objects to this branch under the given prefix.
+* The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
 ### _lakectl import_
 
