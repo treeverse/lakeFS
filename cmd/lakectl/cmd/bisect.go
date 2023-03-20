@@ -15,7 +15,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const bisectCommitTemplate = `{{ range $val := . }}
@@ -47,46 +46,41 @@ var ErrCommitNotFound = errors.New("commit not found")
 // bisectCmd represents the bisect command
 var bisectCmd = &cobra.Command{
 	Use:   "bisect",
-	Short: "A brief description of your command",
+	Short: "Binary search to find the commit that introduced a bug",
 }
 
 type Bisect struct {
-	Created    time.Time
-	Repository string
-	BadCommit  string
-	GoodCommit string
-	Commits    []*api.Commit
+	Created    time.Time     `json:"created"`
+	Repository string        `json:"repository"`
+	BadCommit  string        `json:"badCommit,omitempty"`
+	GoodCommit string        `json:"goodCommit,omitempty"`
+	Commits    []*api.Commit `json:"commits,omitempty"`
 }
+
+const bisectStartCmdArgs = 3
 
 // bisectStartCmd represents the start command
 var bisectStartCmd = &cobra.Command{
-	Use:   "start <repository> [bad commit] [good commit]",
+	Use:   "start <repository> <bad ref> <good ref>",
 	Short: "Start a bisect session",
-	Args:  cobra.RangeArgs(1, 3),
+	Args:  cobra.ExactArgs(bisectStartCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		// parse args
 		repoURI := MustParseRepoURI("repository", args[0])
 
-		var badURI *uri.URI
-		if len(args) > 1 {
-			badURI = MustParseRefURI("bad", args[1])
-			if badURI.Repository != repoURI.Repository {
-				Die("Repository doesn't match 'bad' commit", 1)
-			}
+		badURI := MustParseRefURI("bad", args[1])
+		if badURI.Repository != repoURI.Repository {
+			Die("Repository doesn't match 'bad' commit", 1)
 		}
 
-		var goodURI *uri.URI
-		if len(args) > 2 {
-			goodURI = MustParseRefURI("good", args[2])
-			if goodURI.Repository != repoURI.Repository {
-				Die("Repository doesn't match 'good' commit", 1)
-			}
+		goodURI := MustParseRefURI("good", args[2])
+		if goodURI.Repository != repoURI.Repository {
+			Die("Repository doesn't match 'good' commit", 1)
 		}
 
 		// resolve repository and references
 		client := getClient()
 		ctx := cmd.Context()
-
 		// check repository exists
 		repoResponse, err := client.GetRepositoryWithResponse(ctx, repoURI.Repository)
 		DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
@@ -96,15 +90,10 @@ var bisectStartCmd = &cobra.Command{
 		state := &Bisect{
 			Created:    time.Now().UTC(),
 			Repository: repoResponse.JSON200.Id,
+			BadCommit:  resolveCommitOrDie(ctx, client, badURI.Repository, badURI.Ref),
+			GoodCommit: resolveCommitOrDie(ctx, client, goodURI.Repository, goodURI.Ref),
 		}
 		// resolve commits
-		if badURI != nil {
-			state.BadCommit = resolveCommitOrDie(ctx, client, badURI.Repository, badURI.Ref)
-		}
-		if goodURI != nil {
-			state.GoodCommit = resolveCommitOrDie(ctx, client, goodURI.Repository, goodURI.Ref)
-		}
-		// if we have both - load log
 		if err := state.Update(ctx, client); err != nil {
 			DieErr(err)
 		}
@@ -166,50 +155,22 @@ var bisectBadCmd = &cobra.Command{
 	Use:     "bad",
 	Aliases: []string{"new"},
 	Short:   "Set 'bad' commit that is known to contain the bug",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		var ref string
-		if len(args) > 0 {
-			ref = args[0]
-		}
-		bisectCmdSelect(cmd, ref, BisectSelectBad)
+		bisectCmdSelect(BisectSelectBad)
 	},
 }
 
-func bisectCmdSelect(cmd *cobra.Command, ref string, bisectSelect BisectSelect) {
-	ctx := cmd.Context()
+func bisectCmdSelect(bisectSelect BisectSelect) {
 	var state Bisect
 	err := state.Load()
 	if os.IsNotExist(err) {
 		Die(`You need to start by "bisect start"`, 1)
 	}
-
-	client := getClient()
-	if ref == "" {
-		// update current selection
-		if err := state.SaveSelect(bisectSelect); err != nil {
-			DieErr(err)
-		}
-		state.PrintStatus()
-		return
-	}
-
-	// update good/bad - currently will start over bisect
-	commitURI := MustParseRefURI("ref", ref)
-	if commitURI.Repository != state.Repository {
-		DieFmt("Repository '%s' doesn't match active bisect repository '%s'", state.Repository, commitURI.Repository)
-	}
-	commitID := resolveCommitOrDie(ctx, client, commitURI.Repository, commitURI.Ref)
-	switch bisectSelect {
-	case BisectSelectGood:
-		state.GoodCommit = commitID
-	case BisectSelectBad:
-		state.BadCommit = commitID
-	default:
-		DieFmt("Unknown operation (code %d)", bisectSelect)
-	}
-	if err := state.Update(ctx, client); err != nil {
+	if err := state.SaveSelect(bisectSelect); err != nil {
 		DieErr(err)
 	}
+	state.PrintStatus()
 }
 
 // bisectGoodCmd represents the good command
@@ -217,13 +178,9 @@ var bisectGoodCmd = &cobra.Command{
 	Use:     "good",
 	Aliases: []string{"old"},
 	Short:   "Set current commit as 'good' commit that is known to be before the bug was introduced",
-	Args:    cobra.RangeArgs(0, 1),
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		var ref string
-		if len(args) > 0 {
-			ref = args[0]
-		}
-		bisectCmdSelect(cmd, ref, BisectSelectGood)
+		bisectCmdSelect(BisectSelectGood)
 	},
 }
 
@@ -238,16 +195,19 @@ var bisectRunCmd = &cobra.Command{
 			Die(`You need to start by "bisect start"`, 1)
 		}
 		ctx := cmd.Context()
-		for len(state.Commits) > 2 {
+		for len(state.Commits) > 1 {
 			h := len(state.Commits) >> 1
 			commit := state.Commits[h]
 
+			fmt.Printf("== Commit [%s] %s\n", commit.Id, commit.Message)
 			c := bisectRunCommand(ctx, commit, args[0], args[1:])
 			var bisectSelect BisectSelect
 			if err := c.Run(); err != nil {
 				bisectSelect = BisectSelectBad
+				fmt.Printf("-- BAD [%s] %s\n", commit.Id, commit.Message)
 			} else {
 				bisectSelect = BisectSelectGood
+				fmt.Printf("-- GOOD [%s] %s\n", commit.Id, commit.Message)
 			}
 			if err := state.SaveSelect(bisectSelect); err != nil {
 				DieErr(err)
@@ -260,10 +220,10 @@ var bisectRunCmd = &cobra.Command{
 func bisectRunCommand(ctx context.Context, commit *api.Commit, name string, args []string) *exec.Cmd {
 	// prepare args
 	replacer := strings.NewReplacer(
-		"BISECT_ID", commit.Id,
-		"BISECT_MESSAGE", commit.Message,
-		"BISECT_METARANGE_ID", commit.MetaRangeId,
-		"BISECT_COMMITTER", commit.Committer,
+		":BISECT_ID:", commit.Id,
+		":BISECT_MESSAGE:", commit.Message,
+		":BISECT_METARANGE_ID:", commit.MetaRangeId,
+		":BISECT_COMMITTER:", commit.Committer,
 	)
 	cmdArgs := make([]string, 0, len(args))
 	for _, arg := range args {
@@ -289,7 +249,7 @@ func bisectRunCommand(ctx context.Context, commit *api.Commit, name string, args
 // bisectLogCmd represents the log command
 var bisectLogCmd = &cobra.Command{
 	Use:   "log",
-	Short: "A brief description of your command",
+	Short: "Print out the current log of bisect",
 	Run: func(cmd *cobra.Command, args []string) {
 		var state Bisect
 		err := state.Load()
@@ -303,14 +263,13 @@ var bisectLogCmd = &cobra.Command{
 // bisectViewCmd represents the log command
 var bisectViewCmd = &cobra.Command{
 	Use:   "view",
-	Short: "A brief description of your command",
+	Short: "Current bisect commits",
 	Run: func(cmd *cobra.Command, args []string) {
 		var state Bisect
 		err := state.Load()
 		if os.IsNotExist(err) {
 			Die(`You need to start by "bisect start"`, 1)
 		}
-
 		if len(state.Commits) == 0 {
 			state.PrintStatus()
 			return
@@ -360,7 +319,7 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 		return nil
 	}
 
-	// scan commit log from bad to good - cache commits
+	// scan commit log from bad to good (not included) and save them into state
 	b.Commits = nil
 	var commits []*api.Commit
 	params := &api.LogCommitsParams{}
@@ -372,7 +331,6 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 		}
 		results := logResponse.JSON200.Results
 		for i := range results {
-			// stop when we got to the good commit
 			if results[i].Id == b.GoodCommit {
 				b.Commits = commits
 				return nil
@@ -388,8 +346,7 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 }
 
 func (b *Bisect) SaveSelect(sel BisectSelect) error {
-	if len(b.Commits) < 2 {
-		// nothing to search
+	if len(b.Commits) <= 1 {
 		return nil
 	}
 	h := len(b.Commits) >> 1
