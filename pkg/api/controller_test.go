@@ -3059,6 +3059,7 @@ func TestController_MergeInvalidStrategy(t *testing.T) {
 		Message:  api.StringPtr("merge work to main"),
 		Strategy: &strategy,
 	})
+	testutil.Must(t, err)
 	require.Equal(t, http.StatusBadRequest, mergeResp.StatusCode())
 }
 
@@ -3390,22 +3391,10 @@ func TestController_CherryPick(t *testing.T) {
 	_, err = deps.catalog.Commit(ctx, repo, "main", "message1", DefaultUserID, nil, nil, nil)
 	testutil.Must(t, err)
 
-	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "branch2", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "branch3", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "branch4", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch1", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch2", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch3", "main")
-	testutil.Must(t, err)
-	_, err = deps.catalog.CreateBranch(ctx, repo, "dest-branch4", "main")
-	testutil.Must(t, err)
+	for _, name := range []string{"branch1", "branch2", "branch3", "branch4", "dest-branch1", "dest-branch2", "dest-branch3", "dest-branch4"} {
+		_, err = deps.catalog.CreateBranch(ctx, repo, name, "main")
+		testutil.Must(t, err)
+	}
 
 	testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}))
 	commit2, err := deps.catalog.Commit(ctx, repo, "branch1", "message2", DefaultUserID, nil, nil, nil)
@@ -3443,11 +3432,11 @@ func TestController_CherryPick(t *testing.T) {
 		if resp.JSON404 == nil {
 			t.Error("expected to not find object foo/bar2 in dest-branch1 branch")
 		}
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch1", &api.GetObjectParams{Path: "foo/bar3"})
-		verifyResponseOK(t, cherryResponse, err)
+		respStat, err := clt.StatObjectWithResponse(ctx, repo, "dest-branch1", &api.StatObjectParams{Path: "foo/bar3"})
+		verifyResponseOK(t, respStat, err)
 
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch1", &api.GetObjectParams{Path: "foo/bar4"})
-		verifyResponseOK(t, cherryResponse, err)
+		respStat, err = clt.StatObjectWithResponse(ctx, repo, "dest-branch1", &api.StatObjectParams{Path: "foo/bar4"})
+		verifyResponseOK(t, respStat, err)
 	})
 
 	t.Run("from commit", func(t *testing.T) {
@@ -3455,12 +3444,12 @@ func TestController_CherryPick(t *testing.T) {
 		verifyResponseOK(t, cherryResponse, err)
 
 		// verify that the cherry-pick worked as expected
-		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch2", &api.GetObjectParams{Path: "foo/bar2"})
-		verifyResponseOK(t, cherryResponse, err)
+		resp, err := clt.StatObjectWithResponse(ctx, repo, "dest-branch2", &api.StatObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, resp, err)
 
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch2", &api.GetObjectParams{Path: "foo/bar3"})
+		respStat, err := clt.StatObjectWithResponse(ctx, repo, "dest-branch2", &api.StatObjectParams{Path: "foo/bar3"})
 		testutil.Must(t, err)
-		if resp.JSON404 == nil {
+		if respStat.JSON404 == nil {
 			t.Error("expected to not find object foo/bar3 in dest-branch2 branch")
 		}
 	})
@@ -3500,18 +3489,18 @@ func TestController_CherryPick(t *testing.T) {
 		verifyResponseOK(t, cherryResponse, err)
 		// verify that the cherry-pick worked as expected
 
-		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar2"})
-		verifyResponseOK(t, cherryResponse, err)
+		resp, err := clt.StatObjectWithResponse(ctx, repo, "dest-branch4", &api.StatObjectParams{Path: "foo/bar2"})
+		verifyResponseOK(t, resp, err)
 
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar3"})
-		verifyResponseOK(t, cherryResponse, err)
+		resp, err = clt.StatObjectWithResponse(ctx, repo, "dest-branch4", &api.StatObjectParams{Path: "foo/bar3"})
+		verifyResponseOK(t, resp, err)
 
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar4"})
-		verifyResponseOK(t, cherryResponse, err)
+		resp, err = clt.StatObjectWithResponse(ctx, repo, "dest-branch4", &api.StatObjectParams{Path: "foo/bar4"})
+		verifyResponseOK(t, resp, err)
 
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch4", &api.GetObjectParams{Path: "foo/bar8"})
+		respStat, err := clt.StatObjectWithResponse(ctx, repo, "dest-branch4", &api.StatObjectParams{Path: "foo/bar8"})
 		testutil.Must(t, err)
-		if resp.JSON404 == nil {
+		if respStat.JSON404 == nil {
 			t.Error("expected to not find object foo/bar8 in dest-branch4 branch")
 		}
 	})
@@ -3521,19 +3510,19 @@ func TestController_CherryPick(t *testing.T) {
 		verifyResponseOK(t, cherryResponse, err)
 
 		// verify that the cherry-pick worked as expected
-		resp, err := clt.GetObjectWithResponse(ctx, repo, "dest-branch3", &api.GetObjectParams{Path: "foo/bar2"})
+		resp, err := clt.StatObjectWithResponse(ctx, repo, "dest-branch3", &api.StatObjectParams{Path: "foo/bar2"})
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
 			t.Error("expected to not find object foo/bar2 in dest-branch3 branch")
 		}
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch3", &api.GetObjectParams{Path: "foo/bar4"})
+		resp, err = clt.StatObjectWithResponse(ctx, repo, "dest-branch3", &api.StatObjectParams{Path: "foo/bar4"})
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
 			t.Error("expected to not find object foo/bar6 in dest-branch3 branch")
 		}
 
-		resp, err = clt.GetObjectWithResponse(ctx, repo, "dest-branch3", &api.GetObjectParams{Path: "foo/bar8"})
-		verifyResponseOK(t, cherryResponse, err)
+		resp, err = clt.StatObjectWithResponse(ctx, repo, "dest-branch3", &api.StatObjectParams{Path: "foo/bar8"})
+		verifyResponseOK(t, resp, err)
 	})
 
 	t.Run("invalid parent id (too big)- merge commit", func(t *testing.T) {
