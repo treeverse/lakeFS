@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine3.16 AS build
 
 ARG VERSION=dev
 
@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
 # Build delta diff binary
-FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.17 AS build-delta-diff-plugin
+FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.16 AS build-delta-diff-plugin
 RUN apk add build-base && apk add pkgconfig && apk add libressl-dev
 RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
@@ -47,7 +47,7 @@ RUN rm ./target/release/deps/delta_diff*
 RUN cargo build --release
 
 # lakectl image
-FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakectl
+FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakectl
 RUN apk add -U --no-cache ca-certificates
 WORKDIR /app
 ENV PATH /app:$PATH
@@ -58,7 +58,7 @@ WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
 # lakefs image
-FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakefs-lakectl
+FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-lakectl
 
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
@@ -80,7 +80,7 @@ ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
 # lakefs image
-FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakefs-plugins
+FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-plugins
 
 RUN apk update
 RUN apk add libressl-dev && apk add libc6-compat
