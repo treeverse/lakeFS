@@ -3,14 +3,12 @@ import { useParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card"
-import { FaDownload } from "react-icons/fa";
 
 import { useAPI } from "../../../lib/hooks/api";
 import { useQuery } from "../../../lib/hooks/router";
 import { objects } from "../../../lib/api";
 import { ObjectRenderer} from "./fileRenderers";
-import {ClipboardButton, Error} from "../../../lib/components/controls";
-import noop from "lodash/noop";
+import {Error} from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeCommit } from "../../../constants";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
@@ -122,29 +120,13 @@ export const FileContents: FC<FileContentsProps> = ({repoId, refId, path, loadin
     }
 
     const titleComponent = showFullNavigator ?
-        (<URINavigator path={path} repo={repo} reference={reference} isPathToFile={true} />) :
+        (<URINavigator path={path} repo={repo} reference={reference} isPathToFile={true} downloadUrl={objectUrl} />) :
         (<span>{path}</span>);
-
+    
     return (
             <Card className={'file-content-card'}>
-                <Card.Header className={'file-content-heading d-flex justify-content-between align-items-center'}>
+                <Card.Header className={'file-content-heading'}>
                     {titleComponent}
-                    <span className="object-viewer-buttons">
-                        <a 
-                            href={objectUrl}
-                            download={path.split('/').pop()}
-                            className="btn btn-primary btn-sm download-button me-1">
-                                <FaDownload />
-                        </a>
-                        <ClipboardButton
-                            text={`lakefs://${repoId}/${refId}/${path}`}
-                            variant="outline-primary"
-                            size="sm"
-                            onSuccess={noop}
-                            onError={noop}
-                            className={"me-1"}
-                            tooltip={"copy URI to clipboard"} />
-                    </span>
                 </Card.Header>
                 <Card.Body className={'file-content-body'}>
                     <Box sx={{mx: 1}}>

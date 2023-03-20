@@ -50,7 +50,8 @@ func sampleEntry(prefix string, n int) kv.Entry {
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
 
-func TestDriver(t *testing.T, name string, params kvparams.Config) {
+func DriverTest(t *testing.T, name string, params kvparams.Config) {
+	t.Helper()
 	ms := MakeStoreByName(name, params)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
@@ -292,6 +293,26 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, nil)
 		if !errors.Is(err, kv.ErrPredicateFailed) {
 			t.Fatalf("SetIf err=%v - key=%s, value=%s, pred=nil, expected err=%s", err, key, val2, kv.ErrPredicateFailed)
+		}
+	})
+
+	t.Run("predicate_empty_slice", func(t *testing.T) {
+		key := uniqueKey("predicate-empty-slice")
+		val1 := []byte{}
+		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
+		if err != nil {
+			t.Fatalf("Set while testing predicate empty slice - key=%s value=%s: %s", key, val1, err)
+		}
+
+		res, err := store.Get(ctx, []byte(testPartitionKey), key)
+		if err != nil {
+			t.Fatalf("Get while testing predicate empty slice - key=%s: %s", key, err)
+		}
+
+		val2 := []byte("v2")
+		err = store.SetIf(ctx, []byte(testPartitionKey), key, val2, res.Predicate)
+		if err != nil {
+			t.Fatalf("SetIf with previous value while testing predicate empty slice - key=%s value=%s pred=%s: %s", key, val2, val1, err)
 		}
 	})
 

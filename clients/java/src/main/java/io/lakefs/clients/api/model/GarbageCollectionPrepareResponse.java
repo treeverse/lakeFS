@@ -20,9 +20,28 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import io.lakefs.clients.api.JSON;
 
 /**
  * GarbageCollectionPrepareResponse
@@ -41,6 +60,8 @@ public class GarbageCollectionPrepareResponse {
   @SerializedName(SERIALIZED_NAME_GC_ADDRESSES_LOCATION)
   private String gcAddressesLocation;
 
+  public GarbageCollectionPrepareResponse() {
+  }
 
   public GarbageCollectionPrepareResponse runId(String runId) {
     
@@ -53,7 +74,6 @@ public class GarbageCollectionPrepareResponse {
    * @return runId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "64eaa103-d726-4a33-bcb8-7c0b4abfe09e", required = true, value = "a unique identifier generated for this GC job")
 
   public String getRunId() {
     return runId;
@@ -76,7 +96,6 @@ public class GarbageCollectionPrepareResponse {
    * @return gcCommitsLocation
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/commits", required = true, value = "location of the resulting commits csv table (partitioned by run_id)")
 
   public String getGcCommitsLocation() {
     return gcCommitsLocation;
@@ -99,7 +118,6 @@ public class GarbageCollectionPrepareResponse {
    * @return gcAddressesLocation
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "s3://my-storage-namespace/_lakefs/retention/addresses", required = true, value = "location to use for expired addresses parquet table (partitioned by run_id)")
 
   public String getGcAddressesLocation() {
     return gcAddressesLocation;
@@ -109,6 +127,7 @@ public class GarbageCollectionPrepareResponse {
   public void setGcAddressesLocation(String gcAddressesLocation) {
     this.gcAddressesLocation = gcAddressesLocation;
   }
+
 
 
   @Override
@@ -152,5 +171,109 @@ public class GarbageCollectionPrepareResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>();
+    openapiFields.add("run_id");
+    openapiFields.add("gc_commits_location");
+    openapiFields.add("gc_addresses_location");
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>();
+    openapiRequiredFields.add("run_id");
+    openapiRequiredFields.add("gc_commits_location");
+    openapiRequiredFields.add("gc_addresses_location");
+  }
+
+ /**
+  * Validates the JSON Object and throws an exception if issues found
+  *
+  * @param jsonObj JSON Object
+  * @throws IOException if the JSON Object is invalid with respect to GarbageCollectionPrepareResponse
+  */
+  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
+      if (jsonObj == null) {
+        if (!GarbageCollectionPrepareResponse.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in GarbageCollectionPrepareResponse is not found in the empty JSON string", GarbageCollectionPrepareResponse.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Entry<String, JsonElement> entry : entries) {
+        if (!GarbageCollectionPrepareResponse.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `GarbageCollectionPrepareResponse` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : GarbageCollectionPrepareResponse.openapiRequiredFields) {
+        if (jsonObj.get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
+        }
+      }
+      if (!jsonObj.get("run_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `run_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("run_id").toString()));
+      }
+      if (!jsonObj.get("gc_commits_location").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `gc_commits_location` to be a primitive type in the JSON string but got `%s`", jsonObj.get("gc_commits_location").toString()));
+      }
+      if (!jsonObj.get("gc_addresses_location").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `gc_addresses_location` to be a primitive type in the JSON string but got `%s`", jsonObj.get("gc_addresses_location").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!GarbageCollectionPrepareResponse.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'GarbageCollectionPrepareResponse' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<GarbageCollectionPrepareResponse> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(GarbageCollectionPrepareResponse.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<GarbageCollectionPrepareResponse>() {
+           @Override
+           public void write(JsonWriter out, GarbageCollectionPrepareResponse value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public GarbageCollectionPrepareResponse read(JsonReader in) throws IOException {
+             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
+             validateJsonObject(jsonObj);
+             return thisAdapter.fromJsonTree(jsonObj);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+ /**
+  * Create an instance of GarbageCollectionPrepareResponse given an JSON string
+  *
+  * @param jsonString JSON string
+  * @return An instance of GarbageCollectionPrepareResponse
+  * @throws IOException if the JSON string is invalid with respect to GarbageCollectionPrepareResponse
+  */
+  public static GarbageCollectionPrepareResponse fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, GarbageCollectionPrepareResponse.class);
+  }
+
+ /**
+  * Convert an instance of GarbageCollectionPrepareResponse to an JSON string
+  *
+  * @return JSON string
+  */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
+  }
 }
 

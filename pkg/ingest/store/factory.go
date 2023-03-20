@@ -5,61 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/block/gs"
+	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/block/params"
+	"github.com/treeverse/lakefs/pkg/block/s3"
 )
 
-var (
-	ErrNotSupported = errors.New("no storage adapter found")
-	ErrForbidden    = errors.New("forbidden")
-	ErrBadPath      = errors.New("bad path traversal blocked")
-)
-
-type ObjectStoreEntry struct {
-	// FullKey represents the fully qualified path in the object store namespace for the given entry
-	FullKey string `json:"full_key,omitempty"`
-	// RelativeKey represents a path relative to prefix (or directory). If none specified, will be identical to FullKey
-	RelativeKey string `json:"relative_key,omitempty"`
-	// Address is a full URI for the entry, including the storage namespace (i.e. s3://bucket/path/to/key)
-	Address string `json:"address,omitempty"`
-	// ETag represents a hash of the entry's content. Generally as hex encoded MD5,
-	// but depends on the underlying object store
-	ETag string `json:"etag,omitempty"`
-	// Mtime is the last-modified datetime of the entry
-	Mtime time.Time `json:"mtime,omitempty"`
-	// Size in bytes
-	Size int64 `json:"size"`
-}
-
-type WalkOptions struct {
-	// All walked items must be greater than After
-	After string
-
-	// ContinuationToken is passed to the client for efficient listing.
-	// Value is Opaque to the caller.
-	ContinuationToken string
-}
-
-type Mark struct {
-	ContinuationToken string
-	LastKey           string
-	HasMore           bool
-}
-
-type Walker interface {
-	Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error
-	Marker() Mark
-}
-
-func (e ObjectStoreEntry) String() string {
-	return fmt.Sprintf("ObjectStoreEntry: {Address:%s, RelativeKey:%s, ETag:%s, Size:%d, Mtime:%s}",
-		e.Address, e.RelativeKey, e.ETag, e.Size, e.Mtime)
-}
+var ErrNotSupported = errors.New("no storage adapter found")
 
 type WalkerOptions struct {
 	S3EndpointURL string
@@ -67,22 +26,22 @@ type WalkerOptions struct {
 }
 
 type WalkerWrapper struct {
-	walker Walker
+	walker block.Walker
 	uri    *url.URL
 }
 
-func NewWrapper(walker Walker, uri *url.URL) *WalkerWrapper {
+func NewWrapper(walker block.Walker, uri *url.URL) *WalkerWrapper {
 	return &WalkerWrapper{
 		walker: walker,
 		uri:    uri,
 	}
 }
 
-func (ww *WalkerWrapper) Walk(ctx context.Context, opts WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+func (ww *WalkerWrapper) Walk(ctx context.Context, opts block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	return ww.walker.Walk(ctx, ww.uri, opts, walkFn)
 }
 
-func (ww *WalkerWrapper) Marker() Mark {
+func (ww *WalkerWrapper) Marker() block.Mark {
 	return ww.walker.Marker()
 }
 
@@ -94,7 +53,7 @@ func NewFactory(params params.AdapterConfig) *WalkerFactory {
 	return &WalkerFactory{params: params}
 }
 
-func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*S3Walker, error) {
+func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*s3.Walker, error) {
 	var sess *session.Session
 	if f.params != nil {
 		s3params, err := f.params.BlockstoreS3Params()
@@ -112,10 +71,10 @@ func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*S3Walker, error) {
 			return nil, err
 		}
 	}
-	return NewS3Walker(sess), nil
+	return s3.NewS3Walker(sess), nil
 }
 
-func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*GCSWalker, error) {
+func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*gs.GCSWalker, error) {
 	var svc *storage.Client
 	if f.params != nil {
 		gsParams, err := f.params.BlockstoreGSParams()
@@ -133,10 +92,10 @@ func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*GCSWalker, error) 
 			return nil, err
 		}
 	}
-	return NewGCSWalker(svc), nil
+	return gs.NewGCSWalker(svc), nil
 }
 
-func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*AzureBlobWalker, error) {
+func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*azure.BlobWalker, error) {
 	storageAccount, err := azure.ExtractStorageAccount(importURL)
 	if err != nil {
 		return nil, err
@@ -162,7 +121,7 @@ func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*AzureBlobWalker, 
 		return nil, err
 	}
 
-	return NewAzureBlobWalker(c)
+	return azure.NewAzureBlobWalker(c)
 }
 
 func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
@@ -171,7 +130,7 @@ func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 		return nil, fmt.Errorf("could not parse storage URI %s: %w", uri, err)
 	}
 
-	var walker Walker
+	var walker block.Walker
 	switch uri.Scheme {
 	case "s3":
 		walker, err = f.buildS3Walker(opts)
@@ -199,10 +158,33 @@ func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 	return NewWrapper(walker, uri), nil
 }
 
-func (f *WalkerFactory) buildLocalWalker() (*LocalWalker, error) {
-	localParams, err := f.params.BlockstoreLocalParams()
-	if err != nil {
-		return nil, err
+func (f *WalkerFactory) buildLocalWalker() (*local.Walker, error) {
+	var (
+		localParams params.Local
+		err         error
+	)
+
+	if f.params != nil {
+		localParams, err = f.params.BlockstoreLocalParams()
+		if err != nil {
+			return nil, err
+		}
 	}
-	return NewLocalWalker(localParams), nil
+
+	return local.NewLocalWalker(localParams), nil
+}
+
+func getS3Client(s3EndpointURL string) (*session.Session, error) {
+	var config aws.Config
+	if s3EndpointURL != "" {
+		config = aws.Config{
+			Endpoint:         aws.String(s3EndpointURL),
+			Region:           aws.String("us-east-1"), // Needs region for validation as it is AWS client
+			S3ForcePathStyle: aws.Bool(true),
+		}
+	}
+	return session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+		Config:            config,
+	})
 }

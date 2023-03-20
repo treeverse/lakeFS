@@ -4,28 +4,28 @@ import {
     ChevronDownIcon,
     ChevronRightIcon, CircleSlashIcon,
     ClockIcon,
-    FileDiffIcon, FileDirectoryIcon,
-    GraphIcon,
-    HistoryIcon, PencilIcon, PlusIcon, TableIcon, TrashIcon, DiffIcon
+    FileDirectoryIcon,
+    HistoryIcon, PencilIcon, FileIcon, TableIcon, TrashIcon
 } from "@primer/octicons-react";
 import ChangeSummary from "./ChangeSummary";
 import {ConfirmationModal} from "../modals";
 import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
+import {TreeRowType} from "../../../constants";
 
 class RowAction {
     /**
      * @param {JSX.Element} icon
      * @param {string} tooltip
-     * @param {boolean} visible
+     * @param {string} text
      * @param {()=>void} onClick
      */
-    constructor(icon, tooltip, visible, onClick) {
-        this.tooltip = tooltip
-        this.visible = visible
-        this.onClick = onClick
+    constructor(icon, tooltip= "", text, onClick) {
         this.icon = icon
+        this.tooltip = tooltip
+        this.text = text
+        this.onClick = onClick
     }
 }
 
@@ -35,13 +35,15 @@ class RowAction {
 const ChangeRowActions = ({actions}) => <>
     {
         actions.map(action => (
-            <><OverlayTrigger placement="bottom" overlay={<Tooltip>{action.tooltip}</Tooltip>}>
-                <Button variant="link" disabled={false} style={{visibility: action.visible ? "visible" : ""}}
-                      onClick={(e) => {
-                          e.preventDefault();
-                          action.onClick()
-                      }}>
-                    {action.icon}
+            <><OverlayTrigger placement="bottom" overlay={<Tooltip hidden={!action.tooltip}>{action.tooltip}</Tooltip>}>
+                <Button variant="link" disabled={false}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            action.onClick()
+                        }}>
+                    {action.icon
+                        ? action.icon
+                        : action.text}
                 </Button>
             </OverlayTrigger>&#160;&#160;</>
         ))}
@@ -51,14 +53,14 @@ export const ObjectTreeEntryRow = ({entry, relativeTo = "", diffExpanded, depth 
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
-    const diffIndicator = <DiffIndicationIcon entry={entry}/>;
+    const diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Object}/>;
 
     const rowActions = []
     if (onClickExpandDiff) {
-        rowActions.push(new RowAction(<FileDiffIcon/>, diffExpanded ? "Hide changes" : "Show changes", diffExpanded, onClickExpandDiff))
+        rowActions.push(new RowAction(null, null, diffExpanded ? "Hide object changes" : "Show object changes", onClickExpandDiff))
     }
     if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
             setShowRevertConfirm(true)
         }))
     }
@@ -73,15 +75,15 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractPathText(entry, relativeTo);
-    let diffIndicator = <DiffIndicationIcon entry={entry}/>;
+    let diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Prefix}/>;
     const [showSummary, setShowSummary] = useState(false);
     if (entry.path_type === "common_prefix") {
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
-    rowActions.push(new RowAction(<GraphIcon/>, showSummary ? "Hide summary" : "Calculate change summary", showSummary, () => setShowSummary(!showSummary)))
+    rowActions.push(new RowAction(null, null, showSummary ? "Hide change summary" : "Calculate change summary", () => setShowSummary(!showSummary)))
     if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
             setShowRevertConfirm(true)
         }))
     }
@@ -99,12 +101,12 @@ export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, de
     const [showRevertConfirm, setShowRevertConfirm] = useState(false)
     let rowClass = 'tree-entry-row ' + diffType(entry);
     let pathSection = extractTableName(entry, relativeTo);
-    const diffIndicator = <DiffIndicationIcon entry={entry} isTableRow={true}/>
+    const diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Table}/>
 
     const rowActions = []
-    rowActions.push(new RowAction(<DiffIcon/>, "Show table changes", true, onClickExpandDiff))
+    rowActions.push(new RowAction(null, null, "Show table changes", onClickExpandDiff))
     if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", false, () => {
+        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
             setShowRevertConfirm(true)
         }))
     }
@@ -124,16 +126,16 @@ const PrefixExpansionSection = ({dirExpanded, onClick}) => {
 const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, rowActions,
                       showRevertConfirm, setShowRevertConfirm, pathSection, onRevert, dirExpanded, onExpand, ...rest}) => {
     return (<tr {...rest}>
-            <td className="pl-4 col-auto p-2">{diffIndicator}</td>
-            <td className="col-9 tree-path">
+            <td className="entry-type-indicator">{diffIndicator}</td>
+            <td className="tree-path">
                         <span style={{marginLeft: (depth * 20) + "px"}}>
+                            {pathSection}
                             {onExpand && <PrefixExpansionSection dirExpanded={dirExpanded} onClick={onExpand}/>}
                             {loading ? <ClockIcon/> : ""}
-                            {pathSection}
                         </span>
             </td>
-            <td className={"col-2 p-0 text-right"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
-            <td className={"col-1 change-entry-row-actions"}>
+            <td className={"change-summary"}>{showSummary && <ChangeSummary prefix={entry.path} getMore={getMore}/>}</td>
+            <td className={"change-entry-row-actions"}>
                 <ChangeRowActions actions={rowActions} />
                 <ConfirmationModal show={showRevertConfirm} onHide={setShowRevertConfirm}
                                    msg={`Are you sure you wish to revert "${entry.path}" (${entry.type})?`}
@@ -178,43 +180,42 @@ function extractTableName(entry, relativeTo) {
     return pathText;
 }
 
-export const DiffIndicationIcon = ({entry, isTableRow = false}) => {
+export const DiffIndicationIcon = ({entry, rowType}) => {
     let diffIcon;
     let tooltipId;
     let tooltipText;
-    if (entry.path_type === 'common_prefix') {
+    if (rowType === TreeRowType.Prefix) {
         diffIcon = <FileDirectoryIcon/>;
         tooltipId = "tooltip-prefix";
         tooltipText = "Changes under prefix";
-    }
-    if (isTableRow) {
+    } else if (rowType === TreeRowType.Table) {
         diffIcon = <TableIcon/>;
         tooltipId = "tooltip-table";
         tooltipText = "Table changed"
-    }
-
-    switch (entry.type) {
-        case 'removed':
-            diffIcon = <TrashIcon/>;
-            tooltipId = "tooltip-removed";
-            tooltipText = "Removed";
-            break;
-        case 'added':
-            diffIcon = <PlusIcon/>;
-            tooltipId = "tooltip-added";
-            tooltipText = "Added";
-            break;
-        case 'changed':
-            diffIcon = <PencilIcon/>;
-            tooltipId = "tooltip-changed";
-            tooltipText = "Changed";
-            break;
-        case 'conflict':
-            diffIcon = <CircleSlashIcon/>;
-            tooltipId = "tooltip-conflict";
-            tooltipText = "Conflict";
-            break;
-        default:
+    } else {
+        switch (entry.type) {
+            case 'removed':
+                diffIcon = <TrashIcon/>;
+                tooltipId = "tooltip-removed";
+                tooltipText = "Removed";
+                break;
+            case 'added':
+                diffIcon = <FileIcon/>;
+                tooltipId = "tooltip-added";
+                tooltipText = "Added";
+                break;
+            case 'changed':
+                diffIcon = <PencilIcon/>;
+                tooltipId = "tooltip-changed";
+                tooltipText = "Changed";
+                break;
+            case 'conflict':
+                diffIcon = <CircleSlashIcon/>;
+                tooltipId = "tooltip-conflict";
+                tooltipText = "Conflict";
+                break;
+            default:
+        }
     }
 
     return <OverlayTrigger placement="bottom" overlay={(<Tooltip id={tooltipId}>{tooltipText}</Tooltip>)}>

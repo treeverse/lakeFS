@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,9 +18,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/exp/slices"
 )
+
+const StoragePrefix = block.BlockstoreTypeLocal + "://"
 
 type Adapter struct {
 	path                    string
@@ -37,8 +41,29 @@ var (
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
-	ErrForbidden             = errors.New("forbidden")
 )
+
+type QualifiedKey struct {
+	block.CommonQualifiedKey
+	path string
+}
+
+func (qk QualifiedKey) Format() string {
+	p := path.Join(qk.path, qk.GetStorageNamespace(), qk.GetKey())
+	return qk.GetStorageType().Scheme() + "://" + p
+}
+
+func (qk QualifiedKey) GetStorageType() block.StorageType {
+	return qk.CommonQualifiedKey.GetStorageType()
+}
+
+func (qk QualifiedKey) GetStorageNamespace() string {
+	return qk.CommonQualifiedKey.GetStorageNamespace()
+}
+
+func (qk QualifiedKey) GetKey() string {
+	return qk.CommonQualifiedKey.GetKey()
+}
 
 func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 	return func(a *Adapter) {
@@ -49,6 +74,12 @@ func WithAllowedExternalPrefixes(prefixes []string) func(a *Adapter) {
 func WithImportEnabled(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.importEnabled = b
+	}
+}
+
+func WithRemoveEmptyDir(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.removeEmptyDir = b
 	}
 }
 
@@ -85,21 +116,20 @@ func (l *Adapter) verifyRelPath(p string) error {
 	return nil
 }
 
-func (l *Adapter) getPath(ptr block.ObjectPointer) (string, error) {
-	const prefix = block.BlockstoreTypeLocal + "://"
-	if strings.HasPrefix(ptr.Identifier, prefix) {
+func (l *Adapter) extractParamsFromObj(ptr block.ObjectPointer) (string, error) {
+	if strings.HasPrefix(ptr.Identifier, StoragePrefix) {
 		// check abs path
-		p := ptr.Identifier[len(prefix):]
-		if err := l.verifyAbsPath(p); err != nil {
+		p := ptr.Identifier[len(StoragePrefix):]
+		if err := VerifyAbsPath(p, l.path, l.allowedExternalPrefixes); err != nil {
 			return "", err
 		}
 		return p, nil
 	}
 	// relative path
-	if !strings.HasPrefix(ptr.StorageNamespace, prefix) {
+	if !strings.HasPrefix(ptr.StorageNamespace, StoragePrefix) {
 		return "", fmt.Errorf("%w: storage namespace", ErrBadPath)
 	}
-	p := path.Join(l.path, ptr.StorageNamespace[len(prefix):], ptr.Identifier)
+	p := path.Join(l.path, ptr.StorageNamespace[len(StoragePrefix):], ptr.Identifier)
 	if err := l.verifyRelPath(p); err != nil {
 		return "", err
 	}
@@ -128,7 +158,7 @@ func (l *Adapter) Path() string {
 }
 
 func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
@@ -145,7 +175,7 @@ func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 }
 
 func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
@@ -156,7 +186,8 @@ func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
 	}
 	if l.removeEmptyDir {
 		dir := filepath.Dir(p)
-		removeEmptyDirUntil(dir, l.path)
+		repoRoot := obj.StorageNamespace[len(StoragePrefix):]
+		removeEmptyDirUntil(dir, path.Join(l.path, repoRoot))
 	}
 	return nil
 }
@@ -181,7 +212,7 @@ func removeEmptyDirUntil(dir string, stopAt string) {
 }
 
 func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
-	source, err := l.getPath(sourceObj)
+	source, err := l.extractParamsFromObj(sourceObj)
 	if err != nil {
 		return err
 	}
@@ -192,7 +223,7 @@ func (l *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 	if err != nil {
 		return err
 	}
-	dest, err := l.getPath(destinationObj)
+	dest, err := l.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return err
 	}
@@ -248,7 +279,7 @@ func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 }
 
 func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -262,8 +293,24 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (read
 	return f, nil
 }
 
+func (l *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
+	if err := block.ValidateStorageType(uri, block.StorageTypeLocal); err != nil {
+		return nil, err
+	}
+
+	err := VerifyAbsPath(uri.Path, l.path, l.allowedExternalPrefixes)
+	if err != nil {
+		return nil, err
+	}
+	return NewLocalWalker(params.Local{
+		Path:                    l.path,
+		ImportEnabled:           l.importEnabled,
+		AllowedExternalPrefixes: l.allowedExternalPrefixes,
+	}), nil
+}
+
 func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return false, err
 	}
@@ -278,7 +325,10 @@ func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, erro
 }
 
 func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
-	p, err := l.getPath(obj)
+	if start < 0 || end <= 0 {
+		return nil, block.ErrBadIndex
+	}
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +349,7 @@ func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int
 }
 
 func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (block.Properties, error) {
-	p, err := l.getPath(obj)
+	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -327,7 +377,7 @@ func isDirectoryWritable(pth string) bool {
 
 func (l *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	if strings.Contains(obj.Identifier, "/") {
-		fullPath, err := l.getPath(obj)
+		fullPath, err := l.extractParamsFromObj(obj)
 		if err != nil {
 			return nil, err
 		}
@@ -407,7 +457,7 @@ func computeETag(parts []block.MultipartPart) string {
 }
 
 func (l *Adapter) unitePartFiles(identifier block.ObjectPointer, filenames []string) (int64, error) {
-	p, err := l.getPath(identifier)
+	p, err := l.extractParamsFromObj(identifier)
 	if err != nil {
 		return 0, err
 	}
@@ -460,7 +510,7 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 		StorageNamespace: obj.StorageNamespace,
 		Identifier:       uploadID,
 	}
-	globPathPattern, err := l.getPath(newObj)
+	globPathPattern, err := l.extractParamsFromObj(newObj)
 	if err != nil {
 		return nil, err
 	}
@@ -489,24 +539,46 @@ func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
+func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	qk, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if path allowed and return error if path is not allowed
+	_, err = l.extractParamsFromObj(block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		Identifier:       key,
+		IdentifierType:   identifierType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return QualifiedKey{
+		CommonQualifiedKey: qk,
+		path:               l.path,
+	}, nil
+}
+
 func (l *Adapter) RuntimeStats() map[string]string {
 	return nil
 }
 
-func (l *Adapter) verifyAbsPath(p string) error {
+func VerifyAbsPath(absPath, adapterPath string, allowedPrefixes []string) error {
 	// check we have a valid abs path
-	if !path.IsAbs(p) || path.Clean(p) != p {
+	if !path.IsAbs(absPath) || path.Clean(absPath) != absPath {
 		return ErrBadPath
 	}
 	// point to storage namespace
-	if strings.HasPrefix(p, l.path) {
+	if strings.HasPrefix(absPath, adapterPath) {
 		return nil
 	}
 	// allowed places
-	if !slices.ContainsFunc(l.allowedExternalPrefixes, func(prefix string) bool {
-		return strings.HasPrefix(p, prefix)
+	if !slices.ContainsFunc(allowedPrefixes, func(prefix string) bool {
+		return strings.HasPrefix(absPath, prefix)
 	}) {
-		return ErrForbidden
+		return block.ErrForbidden
 	}
 	return nil
 }

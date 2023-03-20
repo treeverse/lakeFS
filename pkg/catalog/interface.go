@@ -25,6 +25,12 @@ type RevertParams struct {
 	Committer    string
 }
 
+type CherryPickParams struct {
+	Reference    string // the commit to pick
+	ParentNumber *int   // if a merge commit was pocked, the change will be picked relative to this parent number (1-based).
+	Committer    string
+}
+
 type PathRecord struct {
 	Path     Path
 	IsPrefix bool
@@ -110,6 +116,9 @@ type Interface interface {
 	// Revert creates a reverse patch to the given commit, and applies it as a new commit on the given branch.
 	Revert(ctx context.Context, repository, branch string, params RevertParams) error
 
+	// CherryPick creates a patch to the given commit, and applies it as a new commit on the given branch.
+	CherryPick(ctx context.Context, repository, branch string, params CherryPickParams) (*CommitLog, error)
+
 	Diff(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	Compare(ctx context.Context, repository, leftReference string, rightReference string, params DiffParams) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch, prefix, delimiter string, limit int, after string) (Differences, bool, error)
@@ -151,5 +160,6 @@ type Interface interface {
 	SetLinkAddress(ctx context.Context, repository, token string) error
 	VerifyLinkAddress(ctx context.Context, repository, token string) error
 	DeleteExpiredLinkAddresses(ctx context.Context)
+
 	io.Closer
 }

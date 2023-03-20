@@ -17,27 +17,17 @@ redirect_from:
 
 # Using lakeFS with Spark
 {: .no_toc }
-[Apache Spark](https://spark.apache.org/) is a multi-language engine for executing data engineering, data science, and machine learning on single-node machines or clusters
+
+There are two ways to use lakeFS with Spark:
+
+* Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): Highly scalable, data flows directly from client to storage.
+* Using the [S3 gateway](#use-the-s3-gateway): Scalable and simpler to set up.
 
 {: .pb-5 }
 
-{% include toc.html %}
-
-**⚠️ Note** In all of the following examples, we set AWS and lakeFS credentials at runtime for
-clarity. In production, properties defining AWS credentials should be set using one of
-Hadoop's standard ways of [authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}.
-Similarly, properties defining lakeFS credentials should be configured in secure site files,
-not on the command line or inlined in code where they might be exposed.
+⚠️ The following examples include inline credentials for the sake of simplicity.
+In production, credentials should be protected using security best practices.
 {: .note }
-
-## Two-tiered Spark support
-{: .no_toc }
-
-There are two ways you can use lakeFS with Spark:
-
-* Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): Highly scalable, data flows directly from client to storage.
-* Using the [S3 gateway](#use-the-s3-gateway): Highly scalable, highly compatible with any S3 interface.
-
 
 ## Use the lakeFS Hadoop FileSystem
 
@@ -100,7 +90,6 @@ Additionally, supply the `fs.lakefs.*` configurations to allow Spark to access m
 
 The lakeFS Hadoop FileSystem uses the `fs.s3a.*` properties to directly
 access S3. If your cluster already has access to your buckets (for example, if you're using an AWS instance profile), then you don't need to configure these properties.
-permissions.
 {: .note }
 
 Here are some configuration examples:
@@ -210,31 +199,20 @@ spark.hadoop.fs.lakefs.endpoint https://lakefs.example.com/api/v1
 Amazon provides [S3 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
 {: .note }
 
-### Reading Data
-{: .no_toc }
+### Usage
 
-To access objects in lakeFS, you need to use the lakeFS path conventions:
-
-```
-lakefs://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT
-```
-
-Here's an example for reading a parquet file from lakeFS to a Spark DataFrame:
+Hadoop FileSystem paths use the `lakefs://` protocol, with paths taking the form `lakefs://<repository>/<ref>/path/to/object`.
+`<ref>` can be a branch, tag, or commit ID in lakeFS.
+Here's an example for reading a Parquet file from lakeFS to a Spark DataFrame:
 
 ```scala
 val repo = "example-repo"
 val branch = "main"
-val dataPath = s"lakefs://${repo}/${branch}/example-path/example-file.parquet"
-
-val df = spark.read.parquet(dataPath)
+val df = spark.read.parquet(s"lakefs://${repo}/${branch}/example-path/example-file.parquet")
 ```
 
-You can now use this DataFrame like you would normally do.
+Here's how to write some results back to a lakeFS path:
 
-### Writing Data
-{: .no_toc }
-
-Now simply write your results back to a lakeFS path:
 ```scala
 df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/output-path/")
 ```
@@ -245,8 +223,6 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 
 * Since data will not be sent to the lakeFS server, using this mode maximizes data security.
 * The FileSystem implementation is tested with the latest Spark 2.X (Hadoop 2) and Spark 3.X (Hadoop 3) Bitnami images.
-
-
 
 ## Use the S3 gateway
 
@@ -579,32 +555,17 @@ aws emr add-steps --cluster-id j-197B3AEGQ9XE4 \
 
 With this configuration set, you read S3A paths with `example-repo` as the bucket will use lakeFS, while all other buckets will use AWS S3.
 
-### Reading Data
-{: .no_toc }
+### Usage
 
-To access objects in lakeFS, you need to use the lakeFS S3 gateway path
-conventions:
-
-```
-s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT
-```
-
-Here is an example for reading a parquet file from lakeFS to a Spark DataFrame:
+Here's an example for reading a Parquet file from lakeFS to a Spark DataFrame:
 
 ```scala
 val repo = "example-repo"
 val branch = "main"
-val dataPath = s"s3a://${repo}/${branch}/example-path/example-file.parquet"
-
-val df = spark.read.parquet(dataPath)
+val df = spark.read.parquet(s"s3a://${repo}/${branch}/example-path/example-file.parquet")
 ```
 
-You can now use this DataFrame like you'd normally do.
-
-### Writing Data
-{: .no_toc }
-
-Now simply write your results back to a lakeFS path:
+Here's how to write some results back to a lakeFS path:
 ```scala
 df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-path/")
 ```

@@ -37,16 +37,27 @@ import {
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
+import {OverlayTrigger} from "react-bootstrap";
+import Tooltip from "react-bootstrap/Tooltip";
 
 
 const README_FILE_NAME = 'README.md';
 const REPOSITORY_AGE_BEFORE_GC = 14;
 
-const ImportButton = ({variant = "success", enabled = false, onClick}) => {
+const ImportButton = ({variant = "success", onClick, config }) => {
+    const tip = config.import_support ? "Import data from a remote source" :
+        config.blockstore_type === "local" ?
+                "Import is not enabled for local blockstore" :
+                "Unsupported for " + config.blockstore_type +" blockstore";
+
     return (
-        <Button variant={variant} disabled={!enabled} onClick={onClick}>
-            <BsCloudArrowUp/> Import
-        </Button>
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>} >
+            <span>
+                <Button variant={variant} disabled={!config.import_support} onClick={onClick} >
+                    <BsCloudArrowUp/> Import
+                </Button>
+            </span>
+        </OverlayTrigger>
     )
 }
 
@@ -487,7 +498,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                     <ImportButton
                         onClick={() => setShowImport(true)}
-                        enabled={config.import_support}
+                        config={config}
                     />
                     <ImportModal
                         config={config}

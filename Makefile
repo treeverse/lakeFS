@@ -12,7 +12,7 @@ PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v6.4.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 ifndef PACKAGE_VERSION
@@ -146,6 +146,7 @@ gen-code: gen-api ## Run the generator for inline commands
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
 		./pkg/kv \
+		./pkg/permissions \
 		./pkg/pyramid
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
@@ -189,7 +190,7 @@ gofmt:  ## gofmt code formating
 
 validate-fmt:  ## Validate go format
 	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -o \( -path ./pkg/ddl \) -prune -o \( -path ./pkg/webui \) -prune -o \( -path ./pkg/api/gen \) -prune -o -name '*.go' -print)); \
+	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -o \( -path ./pkg/ddl \) -prune -o \( -path ./pkg/webui \) -prune -o \( -path ./pkg/api/gen \) -prune -o \( -path ./pkg/permissions/*.gen.go \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
 		echo checking gofmt fail... ; \
 		echo "$${res}"; \
@@ -221,6 +222,10 @@ validate-mockgen: gen-code
 	git diff --quiet -- pkg/kv/mock/store.go || (echo "Modification verification failed! pkg/kv/mock/store.go"; false)
 	git diff --quiet -- pkg/pyramid/mock/pyramid.go || (echo "Modification verification failed! pkg/pyramid/mock/pyramid.go"; false)
 
+.PHONY: validate-permissions-gen
+validate-permissions-gen: gen-code
+	git diff --quiet -- pkg/permissions/actions.gen.go || (echo "Modification verification failed!  pkg/permissions/actions.gen.go"; false)
+
 validate-reference:
 	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
 
@@ -231,7 +236,7 @@ validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -263,3 +268,8 @@ help:  ## Show Help menu
 
 # helpers
 gen: gen-ui gen-api clients gen-docs
+
+delta-plugin:
+	CARGOCMD=$(or $(shell which cargo), $(error "Missing dependency - no cargo in PATH"))
+	$(CARGOCMD) clean --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+	$(CARGOCMD) build --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml

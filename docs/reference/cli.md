@@ -1,6 +1,6 @@
 ---
 layout: default
-title: CLI (lakectl)
+title: lakectl (lakeFS command-line tool)
 description: lakeFS comes with its own native CLI client. Here you can see the complete command reference.
 parent: Reference
 nav_order: 20
@@ -9,17 +9,22 @@ redirect_from:
   - ./commands.html
 ---
 
-# Commands (CLI) Reference
+{% comment %}
+This file (cli.md) is automagically generated from the Go code files under cmd/lakectl. 
+Any changes made directly to the Markdown file will be overwritten, and should instead be made to the
+relevant Go files. 
+{% endcomment %}
+
+# lakectl (lakeFS command-line tool)
 {:.no_toc}
 
 {% include toc.html %}
 
-## Installing the lakectl command locally
+## Installing lakectl locally
 
-`lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
+`lakectl` is available for Linux, macOS, and Windows. You can also [run it using Docker](#running-lakectl-from-docker).
 
-[Download lakectl](../index.md#downloads){: .btn .btn-green target="_blank"}
-
+[Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
 
 ### Configuring credentials and API endpoint
 
@@ -41,6 +46,25 @@ will provide a link to download a preconfigured configuration file for you.
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
 *LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
 controls `server.endpoint_url`.
+
+## Running lakectl from Docker
+
+If you'd rather run `lakectl` from a Docker container you can do so by passing configuration elements as environment variables. 
+Here is an example: 
+
+```bash
+docker run --rm --pull always \
+          -e LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE \
+          -e LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=xxxxx
+          -e LAKECTL_SERVER_ENDPOINT_URL=https://host.us-east-2.lakefscloud.io/ \
+          --entrypoint lakectl treeverse/lakefs \
+          repo list
+```
+
+_Bear in mind that if you are running lakeFS itself locally you will need to account for this in your networking configuration of 
+the Docker container. That is to say, `localhost` to a Docker container is itself, not the host machine on which it is running._
+
+## Command Reference
 ### lakectl
 
 A cli tool to explore manage and work with lakeFS
@@ -1565,6 +1589,39 @@ lakectl cat-sst <sst-file> [flags]
 
 
 
+### lakectl cherry-pick
+
+Cherry-Pick a ref into a branch
+
+#### Synopsis
+{:.no_toc}
+
+The commit will be applied to the branch as a new commit.
+Cherry picks the commit represented by some-ref into the main branch
+by applying all the changes between the commit and its parent on the destination branch.
+
+```
+lakectl cherry-pick <source ref> <branch ref> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl cherry-pick lakefs://myrepo/some-ref lakefs://myrepo/main
+
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                help for cherry-pick
+  -m, --parent-number int   the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.
+```
+
+
+
 ### lakectl commit
 
 Commit changes on a given branch
@@ -2253,12 +2310,20 @@ Show log of commits for a given branch
 lakectl log <branch uri> [flags]
 ```
 
+#### Examples
+{:.no_toc}
+
+```
+lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
+```
+
 #### Options
 {:.no_toc}
 
 ```
       --after string         show results after this value (used for pagination)
       --amount int           number of results to return. By default, all results are returned
+      --dot                  return results in a dotgraph format
   -h, --help                 help for log
       --limit                limit result just to amount. By default, returns whether more items are available.
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together

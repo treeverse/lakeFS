@@ -4,21 +4,18 @@ import io.treeverse.clients.LakeFSContext._
 import io.treeverse.lakefs.catalog.Entry
 import io.treeverse.lakefs.graveler.committed.RangeData
 import org.apache.commons.lang3.StringUtils
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapred.SplitLocationInfo
 import org.apache.hadoop.mapreduce._
-import scalapb.GeneratedMessage
-import scalapb.GeneratedMessageCompanion
+import org.apache.spark.TaskContext
+import org.slf4j.{Logger, LoggerFactory}
+import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
-import java.io.DataInput
-import java.io.DataOutput
-import java.io.File
+import java.io.{DataInput, DataOutput, File}
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
-import org.slf4j.{Logger, LoggerFactory}
 
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
@@ -89,18 +86,21 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
     localFile = File.createTempFile("lakefs.", ".range")
-    localFile.deleteOnExit()
+    // Cleanup the local file - using the same technic as other data sources:
+    // https://github.com/apache/spark/blob/c0b1735c0bfeb1ff645d146e262d7ccd036a590e/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/text/TextFileFormat.scala#L123
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => localFile.delete()))
+
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
-    fs.copyToLocalFile(gravelerSplit.path, new Path(localFile.getAbsolutePath))
+    fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
     // TODO(johnnyaug) should we cache this?
     sstableReader = new SSTableReader(localFile.getAbsolutePath, companion)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
-      val props = sstableReader.getProperties()
+      val props = sstableReader.getProperties
       logger.debug(s"Props: $props")
-      if (new String(props.get("type").get) != "ranges" || props.get("entity").nonEmpty) {
+      if (new String(props("type")) != "ranges" || props.contains("entity")) {
         return
       }
     }
@@ -155,7 +155,6 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     val commitID = conf.get(LAKEFS_CONF_JOB_COMMIT_ID_KEY)
-    val sourceName = conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY)
     val apiClient = ApiClient.get(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),

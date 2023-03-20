@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"sync"
 
@@ -102,7 +103,11 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.R
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
+	return nil, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
+}
+
+func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
 	return "", fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
@@ -287,6 +292,10 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info.PreSignSupport = false
 	info.ImportSupport = false
 	return info
+}
+
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

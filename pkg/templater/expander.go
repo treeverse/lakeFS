@@ -1,10 +1,6 @@
 package templater
 
 import (
-	"github.com/treeverse/lakefs/pkg/auth"
-	auth_model "github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/config"
-
 	"context"
 	"errors"
 	"fmt"
@@ -14,6 +10,10 @@ import (
 	"path"
 	"strings"
 	"text/template"
+
+	"github.com/treeverse/lakefs/pkg/auth"
+	auth_model "github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 const (
@@ -142,7 +142,7 @@ func NewExpanderMap(fs fs.FS, cfg *config.Config, auth AuthService) *ExpanderMap
 	}
 }
 
-func (em *ExpanderMap) Get(ctx context.Context, username, name string) (Expander, error) {
+func (em *ExpanderMap) Get(_ context.Context, _, name string) (Expander, error) {
 	if e, ok := em.expanders[name]; ok {
 		// Fast-path through the cache
 		if e == nil {

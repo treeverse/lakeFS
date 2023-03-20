@@ -1,7 +1,6 @@
 package block
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -16,8 +15,6 @@ const (
 	StorageTypeGS
 	StorageTypeAzure
 )
-
-var ErrInvalidNamespace = errors.New("invalid namespace")
 
 func (s StorageType) BlockstoreType() string {
 	switch s {
@@ -56,20 +53,33 @@ type StorageNamespaceInfo struct {
 	ImportSupport          bool
 }
 
-type QualifiedKey struct {
+type QualifiedKey interface {
+	Format() string
+	GetStorageType() StorageType
+	GetStorageNamespace() string
+	GetKey() string
+}
+
+type CommonQualifiedKey struct {
 	StorageType      StorageType
 	StorageNamespace string
 	Key              string
 }
 
-type QualifiedPrefix struct {
-	StorageType      StorageType
-	StorageNamespace string
-	Prefix           string
+func (qk CommonQualifiedKey) Format() string {
+	return qk.StorageType.Scheme() + "://" + formatPathWithNamespace(qk.StorageNamespace, qk.Key)
 }
 
-func (qk QualifiedKey) Format() string {
-	return qk.StorageType.Scheme() + "://" + formatPathWithNamespace(qk.StorageNamespace, qk.Key)
+func (qk CommonQualifiedKey) GetStorageType() StorageType {
+	return qk.StorageType
+}
+
+func (qk CommonQualifiedKey) GetKey() string {
+	return qk.Key
+}
+
+func (qk CommonQualifiedKey) GetStorageNamespace() string {
+	return qk.StorageNamespace
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
@@ -86,8 +96,20 @@ func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 	case "http", "https":
 		return StorageTypeAzure, nil
 	default:
-		return st, fmt.Errorf("%s: %w", namespaceURL.Scheme, ErrInvalidNamespace)
+		return st, fmt.Errorf("invalid storage scheme %s: %w", namespaceURL.Scheme, ErrInvalidAddress)
 	}
+}
+
+func ValidateStorageType(uri *url.URL, expectedStorage StorageType) error {
+	storage, err := GetStorageType(uri)
+	if err != nil {
+		return err
+	}
+
+	if storage != expectedStorage {
+		return fmt.Errorf("expected storage type %s: %w", expectedStorage.Scheme(), ErrInvalidAddress)
+	}
+	return nil
 }
 
 func formatPathWithNamespace(namespacePath, keyPath string) string {
@@ -98,21 +120,7 @@ func formatPathWithNamespace(namespacePath, keyPath string) string {
 	return namespacePath + "/" + keyPath
 }
 
-func ResolveNamespacePrefix(defaultNamespace, prefix string) (QualifiedPrefix, error) {
-	// behaviour for key and prefix is the same
-	key, err := resolveRelative(defaultNamespace, prefix)
-	if err != nil {
-		return QualifiedPrefix{}, fmt.Errorf("resolving namespace: %w", err)
-	}
-
-	return QualifiedPrefix{
-		StorageType:      key.StorageType,
-		StorageNamespace: key.StorageNamespace,
-		Prefix:           key.Key,
-	}, nil
-}
-
-func ResolveNamespace(defaultNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {
+func DefaultResolveNamespace(defaultNamespace, key string, identifierType IdentifierType) (CommonQualifiedKey, error) {
 	switch identifierType {
 	case IdentifierTypeUnknownDeprecated:
 		return resolveNamespaceUnknown(defaultNamespace, key)
@@ -125,43 +133,43 @@ func ResolveNamespace(defaultNamespace, key string, identifierType IdentifierTyp
 	}
 }
 
-func resolveFull(key string) (QualifiedKey, error) {
+func resolveFull(key string) (CommonQualifiedKey, error) {
 	parsedKey, err := url.ParseRequestURI(key)
 	if err != nil {
-		return QualifiedKey{}, fmt.Errorf("could not parse URI: %w", err)
+		return CommonQualifiedKey{}, fmt.Errorf("could not parse URI: %w", err)
 	}
 	// extract its scheme
 	storageType, err := GetStorageType(parsedKey)
 	if err != nil {
-		return QualifiedKey{}, err
+		return CommonQualifiedKey{}, err
 	}
-	return QualifiedKey{
+	return CommonQualifiedKey{
 		StorageType:      storageType,
 		StorageNamespace: parsedKey.Host,
 		Key:              formatPathWithNamespace("", parsedKey.Path),
 	}, nil
 }
 
-func resolveRelative(defaultNamespace, key string) (QualifiedKey, error) {
+func resolveRelative(defaultNamespace, key string) (CommonQualifiedKey, error) {
 	// is not fully qualified, treat as key only
 	// if we don't have a trailing slash for the namespace, add it.
-	parsedNs, err := url.ParseRequestURI(defaultNamespace)
+	parsedNS, err := url.ParseRequestURI(defaultNamespace)
 	if err != nil {
-		return QualifiedKey{}, fmt.Errorf("default namespace %s: %w", defaultNamespace, ErrInvalidNamespace)
+		return CommonQualifiedKey{}, fmt.Errorf("default namespace %s: %w", defaultNamespace, ErrInvalidAddress)
 	}
-	storageType, err := GetStorageType(parsedNs)
+	storageType, err := GetStorageType(parsedNS)
 	if err != nil {
-		return QualifiedKey{}, fmt.Errorf("no storage type for %s: %w", parsedNs, err)
+		return CommonQualifiedKey{}, fmt.Errorf("no storage type for %s: %w", parsedNS, err)
 	}
 
-	return QualifiedKey{
+	return CommonQualifiedKey{
 		StorageType:      storageType,
-		StorageNamespace: parsedNs.Host,
-		Key:              formatPathWithNamespace(parsedNs.Path, key),
+		StorageNamespace: strings.TrimSuffix(parsedNS.Host+parsedNS.Path, "/"),
+		Key:              key,
 	}, nil
 }
 
-func resolveNamespaceUnknown(defaultNamespace, key string) (QualifiedKey, error) {
+func resolveNamespaceUnknown(defaultNamespace, key string) (CommonQualifiedKey, error) {
 	// first try to treat key as a full path
 	if qk, err := resolveFull(key); err == nil {
 		return qk, nil
