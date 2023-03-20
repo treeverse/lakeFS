@@ -5,6 +5,7 @@ ARG VERSION=dev
 WORKDIR /build
 
 # Packages required to build
+RUN apk add build-base && apk add pkgconfig && apk add libressl-dev
 RUN apk add --no-cache build-base
 
 # Copy project deps first since they don't change often
@@ -83,7 +84,7 @@ CMD ["run"]
 FROM --platform=$BUILDPLATFORM alpine:3.17.0 AS lakefs-plugins
 
 RUN apk update
-RUN apk add libressl-dev && apk add libc6-compat && apk add build-base && apk add pkgconfig
+RUN apk add libressl-dev && apk add libc6-compat
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
 RUN apk add netcat-openbsd
