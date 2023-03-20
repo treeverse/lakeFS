@@ -737,16 +737,7 @@ func (s *AuthService) WritePolicy(ctx context.Context, policy *model.Policy, upd
 	m := model.ProtoFromPolicy(policy)
 
 	if update { // update policy only if it already exists
-		_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, policyKey, &model.PolicyData{})
-		if err != nil {
-			return err
-		}
-		err = kv.SetMsg(ctx, s.store, model.PartitionKey, policyKey, m)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, policyKey, m, nil)
+		err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, policyKey, m, kv.PrecondConditionalExists)
 		if err != nil {
 			if errors.Is(err, kv.ErrPredicateFailed) {
 				err = ErrNotFound
