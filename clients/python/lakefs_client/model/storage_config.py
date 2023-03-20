@@ -40,14 +40,16 @@ class StorageConfig(
             "blockstore_namespace_example",
             "blockstore_type",
             "import_support",
+            "pre_sign_support_UI",
             "pre_sign_support",
         }
-
+        
         class properties:
             blockstore_type = schemas.StrSchema
             blockstore_namespace_example = schemas.StrSchema
             blockstore_namespace_ValidityRegex = schemas.StrSchema
             pre_sign_support = schemas.BoolSchema
+            pre_sign_support_UI = schemas.BoolSchema
             import_support = schemas.BoolSchema
             default_namespace_prefix = schemas.StrSchema
             __annotations__ = {
@@ -55,144 +57,98 @@ class StorageConfig(
                 "blockstore_namespace_example": blockstore_namespace_example,
                 "blockstore_namespace_ValidityRegex": blockstore_namespace_ValidityRegex,
                 "pre_sign_support": pre_sign_support,
+                "pre_sign_support_UI": pre_sign_support_UI,
                 "import_support": import_support,
                 "default_namespace_prefix": default_namespace_prefix,
             }
-
+    
     blockstore_namespace_ValidityRegex: MetaOapg.properties.blockstore_namespace_ValidityRegex
     blockstore_namespace_example: MetaOapg.properties.blockstore_namespace_example
     blockstore_type: MetaOapg.properties.blockstore_type
     import_support: MetaOapg.properties.import_support
+    pre_sign_support_UI: MetaOapg.properties.pre_sign_support_UI
     pre_sign_support: MetaOapg.properties.pre_sign_support
-
+    
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["blockstore_type"]) -> MetaOapg.properties.blockstore_type: ...
-
+    
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["blockstore_namespace_example"]) -> MetaOapg.properties.blockstore_namespace_example: ...
-
+    
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["blockstore_namespace_ValidityRegex"]) -> MetaOapg.properties.blockstore_namespace_ValidityRegex: ...
-
+    
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["pre_sign_support"]) -> MetaOapg.properties.pre_sign_support: ...
-
+    
+    @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["pre_sign_support_UI"]) -> MetaOapg.properties.pre_sign_support_UI: ...
+    
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["import_support"]) -> MetaOapg.properties.import_support: ...
-
+    
     @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["default_namespace_prefix"]) -> MetaOapg.properties.default_namespace_prefix: ...
-
+    
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
-
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "import_support", "default_namespace_prefix", ], str]):
+    
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "pre_sign_support_UI", "import_support", "default_namespace_prefix", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
-
-
+    
+    
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["blockstore_type"]) -> MetaOapg.properties.blockstore_type: ...
-
+    
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["blockstore_namespace_example"]) -> MetaOapg.properties.blockstore_namespace_example: ...
-
+    
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["blockstore_namespace_ValidityRegex"]) -> MetaOapg.properties.blockstore_namespace_ValidityRegex: ...
-
+    
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["pre_sign_support"]) -> MetaOapg.properties.pre_sign_support: ...
-
+    
+    @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["pre_sign_support_UI"]) -> MetaOapg.properties.pre_sign_support_UI: ...
+    
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["import_support"]) -> MetaOapg.properties.import_support: ...
-
+    
     @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["default_namespace_prefix"]) -> typing.Union[MetaOapg.properties.default_namespace_prefix, schemas.Unset]: ...
-
+    
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
-
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "import_support", "default_namespace_prefix", ], str]):
+    
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "pre_sign_support_UI", "import_support", "default_namespace_prefix", ], str]):
         return super().get_item_oapg(name)
+    
 
-
-        Args:
-            blockstore_type (str):
-            blockstore_namespace_example (str):
-            blockstore_namespace_validity_regex (str):
-            pre_sign_support (bool):
-            import_support (bool):
-
-        Keyword Args:
-            _check_type (bool): if True, values for parameters in openapi_types
-                                will be type checked and a TypeError will be
-                                raised if the wrong type is input.
-                                Defaults to True
-            _path_to_item (tuple/list): This is a list of keys or values to
-                                drill down to the model in received_data
-                                when deserializing a response
-            _spec_property_naming (bool): True if the variable names in the input data
-                                are serialized names, as specified in the OpenAPI document.
-                                False if the variable names in the input data
-                                are pythonic names, e.g. snake case (default)
-            _configuration (Configuration): the instance to use when
-                                deserializing a file_type parameter.
-                                If passed, type conversion is attempted
-                                If omitted no type conversion is done.
-            _visited_composed_classes (tuple): This stores a tuple of
-                                classes that we have traveled through so that
-                                if we see that class again we will not use its
-                                discriminator again.
-                                When traveling through a discriminator, the
-                                composed schema that is
-                                is traveled through is added to this set.
-                                For example if Animal has a discriminator
-                                petType and we pass in "Dog", and the class Dog
-                                allOf includes Animal, we move through Animal
-                                once using the discriminator, and pick Dog.
-                                Then in Dog, we will make an instance of the
-                                Animal class but this time we won't travel
-                                through its discriminator because we passed in
-                                _visited_composed_classes = (Animal,)
-            default_namespace_prefix (str): [optional]  # noqa: E501
-        """
-
-        _check_type = kwargs.pop('_check_type', True)
-        _spec_property_naming = kwargs.pop('_spec_property_naming', False)
-        _path_to_item = kwargs.pop('_path_to_item', ())
-        _configuration = kwargs.pop('_configuration', None)
-        _visited_composed_classes = kwargs.pop('_visited_composed_classes', ())
-
-        if args:
-            raise ApiTypeError(
-                "Invalid positional arguments=%s passed to %s. Remove those invalid positional arguments." % (
-                    args,
-                    self.__class__.__name__,
-                ),
-                path_to_item=_path_to_item,
-                valid_classes=(self.__class__,),
-            )
-
-        self._data_store = {}
-        self._check_type = _check_type
-        self._spec_property_naming = _spec_property_naming
-        self._path_to_item = _path_to_item
-        self._configuration = _configuration
-        self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
-
-        self.blockstore_type = blockstore_type
-        self.blockstore_namespace_example = blockstore_namespace_example
-        self.blockstore_namespace_validity_regex = blockstore_namespace_validity_regex
-        self.pre_sign_support = pre_sign_support
-        self.import_support = import_support
-        for var_name, var_value in kwargs.items():
-            if var_name not in self.attribute_map and \
-                        self._configuration is not None and \
-                        self._configuration.discard_unknown_keys and \
-                        self.additional_properties_type is None:
-                # discard variable.
-                continue
-            setattr(self, var_name, var_value)
-            if var_name in self.read_only_vars:
-                raise ApiAttributeError(f"`{var_name}` is a read-only attribute. Use `from_openapi_data` to instantiate "
-                                     f"class with read only attributes.")
+    def __new__(
+        cls,
+        *_args: typing.Union[dict, frozendict.frozendict, ],
+        blockstore_namespace_ValidityRegex: typing.Union[MetaOapg.properties.blockstore_namespace_ValidityRegex, str, ],
+        blockstore_namespace_example: typing.Union[MetaOapg.properties.blockstore_namespace_example, str, ],
+        blockstore_type: typing.Union[MetaOapg.properties.blockstore_type, str, ],
+        import_support: typing.Union[MetaOapg.properties.import_support, bool, ],
+        pre_sign_support_UI: typing.Union[MetaOapg.properties.pre_sign_support_UI, bool, ],
+        pre_sign_support: typing.Union[MetaOapg.properties.pre_sign_support, bool, ],
+        default_namespace_prefix: typing.Union[MetaOapg.properties.default_namespace_prefix, str, schemas.Unset] = schemas.unset,
+        _configuration: typing.Optional[schemas.Configuration] = None,
+        **kwargs: typing.Union[schemas.AnyTypeSchema, dict, frozendict.frozendict, str, date, datetime, uuid.UUID, int, float, decimal.Decimal, None, list, tuple, bytes],
+    ) -> 'StorageConfig':
+        return super().__new__(
+            cls,
+            *_args,
+            blockstore_namespace_ValidityRegex=blockstore_namespace_ValidityRegex,
+            blockstore_namespace_example=blockstore_namespace_example,
+            blockstore_type=blockstore_type,
+            import_support=import_support,
+            pre_sign_support_UI=pre_sign_support_UI,
+            pre_sign_support=pre_sign_support,
+            default_namespace_prefix=default_namespace_prefix,
+            _configuration=_configuration,
+            **kwargs,
+        )

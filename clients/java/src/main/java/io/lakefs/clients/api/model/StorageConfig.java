@@ -200,7 +200,6 @@ public class StorageConfig {
    * @return preSignSupportUI
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
 
   public Boolean getPreSignSupportUI() {
     return preSignSupportUI;
@@ -296,6 +295,7 @@ public class StorageConfig {
     openapiFields.add("blockstore_namespace_ValidityRegex");
     openapiFields.add("default_namespace_prefix");
     openapiFields.add("pre_sign_support");
+    openapiFields.add("pre_sign_support_UI");
     openapiFields.add("import_support");
 
     // a set of required properties/fields (JSON key names)
@@ -304,6 +304,7 @@ public class StorageConfig {
     openapiRequiredFields.add("blockstore_namespace_example");
     openapiRequiredFields.add("blockstore_namespace_ValidityRegex");
     openapiRequiredFields.add("pre_sign_support");
+    openapiRequiredFields.add("pre_sign_support_UI");
     openapiRequiredFields.add("import_support");
   }
 
