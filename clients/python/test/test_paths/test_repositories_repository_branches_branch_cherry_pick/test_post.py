@@ -21,7 +21,7 @@ from .. import ApiTestMixin
 class TestRepositoriesRepositoryBranchesBranchCherryPick(ApiTestMixin, unittest.TestCase):
     """
     RepositoriesRepositoryBranchesBranchCherryPick unit test stubs
-        Cherry-Pick the given reference commit into the given branch  # noqa: E501
+        Replay the changes from the given commit on the branch  # noqa: E501
     """
     _configuration = configuration.Configuration()
 

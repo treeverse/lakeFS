@@ -4,7 +4,7 @@ All URIs are relative to */api/v1*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**cherryPick**](BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch |
+| [**cherryPick**](BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch |
 | [**createBranch**](BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch |
 | [**deleteBranch**](BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch |
 | [**diffBranch**](BranchesApi.md#diffBranch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch |
@@ -18,7 +18,7 @@ All URIs are relative to */api/v1*
 # **cherryPick**
 > Commit cherryPick(repository, branch, cherryPickCreation)
 
-Cherry-Pick the given reference commit into the given branch
+Replay the changes from the given commit on the branch
 
 ### Example
 ```java

@@ -264,7 +264,7 @@ class BaseApi(api_client.Api):
         skip_deserialization: bool = False,
     ):
         """
-        Cherry-Pick the given reference commit into the given branch
+        Replay the changes from the given commit on the branch
         :param skip_deserialization: If true then api_response.response will be set but
             api_response.body and api_response.headers will not be deserialized into schema
             class instances

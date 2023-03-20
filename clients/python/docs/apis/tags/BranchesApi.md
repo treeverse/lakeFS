@@ -5,7 +5,7 @@ All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**cherry_pick**](#cherry_pick) | **post** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch
+[**cherry_pick**](#cherry_pick) | **post** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
 [**create_branch**](#create_branch) | **post** /repositories/{repository}/branches | create branch
 [**delete_branch**](#delete_branch) | **delete** /repositories/{repository}/branches/{branch} | delete branch
 [**diff_branch**](#diff_branch) | **get** /repositories/{repository}/branches/{branch}/diff | diff branch
@@ -18,7 +18,7 @@ Method | HTTP request | Description
 <a name="cherry_pick"></a>
 > Commit cherry_pick(repositorybranchcherry_pick_creation)
 
-Cherry-Pick the given reference commit into the given branch
+Replay the changes from the given commit on the branch
 
 ### Example
 
@@ -88,7 +88,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         parent_number=1,
     )
     try:
-        # Cherry-Pick the given reference commit into the given branch
+        # Replay the changes from the given commit on the branch
         api_response = api_instance.cherry_pick(
             path_params=path_params,
             body=body,

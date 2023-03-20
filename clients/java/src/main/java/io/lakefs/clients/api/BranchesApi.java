@@ -169,7 +169,7 @@ public class BranchesApi {
     }
 
     /**
-     * Cherry-Pick the given reference commit into the given branch
+     * Replay the changes from the given commit on the branch
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -193,7 +193,7 @@ public class BranchesApi {
     }
 
     /**
-     * Cherry-Pick the given reference commit into the given branch
+     * Replay the changes from the given commit on the branch
      * 
      * @param repository  (required)
      * @param branch  (required)
@@ -218,7 +218,7 @@ public class BranchesApi {
     }
 
     /**
-     * Cherry-Pick the given reference commit into the given branch (asynchronously)
+     * Replay the changes from the given commit on the branch (asynchronously)
      * 
      * @param repository  (required)
      * @param branch  (required)

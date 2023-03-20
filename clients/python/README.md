@@ -242,7 +242,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**login**](docs/apis/tags/AuthApi.md#login) | **post** /auth/login | perform a login
 *AuthApi* | [**update_password**](docs/apis/tags/AuthApi.md#update_password) | **post** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/apis/tags/AuthApi.md#update_policy) | **put** /auth/policies/{policyId} | update policy
-*BranchesApi* | [**cherry_pick**](docs/apis/tags/BranchesApi.md#cherry_pick) | **post** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch
+*BranchesApi* | [**cherry_pick**](docs/apis/tags/BranchesApi.md#cherry_pick) | **post** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
 *BranchesApi* | [**create_branch**](docs/apis/tags/BranchesApi.md#create_branch) | **post** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**delete_branch**](docs/apis/tags/BranchesApi.md#delete_branch) | **delete** /repositories/{repository}/branches/{branch} | delete branch
 *BranchesApi* | [**diff_branch**](docs/apis/tags/BranchesApi.md#diff_branch) | **get** /repositories/{repository}/branches/{branch}/diff | diff branch

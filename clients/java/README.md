@@ -178,7 +178,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**updatePassword**](docs/AuthApi.md#updatePassword) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
-*BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Cherry-Pick the given reference commit into the given branch
+*BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
 *BranchesApi* | [**createBranch**](docs/BranchesApi.md#createBranch) | **POST** /repositories/{repository}/branches | create branch
 *BranchesApi* | [**deleteBranch**](docs/BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
 *BranchesApi* | [**diffBranch**](docs/BranchesApi.md#diffBranch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch
