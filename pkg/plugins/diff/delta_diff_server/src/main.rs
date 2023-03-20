@@ -252,13 +252,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let port: u16 = portpicker::pick_unused_port().expect("No free ports");
     let address: SocketAddr = format!("127.0.0.1:{}", port).parse().unwrap();
     let differ_service = DifferService::default();
-    let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
-    health_reporter
-        .set_serving::<TableDifferServer<DifferService>>()
-        .await;
 
     let serve = Server::builder()
-        .add_service(health_service)
         .add_service(TableDifferServer::new(differ_service))
         .serve(address);
 
