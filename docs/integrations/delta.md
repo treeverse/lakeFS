@@ -20,16 +20,17 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 
 {% include toc.html %}
 
-## Beta: Viewing Delta Lake table changes in lakeFS 
+## Beta: Viewing Delta Lake table changes in lakeFS
 
-### Enable Delta Lake tables diff
+### Installing the Delta Lake diff plugin
 
-The Delta Lake diff functionality is enabled using a binary plugin. This binary plugin can be found as part of the latest lakeFS
-[release](https://github.com/treeverse/lakeFS/releases/latest) (starting from 0.100.0), and can also be built locally using the `make delta-plugin` command
-(run from lakeFS's repository root). After getting it, place it under `~/.lakefs/plugins/diff`.  
-lakeFS will look for a binary named `delta_diff` under `~/.lakefs/plugins/diff` if not configured otherwise.
+To enable the Delta Lake diff feature, you need to install a plugin. You will find the plugin binary in the
+[release](https://github.com/treeverse/lakeFS/releases/latest) tarball (versions >= 0.100.0).
+Put the `delta_diff` binary under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
 
-### Using Delta Lake table diff
+**Notice**: If you're using the lakeFS [docker image](../quickstart/run.md#running-locally-with-docker), the plugin is installed by default.
+
+### Viewing Delta Lake table changes
 
 Using lakeFS you can compare different versions of Delta tables, view the table operations that have been done since the tables diverged, and the details of those operations.
 
