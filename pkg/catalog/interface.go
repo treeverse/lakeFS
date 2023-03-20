@@ -27,7 +27,7 @@ type RevertParams struct {
 
 type CherryPickParams struct {
 	Reference    string // the commit to pick
-	ParentNumber *int   // if a merge commit was pocked, the change will be picked relative to this parent number (1-based).
+	ParentNumber *int   // if a merge commit was picked, the change will be applied relative to this parent number (1-based).
 	Committer    string
 }
 

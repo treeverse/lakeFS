@@ -14,12 +14,10 @@ const (
 
 // lakectl cherry-pick lakefs://myrepo/main lakefs://myrepo/some-ref
 var cherryPick = &cobra.Command{
-	Use:   "cherry-pick <source ref> <branch ref>",
-	Short: "Cherry-Pick a ref into a branch",
-	Long: `The commit will be applied to the branch as a new commit.
-Cherry picks the commit represented by some-ref into the main branch
-by applying all the changes between the commit and its parent on the destination branch.`,
-	Example: `lakectl cherry-pick lakefs://myrepo/some-ref lakefs://myrepo/main
+	Use:   "cherry-pick <commit ref> <branch>",
+	Short: "Apply the changes introduced by an existing commit",
+	Long:  `Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.`,
+	Example: `lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
 `,
 
 	Args: cobra.ExactArgs(cherryPickCmdArgs),
