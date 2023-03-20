@@ -15,5 +15,4 @@ export async function isDeltaLakeTable(entry, repo, ref) {
 
     let response = await objects.list(repo.id, ref, entry.path + "_delta_log/")
     return response !== null && response.results.length !== 0;
-
 }
