@@ -100,9 +100,11 @@ var bisectStartCmd = &cobra.Command{
 		// resolve commits
 		if badURI != nil {
 			state.BadCommit = resolveCommitOrDie(ctx, client, badURI.Repository, badURI.Ref)
+			fmt.Println("BAD", state.BadCommit)
 		}
 		if goodURI != nil {
 			state.GoodCommit = resolveCommitOrDie(ctx, client, goodURI.Repository, goodURI.Ref)
+			fmt.Println("GOOD", state.GoodCommit)
 		}
 		// if we have both - load log
 		if err := state.Update(ctx, client); err != nil {
@@ -133,13 +135,13 @@ func (b *Bisect) PrintStatus() {
 		fmt.Printf("Good commit lakefs://%s/%s, waiting for bad commit\n", b.Repository, b.GoodCommit)
 	case commitCount == 0:
 		fmt.Println("No commits found")
-	case commitCount < 3:
-		commit := b.Commits[commitCount-1]
+	case commitCount == 1:
+		commit := b.Commits[0]
 		fmt.Printf("Found commit lakefs://%s/%s %s\n", b.Repository, commit.Id, commit.Message)
 	default:
-		steps := math.Log2(float64(commitCount - 1))
+		steps := math.Log2(float64(commitCount))
 		h := commitCount >> 1
-		fmt.Printf("Bisecting: %d commits left to test after this (roughly %d steps)\n", h, int(steps-1))
+		fmt.Printf("Bisecting: %d commits left to test after this (roughly %d steps)\n", h, int(steps))
 		commit := b.Commits[h]
 		fmt.Printf("Current commit lakefs://%s/%s %s\n", b.Repository, commit.Id, commit.Message)
 	}
@@ -372,22 +374,19 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 		}
 		results := logResponse.JSON200.Results
 		for i := range results {
-			commits = append(commits, &results[i])
+			// stop when we got to the good commit
 			if results[i].Id == b.GoodCommit {
-				break
+				b.Commits = commits
+				return nil
 			}
+			commits = append(commits, &results[i])
 		}
 		if !logResponse.JSON200.Pagination.HasMore {
 			break
 		}
 		params.After = api.PaginationAfterPtr(logResponse.JSON200.Pagination.NextOffset)
 	}
-	if commits[len(commits)-1].Id != b.GoodCommit {
-		return fmt.Errorf("good %w", ErrCommitNotFound)
-	}
-
-	b.Commits = commits
-	return nil
+	return fmt.Errorf("good %w", ErrCommitNotFound)
 }
 
 func (b *Bisect) SaveSelect(sel BisectSelect) error {

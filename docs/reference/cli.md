@@ -1307,6 +1307,161 @@ lakectl auth users policies list [flags]
 
 
 
+### lakectl bisect
+
+A brief description of your command
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for bisect
+```
+
+
+
+### lakectl bisect bad
+
+Set 'bad' commit that is known to contain the bug
+
+```
+lakectl bisect bad [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for bad
+```
+
+
+
+### lakectl bisect good
+
+Set current commit as 'good' commit that is known to be before the bug was introduced
+
+```
+lakectl bisect good [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for good
+```
+
+
+
+### lakectl bisect help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type bisect help [path to command] for full details.
+
+```
+lakectl bisect help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl bisect log
+
+A brief description of your command
+
+```
+lakectl bisect log [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for log
+```
+
+
+
+### lakectl bisect reset
+
+Clean up the bisection state
+
+```
+lakectl bisect reset [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for reset
+```
+
+
+
+### lakectl bisect run
+
+Bisecting based on command status code
+
+```
+lakectl bisect run <command> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for run
+```
+
+
+
+### lakectl bisect start
+
+Start a bisect session
+
+```
+lakectl bisect start <repository> [bad commit] [good commit] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for start
+```
+
+
+
+### lakectl bisect view
+
+A brief description of your command
+
+```
+lakectl bisect view [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for view
+```
+
+
+
 ### lakectl branch
 
 Create and manage branches within a repository
