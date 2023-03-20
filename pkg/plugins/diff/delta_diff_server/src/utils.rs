@@ -31,8 +31,12 @@ const TIMESTAMP_KEY: &str = "timestamp";
 
 pub(crate) fn construct_storage_config(config: GatewayConfig) -> HashMap<String, String> {
     let mut s3_config: HashMap<String, String> = HashMap::new();
+    let mut endpoint = config.endpoint;
+    if endpoint.contains("0.0.0.0:") {
+        endpoint = endpoint.replace("0.0.0.0:", "localhost:");
+    }
     s3_config.insert("AWS_ACCESS_KEY_ID".to_string(), config.key);
-    s3_config.insert("AWS_ENDPOINT_URL".to_string(), config.endpoint);
+    s3_config.insert("AWS_ENDPOINT_URL".to_string(), endpoint);
     s3_config.insert("AWS_S3_ADDRESSING_STYLE".to_string(), "path".to_string());
     s3_config.insert("AWS_SECRET_ACCESS_KEY".to_string(), config.secret);
     s3_config.insert("AWS_STORAGE_ALLOW_HTTP".to_string(), "true".to_string());

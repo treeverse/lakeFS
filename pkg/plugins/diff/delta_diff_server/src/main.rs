@@ -59,6 +59,7 @@ impl TableDiffer for DifferService {
         let left_table_path: TablePath = diff_props.left_table_path.expect("Missing left table's path");
         let right_table_path: TablePath = diff_props.right_table_path.expect("Missing right table's path");
         let s3_config_map: HashMap<String, String> = utils::construct_storage_config(s3_gateway_config_req);
+        eprintln!("Received Creds:\n{:?}\n", s3_config_map);
         eprintln!("Before getting the Delta Tables");
         let left_table_res =
             delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, &left_table_path);
