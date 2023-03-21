@@ -21,7 +21,7 @@ import Alert from "react-bootstrap/Alert";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects, refs, retention, repositories, NotFoundError} from "../../../lib/api";
+import {config, objects, refs, staging, retention, repositories, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -211,7 +211,20 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             inProgress: true
         })
         try {
-            await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
+            if (config.pre_sign_support_ui) {
+                const getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support);
+
+                const putResp = await fetch(getResp.presigned_url, {
+                    method: 'PUT',
+                    mode: 'cors',
+                    body: fileRef.current.files[0]
+                });
+
+                const etag = putResp.headers.get('ETag').replace(/["]/g, '')
+                await staging.link(repo.id, reference.id, textRef.current.value, getResp, etag, fileRef.current.files[0].size);
+            } else {
+                await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
+            }
             setUploadState({...initialState})
             onDone()
         } catch (error) {
@@ -304,7 +317,7 @@ const TreeContainer = ({
                            refreshToken
                        }) => {
     const {results, error, loading, nextPage} = useAPIWithPagination(() => {
-        return objects.list(repo.id, reference.id, path, after)
+        return objects.list(repo.id, reference.id, path, after, config.pre_sign_support)
     }, [repo.id, reference.id, path, after, refreshToken]);
     const initialState = {
         inProgress: false,
@@ -344,7 +357,7 @@ const TreeContainer = ({
     );
 }
 
-const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
+const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
     let readmePath = '';
 
     if (path) {
@@ -373,6 +386,7 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
             error={error}
             loading={loading}
             showFullNavigator={false}
+            presign={config.pre_sign_support}
         />
     );
 }
@@ -526,7 +540,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     }}
                     onRefresh={refresh}/>
 
-                <ReadmeContainer reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
+                <ReadmeContainer config={config} reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
             </Box>
         </>
     );

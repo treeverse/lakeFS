@@ -78,6 +78,7 @@ require (
 	github.com/IBM/pgxpoolprometheus v1.0.1
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.2
+	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-co-op/gocron v1.18.0
 	github.com/gorilla/securecookie v1.1.1

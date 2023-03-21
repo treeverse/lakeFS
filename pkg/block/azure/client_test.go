@@ -11,10 +11,10 @@ import (
 )
 
 func TestExtraction(t *testing.T) {
-	parse := func(u string) *url.URL {
-		url, err := url.Parse(u)
+	parse := func(p string) *url.URL {
+		u, err := url.Parse(p)
 		require.NoError(t, err)
-		return url
+		return u
 	}
 	tests := []struct {
 		name                   string
@@ -40,7 +40,7 @@ func TestExtraction(t *testing.T) {
 		{
 			name:        "No subdomains",
 			url:         parse("https://Rgeaccountblobcorewindowsnet/newcontainer/2023/"),
-			expectedErr: block.ErrInvalidNamespace,
+			expectedErr: block.ErrInvalidAddress,
 		},
 	}
 
@@ -55,5 +55,4 @@ func TestExtraction(t *testing.T) {
 			}
 		})
 	}
-
 }

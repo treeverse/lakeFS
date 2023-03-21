@@ -35,7 +35,7 @@ func TestLocalLoad(t *testing.T) {
 
 	// Only once
 	ctx := context.Background()
-	viper.Set("blockstore.type", block.BlockstoreTypeLocal)
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
 	conf, err := config.NewConfig()
 	testutil.MustDo(t, "config", err)

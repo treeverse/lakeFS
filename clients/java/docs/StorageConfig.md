@@ -5,14 +5,15 @@
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**blockstoreType** | **String** |  | 
-**blockstoreNamespaceExample** | **String** |  | 
-**blockstoreNamespaceValidityRegex** | **String** |  | 
-**defaultNamespacePrefix** | **String** |  |  [optional]
-**preSignSupport** | **Boolean** |  | 
-**importSupport** | **Boolean** |  | 
+| Name | Type | Description | Notes |
+|------------ | ------------- | ------------- | -------------|
+|**blockstoreType** | **String** |  |  |
+|**blockstoreNamespaceExample** | **String** |  |  |
+|**blockstoreNamespaceValidityRegex** | **String** |  |  |
+|**defaultNamespacePrefix** | **String** |  |  [optional] |
+|**preSignSupport** | **Boolean** |  |  |
+|**preSignSupportUI** | **Boolean** |  |  |
+|**importSupport** | **Boolean** |  |  |
 
 
 

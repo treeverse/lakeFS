@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
@@ -26,7 +27,7 @@ func TestS3Walk(t *testing.T) {
 		StorageURI:    IngestTestBucketPath,
 	})
 	require.NoError(t, err)
-	err = walker.Walk(context.Background(), store.WalkOptions{}, func(e store.ObjectStoreEntry) error {
+	err = walker.Walk(context.Background(), block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		numObjs++
 		return nil
 	})

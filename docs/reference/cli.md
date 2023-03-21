@@ -1589,6 +1589,37 @@ lakectl cat-sst <sst-file> [flags]
 
 
 
+### lakectl cherry-pick
+
+Apply the changes introduced by an existing commit
+
+#### Synopsis
+{:.no_toc}
+
+Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.
+
+```
+lakectl cherry-pick <commit ref> <branch> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
+
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                help for cherry-pick
+  -m, --parent-number int   the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.
+```
+
+
+
 ### lakectl commit
 
 Commit changes on a given branch

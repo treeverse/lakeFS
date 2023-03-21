@@ -20,6 +20,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	s3Adapter "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
@@ -210,7 +211,7 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 	}
 
 	// list underlying storage
-	objects, qp := listRepositoryUnderlyingStorage(t, ctx, repo)
+	objects, qk := listRepositoryUnderlyingStorage(t, ctx, repo)
 
 	// verify that all previous objects are found or deleted, if needed
 	for _, obj := range findings.All {
@@ -235,10 +236,11 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 		}
 	}
 
+	bucket, key := s3Adapter.ExtractParamsFromQK(qk)
 	s3Client := newDefaultS3Client()
-	runID := getLastUGCRunID(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
-	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", qp.Prefix, runID)
-	cutoffTime, err := getReportCutoffTime(s3Client, qp.StorageNamespace, reportPath)
+	runID := getLastUGCRunID(t, ctx, s3Client, bucket, key)
+	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", key, runID)
+	cutoffTime, err := getReportCutoffTime(s3Client, bucket, reportPath)
 	if err != nil {
 		t.Fatalf("Failed to get start list time from ugc report %s", err)
 	}
@@ -265,7 +267,7 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 }
 
 // listRepositoryUnderlyingStorage list on the repository storage namespace returns its objects, and the storage namespace
-func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.QualifiedPrefix) {
+func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo string) ([]Object, block.CommonQualifiedKey) {
 	// list all objects in the physical layer
 	repoResponse, err := client.GetRepositoryWithResponse(ctx, repo)
 	if err != nil {
@@ -277,14 +279,15 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 
 	// list committed files and keep the physical paths
 	storageNamespace := repoResponse.JSON200.StorageNamespace
-	qp, err := block.ResolveNamespacePrefix(storageNamespace, "")
+	qk, err := block.DefaultResolveNamespace(storageNamespace, "", block.IdentifierTypeRelative)
 	if err != nil {
 		t.Fatalf("Failed to resolve namespace '%s': %s", storageNamespace, err)
 	}
 
+	bucket, key := s3Adapter.ExtractParamsFromQK(qk)
 	s3Client := newDefaultS3Client()
-	objects := listUnderlyingStorage(t, ctx, s3Client, qp.StorageNamespace, qp.Prefix)
-	return objects, qp
+	objects := listUnderlyingStorage(t, ctx, s3Client, bucket, key)
+	return objects, qk
 }
 
 func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []Object {
@@ -294,7 +297,7 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	}
 	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
 	if err != nil {
-		t.Fatalf("Failed ot list objects (bucket: %s, prefix: %s): %s", bucket, prefix, err)
+		t.Fatalf("Failed to list objects (bucket: %s, prefix: %s): %s", bucket, prefix, err)
 	}
 
 	// sorted list of objects found on repository - before ugc
@@ -331,7 +334,7 @@ func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket,
 	}
 	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
 	if err != nil {
-		t.Fatalf("Failed ot list objects (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
+		t.Fatalf("Failed to list objects (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
 	}
 
 	if len(listOutput.CommonPrefixes) == 0 {

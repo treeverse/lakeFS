@@ -36,9 +36,10 @@ const (
 )
 
 type Adapter struct {
-	clientCache      *ClientCache
-	preSignedExpiry  time.Duration
-	disablePreSigned bool
+	clientCache        *ClientCache
+	preSignedExpiry    time.Duration
+	disablePreSigned   bool
+	disablePreSignedUI bool
 }
 
 func NewAdapter(params params.Azure) (*Adapter, error) {
@@ -52,9 +53,10 @@ func NewAdapter(params params.Azure) (*Adapter, error) {
 		return nil, err
 	}
 	return &Adapter{
-		clientCache:      cache,
-		preSignedExpiry:  preSignedExpiry,
-		disablePreSigned: params.DisablePreSigned,
+		clientCache:        cache,
+		preSignedExpiry:    preSignedExpiry,
+		disablePreSigned:   params.DisablePreSigned,
+		disablePreSignedUI: params.DisablePreSignedUI,
 	}, nil
 }
 
@@ -77,7 +79,7 @@ func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
 	const expectedHostParts = 2
 	hostParts := strings.SplitN(storageAccount.Host, ".", expectedHostParts)
 	if len(hostParts) != expectedHostParts {
-		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidNamespace)
+		return "", fmt.Errorf("wrong host parts(%d): %w", len(hostParts), block.ErrInvalidAddress)
 	}
 
 	return hostParts[0], nil
@@ -85,18 +87,16 @@ func ExtractStorageAccount(storageAccount *url.URL) (string, error) {
 
 func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 	var qk BlobURLInfo
-	storageType, err := block.GetStorageType(pathURL)
+	err := block.ValidateStorageType(pathURL, block.StorageTypeAzure)
 	if err != nil {
 		return qk, err
 	}
-	if storageType != block.StorageTypeAzure {
-		return qk, fmt.Errorf("wrong storage type: %w", block.ErrInvalidNamespace)
-	}
+
 	// In azure the first part of the path is part of the storage namespace
 	trimmedPath := strings.Trim(pathURL.Path, "/")
 	pathParts := strings.Split(trimmedPath, "/")
 	if len(pathParts) == 0 {
-		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidNamespace)
+		return qk, fmt.Errorf("wrong path parts(%d): %w", len(pathParts), block.ErrInvalidAddress)
 	}
 
 	storageAccount, err := ExtractStorageAccount(pathURL)
@@ -193,6 +193,24 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	defer reportMetrics("Get", time.Now(), nil, &err)
 
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
+}
+
+func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
+	if err := block.ValidateStorageType(uri, block.StorageTypeAzure); err != nil {
+		return nil, err
+	}
+
+	storageAccount, err := ExtractStorageAccount(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := a.clientCache.NewServiceClient(storageAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAzureBlobWalker(client)
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
@@ -555,7 +573,14 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	if a.disablePreSigned {
 		info.PreSignSupport = false
 	}
+	if !(a.disablePreSignedUI || a.disablePreSigned) {
+		info.PreSignSupportUI = true
+	}
 	return info
+}
+
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

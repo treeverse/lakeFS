@@ -121,7 +121,10 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
-	viper.Set("blockstore.type", block.BlockstoreTypeMem)
+
+	if viper.Get(config.BlockstoreTypeKey) == nil {
+		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+	}
 	viper.Set("database.type", mem.DriverName)
 
 	collector := &memCollector{}

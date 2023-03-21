@@ -1399,6 +1399,49 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	return err
 }
 
+func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch string, params CherryPickParams) (*CommitLog, error) {
+	branchID := graveler.BranchID(branch)
+	reference := graveler.Ref(params.Reference)
+	parentNumber := params.ParentNumber
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: reference, Fn: graveler.ValidateRef},
+		{Name: "committer", Value: params.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNilOrPositiveInt},
+	}); err != nil {
+		return nil, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	commitID, err := c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, params.Committer)
+	if err != nil {
+		return nil, err
+	}
+
+	// in order to return commit log we need the commit creation time and parents
+	commit, err := c.Store.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		return nil, graveler.ErrCommitNotFound
+	}
+
+	catalogCommitLog := &CommitLog{
+		Reference:    commitID.String(),
+		Committer:    params.Committer,
+		Message:      commit.Message,
+		CreationDate: commit.CreationDate.UTC(),
+		MetaRangeID:  string(commit.MetaRangeID),
+		Metadata:     Metadata(commit.Metadata),
+	}
+	for _, parent := range commit.Parents {
+		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
+	}
+	return catalogCommitLog, nil
+}
+
 func (c *Catalog) Diff(ctx context.Context, repositoryID string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	left := graveler.Ref(leftReference)
 	right := graveler.Ref(rightReference)
@@ -1705,6 +1748,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 		return nil, nil, err
 	}
 
+	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
 	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
@@ -2174,6 +2218,7 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil
 	}
+
 	return err
 }
 

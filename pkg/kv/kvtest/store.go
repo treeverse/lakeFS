@@ -50,7 +50,8 @@ func sampleEntry(prefix string, n int) kv.Entry {
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
 
-func TestDriver(t *testing.T, name string, params kvparams.Config) {
+func DriverTest(t *testing.T, name string, params kvparams.Config) {
+	t.Helper()
 	ms := MakeStoreByName(name, params)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })

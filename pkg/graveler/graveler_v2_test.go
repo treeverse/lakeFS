@@ -415,6 +415,73 @@ func TestGravelerRevert(t *testing.T) {
 	})
 }
 
+func TestGravelerCherryPick(t *testing.T) {
+	ctx := context.Background()
+
+	firstUpdateBranch := func(test *testutil.GravelerTest) {
+		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+				branchTest := branch1
+				updatedBranch, err := f(&branchTest)
+				require.NoError(t, err)
+				require.Equal(t, []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}, updatedBranch.SealedTokens)
+				require.NotEmpty(t, updatedBranch.StagingToken)
+				require.NotEqual(t, stagingToken1, updatedBranch.StagingToken)
+				return nil
+			}).Times(1)
+	}
+	emptyStagingTokenCombo := func(test *testutil.GravelerTest, times int) {
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
+			Key:   key1,
+			Value: nil, // tombstone
+		}}), nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
+			Key:   key1,
+			Value: value1,
+		}}), nil)
+	}
+	t.Run("cherry-pick successful", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		firstUpdateBranch(test)
+		emptyStagingTokenCombo(test, 2)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
+		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit4ID)).Times(1).Return(rawRefCommit4, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit4).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit4ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit4ID).Times(1).Return(&commit4, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr4ID, graveler.MergeStrategyNone).Times(1).Return(mr3ID, nil)
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+			require.Equal(t, mr3ID, commit.MetaRangeID)
+			return commit3ID, nil
+		}).Times(1)
+		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}
+				updatedBranch, err := f(branchTest)
+				require.NoError(t, err)
+				require.Equal(t, []graveler.StagingToken{}, updatedBranch.SealedTokens)
+				require.NotEmpty(t, updatedBranch.StagingToken)
+				require.Equal(t, commit3ID, updatedBranch.CommitID)
+				return nil
+			}).Times(1)
+		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Times(1)
+		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Times(1)
+		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
+		parent := 1
+		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester")
+
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		require.Equal(t, commit3ID, graveler.CommitID(val.Ref()))
+	})
+}
+
 func TestGravelerCommit_v2(t *testing.T) {
 	ctx := context.Background()
 

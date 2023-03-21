@@ -16,8 +16,8 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.StorageURI;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,59 +27,49 @@ import java.util.Map;
 /**
  * API tests for MetadataApi
  */
-@Ignore
+@Disabled
 public class MetadataApiTest {
 
     private final MetadataApi api = new MetadataApi();
 
-    
     /**
      * creates symlink files corresponding to the given directory
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void createSymlinkFileTest() throws ApiException {
         String repository = null;
         String branch = null;
         String location = null;
-                StorageURI response = api.createSymlinkFile(repository, branch, location);
+        StorageURI response = api.createSymlinkFile(repository, branch, location);
         // TODO: test validations
     }
-    
+
     /**
      * return URI to a meta-range file
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getMetaRangeTest() throws ApiException {
         String repository = null;
         String metaRange = null;
-                StorageURI response = api.getMetaRange(repository, metaRange);
+        StorageURI response = api.getMetaRange(repository, metaRange);
         // TODO: test validations
     }
-    
+
     /**
      * return URI to a range file
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getRangeTest() throws ApiException {
         String repository = null;
         String range = null;
-                StorageURI response = api.getRange(repository, range);
+        StorageURI response = api.getRange(repository, range);
         // TODO: test validations
     }
-    
+
 }
