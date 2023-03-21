@@ -222,7 +222,7 @@ These configuration items are for the lakeFS key-value store database
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 
 
-## Example lakeFS Server Configuration
+## Examples
 ### Local Development with PostgreSQL database
 
 ```yaml
