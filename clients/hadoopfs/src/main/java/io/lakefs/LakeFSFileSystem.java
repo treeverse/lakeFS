@@ -804,7 +804,7 @@ public class LakeFSFileSystem extends FileSystem {
         boolean isEmptyDirectory = isDir && objectStat.getPathType() == ObjectStats.PathTypeEnum.OBJECT;
         long blockSize = isDir
                 ? 0
-                : getDefaultBlockSize(); // TODO why not?
+                : getDefaultBlockSize();
         LakeFSFileStatus.Builder builder =
                 new LakeFSFileStatus.Builder(filePath)
                         .length(length)

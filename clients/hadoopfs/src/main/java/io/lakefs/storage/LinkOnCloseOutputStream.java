@@ -1,19 +1,17 @@
 package io.lakefs.storage;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.hadoop.fs.Path;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.clients.api.StagingApi;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
 import io.lakefs.utils.ObjectLocation;
-import org.apache.hadoop.fs.Path;
-
-import com.amazonaws.services.s3.model.ObjectMetadata;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Wraps a FSDataOutputStream to link file on staging when done writing
