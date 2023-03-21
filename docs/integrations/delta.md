@@ -20,20 +20,32 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 
 {% include toc.html %}
 
-## Beta: Viewing Delta table changes in lakeFS 
+## Viewing Delta Lake table changes in lakeFS <sup>BETA</sup>
 
-Using lakeFS you can compare different versions of Delta tables, view the table operations that have been done since the tables diverged, and the details of those operations.
+Using lakeFS you can
+* Compare different versions of Delta Lake tables
+* Get a detailed view of all Delta Lake table operations performed since the tables diverged.
 
-For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged. 
+For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged.
 Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
-
 
 ![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
 ![movies_table_operations.png](../assets/img/delta-diff-operations.png)
 
-**Note:** 
+**Note:**
 The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
 {: .note }
+
+### Installing the Delta Lake diff plugin
+
+To enable the Delta Lake diff feature, you need to install a plugin on the lakeFS server. You will find the plugin binary in the
+[release](https://github.com/treeverse/lakeFS/releases/latest) tarball (versions >= 0.100.0).
+Put the `delta_diff` binary under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
+
+You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
+`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration) file.
+
+**Notice**: If you're using the lakeFS [docker image](../quickstart/run.md#running-locally-with-docker), the plugin is installed by default.
 
 ## Spark Configuration
 
@@ -69,7 +81,6 @@ When using multi-cluster writes, Databricks overrides Delta’s S3-commit action
 The new action tries to contact lakeFS from servers on Databricks’ own AWS account, which of course won’t be able to access your private network. 
 So, if you must use multi-cluster writes, you’ll have to allow access from Databricks’ AWS account to lakeFS. 
 If you are trying to achieve that, please reach out on Slack and the community will try to assist.
-
 
 ## Further Reading
 
