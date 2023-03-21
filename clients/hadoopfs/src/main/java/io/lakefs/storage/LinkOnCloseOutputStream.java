@@ -1,19 +1,24 @@
-package io.lakefs;
-
-import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.utils.ObjectLocation;
-import org.apache.hadoop.fs.Path;
+package io.lakefs.storage;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.hadoop.fs.Path;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import io.lakefs.LakeFSClient;
+import io.lakefs.LakeFSFileSystem;
+import io.lakefs.clients.api.StagingApi;
+import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.utils.ObjectLocation;
 
 /**
  * Wraps a FSDataOutputStream to link file on staging when done writing
  */
 class LinkOnCloseOutputStream extends OutputStream {
-    private final LakeFSFileSystem lfs;
+    private final LakeFSFileSystem lakeFSFileSystem;
+    private final LakeFSClient lakeFSClient;
     private final StagingLocation stagingLoc;
     private final ObjectLocation objectLoc;
     private final URI physicalUri;
@@ -29,9 +34,10 @@ class LinkOnCloseOutputStream extends OutputStream {
      * @param metadataClient client used to request metadata information from the underlying FileSystem.
      * @param out stream on underlying filesystem to wrap.
      */
-    LinkOnCloseOutputStream(LakeFSFileSystem lfs, StagingLocation stagingLoc, ObjectLocation objectLoc,
+    LinkOnCloseOutputStream(LakeFSFileSystem lfs, LakeFSClient lfsClient, StagingLocation stagingLoc, ObjectLocation objectLoc,
                             URI physicalUri, MetadataClient metadataClient, OutputStream out) {
-        this.lfs = lfs;
+        this.lakeFSFileSystem = lfs;
+        this.lakeFSClient = lfsClient;
         this.stagingLoc = stagingLoc;
         this.objectLoc = objectLoc;
         this.physicalUri = physicalUri;
@@ -67,11 +73,17 @@ class LinkOnCloseOutputStream extends OutputStream {
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
         if (!this.isLinked.getAndSet(true)) {
             try {
-                lfs.linkPhysicalAddress(objectLoc, stagingLoc, physicalUri, metadataClient);
+                ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
+                StagingMetadata metadata = new StagingMetadata()
+                        .staging(stagingLoc)
+                        .checksum(objectMetadata.getETag())
+                        .sizeBytes(objectMetadata.getContentLength());
+                StagingApi staging = lakeFSClient.getStagingApi();
+                staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), metadata);
             } catch (io.lakefs.clients.api.ApiException e) {
                 throw new IOException("link lakeFS path to physical address", e);
             }
-            lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
+            lakeFSFileSystem.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
         }
     }
 }

@@ -1,4 +1,4 @@
-package io.lakefs;
+package io.lakefs.storage;
 
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
