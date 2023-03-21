@@ -1,13 +1,13 @@
 ---
 layout: default
-title: lakeFS Server Configuration
+title: Server Configuration
 description: Reference for lakeFS Server configuration items and several examples of confriguation for different deployment permutations.
 parent: Reference
 nav_order: 10
 has_children: false
 ---
 
-# lakeFS Server Configuration
+# Server Configuration
 {: .no_toc }
 
 {% include toc.html %}
