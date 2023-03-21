@@ -1309,6 +1309,9 @@ lakectl auth users policies list [flags]
 
 ### lakectl bisect
 
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
 Binary search to find the commit that introduced a bug
 
 #### Options
@@ -1379,7 +1382,7 @@ lakectl bisect help [command] [flags]
 
 ### lakectl bisect log
 
-Print out the current log of bisect
+Print out the current bisect state
 
 ```
 lakectl bisect log [flags]
@@ -1433,7 +1436,7 @@ lakectl bisect run <command> [flags]
 Start a bisect session
 
 ```
-lakectl bisect start <repository> <bad ref> <good ref> [flags]
+lakectl bisect start <bad ref> <good ref> [flags]
 ```
 
 #### Options
