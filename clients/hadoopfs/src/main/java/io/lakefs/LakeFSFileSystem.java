@@ -802,9 +802,14 @@ public class LakeFSFileSystem extends FileSystem {
         String physicalAddress = objectStat.getPhysicalAddress();
         boolean isDir = isDirectory(objectStat);
         boolean isEmptyDirectory = isDir && objectStat.getPathType() == ObjectStats.PathTypeEnum.OBJECT;
-        long blockSize = isDir
-                ? 0
-                : getDefaultBlockSize();
+        long blockSize = 0;
+        if (!isDir) {
+            try {
+                blockSize = getDefaultBlockSize(new Path(physicalAddressTranslator.translate(new URI(physicalAddress))));
+            } catch (URISyntaxException e) {
+                blockSize = getDefaultBlockSize();
+            }
+        }
         LakeFSFileStatus.Builder builder =
                 new LakeFSFileStatus.Builder(filePath)
                         .length(length)
