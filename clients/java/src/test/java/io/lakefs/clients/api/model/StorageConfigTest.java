@@ -78,6 +78,14 @@ public class StorageConfigTest {
     }
 
     /**
+     * Test the property 'preSignSupportUI'
+     */
+    @Test
+    public void preSignSupportUITest() {
+        // TODO: test preSignSupportUI
+    }
+
+    /**
      * Test the property 'importSupport'
      */
     @Test

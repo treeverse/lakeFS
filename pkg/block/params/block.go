@@ -34,21 +34,24 @@ type S3 struct {
 	ServerSideEncryptionKmsKeyID  string
 	PreSignedExpiry               time.Duration
 	DisablePreSigned              bool
+	DisablePreSignedUI            bool
 }
 
 type GS struct {
-	CredentialsFile  string
-	CredentialsJSON  string
-	PreSignedExpiry  time.Duration
-	DisablePreSigned bool
+	CredentialsFile    string
+	CredentialsJSON    string
+	PreSignedExpiry    time.Duration
+	DisablePreSigned   bool
+	DisablePreSignedUI bool
 }
 
 type Azure struct {
-	StorageAccount   string
-	StorageAccessKey string
-	TryTimeout       time.Duration
-	PreSignedExpiry  time.Duration
-	DisablePreSigned bool
+	StorageAccount     string
+	StorageAccessKey   string
+	TryTimeout         time.Duration
+	PreSignedExpiry    time.Duration
+	DisablePreSigned   bool
+	DisablePreSignedUI bool
 	// TestEndpointURL - For testing purposes, provide a custom URL to override the default URL template
 	TestEndpointURL string
 }

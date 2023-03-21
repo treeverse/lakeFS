@@ -40,6 +40,7 @@ class StorageConfig(
             "blockstore_namespace_example",
             "blockstore_type",
             "import_support",
+            "pre_sign_support_UI",
             "pre_sign_support",
         }
         
@@ -48,6 +49,7 @@ class StorageConfig(
             blockstore_namespace_example = schemas.StrSchema
             blockstore_namespace_ValidityRegex = schemas.StrSchema
             pre_sign_support = schemas.BoolSchema
+            pre_sign_support_UI = schemas.BoolSchema
             import_support = schemas.BoolSchema
             default_namespace_prefix = schemas.StrSchema
             __annotations__ = {
@@ -55,6 +57,7 @@ class StorageConfig(
                 "blockstore_namespace_example": blockstore_namespace_example,
                 "blockstore_namespace_ValidityRegex": blockstore_namespace_ValidityRegex,
                 "pre_sign_support": pre_sign_support,
+                "pre_sign_support_UI": pre_sign_support_UI,
                 "import_support": import_support,
                 "default_namespace_prefix": default_namespace_prefix,
             }
@@ -63,6 +66,7 @@ class StorageConfig(
     blockstore_namespace_example: MetaOapg.properties.blockstore_namespace_example
     blockstore_type: MetaOapg.properties.blockstore_type
     import_support: MetaOapg.properties.import_support
+    pre_sign_support_UI: MetaOapg.properties.pre_sign_support_UI
     pre_sign_support: MetaOapg.properties.pre_sign_support
     
     @typing.overload
@@ -78,6 +82,9 @@ class StorageConfig(
     def __getitem__(self, name: typing_extensions.Literal["pre_sign_support"]) -> MetaOapg.properties.pre_sign_support: ...
     
     @typing.overload
+    def __getitem__(self, name: typing_extensions.Literal["pre_sign_support_UI"]) -> MetaOapg.properties.pre_sign_support_UI: ...
+    
+    @typing.overload
     def __getitem__(self, name: typing_extensions.Literal["import_support"]) -> MetaOapg.properties.import_support: ...
     
     @typing.overload
@@ -86,7 +93,7 @@ class StorageConfig(
     @typing.overload
     def __getitem__(self, name: str) -> schemas.UnsetAnyTypeSchema: ...
     
-    def __getitem__(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "import_support", "default_namespace_prefix", ], str]):
+    def __getitem__(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "pre_sign_support_UI", "import_support", "default_namespace_prefix", ], str]):
         # dict_instance[name] accessor
         return super().__getitem__(name)
     
@@ -104,6 +111,9 @@ class StorageConfig(
     def get_item_oapg(self, name: typing_extensions.Literal["pre_sign_support"]) -> MetaOapg.properties.pre_sign_support: ...
     
     @typing.overload
+    def get_item_oapg(self, name: typing_extensions.Literal["pre_sign_support_UI"]) -> MetaOapg.properties.pre_sign_support_UI: ...
+    
+    @typing.overload
     def get_item_oapg(self, name: typing_extensions.Literal["import_support"]) -> MetaOapg.properties.import_support: ...
     
     @typing.overload
@@ -112,7 +122,7 @@ class StorageConfig(
     @typing.overload
     def get_item_oapg(self, name: str) -> typing.Union[schemas.UnsetAnyTypeSchema, schemas.Unset]: ...
     
-    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "import_support", "default_namespace_prefix", ], str]):
+    def get_item_oapg(self, name: typing.Union[typing_extensions.Literal["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "pre_sign_support", "pre_sign_support_UI", "import_support", "default_namespace_prefix", ], str]):
         return super().get_item_oapg(name)
     
 
@@ -123,6 +133,7 @@ class StorageConfig(
         blockstore_namespace_example: typing.Union[MetaOapg.properties.blockstore_namespace_example, str, ],
         blockstore_type: typing.Union[MetaOapg.properties.blockstore_type, str, ],
         import_support: typing.Union[MetaOapg.properties.import_support, bool, ],
+        pre_sign_support_UI: typing.Union[MetaOapg.properties.pre_sign_support_UI, bool, ],
         pre_sign_support: typing.Union[MetaOapg.properties.pre_sign_support, bool, ],
         default_namespace_prefix: typing.Union[MetaOapg.properties.default_namespace_prefix, str, schemas.Unset] = schemas.unset,
         _configuration: typing.Optional[schemas.Configuration] = None,
@@ -135,6 +146,7 @@ class StorageConfig(
             blockstore_namespace_example=blockstore_namespace_example,
             blockstore_type=blockstore_type,
             import_support=import_support,
+            pre_sign_support_UI=pre_sign_support_UI,
             pre_sign_support=pre_sign_support,
             default_namespace_prefix=default_namespace_prefix,
             _configuration=_configuration,

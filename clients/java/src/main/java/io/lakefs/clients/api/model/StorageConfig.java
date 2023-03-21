@@ -68,6 +68,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT)
   private Boolean preSignSupport;
 
+  public static final String SERIALIZED_NAME_PRE_SIGN_SUPPORT_U_I = "pre_sign_support_UI";
+  @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT_U_I)
+  private Boolean preSignSupportUI;
+
   public static final String SERIALIZED_NAME_IMPORT_SUPPORT = "import_support";
   @SerializedName(SERIALIZED_NAME_IMPORT_SUPPORT)
   private Boolean importSupport;
@@ -185,6 +189,28 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig preSignSupportUI(Boolean preSignSupportUI) {
+    
+    this.preSignSupportUI = preSignSupportUI;
+    return this;
+  }
+
+   /**
+   * Get preSignSupportUI
+   * @return preSignSupportUI
+  **/
+  @javax.annotation.Nonnull
+
+  public Boolean getPreSignSupportUI() {
+    return preSignSupportUI;
+  }
+
+
+  public void setPreSignSupportUI(Boolean preSignSupportUI) {
+    this.preSignSupportUI = preSignSupportUI;
+  }
+
+
   public StorageConfig importSupport(Boolean importSupport) {
     
     this.importSupport = importSupport;
@@ -222,12 +248,13 @@ public class StorageConfig {
         Objects.equals(this.blockstoreNamespaceValidityRegex, storageConfig.blockstoreNamespaceValidityRegex) &&
         Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix) &&
         Objects.equals(this.preSignSupport, storageConfig.preSignSupport) &&
+        Objects.equals(this.preSignSupportUI, storageConfig.preSignSupportUI) &&
         Objects.equals(this.importSupport, storageConfig.importSupport);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, importSupport);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUI, importSupport);
   }
 
   @Override
@@ -239,6 +266,7 @@ public class StorageConfig {
     sb.append("    blockstoreNamespaceValidityRegex: ").append(toIndentedString(blockstoreNamespaceValidityRegex)).append("\n");
     sb.append("    defaultNamespacePrefix: ").append(toIndentedString(defaultNamespacePrefix)).append("\n");
     sb.append("    preSignSupport: ").append(toIndentedString(preSignSupport)).append("\n");
+    sb.append("    preSignSupportUI: ").append(toIndentedString(preSignSupportUI)).append("\n");
     sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -267,6 +295,7 @@ public class StorageConfig {
     openapiFields.add("blockstore_namespace_ValidityRegex");
     openapiFields.add("default_namespace_prefix");
     openapiFields.add("pre_sign_support");
+    openapiFields.add("pre_sign_support_UI");
     openapiFields.add("import_support");
 
     // a set of required properties/fields (JSON key names)
@@ -275,6 +304,7 @@ public class StorageConfig {
     openapiRequiredFields.add("blockstore_namespace_example");
     openapiRequiredFields.add("blockstore_namespace_ValidityRegex");
     openapiRequiredFields.add("pre_sign_support");
+    openapiRequiredFields.add("pre_sign_support_UI");
     openapiRequiredFields.add("import_support");
   }
 

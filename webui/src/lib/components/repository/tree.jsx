@@ -9,6 +9,7 @@ import {
   FileIcon,
   GearIcon,
   InfoIcon,
+  LinkIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
@@ -45,7 +46,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -75,11 +76,24 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
 
         <Dropdown.Menu>
           {entry.path_type === "object" && (
+              <Dropdown.Item
+                  onClick={(e) => {
+                    copyTextToClipboard(
+                        entry.physical_address
+                    );
+                    e.preventDefault();
+                  }}
+              >
+                <LinkIcon /> Copy Presigned URL
+              </Dropdown.Item>
+          )}
+          {entry.path_type === "object" && (
             <PathLink
               path={entry.path}
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
+              presign={presign}
             >
               <DownloadIcon /> Download
             </PathLink>
@@ -362,9 +376,9 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   );
 };
 
-const PathLink = ({ repoId, reference, path, children, as = null }) => {
+const PathLink = ({ repoId, reference, path, children, presign = false, as = null }) => {
   const name = path.split("/").pop();
-  const link = linkToPath(repoId, reference.id, path);
+  const link = linkToPath(repoId, reference.id, path, presign);
   if (as === null)
     return (
       <a href={link} download={name}>
@@ -374,7 +388,7 @@ const PathLink = ({ repoId, reference, path, children, as = null }) => {
   return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
   let rowClass = "change-entry-row ";
   switch (entry.diff_type) {
     case "changed":
@@ -506,6 +520,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
         reference={reference}
         entry={entry}
         onDelete={onDelete}
+        presign={config.config.pre_sign_support}
       />
     );
   }
@@ -737,6 +752,7 @@ export const Tree = ({
           <tbody>
             {results.map((entry) => (
               <EntryRow
+                config={config}
                 key={entry.path}
                 entry={entry}
                 path={path}
