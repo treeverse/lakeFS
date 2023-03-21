@@ -36,6 +36,10 @@ COPY ./pkg/plugins/diff/delta_diff_server/Cargo.lock ./Cargo.lock
 COPY ./pkg/plugins/diff/delta_diff_server/Cargo.toml ./Cargo.toml
 
 # 3. Build only the dependencies to cache them in this layer
+
+# Rust default behavior is to build a static binary (default target is <arch>-unknown-linux-musl on Alpine, and musl
+# is assumed to be static). It links to openssl statically, but these are dynamic libraries. Setting RUSTFLAGS=-Ctarget-feature=-crt-static
+# forces Rust to create a dynamic binary, despite asking for musl.
 RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 RUN rm src/*.rs
 
