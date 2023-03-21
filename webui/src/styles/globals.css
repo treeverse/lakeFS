@@ -101,6 +101,7 @@
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: .9rem;
   color: #303030;
+  width: 95%;
 }
 
 .lakefs-uri strong {
@@ -720,4 +721,3 @@ td.entry-type-indicator {
   width: 1%;
   padding: 2px;
 }
-
