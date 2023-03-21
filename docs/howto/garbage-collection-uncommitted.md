@@ -8,7 +8,7 @@ nav_order: 20
 has_children: false
 ---
 
-## Garbage collection: uncommitted object <sup>BETA</sup>
+## Garbage collection: uncommitted objects <sup>BETA</sup>
 {: .no_toc }
 
 Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and
