@@ -39,7 +39,7 @@ RUN curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC
 RUN apk add --force-overwrite --allow-untrusted /tmp/*.apk
 RUN /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
 RUN apk add --force-overwrite --no-cache musl-dev
-RUN apk add libressl-dev
+RUN apk add openssl-dev
 
 RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
@@ -113,7 +113,7 @@ RUN apk update
 #    rm -v /tmp/*.apk && \
 #    /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib \
 
-RUN apk add libressl-dev && apk add libc6-compat && apk add libgcc
+RUN apk add openssl-dev && apk add libc6-compat && apk add libgcc
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
 RUN apk add netcat-openbsd
