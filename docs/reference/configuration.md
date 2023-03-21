@@ -20,7 +20,7 @@ The configuration file's location can be set with the `--config` flag. If not sp
 1. `/etc/lakefs/config.yaml`
 1. `$HOME/.lakefs.yaml`
 
-All the configuration variables can be set or overridden using environment variables. The variable name will have a prefix of *`LAKEFS_`*, followed by the name of the configuration, replacing every '`.`' with a '`_`'.
+All the configuration properties can be set or overridden using environment variables. The variable name should have a prefix of *`LAKEFS_`*, followed by the name of the configuration, replacing every '`.`' with a '`_`'.
 
 For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
 
