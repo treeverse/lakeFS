@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from "react";
-
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import * as dayjs from 'dayjs'
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
@@ -17,10 +17,11 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Alert from "react-bootstrap/Alert";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects} from "../../../lib/api";
+import {config, objects, refs, staging, retention, repositories, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -36,15 +37,27 @@ import {
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
+import {OverlayTrigger} from "react-bootstrap";
+import Tooltip from "react-bootstrap/Tooltip";
 
 
 const README_FILE_NAME = 'README.md';
+const REPOSITORY_AGE_BEFORE_GC = 14;
 
-const ImportButton = ({variant = "success", enabled = false, onClick}) => {
+const ImportButton = ({variant = "success", onClick, config }) => {
+    const tip = config.import_support ? "Import data from a remote source" :
+        config.blockstore_type === "local" ?
+                "Import is not enabled for local blockstore" :
+                "Unsupported for " + config.blockstore_type +" blockstore";
+
     return (
-        <Button variant={variant} disabled={!enabled} onClick={onClick}>
-            <BsCloudArrowUp/> Import
-        </Button>
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>} >
+            <span>
+                <Button variant={variant} disabled={!config.import_support} onClick={onClick} >
+                    <BsCloudArrowUp/> Import
+                </Button>
+            </span>
+        </OverlayTrigger>
     )
 }
 
@@ -53,6 +66,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
+    const [metadataFields, setMetadataFields] = useState([])
 
     const sourceRef = useRef(null);
     const destRef = useRef(null);
@@ -68,12 +82,25 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         setImportPhase(ImportPhase.NotStarted);
         setIsImportEnabled(false);
         setNumberOfImportedObjects(0);
+        setMetadataFields([]);
     }
 
     const hide = () => {
-        if (ImportPhase.InProgress === importPhase) return;
+        if (ImportPhase.InProgress === importPhase || ImportPhase.Merging === importPhase) return;
         resetState()
         onHide()
+    };
+
+    const doMerge = async () => {
+        setImportPhase(ImportPhase.Merging);
+        try {
+            await refs.merge(repoId, importBranch, currBranch);
+            onDone();
+            hide();
+        } catch (error) {
+            setImportPhase(ImportPhase.MergeFailed);
+            setImportError(error);
+        }
     };
 
     const doImport = async () => {
@@ -83,6 +110,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
             setNumberOfImportedObjects(numObj);
         }
         try {
+            const metadata = {};
+            metadataFields.forEach(pair => metadata[pair.key] = pair.value)
             await runImport(
                 updateStateFromImport,
                 destRef.current.value,
@@ -90,7 +119,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 sourceRef.current.value,
                 importBranch,
                 repoId,
-                referenceId
+                referenceId,
+                metadata
             );
             onDone();
         } catch (error) {
@@ -109,7 +139,9 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 </Modal.Header>
                 <Modal.Body>
                     {
-                        (importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed) &&
+                        (importPhase === ImportPhase.NotStarted ||
+                            importPhase === ImportPhase.Failed  ||
+                            importPhase === ImportPhase.MergeFailed) &&
                         <ImportForm
                             config={config}
                             pathStyle={pathStyle}
@@ -121,6 +153,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                             path={path}
                             commitMsgRef={commitMsgRef}
                             shouldAddPath={true}
+                            metadataFields={metadataFields}
+                            setMetadataFields={setMetadataFields}
                             err={importError}
                         />
                     }
@@ -138,9 +172,14 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
                         Cancel
                     </Button>
-                    {
-                        <ExecuteImportButton importPhase={importPhase} importFunc={doImport} isEnabled={isImportEnabled}/>
-                    }
+
+                    <ExecuteImportButton
+                        importPhase={importPhase}
+                        importFunc={doImport}
+                        mergeFunc={doMerge}
+                        doneFunc={onDone}
+                        isEnabled={isImportEnabled}/>
+
                 </Modal.Footer>
             </Modal>
         </>
@@ -172,7 +211,20 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             inProgress: true
         })
         try {
-            await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
+            if (config.pre_sign_support_ui) {
+                const getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support);
+
+                const putResp = await fetch(getResp.presigned_url, {
+                    method: 'PUT',
+                    mode: 'cors',
+                    body: fileRef.current.files[0]
+                });
+
+                const etag = putResp.headers.get('ETag').replace(/["]/g, '')
+                await staging.link(repo.id, reference.id, textRef.current.value, getResp, etag, fileRef.current.files[0].size);
+            } else {
+                await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
+            }
             setUploadState({...initialState})
             onDone()
         } catch (error) {
@@ -265,7 +317,7 @@ const TreeContainer = ({
                            refreshToken
                        }) => {
     const {results, error, loading, nextPage} = useAPIWithPagination(() => {
-        return objects.list(repo.id, reference.id, path, after)
+        return objects.list(repo.id, reference.id, path, after, config.pre_sign_support)
     }, [repo.id, reference.id, path, after, refreshToken]);
     const initialState = {
         inProgress: false,
@@ -305,7 +357,7 @@ const TreeContainer = ({
     );
 }
 
-const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
+const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
     let readmePath = '';
 
     if (path) {
@@ -334,8 +386,52 @@ const ReadmeContainer = ({repo, reference, path='', refreshDep=''}) => {
             error={error}
             loading={loading}
             showFullNavigator={false}
+            presign={config.pre_sign_support}
         />
     );
+}
+
+const NoGCRulesWarning = ({ repoId }) => {
+    const storageKey = `show_gc_warning_${repoId}`;
+    const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== "false")
+    const closeAndRemember = useCallback(() => {
+        window.localStorage.setItem(storageKey, "false")
+        setShow(false)
+    }, [repoId])
+
+    const {response} = useAPI(async() => {
+        const repo = await repositories.get(repoId)
+        if (!repo.storage_namespace.startsWith('s3:') &&
+            !repo.storage_namespace.startsWith('http')) {
+            return false;
+        }
+        const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), 'days');
+        if (createdAgo > REPOSITORY_AGE_BEFORE_GC) {
+            try {
+                await retention.getGCPolicy(repoId);
+            } catch (e) {
+                if (e instanceof NotFoundError) {
+                    return true
+                }
+            }
+        }
+        return false;
+    }, [repoId]);
+
+    if (show && response) {
+        return (
+            <Alert
+                variant="warning"
+                onClose={closeAndRemember}
+                dismissible>
+                <strong>Warning</strong>: No garbage collection rules configured for this repository.
+                {' '}
+                <a href="https://docs.lakefs.io/howto/garbage-collection.html" target="_blank" rel="noreferrer">Learn More</a>.
+
+            </Alert>
+        )
+    }
+    return <></>;
 }
 
 const ObjectsBrowser = ({config, configError}) => {
@@ -402,7 +498,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                     <ImportButton
                         onClick={() => setShowImport(true)}
-                        enabled={config.import_support}
+                        config={config}
                     />
                     <ImportModal
                         config={config}
@@ -418,6 +514,8 @@ const ObjectsBrowser = ({config, configError}) => {
                     />
                 </ActionGroup>
             </ActionsBar>
+
+            <NoGCRulesWarning repoId={repo.id}/>
 
             <Box sx={{display: 'flex', flexDirection: 'column', gap: '10px', mb: '30px'}}>
                 <TreeContainer
@@ -442,7 +540,7 @@ const ObjectsBrowser = ({config, configError}) => {
                     }}
                     onRefresh={refresh}/>
 
-                <ReadmeContainer reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
+                <ReadmeContainer config={config} reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
             </Box>
         </>
     );

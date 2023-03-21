@@ -1,3 +1,5 @@
+//go:generate go run --tags generate ./codegen ./actions.go ./actions.gen.go
+
 package permissions
 
 import (

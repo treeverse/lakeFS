@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -1037,7 +1038,7 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 		return nil, err
 	}
 	catalogCommitLog := &CommitLog{
-		Reference:    reference,
+		Reference:    commitID.String(),
 		Committer:    commit.Committer,
 		Message:      commit.Message,
 		CreationDate: commit.CreationDate,
@@ -1398,6 +1399,49 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	return err
 }
 
+func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch string, params CherryPickParams) (*CommitLog, error) {
+	branchID := graveler.BranchID(branch)
+	reference := graveler.Ref(params.Reference)
+	parentNumber := params.ParentNumber
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: reference, Fn: graveler.ValidateRef},
+		{Name: "committer", Value: params.Committer, Fn: validator.ValidateRequiredString},
+		{Name: "parentNumber", Value: parentNumber, Fn: validator.ValidateNilOrPositiveInt},
+	}); err != nil {
+		return nil, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	commitID, err := c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, params.Committer)
+	if err != nil {
+		return nil, err
+	}
+
+	// in order to return commit log we need the commit creation time and parents
+	commit, err := c.Store.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		return nil, graveler.ErrCommitNotFound
+	}
+
+	catalogCommitLog := &CommitLog{
+		Reference:    commitID.String(),
+		Committer:    params.Committer,
+		Message:      commit.Message,
+		CreationDate: commit.CreationDate.UTC(),
+		MetaRangeID:  string(commit.MetaRangeID),
+		Metadata:     Metadata(commit.Metadata),
+	}
+	for _, parent := range commit.Parents {
+		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
+	}
+	return catalogCommitLog, nil
+}
+
 func (c *Catalog) Diff(ctx context.Context, repositoryID string, leftReference string, rightReference string, params DiffParams) (Differences, bool, error) {
 	left := graveler.Ref(leftReference)
 	right := graveler.Ref(rightReference)
@@ -1704,6 +1748,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 		return nil, nil, err
 	}
 
+	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
 	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
@@ -1796,8 +1841,10 @@ type GCUncommittedMark struct {
 }
 
 type PrepareGCUncommittedInfo struct {
+	RunID    string `json:"run_id"`
+	Location string `json:"location"`
+	Filename string `json:"filename"`
 	Mark     *GCUncommittedMark
-	Metadata graveler.GarbageCollectionRunMetadata
 }
 
 type UncommittedParquetObject struct {
@@ -1805,23 +1852,31 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) error {
+func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) (string, error) {
 	_, err := fd.Seek(0, 0)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !strings.HasSuffix(location, "/") {
-		location += "/"
+	// location is full path to underlying storage - join a unique filename and upload data
+	name := xid.New().String()
+	identifier, err := url.JoinPath(location, name)
+	if err != nil {
+		return "", err
 	}
-	location += xid.New().String()
-	return c.BlockAdapter.Put(ctx, block.ObjectPointer{
+	obj := block.ObjectPointer{
 		StorageNamespace: ns.String(),
-		Identifier:       location,
+		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
-	}, size, fd, block.PutOpts{})
+	}
+	err = c.BlockAdapter.Put(ctx, obj, size, fd, block.PutOpts{})
+	if err != nil {
+		return "", err
+	}
+	return name, nil
 }
 
 func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error) {
+	var err error
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -1858,25 +1913,28 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 		return nil, err
 	}
 
-	uncommittedLocation, err := c.Store.GCGetUncommittedLocation(repository, runID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Upload parquet file to object store
+	var (
+		uncommittedLocation string
+		name                string
+	)
 	if hasData {
-		err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+		uncommittedLocation, err = c.Store.GCGetUncommittedLocation(repository, runID)
+		if err != nil {
+			return nil, err
+		}
+
+		name, err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &PrepareGCUncommittedInfo{
-		Mark: newMark,
-		Metadata: graveler.GarbageCollectionRunMetadata{
-			RunId:               runID,
-			UncommittedLocation: uncommittedLocation,
-		},
+		Mark:     newMark,
+		RunID:    runID,
+		Location: uncommittedLocation,
+		Filename: name,
 	}, nil
 }
 
@@ -2160,6 +2218,7 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil
 	}
+
 	return err
 }
 

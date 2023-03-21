@@ -1,1 +1,1 @@
-Download: lakefs://${REPO}/${BRANCH}/${PATH}/${FILE} to ${FILE}
+Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE} to ${FILE}

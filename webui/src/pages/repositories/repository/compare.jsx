@@ -94,6 +94,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                 };
             }}/>
 
+    const changesTreeMessage = <p>Showing changes between <strong>{reference.id}</strong> and <strong>{compareReference.id}</strong></p>
     let leftCommittedRef = reference.id;
     let rightCommittedRef = compareReference.id;
     if (reference.type === RefTypeBranch) {
@@ -116,7 +117,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                          repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                          getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
                                          loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
-                                         setIsTableMerge={setIsTableMerge}/>
+                                         setIsTableMerge={setIsTableMerge} changesTreeMessage={changesTreeMessage}/>
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 

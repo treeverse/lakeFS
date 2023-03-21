@@ -23,8 +23,8 @@ import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
 import io.lakefs.clients.api.model.VersionConfig;
-import org.junit.Test;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,96 +34,77 @@ import java.util.Map;
 /**
  * API tests for ConfigApi
  */
-@Ignore
+@Disabled
 public class ConfigApiTest {
 
     private final ConfigApi api = new ConfigApi();
 
-    
     /**
-     * 
-     *
      * get information of gc settings
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getGarbageCollectionConfigTest() throws ApiException {
-                GarbageCollectionConfig response = api.getGarbageCollectionConfig();
+        GarbageCollectionConfig response = api.getGarbageCollectionConfig();
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * get version of lakeFS server
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getLakeFSVersionTest() throws ApiException {
-                VersionConfig response = api.getLakeFSVersion();
+        VersionConfig response = api.getLakeFSVersion();
         // TODO: test validations
     }
-    
+
     /**
      * check if the lakeFS installation is already set up
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getSetupStateTest() throws ApiException {
-                SetupState response = api.getSetupState();
+        SetupState response = api.getSetupState();
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * retrieve lakeFS storage configuration
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void getStorageConfigTest() throws ApiException {
-                StorageConfig response = api.getStorageConfig();
+        StorageConfig response = api.getStorageConfig();
         // TODO: test validations
     }
-    
+
     /**
      * setup lakeFS and create a first user
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void setupTest() throws ApiException {
         Setup setup = null;
-                CredentialsWithSecret response = api.setup(setup);
+        CredentialsWithSecret response = api.setup(setup);
         // TODO: test validations
     }
-    
+
     /**
      * setup communications preferences
      *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void setupCommPrefsTest() throws ApiException {
         CommPrefsInput commPrefsInput = null;
-                NextStep response = api.setupCommPrefs(commPrefsInput);
+        NextStep response = api.setupCommPrefs(commPrefsInput);
         // TODO: test validations
     }
-    
+
 }

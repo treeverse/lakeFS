@@ -529,3 +529,74 @@ func TestLakectlImport(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/another/import/ --merge", false, "lakectl_import_and_merge", vars)
 }
+
+func TestLakectlCherryPick(t *testing.T) {
+	SkipTestIfAskedTo(t)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	branch1 := "branch1"
+	branch2 := "branch2"
+	branchVars := map[string]string{
+		"REPO":          repoName,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   "branch1",
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branch1+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+	branchVars["DEST_BRANCH"] = "branch2"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branch2+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+
+	// upload some data
+	vars["BRANCH"] = branch1
+	for i := 1; i <= 3; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/%d", i)
+		commitMessage := fmt.Sprintf("commit %d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+branch1+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		commitVars := map[string]string{
+			"REPO":    repoName,
+			"BRANCH":  branch1,
+			"MESSAGE": commitMessage,
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+branch1+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", commitVars)
+	}
+
+	vars["BRANCH"] = branch2
+	for i := 3; i <= 5; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/%d", i)
+		commitMessage := fmt.Sprintf("commit %d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+branch2+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+
+		commitVars := map[string]string{
+			"REPO":    repoName,
+			"BRANCH":  branch2,
+			"MESSAGE": commitMessage,
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+branch2+` -m "`+commitMessage+`" --epoch-time-seconds 0`, false, "lakectl_commit", commitVars)
+	}
+
+	t.Run("success", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch1+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_cherry_pick", map[string]string{
+			"REPO":    repoName,
+			"BRANCH":  mainBranch,
+			"MESSAGE": "commit 3",
+		})
+
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch2+"~1"+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_cherry_pick", map[string]string{
+			"REPO":    repoName,
+			"BRANCH":  mainBranch,
+			"MESSAGE": "commit 4",
+		})
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		RunCmdAndVerifyFailure(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch1+" lakefs://"+repoName+"/"+branch2, false,
+			fmt.Sprintf("Branch: lakefs://%s/%s\nupdate branch: conflict found\n409 Conflict\n", repoName, branch2), nil)
+	})
+}

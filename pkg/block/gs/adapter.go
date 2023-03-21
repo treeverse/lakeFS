@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -33,9 +35,10 @@ var (
 )
 
 type Adapter struct {
-	client           *storage.Client
-	preSignedExpiry  time.Duration
-	disablePreSigned bool
+	client             *storage.Client
+	preSignedExpiry    time.Duration
+	disablePreSigned   bool
+	disablePreSignedUI bool
 }
 
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
@@ -52,6 +55,14 @@ func WithDisablePreSigned(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
 			a.disablePreSigned = false
+		}
+	}
+}
+
+func WithDisablePreSignedUI(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSignedUI = false
 		}
 	}
 }
@@ -75,39 +86,14 @@ func (a *Adapter) newPreSignedTime() time.Time {
 	return time.Now().UTC().Add(a.preSignedExpiry)
 }
 
-func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
-	if err != nil {
-		return qualifiedKey, err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeGS {
-		return qualifiedKey, block.ErrInvalidNamespace
-	}
-	return qualifiedKey, nil
-}
-
-func resolveNamespacePrefix(lsOpts block.WalkOpts) (block.QualifiedPrefix, error) {
-	qualifiedPrefix, err := block.ResolveNamespacePrefix(lsOpts.StorageNamespace, lsOpts.Prefix)
-	if err != nil {
-		return qualifiedPrefix, err
-	}
-	if qualifiedPrefix.StorageType != block.StorageTypeGS {
-		return qualifiedPrefix, block.ErrInvalidNamespace
-	}
-	return qualifiedPrefix, nil
-}
-
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
-	w := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
-		NewWriter(ctx)
+	w := a.client.Bucket(bucket).Object(key).NewWriter(ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		return fmt.Errorf("io.Copy: %w", err)
@@ -122,19 +108,26 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	var err error
 	defer reportMetrics("Get", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-	r, err := a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).NewReader(ctx)
+	r, err := a.client.Bucket(bucket).Object(key).NewReader(ctx)
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
+		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", bucket, key)
 		return nil, err
 	}
 	return r, nil
+}
+
+func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
+	if err := block.ValidateStorageType(uri, block.StorageTypeGS); err != nil {
+		return nil, err
+	}
+	return NewGCSWalker(a.client), nil
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
@@ -145,7 +138,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	var err error
 	defer reportMetrics("GetPreSignedURL", time.Now(), nil, &err)
 
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return "", err
 	}
@@ -158,41 +151,12 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		Method:  method,
 		Expires: a.newPreSignedTime(),
 	}
-	k, err := a.client.Bucket(qualifiedKey.StorageNamespace).SignedURL(qualifiedKey.Key, opts)
+	k, err := a.client.Bucket(bucket).SignedURL(key, opts)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("error generating pre-signed URL")
 		return "", err
 	}
 	return k, nil
-}
-
-func (a *Adapter) Walk(ctx context.Context, walkOpt block.WalkOpts, walkFn block.WalkFunc) error {
-	var err error
-	defer reportMetrics("Walk", time.Now(), nil, &err)
-	qualifiedPrefix, err := resolveNamespacePrefix(walkOpt)
-	if err != nil {
-		return err
-	}
-
-	iter := a.client.
-		Bucket(qualifiedPrefix.StorageNamespace).
-		Objects(ctx, &storage.Query{Prefix: qualifiedPrefix.Prefix})
-
-	for {
-		attrs, err := iter.Next()
-
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedPrefix.StorageNamespace, err)
-		}
-
-		if err := walkFn(attrs.Name); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func isErrNotFound(err error) bool {
@@ -202,11 +166,11 @@ func isErrNotFound(err error) bool {
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return false, err
 	}
-	_, err = a.client.Bucket(qualifiedKey.StorageNamespace).Object(qualifiedKey.Key).Attrs(ctx)
+	_, err = a.client.Bucket(bucket).Object(key).Attrs(ctx)
 	if isErrNotFound(err) {
 		return false, nil
 	}
@@ -219,19 +183,16 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
 	defer reportMetrics("GetRange", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-	r, err := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
-		NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
+	r, err := a.client.Bucket(bucket).Object(key).NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", qualifiedKey.StorageNamespace, qualifiedKey.Key)
+		a.log(ctx).WithError(err).Errorf("failed to get object bucket %s key %s", bucket, key)
 		return nil, err
 	}
 	return r, nil
@@ -241,14 +202,11 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
 	var props block.Properties
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return props, err
 	}
-	_, err = a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
-		Attrs(ctx)
+	_, err = a.client.Bucket(bucket).Object(key).Attrs(ctx)
 	if err != nil {
 		return props, err
 	}
@@ -258,16 +216,13 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
-	err = a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
-		Delete(ctx)
+	err = a.client.Bucket(bucket).Object(key).Delete(ctx)
 	if err != nil {
-		return fmt.Errorf("Object(%q).Delete: %w", qualifiedKey.Key, err)
+		return fmt.Errorf("Object(%q).Delete: %w", key, err)
 	}
 	return nil
 }
@@ -275,16 +230,16 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Copy", time.Now(), nil, &err)
-	qualifiedDestinationKey, err := resolveNamespace(destinationObj)
+	dstBucket, dstKey, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return fmt.Errorf("resolve destination: %w", err)
 	}
-	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	srcBucket, srcKey, err := a.extractParamsFromObj(sourceObj)
 	if err != nil {
 		return fmt.Errorf("resolve source: %w", err)
 	}
-	destinationObjectHandle := a.client.Bucket(qualifiedDestinationKey.StorageNamespace).Object(qualifiedDestinationKey.Key)
-	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
+	destinationObjectHandle := a.client.Bucket(dstBucket).Object(dstKey)
+	sourceObjectHandle := a.client.Bucket(srcBucket).Object(srcKey)
 	_, err = destinationObjectHandle.CopierFrom(sourceObjectHandle).Run(ctx)
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)
@@ -295,18 +250,15 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, uploadID, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-	uploadID := qualifiedKey.Key
 	// we keep a marker file to identify multipart in progress
 	objName := formatMultipartMarkerFilename(uploadID)
-	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(objName)
+	o := a.client.Bucket(bucket).Object(objName)
 	w := o.NewWriter(ctx)
-	_, err = io.WriteString(w, qualifiedKey.Key)
+	_, err = io.WriteString(w, uploadID)
 	if err != nil {
 		return nil, fmt.Errorf("io.WriteString: %w", err)
 	}
@@ -317,8 +269,8 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	// log information
 	a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
-		"qualified_ns":  qualifiedKey.StorageNamespace,
-		"qualified_key": qualifiedKey.Key,
+		"qualified_ns":  bucket,
+		"qualified_key": uploadID,
 		"key":           obj.Identifier,
 	}).Debug("created multipart upload")
 	return &block.CreateMultiPartUploadResponse{
@@ -329,14 +281,12 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucket, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
-	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(objName)
+	o := a.client.Bucket(bucket).Object(objName)
 	w := o.NewWriter(ctx)
 	_, err = io.Copy(w, reader)
 	if err != nil {
@@ -358,20 +308,18 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(destinationObj)
+	bucket, _, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return nil, err
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
-	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(objName)
+	o := a.client.Bucket(bucket).Object(objName)
 
-	qualifiedSourceKey, err := resolveNamespace(sourceObj)
+	srcBucket, srcKey, err := a.extractParamsFromObj(sourceObj)
 	if err != nil {
 		return nil, fmt.Errorf("resolve source: %w", err)
 	}
-	sourceObjectHandle := a.client.Bucket(qualifiedSourceKey.StorageNamespace).Object(qualifiedSourceKey.Key)
+	sourceObjectHandle := a.client.Bucket(srcBucket).Object(srcKey)
 
 	attrs, err := o.CopierFrom(sourceObjectHandle).Run(ctx)
 	if err != nil {
@@ -385,14 +333,12 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(destinationObj)
+	bucket, _, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return nil, err
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
-	o := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(objName)
+	o := a.client.Bucket(bucket).Object(objName)
 
 	reader, err := a.GetRange(ctx, sourceObj, startPosition, endPosition)
 	if err != nil {
@@ -425,11 +371,11 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string) error {
 	var err error
 	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucketName, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
-	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
+	bucket := a.client.Bucket(bucketName)
 
 	// delete all related files by listing the prefix
 	it := bucket.Objects(ctx, &storage.Query{
@@ -442,10 +388,10 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.StorageNamespace, err)
+			return fmt.Errorf("bucket(%s).Objects(): %w", bucketName, err)
 		}
 		if err := bucket.Object(attrs.Name).Delete(ctx); err != nil {
-			return fmt.Errorf("bucket(%s).object(%s).Delete(): %w", qualifiedKey.StorageNamespace, attrs.Name, err)
+			return fmt.Errorf("bucket(%s).object(%s).Delete(): %w", bucketName, attrs.Name, err)
 		}
 	}
 	return nil
@@ -454,19 +400,19 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
-	qualifiedKey, err := resolveNamespace(obj)
+	bucketName, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
-		"qualified_ns":  qualifiedKey.StorageNamespace,
-		"qualified_key": qualifiedKey.Key,
+		"qualified_ns":  bucketName,
+		"qualified_key": key,
 		"key":           obj.Identifier,
 	})
 
 	// list bucket parts and validate request match
-	bucketParts, err := a.listMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, uploadID)
+	bucketParts, err := a.listMultipartUploadParts(ctx, bucketName, uploadID)
 	if err != nil {
 		return nil, err
 	}
@@ -483,14 +429,14 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}
 
 	// compose target object
-	targetAttrs, err := a.composeMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, uploadID, parts)
+	targetAttrs, err := a.composeMultipartUploadParts(ctx, bucketName, uploadID, parts)
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, err
 	}
 
 	// delete marker
-	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
+	bucket := a.client.Bucket(bucketName)
 	objMarker := bucket.Object(formatMultipartMarkerFilename(uploadID))
 	if err := objMarker.Delete(ctx); err != nil {
 		a.log(ctx).WithError(err).Warn("Failed to delete multipart upload marker")
@@ -599,7 +545,34 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	if a.disablePreSigned {
 		info.PreSignSupport = false
 	}
+	if !(a.disablePreSignedUI || a.disablePreSigned) {
+		info.PreSignSupportUI = true
+	}
 	return info
+}
+
+func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, error) {
+	qk, err := a.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
+	if err != nil {
+		return "", "", err
+	}
+	bucket, prefix, _ := strings.Cut(qk.GetStorageNamespace(), "/")
+	key := qk.GetKey()
+	if len(prefix) > 0 { // Avoid situations where prefix is empty or "/"
+		key = prefix + "/" + key
+	}
+	return bucket, key, nil
+}
+
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	qualifiedKey, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+	if err != nil {
+		return qualifiedKey, err
+	}
+	if qualifiedKey.GetStorageType() != block.StorageTypeGS {
+		return qualifiedKey, fmt.Errorf("expected storage type gs: %w", block.ErrInvalidAddress)
+	}
+	return qualifiedKey, nil
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

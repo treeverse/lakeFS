@@ -101,6 +101,7 @@
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: .9rem;
   color: #303030;
+  width: 95%;
 }
 
 .lakefs-uri strong {
@@ -259,13 +260,19 @@
 .tree-path .octicon {
   color: #007bff;
   margin-right: 5px;
-  font-size: .9rem;
+  font-size: .875rem;
 }
 
 .diff-removed .tree-path,
 .diff-removed .tree-path .octicon,
 .diff-removed .diff-indicator .octicon {
   color: #808080;
+}
+
+td.tree-path {
+  padding: 0px;
+  text-align: left;
+  width: 30%;
 }
 
 .diff-changed {
@@ -343,13 +350,18 @@
 .table .change-entry-row .change-entry-row-actions .btn-link,
 .table .tree-entry-row .change-entry-row-actions .btn-link {
   visibility: hidden;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
+  padding: 5px;
 }
 .table .change-entry-row:hover .change-entry-row-actions .btn-link,
-.table .tree-entry-row:hover .change-entry-row-actions .btn-link,
+.table .tree-entry-row .change-entry-row-actions .btn-link,
 .table .tree-entry-row:focus .change-entry-row-actions .btn-link {
   visibility: visible;
   display: inline-block;
+}
+
+td.change-entry-row-actions {
+  width: 12%;
 }
 
 .tree-container {
@@ -447,6 +459,12 @@ td .form-group {
 
 .change-summary .arrow {
   visibility: hidden;
+}
+
+td.change-summary {
+  padding: 0px;
+  text-align: right;
+  width: 10%;
 }
 
 .color-fg-added {
@@ -549,6 +567,8 @@ td .form-group {
 .import-num-objects {
   display: inline-flex;
   color: green;
+  font-weight: bolder;
+  margin: 0 2px;
 }
 
 .import-text {
@@ -586,7 +606,7 @@ td .form-group {
 
 .file-content-heading {
   background-color: #FBFBFB;
-  padding: 5px;
+  padding: 10px;
 }
 
 .file-content-body {
@@ -602,11 +622,6 @@ td .form-group {
   margin-right: 8px;
 }
 
-.object-viewer-buttons {
-  width: 20%;
-  text-align: right;
-  margin-right: 5px;
-}
 
 .object-viewer-sql-input.form-control {
   background-color: #333333;
@@ -618,10 +633,26 @@ td .form-group {
   background-color: #333333;
   color: #FFFFFF;
 }
+
+.powered-by {
+  line-height: .8em;
+  font-size: .8em;
+  font-style: italic;
+
+}
+
 .object-viewer-sql-results {
   overflow: auto;
   font-size: .75rem;
   max-height: 400px;
+}
+.object-viewer-sql-results th {
+  font-size: .9rem;
+  padding: 5px 10px;
+}
+.object-viewer-sql-results th small {
+  font-size: .7rem;
+  color: #888;
 }
 
 .image-container {
@@ -686,3 +717,7 @@ td.table-diff-type {
   font-size: medium;
 }
 
+td.entry-type-indicator {
+  width: 1%;
+  padding: 2px;
+}

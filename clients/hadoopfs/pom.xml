@@ -82,6 +82,33 @@ To export to S3:
             </build>
         </profile>
         <profile>
+            <id>contract-tests-hadoop3-presigned</id>
+            <properties>
+                <exclude.tests>io/lakefs/contract/hadoop2/**</exclude.tests>
+                <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
+                <hadoop.version>3.1.4</hadoop.version>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.12.4</version>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <lakefs.access_mode>presigned</lakefs.access_mode>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+                <resources>
+                    <resource>
+                        <directory>${contract_tests.resource_dir}</directory>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+        <profile>
             <id>release</id>
             <build>
                 <plugins>
@@ -196,8 +223,10 @@ To export to S3:
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
         <hadoop.version>2.7.7</hadoop.version>
+        <finalName>${project.artifactId}-${project.version}</finalName>
     </properties>
     <build>
+        <finalName>${finalName}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -308,6 +337,13 @@ To export to S3:
 	  <version>1.16.0</version>
 	  <scope>test</scope>
 	</dependency>
+    <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver -->
+    <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>mockwebserver</artifactId>
+        <version>4.10.0</version>
+        <scope>test</scope>
+    </dependency>
 
 	<!--
 	     https://stackoverflow.com/questions/35569092/java-lang-classnotfoundexception-com-fasterxml-jackson-annotation-jsonincludev

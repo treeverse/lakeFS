@@ -27,14 +27,15 @@ class LocalCache {
 
 const cache = new LocalCache();
 
-export const linkToPath = (repoId, branchId, path) => {
+export const linkToPath = (repoId, branchId, path, presign=false) => {
     const query = qs({
-        path: path,
+        path,
+        presign,
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
 };
 
-const qs = (queryParts) => {
+export const qs = (queryParts) => {
     const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
     return new URLSearchParams(parts).toString();
 };
@@ -62,7 +63,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
     const headers = new Headers({
         ...defaultAPIHeaders,
         ...additionalHeaders,
-    })
+    });
     const response = await fetch(`${API_ENDPOINT}${uri}`, {headers, ...requestData});
 
     // check if we're missing credentials
@@ -594,8 +595,8 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
-        const query = qs({prefix: tree, amount, after, delimiter});
+    async list(repoId, ref, tree, after = "", presign= false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
+        const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -629,8 +630,8 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path) {
-        const query = qs({path});
+    async get(repoId, ref, path, presign= false) {
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
         });
@@ -639,6 +640,11 @@ class Objects {
         }
 
         return response.text()
+    }
+
+    async getPresignedUrlForDownload(repoId, ref, path) {
+        const response = await this.getStat(repoId, ref, path, true);
+        return response?.physical_address;
     }
 
     async head(repoId, ref, path) {
@@ -656,8 +662,8 @@ class Objects {
         }
     }
 
-    async getStat(repoId, ref, path) {
-        const query = qs({path});
+    async getStat(repoId, ref, path, presign = false) {
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -1022,6 +1028,31 @@ class Statistics {
     }
 }
 
+class Staging {
+    async get(repoId, branchId, path, presign= false) {
+        const query = qs({path, presign});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
+            method: 'GET'
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async link(repoId, branchId, path, staging, checksum, sizeBytes) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
+            method: 'PUT',
+            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes})
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+}
+
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const tags = new Tags();
@@ -1038,3 +1069,4 @@ export const ranges = new Ranges();
 export const metaRanges = new MetaRanges();
 export const templates = new Templates();
 export const statistics = new Statistics();
+export const staging = new Staging();

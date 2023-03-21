@@ -45,15 +45,21 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// LDAP holds configuration for authenticating on an LDAP server.
-type LDAP struct {
-	ServerEndpoint    string `mapstructure:"server_endpoint"`
-	BindDN            string `mapstructure:"bind_dn"`
-	BindPassword      string `mapstructure:"bind_password"`
-	DefaultUserGroup  string `mapstructure:"default_user_group"`
-	UsernameAttribute string `mapstructure:"username_attribute"`
-	UserBaseDN        string `mapstructure:"user_base_dn"`
-	UserFilter        string `mapstructure:"user_filter"`
+// TODO(isan) consolidate with OIDC
+// CookieAuthVerification is related to auth based on a cookie set by an external service
+type CookieAuthVerification struct {
+	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
+	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
+	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
+	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
+	// InitialGroupsClaimName comma separated list of groups to add to the user on the lakeFS side
+	InitialGroupsClaimName string `mapstructure:"initial_groups_claim_name"`
+	// FriendlyNameClaimName is the claim name to use as the user's friendly name in places like the UI
+	FriendlyNameClaimName string `mapstructure:"friendly_name_claim_name"`
+	// ExternalUserIDClaimName is the claim name to use as the user identifier with an IDP
+	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
+	// AuthSource tag each user with label of the IDP
+	AuthSource string `mapstructure:"auth_source"`
 }
 
 // S3AuthInfo holds S3-style authentication.
@@ -69,6 +75,17 @@ type S3AuthInfo struct {
 		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
 		SessionToken    SecureString `mapstructure:"session_token"`
 	}
+}
+
+// PluginProps struct holds the properties needed to run a plugin
+type PluginProps struct {
+	Path    string `mapstructure:"path"`
+	Version *int   `mapstructure:"version"`
+}
+
+// DiffProps struct holds the properties that define the details necessary to run a diff.
+type DiffProps struct {
+	PluginName string `mapstructure:"plugin"`
 }
 
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -163,8 +180,18 @@ type Config struct {
 			Token           string
 			SupportsInvites bool `mapstructure:"supports_invites"`
 		}
-		LDAP *LDAP
-		OIDC OIDC
+		RemoteAuthenticator struct {
+			// Enabled if set true will enable remote authentication
+			Enabled bool `mapstructure:"enabled"`
+			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+			Endpoint string `mapstructure:"endpoint"`
+			// DefaultUserGroup is the default group for the users authenticated by the remote service
+			DefaultUserGroup string `mapstructure:"default_user_group"`
+			// RequestTimeout timeout for remote authentication requests
+			RequestTimeout time.Duration `mapstructure:"request_timeout"`
+		} `mapstructure:"remote_authenticator"`
+		OIDC                   OIDC                   `mapstructure:"oidc"`
+		CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
 		// LogoutRedirectURL is the URL on which to mount the
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
@@ -180,8 +207,8 @@ type Config struct {
 		} `mapstructure:"ui_config"`
 	}
 	Blockstore struct {
-		Type                   string `mapstructure:"type" validate:"required"`
-		DefaultNamespacePrefix string `mapstructure:"default_namespace_prefix"`
+		Type                   string  `mapstructure:"type" validate:"required"`
+		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
 		Local                  *struct {
 			Path                    string   `mapstructure:"path"`
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
@@ -202,22 +229,27 @@ type Config struct {
 			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI            bool          `mapstructure:"disable_pre_signed_ui"`
 		} `mapstructure:"s3"`
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
 			StorageAccount   string        `mapstructure:"storage_account"`
 			StorageAccessKey string        `mapstructure:"storage_access_key"`
 			// Deprecated: Value ignored
-			AuthMethod       string        `mapstructure:"auth_method"`
-			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
+			AuthMethod         string        `mapstructure:"auth_method"`
+			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
+			// TestEndpointURL for testing purposes
+			TestEndpointURL string `mapstructure:"test_endpoint_url"`
 		} `mapstructure:"azure"`
 		GS *struct {
-			S3Endpoint       string        `mapstructure:"s3_endpoint"`
-			CredentialsFile  string        `mapstructure:"credentials_file"`
-			CredentialsJSON  string        `mapstructure:"credentials_json"`
-			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
+			S3Endpoint         string        `mapstructure:"s3_endpoint"`
+			CredentialsFile    string        `mapstructure:"credentials_file"`
+			CredentialsJSON    string        `mapstructure:"credentials_json"`
+			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
 		} `mapstructure:"gs"`
 	}
 	Committed struct {
@@ -299,6 +331,8 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
+	Diff    map[string]DiffProps   `mapstructure:"diff"`
+	Plugins map[string]PluginProps `mapstructure:"plugins"`
 }
 
 func NewConfig() (*Config, error) {
@@ -477,6 +511,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		ServerSideEncryptionKmsKeyID:  c.Blockstore.S3.ServerSideEncryptionKmsKeyID,
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
+		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
 	}, nil
 }
 
@@ -493,8 +528,12 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 }
 
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
+	credPath, err := homedir.Expand(c.Blockstore.GS.CredentialsFile)
+	if err != nil {
+		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
+	}
 	return blockparams.GS{
-		CredentialsFile: c.Blockstore.GS.CredentialsFile,
+		CredentialsFile: credPath,
 		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
 		PreSignedExpiry: c.Blockstore.GS.PreSignedExpiry,
 	}, nil
@@ -509,6 +548,7 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
 		TryTimeout:       c.Blockstore.Azure.TryTimeout,
 		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
+		TestEndpointURL:  c.Blockstore.Azure.TestEndpointURL,
 	}, nil
 }
 

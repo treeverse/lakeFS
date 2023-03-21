@@ -37,7 +37,7 @@ type GarbageCollectionManager struct {
 
 func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
-	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	qk, err := m.blockAdapter.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
@@ -46,16 +46,17 @@ func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn gravel
 
 func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
-	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	qk, err := m.blockAdapter.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
 	return qk.Format(), nil
 }
 
+// GetUncommittedLocation return full path to underlying storage path to store uncommitted information
 func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(uncommittedFilePrefixTemplate, m.committedBlockStoragePrefix, runID)
-	qk, err := block.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	qk, err := m.blockAdapter.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
@@ -92,8 +93,8 @@ type RepositoryCommitGetter struct {
 	repository *graveler.RepositoryRecord
 }
 
-func (r *RepositoryCommitGetter) GetCommit(ctx context.Context, commitID graveler.CommitID) (*graveler.Commit, error) {
-	return r.refManager.GetCommit(ctx, r.repository, commitID)
+func (r *RepositoryCommitGetter) ListCommits(ctx context.Context) (graveler.CommitIterator, error) {
+	return r.refManager.ListCommits(ctx, r.repository)
 }
 
 func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {

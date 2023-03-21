@@ -8,7 +8,6 @@ has_children: false
 ---
 
 # Authentication 
-
 {: .no_toc }
 
 {% include toc.html %}
@@ -26,6 +25,11 @@ Web UI at Administration / Users to create users. Users have an access key
 `AKIA...` and an associated secret access key. These credentials are valid
 for logging into the Web UI or authenticating programmatic requests to the API
 Server or the S3 Gateway.
+
+#### Remote Authenticator Service 
+
+lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
+To configure a Remote Authenticator see the [configuration fields](../reference/configuration.md).
 
 #### LDAP server
 

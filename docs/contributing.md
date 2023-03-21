@@ -31,7 +31,7 @@ Before you get started, we kindly ask that you:
 *This section was tested on macOS and Linux (Fedora 32, Ubuntu 20.04) - Your mileage may vary*
 
 
-Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly. The Java workflows use [Maven 3.8.1](https://github.com/actions/virtual-environments/blob/main/images/linux/Ubuntu2004-README.md) (but any recent version of Maven should work).
+Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly. The Java workflows use [Maven 3.8.x](https://github.com/actions/runner-images/blob/bc22983319daa620b2ad01a74b68f6f462d86241/images/linux/Ubuntu2004-Readme.md) (but any recent version of Maven should work).
 
 1. Install the required dependencies for your OS:
    1. [Git](https://git-scm.com/downloads)
@@ -81,11 +81,15 @@ Run unit tests:
 make test
 ```
 
-Check that linting rules are passing:
+Check that linting rules are passing. 
 
 ```shell
 make checks-validator
 ```
+
+You will need GNU diff to run this. On the macOS it can be installed with `brew install diffutils`
+{: .note .note-info }
+
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
 
 Run system-tests:

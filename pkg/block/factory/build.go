@@ -3,7 +3,6 @@ package factory
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -27,8 +26,6 @@ import (
 
 // googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
-
-var ErrInvalidBlockstoreType = errors.New("invalid blockstore type")
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -66,7 +63,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		return azure.NewAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockstoreType, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
+			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 
@@ -113,6 +110,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
 		s3a.WithPreSignedExpiry(params.PreSignedExpiry),
 		s3a.WithDisablePreSigned(params.DisablePreSigned),
+		s3a.WithDisablePreSignedUI(params.DisablePreSignedUI),
 	}
 	if params.ServerSideEncryption != "" {
 		opts = append(opts, s3a.WithServerSideEncryption(params.ServerSideEncryption))
@@ -147,6 +145,7 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	adapter := gs.NewAdapter(client,
 		gs.WithPreSignedExpiry(params.PreSignedExpiry),
 		gs.WithDisablePreSigned(params.DisablePreSigned),
+		gs.WithDisablePreSignedUI(params.DisablePreSignedUI),
 	)
 	logging.Default().WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil

@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 
 import {
     ArrowLeftIcon,
-    ClockIcon, DiffIcon, InfoIcon
+    ClockIcon, DiffIcon, InfoIcon, PlusIcon, XIcon
 } from "@primer/octicons-react";
 
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
@@ -18,6 +18,9 @@ import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {refs, statistics} from "../../api";
 import {DeltaLakeDiff} from "./TableDiff";
+import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
@@ -36,7 +39,7 @@ import {DeltaLakeDiff} from "./TableDiff";
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
-                                depth=0, setTableDiffExpanded}) => {
+                                depth=0, setTableDiffExpanded, setTableDiffState, setIsTableMerge}) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -94,7 +97,8 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             results.map(child =>
                 (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                               internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                              relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={setTableDiffExpanded}/>))}
+                              relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={onTableDiffExpansion(child, setTableDiffState, setIsTableMerge)} setTableDiffState={setTableDiffState}
+                              setIsTableMerge={setIsTableMerge}/>))}
             {(!!nextPage || loading) &&
             <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                                 setAfterUpdated={setAfterUpdated}/>
@@ -137,21 +141,20 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
     let leftResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, rightDiffRefID));
     let rightResult = useAPI(() => tablesUtil.isDeltaLakeTable(entry, repo, leftDiffRefID));
     useEffect(() => {
-        if (entry.path_type === "object") {
-            setTreeItemType({ type: TreeItemType.Object, loading: false });
+        if (treeItemType.loading) {
+            if (entry.path_type === "object") {
+                setTreeItemType({ type: TreeItemType.Object, loading: false });
+            } else if (!leftResult.loading && !rightResult.loading) {
+                setTreeItemType({
+                    type:
+                        leftResult.response || rightResult.response
+                            ? TreeItemType.DeltaLakeTable
+                            : TreeItemType.Prefix,
+                    loading: false,
+                });
+            }
         }
-    }, [entry]);
-    useEffect(() => {
-        if (treeItemType.loading && !leftResult.loading && !rightResult.loading) {
-            setTreeItemType({
-                type:
-                    leftResult.response || rightResult.response
-                        ? TreeItemType.DeltaLakeTable
-                        : TreeItemType.Prefix,
-                loading: false,
-            });
-        }
-    }, [leftResult, rightResult]);
+    }, [leftResult, rightResult, entry]);
     return treeItemType;
 }
 
@@ -178,9 +181,10 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  */
 export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge}) => {
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
+                                         changesTreeMessage= ""}) => {
     const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
-    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: ""});
+    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
     if (results.length === 0) {
         return <div className="tree-container">
@@ -195,7 +199,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                           variant="secondary"
                                           disabled={false}
                                           onClick={() => {
-                                              setTableDiffState( {isShown: false, expandedTablePath: ""})
+                                              setTableDiffState( {isShown: false, expandedTablePath: "", expandedTableName: ""})
                                               if (setIsTableMerge) {
                                                   setIsTableMerge(false);
                                               }
@@ -205,11 +209,16 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                 : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can use lakeFS to
                                     compare Delta Lake tables. <a href="https://docs.lakefs.io/integrations/delta.html">Learn more.</a> </Alert></div>
                     }
+                    <div>{changesTreeMessage}</div>
                     <Card>
                         <Card.Header>
+                            {tableDiffState.isShown
+                                ? tableDiffState.expandedTableName
+                                :
                                 <span className="float-start">
                                     {(delimiter !== "") && uriNavigator}
                                 </span>
+                            }
                         </Card.Header>
                         <Card.Body>
                             {tableDiffState.isShown
@@ -226,12 +235,9 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     setTableDiffExpanded={() => {
-                                                         setTableDiffState({isShown: true,  expandedTablePath: entry.path})
-                                                         if (setIsTableMerge) {
-                                                             setIsTableMerge(true);
-                                                         }
-                                                     }}
+                                                     setTableDiffExpanded={onTableDiffExpansion(entry, setTableDiffState, setIsTableMerge)}
+                                                     setTableDiffState={setTableDiffState}
+                                                     setIsTableMerge={setIsTableMerge}
                                                  />);
                                 })}
                                 {!!nextPage &&
@@ -248,6 +254,15 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
 export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {
     return refs.diff(repo.id, leftRefId, rightRefId, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
 };
+
+const onTableDiffExpansion = (entry, setTableDiffState, setIsTableMerge) => () => {
+    const pathParts = entry.path.split('/');
+    const tableName = pathParts.pop() || pathParts.pop();  // handle trailing slash at the end of table name
+    setTableDiffState({isShown: true,  expandedTablePath: entry.path, expandedTableName: tableName})
+    if (setIsTableMerge) {
+        setIsTableMerge(true);
+    }
+}
 
 const ExperimentalDeltaDiffButton = ({showButton = false}) => {
     const [showComingSoonModal, setShowComingSoonModal] = useState(false);
@@ -279,4 +294,60 @@ const ExperimentalDeltaDiffButton = ({showButton = false}) => {
             </Button>
         </ExperimentalOverlayTooltip>
     </>
+}
+
+export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
+    const onChangeKey = useCallback((i) => {
+        return e => {
+            console.log(e)
+            const key = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key}, ...prev.slice(i+1)]);
+            e.preventDefault()
+        };
+    }, [setMetadataFields]);
+
+    const onChangeValue = useCallback((i) => {
+        return e => {
+            const value = e.currentTarget.value;
+            setMetadataFields(prev => [...prev.slice(0,i),  {...prev[i], value}, ...prev.slice(i+1)]);
+        };
+    }, [setMetadataFields]);
+
+    const onRemovePair = useCallback((i) => {
+        return () => setMetadataFields(prev => [...prev.slice(0, i), ...prev.slice(i + 1)])
+    }, [setMetadataFields])
+
+    const onAddPair = useCallback(() => {
+        setMetadataFields(prev => [...prev, {key: "", value: ""}])
+    }, [setMetadataFields])
+
+    return (
+        <div className="mt-3 mb-3">
+            {metadataFields.map((f, i) => {
+                return (
+                    <Form.Group key={`commit-metadata-field-${i}`} className="mb-3">
+                        <Row>
+                            <Col md={{span: 5}}>
+                                <Form.Control type="text" placeholder="Key" defaultValue={f.key} onChange={onChangeKey(i)}/>
+                            </Col>
+                            <Col md={{span: 5}}>
+                                <Form.Control type="text" placeholder="Value" defaultValue={f.value}  onChange={onChangeValue(i)}/>
+                            </Col>
+                            <Col md={{span: 1}}>
+                                <Form.Text>
+                                    <Button size="sm" variant="secondary" onClick={onRemovePair(i)}>
+                                        <XIcon/>
+                                    </Button>
+                                </Form.Text>
+                            </Col>
+                        </Row>
+                    </Form.Group>
+                )
+            })}
+            <Button onClick={onAddPair} size="sm" variant="secondary">
+                <PlusIcon/>{' '}
+                Add Metadata field
+            </Button>
+        </div>
+    )
 }

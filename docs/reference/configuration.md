@@ -82,25 +82,20 @@ This reference uses `.` to denote the nesting of values.
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
-* <a name="ldap"/>`auth.ldap.server_endpoint` `(string : required)` - If specified, also authenticate users via this LDAP server.
-* `auth.ldap.bind_dn` `(string : required)` - Use this DN to bind lakeFS on the LDAP server for searching for users.
-* `auth.ldap.bind_password` `(string : )` - If set, use this password for binding `bind_dn`.
-* `auth.ldap.username_attribute` `(string : required)` - Attribute holding login username on LDAP users, e.g. `cn` or `uid`.
-* `auth.ldap.user_base_dn` `(string : required)` - Base DN for searching for users.  Search looks for users in the subtree below this.
-* `auth.ldap.default_user_group` `(string : )` - Create all LDAP users in this group.  Defaults to `Viewers`.
-* `auth.ldap.user_filter` `(string : )` - Additional filter for users.
-* `auth.oidc.enabled` `(bool : false)` - Set to true to enable authentication with an external OIDC provider.
-* `auth.oidc.is_default_login` `(bool : false)` - If true, the lakeFS login page will redirect to the external provider by default.
-* `auth.oidc.client_id` `(string : )` - OIDC client ID.
-* `auth.oidc.client_secret` `(string : )` - OIDC client secret.
-* `auth.oidc.url` `(string : )` - The base URL of your OIDC compatible identity provider.
-* `auth.oidc.callback_base_url` `(string : )` - The scheme, host and port of your lakeFS installation. After authenticating, your identity provider will redirect you to a URL under this base.
+* `auth.remote_authenticator.enabled` `(bool : false)` - If specified, also authenticate users via this Remote Authenticator server.
+* `auth.remote_authenticator.endpoint` `(string : required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
+* `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
+* `auth.remote_authenticator.request_timeout` `(duration : 10s)` - If specified, timeout for remote authentication requests.
+* `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+* `auth.cookie_auth_verification.default_initial_groups` (string[] : [])` - By default, users will be assigned to these groups
+* `auth.cookie_auth_verification.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.cookie_auth_verification.default_initial_groups` is also set. 
+* `auth.cookie_auth_verification.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.cookie_auth_verification.external_user_id_claim_name` - `(string : )` - If specified, the value from the claim with this name will be used as the user's id name.
+* `auth.cookie_auth_verification.auth_source` - `(string : )` - If specified, user will be labeled with this auth source.
 * `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
 * `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set. 
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
-* `auth.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - Add these parameters when calling the provider's `/authorize` endpoint
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
-* `auth.oidc.additional_scope_claims` `(string[]: [])` - Add these additional scopes/claims to the OIDC user token. `openid` and `profile` are provided already. 
 * `auth.ui_config.RBAC` `(string: "simplified")` - "simplified" or
   "external".  In simplified mode, do not display policy in GUI.  If you
   have configured an external auth server you can set this to "external" to
@@ -116,9 +111,11 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+* `blockstore.gs.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+* `blockstore.azure.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
@@ -134,6 +131,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+* `blockstore.s3.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
 * `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin. 
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.

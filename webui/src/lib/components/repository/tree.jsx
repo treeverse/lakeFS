@@ -9,6 +9,7 @@ import {
   FileIcon,
   GearIcon,
   InfoIcon,
+  LinkIcon,
   PencilIcon,
   PlusIcon,
   TrashIcon,
@@ -33,6 +34,7 @@ import {ClipboardButton, copyTextToClipboard, Error, Loading} from "../controls"
 import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
+import {FaDownload} from "react-icons/fa";
 
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
@@ -44,7 +46,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -74,11 +76,24 @@ const EntryRowActions = ({ repo, reference, entry, onDelete }) => {
 
         <Dropdown.Menu>
           {entry.path_type === "object" && (
+              <Dropdown.Item
+                  onClick={(e) => {
+                    copyTextToClipboard(
+                        entry.physical_address
+                    );
+                    e.preventDefault();
+                  }}
+              >
+                <LinkIcon /> Copy Presigned URL
+              </Dropdown.Item>
+          )}
+          {entry.path_type === "object" && (
             <PathLink
               path={entry.path}
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
+              presign={presign}
             >
               <DownloadIcon /> Download
             </PathLink>
@@ -361,9 +376,9 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   );
 };
 
-const PathLink = ({ repoId, reference, path, children, as = null }) => {
+const PathLink = ({ repoId, reference, path, children, presign = false, as = null }) => {
   const name = path.split("/").pop();
-  const link = linkToPath(repoId, reference.id, path);
+  const link = linkToPath(repoId, reference.id, path, presign);
   if (as === null)
     return (
       <a href={link} download={name}>
@@ -373,7 +388,7 @@ const PathLink = ({ repoId, reference, path, children, as = null }) => {
   return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
   let rowClass = "change-entry-row ";
   switch (entry.diff_type) {
     case "changed":
@@ -505,6 +520,7 @@ const EntryRow = ({ repo, reference, path, entry, onDelete, showActions }) => {
         reference={reference}
         entry={entry}
         onDelete={onDelete}
+        presign={config.config.pre_sign_support}
       />
     );
   }
@@ -563,77 +579,84 @@ export const URINavigator = ({
   repo,
   reference,
   path,
+  downloadUrl,
   relativeTo = "",
   pathURLBuilder = buildPathURL,
   isPathToFile = false,
+  hasCopyButton = false
 }) => {
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
 
   return (
-    <span className="d-flex justify-content-between align-items-center">
-      <span className="lakefs-uri" style={{ display: "inline-flex" }}>
-        <div>
-          {relativeTo === "" ? (
-            <>
-              <strong>{"lakefs://"}</strong>
-              <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
-                {repo.id}
-              </Link>
-              <strong>{"/"}</strong>
-              <Link
-                href={{
-                  pathname: "/repositories/:repoId/objects",
-                  params,
-                  query: { ref: reference.id },
-                }}
-              >
-                {reference.type === RefTypeCommit
-                  ? reference.id.substr(0, 12)
-                  : reference.id}
-              </Link>
-              <strong>{"/"}</strong>
-            </>
-          ) : (
-            <>
-              <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-              <strong>{"/"}</strong>
-            </>
-          )}
+    <div className="d-flex">
+      <div className="lakefs-uri flex-grow-1">
+        {relativeTo === "" ? (
+          <>
+            <strong>{"lakefs://"}</strong>
+            <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
+              {repo.id}
+            </Link>
+            <strong>{"/"}</strong>
+            <Link
+              href={{
+                pathname: "/repositories/:repoId/objects",
+                params,
+                query: { ref: reference.id },
+              }}
+            >
+              {reference.type === RefTypeCommit
+                ? reference.id.substr(0, 12)
+                : reference.id}
+            </Link>
+            <strong>{"/"}</strong>
+          </>
+        ) : (
+          <>
+            <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+            <strong>{"/"}</strong>
+          </>
+        )}
 
-          {parts.map((part, i) => {
-            const path =
-              parts
-                .slice(0, i + 1)
-                .map((p) => p.name)
-                .join("/") + "/";
-            const query = { path, ref: reference.id };
-            const edgeElement =
-              isPathToFile && i === parts.length - 1 ? (
-                <span>{part.name}</span>
-              ) : (
-                <>
-                  <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                  <strong>{"/"}</strong>
-                </>
-              );
-            return <span key={part.name}>{edgeElement}</span>;
-          })}
+        {parts.map((part, i) => {
+          const path =
+            parts
+              .slice(0, i + 1)
+              .map((p) => p.name)
+              .join("/") + "/";
+          const query = { path, ref: reference.id };
+          const edgeElement =
+            isPathToFile && i === parts.length - 1 ? (
+              <span>{part.name}</span>
+            ) : (
+              <>
+                <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                <strong>{"/"}</strong>
+              </>
+            );
+          return <span key={part.name}>{edgeElement}</span>;
+        })}
         </div>
-      </span>
-      <span className="object-viewer-buttons">
-          <ClipboardButton
-              text={`lakefs://${repo.id}/${reference.id}/${path}`}
-              variant="outline-primary"
-              size="sm"
-              onSuccess={noop}
-              onError={noop}
-              className={"me-1"}
-              tooltip={"copy URI to clipboard"}
-              hidden={isPathToFile}
-              disabled={isPathToFile}/>
-      </span>
-    </span>
+      <div className="object-viewer-buttons">
+        {hasCopyButton &&
+        <ClipboardButton
+            text={`lakefs://${repo.id}/${reference.id}/${path}`}
+            variant="link"
+            size="sm"
+            onSuccess={noop}
+            onError={noop}
+            className={"me-1"}
+            tooltip={"copy URI to clipboard"}/>}
+        {(downloadUrl) && (
+          <a
+              href={downloadUrl}
+              download={path.split('/').pop()}
+              className="btn btn-link btn-sm download-button me-1">
+            <FaDownload />
+          </a>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -729,6 +752,7 @@ export const Tree = ({
           <tbody>
             {results.map((entry) => (
               <EntryRow
+                config={config}
                 key={entry.path}
                 entry={entry}
                 path={path}
@@ -748,7 +772,7 @@ export const Tree = ({
     <div className="tree-container">
       <Card>
         <Card.Header>
-          <URINavigator path={path} repo={repo} reference={reference} />
+          <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true}/>
         </Card.Header>
         <Card.Body>{body}</Card.Body>
       </Card>

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -17,7 +18,7 @@ type mockAdapter struct {
 	lastStorageClass *string
 }
 
-func (a *mockAdapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *mockAdapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
 	return "", block.ErrOperationNotSupported
 }
 
@@ -30,7 +31,7 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
+func (a *mockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return err
@@ -42,16 +43,16 @@ func (a *mockAdapter) Put(ctx context.Context, obj block.ObjectPointer, _ int64,
 	return nil
 }
 
-func (a *mockAdapter) Exists(context.Context, block.ObjectPointer) (bool, error) {
+func (a *mockAdapter) Exists(_ context.Context, _ block.ObjectPointer) (bool, error) {
 	return false, nil
 }
 
-func (a *mockAdapter) Get(_ context.Context, obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
+func (a *mockAdapter) Get(_ context.Context, _ block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (a *mockAdapter) Walk(_ context.Context, _ block.WalkOpts, _ block.WalkFunc) error {
-	return nil
+func (a *mockAdapter) GetWalker(_ *url.URL) (block.Walker, error) {
+	return nil, nil
 }
 
 func (a *mockAdapter) GetRange(_ context.Context, _ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
@@ -70,19 +71,19 @@ func (a *mockAdapter) Copy(_ context.Context, _, _ block.ObjectPointer) error {
 	return errors.New("copy method not implemented in mock adapter")
 }
 
-func (a *mockAdapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, r *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *mockAdapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	panic("try to create multipart in mock adapter")
 }
 
-func (a *mockAdapter) UploadPart(_ context.Context, _ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *mockAdapter) UploadPart(_ context.Context, _ block.ObjectPointer, _ int64, _ io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
 	panic("try to upload part in mock adapter")
 }
 
-func (a *mockAdapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, uploadID string) error {
+func (a *mockAdapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ string) error {
 	panic("try to abort multipart in mock adapter")
 }
 
-func (a *mockAdapter) CompleteMultiPartUpload(_ context.Context, _ block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+func (a *mockAdapter) CompleteMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ string, _ *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	panic("try to complete multipart in mock adapter")
 }
 
@@ -107,6 +108,10 @@ func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info.PreSignSupport = false
 	info.ImportSupport = false
 	return info
+}
+
+func (a *mockAdapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
 func (a *mockAdapter) RuntimeStats() map[string]string {
