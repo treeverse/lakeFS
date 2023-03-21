@@ -69,4 +69,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: |
-            treeverse/lakefs:${{ steps.version.outputs.tag }}
+            treeverse/experimental-lakefs:${{ steps.version.outputs.tag }}
