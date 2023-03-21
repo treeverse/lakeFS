@@ -6430,6 +6430,7 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
+        pre_sign_support_UI: true
         import_support: true
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
@@ -6444,6 +6445,8 @@ components:
           type: string
         pre_sign_support:
           type: boolean
+        pre_sign_support_UI:
+          type: boolean
         import_support:
           type: boolean
       required:
@@ -6452,6 +6455,7 @@ components:
       - blockstore_type
       - import_support
       - pre_sign_support
+      - pre_sign_support_UI
       type: object
     VersionConfig:
       example:
