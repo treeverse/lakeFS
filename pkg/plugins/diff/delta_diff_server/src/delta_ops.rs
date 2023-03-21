@@ -31,7 +31,7 @@ fn create_s3_path(repo: &str, table_path: &TablePath) -> String {
 
 async fn create_table_with_config(config: &HashMap<String, String>, path: String) -> Result<DeltaTable, DeltaTableError> {
     let cloned_config = config.clone();
-    let builder = DeltaTableBuilder::from_uri(path)
+    let builder = DeltaTableBuilder::from_uri(path.clone())
         .with_storage_options(cloned_config);
     eprintln!("create_table_with_config:\npath:{}\n{:?}\n", path, config);
     builder.load().await
