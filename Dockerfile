@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Build delta diff binary
 FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.16 AS build-delta-diff-plugin
-RUN apk add build-base pkgconfig libressl-dev
+RUN apk update && apk add build-base pkgconfig openssl-dev alpine-sdk
 RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
 
@@ -36,7 +36,7 @@ COPY ./pkg/plugins/diff/delta_diff_server/Cargo.lock ./Cargo.lock
 COPY ./pkg/plugins/diff/delta_diff_server/Cargo.toml ./Cargo.toml
 
 # 3. Build only the dependencies to cache them in this layer
-RUN cargo build --release
+RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 RUN rm src/*.rs
 
 # 4. Now that the dependency is built, copy your source code
@@ -44,7 +44,7 @@ COPY ./pkg/plugins/diff/delta_diff_server/src ./src
 
 # 5. Build for release.
 RUN rm ./target/release/deps/delta_diff*
-RUN cargo build --release
+RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 
 # lakectl image
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakectl
@@ -83,8 +83,7 @@ CMD ["run"]
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-plugins
 
 RUN apk add -U --no-cache ca-certificates
-RUN apk add qemu qemu-img qemu-system-x86_64 qemu-ui-gtk
-RUN apk add libressl-dev && apk add libc6-compat
+RUN apk add openssl-dev libc6-compat alpine-sdk
 # Be Docker compose friendly (i.e. support wait-for)
 RUN apk add netcat-openbsd
 
