@@ -25,6 +25,10 @@ services:
           lakectl fs upload lakefs://quickstart/main/lakes.parquet --source /data/lakes.parquet || true
           lakectl commit lakefs://quickstart/main -m "Load sample data" || true
           echo ""
+          echo "---- Adding branch protection to main ----"
+          echo "(changes can only be merged to main, not committed directly)"
+          lakectl branch-protect add lakefs://quickstart main || true
+          echo ""
           echo "-------- Let's go and have axolotl fun! --------"
           echo ""
           echo ">(.＿.)<     http://127.0.0.1:8000/      "
