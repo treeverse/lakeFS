@@ -20,19 +20,25 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 
 {% include toc.html %}
 
-## Beta: Viewing Delta Lake table changes in lakeFS
+## Viewing Delta Lake table changes in lakeFS <sup>BETA</sup>
 
 ### Installing the Delta Lake diff plugin
 
-To enable the Delta Lake diff feature, you need to install a plugin. You will find the plugin binary in the
+To enable the Delta Lake diff feature, you need to install a plugin on the lakeFS server. You will find the plugin binary in the
 [release](https://github.com/treeverse/lakeFS/releases/latest) tarball (versions >= 0.100.0).
 Put the `delta_diff` binary under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
 
+You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
+`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration) file.
+
 **Notice**: If you're using the lakeFS [docker image](../quickstart/run.md#running-locally-with-docker), the plugin is installed by default.
+
 
 ### Viewing Delta Lake table changes
 
-Using lakeFS you can compare different versions of Delta tables, view the table operations that have been done since the tables diverged, and the details of those operations.
+Using lakeFS you can
+* Compare different versions of Delta tables
+* View the table operations that have been done since the tables diverged and see the details of those operations.
 
 For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged. 
 Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
@@ -79,44 +85,6 @@ When using multi-cluster writes, Databricks overrides Delta’s S3-commit action
 The new action tries to contact lakeFS from servers on Databricks’ own AWS account, which of course won’t be able to access your private network. 
 So, if you must use multi-cluster writes, you’ll have to allow access from Databricks’ AWS account to lakeFS. 
 If you are trying to achieve that, please reach out on Slack and the community will try to assist.
-
-### Customizing the Delta Lake diff plugin location
-
-To customize the location of the Delta Lake diff plugin, add the following configurations to the
-[`.lakefs.yaml`](../reference/configuration) file:
-
-```yaml
-diff:
-  delta:
-    plugin: <custom name>
-
-plugins:
-  properties:
-    <custom name>:
-      path: <custom path to the Delta Lake diff plugin binary>
-```
-
-For example:
-
-```yaml
-diff:
-  delta:
-    plugin: my_delta_diff_plugin
-
-plugins:
-  properties:
-    my_delta_diff_plugin:
-      path: ~/path/to/delta_plugin
-```
-
-It's also possible to change the default location at which lakeFS will look for the `delta_diff` plugin by setting:
-
-```yaml
-plugins:
-  default_path: <default location>
-```
-
-lakeFS will search for `delta_diff` under the `<default location>/diff` path.
 
 ## Further Reading
 
