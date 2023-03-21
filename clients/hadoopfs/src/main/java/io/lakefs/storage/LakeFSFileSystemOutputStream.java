@@ -71,9 +71,6 @@ public class LakeFSFileSystemOutputStream extends OutputStream {
             throw new IOException("link lakeFS path to physical address", e);
         }
         lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
-        
-        String body = IOUtils.toString(connection.getInputStream());
-        System.out.println(body);
         if (connection.getResponseCode() > 299) {
             throw new IOException("Failed to finish writing to presigned link. Response code: " + connection.getResponseCode());
         }

@@ -133,7 +133,8 @@ public class LakeFSFileSystem extends FileSystem {
         } catch (ApiException e) {
             throw new IOException("Failed to get lakeFS blockstore type", e);
         }
-        AccessMode accessMode = AccessMode.fromValue(StringUtils.defaultIfBlank(FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX), AccessMode.SIMPLE.getValue()));
+        String accessModeConf = FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX);
+        AccessMode accessMode = AccessMode.valueOf(StringUtils.defaultIfBlank(accessModeConf, AccessMode.SIMPLE.toString()).toUpperCase());
         if (accessMode == AccessMode.PRESIGNED) {
             storageAccessStrategy = new PresignedStorageAccessStrategy(this, lfsClient);
         } else if (accessMode == AccessMode.SIMPLE) {
@@ -576,13 +577,13 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     /**
-     * Delete parents directory markers from path until root.
-     * Assume the caller created an object under the path which will make the empty
-     * directory irrelevant.
+     * Delete parent directory markers from path until root.
+     * Assumption: the caller has created an object under the path, so the empty
+     * directory markers are no longer necessary.
      * Based on the S3AFileSystem implementation.
-     * NOTE there is a race with mkdir which in case we move a file to a directory
-     * which mkdirs try to create, in case we try to delete
+     * Note: there is a race here if this is called on a path which mkdir is trying to create.
      * 
+     * This should be not be used from outside. TODO(johnnyaug): make it private.
      * @param f path to start for empty directory markers
      */
     public void deleteEmptyDirectoryMarkers(Path f) {

@@ -12,26 +12,8 @@ public class Constants {
     public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
 
     public static enum AccessMode {
-        SIMPLE("simple"),
-        PRESIGNED("presigned");
-        
-        private String value;
-        AccessMode(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public static AccessMode fromValue(String value) {
-            for (AccessMode mode : AccessMode.values()) {
-                if (mode.getValue().equals(value)) {
-                    return mode;
-                }
-            }
-            return null;
-        }
+        SIMPLE,
+        PRESIGNED;
     }
 
 
