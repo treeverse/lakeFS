@@ -12,13 +12,13 @@ has_children: false
 
 {% include toc.html %}
 
-lakeFS provides the option to access the data directly from the storage and not through lakeFS using presinged URL.
-lakeFS can generate a presigned URL to the object store by a user who has access to the object. The presigned URL can be used to access the object.
-lakeFS assume by default the object storage support presinged URLs, if not it should be disabled in the configuration.
+With lakeFS, you can access data directly from the storage and not through lakeFS using a presined URL.
+Based on the user's access to an object in the object store, the presigned URL will get read or write access.
+The presign support is enabled for block adapter that supports it, and can be disabled by the [configuration](configuration.md) (blockstore.blockstore-name.disable_pre_signed). Note that the UI support is disabled by default.
 
 # Using presigned URLs in the UI
 
-For the UI to fetch objects using a presigned URL to the object storage (instead through lakeFS), need to enable the presigned URL support UI in the lakeFS configuration and add CORS (Cross-Origin Resource Sharing) permissions to the bucket.
+You must enable the presigned URL support UI in the lakeFS [configuration](configuration.md) (blockstore.blockstore-name.disable_pre_signed_ui) and add CORS (Cross-Origin Resource Sharing) permissions to the bucket for the UI to fetch objects using a presigned URL (instead of through lakeFS).
 
 **⚠️ Note** Currently DuckDB fetching data from lakeFS does not support fetching data using presigned URL.
 
@@ -51,8 +51,7 @@ For the UI to fetch objects using a presigned URL to the object storage (instead
   [
     {
         "origin": ["lakefs.endpoint"],
-        "responseHeader": [
-            "ETag"],
+        "responseHeader": ["ETag"],
         "method": ["PUT", "GET"],
         "maxAgeSeconds": 3600
     }
