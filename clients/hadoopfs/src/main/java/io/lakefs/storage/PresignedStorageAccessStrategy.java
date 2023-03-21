@@ -11,6 +11,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
+import io.lakefs.LakeFSLinker;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.StagingApi;
@@ -41,8 +42,8 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/octet-stream");
         connection.setRequestMethod("PUT");
-        OutputStream out = new LakeFSFileSystemOutputStream(lakeFSFileSystem, lfsClient, connection,
-                objectLocation, stagingLocation);
+        LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation);
+        OutputStream out = new LakeFSFileSystemOutputStream(connection, linker);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
