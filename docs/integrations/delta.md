@@ -22,6 +22,20 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 
 ## Viewing Delta Lake table changes in lakeFS <sup>BETA</sup>
 
+Using lakeFS you can
+* Compare different versions of Delta Lake tables
+* Get a detailed view of all Delta Lake table operations performed since the tables diverged.
+
+For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged.
+Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
+
+![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
+![movies_table_operations.png](../assets/img/delta-diff-operations.png)
+
+**Note:**
+The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
+{: .note }
+
 ### Installing the Delta Lake diff plugin
 
 To enable the Delta Lake diff feature, you need to install a plugin on the lakeFS server. You will find the plugin binary in the
@@ -32,24 +46,6 @@ You can customize the location of the Delta Lake diff plugin by changing the `di
 `plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration) file.
 
 **Notice**: If you're using the lakeFS [docker image](../quickstart/run.md#running-locally-with-docker), the plugin is installed by default.
-
-
-### Viewing Delta Lake table changes
-
-Using lakeFS you can
-* Compare different versions of Delta tables
-* View the table operations that have been done since the tables diverged and see the details of those operations.
-
-For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged. 
-Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
-
-
-![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
-![movies_table_operations.png](../assets/img/delta-diff-operations.png)
-
-**Note:** 
-The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
-{: .note }
 
 ## Spark Configuration
 
