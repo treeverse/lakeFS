@@ -33,7 +33,7 @@ pub(crate) fn construct_storage_config(config: GatewayConfig) -> HashMap<String,
     let mut s3_config: HashMap<String, String> = HashMap::new();
     let mut endpoint = config.endpoint;
     if endpoint.contains("0.0.0.0:") {
-        endpoint = endpoint.replace("0.0.0.0:", "localhost:");
+        endpoint = endpoint.replace("0.0.0.0:", "127.0.0.1:");
     }
     s3_config.insert("AWS_ACCESS_KEY_ID".to_string(), config.key);
     s3_config.insert("AWS_ENDPOINT_URL".to_string(), endpoint);
