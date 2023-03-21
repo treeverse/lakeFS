@@ -27,7 +27,20 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Build delta diff binary
 FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.16 AS build-delta-diff-plugin
-RUN apk add build-base && apk add pkgconfig && apk add libressl-dev
+#RUN apk add build-base && apk add pkgconfig && apk add libressl-dev
+
+ENV GLIBC_REPO=https://github.com/sgerrand/alpine-pkg-glibc
+ENV GLIBC_VERSION=2.35-r0
+RUN set -ex
+RUN apk --force-overwrite add libstdc++ curl ca-certificates
+RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+RUN curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk -o /tmp/glibc-${GLIBC_VERSION}.apk
+RUN curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC_VERSION}.apk -o /tmp/glibc-bin-${GLIBC_VERSION}.apk
+RUN apk add --force-overwrite --allow-untrusted /tmp/*.apk
+RUN /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
+RUN apk add --force-overwrite --no-cache musl-dev
+RUN apk add libressl-dev
+
 RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
 
@@ -83,6 +96,23 @@ CMD ["run"]
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-plugins
 
 RUN apk update
+
+#ENV GLIBC_REPO=https://github.com/sgerrand/alpine-pkg-glibc
+#ENV GLIBC_VERSION=2.35-r0
+#RUN set -ex
+#RUN apk --force-overwrite add libstdc++ curl ca-certificates
+#RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+#RUN curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk -o /tmp/glibc-${GLIBC_VERSION}.apk
+#RUN curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC_VERSION}.apk -o /tmp/glibc-bin-${GLIBC_VERSION}.apk
+#RUN apk add --force-overwrite --allow-untrusted /tmp/*.apk
+#RUN /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
+
+#RUN for pkg in glibc-${GLIBC_VERSION} glibc-bin-${GLIBC_VERSION}; \
+#        do curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/${pkg}.apk -o /tmp/${pkg}.apk; done && \
+#    apk add --force-overwrite --allow-untrusted /tmp/*.apk && \
+#    rm -v /tmp/*.apk && \
+#    /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib \
+
 RUN apk add libressl-dev && apk add libc6-compat && apk add libgcc
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
