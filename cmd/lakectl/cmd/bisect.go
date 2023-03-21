@@ -45,8 +45,9 @@ var ErrCommitNotFound = errors.New("commit not found")
 
 // bisectCmd represents the bisect command
 var bisectCmd = &cobra.Command{
-	Use:   "bisect",
-	Short: "Binary search to find the commit that introduced a bug",
+	Use:    "bisect",
+	Short:  "Binary search to find the commit that introduced a bug",
+	Hidden: true,
 }
 
 type Bisect struct {
@@ -57,32 +58,26 @@ type Bisect struct {
 	Commits    []*api.Commit `json:"commits,omitempty"`
 }
 
-const bisectStartCmdArgs = 3
+const bisectStartCmdArgs = 2
 
 // bisectStartCmd represents the start command
 var bisectStartCmd = &cobra.Command{
-	Use:   "start <repository> <bad ref> <good ref>",
+	Use:   "start <bad ref> <good ref>",
 	Short: "Start a bisect session",
 	Args:  cobra.ExactArgs(bisectStartCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		// parse args
-		repoURI := MustParseRepoURI("repository", args[0])
-
-		badURI := MustParseRefURI("bad", args[1])
-		if badURI.Repository != repoURI.Repository {
-			Die("Repository doesn't match 'bad' commit", 1)
+		badURI := MustParseRefURI("bad", args[0])
+		goodURI := MustParseRefURI("good", args[1])
+		if goodURI.Repository != badURI.Repository {
+			Die("Two references doesn't use the same repository", 1)
 		}
-
-		goodURI := MustParseRefURI("good", args[2])
-		if goodURI.Repository != repoURI.Repository {
-			Die("Repository doesn't match 'good' commit", 1)
-		}
+		repository := goodURI.Repository
 
 		// resolve repository and references
 		client := getClient()
 		ctx := cmd.Context()
 		// check repository exists
-		repoResponse, err := client.GetRepositoryWithResponse(ctx, repoURI.Repository)
+		repoResponse, err := client.GetRepositoryWithResponse(ctx, repository)
 		DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
 		if repoResponse.JSON200 == nil {
 			Die("Bad response from server", 1)
@@ -115,7 +110,7 @@ func (b *Bisect) PrintStatus() {
 	commitCount := len(b.Commits)
 	switch {
 	case b.BadCommit == "" && b.GoodCommit == "":
-		fmt.Println("Waiting for both good and bad commit")
+		fmt.Println("Missing both good and bad commits")
 	case b.GoodCommit == "":
 		fmt.Printf("Bad commit lakefs://%s/%s, waiting for good commit\n", b.Repository, b.BadCommit)
 	case b.BadCommit == "":
@@ -249,7 +244,7 @@ func bisectRunCommand(ctx context.Context, commit *api.Commit, name string, args
 // bisectLogCmd represents the log command
 var bisectLogCmd = &cobra.Command{
 	Use:   "log",
-	Short: "Print out the current log of bisect",
+	Short: "Print out the current bisect state",
 	Run: func(cmd *cobra.Command, args []string) {
 		var state Bisect
 		err := state.Load()
@@ -321,8 +316,11 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 
 	// scan commit log from bad to good (not included) and save them into state
 	b.Commits = nil
+	const amountPerCall = 500
+	params := &api.LogCommitsParams{
+		Amount: api.PaginationAmountPtr(amountPerCall),
+	}
 	var commits []*api.Commit
-	params := &api.LogCommitsParams{}
 	for {
 		logResponse, err := client.LogCommitsWithResponse(ctx, b.Repository, b.BadCommit, params)
 		DieOnErrorOrUnexpectedStatusCode(logResponse, err, http.StatusOK)
