@@ -48,6 +48,16 @@ object StorageUtils {
   }
 
   object AzureBlob {
+    val AccountAuthTypePattern =
+      "fs.azure.account.auth.type.<storageAccountName>.dfs.core.windows.net"
+    val AccountOAuthProviderTypePattern =
+      "fs.azure.account.oauth.provider.type.<storageAccountName>.dfs.core.windows.net"
+    val AccountOAuthClientId =
+      "fs.azure.account.oauth2.client.id.<storageAccountName>.dfs.core.windows.net"
+    val AccountOAuthClientSecret =
+      "fs.azure.account.oauth2.client.secret.<storageAccountName>.dfs.core.windows.net"
+    val AccountOAuthClientEndpoint =
+      "fs.azure.account.oauth2.client.endpoint.<storageAccountName>.dfs.core.windows.net"
     val StorageAccountKeyPropertyPattern =
       "fs.azure.account.key.<storageAccountName>.dfs.core.windows.net"
     val StorageAccNamePlaceHolder = "<storageAccountName>"
