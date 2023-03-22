@@ -2577,7 +2577,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	}
 
 	// copy entry
-	entry, fullCopy, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
+	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2588,11 +2588,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	copyType := httpHeaderCopyTypeShallow
-	if fullCopy {
-		copyType = httpHeaderCopyTypeFull
-	}
-	w.Header().Set(httpHeaderCopyType, copyType)
+	w.Header().Set(httpHeaderCopyType, httpHeaderCopyTypeFull)
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
