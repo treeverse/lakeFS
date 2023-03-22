@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-## v0.97.1
+## v0.97.2
 
 :new: What's new:
 
