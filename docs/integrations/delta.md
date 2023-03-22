@@ -39,7 +39,7 @@ The diff is available as long as the table history in Delta is retained ([30 day
 ### Installing the Delta Lake diff plugin
 
 To enable the Delta Lake diff feature, you need to install a plugin on the lakeFS server. You will find the plugin binary in the
-[release](https://github.com/treeverse/lakeFS/releases/latest) tarball (versions >= 0.100.0).
+[release](https://github.com/treeverse/lakeFS/releases/latest) tarball (versions >= 0.97.3).
 Put the `delta_diff` binary under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
 
 You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
