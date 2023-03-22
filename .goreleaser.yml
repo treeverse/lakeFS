@@ -54,8 +54,7 @@ archives:
     {{ .ProjectName }}_
     {{ .Version }}_
     {{ tolower .Os }}_
-    {{- if eq .Arch "x86_64" }}amd64
-    {{- else if eq .Arch "Darwin" }}darwin
+    {{- if eq .Arch "amd64" }}x86_64
     {{- else }}{{ .Arch }}{{ end }}
   format: tar.gz
   format_overrides:
