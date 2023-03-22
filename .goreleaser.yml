@@ -50,12 +50,13 @@ archives:
   name_template: "{{ .Os }}_{{ .Arch }}/lakectl"
   builds:
    - lakectl
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
-  id: release
+- name_template: >-
+    {{ .ProjectName }}_
+    {{ .Version }}_
+    {{ tolower .Os }}_
+    {{- if eq .Arch "x86_64" }}amd64
+    {{- else if eq .Arch "Darwin" }}darwin
+    {{- else }}{{ .Arch }}{{ end }}
   format: tar.gz
   format_overrides:
     - goos: windows
@@ -63,7 +64,6 @@ archives:
   files:
     - src: '{{ .Env.DELTA_ARTIFACTS_LOCATION }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
       strip_parent: true
-  name_template: "{{.ProjectName}}_{{.Version}}_{{ .Os }}_{{ .Arch }}"
   builds:
    - lakefs
    - lakectl
