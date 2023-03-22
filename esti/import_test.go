@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -190,4 +191,29 @@ func testImport(t *testing.T, ctx context.Context, repoName string, importPath s
 	})
 	require.NoError(t, err, "failed to commit")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+}
+
+func TestAzureDataLakeV2(t *testing.T) {
+	importPrefix := viper.GetString("adls_import_base_url")
+	if importPrefix == "" {
+		t.Skip("No Azure data lake storage path prefix was given")
+	}
+
+	ctx, _, repoName := setupTest(t)
+	defer tearDownTest(repoName)
+
+	// each test is a folder under the prefix import
+	tests := []string{
+		"empty-folder",
+		"prefix-item-order",
+	}
+	for _, test := range tests {
+		t.Run(test, func(t *testing.T) {
+			importPath, err := url.JoinPath(importPrefix, test)
+			if err != nil {
+				t.Fatal("Import URL", err)
+			}
+			testImport(t, ctx, repoName, importPath)
+		})
+	}
 }
