@@ -95,7 +95,7 @@ func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*gs.GCSWalker, erro
 	return gs.NewGCSWalker(svc), nil
 }
 
-func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*azure.BlobWalker, error) {
+func (f *WalkerFactory) buildAzureWalker(ctx context.Context, importURL *url.URL) (block.Walker, error) {
 	storageAccount, err := azure.ExtractStorageAccount(importURL)
 	if err != nil {
 		return nil, err
@@ -121,6 +121,15 @@ func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*azure.BlobWalker,
 		return nil, err
 	}
 
+	info, err := c.GetAccountInfo(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if info.IsHierarchicalNamespaceEnabled != nil && *info.IsHierarchicalNamespaceEnabled {
+		return azure.NewAzureDataLakeWalker(c)
+	}
+
 	return azure.NewAzureBlobWalker(c)
 }
 
@@ -143,7 +152,7 @@ func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker(uri)
+		walker, err = f.buildAzureWalker(ctx, uri)
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}
