@@ -1,15 +1,13 @@
 ---
 layout: default
-title: Committing and Merging
+title: Commit and Merge
 description: TODO
-parent: lakeFS Quickstart
-nav_order: 4
+parent: Quickstart
+nav_order: 20
 has_children: false
-# next: ["Create your first repository", "./repository.html"]
-# redirect_from: [ "./quickstart/", "quickstart/installing.html", "quickstart/try.html"]
+next: ["Rollback the changes", "./rollback.html"]
+previous: ["Create a branch of the data", "./branch.html"]
 ---
-
-# Committing and Merging in lakeFS
 
 In the previous step we branched our data from `main` into a new `denmark-lakes` branch, and overwrote the `lakes.parquet` to hold solely information about lakes in Denmark. Now we're going to commit that change (just like git) and merge it back to main (just like git)
 
@@ -19,7 +17,8 @@ Having make the change to the datafile in the `denmark-lakes` branch, we now wan
 
 ```bash
 docker exec lakefs \
-	lakectl commit lakefs://quickstart/denmark-lakes -m "Create a dataset of just the lakes in Denmark"
+    lakectl commit lakefs://quickstart/denmark-lakes \
+	    -m "Create a dataset of just the lakes in Denmark"
 ```
 
 You will get confirmation of the commit including its hash.
@@ -41,13 +40,16 @@ As above, we'll use `lakectl` to do this too. The syntax just requires us to spe
 
 ```bash
 docker exec lakefs \
-	lakectl merge lakefs://quickstart/denmark-lakes lakefs://quickstart/main
+    lakectl merge \
+	    lakefs://quickstart/denmark-lakes \
+		lakefs://quickstart/main
 ```
 
 We can confirm that this has worked by returning to the same object view of `lakes.parquet` as before and clicking on **Execute** to rerun the same query. You'll see that the country row counts have changed, and only Denmark is left in the data: 
 
-![](CleanShot%202023-03-21%20at%2017.04.10.png)
-But…oh no! 😬 A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻 
+![](/assets/quickstart/duckdb-main-03.png)
+
+**But…oh no!** 😬 A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻 
 
 Is all lost? Will our hero overcome the obstacles? No, and yes respectively!
 

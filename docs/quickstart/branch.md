@@ -1,15 +1,15 @@
 ---
-layout: default
-title: Branch
+# layout: default
+title: Create a branch
 description: TODO
-parent: lakeFS Quickstart
-nav_order: 3
+parent: Quickstart
+nav_order: 15
 has_children: false
-# next: ["Create your first repository", "./repository.html"]
-# redirect_from: [ "./quickstart/", "quickstart/installing.html", "quickstart/try.html"]
+next: ["Merge the branch back into main", "./commit-and-merge.html"]
+previous: ["Query the pre-populated data", "./query.html"]
 ---
 
-# Create a Branch
+# Create a Branch 🪓
 
 lakeFS uses branches in a similar way to git. It's a great way to isolate changes until, or if, we are ready to re-integrate them. lakeFS uses a copy-on-write technique which means that it's very efficient to create branches of your data. 
 
@@ -19,8 +19,9 @@ The first thing we'll do is create a branch for us to do this development agains
 
 ```bash
 docker exec lakefs \
-	lakectl branch create lakefs://quickstart/denmark-lakes \
-		         --source lakefs://quickstart/main
+    lakectl branch create \
+	    lakefs://quickstart/denmark-lakes \
+		--source lakefs://quickstart/main
 ```
 
 You should get a confirmation message like this:
@@ -57,7 +58,8 @@ SET s3_use_ssl=false;
 Now we'll load the lakes data into a DuckDB table so that we can manipulate it:
 
 ```sql
-CREATE TABLE lakes AS select * from read_parquet('s3://quickstart/denmark-lakes/lakes.parquet');
+CREATE TABLE lakes AS 
+    SELECT * FROM READ_PARQUET('s3://quickstart/denmark-lakes/lakes.parquet');
 ```
 
 Just to check that it's the same we saw before we're run the same query: 
@@ -119,7 +121,8 @@ DESC LIMIT 5;
 The changes so far have only been to DuckDB's copy of the data. Let's now push it back to lakeFS. Note the S3 path is different this time as we're writing it to the `denmark-lakes` branch, not `main`: 
 
 ```sql
-COPY lakes TO 's3://quickstart/denmark-lakes/lakes.parquet' (FORMAT 'PARQUET', ALLOW_OVERWRITE TRUE);
+COPY lakes TO 's3://quickstart/denmark-lakes/lakes.parquet' 
+    (FORMAT 'PARQUET', ALLOW_OVERWRITE TRUE);
 ```
 
 ## Verify that the Data's Changed on the Branch
@@ -156,6 +159,6 @@ GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
 ```
-![](CleanShot%202023-03-21%20at%2016.50.53.png)
+![](/assets/quickstart/duckdb-main-02.png)
 
 In the next step we'll see how to merge our branch back into main. 
