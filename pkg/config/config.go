@@ -80,7 +80,13 @@ type S3AuthInfo struct {
 // PluginProps struct holds the properties needed to run a plugin
 type PluginProps struct {
 	Path    string `mapstructure:"path"`
-	Version *int   `mapstructure:"version"`
+	Version int    `mapstructure:"version"`
+}
+
+// Plugins struct holds the plugins dir default location and a map of optional plugin location with higher precedence
+type Plugins struct {
+	DefaultPath string                 `mapstructure:"default_path"`
+	Properties  map[string]PluginProps `mapstructure:"properties"`
 }
 
 // DiffProps struct holds the properties that define the details necessary to run a diff.
@@ -331,8 +337,8 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
-	Diff    map[string]DiffProps   `mapstructure:"diff"`
-	Plugins map[string]PluginProps `mapstructure:"plugins"`
+	Diff    map[string]DiffProps `mapstructure:"diff"`
+	Plugins Plugins              `mapstructure:"plugins"`
 }
 
 func NewConfig() (*Config, error) {

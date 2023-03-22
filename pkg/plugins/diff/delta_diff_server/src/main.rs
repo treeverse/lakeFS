@@ -58,7 +58,6 @@ impl TableDiffer for DifferService {
         let diff_props: DiffProps = r.props.expect("Missing diff properties");
         let left_table_path: TablePath = diff_props.left_table_path.expect("Missing left table's path");
         let right_table_path: TablePath = diff_props.right_table_path.expect("Missing right table's path");
-
         let s3_config_map: HashMap<String, String> = utils::construct_storage_config(s3_gateway_config_req);
         let left_table_res =
             delta_ops::get_delta_table(&s3_config_map, &diff_props.repo, &left_table_path);
@@ -120,12 +119,14 @@ async fn get_diff_type(left_table_res: &Result<DeltaTable, Status>,
         (Err(status), Ok(_)) => {
             // left table wasn't found, and it doesn't exist on the base: table created
             if matches!(status.code(), Code::NotFound) {
-                if base_table_res.is_err() && matches!(base_table_res.as_ref().unwrap_err().code(), Code::NotFound) {
-                    Ok(DiffType::Created)
-                } else if base_table_res.is_ok() { // The table existed on the base branch
+                if base_table_res.is_err() {
+                    if matches!(base_table_res.as_ref().unwrap_err().code(), Code::NotFound | Code::InvalidArgument) { // didn't exist in base ref or no base ref provided
+                        Ok(DiffType::Created)
+                    } else { // There was other kind of error with the base branch
+                        Err(base_table_res.as_ref().unwrap_err().clone())
+                    }
+                } else { // The table existed on the base branch
                     Ok(DiffType::Changed)
-                } else { // There was other kind of error with the base branch
-                    Err(base_table_res.as_ref().unwrap_err().clone())
                 }
             } else {
                 Err(left_table_res.as_ref().unwrap_err().clone())
@@ -166,12 +167,13 @@ impl HistoryAndVersion {
     }
 }
 
-fn show_history(mut hist: Vec<Map<String, Value>>, table_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
+fn show_history(mut hist: Vec<Map<String, Value>>, mut table_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
     hist.reverse();
     let mut ans: Vec<TableOperation> = Vec::with_capacity(hist.len());
     for commit in hist {
         let table_op = construct_table_op(&commit, table_version)?;
         ans.push(table_op);
+        table_version -= 1;
     }
     Ok(ans)
 }

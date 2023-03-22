@@ -1,16 +1,10 @@
 import React, {useCallback, useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {
-    ActionGroup,
-    ActionsBar,
-    Error,
-    Loading,
-    RefreshButton
-} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, GitMergeIcon, ArrowSwitchIcon} from "@primer/octicons-react";
+import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
@@ -104,20 +98,26 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
         rightCommittedRef += "@";
     }
 
-    if (loading) content = <Loading/>
+    if (loading) {
+        content = <Loading/>
+    }
     else if (error) content = <Error error={error}/>
-    else if (compareReference.id === reference.id) content = (
-        <Alert variant="warning">
-            <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-            You’ll need to use two different sources to get a valid comparison.
-        </Alert>
-    )
-    else content = <ChangesTreeContainer results={results} showExperimentalDeltaDiffButton={true} delimiter={delimiter}
-                                         uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
-                                         repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
-                                         getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
-                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
-                                         setIsTableMerge={setIsTableMerge} changesTreeMessage={changesTreeMessage}/>
+    else if (compareReference.id === reference.id) {
+        content = (
+            <Alert variant="warning">
+                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
+                You’ll need to use two different sources to get a valid comparison.
+            </Alert>
+        )
+    }
+    else {
+        content = <ChangesTreeContainer results={results} delimiter={delimiter}
+                                        uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
+                                        repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
+                                        getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
+                                        loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
+                                        setIsTableMerge={setIsTableMerge} changesTreeMessage={changesTreeMessage}/>
+    }
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
 
