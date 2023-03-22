@@ -3,6 +3,7 @@ name: releaser
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   packages: write

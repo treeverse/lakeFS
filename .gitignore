@@ -41,6 +41,7 @@
 /cmd/lakefs-loadtest/lakefs-loadtest
 /cmd/lakectl/lakectl
 /dist
+/delta/
 
 # client excludes
 /webui/node_modules
