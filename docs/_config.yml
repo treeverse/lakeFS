@@ -23,8 +23,8 @@ aux_links:
     - 'https://lakefs.io/blog/'
   'Guides':
     - 'https://lakefs.io/guides/'  
-  'Slack':
-    - 'https://lakefs.io/slack/'
+  'Community':
+    - 'https://lakefs.io/developers/'
   'GitHub':
     - 'https://github.com/treeverse/lakeFS'
     
@@ -49,7 +49,7 @@ footer_links:
   'GitHub':
     - 'https://github.com/treeverse/lakeFS'
   'Community':
-    - 'https://lakefs.io/community/'
+    - 'https://lakefs.io/developers/'
   'lakeFS Cloud':
       - 'https://lakefs.io/cloud-registration/'
   'Contact':
