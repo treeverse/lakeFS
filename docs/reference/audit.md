@@ -5,6 +5,7 @@ parent: Reference
 description: lakeFS Audit Logs
 nav_order: 100
 has_children: false
+redirect_from: "/audit.html"
 ---
 
 The Audit logs feature is only available in [lakeFS Cloud](https://lakefs.cloud/).
@@ -14,7 +15,7 @@ The Audit logs feature is only available in [lakeFS Cloud](https://lakefs.cloud/
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 
-![audit log](assets/img/audit-log.png)
+![audit log](/assets/img/audit-log.png)
 
 This can be useful for several purposes, including: 
 
