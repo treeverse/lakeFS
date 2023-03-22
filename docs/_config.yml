@@ -17,8 +17,6 @@ remote_theme: pmarsceill/just-the-docs@v0.4.1
 
 # Aux links for the upper right navigation
 aux_links:
-  'Home':
-    - 'https://docs.lakefs.io/'
   'Blog':
     - 'https://lakefs.io/blog/'
   'Guides':
@@ -42,8 +40,6 @@ footer:
     - 'https://www.treeverse.io/'
 
 footer_links:
-  'Home':
-    - 'https://docs.lakefs.io/'
   'Blog':
     - 'https://lakefs.io/blog/'
   'GitHub':
