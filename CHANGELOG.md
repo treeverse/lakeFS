@@ -15,14 +15,14 @@
 
 :bug: Bugs fixed:
 
-- Fix inconsistent marshaling in DDB KV (#5409)
+- Fix inconsistent marshaling in DynamoDB KV (#5409)
 - Fix S3 accept header prefer application/xml (#5447)
 - Fix lakectl table write to non tty non string column (#5500)
 - Fix S3 adapter access content length without nil check (#5499)
 - Fix UI DuckDB fix re-query updated data (#5536)
-- Fix object name wrapping in GUI (#5532)
+- Fix object name wrapping in UI (#5532)
 - Fix iterator panic on close after failed SeekGE (#5516)
-- Remove stack trace from GUI (#5523)
+- Remove stack trace from error message in the UI (#5523)
 
 ## v0.96.1
 
