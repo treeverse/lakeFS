@@ -6,9 +6,9 @@
 
 :new: What's new:
 
-- Delta Lake Tables diff - BETA: Compare Delta Lake tables between different refs - GUI only (#5427)
+- Delta Lake Tables diff - BETA: Compare Delta Lake tables between different refs - UI only (#5427)
 - Cherry-pick a commit to a branch (#5483)
-- Diff ux improvements (#5414)
+- Diff UX improvements (#5414)
 - DuckDB/lakeFS improvements (#5430)
 - Display images in markdown with support for lakefs:// URIs (#5449)
 - DynamoDB KV error count without context cancellation (#5512)
@@ -17,7 +17,7 @@
 
 - Fix inconsistent marshaling in DynamoDB KV (#5409)
 - Fix S3 accept header prefer application/xml (#5447)
-- Fix lakectl table write to non tty non string column (#5500)
+- Fix lakectl table write to non TTY non string column (#5500)
 - Fix S3 adapter access content length without nil check (#5499)
 - Fix UI DuckDB fix re-query updated data (#5536)
 - Fix object name wrapping in UI (#5532)
