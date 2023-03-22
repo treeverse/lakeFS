@@ -104,7 +104,7 @@ export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, de
     const diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Table}/>
 
     const rowActions = []
-    rowActions.push(new RowAction(null, null, "Show table changes", onClickExpandDiff))
+    rowActions.push(new RowAction(null, "", "Show table changes", onClickExpandDiff))
     if (onRevert) {
         rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
             setShowRevertConfirm(true)

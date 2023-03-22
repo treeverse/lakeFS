@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     depends_on:
       - "postgres"
-    volumes: 
+    volumes:
       - lakefs-app:/app:ro
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
@@ -37,7 +37,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   esti:
-    image: "golang:1.19.2-alpine"
+    image: "golang:1.19.2-alpine3.16"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
@@ -70,7 +70,7 @@ services:
         go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
     volumes:
       - lakefs-code:/lakefs
-      - lakefs-app:/app:ro 
+      - lakefs-app:/app:ro
 
 volumes:
   lakefs-code:

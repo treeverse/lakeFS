@@ -3,6 +3,7 @@ package tablediff
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -59,7 +60,7 @@ func Test_registerPlugins(t *testing.T) {
 	type args struct {
 		service     *Service
 		diffProps   map[string]config.DiffProps
-		pluginProps map[string]config.PluginProps
+		pluginProps config.Plugins
 	}
 	testCases := []struct {
 		description string
@@ -71,6 +72,7 @@ func Test_registerPlugins(t *testing.T) {
 		{
 			description: "register delta diff plugin - default path and version - success",
 			diffTypes:   []string{"delta"},
+			pluginName:  pluginName,
 			args: args{
 				service: NewMockService(),
 				diffProps: map[string]config.DiffProps{
@@ -78,7 +80,7 @@ func Test_registerPlugins(t *testing.T) {
 						PluginName: pluginName,
 					},
 				},
-				pluginProps: nil,
+				pluginProps: config.Plugins{},
 			},
 		},
 		{
@@ -92,10 +94,13 @@ func Test_registerPlugins(t *testing.T) {
 						PluginName: pluginName,
 					},
 				},
-				pluginProps: map[string]config.PluginProps{
-					pluginName: {
-						Path:    customPluginPath,
-						Version: &customPluginVersion,
+				pluginProps: config.Plugins{
+					DefaultPath: "",
+					Properties: map[string]config.PluginProps{
+						pluginName: {
+							Path:    customPluginPath,
+							Version: customPluginVersion,
+						},
 					},
 				},
 			},
@@ -116,7 +121,7 @@ func Test_registerPlugins(t *testing.T) {
 						PluginName: pluginName,
 					},
 				},
-				pluginProps: nil,
+				pluginProps: config.Plugins{},
 			},
 			expectedErr: ErrNotFound,
 		},
@@ -134,10 +139,13 @@ func Test_registerPlugins(t *testing.T) {
 						PluginName: pluginName,
 					},
 				},
-				pluginProps: map[string]config.PluginProps{
-					pluginName: {
-						Path:    customPluginPath,
-						Version: &customPluginVersion,
+				pluginProps: config.Plugins{
+					DefaultPath: "",
+					Properties: map[string]config.PluginProps{
+						pluginName: {
+							Path:    customPluginPath,
+							Version: customPluginVersion,
+						},
 					},
 				},
 			},
@@ -157,9 +165,9 @@ func Test_registerPlugins(t *testing.T) {
 						t.Errorf("'%s' failed: %s", tc.description, err)
 					}
 					pluginDetails := diffs.Diffs[0].OperationContent
-					tcPath := config.DefaultPluginLocation(tc.args.diffProps[dt].PluginName)
-					if tc.args.pluginProps[tc.pluginName].Path != "" {
-						tcPath = tc.args.pluginProps[tc.pluginName].Path
+					tcPath := filepath.Join(tc.args.pluginProps.DefaultPath, "diff", tc.pluginName)
+					if tc.args.pluginProps.Properties[tc.pluginName].Path != "" {
+						tcPath = tc.args.pluginProps.Properties[tc.pluginName].Path
 					}
 					if pluginDetails[PluginPath] != tcPath {
 						t.Errorf("'%s' failed: incorrect plugin path. got '%s' instead of  '%s'",
@@ -167,12 +175,12 @@ func Test_registerPlugins(t *testing.T) {
 							pluginDetails[PluginPath],
 							tcPath)
 					}
-					tcVersion := tc.args.pluginProps[tc.pluginName].Version
-					if tcVersion != nil && pluginDetails[PluginVersion] != strconv.Itoa(*tcVersion) {
+					tcVersion := tc.args.pluginProps.Properties[tc.pluginName].Version
+					if tcVersion != 0 && pluginDetails[PluginVersion] != strconv.Itoa(tcVersion) {
 						t.Errorf("'%s' failed: incorrect plugin version. got '%s' instead of  '%s'",
 							tc.description,
 							pluginDetails[PluginVersion],
-							strconv.Itoa(*tcVersion))
+							strconv.Itoa(tcVersion))
 					}
 				}
 			}
