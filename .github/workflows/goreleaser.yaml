@@ -86,11 +86,11 @@ jobs:
         working-directory: ${{steps.download.outputs.download-path}}
         run: |
           mv delta-aarch64-apple-darwin delta-darwin-arm64
-          mv delta-x86_64-apple-darwin delta-darwin-x86_64
+          mv delta-x86_64-apple-darwin delta-darwin-amd64
           mv delta-aarch64-pc-windows-msvc delta-windows-arm64
-          mv delta-x86_64-pc-windows-msvc delta-windows-x86_64
+          mv delta-x86_64-pc-windows-msvc delta-windows-amd64
           mv delta-aarch64-unknown-linux-musl delta-linux-arm64
-          mv delta-x86_64-unknown-linux-musl delta-linux-x86_64
+          mv delta-x86_64-unknown-linux-musl delta-linux-amd64
 
       - name: Setup NodeJS
         uses: actions/setup-node@v3
@@ -112,7 +112,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DELTA_ARTIFACTS_LOCATION: delta/artifacts
