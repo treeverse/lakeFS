@@ -132,6 +132,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.s3.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
+* `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin. 
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
 * `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
@@ -184,6 +185,9 @@ This reference uses `.` to denote the nesting of values.
   local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be in, it should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
+* `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
+* `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
+* `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
 * `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
 * `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
