@@ -5,5 +5,4 @@ description: Clean up unnecessary objects using the garbage collection feature i
 parent: How-To
 nav_order: 20
 has_children: true
-redirect_from: ../reference/garbage-collection.html
 ---
