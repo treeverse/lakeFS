@@ -1,6 +1,9 @@
 # Changelog
 
 ## _Upcoming_
+## 0.1.13
+
+* Presigned mode <sup>BETA</sup>: a secure, cloud-agnostic way to use lakeFS with Hadoop.
 
 ## 0.1.12
 
