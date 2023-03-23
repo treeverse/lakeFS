@@ -159,7 +159,7 @@ object BulkRemoverFactory {
         StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
       )
       if (storageAccountKey != null) {
-        blobServiceClientBuilder.credential(
+        val blobServiceClientBuilderWithKey = blobServiceClientBuilder.credential(
           new StorageSharedKeyCredential(storageAccountName, storageAccountKey)
         )
       }
@@ -188,7 +188,7 @@ object BulkRemoverFactory {
         blobServiceClientBuilder.credential(clientSecretCredential)
       }
 
-      val blobServiceClient: BlobServiceClient = blobServiceClientBuilder.buildClient
+      val blobServiceClient: BlobServiceClient = blobServiceClientBuilderWithKey.buildClient
 
       new BlobBatchClientBuilder(blobServiceClient).buildClient
     }
