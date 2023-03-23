@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
@@ -95,7 +96,7 @@ func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*gs.GCSWalker, erro
 	return gs.NewGCSWalker(svc), nil
 }
 
-func (f *WalkerFactory) buildAzureWalker(ctx context.Context, importURL *url.URL) (block.Walker, error) {
+func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (block.Walker, error) {
 	storageAccount, err := azure.ExtractStorageAccount(importURL)
 	if err != nil {
 		return nil, err
@@ -116,21 +117,27 @@ func (f *WalkerFactory) buildAzureWalker(ctx context.Context, importURL *url.URL
 		azureParams.StorageAccount = storageAccount
 		azureParams.StorageAccessKey = ""
 	}
-	c, err := azure.BuildAzureServiceClient(azureParams)
+	client, err := azure.BuildAzureServiceClient(azureParams)
 	if err != nil {
 		return nil, err
 	}
 
-	info, err := c.GetAccountInfo(ctx, nil)
-	if err != nil {
-		return nil, err
+	isHNS := isHierarchicalNamespaceEnabled(importURL)
+	if isHNS {
+		return azure.NewAzureDataLakeWalker(client)
 	}
+	return azure.NewAzureBlobWalker(client)
+}
 
-	if info.IsHierarchicalNamespaceEnabled != nil && *info.IsHierarchicalNamespaceEnabled {
-		return azure.NewAzureDataLakeWalker(c)
-	}
-
-	return azure.NewAzureBlobWalker(c)
+// isHierarchicalNamespaceEnabled - identify if hns enabled on the account,
+// based on the import URL.
+// Until we enable a way to extract the account information, we assume it based on the domain used in import:
+// https://<account>.<blob|adls>.core.windows.net/
+// adls - azure data lake storage
+func isHierarchicalNamespaceEnabled(u *url.URL) bool {
+	const importURLParts = 3
+	n := strings.SplitN(u.Host, ".", importURLParts)
+	return len(n) == importURLParts && n[1] == "adls"
 }
 
 func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {
@@ -152,7 +159,7 @@ func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker(ctx, uri)
+		walker, err = f.buildAzureWalker(uri)
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}

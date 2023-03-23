@@ -1,7 +1,6 @@
 package azure_test
 
 import (
-	"errors"
 	"net/url"
 	"testing"
 
@@ -51,7 +50,7 @@ func TestExtraction(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedStorageAccount, actualStorageAccount)
 			} else {
-				require.True(t, errors.Is(err, tt.expectedErr))
+				require.ErrorIs(t, err, tt.expectedErr)
 			}
 		})
 	}
