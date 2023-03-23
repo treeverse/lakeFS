@@ -30,7 +30,7 @@ commit main successfully reverted
 ```
 
 Back in the object page and the DuckDB query we can see that the original file is now back to how it was: 
-![](/assets/quickstart/duckdb-main-02.png)
+![](/assets/img/quickstart/duckdb-main-02.png)
 
 ## Bonus Challenge
 

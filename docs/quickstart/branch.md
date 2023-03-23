@@ -159,6 +159,6 @@ GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
 ```
-![](/assets/quickstart/duckdb-main-02.png)
+![](/assets/img/quickstart/duckdb-main-02.png)
 
 In the next step we'll see how to merge our branch back into main. 
