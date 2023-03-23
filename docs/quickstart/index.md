@@ -1,6 +1,5 @@
 ---
-layout: default
-title: Quickstart
+title: ⭐ Quickstart ⭐
 description: A hands-on quickstart for lakeFS, introducing branching, merging, and rollback. 
 nav_order: 1
 has_children: true

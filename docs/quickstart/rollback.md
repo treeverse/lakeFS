@@ -1,8 +1,7 @@
 ---
-layout: default
-title: Roll back Changes
+title: 5️⃣ Roll back Changes
 description: TODO
-parent: Quickstart
+parent: ⭐ Quickstart ⭐
 nav_order: 25
 has_children: false
 next: ["Resources for learning more about lakeFS", "./getting-started.html"]

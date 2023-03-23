@@ -1,8 +1,7 @@
 ---
-layout: default
-title: Run lakeFS
+title: 1️⃣ Run lakeFS
 description: TODO
-parent: Quickstart
+parent: ⭐ Quickstart ⭐
 nav_order: 5
 has_children: false
 next: ["Query the pre-populated data", "./query.html"]

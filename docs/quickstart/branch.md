@@ -1,8 +1,7 @@
 ---
-# layout: default
-title: Create a branch
+title: 3️⃣ Create a branch
 description: TODO
-parent: Quickstart
+parent: ⭐ Quickstart ⭐
 nav_order: 15
 has_children: false
 next: ["Merge the branch back into main", "./commit-and-merge.html"]

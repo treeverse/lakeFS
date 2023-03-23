@@ -1,8 +1,7 @@
 ---
-layout: default
-title: Query the data
+title: 2️⃣ Query the data
 description: TODO
-parent: Quickstart
+parent: ⭐ Quickstart ⭐
 nav_order: 10
 has_children: false
 next: ["Create a branch of the data", "./branch.html"]
