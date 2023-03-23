@@ -1,13 +1,13 @@
 ---
 layout: default
-title: 🧑🏻‍🎓 Learning more about lakeFS
+title: 🧑🏻‍🎓 Learn more about lakeFS
 description: TODO
 parent: ⭐ Quickstart ⭐
 nav_order: 99
 has_children: false
 ---
 
-# Learning more about lakeFS
+# Learn more about lakeFS
 
 The [lakeFS quickstart](/quickstart) is just the beginning of your lakeFS journey 🛣️
 
