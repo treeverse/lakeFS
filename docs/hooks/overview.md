@@ -18,7 +18,7 @@ Like other version control systems, lakeFS allows you to configure `Actions` to 
 ## Example use cases
 
 1. Format Validator:
-   A webhook that checks new files to ensure they are of a set of allowed data format.
+   A webhook that checks new files to ensure they are of a set of allowed data formats.
 1. Schema Validator:
    A webhook that reads new Parquet and ORC files to ensure they don't contain a block list of column names (or name prefixes).
    This is useful for avoiding accidental PII exposure.

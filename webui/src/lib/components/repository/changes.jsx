@@ -1,22 +1,18 @@
 import React, {useCallback, useEffect, useState} from "react";
 
-import {
-    ArrowLeftIcon,
-    ClockIcon, DiffIcon, InfoIcon, PlusIcon, XIcon
-} from "@primer/octicons-react";
+import {ArrowLeftIcon, ClockIcon, InfoIcon, PlusIcon, XIcon} from "@primer/octicons-react";
 
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
-import {Error, ExperimentalOverlayTooltip} from "../controls";
+import {Error} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {TreeItemType} from "../../../constants";
 import * as tablesUtil from "../../../util/tablesUtil";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow, TableTreeEntryRow} from "./treeRows";
 import Alert from "react-bootstrap/Alert";
-import {ComingSoonModal} from "../modals";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {refs, statistics} from "../../api";
+import {refs} from "../../api";
 import {DeltaLakeDiff} from "./TableDiff";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -44,7 +40,6 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
 
     const itemType = useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID);
 
@@ -90,7 +85,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             }
         </>
 
-    } else if (itemType.type === TreeItemType.Prefix || !enableDeltaDiff) {
+    } else if (itemType.type === TreeItemType.Prefix) {
         return <>
             <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
             {dirExpanded && results &&
@@ -163,7 +158,6 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  * and uncommitted changes views.
  *
  * @param results to be displayed in the changes tree container
- * @param showExperimentalDeltaDiffButton whether or not to display a delta-specific experimental feature button. TODO (Tals): remove when enabling the delta diff feature.
  * @param delimiter objects delimiter ('' or '/')
  * @param uriNavigator to navigate in the page using the changes container
  * @param leftDiffRefID commitID / branch
@@ -179,11 +173,10 @@ function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID) {
  * @param onNavigate to be called when navigating to a prefix
  * @param onRevert to be called when an object/prefix is requested to be reverted
  */
-export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton = false, delimiter, uriNavigator,
+export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
                                          changesTreeMessage= ""}) => {
-    const enableDeltaDiff = JSON.parse(localStorage.getItem(`enable_delta_diff`));
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
 
     if (results.length === 0) {
@@ -192,9 +185,7 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
         </div>
     } else {
         return <div className="tree-container">
-                    {!enableDeltaDiff
-                        ? <ExperimentalDeltaDiffButton showButton={showExperimentalDeltaDiffButton}/>
-                        : tableDiffState.isShown
+                    {tableDiffState.isShown
                                 ? <Button className="action-bar"
                                           variant="secondary"
                                           disabled={false}
@@ -206,8 +197,8 @@ export const ChangesTreeContainer = ({results, showExperimentalDeltaDiffButton =
                                           }}>
                                     <ArrowLeftIcon/> Back to object comparison
                                   </Button>
-                                : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can now use lakeFS to
-                                    compare Delta Lake tables</Alert></div>
+                                : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can use lakeFS to
+                                    compare Delta Lake tables. <a href="https://docs.lakefs.io/integrations/delta.html">Learn more.</a> </Alert></div>
                     }
                     <div>{changesTreeMessage}</div>
                     <Card>
@@ -262,38 +253,6 @@ const onTableDiffExpansion = (entry, setTableDiffState, setIsTableMerge) => () =
     if (setIsTableMerge) {
         setIsTableMerge(true);
     }
-}
-
-const ExperimentalDeltaDiffButton = ({showButton = false}) => {
-    const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-    const sendDeltaDiffStats = async () => {
-        const deltaDiffStatEvents = [
-            {
-                "class": "experimental-feature",
-                "name": "delta-diff",
-                "count": 1,
-            }
-        ];
-        await statistics.postStatsEvents(deltaDiffStatEvents);
-    }
-
-    return <>
-        <ComingSoonModal display={showComingSoonModal}
-                         onCancel={() => setShowComingSoonModal(false)}>
-            <div>lakeFS Delta Lake tables diff is under development</div>
-        </ComingSoonModal>
-        <ExperimentalOverlayTooltip>
-            <Button className="action-bar"
-                    variant="primary"
-                    hidden={!showButton}
-                    onClick={async () => {
-                        setShowComingSoonModal(true);
-                        await sendDeltaDiffStats();
-                    }}>
-                <DiffIcon/> Compare Delta Lake tables
-            </Button>
-        </ExperimentalOverlayTooltip>
-    </>
 }
 
 export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
