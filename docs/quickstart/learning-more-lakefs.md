@@ -13,9 +13,12 @@ The [lakeFS quickstart](/quickstart) is just the beginning of your lakeFS journe
 
 Here are some more resources to help you find out more about lakeFS. 
 
+## Connecting lakeFS to your own object storage
+
+Enjoyed the quickstart and want to try out lakeFS against your own data? Check out <<TODO>>this guide<<TODO>> on how to run lakeFS locally connecting to an object store. 
 ## Deploying lakeFS
 
-The deployment guides show you how to deploy lakeFS [locally](deploy/onprem.html) (including on [Kubernetes](/deploy/onprem.html#k8s)) or on [AWS](/deploy/aws.html), [Azure](/deploy/azure.html), or [GCP](/deploy/gcp.html). 
+Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](deploy/onprem.html) (including on [Kubernetes](/deploy/onprem.html#k8s)) or on [AWS](/deploy/aws.html), [Azure](/deploy/azure.html), or [GCP](/deploy/gcp.html). 
 
 Alternatively you might want to have a look at [lakeFS Cloud](https://lakefs.cloud/) which provides a fully-managed, SOC-2 compliant, lakeFS service. 
 
