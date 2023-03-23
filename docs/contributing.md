@@ -166,7 +166,7 @@ To render the documentation locally and preview changes you can run the Jeykll s
    This can take a short while—you'll see something like this in the server's output when it's done. 
    
    ```
-   ...done in 34.714073461 seconds.
+   ...done in 34.714073460 seconds.
    ```
 
    Your page will automatically reload to show the changes.
