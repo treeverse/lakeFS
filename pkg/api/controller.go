@@ -4016,7 +4016,6 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 
 	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, tdp)
 	if err != nil {
-		c.Logger.Error(err)
 		if errors.Is(err, tablediff.ErrTableNotFound) {
 			writeError(w, r, http.StatusNotFound, err)
 		} else {

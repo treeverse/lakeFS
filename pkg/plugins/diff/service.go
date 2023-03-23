@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -19,6 +18,8 @@ import (
 
 var (
 	ErrTableNotFound = errors.New("table not found")
+	ErrLoadingPlugin = errors.New("couldn't load diff plugin")
+	ErrFailedDiff    = errors.New("failed running the diff")
 )
 
 const (
@@ -104,7 +105,8 @@ type Service struct {
 func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Params) (Response, error) {
 	d, closeClient, err := s.pluginHandler.LoadPluginClient(diffType)
 	if err != nil {
-		return Response{}, err
+		logging.Default().WithError(err).Errorf("encountered err while loading the plugin client")
+		return Response{}, ErrLoadingPlugin
 	}
 	if closeClient != nil {
 		s.appendClosingFunction(diffType, closeClient)
@@ -112,7 +114,11 @@ func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Param
 
 	diffResponse, err := d.Diff(ctx, diffParams)
 	if err != nil {
-		return Response{}, err
+		logging.Default().WithError(err).Errorf("encountered err while performing the diff")
+		if errors.Is(err, ErrTableNotFound) {
+			return Response{}, err
+		}
+		return Response{}, ErrFailedDiff
 	}
 	return diffResponse, nil
 }
@@ -137,7 +143,7 @@ func (s *Service) appendClosingFunction(diffType string, f func()) {
 }
 
 // NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
-func NewService(diffProps map[string]config.DiffProps, pluginProps config.Plugins) (*Service, func()) {
+func NewService(diffProps config.DiffProps, pluginProps config.Plugins) (*Service, func()) {
 	service := &Service{
 		pluginHandler:  internal.NewManager[Differ](),
 		closeFunctions: make(map[string]func()),
@@ -146,34 +152,11 @@ func NewService(diffProps map[string]config.DiffProps, pluginProps config.Plugin
 	return service, service.Close
 }
 
-func registerPlugins(service *Service, diffProps map[string]config.DiffProps, pluginProps config.Plugins) {
+func registerPlugins(service *Service, diffProps config.DiffProps, pluginProps config.Plugins) {
 	registerDefaultPlugins(service, pluginProps.DefaultPath)
-	for n, p := range diffProps {
-		pluginName := p.PluginName
-		// If the requested plugin wasn't configured with a path, it will be defined under the default location
-		pluginPath := filepath.Join(diffPluginsDefaultPath(pluginProps.DefaultPath), pluginName)
-		pluginVersion := 1 // default version
-		if props, ok := pluginProps.Properties[pluginName]; ok {
-			pp, err := homedir.Expand(props.Path)
-			if err != nil {
-				logging.Default().Errorf("failed to register a plugin for an invalid path: '%s'", props.Path)
-				continue
-			}
-			pluginPath = pp
-			if props.Version != 0 {
-				pluginVersion = props.Version
-			}
-		}
 
-		if strings.ToLower(n) == "delta" {
-			pid := plugins.PluginIdentity{ProtocolVersion: uint(pluginVersion), ExecutableLocation: pluginPath}
-			pa := plugins.PluginHandshake{}
-			RegisterDeltaLakeDiffPlugin(service, pid, pa)
-		} else {
-			logging.Default().Errorf("failed to register a plugin for an unknown diff type: '%s'", n)
-			continue
-		}
-		logging.Default().Infof("successfully registered a plugin for diff type: '%s'", n)
+	if diffProps.Delta.PluginName != "" {
+		registerPlugin(service, pluginProps, RegisterDeltaLakeDiffPlugin, "delta", diffProps.Delta.PluginName)
 	}
 }
 
@@ -192,6 +175,31 @@ func registerDefaultPlugins(service *Service, pluginsPath string) {
 	pa := plugins.PluginHandshake{}
 	RegisterDeltaLakeDiffPlugin(service, pid, pa)
 }
+
+func registerPlugin(service *Service, pluginProps config.Plugins, rf registrationFunc, diffType, pluginName string) {
+	// If the requested plugin wasn't configured with a path, it will be defined under the default location
+	pluginPath := filepath.Join(diffPluginsDefaultPath(pluginProps.DefaultPath), pluginName)
+	pluginVersion := 1 // default version
+	if props, ok := pluginProps.Properties[pluginName]; ok {
+		pp, err := homedir.Expand(props.Path)
+		if err != nil {
+			logging.Default().Errorf("failed to register a plugin for an invalid path: '%s'", props.Path)
+			return
+		}
+		pluginPath = pp
+		if props.Version != 0 {
+			pluginVersion = props.Version
+		}
+	}
+
+	pid := plugins.PluginIdentity{ProtocolVersion: uint(pluginVersion), ExecutableLocation: pluginPath}
+	pa := plugins.PluginHandshake{}
+	rf(service, pid, pa)
+
+	logging.Default().Infof("successfully registered a plugin for diff type: '%s'", diffType)
+}
+
+type registrationFunc func(ds *Service, pid plugins.PluginIdentity, handshake plugins.PluginHandshake)
 
 func diffPluginsDefaultPath(pluginsPath string) string {
 	pp, _ := homedir.Expand(pluginsPath)
