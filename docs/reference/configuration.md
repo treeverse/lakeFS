@@ -221,6 +221,12 @@ These configuration items are for the lakeFS key-value store database
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be in, it should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
 
+### Plugins
+
+* `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin. 
+* `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
+* `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
+* `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
 
 ## Examples
 ### Local Development with PostgreSQL database
