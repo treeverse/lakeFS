@@ -46,7 +46,7 @@ type RangeManager interface {
 	// Exists returns true if id references a Range.
 	Exists(ctx context.Context, ns Namespace, id ID) (bool, error)
 
-	// GetValue returns the value matching key in the Range referenced by id.  If id not
+	// GetValue returns the value matching key in the Range referenced by id. If id not
 	// found, it return (nil, ErrNotFound).
 	GetValue(ctx context.Context, ns Namespace, id ID, key Key) (*Record, error)
 
