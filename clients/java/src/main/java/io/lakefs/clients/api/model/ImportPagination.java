@@ -20,28 +20,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * ImportPagination
@@ -60,8 +41,6 @@ public class ImportPagination {
   @SerializedName(SERIALIZED_NAME_LAST_KEY)
   private String lastKey;
 
-  public ImportPagination() {
-  }
 
   public ImportPagination hasMore(Boolean hasMore) {
     
@@ -74,6 +53,7 @@ public class ImportPagination {
    * @return hasMore
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "More keys to be ingested.")
 
   public Boolean getHasMore() {
     return hasMore;
@@ -96,6 +76,7 @@ public class ImportPagination {
    * @return continuationToken
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "Opaque. Token used to import the next range.")
 
   public String getContinuationToken() {
     return continuationToken;
@@ -118,6 +99,7 @@ public class ImportPagination {
    * @return lastKey
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Last object store key that was ingested.")
 
   public String getLastKey() {
     return lastKey;
@@ -127,7 +109,6 @@ public class ImportPagination {
   public void setLastKey(String lastKey) {
     this.lastKey = lastKey;
   }
-
 
 
   @Override
@@ -171,105 +152,5 @@ public class ImportPagination {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("has_more");
-    openapiFields.add("continuation_token");
-    openapiFields.add("last_key");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("has_more");
-    openapiRequiredFields.add("last_key");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to ImportPagination
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!ImportPagination.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in ImportPagination is not found in the empty JSON string", ImportPagination.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!ImportPagination.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `ImportPagination` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : ImportPagination.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if ((jsonObj.get("continuation_token") != null && !jsonObj.get("continuation_token").isJsonNull()) && !jsonObj.get("continuation_token").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `continuation_token` to be a primitive type in the JSON string but got `%s`", jsonObj.get("continuation_token").toString()));
-      }
-      if (!jsonObj.get("last_key").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `last_key` to be a primitive type in the JSON string but got `%s`", jsonObj.get("last_key").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ImportPagination.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ImportPagination' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ImportPagination> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ImportPagination.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ImportPagination>() {
-           @Override
-           public void write(JsonWriter out, ImportPagination value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ImportPagination read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of ImportPagination given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ImportPagination
-  * @throws IOException if the JSON string is invalid with respect to ImportPagination
-  */
-  public static ImportPagination fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ImportPagination.class);
-  }
-
- /**
-  * Convert an instance of ImportPagination to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

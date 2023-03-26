@@ -1,13 +1,13 @@
 # ActionsApi
 
-All URIs are relative to */api/v1*
+All URIs are relative to *http://localhost/api/v1*
 
-| Method | HTTP request | Description |
-|------------- | ------------- | -------------|
-| [**getRun**](ActionsApi.md#getRun) | **GET** /repositories/{repository}/actions/runs/{run_id} | get a run |
-| [**getRunHookOutput**](ActionsApi.md#getRunHookOutput) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output | get run hook output |
-| [**listRepositoryRuns**](ActionsApi.md#listRepositoryRuns) | **GET** /repositories/{repository}/actions/runs | list runs |
-| [**listRunHooks**](ActionsApi.md#listRunHooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks |
+Method | HTTP request | Description
+------------- | ------------- | -------------
+[**getRun**](ActionsApi.md#getRun) | **GET** /repositories/{repository}/actions/runs/{run_id} | get a run
+[**getRunHookOutput**](ActionsApi.md#getRunHookOutput) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output | get run hook output
+[**listRepositoryRuns**](ActionsApi.md#listRepositoryRuns) | **GET** /repositories/{repository}/actions/runs | list runs
+[**listRunHooks**](ActionsApi.md#listRunHooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks
 
 
 <a name="getRun"></a>
@@ -29,7 +29,7 @@ import io.lakefs.clients.api.ActionsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -42,6 +42,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -53,10 +57,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -77,10 +77,10 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **runId** | **String**|  | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **runId** | **String**|  |
 
 ### Return type
 
@@ -88,7 +88,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -98,10 +98,10 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | action run result |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | action run result |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="getRunHookOutput"></a>
 # **getRunHookOutput**
@@ -122,7 +122,7 @@ import io.lakefs.clients.api.ActionsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -135,6 +135,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -146,10 +150,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -171,11 +171,11 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **runId** | **String**|  | |
-| **hookRunId** | **String**|  | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **runId** | **String**|  |
+ **hookRunId** | **String**|  |
 
 ### Return type
 
@@ -183,7 +183,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -193,10 +193,10 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | run hook output |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | run hook output |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="listRepositoryRuns"></a>
 # **listRepositoryRuns**
@@ -217,7 +217,7 @@ import io.lakefs.clients.api.ActionsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -230,6 +230,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -241,10 +245,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -268,13 +268,13 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **after** | **String**| return items after this value | [optional] |
-| **amount** | **Integer**| how many items to return | [optional] [default to 100] |
-| **branch** | **String**|  | [optional] |
-| **commit** | **String**|  | [optional] |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **after** | **String**| return items after this value | [optional]
+ **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **branch** | **String**|  | [optional]
+ **commit** | **String**|  | [optional]
 
 ### Return type
 
@@ -282,7 +282,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -292,10 +292,10 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | list action runs |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | list action runs |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="listRunHooks"></a>
 # **listRunHooks**
@@ -316,7 +316,7 @@ import io.lakefs.clients.api.ActionsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -329,6 +329,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -340,10 +344,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -366,12 +366,12 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **runId** | **String**|  | |
-| **after** | **String**| return items after this value | [optional] |
-| **amount** | **Integer**| how many items to return | [optional] [default to 100] |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **runId** | **String**|  |
+ **after** | **String**| return items after this value | [optional]
+ **amount** | **Integer**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -379,7 +379,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -389,8 +389,8 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | list specific run hooks |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | list specific run hooks |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 

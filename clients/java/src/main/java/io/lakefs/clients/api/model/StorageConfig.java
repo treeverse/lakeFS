@@ -20,28 +20,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * StorageConfig
@@ -76,8 +57,6 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_IMPORT_SUPPORT)
   private Boolean importSupport;
 
-  public StorageConfig() {
-  }
 
   public StorageConfig blockstoreType(String blockstoreType) {
     
@@ -90,6 +69,7 @@ public class StorageConfig {
    * @return blockstoreType
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreType() {
     return blockstoreType;
@@ -112,6 +92,7 @@ public class StorageConfig {
    * @return blockstoreNamespaceExample
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreNamespaceExample() {
     return blockstoreNamespaceExample;
@@ -134,6 +115,7 @@ public class StorageConfig {
    * @return blockstoreNamespaceValidityRegex
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getBlockstoreNamespaceValidityRegex() {
     return blockstoreNamespaceValidityRegex;
@@ -156,6 +138,7 @@ public class StorageConfig {
    * @return defaultNamespacePrefix
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public String getDefaultNamespacePrefix() {
     return defaultNamespacePrefix;
@@ -178,6 +161,7 @@ public class StorageConfig {
    * @return preSignSupport
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public Boolean getPreSignSupport() {
     return preSignSupport;
@@ -200,6 +184,7 @@ public class StorageConfig {
    * @return preSignSupportUI
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public Boolean getPreSignSupportUI() {
     return preSignSupportUI;
@@ -222,6 +207,7 @@ public class StorageConfig {
    * @return importSupport
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public Boolean getImportSupport() {
     return importSupport;
@@ -231,7 +217,6 @@ public class StorageConfig {
   public void setImportSupport(Boolean importSupport) {
     this.importSupport = importSupport;
   }
-
 
 
   @Override
@@ -283,119 +268,5 @@ public class StorageConfig {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("blockstore_type");
-    openapiFields.add("blockstore_namespace_example");
-    openapiFields.add("blockstore_namespace_ValidityRegex");
-    openapiFields.add("default_namespace_prefix");
-    openapiFields.add("pre_sign_support");
-    openapiFields.add("pre_sign_support_UI");
-    openapiFields.add("import_support");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("blockstore_type");
-    openapiRequiredFields.add("blockstore_namespace_example");
-    openapiRequiredFields.add("blockstore_namespace_ValidityRegex");
-    openapiRequiredFields.add("pre_sign_support");
-    openapiRequiredFields.add("pre_sign_support_UI");
-    openapiRequiredFields.add("import_support");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to StorageConfig
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!StorageConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in StorageConfig is not found in the empty JSON string", StorageConfig.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!StorageConfig.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `StorageConfig` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : StorageConfig.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if (!jsonObj.get("blockstore_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `blockstore_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("blockstore_type").toString()));
-      }
-      if (!jsonObj.get("blockstore_namespace_example").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `blockstore_namespace_example` to be a primitive type in the JSON string but got `%s`", jsonObj.get("blockstore_namespace_example").toString()));
-      }
-      if (!jsonObj.get("blockstore_namespace_ValidityRegex").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `blockstore_namespace_ValidityRegex` to be a primitive type in the JSON string but got `%s`", jsonObj.get("blockstore_namespace_ValidityRegex").toString()));
-      }
-      if ((jsonObj.get("default_namespace_prefix") != null && !jsonObj.get("default_namespace_prefix").isJsonNull()) && !jsonObj.get("default_namespace_prefix").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `default_namespace_prefix` to be a primitive type in the JSON string but got `%s`", jsonObj.get("default_namespace_prefix").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!StorageConfig.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'StorageConfig' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<StorageConfig> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(StorageConfig.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<StorageConfig>() {
-           @Override
-           public void write(JsonWriter out, StorageConfig value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public StorageConfig read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of StorageConfig given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StorageConfig
-  * @throws IOException if the JSON string is invalid with respect to StorageConfig
-  */
-  public static StorageConfig fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, StorageConfig.class);
-  }
-
- /**
-  * Convert an instance of StorageConfig to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

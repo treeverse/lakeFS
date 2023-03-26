@@ -16,8 +16,8 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.OtfDiffList;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,15 +27,19 @@ import java.util.Map;
 /**
  * API tests for ExperimentalApi
  */
-@Disabled
+@Ignore
 public class ExperimentalApiTest {
 
     private final ExperimentalApi api = new ExperimentalApi();
 
+    
     /**
      * perform otf diff
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void otfDiffTest() throws ApiException {
@@ -44,8 +48,8 @@ public class ExperimentalApiTest {
         String rightRef = null;
         String tablePath = null;
         String type = null;
-        OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type);
+                OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type);
         // TODO: test validations
     }
-
+    
 }
