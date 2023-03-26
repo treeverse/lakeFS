@@ -6,6 +6,7 @@ import org.apache.commons.lang3.time.DateUtils
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.functions.col
 import org.scalatest.BeforeAndAfter
+import org.scalatest.ParallelTestExecution
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should
 import org.scalatestplus.mockito.MockitoSugar
@@ -20,7 +21,8 @@ class UncommittedGarbageCollectorSpec
     with SparkSessionSetup
     with should.Matchers
     with BeforeAndAfter
-    with MockitoSugar {
+    with MockitoSugar
+    with ParallelTestExecution {
 
   describe("UncommittedGarbageCollector") {
     var dir: java.nio.file.Path = null
