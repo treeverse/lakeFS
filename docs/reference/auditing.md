@@ -1,17 +1,20 @@
 ---
 layout: default
-title: Audit Logs
+title: Auditing
 parent: Reference
-description: lakeFS Audit Logs
+description: lakeFS Cloud Auditing
 nav_order: 100
 has_children: false
-redirect_from: "/audit.html"
+redirect_from: "/auditing.html"
 ---
 
-The Audit logs feature is only available in [lakeFS Cloud](https://lakefs.cloud/).
-{: .note .note-info }
+{: .note}
+> Auditing is only available for [lakeFS Cloud](../cloud.md).
 
-# Audit log
+# Auditing
+{: .d-inline-block }
+Cloud
+{: .label .label-green }
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 

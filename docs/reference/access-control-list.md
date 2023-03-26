@@ -1,16 +1,18 @@
 ---
 layout: default
-title: Access Control Lists (ACL)
+title: Access Control List (ACL)
 parent: Reference
-description: Access Control Lists (ACL)
+description: Access Control List (ACL)
 nav_order: 100
 has_children: false
 ---
 
-# Access Control Lists (ACL)
+# Access Control List (ACL)
 {: .no_toc }
 
-ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+{: .note}
+> ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+
 
 {% include toc.html %}
 
@@ -44,7 +46,7 @@ If you are using ACL then the lakeFS configuration element `auth.ui_config.RBAC`
 
 Here's how the current ACL model compares to to that prior to [the changes introduced](/posts/security_update.html#whats-changing) in v0.97.
 
-| Permission | Allows                                     | Previous Group Name       | previous policy names and action list                                                                                                                                                                                                                                                                                                                                            | 
+| Permission | Allows                                     | Previous Group Name       | Previous Policy Names and Actions                                                                                         | 
 |------------|--------------------------------------------|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Read**   | Read operations, creating access keys.     | Viewers                   | FSReadAll \[fs:List*, fs:Read*]                                                                                                                                                                                                                                                                                                                                                  |
 | **Write**  | Allows all data read and write operations. | Developers                | FSReadWriteAll \[fs:ListRepositories, fs:ReadRepository, fs:ReadCommit, fs:ListBranches, fs:ListTags, fs:ListObjects, fs:ReadObject, fs:WriteObject, fs:DeleteObject, fs:RevertBranch, fs:ReadBranch, fs:ReadTag, fs:CreateBranch, fs:CreateTag, fs:DeleteBranch, fs:DeleteTag, fs:CreateCommit] RepoManagementReadAll \[ci:Read*, retention:Get*, branches:Get*, fs:ReadConfig] |
