@@ -18,7 +18,7 @@ def settingsToCompileIn(dir: String, flavour: String = "") = {
   lazy val allSettings = Seq(
     Compile / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "scala",
     Test / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "test" / "scala",
-    Test / testOptions += Tests.Argument("-P"),
+    Test / testOptions += Tests.Argument("-P4"),
     Compile / resourceDirectory := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "resources",
     Compile / PB.includePaths += (Compile / resourceDirectory).value,
     Compile / PB.protoSources += (Compile / resourceDirectory).value
