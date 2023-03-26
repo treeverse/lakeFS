@@ -37,12 +37,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class CommitsApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public CommitsApi() {
         this(Configuration.getDefaultApiClient());
@@ -58,22 +55,6 @@ public class CommitsApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -98,25 +79,12 @@ public class CommitsApi {
      </table>
      */
     public okhttp3.Call commitCall(String repository, String branch, CommitCreation commitCreation, String sourceMetarange, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = commitCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/commits"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -140,32 +108,33 @@ public class CommitsApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call commitValidateBeforeCall(String repository, String branch, CommitCreation commitCreation, String sourceMetarange, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling commit(Async)");
         }
-
+        
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling commit(Async)");
         }
-
+        
         // verify the required parameter 'commitCreation' is set
         if (commitCreation == null) {
             throw new ApiException("Missing the required parameter 'commitCreation' when calling commit(Async)");
         }
+        
 
-        return commitCall(repository, branch, commitCreation, sourceMetarange, _callback);
+        okhttp3.Call localVarCall = commitCall(repository, branch, commitCreation, sourceMetarange, _callback);
+        return localVarCall;
 
     }
 
@@ -268,25 +237,12 @@ public class CommitsApi {
      </table>
      */
     public okhttp3.Call getCommitCall(String repository, String commitId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/commits/{commitId}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "commitId" + "}", localVarApiClient.escapeString(commitId.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "commitId" + "\\}", localVarApiClient.escapeString(commitId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -303,29 +259,31 @@ public class CommitsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getCommitValidateBeforeCall(String repository, String commitId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getCommit(Async)");
         }
-
+        
         // verify the required parameter 'commitId' is set
         if (commitId == null) {
             throw new ApiException("Missing the required parameter 'commitId' when calling getCommit(Async)");
         }
+        
 
-        return getCommitCall(repository, commitId, _callback);
+        okhttp3.Call localVarCall = getCommitCall(repository, commitId, _callback);
+        return localVarCall;
 
     }
 
@@ -417,25 +375,12 @@ public class CommitsApi {
      */
     @Deprecated
     public okhttp3.Call logBranchCommitsCall(String repository, String branch, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/commits"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -460,30 +405,32 @@ public class CommitsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call logBranchCommitsValidateBeforeCall(String repository, String branch, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling logBranchCommits(Async)");
         }
-
+        
         // verify the required parameter 'branch' is set
         if (branch == null) {
             throw new ApiException("Missing the required parameter 'branch' when calling logBranchCommits(Async)");
         }
+        
 
-        return logBranchCommitsCall(repository, branch, after, amount, _callback);
+        okhttp3.Call localVarCall = logBranchCommitsCall(repository, branch, after, amount, _callback);
+        return localVarCall;
 
     }
 

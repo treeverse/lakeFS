@@ -38,12 +38,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class ActionsApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public ActionsApi() {
         this(Configuration.getDefaultApiClient());
@@ -59,22 +56,6 @@ public class ActionsApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -94,25 +75,12 @@ public class ActionsApi {
      </table>
      */
     public okhttp3.Call getRunCall(String repository, String runId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/actions/runs/{run_id}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "run_id" + "}", localVarApiClient.escapeString(runId.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "run_id" + "\\}", localVarApiClient.escapeString(runId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -129,29 +97,31 @@ public class ActionsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getRunValidateBeforeCall(String repository, String runId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getRun(Async)");
         }
-
+        
         // verify the required parameter 'runId' is set
         if (runId == null) {
             throw new ApiException("Missing the required parameter 'runId' when calling getRun(Async)");
         }
+        
 
-        return getRunCall(repository, runId, _callback);
+        okhttp3.Call localVarCall = getRunCall(repository, runId, _callback);
+        return localVarCall;
 
     }
 
@@ -240,26 +210,13 @@ public class ActionsApi {
      </table>
      */
     public okhttp3.Call getRunHookOutputCall(String repository, String runId, String hookRunId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "run_id" + "}", localVarApiClient.escapeString(runId.toString()))
-            .replace("{" + "hook_run_id" + "}", localVarApiClient.escapeString(hookRunId.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "run_id" + "\\}", localVarApiClient.escapeString(runId.toString()))
+            .replaceAll("\\{" + "hook_run_id" + "\\}", localVarApiClient.escapeString(hookRunId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -268,8 +225,7 @@ public class ActionsApi {
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
         final String[] localVarAccepts = {
-            "application/octet-stream",
-            "application/json"
+            "application/octet-stream", "application/json"
         };
         final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
         if (localVarAccept != null) {
@@ -277,34 +233,36 @@ public class ActionsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getRunHookOutputValidateBeforeCall(String repository, String runId, String hookRunId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getRunHookOutput(Async)");
         }
-
+        
         // verify the required parameter 'runId' is set
         if (runId == null) {
             throw new ApiException("Missing the required parameter 'runId' when calling getRunHookOutput(Async)");
         }
-
+        
         // verify the required parameter 'hookRunId' is set
         if (hookRunId == null) {
             throw new ApiException("Missing the required parameter 'hookRunId' when calling getRunHookOutput(Async)");
         }
+        
 
-        return getRunHookOutputCall(repository, runId, hookRunId, _callback);
+        okhttp3.Call localVarCall = getRunHookOutputCall(repository, runId, hookRunId, _callback);
+        return localVarCall;
 
     }
 
@@ -398,24 +356,11 @@ public class ActionsApi {
      </table>
      */
     public okhttp3.Call listRepositoryRunsCall(String repository, String after, Integer amount, String branch, String commit, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/actions/runs"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -448,24 +393,26 @@ public class ActionsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listRepositoryRunsValidateBeforeCall(String repository, String after, Integer amount, String branch, String commit, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling listRepositoryRuns(Async)");
         }
+        
 
-        return listRepositoryRunsCall(repository, after, amount, branch, commit, _callback);
+        okhttp3.Call localVarCall = listRepositoryRunsCall(repository, after, amount, branch, commit, _callback);
+        return localVarCall;
 
     }
 
@@ -564,25 +511,12 @@ public class ActionsApi {
      </table>
      */
     public okhttp3.Call listRunHooksCall(String repository, String runId, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/actions/runs/{run_id}/hooks"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "run_id" + "}", localVarApiClient.escapeString(runId.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "run_id" + "\\}", localVarApiClient.escapeString(runId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -607,29 +541,31 @@ public class ActionsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listRunHooksValidateBeforeCall(String repository, String runId, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling listRunHooks(Async)");
         }
-
+        
         // verify the required parameter 'runId' is set
         if (runId == null) {
             throw new ApiException("Missing the required parameter 'runId' when calling listRunHooks(Async)");
         }
+        
 
-        return listRunHooksCall(repository, runId, after, amount, _callback);
+        okhttp3.Call localVarCall = listRunHooksCall(repository, runId, after, amount, _callback);
+        return localVarCall;
 
     }
 

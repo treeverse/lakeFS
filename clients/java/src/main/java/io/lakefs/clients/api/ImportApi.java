@@ -38,12 +38,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class ImportApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public ImportApi() {
         this(Configuration.getDefaultApiClient());
@@ -59,22 +56,6 @@ public class ImportApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -96,24 +77,11 @@ public class ImportApi {
      </table>
      */
     public okhttp3.Call createMetaRangeCall(String repository, MetaRangeCreation metaRangeCreation, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = metaRangeCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/metaranges"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -133,27 +101,28 @@ public class ImportApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call createMetaRangeValidateBeforeCall(String repository, MetaRangeCreation metaRangeCreation, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling createMetaRange(Async)");
         }
-
+        
         // verify the required parameter 'metaRangeCreation' is set
         if (metaRangeCreation == null) {
             throw new ApiException("Missing the required parameter 'metaRangeCreation' when calling createMetaRange(Async)");
         }
+        
 
-        return createMetaRangeCall(repository, metaRangeCreation, _callback);
+        okhttp3.Call localVarCall = createMetaRangeCall(repository, metaRangeCreation, _callback);
+        return localVarCall;
 
     }
 
@@ -248,24 +217,11 @@ public class ImportApi {
      </table>
      */
     public okhttp3.Call ingestRangeCall(String repository, StageRangeCreation stageRangeCreation, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = stageRangeCreation;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/ranges"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -285,27 +241,28 @@ public class ImportApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call ingestRangeValidateBeforeCall(String repository, StageRangeCreation stageRangeCreation, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling ingestRange(Async)");
         }
-
+        
         // verify the required parameter 'stageRangeCreation' is set
         if (stageRangeCreation == null) {
             throw new ApiException("Missing the required parameter 'stageRangeCreation' when calling ingestRange(Async)");
         }
+        
 
-        return ingestRangeCall(repository, stageRangeCreation, _callback);
+        okhttp3.Call localVarCall = ingestRangeCall(repository, stageRangeCreation, _callback);
+        return localVarCall;
 
     }
 

@@ -20,8 +20,8 @@ import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
 import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,66 +31,88 @@ import java.util.Map;
 /**
  * API tests for RetentionApi
  */
-@Disabled
+@Ignore
 public class RetentionApiTest {
 
     private final RetentionApi api = new RetentionApi();
 
+    
     /**
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void deleteGarbageCollectionRulesTest() throws ApiException {
         String repository = null;
-        api.deleteGarbageCollectionRules(repository);
+                api.deleteGarbageCollectionRules(repository);
         // TODO: test validations
     }
-
+    
     /**
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void getGarbageCollectionRulesTest() throws ApiException {
         String repository = null;
-        GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
+                GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
         // TODO: test validations
     }
-
+    
     /**
      * save lists of active and expired commits for garbage collection
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void prepareGarbageCollectionCommitsTest() throws ApiException {
         String repository = null;
         GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = null;
-        GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
+                GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
         // TODO: test validations
     }
-
+    
     /**
      * save repository uncommitted metadata for garbage collection
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void prepareGarbageCollectionUncommittedTest() throws ApiException {
         String repository = null;
         PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
-        PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
+                PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
         // TODO: test validations
     }
-
+    
     /**
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void setGarbageCollectionRulesTest() throws ApiException {
         String repository = null;
         GarbageCollectionRules garbageCollectionRules = null;
-        api.setGarbageCollectionRules(repository, garbageCollectionRules);
+                api.setGarbageCollectionRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
-
+    
 }

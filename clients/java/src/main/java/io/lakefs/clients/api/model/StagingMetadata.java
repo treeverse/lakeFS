@@ -21,34 +21,17 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.api.model.StagingLocation;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * information about uploaded object
  */
+@ApiModel(description = "information about uploaded object")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StagingMetadata {
   public static final String SERIALIZED_NAME_STAGING = "staging";
@@ -65,14 +48,12 @@ public class StagingMetadata {
 
   public static final String SERIALIZED_NAME_USER_METADATA = "user_metadata";
   @SerializedName(SERIALIZED_NAME_USER_METADATA)
-  private Map<String, String> userMetadata = new HashMap<>();
+  private Map<String, String> userMetadata = null;
 
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
-  public StagingMetadata() {
-  }
 
   public StagingMetadata staging(StagingLocation staging) {
     
@@ -85,6 +66,7 @@ public class StagingMetadata {
    * @return staging
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public StagingLocation getStaging() {
     return staging;
@@ -107,6 +89,7 @@ public class StagingMetadata {
    * @return checksum
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "unique identifier of object content on backing store (typically ETag)")
 
   public String getChecksum() {
     return checksum;
@@ -129,6 +112,7 @@ public class StagingMetadata {
    * @return sizeBytes
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public Long getSizeBytes() {
     return sizeBytes;
@@ -148,7 +132,7 @@ public class StagingMetadata {
 
   public StagingMetadata putUserMetadataItem(String key, String userMetadataItem) {
     if (this.userMetadata == null) {
-      this.userMetadata = new HashMap<>();
+      this.userMetadata = new HashMap<String, String>();
     }
     this.userMetadata.put(key, userMetadataItem);
     return this;
@@ -159,6 +143,7 @@ public class StagingMetadata {
    * @return userMetadata
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Map<String, String> getUserMetadata() {
     return userMetadata;
@@ -181,6 +166,7 @@ public class StagingMetadata {
    * @return contentType
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "Object media type")
 
   public String getContentType() {
     return contentType;
@@ -190,7 +176,6 @@ public class StagingMetadata {
   public void setContentType(String contentType) {
     this.contentType = contentType;
   }
-
 
 
   @Override
@@ -238,110 +223,5 @@ public class StagingMetadata {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("staging");
-    openapiFields.add("checksum");
-    openapiFields.add("size_bytes");
-    openapiFields.add("user_metadata");
-    openapiFields.add("content_type");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("staging");
-    openapiRequiredFields.add("checksum");
-    openapiRequiredFields.add("size_bytes");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to StagingMetadata
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!StagingMetadata.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in StagingMetadata is not found in the empty JSON string", StagingMetadata.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!StagingMetadata.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `StagingMetadata` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : StagingMetadata.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      // validate the required field `staging`
-      StagingLocation.validateJsonObject(jsonObj.getAsJsonObject("staging"));
-      if (!jsonObj.get("checksum").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `checksum` to be a primitive type in the JSON string but got `%s`", jsonObj.get("checksum").toString()));
-      }
-      if ((jsonObj.get("content_type") != null && !jsonObj.get("content_type").isJsonNull()) && !jsonObj.get("content_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `content_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("content_type").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!StagingMetadata.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'StagingMetadata' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<StagingMetadata> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(StagingMetadata.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<StagingMetadata>() {
-           @Override
-           public void write(JsonWriter out, StagingMetadata value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public StagingMetadata read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of StagingMetadata given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StagingMetadata
-  * @throws IOException if the JSON string is invalid with respect to StagingMetadata
-  */
-  public static StagingMetadata fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, StagingMetadata.class);
-  }
-
- /**
-  * Convert an instance of StagingMetadata to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

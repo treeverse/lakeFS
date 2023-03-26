@@ -20,30 +20,11 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * LoginConfig
@@ -119,14 +100,12 @@ public class LoginConfig {
 
   public static final String SERIALIZED_NAME_LOGIN_COOKIE_NAMES = "login_cookie_names";
   @SerializedName(SERIALIZED_NAME_LOGIN_COOKIE_NAMES)
-  private List<String> loginCookieNames = new ArrayList<>();
+  private List<String> loginCookieNames = new ArrayList<String>();
 
   public static final String SERIALIZED_NAME_LOGOUT_URL = "logout_url";
   @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
   private String logoutUrl;
 
-  public LoginConfig() {
-  }
 
   public LoginConfig RBAC(RBACEnum RBAC) {
     
@@ -139,6 +118,7 @@ public class LoginConfig {
    * @return RBAC
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. ")
 
   public RBACEnum getRBAC() {
     return RBAC;
@@ -161,6 +141,7 @@ public class LoginConfig {
    * @return loginUrl
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "primary URL to use for login.")
 
   public String getLoginUrl() {
     return loginUrl;
@@ -183,6 +164,7 @@ public class LoginConfig {
    * @return loginFailedMessage
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
 
   public String getLoginFailedMessage() {
     return loginFailedMessage;
@@ -205,6 +187,7 @@ public class LoginConfig {
    * @return fallbackLoginUrl
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "secondary URL to offer users to use for login.")
 
   public String getFallbackLoginUrl() {
     return fallbackLoginUrl;
@@ -227,6 +210,7 @@ public class LoginConfig {
    * @return fallbackLoginLabel
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "label to place on fallback_login_url.")
 
   public String getFallbackLoginLabel() {
     return fallbackLoginLabel;
@@ -254,6 +238,7 @@ public class LoginConfig {
    * @return loginCookieNames
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "cookie names used to store JWT")
 
   public List<String> getLoginCookieNames() {
     return loginCookieNames;
@@ -276,6 +261,7 @@ public class LoginConfig {
    * @return logoutUrl
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "URL to use for logging out.")
 
   public String getLogoutUrl() {
     return logoutUrl;
@@ -285,7 +271,6 @@ public class LoginConfig {
   public void setLogoutUrl(String logoutUrl) {
     this.logoutUrl = logoutUrl;
   }
-
 
 
   @Override
@@ -337,128 +322,5 @@ public class LoginConfig {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("RBAC");
-    openapiFields.add("login_url");
-    openapiFields.add("login_failed_message");
-    openapiFields.add("fallback_login_url");
-    openapiFields.add("fallback_login_label");
-    openapiFields.add("login_cookie_names");
-    openapiFields.add("logout_url");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("login_url");
-    openapiRequiredFields.add("login_cookie_names");
-    openapiRequiredFields.add("logout_url");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to LoginConfig
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!LoginConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in LoginConfig is not found in the empty JSON string", LoginConfig.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!LoginConfig.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `LoginConfig` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : LoginConfig.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if ((jsonObj.get("RBAC") != null && !jsonObj.get("RBAC").isJsonNull()) && !jsonObj.get("RBAC").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `RBAC` to be a primitive type in the JSON string but got `%s`", jsonObj.get("RBAC").toString()));
-      }
-      if (!jsonObj.get("login_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url").toString()));
-      }
-      if ((jsonObj.get("login_failed_message") != null && !jsonObj.get("login_failed_message").isJsonNull()) && !jsonObj.get("login_failed_message").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `login_failed_message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_failed_message").toString()));
-      }
-      if ((jsonObj.get("fallback_login_url") != null && !jsonObj.get("fallback_login_url").isJsonNull()) && !jsonObj.get("fallback_login_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `fallback_login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("fallback_login_url").toString()));
-      }
-      if ((jsonObj.get("fallback_login_label") != null && !jsonObj.get("fallback_login_label").isJsonNull()) && !jsonObj.get("fallback_login_label").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `fallback_login_label` to be a primitive type in the JSON string but got `%s`", jsonObj.get("fallback_login_label").toString()));
-      }
-      // ensure the required json array is present
-      if (jsonObj.get("login_cookie_names") == null) {
-        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
-      } else if (!jsonObj.get("login_cookie_names").isJsonArray()) {
-        throw new IllegalArgumentException(String.format("Expected the field `login_cookie_names` to be an array in the JSON string but got `%s`", jsonObj.get("login_cookie_names").toString()));
-      }
-      if (!jsonObj.get("logout_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `logout_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("logout_url").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!LoginConfig.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'LoginConfig' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<LoginConfig> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(LoginConfig.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<LoginConfig>() {
-           @Override
-           public void write(JsonWriter out, LoginConfig value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public LoginConfig read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of LoginConfig given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of LoginConfig
-  * @throws IOException if the JSON string is invalid with respect to LoginConfig
-  */
-  public static LoginConfig fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, LoginConfig.class);
-  }
-
- /**
-  * Convert an instance of LoginConfig to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

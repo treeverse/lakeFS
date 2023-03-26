@@ -19,8 +19,8 @@ import io.lakefs.clients.api.model.ActionRunList;
 import io.lakefs.clients.api.model.Error;
 import java.io.File;
 import io.lakefs.clients.api.model.HookRunList;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,42 +30,52 @@ import java.util.Map;
 /**
  * API tests for ActionsApi
  */
-@Disabled
+@Ignore
 public class ActionsApiTest {
 
     private final ActionsApi api = new ActionsApi();
 
+    
     /**
      * get a run
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void getRunTest() throws ApiException {
         String repository = null;
         String runId = null;
-        ActionRun response = api.getRun(repository, runId);
+                ActionRun response = api.getRun(repository, runId);
         // TODO: test validations
     }
-
+    
     /**
      * get run hook output
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void getRunHookOutputTest() throws ApiException {
         String repository = null;
         String runId = null;
         String hookRunId = null;
-        File response = api.getRunHookOutput(repository, runId, hookRunId);
+                File response = api.getRunHookOutput(repository, runId, hookRunId);
         // TODO: test validations
     }
-
+    
     /**
      * list runs
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void listRepositoryRunsTest() throws ApiException {
@@ -74,14 +84,17 @@ public class ActionsApiTest {
         Integer amount = null;
         String branch = null;
         String commit = null;
-        ActionRunList response = api.listRepositoryRuns(repository, after, amount, branch, commit);
+                ActionRunList response = api.listRepositoryRuns(repository, after, amount, branch, commit);
         // TODO: test validations
     }
-
+    
     /**
      * list run hooks
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void listRunHooksTest() throws ApiException {
@@ -89,8 +102,8 @@ public class ActionsApiTest {
         String runId = null;
         String after = null;
         Integer amount = null;
-        HookRunList response = api.listRunHooks(repository, runId, after, amount);
+                HookRunList response = api.listRunHooks(repository, runId, after, amount);
         // TODO: test validations
     }
-
+    
 }

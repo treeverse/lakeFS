@@ -1,12 +1,10 @@
-# coding: utf-8
-
 # flake8: noqa
 
 # import all models into this package
 # if you have many models here with many references from one model to another this may
 # raise a RecursionError
 # to avoid this, import only the models that you directly need like:
-# from lakefs_client.model.pet import Pet
+# from from lakefs_client.model.pet import Pet
 # or import this package, but before doing it, use:
 # import sys
 # sys.setrecursionlimit(n)
@@ -44,6 +42,7 @@ from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.import_pagination import ImportPagination
 from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
+from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
