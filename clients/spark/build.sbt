@@ -18,6 +18,7 @@ def settingsToCompileIn(dir: String, flavour: String = "") = {
   lazy val allSettings = Seq(
     Compile / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "scala",
     Test / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "test" / "scala",
+    Test / testOptions += Tests.Argument("-P")
     Compile / resourceDirectory := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "resources",
     Compile / PB.includePaths += (Compile / resourceDirectory).value,
     Compile / PB.protoSources += (Compile / resourceDirectory).value
@@ -62,7 +63,8 @@ def generateCoreProject(buildType: BuildType) =
       //     Test / parallelExecution := false,
 
       // Uncomment to get (very) full stacktraces in test:
-      //      Test / testOptions += Tests.Argument("-oF"),
+      //      Test / 
+      += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/"),
       buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "io.treeverse.clients"
