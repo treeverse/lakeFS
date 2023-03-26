@@ -2,7 +2,7 @@
 layout: default
 title: lakeFS Enterprise
 description: lakeFS Enterprise is an enterprise-ready lakeFS solution, implemented using our best practices, providing additional features, such as RBAC, SSO and Support SLA.
-nav_order: 100
+nav_order: 96
 has_children: false
 ---
 

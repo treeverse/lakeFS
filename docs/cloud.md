@@ -2,7 +2,7 @@
 layout: default
 title: lakeFS Cloud
 description: lakeFS Cloud is a managed cloud-based data lake versioning platform that helps organizations manage and analyze large amounts of data. It is designed to enable data engineers and data scientists to store, process, and analyze data in a single, scalable platform.
-nav_order: 100
+nav_order: 95
 has_children: false
 ---
 
