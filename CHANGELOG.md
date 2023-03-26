@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+## v0.97.4
+
+:bug: Bugs fixed:
+
+- Fix lakeFS clients - revert OpenAPI generator cli version (#5572)
+
 ## v0.97.3
 
 :new: What's new:
