@@ -78,6 +78,10 @@ object StorageUtils {
     def uriToStorageAccountName(storageNsURI: URI): String = {
       storageNsURI.getHost.split('.')(0)
     }
+
+    def getTenantId(authorityHost: URI): String = {
+      authorityHost.getPath.split('/')(1)
+    }
   }
 
   object S3 {

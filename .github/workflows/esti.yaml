@@ -403,6 +403,7 @@ jobs:
           ESTI_VERSION: ${{ steps.version.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
 
+
   committed-gc-test-azure:
     name: Test committed gc on Azure
     needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
@@ -491,6 +492,7 @@ jobs:
           path: test/spark/metaclient
 
       - name: GC test
+        continue-on-error: true
         run: |
           go test -timeout 30m -v ./esti \
             -system-tests -use-local-credentials -run=TestCommittedGC \
@@ -503,6 +505,13 @@ jobs:
           ESTI_AZURE_STORAGE_ACCOUNT: esti
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
 
+      - name: worker logs
+        continue-on-error: true
+        run: docker logs "${{ job.services.spark-worker.id }}"
+
+      - name: spark logs
+        continue-on-error: true
+        run: docker logs "${{ job.services.spark.id }}"
 
   deploy-rclone-export-image:
     name: Build and push rclone export Docker image

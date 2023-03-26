@@ -578,6 +578,7 @@ object GarbageCollector {
       region: String,
       storageType: String
   ): Dataset[String] = {
+    println("got to bulk remove")
     import spark.implicits._
     val bulkRemover =
       BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)

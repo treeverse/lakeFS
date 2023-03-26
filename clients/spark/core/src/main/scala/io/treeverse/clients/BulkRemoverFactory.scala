@@ -146,30 +146,40 @@ object BulkRemoverFactory {
         storageAccountName: String
     ): BlobBatchClient = {
 
-      val blobServiceClientBuilder: BlobServiceClientBuilder =
-        new BlobServiceClientBuilder()
-          .endpoint(storageAccountUrl)
-          .retryOptions(
-            new RequestRetryOptions()
-          ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
-          .httpClient(HttpClient.createDefault())
-
+      println("got to getBlobBatchClient ")
       // Access the storage using the account key
       val storageAccountKey = hc.get(
         StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
       )
       if (storageAccountKey != null) {
-        val blobServiceClientBuilderWithKey = blobServiceClientBuilder.credential(
-          new StorageSharedKeyCredential(storageAccountName, storageAccountKey)
-        )
+        println("got to type storageAccountKey ")
+        val blobServiceClientBuilderWithKey: BlobServiceClientBuilder =
+          new BlobServiceClientBuilder()
+            .endpoint(storageAccountUrl)
+            .retryOptions(
+              new RequestRetryOptions()
+            ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
+            .httpClient(HttpClient.createDefault())
+            .credential(new StorageSharedKeyCredential(storageAccountName, storageAccountKey))
+        val blobServiceClientWithKey: BlobServiceClient =
+          blobServiceClientBuilderWithKey.buildClient
+        return new BlobBatchClientBuilder(blobServiceClientWithKey).buildClient
       }
-
       // Access the storage using OAuth 2.0 with an Azure service principal
       else if (
         hc.get(
           AccountAuthTypePattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
         ) == "OAuth"
       ) {
+        println("got to type OAuth ")
+        val tenantId = getTenantId(
+          new URI(
+            hc.get(
+              AccountOAuthClientEndpoint.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
+            )
+          )
+        )
+        println("got to get tanent id: ", tenantId)
         val clientSecretCredential: ClientSecretCredential = new ClientSecretCredentialBuilder()
           .clientId(
             hc.get(AccountOAuthClientId.replaceFirst(StorageAccNamePlaceHolder, storageAccountName))
@@ -179,18 +189,25 @@ object BulkRemoverFactory {
               AccountOAuthClientSecret.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
             )
           )
-          .tenantId(
-            hc.get(
-              AccountOAuthClientEndpoint.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
-            )
-          )
+          .tenantId(tenantId)
           .build()
-        blobServiceClientBuilder.credential(clientSecretCredential)
+        println("clientSecretCredential " + clientSecretCredential)
+        val blobServiceClientBuilderWithServivePrincipal: BlobServiceClientBuilder =
+          new BlobServiceClientBuilder()
+            .endpoint(storageAccountUrl)
+            .retryOptions(new RequestRetryOptions())
+            .httpClient(HttpClient.createDefault())
+            .credential(clientSecretCredential)
+        val blobServiceClientWithServivePrincipal: BlobServiceClient =
+          blobServiceClientBuilderWithServivePrincipal.buildClient
+        return new BlobBatchClientBuilder(blobServiceClientWithServivePrincipal).buildClient
       }
+      //TODO lynn: change error
+      else throw new IllegalArgumentException("Invalid argument.")
 
-      val blobServiceClient: BlobServiceClient = blobServiceClientBuilderWithKey.buildClient
+//      val blobServiceClient: BlobServiceClient = blobServiceClientBuilder.buildClient
 
-      new BlobBatchClientBuilder(blobServiceClient).buildClient
+//      new BlobBatchClientBuilder(blobServiceClient).buildClient
     }
 
     override def getMaxBulkSize(): Int = {
