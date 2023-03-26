@@ -63,7 +63,7 @@ body {
 			float: right;
 			position: relative;
 			.main-content-wrap {
-				max-width: 85%;
+				max-width: 1300px;
 				padding: 80px;
 			}
 		}
@@ -83,7 +83,7 @@ body {
 	}
 	p, li{
 		font-family: GalanoGrotesque;
-	    font-size: 14px;
+	    font-size: 1em;
 	}
 
 	h1 {
@@ -165,7 +165,7 @@ body {
 			}
 			a {
 				color: $teal-green;
-				font-size: 14px;
+				font-size: 1em;
 				background-image: none;
 				white-space: normal;
 				&:hover {
