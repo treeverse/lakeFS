@@ -27,13 +27,13 @@ func TestService_RunDiff(t *testing.T) {
 		{
 			register:    false,
 			description: "failure - no client loaded",
-			expectedErr: ErrNotFound,
+			expectedErr: ErrLoadingPlugin,
 		},
 		{
 			register:    true,
 			diffFailure: true,
 			description: "failure - internal diff failed",
-			expectedErr: ErrDiffFailed,
+			expectedErr: ErrFailedDiff,
 		},
 	}
 	for _, tc := range testCases {
