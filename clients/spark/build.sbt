@@ -61,10 +61,6 @@ def generateCoreProject(buildType: BuildType) =
       // (or similar).
       //
       //     Test / parallelExecution := false,
-
-      // Uncomment to get (very) full stacktraces in test:
-      //      Test / 
-      += Tests.Argument("-oF"),
       target := file(s"target/core-${buildType.name}/"),
       buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "io.treeverse.clients"
