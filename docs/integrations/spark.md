@@ -21,13 +21,9 @@ redirect_from:
 There are two ways to use lakeFS with Spark:
 
 * Using the [lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): Highly scalable, data flows directly from client to storage.
-* Using the [S3 gateway](#use-the-s3-gateway): Scalable and simpler to set up.
+* Using the lakeFS [S3-compatible API](#use-the-s3-compatible-api): Scalable and simpler to set up.
 
 {: .pb-5 }
-
-⚠️ The following examples include inline credentials for the sake of simplicity.
-In production, credentials should be protected using security best practices.
-{: .note }
 
 ## Use the lakeFS Hadoop FileSystem
 
@@ -55,20 +51,15 @@ interact with your data on lakeFS.
 
   </div>
   <div markdown="2" id="install-databricks">
+In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
-**Note** For your convenience, follow this [step by step Databricks integration tutorial, including lakeFS Hadoop File System, Python client and lakeFS SPARK client](https://lakefs.io/blog/databricks-lakefs-integration-tutorial/).
-{: .note }
+```
+io.lakefs:hadoop-lakefs-assembly:0.1.12
+```
 
+Once installed, it should look something like this:
 
-  Add the `hadoop-lakefs-assembly` jar to your Databricks cluster. Under `compute ➡️ Libraries` Add a Maven package as follows:
-
-  Install a Maven package with the `io.lakefs:hadoop-lakefs-assembly:0.1.12` 
-  coordinates.
-
-  Once installed, it should look something like this:
-
-  ![Databricks - Adding the lakeFS client Jar](../assets/img/databricks-install-package.png)
-
+![Databricks - Adding the lakeFS client Jar](../assets/img/databricks-install-package.png)
   
   </div>
 </div>
@@ -76,21 +67,15 @@ interact with your data on lakeFS.
 
 ### Configuration
 
-Configure the S3A filesystem with your S3 credentials (**not** the lakeFS credentials).
-Additionally, supply the `fs.lakefs.*` configurations to allow Spark to access metadata on lakeFS: 
+Set the `fs.lakefs.*` Hadoop configurations to point to your lakeFS installation:
+* `fs.lakefs.impl`: `io.lakefs.LakeFSFileSystem`
+* `fs.lakefs.access.key`: lakeFS access key
+* `fs.lakefs.secret.key`: lakeFS secret key
+* `fs.lakefs.endpoint`: lakeFS API URL (e.g. `http://example-org.lakefscloud.io/api/v1`)
 
-| Hadoop Configuration   | Value                                 |
-|------------------------|---------------------------------------|
-| `fs.s3a.access.key`    | Set to the AWS S3 access key          |
-| `fs.s3a.secret.key`    | Set to the AWS S3 secret key          |
-| `fs.lakefs.impl`       | `io.lakefs.LakeFSFileSystem`          |
-| `fs.lakefs.access.key` | Set to the lakeFS access key          |
-| `fs.lakefs.secret.key` | Set to the lakeFS secret key          |
-| `fs.lakefs.endpoint`   | Set to the lakeFS API URL             |
-
-The lakeFS Hadoop FileSystem uses the `fs.s3a.*` properties to directly
-access S3. If your cluster already has access to your buckets (for example, if you're using an AWS instance profile), then you don't need to configure these properties.
-{: .note }
+Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations:
+* `fs.s3a.access.key`: AWS S3 access key
+* `fs.s3a.secret.key`: AWS S3 secret key
 
 Here are some configuration examples:
 <div class="tabs">
@@ -109,9 +94,9 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
-              --conf spark.hadoop.fs.lakefs.endpoint=https://lakefs.example.com/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.12
-              ...
+              --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.lakefscloud.io/api/v1 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.12 \
+              io.example.ExampleClass
 ```
   </div>
   <div markdown="1" id="config-scala">
@@ -123,7 +108,7 @@ spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.eu-cen
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://example-org.lakefscloud.io/api/v1")
 ```
   </div>
   <div markdown="1" id="config-pyspark">
@@ -135,7 +120,7 @@ sc._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "https://s3.eu-central-1.am
 sc._jsc.hadoopConfiguration().set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
 sc._jsc.hadoopConfiguration().set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
 sc._jsc.hadoopConfiguration().set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-sc._jsc.hadoopConfiguration().set("fs.lakefs.endpoint", "https://lakefs.example.com/api/v1")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.endpoint", "https://example-org.lakefscloud.io/api/v1")
 ```
   </div>
   <div markdown="1" id="config-xml">
@@ -172,7 +157,7 @@ and then add these into a configuration file, e.g., `$SPARK_HOME/conf/hdfs-site.
     </property>
     <property>
         <name>fs.lakefs.endpoint</name>
-        <value>https://lakefs.example.com/api/v1</value>
+        <value>https://example-org.lakefscloud.io/api/v1</value>
     </property>
 </configuration>
 ```
@@ -188,7 +173,7 @@ spark.hadoop.fs.lakefs.secret.key abc/lakefs/1234567bPxRfiCYEXAMPLEKEY
 spark.hadoop.fs.s3a.access.key AKIAIOSFODNN7EXAMPLE
 spark.hadoop.fs.s3a.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 spark.hadoop.fs.s3a.impl shaded.databricks.org.apache.hadoop.fs.s3a.S3AFileSystem
-spark.hadoop.fs.lakefs.endpoint https://lakefs.example.com/api/v1
+spark.hadoop.fs.lakefs.endpoint https://example-org.lakefscloud.io/api/v1
 ```
 
   Alternatively, follow this [step by step Databricks integration tutorial, including lakeFS Hadoop File System, Python client and lakeFS SPARK client](https://lakefs.io/blog/databricks-lakefs-integration-tutorial/).
@@ -224,7 +209,7 @@ The data is now created in lakeFS as new changes in your branch. You can now com
 * Since data will not be sent to the lakeFS server, using this mode maximizes data security.
 * The FileSystem implementation is tested with the latest Spark 2.X (Hadoop 2) and Spark 3.X (Hadoop 3) Bitnami images.
 
-## Use the S3 gateway
+## Use the S3-compatible API
 
 lakeFS has an S3-compatible endpoint. Simply point Spark to this endpoint to get started quickly.
 You will access your data using S3-style URIs, e.g. `s3a://example-repo/example-branch/example-table`.
@@ -234,12 +219,10 @@ You will access your data using S3-style URIs, e.g. `s3a://example-repo/example-
 
 To configure Spark to work with lakeFS, we set S3A Hadoop configuration to the lakeFS endpoint and credentials:
 
-| Hadoop Configuration          | Value                                        |
-|-------------------------------|----------------------------------------------|
-| `fs.s3a.access.key`           | Set to the lakeFS access key                 |
-| `fs.s3a.secret.key`           | Set to the lakeFS secret key                 |
-| `fs.s3a.endpoint`             | Set to the lakeFS S3-compatible API endpoint |
-| `fs.s3a.path.style.access`    | Set to `true`                                |
+* `fs.s3a.access.key`: lakeFS access key
+* `fs.s3a.secret.key`: lakeFS secret key
+* `fs.s3a.endpoint`: lakeFS S3-compatible API endpoint
+* `fs.s3a.path.style.access`: `true`
 
 Here is how to do it:
 <div class="tabs">
@@ -254,14 +237,14 @@ Here is how to do it:
 spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAlakefs12345EXAMPLE' \
               --conf spark.hadoop.fs.s3a.secret.key='abc/lakefs/1234567bPxRfiCYEXAMPLEKEY' \
               --conf spark.hadoop.fs.s3a.path.style.access=true \
-              --conf spark.hadoop.fs.s3a.endpoint='https://lakefs.example.com' ...
+              --conf spark.hadoop.fs.s3a.endpoint='https://example-org.lakefscloud.io' ...
 ```
   </div>
   <div markdown="1" id="s3-config-tabs-code">
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://example-org.lakefscloud.io")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.path.style.access", "true")
 ```
   </div>
@@ -280,7 +263,7 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     </property>
     <property>
         <name>fs.s3a.endpoint</name>
-        <value>https://lakefs.example.com</value>
+        <value>https://example-org.lakefscloud.io</value>
     </property>
     <property>
         <name>fs.s3a.path.style.access</name>
@@ -305,11 +288,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.endpoint": "https://lakefs.example.com",
+        "fs.s3.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.path.style.access": "true",
         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.endpoint": "https://lakefs.example.com",
+        "fs.s3a.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.path.style.access": "true"
     }
   },
@@ -318,11 +301,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.endpoint": "https://lakefs.example.com",
+        "fs.s3.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.path.style.access": "true",
         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.endpoint": "https://lakefs.example.com",
+        "fs.s3a.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.path.style.access": "true"
     }
   },
@@ -331,7 +314,7 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "hive.s3.aws-access-key": "AKIAIOSFODNN7EXAMPLE",
         "hive.s3.aws-secret-key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "hive.s3.endpoint": "https://lakefs.example.com",
+        "hive.s3.endpoint": "https://example-org.lakefscloud.io",
         "hive.s3.path-style-access": "true",
         "hive.s3-file-system-type": "PRESTO"
     }
@@ -341,11 +324,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.endpoint": "https://lakefs.example.com",
+        "fs.s3.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.path.style.access": "true",
         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.endpoint": "https://lakefs.example.com",
+        "fs.s3a.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.path.style.access": "true"
     }
   },
@@ -354,11 +337,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.endpoint": "https://lakefs.example.com",
+        "fs.s3.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.path.style.access": "true",
         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.endpoint": "https://lakefs.example.com",
+        "fs.s3a.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.path.style.access": "true"
     }
   },
@@ -367,11 +350,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.endpoint": "https://lakefs.example.com",
+        "fs.s3.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.path.style.access": "true",
         "fs.s3a.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.endpoint": "https://lakefs.example.com",
+        "fs.s3a.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.path.style.access": "true"
     }
   }
@@ -387,7 +370,7 @@ aws emr add-steps --cluster-id j-197B3AEGQ9XE4 \
   --steps="Type=Spark,Name=SparkApplication,ActionOnFailure=CONTINUE, \
   Args=[--conf,spark.hadoop.fs.s3a.access.key=AKIAIOSFODNN7EXAMPLE, \
   --conf,spark.hadoop.fs.s3a.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY, \
-  --conf,spark.hadoop.fs.s3a.endpoint=https://lakefs.example.com, \
+  --conf,spark.hadoop.fs.s3a.endpoint=https://example-org.lakefscloud.io, \
   --conf,spark.hadoop.fs.s3a.path.style.access=true, \
   s3a://<lakefs-repo>/<lakefs-branch>/path/to/jar]"
 ```
@@ -411,7 +394,7 @@ For example, to configure only `example-repo` to use lakeFS, set the following c
 ```sh
 spark-shell --conf spark.hadoop.fs.s3a.bucket.example-repo.access.key='AKIAlakefs12345EXAMPLE' \
               --conf spark.hadoop.fs.s3a.bucket.example-repo.secret.key='abc/lakefs/1234567bPxRfiCYEXAMPLEKEY' \
-              --conf spark.hadoop.fs.s3a.bucket.example-repo.endpoint='https://lakefs.example.com' \
+              --conf spark.hadoop.fs.s3a.bucket.example-repo.endpoint='https://example-org.lakefscloud.io' \
               --conf spark.hadoop.fs.s3a.path.style.access=true
 ```
   </div>
@@ -419,7 +402,7 @@ spark-shell --conf spark.hadoop.fs.s3a.bucket.example-repo.access.key='AKIAlakef
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.access.key", "AKIAlakefs12345EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.endpoint", "https://lakefs.example.com")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.bucket.example-repo.endpoint", "https://example-org.lakefscloud.io")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.path.style.access", "true")
 ```
   </div>
@@ -438,7 +421,7 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     </property>
     <property>
         <name>fs.s3a.bucket.example-repo.endpoint</name>
-        <value>https://lakefs.example.com</value>
+        <value>https://example-org.lakefscloud.io</value>
     </property>
     <property>
         <name>fs.s3a.path.style.access</name>
@@ -463,11 +446,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.bucket.example-repo.path.style.access": "true",
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3a.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.bucket.example-repo.path.style.access": "true"
     }
   },
@@ -476,11 +459,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.bucket.example-repo.path.style.access": "true",
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3a.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.bucket.example-repo.path.style.access": "true"
     }
   },
@@ -489,7 +472,7 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "hive.s3.aws-access-key": "AKIAIOSFODNN7EXAMPLE",
         "hive.s3.aws-secret-key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "hive.s3.endpoint": "https://lakefs.example.com",
+        "hive.s3.endpoint": "https://example-org.lakefscloud.io",
         "hive.s3.path-style-access": "true",
         "hive.s3-file-system-type": "PRESTO"
     }
@@ -499,11 +482,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.bucket.example-repo.path.style.access": "true",
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3a.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.bucket.example-repo.path.style.access": "true"
     }
   },
@@ -512,11 +495,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.bucket.example-repo.path.style.access": "true",
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3a.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.bucket.example-repo.path.style.access": "true"
     }
   },
@@ -525,11 +508,11 @@ Add these into a configuration file, e.g. `$SPARK_HOME/conf/hdfs-site.xml`:
     "Properties": {
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3.bucket.example-repo.path.style.access": "true",
         "fs.s3a.bucket.example-repo.access.key": "AKIAIOSFODNN7EXAMPLE",
         "fs.s3a.bucket.example-repo.secret.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "fs.s3a.bucket.example-repo.endpoint": "https://lakefs.example.com",
+        "fs.s3a.bucket.example-repo.endpoint": "https://example-org.lakefscloud.io",
         "fs.s3a.bucket.example-repo.path.style.access": "true"
     }
   }
@@ -545,7 +528,7 @@ aws emr add-steps --cluster-id j-197B3AEGQ9XE4 \
   --steps="Type=Spark,Name=SparkApplication,ActionOnFailure=CONTINUE, \
   Args=[--conf,spark.hadoop.fs.s3a.bucket.example-repo.access.key=AKIAIOSFODNN7EXAMPLE, \
   --conf,spark.hadoop.fs.s3a.bucket.example-repo.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY, \
-  --conf,spark.hadoop.fs.s3a.bucket.example-repo.endpoint=https://lakefs.example.com, \
+  --conf,spark.hadoop.fs.s3a.bucket.example-repo.endpoint=https://example-org.lakefscloud.io, \
   --conf,spark.hadoop.fs.s3a.path.style.access=true, \
   s3a://<lakefs-repo>/<lakefs-branch>/path/to/jar]"
 ```
@@ -572,20 +555,20 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-### Configuring Azure Databricks with the S3 Gateway
+### Configuring Azure Databricks with the S3-compatible API
 {: .no_toc }
 
-If you use Azure Databricks, you would want to take advantage of the lakeFS S3 gateway with your Azure account, using the S3A File system. 
-Meaning, you’ll need to add the `hadoop-aws` jar (with the same version of your `hadoop-azure` jar) to your Databricks cluster.
-The S3 gateway makes lakeFS compatible with S3, meaning that the S3A file system can “talk” to it natively
-Define your File system configurations in the following way:
+If you use Azure Databricks, you can take advantage of the lakeFS S3-compatible API with your Azure account and the S3A FileSystem. 
+This will require installing the `hadoop-aws` package (with the same version as your `hadoop-azure` package) to your Databricks cluster.
+
+Define your FileSystem configurations in the following way:
 
 ```
 spark.hadoop.fs.lakefs.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.lakefs.access.key=‘AKIAlakefs12345EXAMPLE’                   // The access key to your lakeFS server
 spark.hadoop.fs.lakefs.secret.key=‘abc/lakefs/1234567bPxRfiCYEXAMPLEKEY’     // The secret key to your lakeFS server
 spark.hadoop.fs.lakefs.path.style.access=true
-spark.hadoop.fs.lakefs.endpoint=‘https://lakefs.example.com’                 // The endpoint of your lakeFS server
+spark.hadoop.fs.lakefs.endpoint=‘https://example-org.lakefscloud.io’                 // The endpoint of your lakeFS server
 ```
 
 For more details about [Mounting cloud object storage on Databricks](https://docs.databricks.com/dbfs/mounts.html).
