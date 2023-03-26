@@ -12,6 +12,10 @@ redirect_from:
 # Import data into lakeFS
 {: .no_toc }
 
+
+The simplest way to bring data into lakeFS is by [copying it](#copying-data-into-a-lakefs-repository), but this approach may not be suitable when a lot of data is involved.
+To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). With this approach, lakeFS only creates pointers to your existing objects in your new repository.
+
 {% include toc.html %}
 
 ## Zero-copy import
@@ -22,10 +26,13 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
 {: .note }
 
 1. In your repository's main page, click the _Import_ button to open the import dialog:
+
    ![img.png](../assets/img/UI-Import-Dialog.png)
+
 2. Under _Import from_, fill in the location on your object store you would like to import from.
 3. Fill in the import destination in lakeFS and a commit message.
-4. Once the import is completed, you can merge the changes from the import branch to the source branch.
+
+Once the import is complete, you can merge the changes from the import branch to the source branch.
 
 #### Notes
 {: .no_toc }
@@ -35,7 +42,9 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
 
 ### _lakectl import_
 
-The _import_ command acts the same as the UI import wizard. It commits the changes to a dedicated branch, with an optional
+Prerequisite: have [lakectl](../quickstart/first_commit.md#install-lakectl) installed.
+
+The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to a dedicated branch, with an optional
 flag to merge the changes to `<branch_name>`.
 
 <div class="tabs">
@@ -71,6 +80,8 @@ The imported objects will be committed to the `_my-branch_imported`, creating it
 Using the `--merge` flag will merge `_my-branch_imported` to `my-branch` after a successful import.
 
 ### _lakectl ingest_
+
+Prerequisite: have [lakectl](../quickstart/first_commit.md#install-lakectl) installed.
 
 The _ingest_ command adds the objects to lakeFS by listing them on the client side.
 The added objects will appear as uncommitted changes.
