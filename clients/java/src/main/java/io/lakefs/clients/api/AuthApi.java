@@ -51,12 +51,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class AuthApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public AuthApi() {
         this(Configuration.getDefaultApiClient());
@@ -72,22 +69,6 @@ public class AuthApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -107,25 +88,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call addGroupMembershipCall(String groupId, String userId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}/members/{userId}"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()))
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()))
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -142,29 +110,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call addGroupMembershipValidateBeforeCall(String groupId, String userId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling addGroupMembership(Async)");
         }
-
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling addGroupMembership(Async)");
         }
+        
 
-        return addGroupMembershipCall(groupId, userId, _callback);
+        okhttp3.Call localVarCall = addGroupMembershipCall(groupId, userId, _callback);
+        return localVarCall;
 
     }
 
@@ -248,25 +218,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call attachPolicyToGroupCall(String groupId, String policyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}/policies/{policyId}"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()))
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()))
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -283,29 +240,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call attachPolicyToGroupValidateBeforeCall(String groupId, String policyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling attachPolicyToGroup(Async)");
         }
-
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling attachPolicyToGroup(Async)");
         }
+        
 
-        return attachPolicyToGroupCall(groupId, policyId, _callback);
+        okhttp3.Call localVarCall = attachPolicyToGroupCall(groupId, policyId, _callback);
+        return localVarCall;
 
     }
 
@@ -389,25 +348,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call attachPolicyToUserCall(String userId, String policyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/policies/{policyId}"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()))
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -424,29 +370,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call attachPolicyToUserValidateBeforeCall(String userId, String policyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling attachPolicyToUser(Async)");
         }
-
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling attachPolicyToUser(Async)");
         }
+        
 
-        return attachPolicyToUserCall(userId, policyId, _callback);
+        okhttp3.Call localVarCall = attachPolicyToUserCall(userId, policyId, _callback);
+        return localVarCall;
 
     }
 
@@ -529,24 +477,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call createCredentialsCall(String userId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/credentials"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -563,24 +498,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call createCredentialsValidateBeforeCall(String userId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling createCredentials(Async)");
         }
+        
 
-        return createCredentialsCall(userId, _callback);
+        okhttp3.Call localVarCall = createCredentialsCall(userId, _callback);
+        return localVarCall;
 
     }
 
@@ -664,19 +601,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call createGroupCall(GroupCreation groupCreation, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = groupCreation;
 
         // create path and map variables
@@ -700,17 +624,18 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call createGroupValidateBeforeCall(GroupCreation groupCreation, final ApiCallback _callback) throws ApiException {
-        return createGroupCall(groupCreation, _callback);
+        
+
+        okhttp3.Call localVarCall = createGroupCall(groupCreation, _callback);
+        return localVarCall;
 
     }
 
@@ -795,19 +720,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call createPolicyCall(Policy policy, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = policy;
 
         // create path and map variables
@@ -831,22 +743,23 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call createPolicyValidateBeforeCall(Policy policy, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'policy' is set
         if (policy == null) {
             throw new ApiException("Missing the required parameter 'policy' when calling createPolicy(Async)");
         }
+        
 
-        return createPolicyCall(policy, _callback);
+        okhttp3.Call localVarCall = createPolicyCall(policy, _callback);
+        return localVarCall;
 
     }
 
@@ -934,19 +847,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call createUserCall(UserCreation userCreation, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = userCreation;
 
         // create path and map variables
@@ -970,17 +870,18 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call createUserValidateBeforeCall(UserCreation userCreation, final ApiCallback _callback) throws ApiException {
-        return createUserCall(userCreation, _callback);
+        
+
+        okhttp3.Call localVarCall = createUserCall(userCreation, _callback);
+        return localVarCall;
 
     }
 
@@ -1068,25 +969,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call deleteCredentialsCall(String userId, String accessKeyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/credentials/{accessKeyId}"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()))
-            .replace("{" + "accessKeyId" + "}", localVarApiClient.escapeString(accessKeyId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "accessKeyId" + "\\}", localVarApiClient.escapeString(accessKeyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1103,29 +991,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deleteCredentialsValidateBeforeCall(String userId, String accessKeyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling deleteCredentials(Async)");
         }
-
+        
         // verify the required parameter 'accessKeyId' is set
         if (accessKeyId == null) {
             throw new ApiException("Missing the required parameter 'accessKeyId' when calling deleteCredentials(Async)");
         }
+        
 
-        return deleteCredentialsCall(userId, accessKeyId, _callback);
+        okhttp3.Call localVarCall = deleteCredentialsCall(userId, accessKeyId, _callback);
+        return localVarCall;
 
     }
 
@@ -1208,24 +1098,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call deleteGroupCall(String groupId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1242,24 +1119,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deleteGroupValidateBeforeCall(String groupId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling deleteGroup(Async)");
         }
+        
 
-        return deleteGroupCall(groupId, _callback);
+        okhttp3.Call localVarCall = deleteGroupCall(groupId, _callback);
+        return localVarCall;
 
     }
 
@@ -1340,25 +1219,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call deleteGroupMembershipCall(String groupId, String userId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}/members/{userId}"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()))
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()))
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1375,29 +1241,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deleteGroupMembershipValidateBeforeCall(String groupId, String userId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling deleteGroupMembership(Async)");
         }
-
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling deleteGroupMembership(Async)");
         }
+        
 
-        return deleteGroupMembershipCall(groupId, userId, _callback);
+        okhttp3.Call localVarCall = deleteGroupMembershipCall(groupId, userId, _callback);
+        return localVarCall;
 
     }
 
@@ -1480,24 +1348,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call deletePolicyCall(String policyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/policies/{policyId}"
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1514,24 +1369,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deletePolicyValidateBeforeCall(String policyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling deletePolicy(Async)");
         }
+        
 
-        return deletePolicyCall(policyId, _callback);
+        okhttp3.Call localVarCall = deletePolicyCall(policyId, _callback);
+        return localVarCall;
 
     }
 
@@ -1611,24 +1468,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call deleteUserCall(String userId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1645,24 +1489,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deleteUserValidateBeforeCall(String userId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling deleteUser(Async)");
         }
+        
 
-        return deleteUserCall(userId, _callback);
+        okhttp3.Call localVarCall = deleteUserCall(userId, _callback);
+        return localVarCall;
 
     }
 
@@ -1743,25 +1589,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call detachPolicyFromGroupCall(String groupId, String policyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}/policies/{policyId}"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()))
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()))
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1778,29 +1611,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call detachPolicyFromGroupValidateBeforeCall(String groupId, String policyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling detachPolicyFromGroup(Async)");
         }
-
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling detachPolicyFromGroup(Async)");
         }
+        
 
-        return detachPolicyFromGroupCall(groupId, policyId, _callback);
+        okhttp3.Call localVarCall = detachPolicyFromGroupCall(groupId, policyId, _callback);
+        return localVarCall;
 
     }
 
@@ -1884,25 +1719,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call detachPolicyFromUserCall(String userId, String policyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/policies/{policyId}"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()))
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -1919,29 +1741,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call detachPolicyFromUserValidateBeforeCall(String userId, String policyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling detachPolicyFromUser(Async)");
         }
-
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling detachPolicyFromUser(Async)");
         }
+        
 
-        return detachPolicyFromUserCall(userId, policyId, _callback);
+        okhttp3.Call localVarCall = detachPolicyFromUserCall(userId, policyId, _callback);
+        return localVarCall;
 
     }
 
@@ -2023,19 +1847,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call forgotPasswordCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = forgotPasswordRequest;
 
         // create path and map variables
@@ -2059,22 +1870,23 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] {  };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call forgotPasswordValidateBeforeCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'forgotPasswordRequest' is set
         if (forgotPasswordRequest == null) {
             throw new ApiException("Missing the required parameter 'forgotPasswordRequest' when calling forgotPassword(Async)");
         }
+        
 
-        return forgotPasswordCall(forgotPasswordRequest, _callback);
+        okhttp3.Call localVarCall = forgotPasswordCall(forgotPasswordRequest, _callback);
+        return localVarCall;
 
     }
 
@@ -2148,19 +1960,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call getAuthCapabilitiesCall(final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -2181,19 +1980,21 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] {  };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getAuthCapabilitiesValidateBeforeCall(final ApiCallback _callback) throws ApiException {
-        return getAuthCapabilitiesCall(_callback);
+        
+
+        okhttp3.Call localVarCall = getAuthCapabilitiesCall(_callback);
+        return localVarCall;
 
     }
 
@@ -2269,25 +2070,12 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call getCredentialsCall(String userId, String accessKeyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/credentials/{accessKeyId}"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()))
-            .replace("{" + "accessKeyId" + "}", localVarApiClient.escapeString(accessKeyId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "accessKeyId" + "\\}", localVarApiClient.escapeString(accessKeyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -2304,29 +2092,31 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getCredentialsValidateBeforeCall(String userId, String accessKeyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling getCredentials(Async)");
         }
-
+        
         // verify the required parameter 'accessKeyId' is set
         if (accessKeyId == null) {
             throw new ApiException("Missing the required parameter 'accessKeyId' when calling getCredentials(Async)");
         }
+        
 
-        return getCredentialsCall(userId, accessKeyId, _callback);
+        okhttp3.Call localVarCall = getCredentialsCall(userId, accessKeyId, _callback);
+        return localVarCall;
 
     }
 
@@ -2409,19 +2199,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call getCurrentUserCall(final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -2442,19 +2219,21 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getCurrentUserValidateBeforeCall(final ApiCallback _callback) throws ApiException {
-        return getCurrentUserCall(_callback);
+        
+
+        okhttp3.Call localVarCall = getCurrentUserCall(_callback);
+        return localVarCall;
 
     }
 
@@ -2526,24 +2305,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call getGroupCall(String groupId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -2560,24 +2326,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getGroupValidateBeforeCall(String groupId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling getGroup(Async)");
         }
+        
 
-        return getGroupCall(groupId, _callback);
+        okhttp3.Call localVarCall = getGroupCall(groupId, _callback);
+        return localVarCall;
 
     }
 
@@ -2661,24 +2429,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call getPolicyCall(String policyId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/policies/{policyId}"
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -2695,24 +2450,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getPolicyValidateBeforeCall(String policyId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling getPolicy(Async)");
         }
+        
 
-        return getPolicyCall(policyId, _callback);
+        okhttp3.Call localVarCall = getPolicyCall(policyId, _callback);
+        return localVarCall;
 
     }
 
@@ -2796,24 +2553,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call getUserCall(String userId, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -2830,24 +2574,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getUserValidateBeforeCall(String userId, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling getUser(Async)");
         }
+        
 
-        return getUserCall(userId, _callback);
+        okhttp3.Call localVarCall = getUserCall(userId, _callback);
+        return localVarCall;
 
     }
 
@@ -2933,24 +2679,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listGroupMembersCall(String groupId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}/members"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -2979,24 +2712,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listGroupMembersValidateBeforeCall(String groupId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling listGroupMembers(Async)");
         }
+        
 
-        return listGroupMembersCall(groupId, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listGroupMembersCall(groupId, prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -3089,24 +2824,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listGroupPoliciesCall(String groupId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/groups/{groupId}/policies"
-            .replace("{" + "groupId" + "}", localVarApiClient.escapeString(groupId.toString()));
+            .replaceAll("\\{" + "groupId" + "\\}", localVarApiClient.escapeString(groupId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -3135,24 +2857,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listGroupPoliciesValidateBeforeCall(String groupId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'groupId' is set
         if (groupId == null) {
             throw new ApiException("Missing the required parameter 'groupId' when calling listGroupPolicies(Async)");
         }
+        
 
-        return listGroupPoliciesCall(groupId, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listGroupPoliciesCall(groupId, prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -3246,19 +2970,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listGroupsCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -3291,19 +3002,21 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listGroupsValidateBeforeCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        return listGroupsCall(prefix, after, amount, _callback);
+        
+
+        okhttp3.Call localVarCall = listGroupsCall(prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -3391,19 +3104,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listPoliciesCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -3436,19 +3136,21 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listPoliciesValidateBeforeCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        return listPoliciesCall(prefix, after, amount, _callback);
+        
+
+        okhttp3.Call localVarCall = listPoliciesCall(prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -3538,24 +3240,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listUserCredentialsCall(String userId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/credentials"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -3584,24 +3273,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listUserCredentialsValidateBeforeCall(String userId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling listUserCredentials(Async)");
         }
+        
 
-        return listUserCredentialsCall(userId, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listUserCredentialsCall(userId, prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -3697,24 +3388,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listUserGroupsCall(String userId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/groups"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -3743,24 +3421,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listUserGroupsValidateBeforeCall(String userId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling listUserGroups(Async)");
         }
+        
 
-        return listUserGroupsCall(userId, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listUserGroupsCall(userId, prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -3857,24 +3537,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listUserPoliciesCall(String userId, String prefix, String after, Integer amount, Boolean effective, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/auth/users/{userId}/policies"
-            .replace("{" + "userId" + "}", localVarApiClient.escapeString(userId.toString()));
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -3907,24 +3574,26 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listUserPoliciesValidateBeforeCall(String userId, String prefix, String after, Integer amount, Boolean effective, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'userId' is set
         if (userId == null) {
             throw new ApiException("Missing the required parameter 'userId' when calling listUserPolicies(Async)");
         }
+        
 
-        return listUserPoliciesCall(userId, prefix, after, amount, effective, _callback);
+        okhttp3.Call localVarCall = listUserPoliciesCall(userId, prefix, after, amount, effective, _callback);
+        return localVarCall;
 
     }
 
@@ -4021,19 +3690,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call listUsersCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -4066,19 +3722,21 @@ public class AuthApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call listUsersValidateBeforeCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        return listUsersCall(prefix, after, amount, _callback);
+        
+
+        okhttp3.Call localVarCall = listUsersCall(prefix, after, amount, _callback);
+        return localVarCall;
 
     }
 
@@ -4164,19 +3822,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call loginCall(LoginInformation loginInformation, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = loginInformation;
 
         // create path and map variables
@@ -4200,17 +3845,18 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] {  };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call loginValidateBeforeCall(LoginInformation loginInformation, final ApiCallback _callback) throws ApiException {
-        return loginCall(loginInformation, _callback);
+        
+
+        okhttp3.Call localVarCall = loginCall(loginInformation, _callback);
+        return localVarCall;
 
     }
 
@@ -4290,19 +3936,6 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call updatePasswordCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = updatePasswordByToken;
 
         // create path and map variables
@@ -4326,22 +3959,23 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] { "cookie_auth" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call updatePasswordValidateBeforeCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'updatePasswordByToken' is set
         if (updatePasswordByToken == null) {
             throw new ApiException("Missing the required parameter 'updatePasswordByToken' when calling updatePassword(Async)");
         }
+        
 
-        return updatePasswordCall(updatePasswordByToken, _callback);
+        okhttp3.Call localVarCall = updatePasswordCall(updatePasswordByToken, _callback);
+        return localVarCall;
 
     }
 
@@ -4420,24 +4054,11 @@ public class AuthApi {
      </table>
      */
     public okhttp3.Call updatePolicyCall(String policyId, Policy policy, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = policy;
 
         // create path and map variables
         String localVarPath = "/auth/policies/{policyId}"
-            .replace("{" + "policyId" + "}", localVarApiClient.escapeString(policyId.toString()));
+            .replaceAll("\\{" + "policyId" + "\\}", localVarApiClient.escapeString(policyId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -4457,27 +4078,28 @@ public class AuthApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call updatePolicyValidateBeforeCall(String policyId, Policy policy, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'policyId' is set
         if (policyId == null) {
             throw new ApiException("Missing the required parameter 'policyId' when calling updatePolicy(Async)");
         }
-
+        
         // verify the required parameter 'policy' is set
         if (policy == null) {
             throw new ApiException("Missing the required parameter 'policy' when calling updatePolicy(Async)");
         }
+        
 
-        return updatePolicyCall(policyId, policy, _callback);
+        okhttp3.Call localVarCall = updatePolicyCall(policyId, policy, _callback);
+        return localVarCall;
 
     }
 

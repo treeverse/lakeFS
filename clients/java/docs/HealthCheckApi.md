@@ -1,10 +1,10 @@
 # HealthCheckApi
 
-All URIs are relative to */api/v1*
+All URIs are relative to *http://localhost/api/v1*
 
-| Method | HTTP request | Description |
-|------------- | ------------- | -------------|
-| [**healthCheck**](HealthCheckApi.md#healthCheck) | **GET** /healthcheck |  |
+Method | HTTP request | Description
+------------- | ------------- | -------------
+[**healthCheck**](HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
 
 
 <a name="healthCheck"></a>
@@ -27,7 +27,7 @@ import io.lakefs.clients.api.HealthCheckApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
 
     HealthCheckApi apiInstance = new HealthCheckApi(defaultClient);
     try {
@@ -62,5 +62,5 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **204** | NoContent |  -  |
+**204** | NoContent |  -  |
 
