@@ -274,6 +274,21 @@ func (mr *MockMetaRangeManagerMockRecorder) GetMetaRangeURI(ctx, ns, metaRangeID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetaRangeURI", reflect.TypeOf((*MockMetaRangeManager)(nil).GetMetaRangeURI), ctx, ns, metaRangeID)
 }
 
+// GetRangeForKey mocks base method.
+func (m *MockMetaRangeManager) GetRangeForKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*committed.Range, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRangeForKey", ctx, ns, id, key)
+	ret0, _ := ret[0].(*committed.Range)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRangeForKey indicates an expected call of GetRangeForKey.
+func (mr *MockMetaRangeManagerMockRecorder) GetRangeForKey(ctx, ns, id, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeForKey", reflect.TypeOf((*MockMetaRangeManager)(nil).GetRangeForKey), ctx, ns, id, key)
+}
+
 // GetRangeURI mocks base method.
 func (m *MockMetaRangeManager) GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (string, error) {
 	m.ctrl.T.Helper()

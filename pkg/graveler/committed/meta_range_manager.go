@@ -75,7 +75,7 @@ func (m *metaRangeManager) GetRangeForKey(ctx context.Context, ns graveler.Stora
 		return nil, err
 	}
 	if err != nil {
-		return nil, fmt.Errorf("find metarange in %s: %w", id, err)
+		return nil, fmt.Errorf("find range in %s: %w", id, err)
 	}
 
 	gv, err := UnmarshalValue(v.Value)
@@ -92,6 +92,7 @@ func (m *metaRangeManager) GetRangeForKey(ctx context.Context, ns graveler.Stora
 		return nil, ErrNotFound
 	}
 
+	rng.ID = ID(gv.Identity)
 	return &rng, nil
 }
 

@@ -1493,6 +1493,7 @@ func (g *Graveler) IsEqual(ctx context.Context, repository *RepositoryRecord, le
 	if err != nil {
 		return false, err
 	}
+
 	lRangeID, err := g.CommittedManager.GetRangeIDForKey(ctx, repository.StorageNamespace, lCommit.MetaRangeID, key)
 	lFound := !errors.Is(err, ErrNotFound)
 	if err != nil && lFound {
@@ -1509,27 +1510,37 @@ func (g *Graveler) IsEqual(ctx context.Context, repository *RepositoryRecord, le
 		return false, err
 	}
 
-	switch {
-	case !lFound && !rFound:
-		// no range matching the key exists in both commits
+	if !lFound && !rFound {
+		// no range matching the key exist in both commits
 		return true, nil
-	case !lFound || !rFound:
-		// Possible found in one commit but definitely not in the other
-		return false, nil
-	case lRangeID == rRangeID:
+	}
+	if lRangeID == rRangeID {
 		// It's the same range - the value of the key is identical in both
 		return true, nil
 	}
 
-	// The key exists in both commits, but the range ID is different - the value is needs to be looked at
+	// The key possible exists in both commits, but the range ID is different - the value is needs to be looked at
 	lValue, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, lCommit.MetaRangeID, key)
-	if err != nil {
+	lFound = !errors.Is(err, ErrNotFound)
+	if err != nil && lFound {
 		return false, err
 	}
 	rValue, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, rCommit.MetaRangeID, key)
-	if err != nil {
+	rFound = !errors.Is(err, ErrNotFound)
+	if err != nil && rFound {
 		return false, err
 	}
+
+	switch {
+	case !lFound && !rFound:
+		// not found in both commits
+		return true, nil
+	case !lFound || !rFound:
+		// found in one commit but not in the other
+		return false, nil
+	}
+
+	// found in both commits - compare the value
 	return bytes.Equal(lValue.Identity, rValue.Identity), nil
 }
 

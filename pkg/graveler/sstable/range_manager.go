@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"errors"
 	"fmt"
 
 	"github.com/cockroachdb/pebble"
@@ -62,7 +61,7 @@ func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, cac
 
 var (
 	// ErrKeyNotFound is the error returned when a path is not found
-	ErrKeyNotFound = errors.New("path not found")
+	ErrKeyNotFound = fmt.Errorf("key: %w", committed.ErrNotFound)
 
 	_ committed.RangeManager = &RangeManager{}
 )

@@ -22,6 +22,11 @@ type FakeGraveler struct {
 	hooks                       graveler.HooksHandler
 }
 
+func (g *FakeGraveler) IsEqual(ctx context.Context, repository *graveler.RepositoryRecord, left graveler.CommitID, right graveler.CommitID, key graveler.Key) (bool, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	panic("implement me")
 }

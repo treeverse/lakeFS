@@ -1335,7 +1335,10 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 			if err != nil {
 				return false, fmt.Errorf("compare left right keys: %w", err)
 			}
-			return !equal, nil
+			// if the values are not equal, we have a change
+			if !equal {
+				return true, nil
+			}
 		}
 	}
 	return false, nil

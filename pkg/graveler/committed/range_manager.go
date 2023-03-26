@@ -2,7 +2,6 @@ package committed
 
 import (
 	"context"
-	"errors"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
@@ -40,7 +39,7 @@ type ValueIterator interface {
 	Close()
 }
 
-var ErrNotFound = errors.New("not found")
+var ErrNotFound = graveler.ErrNotFound
 
 type RangeManager interface {
 	// Exists returns true if id references a Range.
