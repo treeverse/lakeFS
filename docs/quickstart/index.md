@@ -5,7 +5,15 @@ nav_order: 1
 has_children: true
 has_toc: false
 next: ["Launch the quickstart environment", "./launch.html"]
-redirect_from: [ "quickstart/installing.html", "quickstart/try.html", "../quickstart.html"]
+redirect_from: 
+    - "./installing.html"
+    - "./try.html"
+    - "/quickstart.html"
+    - "./add_data.html"
+    - "./more_quickstart_options.html"
+    - "./repository.html"
+    - "./run.html"
+    - "./first_commit.html"
 ---
 
 # lakeFS Quickstart
