@@ -22,8 +22,7 @@ type FakeGraveler struct {
 	hooks                       graveler.HooksHandler
 }
 
-func (g *FakeGraveler) IsEqual(ctx context.Context, repository *graveler.RepositoryRecord, left graveler.CommitID, right graveler.CommitID, key graveler.Key) (bool, error) {
-	//TODO implement me
+func (g *FakeGraveler) GetRangeIDByKey(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key) (graveler.RangeID, error) {
 	panic("implement me")
 }
 

@@ -93,8 +93,8 @@ type MetaRangeManager interface {
 	// return a URI that does not resolve (rather than an error) if ID does not exist.
 	GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (string, error)
 
-	// GetRangeForKey returns the Range that contains key in the MetaRange with id.
-	GetRangeForKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error)
+	// GetRangeByKey returns the Range that contains key in the MetaRange with id.
+	GetRangeByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error)
 }
 
 // MetaRangeWriter is an abstraction for creating new MetaRanges

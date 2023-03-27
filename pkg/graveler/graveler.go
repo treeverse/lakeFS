@@ -426,6 +426,9 @@ type KeyValueStore interface {
 	// GetByCommitID returns value from repository / commit by key and error if value does not exist
 	GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error)
 
+	// GetRangeIDByKey returns rangeID from the commitID that contains the key
+	GetRangeIDByKey(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (RangeID, error)
+
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
 	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error
 
@@ -440,9 +443,6 @@ type KeyValueStore interface {
 
 	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
 	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
-
-	// IsEqual returns true if the value of key is equal on left and right commit
-	IsEqual(ctx context.Context, repository *RepositoryRecord, left CommitID, right CommitID, key Key) (bool, error)
 }
 
 type VersionController interface {
@@ -858,8 +858,8 @@ type CommittedManager interface {
 	// GetRange returns information where rangeID is stored.
 	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
 
-	// GetRangeIDForKey returns the RangeID that contains the given key.
-	GetRangeIDForKey(ctx context.Context, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
+	// GetRangeIDByKey returns the RangeID that contains the given key.
+	GetRangeIDByKey(ctx context.Context, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -1488,60 +1488,12 @@ func (g *Graveler) GetByCommitID(ctx context.Context, repository *RepositoryReco
 	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
-func (g *Graveler) IsEqual(ctx context.Context, repository *RepositoryRecord, left CommitID, right CommitID, key Key) (bool, error) {
-	lCommit, err := g.GetCommit(ctx, repository, left)
+func (g *Graveler) GetRangeIDByKey(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (RangeID, error) {
+	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-
-	lRangeID, err := g.CommittedManager.GetRangeIDForKey(ctx, repository.StorageNamespace, lCommit.MetaRangeID, key)
-	lFound := !errors.Is(err, ErrNotFound)
-	if err != nil && lFound {
-		return false, err
-	}
-
-	rCommit, err := g.GetCommit(ctx, repository, right)
-	if err != nil {
-		return false, err
-	}
-	rRangeID, err := g.CommittedManager.GetRangeIDForKey(ctx, repository.StorageNamespace, rCommit.MetaRangeID, key)
-	rFound := !errors.Is(err, ErrNotFound)
-	if err != nil && rFound {
-		return false, err
-	}
-
-	if !lFound && !rFound {
-		// no range matching the key exist in both commits
-		return true, nil
-	}
-	if lRangeID == rRangeID {
-		// It's the same range - the value of the key is identical in both
-		return true, nil
-	}
-
-	// The key possible exists in both commits, but the range ID is different - the value is needs to be looked at
-	lValue, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, lCommit.MetaRangeID, key)
-	lFound = !errors.Is(err, ErrNotFound)
-	if err != nil && lFound {
-		return false, err
-	}
-	rValue, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, rCommit.MetaRangeID, key)
-	rFound = !errors.Is(err, ErrNotFound)
-	if err != nil && rFound {
-		return false, err
-	}
-
-	switch {
-	case !lFound && !rFound:
-		// not found in both commits
-		return true, nil
-	case !lFound || !rFound:
-		// found in one commit but not in the other
-		return false, nil
-	}
-
-	// found in both commits - compare the value
-	return bytes.Equal(lValue.Identity, rValue.Identity), nil
+	return g.CommittedManager.GetRangeIDByKey(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
 func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error {

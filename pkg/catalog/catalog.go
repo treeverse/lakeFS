@@ -17,6 +17,7 @@ import (
 	"github.com/alitto/pond"
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
+	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -161,7 +162,7 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
-	sharedWorkers            = 15
+	sharedWorkers            = 1
 	pendingTasksPerWorker    = 3
 	workersMaxDrainDuration  = 5 * time.Second
 )
@@ -1106,6 +1107,12 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 		return nil, false, fmt.Errorf("%w: list commits without paths", graveler.ErrInvalid)
 	}
 
+	const commitLogCacheSize = 1024 * 5
+	commitCache, err := lru.New(commitLogCacheSize)
+	if err != nil {
+		return nil, false, err
+	}
+
 	const numReadResults = 3
 	done := atomic.NewBool(false)
 
@@ -1141,7 +1148,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 			commitOrder := current
 			current++
 			workerGroup.Submit(func() error {
-				pathInCommit, err := c.checkPathListInCommit(ctx, repository, commitRecord, paths)
+				pathInCommit, err := c.checkPathListInCommit(ctx, repository, commitRecord, paths, commitCache)
 				if err != nil {
 					return err
 				}
@@ -1296,7 +1303,7 @@ func (h *commitLogJobHeap) Pop() interface{} {
 // checkPathListInCommit checks whether the given commit contains changes to a list of paths.
 // it searches the path in the diff between the commit, and it's parent, but do so only to commits
 // that have single parent (not merge commits)
-func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit *graveler.CommitRecord, pathList []PathRecord) (bool, error) {
+func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit *graveler.CommitRecord, pathList []PathRecord, commitCache *lru.Cache) (bool, error) {
 	left := commit.Parents[0]
 	right := commit.CommitID
 
@@ -1331,17 +1338,65 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 				return false, err
 			}
 		} else {
-			equal, err := c.Store.IsEqual(ctx, repository, left, right, key)
-			if err != nil {
-				return false, fmt.Errorf("compare left right keys: %w", err)
+			// check if the key exists in both commits
+
+			// First, check if we can compare the ranges.
+			// If ranges match, or if no ranges for both commits, we can skip the key lookup.
+			lRangeID, err := c.Store.GetRangeIDByKey(ctx, repository, left, key)
+			lFound := !errors.Is(err, graveler.ErrNotFound)
+			if err != nil && lFound {
+				return false, err
 			}
-			// if the values are not equal, we have a change
-			if !equal {
+			rRangeID, err := c.Store.GetRangeIDByKey(ctx, repository, right, key)
+			rFound := !errors.Is(err, graveler.ErrNotFound)
+			if err != nil && rFound {
+				return false, err
+			}
+
+			if !lFound && !rFound {
+				// no range matching the key exist in both commits
+				continue
+			}
+			if lRangeID == rRangeID {
+				// It's the same range - the value of the key is identical in both
+				continue
+			}
+
+			// The key possibly exists in both commits, but the range ID is different - the value is needs to be looked at
+			leftObject, err := storeGetCache(ctx, c.Store, repository, left, key, commitCache)
+			if err != nil {
+				return false, err
+			}
+			rightObject, err := storeGetCache(ctx, c.Store, repository, right, key, commitCache)
+			if err != nil {
+				return false, err
+			}
+
+			// if left or right are missing or doesn't hold the same identify
+			// we want the commit log
+			if leftObject == nil && rightObject != nil ||
+				leftObject != nil && rightObject == nil ||
+				(leftObject != nil && rightObject != nil && !bytes.Equal(leftObject.Identity, rightObject.Identity)) {
 				return true, nil
 			}
 		}
 	}
 	return false, nil
+}
+
+// storeGetCache helper to calls Get and cache the return info 'commitCache'. This method is helpful in case of calling Get
+// on a large set of commits with the same object, and we can return the cached data we returned so far
+func storeGetCache(ctx context.Context, store graveler.KeyValueStore, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key, commitCache *lru.Cache) (*graveler.Value, error) {
+	cacheKey := fmt.Sprintf("%s/%s", commitID, key)
+	if o, found := commitCache.Get(cacheKey); found {
+		return o.(*graveler.Value), nil
+	}
+	o, err := store.GetByCommitID(ctx, repository, commitID, key)
+	if err != nil && !errors.Is(err, graveler.ErrNotFound) {
+		return nil, err
+	}
+	_ = commitCache.Add(cacheKey, o)
+	return o, nil
 }
 
 func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string, params RevertParams) error {

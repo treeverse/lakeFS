@@ -282,11 +282,11 @@ func (c *committedManager) GetRange(ctx context.Context, ns graveler.StorageName
 	return graveler.RangeAddress(uri), err
 }
 
-func (c *committedManager) GetRangeIDForKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (graveler.RangeID, error) {
+func (c *committedManager) GetRangeIDByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (graveler.RangeID, error) {
 	if id == "" {
 		return "", graveler.ErrNotFound
 	}
-	r, err := c.metaRangeManager.GetRangeForKey(ctx, ns, id, key)
+	r, err := c.metaRangeManager.GetRangeByKey(ctx, ns, id, key)
 	if err != nil {
 		return "", fmt.Errorf("get range for key: %w", err)
 	}

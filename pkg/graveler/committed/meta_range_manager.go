@@ -50,7 +50,7 @@ func (m *metaRangeManager) Exists(ctx context.Context, ns graveler.StorageNamesp
 // GetValue finds the matching graveler.ValueRecord in the MetaRange with the rangeID
 func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error) {
 	// Fetch range containing key.
-	rng, err := m.GetRangeForKey(ctx, ns, id, key)
+	rng, err := m.GetRangeByKey(ctx, ns, id, key)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 	}, nil
 }
 
-func (m *metaRangeManager) GetRangeForKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error) {
+func (m *metaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error) {
 	v, err := m.metaManager.GetValueGE(ctx, Namespace(ns), ID(id), Key(key))
 	if errors.Is(err, ErrNotFound) {
 		return nil, err
