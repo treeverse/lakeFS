@@ -40,7 +40,7 @@ services:
           wait
 
   duckdb:
-    image: rmoff/duckdb
+    build: .
     container_name: duckdb
     entrypoint: 
       - /bin/sh 
