@@ -126,15 +126,13 @@ type DataLakeWalker struct {
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
+	storageURI = storageURI.JoinPath("/")
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
 		return err
 	}
-	var basePath string
-	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
-		basePath = prefix[:idx+1]
-	}
+	basePath := prefix
 
 	qk, err := ResolveBlobURLInfoFromURL(containerURL)
 	if err != nil {

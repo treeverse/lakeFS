@@ -23,7 +23,7 @@ const (
 	gsImportPath       = "gs://esti-system-testing-data/import-test-data/"
 	azureImportPath    = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
 	importTargetPrefix = "imported/new-prefix/"
-	importBranchName   = "ingestion"
+	importBranchBase   = "ingestion"
 )
 
 func TestImport(t *testing.T) {
@@ -67,18 +67,20 @@ func TestImport(t *testing.T) {
 	}
 
 	t.Run("default", func(t *testing.T) {
-		testImport(t, ctx, repoName, importPath)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importFilesToCheck, expectedContentLength)
+		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "default")
+		testImport(t, ctx, repoName, importPath, importBranch)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
 	})
 
 	t.Run("parent", func(t *testing.T) {
+		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
 		if blockstoreType == block.BlockstoreTypeLocal {
 			t.Skip("local always assumes import path is dir")
 		}
 		// import without the directory separator as suffix to include the parent directory
 		importPathParent := strings.TrimSuffix(importPath, "/")
-		testImport(t, ctx, repoName, importPathParent)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importFilesToCheck, expectedContentLength)
+		testImport(t, ctx, repoName, importPathParent, importBranch)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
 	})
 }
 
@@ -115,11 +117,11 @@ func setupLocalImportPath(t *testing.T) string {
 	return "local://" + importDir
 }
 
-func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, prefix string, importFilesToCheck []string, expectedContentLength int) {
+func verifyImportObjects(t *testing.T, ctx context.Context, repoName, prefix, importBranch string, importFilesToCheck []string, expectedContentLength int) {
 	for _, k := range importFilesToCheck {
 		// try to read some values from that ingested branch
 		objPath := prefix + k
-		objResp, err := client.GetObjectWithResponse(ctx, repoName, importBranchName, &api.GetObjectParams{
+		objResp, err := client.GetObjectWithResponse(ctx, repoName, importBranch, &api.GetObjectParams{
 			Path: objPath,
 		})
 		require.NoError(t, err, "get object failed: %s", objPath)
@@ -131,7 +133,7 @@ func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, pre
 	hasMore := true
 	after := api.PaginationAfter("")
 	for hasMore {
-		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranchName, &api.ListObjectsParams{After: &after})
+		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &api.ListObjectsParams{After: &after})
 		require.NoError(t, err, "list objects failed")
 		require.NotNil(t, listResp.JSON200)
 
@@ -143,7 +145,7 @@ func verifyImportObjects(t *testing.T, ctx context.Context, repoName string, pre
 	}
 }
 
-func testImport(t *testing.T, ctx context.Context, repoName string, importPath string) {
+func testImport(t *testing.T, ctx context.Context, repoName, importPath, importBranch string) {
 	var (
 		after  string
 		token  *string
@@ -175,13 +177,14 @@ func testImport(t *testing.T, ctx context.Context, repoName string, importPath s
 	require.Equal(t, http.StatusCreated, metarangeResp.StatusCode())
 	require.NotNil(t, metarangeResp.JSON201.Id)
 
-	_, err = client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
-		Name:   importBranchName,
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   importBranch,
 		Source: "main",
 	})
 	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createResp.StatusCode())
 
-	commitResp, err := client.CommitWithResponse(ctx, repoName, importBranchName, &api.CommitParams{
+	commitResp, err := client.CommitWithResponse(ctx, repoName, importBranch, &api.CommitParams{
 		SourceMetarange: metarangeResp.JSON201.Id,
 	}, api.CommitJSONRequestBody{
 		Message: "created by import",
@@ -202,18 +205,42 @@ func TestAzureDataLakeV2(t *testing.T) {
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
 
-	// each test is a folder under the prefix import
-	tests := []string{
-		"empty-folder",
-		"prefix-item-order",
+	tests := []struct {
+		name         string
+		filesToCheck []string
+	}{
+		{
+			name:         "empty-folders",
+			filesToCheck: []string{},
+		},
+		{
+			name: "prefix-item-order",
+			filesToCheck: []string{
+				"aaa",
+				"helloworld.csv",
+				"zero",
+				"helloworld/myfile.csv",
+			},
+		},
 	}
-	for _, test := range tests {
-		t.Run(test, func(t *testing.T) {
-			importPath, err := url.JoinPath(importPrefix, test)
+
+	for _, tt := range tests {
+		importBranch := fmt.Sprintf("%s-%s", importBranchBase, tt.name)
+		// each test is a folder under the prefix import
+		t.Run(tt.name, func(t *testing.T) {
+			importPath, err := url.JoinPath(importPrefix, tt.name)
 			if err != nil {
 				t.Fatal("Import URL", err)
 			}
-			testImport(t, ctx, repoName, importPath)
+			testImport(t, ctx, repoName, importPath, importBranch)
+			if len(tt.filesToCheck) == 0 {
+				resp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &api.ListObjectsParams{})
+				require.NoError(t, err)
+				require.NotNil(t, resp.JSON200)
+				require.Empty(t, resp.JSON200.Results)
+			} else {
+				verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, tt.filesToCheck, 0)
+			}
 		})
 	}
 }
