@@ -3,6 +3,7 @@ package tablediff
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -18,7 +19,7 @@ import (
 
 var (
 	ErrTableNotFound = errors.New("table not found")
-	ErrLoadingPlugin = errors.New("couldn't load diff plugin")
+	ErrLoadingPlugin = errors.New("failed to load diff plugin")
 	ErrFailedDiff    = errors.New("failed running the diff")
 )
 
@@ -105,7 +106,10 @@ type Service struct {
 func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Params) (Response, error) {
 	d, closeClient, err := s.pluginHandler.LoadPluginClient(diffType)
 	if err != nil {
-		logging.Default().WithError(err).Errorf("encountered err while loading the plugin client")
+		logging.FromContext(ctx).WithError(err).
+			WithField("type", diffType).
+			WithField("params", fmt.Sprintf("%+v", diffParams)).
+			Error("failed to load the plugin client")
 		return Response{}, ErrLoadingPlugin
 	}
 	if closeClient != nil {
@@ -114,7 +118,10 @@ func (s *Service) RunDiff(ctx context.Context, diffType string, diffParams Param
 
 	diffResponse, err := d.Diff(ctx, diffParams)
 	if err != nil {
-		logging.Default().WithError(err).Errorf("encountered err while performing the diff")
+		logging.FromContext(ctx).WithError(err).
+			WithField("type", diffType).
+			WithField("params", fmt.Sprintf("%+v", diffParams)).
+			Error("failed to perform diff")
 		if errors.Is(err, ErrTableNotFound) {
 			return Response{}, err
 		}
