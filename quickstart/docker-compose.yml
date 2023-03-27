@@ -3,7 +3,7 @@ services:
 
   lakefs:
     image: treeverse/lakefs:latest
-    pull_policy: always
+    #pull_policy: always
     container_name: lakefs
     ports:
       - "8000:8000"
