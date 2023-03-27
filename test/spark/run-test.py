@@ -36,7 +36,7 @@ def main():
     parser.add_argument("--aws_access_key")
     parser.add_argument("--aws_secret_key")
     parser.add_argument("--region")
-    parser.add_argument("--direct_access", action="store_true")
+    parser.add_argument("--access_mode", choices=["s3_gateway", "hadoopfs", "hadoopfs_presigned"], default="s3_gateway")
     lakefs_access_key = 'AKIAIOSFODNN7EXAMPLE'
     lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 
@@ -58,19 +58,27 @@ def main():
 
     with open('./app/data-sets/sonnets.txt', 'rb') as f:
         lfs_client.objects.upload_object(repository=args.repository, branch="main", path="sonnets.txt", content=f)
-
-    if args.direct_access:
+    base_hadoopfs_config = {
+        "spark.hadoop.fs.lakefs.impl": "io.lakefs.LakeFSFileSystem",
+        "spark.driver.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
+        "spark.executor.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
+        "spark.hadoop.fs.lakefs.endpoint": "http://lakefs:8000/api/v1",
+        "spark.hadoop.fs.lakefs.access.key": lakefs_access_key,
+        "spark.hadoop.fs.lakefs.secret.key": lakefs_secret_key,
+    }
+    if args.access_mode == 'hadoopfs':
         scheme = "lakefs"
         spark_configs = {
-            "spark.hadoop.fs.lakefs.impl": "io.lakefs.LakeFSFileSystem",
-            "spark.driver.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
-            "spark.executor.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
-            "spark.hadoop.fs.lakefs.endpoint": "http://lakefs:8000/api/v1",
-            "spark.hadoop.fs.lakefs.access.key": lakefs_access_key,
-            "spark.hadoop.fs.lakefs.secret.key": lakefs_secret_key,
+            **base_hadoopfs_config,
             "spark.hadoop.fs.s3a.access.key": args.aws_access_key,
             "spark.hadoop.fs.s3a.secret.key": args.aws_secret_key,
             "spark.hadoop.fs.s3a.region": args.region,
+        }
+    elif args.access_mode == 'hadoopfs_presigned':
+        scheme = "lakefs"
+        spark_configs = {
+            **base_hadoopfs_config,
+            "spark.hadoop.fs.lakefs.access.mode": "presigned",
         }
     else:
         scheme = "s3a"

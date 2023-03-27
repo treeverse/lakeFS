@@ -579,6 +579,9 @@ jobs:
       - name: Build and test hadoopfs (hadoop3)
         working-directory: clients/hadoopfs
         run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop3 verify
+      - name: Build and test hadoopfs (hadoop3, presigned mode)
+        working-directory: clients/hadoopfs
+        run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop3-presigned verify
       - name: logs on failure
         if: ${{ failure() }}
         continue-on-error: true
@@ -638,7 +641,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
@@ -741,7 +744,7 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Test lakeFS S3 with Spark ${{ matrix.spark.tag }}.x
+      - name: Spark${{ matrix.spark.tag }} + S3 gateway
         working-directory: test/spark
         run: |
           python ./run-test.py \
@@ -752,9 +755,9 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
-      - name: Test lakeFS S3 with Spark 3.x thick client
+      - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS
         timeout-minutes: 8
         working-directory: test/spark
         run: |
@@ -762,15 +765,28 @@ jobs:
             --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
             --repository thick-client-test \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
-            --direct_access \
+            --access_mode hadoopfs \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
             --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-      - name: lakeFS Logs on Spark with client failure
+      - name: lakeFS Logs on HadoopFS test failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
-
+        run: docker-compose logs --tail=2500 lakefs
+      - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS presigned
+        timeout-minutes: 8
+        working-directory: test/spark
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-presigned/${{ steps.unique.outputs.value }} \
+            --repository thick-client-presigned-test \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
+            --access_mode hadoopfs_presigned
+      - name: lakeFS Logs on HadoopFS presigned test failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=2500 lakefs
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image]
@@ -877,7 +893,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/lakectl_metastore
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
       - name: dbt Logs with failure
         if: ${{ failure() }}
@@ -1000,7 +1016,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV

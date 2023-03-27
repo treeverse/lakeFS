@@ -20,30 +20,12 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * ObjectStageCreation
@@ -68,14 +50,12 @@ public class ObjectStageCreation {
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
-  private Map<String, String> metadata = new HashMap<>();
+  private Map<String, String> metadata = null;
 
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
-  public ObjectStageCreation() {
-  }
 
   public ObjectStageCreation physicalAddress(String physicalAddress) {
     
@@ -88,6 +68,7 @@ public class ObjectStageCreation {
    * @return physicalAddress
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getPhysicalAddress() {
     return physicalAddress;
@@ -110,6 +91,7 @@ public class ObjectStageCreation {
    * @return checksum
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getChecksum() {
     return checksum;
@@ -132,6 +114,7 @@ public class ObjectStageCreation {
    * @return sizeBytes
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public Long getSizeBytes() {
     return sizeBytes;
@@ -154,6 +137,7 @@ public class ObjectStageCreation {
    * @return mtime
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "Unix Epoch in seconds")
 
   public Long getMtime() {
     return mtime;
@@ -173,7 +157,7 @@ public class ObjectStageCreation {
 
   public ObjectStageCreation putMetadataItem(String key, String metadataItem) {
     if (this.metadata == null) {
-      this.metadata = new HashMap<>();
+      this.metadata = new HashMap<String, String>();
     }
     this.metadata.put(key, metadataItem);
     return this;
@@ -184,6 +168,7 @@ public class ObjectStageCreation {
    * @return metadata
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Map<String, String> getMetadata() {
     return metadata;
@@ -206,6 +191,7 @@ public class ObjectStageCreation {
    * @return contentType
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "Object media type")
 
   public String getContentType() {
     return contentType;
@@ -215,7 +201,6 @@ public class ObjectStageCreation {
   public void setContentType(String contentType) {
     this.contentType = contentType;
   }
-
 
 
   @Override
@@ -265,112 +250,5 @@ public class ObjectStageCreation {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("physical_address");
-    openapiFields.add("checksum");
-    openapiFields.add("size_bytes");
-    openapiFields.add("mtime");
-    openapiFields.add("metadata");
-    openapiFields.add("content_type");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("physical_address");
-    openapiRequiredFields.add("checksum");
-    openapiRequiredFields.add("size_bytes");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to ObjectStageCreation
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!ObjectStageCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in ObjectStageCreation is not found in the empty JSON string", ObjectStageCreation.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!ObjectStageCreation.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `ObjectStageCreation` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : ObjectStageCreation.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if (!jsonObj.get("physical_address").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));
-      }
-      if (!jsonObj.get("checksum").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `checksum` to be a primitive type in the JSON string but got `%s`", jsonObj.get("checksum").toString()));
-      }
-      if ((jsonObj.get("content_type") != null && !jsonObj.get("content_type").isJsonNull()) && !jsonObj.get("content_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `content_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("content_type").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ObjectStageCreation.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ObjectStageCreation' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ObjectStageCreation> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ObjectStageCreation.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ObjectStageCreation>() {
-           @Override
-           public void write(JsonWriter out, ObjectStageCreation value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ObjectStageCreation read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of ObjectStageCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ObjectStageCreation
-  * @throws IOException if the JSON string is invalid with respect to ObjectStageCreation
-  */
-  public static ObjectStageCreation fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ObjectStageCreation.class);
-  }
-
- /**
-  * Convert an instance of ObjectStageCreation to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

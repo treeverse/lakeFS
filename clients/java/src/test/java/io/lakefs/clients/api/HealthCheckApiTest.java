@@ -14,8 +14,8 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,20 +25,24 @@ import java.util.Map;
 /**
  * API tests for HealthCheckApi
  */
-@Disabled
+@Ignore
 public class HealthCheckApiTest {
 
     private final HealthCheckApi api = new HealthCheckApi();
 
+    
     /**
+     * 
+     *
      * check that the API server is up and running
      *
-     * @throws ApiException if the Api call fails
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void healthCheckTest() throws ApiException {
-        api.healthCheck();
+                api.healthCheck();
         // TODO: test validations
     }
-
+    
 }

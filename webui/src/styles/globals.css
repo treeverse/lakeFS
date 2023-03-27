@@ -101,6 +101,7 @@
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: .9rem;
   color: #303030;
+  width: 95%;
 }
 
 .lakefs-uri strong {
@@ -347,7 +348,7 @@ td.tree-path {
 }
 
 .table .change-entry-row .change-entry-row-actions .btn-link,
-.table .tree-entry-row .change-entry-row-actions .btn-link {
+.table .tree-entry-row .change-entry-row-actions .btn-link .btn-link:hover {
   visibility: hidden;
   font-size: 0.875rem;
   padding: 5px;
@@ -720,4 +721,3 @@ td.entry-type-indicator {
   width: 1%;
   padding: 2px;
 }
-

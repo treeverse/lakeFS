@@ -36,9 +36,10 @@ const (
 )
 
 type Adapter struct {
-	clientCache      *ClientCache
-	preSignedExpiry  time.Duration
-	disablePreSigned bool
+	clientCache        *ClientCache
+	preSignedExpiry    time.Duration
+	disablePreSigned   bool
+	disablePreSignedUI bool
 }
 
 func NewAdapter(params params.Azure) (*Adapter, error) {
@@ -52,9 +53,10 @@ func NewAdapter(params params.Azure) (*Adapter, error) {
 		return nil, err
 	}
 	return &Adapter{
-		clientCache:      cache,
-		preSignedExpiry:  preSignedExpiry,
-		disablePreSigned: params.DisablePreSigned,
+		clientCache:        cache,
+		preSignedExpiry:    preSignedExpiry,
+		disablePreSigned:   params.DisablePreSigned,
+		disablePreSignedUI: params.DisablePreSignedUI,
 	}, nil
 }
 
@@ -570,6 +572,9 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
 	if a.disablePreSigned {
 		info.PreSignSupport = false
+	}
+	if !(a.disablePreSignedUI || a.disablePreSigned) {
+		info.PreSignSupportUI = true
 	}
 	return info
 }

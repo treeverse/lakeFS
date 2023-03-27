@@ -1,9 +1,6 @@
 import React, {useRef, useState} from "react";
 
-import {
-    GitCommitIcon,
-    HistoryIcon,
-} from "@primer/octicons-react";
+import {GitCommitIcon, HistoryIcon,} from "@primer/octicons-react";
 
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
@@ -11,7 +8,7 @@ import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 
-import {refs, branches, commits} from "../../../lib/api";
+import {branches, commits, refs} from "../../../lib/api";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";

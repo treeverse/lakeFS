@@ -1,5 +1,5 @@
 import React, {FC, FormEvent, useCallback, useEffect, useState} from "react";
-import {getConnection} from "./duckdb";
+import {getDuckDBConnection, closeDuckDBConnection} from "./duckdb";
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as arrow from 'apache-arrow';
 import Form from "react-bootstrap/Form";
@@ -54,31 +54,23 @@ LIMIT 20`
     }, [setSql])
 
     useEffect(() => {
-        if (!sql) return
+        if (!sql) {
+            return;
+        }
         const runQuery = async (sql: string) => {
             setLoading(true)
             setError(null)
-            let conn: duckdb.AsyncDuckDBConnection | null
+            let conn: duckdb.AsyncDuckDBConnection | null = null
             try {
-                conn =  await getConnection()
-            } catch (e) {
-                setData(null)
-                setError(e.toString())
-                setLoading(false)
-                return
-            }
-
-            try {
+                conn = await getDuckDBConnection()
                 const results = await conn.query(sql)
                 setData(results)
-                setError(null)
             } catch (e) {
                 setError(e.toString())
                 setData(null)
             } finally {
                 setLoading(false)
-                if (conn !== null)
-                    await conn.close()
+                await closeDuckDBConnection(conn)
             }
         }
         runQuery(sql).catch(console.error);
@@ -97,7 +89,6 @@ LIMIT 20`
     } else if (data === null) {
         content = <DataLoader/>
     } else {
-
         if (!data || data.numRows === 0) {
             content = (
                 <p className="text-md-center mt-5 mb-5">

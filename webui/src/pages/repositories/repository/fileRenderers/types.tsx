@@ -5,6 +5,7 @@ export interface RendererComponent {
     fileExtension: string | null;
     contentType: string | null;
     sizeBytes: number;
+    presign?: boolean;
 }
 
 export interface RendererComponentWithText extends RendererComponent{

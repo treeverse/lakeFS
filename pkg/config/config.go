@@ -80,7 +80,13 @@ type S3AuthInfo struct {
 // PluginProps struct holds the properties needed to run a plugin
 type PluginProps struct {
 	Path    string `mapstructure:"path"`
-	Version *int   `mapstructure:"version"`
+	Version int    `mapstructure:"version"`
+}
+
+// Plugins struct holds the plugins dir default location and a map of optional plugin location with higher precedence
+type Plugins struct {
+	DefaultPath string                 `mapstructure:"default_path"`
+	Properties  map[string]PluginProps `mapstructure:"properties"`
 }
 
 // DiffProps struct holds the properties that define the details necessary to run a diff.
@@ -229,24 +235,27 @@ type Config struct {
 			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI            bool          `mapstructure:"disable_pre_signed_ui"`
 		} `mapstructure:"s3"`
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
 			StorageAccount   string        `mapstructure:"storage_account"`
 			StorageAccessKey string        `mapstructure:"storage_access_key"`
 			// Deprecated: Value ignored
-			AuthMethod       string        `mapstructure:"auth_method"`
-			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
+			AuthMethod         string        `mapstructure:"auth_method"`
+			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
 			// TestEndpointURL for testing purposes
 			TestEndpointURL string `mapstructure:"test_endpoint_url"`
 		} `mapstructure:"azure"`
 		GS *struct {
-			S3Endpoint       string        `mapstructure:"s3_endpoint"`
-			CredentialsFile  string        `mapstructure:"credentials_file"`
-			CredentialsJSON  string        `mapstructure:"credentials_json"`
-			PreSignedExpiry  time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned bool          `mapstructure:"disable_pre_signed"`
+			S3Endpoint         string        `mapstructure:"s3_endpoint"`
+			CredentialsFile    string        `mapstructure:"credentials_file"`
+			CredentialsJSON    string        `mapstructure:"credentials_json"`
+			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
 		} `mapstructure:"gs"`
 	}
 	Committed struct {
@@ -328,8 +337,8 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
-	Diff    map[string]DiffProps   `mapstructure:"diff"`
-	Plugins map[string]PluginProps `mapstructure:"plugins"`
+	Diff    map[string]DiffProps `mapstructure:"diff"`
+	Plugins Plugins              `mapstructure:"plugins"`
 }
 
 func NewConfig() (*Config, error) {
@@ -508,6 +517,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		ServerSideEncryptionKmsKeyID:  c.Blockstore.S3.ServerSideEncryptionKmsKeyID,
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
+		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
 	}, nil
 }
 

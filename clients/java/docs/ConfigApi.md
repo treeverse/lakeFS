@@ -1,15 +1,15 @@
 # ConfigApi
 
-All URIs are relative to */api/v1*
+All URIs are relative to *http://localhost/api/v1*
 
-| Method | HTTP request | Description |
-|------------- | ------------- | -------------|
-| [**getGarbageCollectionConfig**](ConfigApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection |  |
-| [**getLakeFSVersion**](ConfigApi.md#getLakeFSVersion) | **GET** /config/version |  |
-| [**getSetupState**](ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up |
-| [**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage |  |
-| [**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user |
-| [**setupCommPrefs**](ConfigApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences |
+Method | HTTP request | Description
+------------- | ------------- | -------------
+[**getGarbageCollectionConfig**](ConfigApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
+[**getLakeFSVersion**](ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
+[**getSetupState**](ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
+[**setup**](ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+[**setupCommPrefs**](ConfigApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
 
 
 <a name="getGarbageCollectionConfig"></a>
@@ -33,7 +33,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -46,6 +46,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -57,10 +61,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
@@ -86,7 +86,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -96,8 +96,8 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | lakeFS garbage collection config |  -  |
-| **401** | Unauthorized |  -  |
+**200** | lakeFS garbage collection config |  -  |
+**401** | Unauthorized |  -  |
 
 <a name="getLakeFSVersion"></a>
 # **getLakeFSVersion**
@@ -120,7 +120,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -133,6 +133,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -144,10 +148,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
@@ -173,7 +173,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -183,8 +183,8 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | lakeFS version |  -  |
-| **401** | Unauthorized |  -  |
+**200** | lakeFS version |  -  |
+**401** | Unauthorized |  -  |
 
 <a name="getSetupState"></a>
 # **getSetupState**
@@ -204,7 +204,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
@@ -240,8 +240,8 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | lakeFS setup state |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | lakeFS setup state |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="getStorageConfig"></a>
 # **getStorageConfig**
@@ -264,7 +264,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -277,6 +277,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -288,10 +292,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
@@ -317,7 +317,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -327,8 +327,8 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | lakeFS storage configuration |  -  |
-| **401** | Unauthorized |  -  |
+**200** | lakeFS storage configuration |  -  |
+**401** | Unauthorized |  -  |
 
 <a name="setup"></a>
 # **setup**
@@ -348,7 +348,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     Setup setup = new Setup(); // Setup | 
@@ -368,9 +368,9 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **setup** | [**Setup**](Setup.md)|  | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **setup** | [**Setup**](Setup.md)|  |
 
 ### Return type
 
@@ -388,10 +388,10 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | user created successfully |  -  |
-| **400** | bad request |  -  |
-| **409** | setup was already called |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | user created successfully |  -  |
+**400** | bad request |  -  |
+**409** | setup was already called |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="setupCommPrefs"></a>
 # **setupCommPrefs**
@@ -411,7 +411,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     CommPrefsInput commPrefsInput = new CommPrefsInput(); // CommPrefsInput | 
@@ -431,9 +431,9 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **commPrefsInput** | [**CommPrefsInput**](CommPrefsInput.md)|  | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **commPrefsInput** | [**CommPrefsInput**](CommPrefsInput.md)|  |
 
 ### Return type
 
@@ -451,8 +451,8 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | communication preferences saved successfully |  -  |
-| **409** | setup was already completed |  -  |
-| **412** | wrong setup state for this operation |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | communication preferences saved successfully |  -  |
+**409** | setup was already completed |  -  |
+**412** | wrong setup state for this operation |  -  |
+**0** | Internal Server Error |  -  |
 

@@ -22,28 +22,9 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.api.model.ImportPagination;
 import io.lakefs.clients.api.model.RangeMetadata;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * IngestRangeCreationResponse
@@ -58,8 +39,6 @@ public class IngestRangeCreationResponse {
   @SerializedName(SERIALIZED_NAME_PAGINATION)
   private ImportPagination pagination;
 
-  public IngestRangeCreationResponse() {
-  }
 
   public IngestRangeCreationResponse range(RangeMetadata range) {
     
@@ -72,6 +51,7 @@ public class IngestRangeCreationResponse {
    * @return range
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public RangeMetadata getRange() {
     return range;
@@ -94,6 +74,7 @@ public class IngestRangeCreationResponse {
    * @return pagination
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public ImportPagination getPagination() {
     return pagination;
@@ -103,7 +84,6 @@ public class IngestRangeCreationResponse {
   public void setPagination(ImportPagination pagination) {
     this.pagination = pagination;
   }
-
 
 
   @Override
@@ -145,97 +125,5 @@ public class IngestRangeCreationResponse {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("range");
-    openapiFields.add("pagination");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to IngestRangeCreationResponse
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!IngestRangeCreationResponse.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in IngestRangeCreationResponse is not found in the empty JSON string", IngestRangeCreationResponse.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!IngestRangeCreationResponse.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `IngestRangeCreationResponse` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-      // validate the optional field `range`
-      if (jsonObj.get("range") != null && !jsonObj.get("range").isJsonNull()) {
-        RangeMetadata.validateJsonObject(jsonObj.getAsJsonObject("range"));
-      }
-      // validate the optional field `pagination`
-      if (jsonObj.get("pagination") != null && !jsonObj.get("pagination").isJsonNull()) {
-        ImportPagination.validateJsonObject(jsonObj.getAsJsonObject("pagination"));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!IngestRangeCreationResponse.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'IngestRangeCreationResponse' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<IngestRangeCreationResponse> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(IngestRangeCreationResponse.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<IngestRangeCreationResponse>() {
-           @Override
-           public void write(JsonWriter out, IngestRangeCreationResponse value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public IngestRangeCreationResponse read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of IngestRangeCreationResponse given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of IngestRangeCreationResponse
-  * @throws IOException if the JSON string is invalid with respect to IngestRangeCreationResponse
-  */
-  public static IngestRangeCreationResponse fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, IngestRangeCreationResponse.class);
-  }
-
- /**
-  * Convert an instance of IngestRangeCreationResponse to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

@@ -20,33 +20,15 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import org.openapitools.jackson.nullable.JsonNullable;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * location for placing an object when staging it
  */
+@ApiModel(description = "location for placing an object when staging it")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class StagingLocation {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
@@ -61,8 +43,6 @@ public class StagingLocation {
   @SerializedName(SERIALIZED_NAME_PRESIGNED_URL)
   private String presignedUrl;
 
-  public StagingLocation() {
-  }
 
   public StagingLocation physicalAddress(String physicalAddress) {
     
@@ -75,6 +55,7 @@ public class StagingLocation {
    * @return physicalAddress
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public String getPhysicalAddress() {
     return physicalAddress;
@@ -97,6 +78,7 @@ public class StagingLocation {
    * @return token
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "opaque staging token to use to link uploaded object")
 
   public String getToken() {
     return token;
@@ -119,6 +101,7 @@ public class StagingLocation {
    * @return presignedUrl
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "if presign=true is passed in the request, this field will contain a presigned URL to use when uploading")
 
   public String getPresignedUrl() {
     return presignedUrl;
@@ -128,7 +111,6 @@ public class StagingLocation {
   public void setPresignedUrl(String presignedUrl) {
     this.presignedUrl = presignedUrl;
   }
-
 
 
   @Override
@@ -183,107 +165,5 @@ public class StagingLocation {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("physical_address");
-    openapiFields.add("token");
-    openapiFields.add("presigned_url");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("token");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to StagingLocation
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!StagingLocation.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in StagingLocation is not found in the empty JSON string", StagingLocation.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!StagingLocation.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `StagingLocation` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : StagingLocation.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if ((jsonObj.get("physical_address") != null && !jsonObj.get("physical_address").isJsonNull()) && !jsonObj.get("physical_address").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));
-      }
-      if (!jsonObj.get("token").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `token` to be a primitive type in the JSON string but got `%s`", jsonObj.get("token").toString()));
-      }
-      if ((jsonObj.get("presigned_url") != null && !jsonObj.get("presigned_url").isJsonNull()) && !jsonObj.get("presigned_url").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `presigned_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("presigned_url").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!StagingLocation.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'StagingLocation' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<StagingLocation> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(StagingLocation.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<StagingLocation>() {
-           @Override
-           public void write(JsonWriter out, StagingLocation value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public StagingLocation read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of StagingLocation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StagingLocation
-  * @throws IOException if the JSON string is invalid with respect to StagingLocation
-  */
-  public static StagingLocation fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, StagingLocation.class);
-  }
-
- /**
-  * Convert an instance of StagingLocation to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

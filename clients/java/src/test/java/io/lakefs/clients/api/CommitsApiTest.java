@@ -18,8 +18,8 @@ import io.lakefs.clients.api.model.Commit;
 import io.lakefs.clients.api.model.CommitCreation;
 import io.lakefs.clients.api.model.CommitList;
 import io.lakefs.clients.api.model.Error;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,15 +29,19 @@ import java.util.Map;
 /**
  * API tests for CommitsApi
  */
-@Disabled
+@Ignore
 public class CommitsApiTest {
 
     private final CommitsApi api = new CommitsApi();
 
+    
     /**
      * create commit
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void commitTest() throws ApiException {
@@ -45,27 +49,33 @@ public class CommitsApiTest {
         String branch = null;
         CommitCreation commitCreation = null;
         String sourceMetarange = null;
-        Commit response = api.commit(repository, branch, commitCreation, sourceMetarange);
+                Commit response = api.commit(repository, branch, commitCreation, sourceMetarange);
         // TODO: test validations
     }
-
+    
     /**
      * get commit
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void getCommitTest() throws ApiException {
         String repository = null;
         String commitId = null;
-        Commit response = api.getCommit(repository, commitId);
+                Commit response = api.getCommit(repository, commitId);
         // TODO: test validations
     }
-
+    
     /**
      * get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void logBranchCommitsTest() throws ApiException {
@@ -73,8 +83,8 @@ public class CommitsApiTest {
         String branch = null;
         String after = null;
         Integer amount = null;
-        CommitList response = api.logBranchCommits(repository, branch, after, amount);
+                CommitList response = api.logBranchCommits(repository, branch, after, amount);
         // TODO: test validations
     }
-
+    
 }

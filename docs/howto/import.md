@@ -12,15 +12,17 @@ redirect_from:
 # Import data into lakeFS
 {: .no_toc }
 
+
+The simplest way to bring data into lakeFS is by [copying it](#copying-data-into-a-lakefs-repository), but this approach may not be suitable when a lot of data is involved.
+To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). With this approach, lakeFS only creates pointers to your existing objects in your new repository.
+
 {% include toc.html %}
 
 ## Zero-copy import
 
-### Importing using the lakeFS UI
-
 #### Prerequisites
 
-lakeFS must have permissions to list the objects at the source object store,
+lakeFS must have permissions to list the objects in the source object store,
 and in the same region of your destination bucket.
 In addition, see the following storage provider specific instructions:
 
@@ -80,7 +82,7 @@ See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limita
 The following requirements and limitations apply when the import source is an ADLS Gen2 account:
 
 1. Import is supported only from a folder. Prefix import will not work.
-2. lakeFS requires a hint in the URL to understand that the provided account URL is ADLS Gen2  
+2. lakeFS requires a hint in the URL to understand that the provided account URL is ADLS Gen2
 
 ```
    For account URL:
@@ -98,40 +100,32 @@ No specific prerequisites
 
 ---
 
-lakeFS supports two ways to ingest objects from the object store without copying the data:
+### Using the lakeFS UI
 
-1. [Importing using the lakeFS UI](#importing-using-the-lakefs-ui) - A UI dialog to trigger an import to a designated import branch. It creates a commit from all imported objects.
-1. [Importing using lakectl cli](#importing-using-lakectl-cli) - You can use the [`lakectl` CLI command](../reference/cli.md#lakectl) to create uncommitted objects in a branch. It will make sequential calls between the CLI and the server.
+To import using the UI, lakeFS must have permissions to list the objects in the source object store.
+{: .note }
 
-#### Using the import wizard
+1. In your repository's main page, click the _Import_ button to open the import dialog:
 
-Clicking the Import button from any branch will open the following dialog:
+   ![img.png](../assets/img/UI-Import-Dialog.png)
 
-![Import dialog example configured with S3](../assets/img/UI-Import-Dialog.png)
+2. Under _Import from_, fill in the location on your object store you would like to import from.
+3. Fill in the import destination in lakeFS and a commit message.
 
-If it's the first import to the selected branch, it will create the import branch named `_<branch_name>_imported`.
-lakeFS will import all objects from the Source URI to the import branch under the given prefix.
+Once the import is complete, you can merge the changes from the import branch to the source branch.
 
-The UI will update periodically with the amount of objects imported. How long it takes depends on the amount of objects to be imported but will roughly be a few thousand objects per second.
+#### Notes
+{: .no_toc }
 
-![img.png](../assets/img/ui-import-waiting.png)
+* On the first import to a branch, a dedicated branch named `_<branch_name>_imported` will be created. lakeFS will import all objects to this branch under the given prefix.
+* The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
-Once the import is completed, you can merge the changes from the import branch to the source branch.
+### _lakectl import_
 
-![img.png](../assets/img/ui-import-completed.png)
+Prerequisite: have [lakectl](../quickstart/first_commit.md#install-lakectl) installed.
 
-
-### Importing using lakectl cli
-
-The `lakectl` cli supports _import_ and _ingest_ commands to import objects from an external source.
-
-- The _import_ command acts the same as the UI import wizard. It imports (zero copy) and commits the changes on `_<branch_name>_imported` branch with an optional flag to also merge the changes to `<branch_name>`.
-- The _Ingest_ is listing the source bucket (and optional prefix) from the client, and creating pointers to the returned objects in lakeFS. The objects will be staged on the branch.
-
-
-#### Using the `lakectl import` command
-
-##### Usage
+The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to a dedicated branch, with an optional
+flag to merge the changes to `<branch_name>`.
 
 <div class="tabs">
 <ul>
@@ -162,18 +156,18 @@ lakectl import \
 </div>
 </div>
 
-The imported objects will be committed to `_my-branch_imported` branch. If the branch does not exist, it will be created. The flag `--merge` will merge the branch `_my-branch_imported` to  `my-branch` after a successful import.
+The imported objects will be committed to the `_my-branch_imported`, creating it if it doesn't exists.
+Using the `--merge` flag will merge `_my-branch_imported` to `my-branch` after a successful import.
 
+### _lakectl ingest_
 
-#### Using the `lakectl ingest` command
+Prerequisite: have [lakectl](../quickstart/first_commit.md#install-lakectl) installed.
 
-##### Prerequisites
+The _ingest_ command adds the objects to lakeFS by listing them on the client side.
+The added objects will appear as uncommitted changes.
 
-1. The user calling `lakectl ingest` has permissions to list the objects at the source object store.
-2. _Recommended_: The lakeFS installation has read permissions to the objects being ingested (to support downloading them directly from the lakeFS server)
-3. The source path is **not** a storage namespace used by lakeFS. For example, if `lakefs://my-repo` created with storage namespace `s3://my-bucket`, then `s3://my-bucket/*` cannot be an ingestion source.
-
-##### Usage
+The user calling `lakectl ingest` needs to have permissions to list the objects in the source object store.
+{: .note }
 
 <div class="tabs">
 <ul>
@@ -219,20 +213,13 @@ The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION
 </div>
 
 
-### Limitations to importing data
+### Limitations
 
-Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured to use S3, you cannot import data from Azure.
-
-Import is available for S3, GCP, Azure and the local storage adapters.
-
-Although created by lakeFS, import branches behave like any other branch:
-Authorization policies, CI/CD triggering, branch protection rules and all other lakeFS concepts apply to them as well.
-{: .note }
-
-#### Importing from local storage
-
-For security reasons you need to enable import for the local storage adapter by setting `blockstore.local.import_enabled` and specifying the allowed import paths `blockstore.local.allowed_external_prefixes` described in the [configuration](../reference/configuration.md).
-Since there are some differences between object-stores and file-systems in the way directories/prefixes are treated, local import is allowed only for directories.
+1. Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured to use S3, you cannot import data from Azure.
+2. Import is available for S3, GCP and Azure.
+3. For security reasons, if you are lakeFS on top of your local disk, you need to enable the import feature explicitly. 
+   To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference](../reference/configuration.md)).
+   Since there are some differences between object-stores and file-systems in the way directories/prefixes are treated, local import is allowed only for directories.
 
 ### Working with imported data
 

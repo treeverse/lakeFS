@@ -153,6 +153,7 @@ func (a *Adapter) BlockstoreType() string {
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 	info.PreSignSupport = false
+	info.PreSignSupportUI = false
 	info.ImportSupport = false
 	return info
 }
