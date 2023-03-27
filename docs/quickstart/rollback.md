@@ -1,6 +1,6 @@
 ---
 title: 5️⃣ Roll back Changes
-description: TODO
+description: lakeFS quickstart / Rollback the changes made to show how lakeFS can be used to revert changes made in error. 
 parent: ⭐ Quickstart ⭐
 nav_order: 25
 has_children: false

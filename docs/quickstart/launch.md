@@ -1,6 +1,6 @@
 ---
 title: 1️⃣ Run lakeFS
-description: TODO
+description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample repository and data under Docker Compose
 parent: ⭐ Quickstart ⭐
 nav_order: 5
 has_children: false

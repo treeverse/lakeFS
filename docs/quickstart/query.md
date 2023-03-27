@@ -1,6 +1,6 @@
 ---
 title: 2️⃣ Query the data
-description: TODO
+description: lakeFS quickstart / Query the pre-populated data using lakeFS' built-in DuckDB browser
 parent: ⭐ Quickstart ⭐
 nav_order: 10
 has_children: false

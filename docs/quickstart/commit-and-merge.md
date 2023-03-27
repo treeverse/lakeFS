@@ -1,6 +1,6 @@
 ---
 title: 4️⃣ Commit and Merge
-description: TODO
+description: lakeFS quickstart / Commit the change and merge it back into the main branhch
 parent: ⭐ Quickstart ⭐
 nav_order: 20
 has_children: false

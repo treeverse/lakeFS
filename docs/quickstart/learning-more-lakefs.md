@@ -1,7 +1,7 @@
 ---
 layout: default
 title: 🧑🏻‍🎓 Learn more about lakeFS
-description: TODO
+description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more. 
 parent: ⭐ Quickstart ⭐
 nav_order: 99
 has_children: false
