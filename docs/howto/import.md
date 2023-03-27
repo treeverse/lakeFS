@@ -20,10 +20,10 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 
 ## Zero-copy import
 
-#### Prerequisites
+### Prerequisites
 
 lakeFS must have permissions to list the objects in the source object store,
-and in the same region of your destination bucket.
+and the source bucket must be in the same region of your destination bucket.  
 In addition, see the following storage provider specific instructions:
 
 <div class="tabs">
