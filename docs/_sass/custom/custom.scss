@@ -998,3 +998,20 @@ div.highlighter-rouge{
 		color: $teal-green !important;
 	}
 }
+
+.quickstart {
+	border-width: 0px;
+	padding: 2px;
+	min-width: min-content;
+	max-width: max-content;
+	box-shadow: none;
+}
+
+.quickstart tr td:first-child {
+	padding-right: 8px;
+	width: 50px;
+}
+
+.quickstart h3 {
+	margin-top: 5px !important;
+}
