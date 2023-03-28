@@ -126,6 +126,8 @@ type DataLakeWalker struct {
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
+	// We are limiting the ADLS Gen2 walker to traverse directories only. This is to avoid a bug where we traverse the parent folder as well
+	// due to the use of NewListBlobsHierarchyPager
 	storageURI = storageURI.JoinPath("/")
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
