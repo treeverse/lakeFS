@@ -29,13 +29,15 @@ const OPERATION_KEY: &str = "operation";
 const TIMESTAMP_KEY: &str = "timestamp";
 
 pub(crate) fn construct_storage_config(config: GatewayConfig) -> HashMap<String, String> {
-    let mut s3_config: HashMap<String, String> = HashMap::new();
-    s3_config.insert(s3_storage_options::AWS_ACCESS_KEY_ID.to_string(), config.key);
-    s3_config.insert(s3_storage_options::AWS_ENDPOINT_URL.to_string(), config.endpoint);
-    s3_config.insert(s3_storage_options::AWS_S3_ADDRESSING_STYLE.to_string(), "path".to_string());
-    s3_config.insert(s3_storage_options::AWS_SECRET_ACCESS_KEY.to_string(), config.secret);
-    s3_config.insert(s3_storage_options::AWS_STORAGE_ALLOW_HTTP.to_string(), "true".to_string());
-    s3_config.insert(s3_storage_options::AWS_REGION.to_string(), "us-east-1".to_string());
+
+    let s3_config: HashMap<String, String> = HashMap::from([
+        (s3_storage_options::AWS_ACCESS_KEY_ID.to_string(), config.key),
+        (s3_storage_options::AWS_ENDPOINT_URL.to_string(), config.endpoint),
+        (s3_storage_options::AWS_S3_ADDRESSING_STYLE.to_string(), "path".to_string()),
+        (s3_storage_options::AWS_SECRET_ACCESS_KEY.to_string(), config.secret),
+        (s3_storage_options::AWS_STORAGE_ALLOW_HTTP.to_string(), "true".to_string()),
+        (s3_storage_options::AWS_REGION.to_string(), "us-east-1".to_string())
+    ]);
     s3_config
 }
 
