@@ -61,6 +61,7 @@ services:
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE
+      - ESTI_ADLS_IMPORT_BASE_URL
     working_dir: /lakefs
     command:
       - /bin/sh
