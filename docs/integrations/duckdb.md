@@ -40,6 +40,8 @@ SET s3_url_style='path';
 * `s3_url_style` needs to be set to `path`
 * `s3_region` is the S3 region on which your bucket resides. If local storage, or not S3, then just set it to `us-east-1`. 
 
+#### Configuring the Connection
+
 If lakeFS is not running on an SSL-secured server (for example, you are just running it locally) then you need to also run
 
 ```sql
