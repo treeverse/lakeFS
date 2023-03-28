@@ -162,7 +162,7 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
-	sharedWorkers            = 1
+	sharedWorkers            = 15
 	pendingTasksPerWorker    = 3
 	workersMaxDrainDuration  = 5 * time.Second
 )
