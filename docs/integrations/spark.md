@@ -18,10 +18,11 @@ redirect_from:
 # Using lakeFS with Spark
 {: .no_toc }
 
-There are two ways to use lakeFS with Spark:
+## Ways to use lakeFS with Spark
 
-* [With the S3-compatible API](#use-the-s3-compatible-api): Scalable and simpler to set up.
-* [With the lakeFS Hadoop FileSystem](#use-the-lakefs-hadoop-filesystem): Highly scalable, data flows directly from client to storage.
+* [The S3-compatible API](#use-the-s3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
+* [The lakeFS FileSystem](#use-the-lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
+   * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode-beta): Best of both worlds, but still in beta. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 
 {: .pb-5 }
 
@@ -411,7 +412,7 @@ interact with your data on lakeFS.
 Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.12
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.13
   ```
 
   </div>
@@ -419,7 +420,7 @@ Add the package to your `spark-submit` command:
 In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
 ```
-io.lakefs:hadoop-lakefs-assembly:0.1.12
+io.lakefs:hadoop-lakefs-assembly:0.1.13
 ```
 
 Once installed, it should look something like this:
@@ -460,7 +461,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.12 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.13 \
               io.example.ExampleClass
 ```
   </div>
@@ -569,10 +570,96 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-### Notes for the lakeFS Hadoop FileSystem
+### Hadoop FileSystem in Presigned mode <sup>BETA</sup>
+_Available starting version 0.1.13 of the FileSystem_
 
-* Since data will not be sent to the lakeFS server, using this mode maximizes data security.
-* The FileSystem implementation is tested with the latest Spark 2.X (Hadoop 2) and Spark 3.X (Hadoop 3) Bitnami images.
+In this mode, the lakeFS server is responsible for authenticating with your storage.
+The client will still perform data operations directly on the storage.
+To do so, it will use pre-signed storage URLs provided by the lakeFS server.
+
+When using this mode, you don't need to configure the client with access to your storage:
+
+<div class="tabs">
+  <ul>
+    <li><a href="#config-cli">CLI</a></li>
+    <li><a href="#config-scala">Scala</a></li>
+    <li><a href="#config-pyspark">PySpark</a></li>
+    <li><a href="#config-xml">XML Configuration</a></li>
+    <li><a href="#config-databricks">Databricks</a></li>
+  </ul> 
+  <div markdown="1" id="config-cli">
+```shell
+spark-shell --conf spark.hadoop.fs.access.mode=presigned \
+              --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
+              --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
+              --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
+              --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.13 \
+              io.example.ExampleClass
+```
+  </div>
+  <div markdown="1" id="config-scala">
+
+```scala
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.mode", "presigned")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
+spark.sparkContext.hadoopConfiguration.set("fs.lakefs.endpoint", "https://example-org.us-east-1.lakefscloud.io/api/v1")
+```
+  </div>
+  <div markdown="1" id="config-pyspark">
+
+```python
+sc._jsc.hadoopConfiguration().set("fs.lakefs.access.mode", "presigned")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.access.key", "AKIAlakefs12345EXAMPLE")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.secret.key", "abc/lakefs/1234567bPxRfiCYEXAMPLEKEY")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.endpoint", "https://example-org.us-east-1.lakefscloud.io/api/v1")
+```
+  </div>
+  <div markdown="1" id="config-xml">
+
+Make sure that you load the lakeFS FileSystem into Spark by running it with `--packages` or `--jars`,
+and then add these into a configuration file, e.g., `$SPARK_HOME/conf/hdfs-site.xml`:
+
+```xml
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>fs.lakefs.access.mode</name>
+        <value>presigned</value>
+    </property>
+    <property>
+        <name>fs.lakefs.impl</name>
+        <value>io.lakefs.LakeFSFileSystem</value>
+    </property>
+    <property>
+        <name>fs.lakefs.access.key</name>
+        <value>AKIAlakefs12345EXAMPLE</value>
+    </property>
+    <property>
+        <name>fs.lakefs.secret.key</name>
+        <value>abc/lakefs/1234567bPxRfiCYEXAMPLEKEY</value>
+    </property>
+    <property>
+        <name>fs.lakefs.endpoint</name>
+        <value>https://example-org.us-east-1.lakefscloud.io/api/v1</value>
+    </property>
+</configuration>
+```
+  </div>
+  <div markdown="1" id="config-databricks">
+
+Add the following the cluster's configuration under `Configuration ➡️ Advanced options`:
+
+```
+spark.hadoop.fs.access.mode presigned
+spark.hadoop.fs.lakefs.impl io.lakefs.LakeFSFileSystem
+spark.hadoop.fs.lakefs.access.key AKIAlakefs12345EXAMPLE
+spark.hadoop.fs.lakefs.secret.key abc/lakefs/1234567bPxRfiCYEXAMPLEKEY
+spark.hadoop.fs.lakefs.endpoint https://example-org.us-east-1.lakefscloud.io/api/v1
+```
 
 ## Case Study: SimilarWeb
 
