@@ -20,6 +20,86 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 
 ## Zero-copy import
 
+### Prerequisites
+
+lakeFS must have permissions to list the objects in the source object store,
+and the source bucket must be in the same region of your destination bucket.  
+In addition, see the following storage provider specific instructions:
+
+<div class="tabs">
+<ul>
+  <li><a href="#aws-s3">AWS S3</a></li>
+  <li><a href="#azure-storage">Azure Storage</a></li>
+  <li><a href="#gcs">Google Cloud Storage</a></li>
+</ul>
+<div markdown="1" id="aws-s3">
+
+### AWS S3: Importing from public buckets
+
+lakeFS needs access to the imported location to first list the files to import and later read the files upon users request.
+
+There are some use cases where the user would like to import from a destination which isn't owned by the account running lakeFS.
+For example, importing public datasets to experiment with lakeFS and Spark.
+
+lakeFS will require additional permissions to read from public buckets. For example, for S3 public buckets,
+the following policy needs to be attached to the lakeFS S3 service-account to allow access to public buckets, while blocking access to other owned buckets:
+
+  ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "PubliclyAccessibleBuckets",
+         "Effect": "Allow",
+         "Action": [
+            "s3:GetBucketVersioning",
+            "s3:ListBucket",
+            "s3:GetBucketLocation",
+            "s3:ListBucketMultipartUploads",
+            "s3:ListBucketVersions",
+            "s3:GetObject",
+            "s3:GetObjectVersion",
+            "s3:AbortMultipartUpload",
+            "s3:ListMultipartUploadParts"
+         ],
+         "Resource": ["*"],
+         "Condition": {
+           "StringNotEquals": {
+             "s3:ResourceAccount": "<YourAccountID>"
+           }
+         }
+       }
+     ]
+   }
+   ```
+
+</div>
+<div markdown="1" id="azure-storage">
+See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
+
+### Azure Data Lake Gen2
+
+The following requirements and limitations apply when the import source is an ADLS Gen2 account:
+
+1. Import is supported only from a folder. Prefix import will not work.
+2. lakeFS requires a hint in the URL to understand that the provided account URL is ADLS Gen2
+
+```
+   For account URL:
+      https://<my-account>.core.windows.net/path/to/import/
+
+   Please add the *adls* subdomain to the URL as follows:
+      https://<my-account>.adls.core.windows.net/path/to/import/
+```
+
+</div>
+<div markdown="1" id="gcs">
+No specific prerequisites
+</div>
+</div>
+
+---
+
 ### Using the lakeFS UI
 
 To import using the UI, lakeFS must have permissions to list the objects in the source object store.
@@ -151,46 +231,6 @@ The following table describes the results of making changes in the original buck
 | Create                               | Object not visible                           | Object not accessible      |
 | Overwrite                            | Object visible with outdated metadata        | Updated object accessible  |
 | Delete                               | Object visible                               | Object not accessible      |
-
-
-### AWS S3: Importing from public buckets
-
-lakeFS needs access to the imported location to first list the files to import and later read the files upon users request. 
-
-There are some use cases where the user would like to import from a destination which isn't owned by the account running lakeFS.
-For example, importing public datasets to experiment with lakeFS and Spark.
-
-lakeFS will require additional permissions to read from public buckets. For example, for S3 public buckets,
-the following policy needs to be attached to the lakeFS S3 service-account to allow access to public buckets, while blocking access to other owned buckets:
-
-  ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Sid": "PubliclyAccessibleBuckets",
-         "Effect": "Allow",
-         "Action": [
-            "s3:GetBucketVersioning",
-            "s3:ListBucket",
-            "s3:GetBucketLocation",
-            "s3:ListBucketMultipartUploads",
-            "s3:ListBucketVersions",
-            "s3:GetObject",
-            "s3:GetObjectVersion",
-            "s3:AbortMultipartUpload",
-            "s3:ListMultipartUploadParts"
-         ],
-         "Resource": ["*"],
-         "Condition": {
-           "StringNotEquals": {
-             "s3:ResourceAccount": "<YourAccountID>"
-           }
-         }
-       }
-     ]
-   }
-   ```
 
 ## Copying data into a lakeFS repository
 
