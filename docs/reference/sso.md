@@ -40,6 +40,8 @@ lakeFS Cloud leverage Auth0's capabilities for authentication, therefore, we're 
 Cloud
 {: .label .label-green }
 
+> **Note**: this guide is based on [Okta's Create OIDC app integrations guide](https://help.okta.com/en-us/Content/Topics/Apps/Apps_App_Integration_Wizard_OIDC.htm).
+
 Steps:
 1. Login to your Okta account
 2. Select **Applications > Applications**, then **Create App Integration**.
@@ -143,8 +145,8 @@ Once you finish registering lakeFS Cloud with Azure AD, save the **Application (
 
 ## Enterprise
 
-lakeFS Enterprise provides a sidecar microservice that handles the authentication called Fluffy.
-Once you've onboarded to [lakeFS Enterprise](../enterprise.md) and have access to the authentication sidecar, you can configure one of the supported authentication methods below.
+lakeFS Enterprise provides a secondary service, running side-by-side with lakeFS which handles the authentication, this service is called Fluffy.
+Once you've onboarded to [lakeFS Enterprise](../enterprise.md) and have access to the authentication service (Fluffy), you can configure one of the supported authentication methods below.
 lakeFS Enterprise leverage Helm's capabilities to run the sidecar with it's configuration, on top of the specific-authentication method, please review the [Helm configuration](#helm).
 
 ### AD FS (using SAML)
@@ -152,10 +154,18 @@ lakeFS Enterprise leverage Helm's capabilities to run the sidecar with it's conf
 Enterprise
 {: .label .label-purple }
 
+> **Note**: AD FS integration is using certificates to sign & encrypt requests going out from Fluffy and decrypt incoming requests from AD FS server.
+
 In order for fluffy to work, some values must be configured, update the relevant values section in this file and comment it out.
 1. Replace `fluffy.saml_rsa_public_cert` and `fluffy.saml_rsa_private_key` with real certificate values
 2. Replace `fluffyConfig.auth.saml.idp_metadata_url` to the metadata URL of the provider <adfs-auth.company.com>
 3. Replace `fluffyConfig.auth.saml.external_user_id_claim_name` with the claim name representing user id name in ADFS
+4. Replace `lakefs.company.com` with the lakeFS server endpoint.
+
+If you'd like to generate the certificates using OpenSSL, you can take a look at the following example:
+```sh
+openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com" -
+```
 
 lakeFS Enterprise Configuration:
 ```yaml
@@ -223,6 +233,7 @@ In order for fluffy to work some values must be configured, update the relevant 
 4. Replace in `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters for the target OIDC provider for logout. In this example it's API auth0 returnTo=https://lakefs.company.com/oidc/login
 5. Replace the values in `fluffyConfig.auth.oidc.client_id` and `fluffyConfig.auth.oidc.client_secret` for OIDC. 
 6. Replace the values in `logout_client_id_query_parameter`, note it should match the the key/query param that represents the client id and required by the specific OIDC provider
+7. Replace `lakefs.company.com` with the lakeFS server endpoint.
 
 lakeFS Enterprise Configuration:
 ```yaml
