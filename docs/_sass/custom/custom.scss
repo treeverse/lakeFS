@@ -999,19 +999,24 @@ div.highlighter-rouge{
 	}
 }
 
-.quickstart {
-	border-width: 0px;
-	padding: 2px;
-	min-width: min-content;
-	max-width: max-content;
-	box-shadow: none;
+.quickstart-steps {
+	padding: 10px;
 }
 
-.quickstart tr td:first-child {
-	padding-right: 8px;
-	width: 50px;
+.row {
+	display: flex;
+	flex-direction: row;
 }
 
-.quickstart h3 {
-	margin-top: 5px !important;
+.col {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+
+	&.step-num {
+		margin-right: 20px;
+		& > img {
+			width: 40px;
+		}
+	}
 }
