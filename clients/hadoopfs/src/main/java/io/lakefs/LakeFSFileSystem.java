@@ -583,10 +583,9 @@ public class LakeFSFileSystem extends FileSystem {
      * Based on the S3AFileSystem implementation.
      * Note: there is a race here if this is called on a path which mkdir is trying to create.
      * 
-     * This should be not be used from outside. TODO(johnnyaug): make it private.
      * @param f path to start for empty directory markers
      */
-    public void deleteEmptyDirectoryMarkers(Path f) {
+    void deleteEmptyDirectoryMarkers(Path f) {
         while (true) {
             try {
                 ObjectLocation objectLocation = pathToObjectLocation(f);

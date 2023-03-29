@@ -5,9 +5,9 @@
 
 ## Properties
 
-| Name | Type | Description | Notes |
-|------------ | ------------- | ------------- | -------------|
-|**continuationToken** | **String** |  |  [optional] |
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**continuationToken** | **String** |  |  [optional]
 
 
 

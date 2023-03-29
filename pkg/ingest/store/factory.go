@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
@@ -95,7 +96,7 @@ func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*gs.GCSWalker, erro
 	return gs.NewGCSWalker(svc), nil
 }
 
-func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*azure.BlobWalker, error) {
+func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (block.Walker, error) {
 	storageAccount, err := azure.ExtractStorageAccount(importURL)
 	if err != nil {
 		return nil, err
@@ -116,12 +117,27 @@ func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (*azure.BlobWalker,
 		azureParams.StorageAccount = storageAccount
 		azureParams.StorageAccessKey = ""
 	}
-	c, err := azure.BuildAzureServiceClient(azureParams)
+	client, err := azure.BuildAzureServiceClient(azureParams)
 	if err != nil {
 		return nil, err
 	}
 
-	return azure.NewAzureBlobWalker(c)
+	isHNS := isHierarchicalNamespaceEnabled(importURL)
+	if isHNS {
+		return azure.NewAzureDataLakeWalker(client)
+	}
+	return azure.NewAzureBlobWalker(client)
+}
+
+// isHierarchicalNamespaceEnabled - identify if hns enabled on the account,
+// based on the import URL.
+// Until we enable a way to extract the account information, we assume it based on the domain used in import:
+// https://<account>.<blob|adls>.core.windows.net/
+// adls - azure data lake storage
+func isHierarchicalNamespaceEnabled(u *url.URL) bool {
+	const importURLParts = 3
+	n := strings.SplitN(u.Host, ".", importURLParts)
+	return len(n) == importURLParts && n[1] == "adls"
 }
 
 func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*WalkerWrapper, error) {

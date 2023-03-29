@@ -2,6 +2,43 @@
 
 ## UNRELEASED
 
+## v0.97.5
+
+:bug: Bugs fixed:
+
+- Fix: show GC rules missing warning not showing up (#5582)
+- Fix: dotgraph commit urls are broken (#5583)
+- Fix azure data lake v2 import (#5563)
+- fix presign UI  (#5586)
+
+## v0.97.4
+
+:bug: Bugs fixed:
+
+- Fix lakeFS clients - revert OpenAPI generator cli version (#5572)
+
+## v0.97.3
+
+:new: What's new:
+
+- Delta Lake Tables diff - BETA: Compare Delta Lake tables between different refs - UI only (#5427)
+- Cherry-pick a commit to a branch (#5483)
+- Diff UX improvements (#5414)
+- DuckDB/lakeFS improvements (#5430)
+- Display images in markdown with support for lakefs:// URIs (#5449)
+- DynamoDB KV error count without context cancellation (#5512)
+
+:bug: Bugs fixed:
+
+- Fix inconsistent marshaling in DynamoDB KV (#5409)
+- Fix S3 accept header prefer application/xml (#5447)
+- Fix lakectl table write to non TTY non string column (#5500)
+- Fix S3 adapter access content length without nil check (#5499)
+- Fix UI DuckDB fix re-query updated data (#5536)
+- Fix object name wrapping in UI (#5532)
+- Fix iterator panic on close after failed SeekGE (#5516)
+- Remove stack trace from error message in the UI (#5523)
+
 ## v0.96.1
 
 :bug: Bugs fixed:

@@ -35,12 +35,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class OtfDiffApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public OtfDiffApi() {
         this(Configuration.getDefaultApiClient());
@@ -56,22 +53,6 @@ public class OtfDiffApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -95,26 +76,13 @@ public class OtfDiffApi {
      </table>
      */
     public okhttp3.Call otfDiffCall(String repository, String leftRef, String rightRef, String tablePath, String type, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "left_ref" + "}", localVarApiClient.escapeString(leftRef.toString()))
-            .replace("{" + "right_ref" + "}", localVarApiClient.escapeString(rightRef.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "left_ref" + "\\}", localVarApiClient.escapeString(leftRef.toString()))
+            .replaceAll("\\{" + "right_ref" + "\\}", localVarApiClient.escapeString(rightRef.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -139,44 +107,46 @@ public class OtfDiffApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call otfDiffValidateBeforeCall(String repository, String leftRef, String rightRef, String tablePath, String type, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling otfDiff(Async)");
         }
-
+        
         // verify the required parameter 'leftRef' is set
         if (leftRef == null) {
             throw new ApiException("Missing the required parameter 'leftRef' when calling otfDiff(Async)");
         }
-
+        
         // verify the required parameter 'rightRef' is set
         if (rightRef == null) {
             throw new ApiException("Missing the required parameter 'rightRef' when calling otfDiff(Async)");
         }
-
+        
         // verify the required parameter 'tablePath' is set
         if (tablePath == null) {
             throw new ApiException("Missing the required parameter 'tablePath' when calling otfDiff(Async)");
         }
-
+        
         // verify the required parameter 'type' is set
         if (type == null) {
             throw new ApiException("Missing the required parameter 'type' when calling otfDiff(Async)");
         }
+        
 
-        return otfDiffCall(repository, leftRef, rightRef, tablePath, type, _callback);
+        okhttp3.Call localVarCall = otfDiffCall(repository, leftRef, rightRef, tablePath, type, _callback);
+        return localVarCall;
 
     }
 

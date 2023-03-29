@@ -1,15 +1,15 @@
 # RefsApi
 
-All URIs are relative to */api/v1*
+All URIs are relative to *http://localhost/api/v1*
 
-| Method | HTTP request | Description |
-|------------- | ------------- | -------------|
-| [**diffRefs**](RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references |
-| [**dumpRefs**](RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store |
-| [**findMergeBase**](RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references |
-| [**logCommits**](RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits. |
-| [**mergeIntoBranch**](RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references |
-| [**restoreRefs**](RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store |
+Method | HTTP request | Description
+------------- | ------------- | -------------
+[**diffRefs**](RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
+[**dumpRefs**](RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
+[**findMergeBase**](RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
+[**logCommits**](RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
+[**mergeIntoBranch**](RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
+[**restoreRefs**](RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 
 
 <a name="diffRefs"></a>
@@ -31,7 +31,7 @@ import io.lakefs.clients.api.RefsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -44,6 +44,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -55,10 +59,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     RefsApi apiInstance = new RefsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -85,16 +85,16 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **leftRef** | **String**| a reference (could be either a branch or a commit ID) | |
-| **rightRef** | **String**| a reference (could be either a branch or a commit ID) to compare against | |
-| **after** | **String**| return items after this value | [optional] |
-| **amount** | **Integer**| how many items to return | [optional] [default to 100] |
-| **prefix** | **String**| return items prefixed with this value | [optional] |
-| **delimiter** | **String**| delimiter used to group common prefixes by | [optional] |
-| **type** | **String**|  | [optional] [default to three_dot] [enum: two_dot, three_dot] |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **leftRef** | **String**| a reference (could be either a branch or a commit ID) |
+ **rightRef** | **String**| a reference (could be either a branch or a commit ID) to compare against |
+ **after** | **String**| return items after this value | [optional]
+ **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **prefix** | **String**| return items prefixed with this value | [optional]
+ **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
+ **type** | **String**|  | [optional] [default to three_dot] [enum: two_dot, three_dot]
 
 ### Return type
 
@@ -102,7 +102,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -112,10 +112,10 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | diff between refs |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | diff between refs |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="dumpRefs"></a>
 # **dumpRefs**
@@ -136,7 +136,7 @@ import io.lakefs.clients.api.RefsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -149,6 +149,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -160,10 +164,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     RefsApi apiInstance = new RefsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -183,9 +183,9 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
 
 ### Return type
 
@@ -193,7 +193,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -203,11 +203,11 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **201** | refs dump |  -  |
-| **400** | Validation Error |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**201** | refs dump |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="findMergeBase"></a>
 # **findMergeBase**
@@ -228,7 +228,7 @@ import io.lakefs.clients.api.RefsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -241,6 +241,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -252,10 +256,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     RefsApi apiInstance = new RefsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -277,11 +277,11 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **sourceRef** | **String**| source ref | |
-| **destinationBranch** | **String**| destination branch name | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **sourceRef** | **String**| source ref |
+ **destinationBranch** | **String**| destination branch name |
 
 ### Return type
 
@@ -289,7 +289,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -299,11 +299,11 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | Found the merge base |  -  |
-| **400** | Validation Error |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | Found the merge base |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="logCommits"></a>
 # **logCommits**
@@ -324,7 +324,7 @@ import io.lakefs.clients.api.RefsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -337,6 +337,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -348,10 +352,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     RefsApi apiInstance = new RefsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -377,15 +377,15 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **ref** | **String**|  | |
-| **after** | **String**| return items after this value | [optional] |
-| **amount** | **Integer**| how many items to return | [optional] [default to 100] |
-| **objects** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a specific object | [optional] |
-| **prefixes** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional] |
-| **limit** | **Boolean**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional] |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **ref** | **String**|  |
+ **after** | **String**| return items after this value | [optional]
+ **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **objects** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a specific object | [optional]
+ **prefixes** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional]
+ **limit** | **Boolean**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
 
 ### Return type
 
@@ -393,7 +393,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -403,10 +403,10 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | commit log |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | commit log |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="mergeIntoBranch"></a>
 # **mergeIntoBranch**
@@ -427,7 +427,7 @@ import io.lakefs.clients.api.RefsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -440,6 +440,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -451,10 +455,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     RefsApi apiInstance = new RefsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -477,12 +477,12 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **sourceRef** | **String**| source ref | |
-| **destinationBranch** | **String**| destination branch name | |
-| **merge** | [**Merge**](Merge.md)|  | [optional] |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **sourceRef** | **String**| source ref |
+ **destinationBranch** | **String**| destination branch name |
+ **merge** | [**Merge**](Merge.md)|  | [optional]
 
 ### Return type
 
@@ -490,7 +490,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -500,14 +500,14 @@ public class Example {
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | merge completed |  -  |
-| **400** | Validation Error |  -  |
-| **401** | Unauthorized |  -  |
-| **403** | Forbidden |  -  |
-| **404** | Resource Not Found |  -  |
-| **409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
-| **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | merge completed |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
+**412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
+**0** | Internal Server Error |  -  |
 
 <a name="restoreRefs"></a>
 # **restoreRefs**
@@ -528,7 +528,7 @@ import io.lakefs.clients.api.RefsApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
+    defaultClient.setBasePath("http://localhost/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -541,6 +541,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -552,10 +556,6 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     RefsApi apiInstance = new RefsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -575,10 +575,10 @@ public class Example {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **refsDump** | [**RefsDump**](RefsDump.md)|  | |
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **refsDump** | [**RefsDump**](RefsDump.md)|  |
 
 ### Return type
 
@@ -586,7 +586,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -596,9 +596,9 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | refs successfully loaded |  -  |
-| **400** | Validation Error |  -  |
-| **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **0** | Internal Server Error |  -  |
+**200** | refs successfully loaded |  -  |
+**400** | Validation Error |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**0** | Internal Server Error |  -  |
 

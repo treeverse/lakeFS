@@ -24,7 +24,7 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 {% include_relative includes/prerequisites.md %}
 
-## Grant DynamoDB permissions to lakeFS
+## Grant lakeFS permissions to DynamoDB
 
 By default, lakeFS will create the required DynamoDB table if it does not already exist. You'll have to give the IAM role used by lakeFS the following permissions:
 

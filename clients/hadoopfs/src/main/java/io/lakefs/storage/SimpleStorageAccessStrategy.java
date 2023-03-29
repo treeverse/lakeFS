@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.Path;
 
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
+import io.lakefs.LakeFSLinker;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.ObjectsApi;
 import io.lakefs.clients.api.StagingApi;
@@ -58,8 +59,8 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
             physicalOut = physicalFs.create(physicalPath);
         }
         MetadataClient metadataClient = new MetadataClient(physicalFs);
-        LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(lakeFSFileSystem, lfsClient,
-                stagingLocation, objectLocation, physicalUri, metadataClient, physicalOut);
+        LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation);
+        LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(physicalUri, metadataClient, physicalOut, linker);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }

@@ -45,10 +45,22 @@ archives:
   format_overrides:
     - goos: windows
       format: zip
-- format: binary
+  format: binary
   id: lakectl
   name_template: "{{ .Os }}_{{ .Arch }}/lakectl"
   builds:
+   - lakectl
+- name_template: >-
+    {{ .ProjectName }}_{{ .Version }}_{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else }}{{ .Arch }}{{ end }}
+  format: tar.gz
+  format_overrides:
+    - goos: windows
+      format: zip
+  files:
+    - src: '{{ .Env.DELTA_ARTIFACTS_LOCATION }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
+      strip_parent: true
+  builds:
+   - lakefs
    - lakectl
 checksum:
   name_template: 'checksums.txt'

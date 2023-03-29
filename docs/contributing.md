@@ -41,8 +41,9 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    1. [Node.js & npm](https://www.npmjs.com/get-npm)
    1. [Maven](https://maven.apache.org/) to build and test Spark client codes.
    1. Java 8
-     * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
+      * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
+   1. *Optional* - [Rust & Cargo](https://www.rust-lang.org/tools/install) (only needed if you want to build the Delta Lake diff plugin)
 
 1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS). 
 
@@ -142,6 +143,7 @@ To render the documentation locally and preview changes you can run the Jeykll s
    ```sh
    docker run --rm \
               --name lakefs_docs \
+              -e TZ="Etc/UTC" \
               --publish 4000:4000 --publish 35729:35729 \
               --volume="$PWD/docs:/srv/jekyll:Z" \
               --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
@@ -169,7 +171,7 @@ To render the documentation locally and preview changes you can run the Jeykll s
    This can take a short while—you'll see something like this in the server's output when it's done. 
    
    ```
-   ...done in 34.714073461 seconds.
+   ...done in 34.714073460 seconds.
    ```
 
    Your page will automatically reload to show the changes.

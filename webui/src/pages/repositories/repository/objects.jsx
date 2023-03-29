@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
-import * as dayjs from 'dayjs'
+import dayjs from 'dayjs';
 import {UploadIcon} from "@primer/octicons-react";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
@@ -212,7 +212,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         })
         try {
             if (config.pre_sign_support_ui) {
-                const getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support);
+                const getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support_ui);
 
                 const putResp = await fetch(getResp.presigned_url, {
                     method: 'PUT',
@@ -317,7 +317,7 @@ const TreeContainer = ({
                            refreshToken
                        }) => {
     const {results, error, loading, nextPage} = useAPIWithPagination(() => {
-        return objects.list(repo.id, reference.id, path, after, config.pre_sign_support)
+        return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui)
     }, [repo.id, reference.id, path, after, refreshToken]);
     const initialState = {
         inProgress: false,
@@ -386,7 +386,7 @@ const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
             error={error}
             loading={loading}
             showFullNavigator={false}
-            presign={config.pre_sign_support}
+            presign={config.pre_sign_support_ui}
         />
     );
 }

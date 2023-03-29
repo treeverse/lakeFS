@@ -20,30 +20,12 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * ObjectStats
@@ -123,14 +105,12 @@ public class ObjectStats {
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
-  private Map<String, String> metadata = new HashMap<>();
+  private Map<String, String> metadata = null;
 
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
-  public ObjectStats() {
-  }
 
   public ObjectStats path(String path) {
     
@@ -143,6 +123,7 @@ public class ObjectStats {
    * @return path
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getPath() {
     return path;
@@ -165,6 +146,7 @@ public class ObjectStats {
    * @return pathType
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public PathTypeEnum getPathType() {
     return pathType;
@@ -187,6 +169,7 @@ public class ObjectStats {
    * @return physicalAddress
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\"s3://...\", \"gs://...\", etc.) Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET ")
 
   public String getPhysicalAddress() {
     return physicalAddress;
@@ -209,6 +192,7 @@ public class ObjectStats {
    * @return checksum
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
   public String getChecksum() {
     return checksum;
@@ -231,6 +215,7 @@ public class ObjectStats {
    * @return sizeBytes
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Long getSizeBytes() {
     return sizeBytes;
@@ -253,6 +238,7 @@ public class ObjectStats {
    * @return mtime
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Unix Epoch in seconds")
 
   public Long getMtime() {
     return mtime;
@@ -272,7 +258,7 @@ public class ObjectStats {
 
   public ObjectStats putMetadataItem(String key, String metadataItem) {
     if (this.metadata == null) {
-      this.metadata = new HashMap<>();
+      this.metadata = new HashMap<String, String>();
     }
     this.metadata.put(key, metadataItem);
     return this;
@@ -283,6 +269,7 @@ public class ObjectStats {
    * @return metadata
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Map<String, String> getMetadata() {
     return metadata;
@@ -305,6 +292,7 @@ public class ObjectStats {
    * @return contentType
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "Object media type")
 
   public String getContentType() {
     return contentType;
@@ -314,7 +302,6 @@ public class ObjectStats {
   public void setContentType(String contentType) {
     this.contentType = contentType;
   }
-
 
 
   @Override
@@ -368,122 +355,5 @@ public class ObjectStats {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("path");
-    openapiFields.add("path_type");
-    openapiFields.add("physical_address");
-    openapiFields.add("checksum");
-    openapiFields.add("size_bytes");
-    openapiFields.add("mtime");
-    openapiFields.add("metadata");
-    openapiFields.add("content_type");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("path");
-    openapiRequiredFields.add("path_type");
-    openapiRequiredFields.add("physical_address");
-    openapiRequiredFields.add("checksum");
-    openapiRequiredFields.add("mtime");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to ObjectStats
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!ObjectStats.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in ObjectStats is not found in the empty JSON string", ObjectStats.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!ObjectStats.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `ObjectStats` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : ObjectStats.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if (!jsonObj.get("path").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `path` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path").toString()));
-      }
-      if (!jsonObj.get("path_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `path_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path_type").toString()));
-      }
-      if (!jsonObj.get("physical_address").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));
-      }
-      if (!jsonObj.get("checksum").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `checksum` to be a primitive type in the JSON string but got `%s`", jsonObj.get("checksum").toString()));
-      }
-      if ((jsonObj.get("content_type") != null && !jsonObj.get("content_type").isJsonNull()) && !jsonObj.get("content_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `content_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("content_type").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ObjectStats.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ObjectStats' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ObjectStats> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ObjectStats.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<ObjectStats>() {
-           @Override
-           public void write(JsonWriter out, ObjectStats value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public ObjectStats read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of ObjectStats given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ObjectStats
-  * @throws IOException if the JSON string is invalid with respect to ObjectStats
-  */
-  public static ObjectStats fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ObjectStats.class);
-  }
-
- /**
-  * Convert an instance of ObjectStats to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

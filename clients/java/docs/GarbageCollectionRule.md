@@ -5,10 +5,10 @@
 
 ## Properties
 
-| Name | Type | Description | Notes |
-|------------ | ------------- | ------------- | -------------|
-|**branchId** | **String** |  |  |
-|**retentionDays** | **Integer** |  |  |
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**branchId** | **String** |  | 
+**retentionDays** | **Integer** |  | 
 
 
 

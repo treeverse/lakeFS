@@ -641,7 +641,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
@@ -755,7 +755,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS
         timeout-minutes: 8
@@ -772,7 +772,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
       - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS presigned
         timeout-minutes: 8
         working-directory: test/spark
@@ -786,7 +786,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image]
@@ -893,7 +893,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/lakectl_metastore
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
       - name: dbt Logs with failure
         if: ${{ failure() }}
@@ -1016,7 +1016,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=1000 lakefs
+        run: docker-compose logs --tail=2500 lakefs
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
@@ -1255,6 +1255,7 @@ jobs:
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/import-test-cases
 
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}

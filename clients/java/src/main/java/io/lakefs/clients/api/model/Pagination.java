@@ -20,28 +20,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * Pagination
@@ -64,8 +45,6 @@ public class Pagination {
   @SerializedName(SERIALIZED_NAME_MAX_PER_PAGE)
   private Integer maxPerPage;
 
-  public Pagination() {
-  }
 
   public Pagination hasMore(Boolean hasMore) {
     
@@ -78,6 +57,7 @@ public class Pagination {
    * @return hasMore
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Next page is available")
 
   public Boolean getHasMore() {
     return hasMore;
@@ -100,6 +80,7 @@ public class Pagination {
    * @return nextOffset
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Token used to retrieve the next page")
 
   public String getNextOffset() {
     return nextOffset;
@@ -123,6 +104,7 @@ public class Pagination {
    * @return results
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Number of values found in the results")
 
   public Integer getResults() {
     return results;
@@ -146,6 +128,7 @@ public class Pagination {
    * @return maxPerPage
   **/
   @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "Maximal number of entries per page")
 
   public Integer getMaxPerPage() {
     return maxPerPage;
@@ -155,7 +138,6 @@ public class Pagination {
   public void setMaxPerPage(Integer maxPerPage) {
     this.maxPerPage = maxPerPage;
   }
-
 
 
   @Override
@@ -201,105 +183,5 @@ public class Pagination {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("has_more");
-    openapiFields.add("next_offset");
-    openapiFields.add("results");
-    openapiFields.add("max_per_page");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("has_more");
-    openapiRequiredFields.add("next_offset");
-    openapiRequiredFields.add("results");
-    openapiRequiredFields.add("max_per_page");
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to Pagination
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!Pagination.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in Pagination is not found in the empty JSON string", Pagination.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!Pagination.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `Pagination` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : Pagination.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
-        }
-      }
-      if (!jsonObj.get("next_offset").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `next_offset` to be a primitive type in the JSON string but got `%s`", jsonObj.get("next_offset").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!Pagination.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'Pagination' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<Pagination> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(Pagination.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<Pagination>() {
-           @Override
-           public void write(JsonWriter out, Pagination value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public Pagination read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of Pagination given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Pagination
-  * @throws IOException if the JSON string is invalid with respect to Pagination
-  */
-  public static Pagination fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, Pagination.class);
-  }
-
- /**
-  * Convert an instance of Pagination to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 
