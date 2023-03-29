@@ -51,11 +51,7 @@ archives:
   builds:
    - lakectl
 - name_template: >-
-    {{ .ProjectName }}_
-    {{ .Version }}_
-    {{- title .Os }}_
-    {{- if eq .Arch "amd64" }}x86_64
-    {{- else }}{{ .Arch }}{{ end }}
+    {{ .ProjectName }}_{{ .Version }}_{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else }}{{ .Arch }}{{ end }}
   format: tar.gz
   format_overrides:
     - goos: windows
