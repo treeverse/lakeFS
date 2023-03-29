@@ -21,7 +21,8 @@ type configuration struct {
 	Server struct {
 		EndpointURL string `mapstructure:"endpoint_url"`
 	}
-	Metastore struct {
+	CheckForLatestVersion bool `mapstructure:"check_latest_version"`
+	Metastore             struct {
 		Type string `mapstructure:"type"`
 		Hive struct {
 			URI           string `mapstructure:"uri"`
@@ -80,7 +81,7 @@ const (
 	ConfigServerEndpointURLKey = "server.endpoint_url"
 	ConfigAccessKeyIDKey       = "credentials.access_key_id"
 	ConfigSecretAccessKey      = "credentials.secret_access_key"
-
+	CheckForLatestVersionKey   = "check_latest_version"
 	// Defaults
 	DefaultHiveDBLocationURI = "file:/user/hive/warehouse/"
 	DefaultServerEndpointURL = "http://127.0.0.1:8000"
@@ -89,6 +90,7 @@ const (
 func setDefaults() {
 	viper.SetDefault(HiveDBLocationURIKey, DefaultHiveDBLocationURI)
 	viper.SetDefault(ConfigServerEndpointURLKey, DefaultServerEndpointURL)
+	viper.SetDefault(CheckForLatestVersionKey, true)
 }
 
 func (c *Config) Err() error {

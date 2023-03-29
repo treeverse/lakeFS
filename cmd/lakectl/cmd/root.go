@@ -25,14 +25,17 @@ import (
 
 const (
 	DefaultMaxIdleConnsPerHost = 100
-	// version template
-	versionTemplate = `lakectl version: {{.LakectlVersion}}
-{{ if .LakeFSVersion }}lakeFS version: {{.LakeFSVersion}}{{ end }}
-
-{{ if .LakectlLatestVersion }}{{ print "lakectl out of date!"| yellow }} (Available: {{ .LakectlLatestVersion }}){{ end }}
-{{ if .LakeFSLatestVersion }}{{ print "lakeFS out of date!"| yellow }} (Available: {{ .LakeFSLatestVersion }}){{ end }}
-{{ if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }} {{ end }}
+	// version templates
+	getLakeFSVersionErrorTemplate = `{{ print "Failed getting lakectl server version:" | red }} {{ . }}
 `
+	getLatestVersionErrorTemplate = `{{ print "Failed getting latest version:" | red }} {{ . }}
+`
+	versionTemplate = `lakectl version: {{.LakectlVersion }}
+{{- if .LakeFSVersion }}{{ "\n" }}lakeFS version: {{.LakeFSVersion}}{{ "\n" }}{{ end -}}
+{{- if .UpgradeURL }}{{ "\n" }}{{ end -}}
+{{- if .LakectlLatestVersion }}{{ print "lakectl out of date!"| yellow }} (Available: {{ .LakectlLatestVersion }}){{ "\n" }}{{ end -}}
+{{- if .LakeFSLatestVersion }}{{ print "lakeFS out of date!"| yellow }} (Available: {{ .LakeFSLatestVersion }}){{ "\n" }}{{ end -}}
+{{- if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }}{{ "\n" }}{{ end -}}`
 )
 
 type versionInfo struct {
@@ -105,40 +108,54 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		versionVal, err := cmd.Flags().GetBool("version")
-		if err != nil {
-			DieErr(err)
-		}
-		if !versionVal {
+
+		if !MustBool(cmd.Flags().GetBool("version")) {
 			cmd.Help()
 			return
 		}
-		log := logging.Default()
-		info := versionInfo{LakectlVersion: version.Version, UpgradeURL: version.DefaultReleasesURL}
+
+		verbose := MustBool(cmd.Flags().GetBool("verbose"))
+
+		info := versionInfo{LakectlVersion: version.Version}
 
 		// get lakeFS server version
-		client := getClient()
-		releases := version.NewReleasesSource()
-		resp, err := client.GetLakeFSVersionWithResponse(context.Background())
-		if err != nil {
-			log.WithError(err).Debug("failed to get lakeFS version")
-		} else if resp.JSON200 != nil {
-			lakefsVersion := resp.JSON200
-			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
-			if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
-				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
+		if cfg.Values.CheckForLatestVersion {
+
+			client := getClient()
+			releases := version.NewReleasesSource()
+			resp, err := client.GetLakeFSVersionWithResponse(context.Background())
+			if err != nil {
+				if verbose {
+					WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
+				}
 			}
-			if swag.StringValue(lakefsVersion.UpgradeUrl) != "" {
-				info.UpgradeURL = swag.StringValue(lakefsVersion.UpgradeUrl)
+			if resp.JSON200 == nil {
+				if verbose {
+					WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
+				}
+			} else {
+				lakefsVersion := resp.JSON200
+				info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
+				if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
+					info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
+				}
+				if swag.StringValue(lakefsVersion.UpgradeUrl) != "" {
+					info.UpgradeURL = swag.StringValue(lakefsVersion.UpgradeUrl)
+				}
 			}
-		}
-		// get lakectl latest version
-		latest, err := version.CheckLatestVersion(releases, info.LakectlVersion)
-		if err != nil {
-			log.WithError(err).Debug("failed to get latest version")
-		} else {
-			if latest.Outdated {
-				info.LakectlLatestVersion = latest.Current
+			// get lakectl latest version
+			latest, err := version.CheckLatestVersion(releases, info.LakectlVersion)
+			if err != nil {
+				if verbose {
+					WriteIfVerbose(getLatestVersionErrorTemplate, err)
+				}
+			} else {
+				if latest.Outdated {
+					info.LakectlLatestVersion = latest.Current
+					if info.UpgradeURL == "" {
+						info.UpgradeURL = version.DefaultReleasesURL
+					}
+				}
 			}
 		}
 		Write(versionTemplate, info)
@@ -217,6 +234,8 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
 	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
 	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
+	rootCmd.Flags().Bool("check-latest-version", true, "check if the current version is latest of lakectl and lakeFS (silent fail)")
+	_ = viper.BindPFlag("check_latest_version", rootCmd.Flag("check-latest-version"))
 }
 
 // initConfig reads in config file and ENV variables if set.
