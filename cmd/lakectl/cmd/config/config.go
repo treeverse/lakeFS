@@ -68,14 +68,12 @@ func ReadConfig() (c *Config) {
 	setDefaults()
 	c.err = viper.ReadInConfig()
 	logger := logging.Default().WithField("file", viper.ConfigFileUsed())
-	logger.Info("reading config")
 	if errors.Is(c.err, viper.ConfigFileNotFoundError{}) {
 		logger.WithError(c.err).Fatal("failed to read config file")
 	}
 	if c.err != nil {
-		logger.WithError(c.err).Fatal("failed to read config file @@@@")
+		logger.WithError(c.err).Fatal("failed to read config file")
 	}
-	logger.WithField("CONFIG", c.Values.Server.EndpointURL).Info("read config")
 	return
 }
 

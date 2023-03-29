@@ -97,6 +97,9 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 		"green": func(arg interface{}) string {
 			return text.FgHiGreen.Sprint(arg)
 		},
+		"blue": func(arg interface{}) string {
+			return text.FgHiBlue.Sprint(arg)
+		},
 		"bold": func(arg interface{}) string {
 			return text.Bold.Sprint(arg)
 		},

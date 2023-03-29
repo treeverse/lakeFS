@@ -8,15 +8,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/go-openapi/swag"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tcnksm/go-latest"
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
 	config_types "github.com/treeverse/lakefs/pkg/config"
@@ -26,7 +25,23 @@ import (
 
 const (
 	DefaultMaxIdleConnsPerHost = 100
+	// version template
+	versionTemplate = `lakectl version: {{.LakectlVersion}}
+{{ if .LakeFSVersion }}lakeFS version: {{.LakeFSVersion}}{{ end }}
+
+{{ if .LakectlLatestVersion }}{{ print "lakectl out of date!"| yellow }} (Available: {{ .LakectlLatestVersion }}){{ end }}
+{{ if .LakeFSLatestVersion }}{{ print "lakeFS out of date!"| yellow }} (Available: {{ .LakeFSLatestVersion }}){{ end }}
+{{ if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }} {{ end }}
+`
 )
+
+type versionInfo struct {
+	LakectlVersion       string
+	LakeFSVersion        string
+	LakectlLatestVersion string
+	LakeFSLatestVersion  string
+	UpgradeURL           string
+}
 
 var (
 	cfgFile string
@@ -90,32 +105,44 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		var (
-			errLakeFSVersion error
-			lakeFSVersion    string
-		)
 		versionVal, err := cmd.Flags().GetBool("version")
 		if err != nil {
 			DieErr(err)
 		}
-		if versionVal {
-			// get lakeFS server version
-			client := getClient()
-			resp, errLakeFSVersion := client.GetLakeFSVersionWithResponse(context.Background())
-			if errLakeFSVersion != nil {
-				// TODO(isan): handle error
-			}
-			if resp.StatusCode() != http.StatusOK {
-				// TODO(isan): handle error
-			}
-			if resp.JSON200 == nil || resp.JSON200.Version == nil {
-				//TODO(isan): handle error
-			}
-			lakeFSVersion = *resp.JSON200.Version
-
+		if !versionVal {
+			cmd.Help()
+			return
 		}
+		log := logging.Default()
+		info := versionInfo{LakectlVersion: version.Version, UpgradeURL: version.DefaultReleasesURL}
+
+		// get lakeFS server version
+		client := getClient()
+		releases := version.NewReleasesSource()
+		resp, err := client.GetLakeFSVersionWithResponse(context.Background())
+		if err != nil {
+			log.WithError(err).Debug("failed to get lakeFS version")
+		} else if resp.JSON200 != nil {
+			lakefsVersion := resp.JSON200
+			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
+			if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
+				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
+			}
+			if swag.StringValue(lakefsVersion.UpgradeUrl) != "" {
+				info.UpgradeURL = swag.StringValue(lakefsVersion.UpgradeUrl)
+			}
+		}
+		// get lakectl latest version
+		latest, err := version.CheckLatestVersion(releases, info.LakectlVersion)
+		if err != nil {
+			log.WithError(err).Debug("failed to get latest version")
+		} else {
+			if latest.Outdated {
+				info.LakectlLatestVersion = latest.Current
+			}
+		}
+		Write(versionTemplate, info)
 	},
-	// Version: version.Version,
 }
 
 func getClient() *api.ClientWithResponses {
@@ -190,52 +217,6 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
 	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
 	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
-	// fmt.Printf("CFG? %v\n", cfg)
-	// initConfig()
-	// fmt.Println("11111")
-	// clt := getClient()
-	// fmt.Printf("CFG? %v\n", cfg)
-	// fmt.Println("2222")
-
-	cobra.AddTemplateFunc("latestVersion", func(localVersion string) string {
-		initConfig()
-		fmt.Println("11111")
-		clt := getClient()
-		fmt.Println("2222")
-		if clt != nil {
-			resp, err := clt.GetLakeFSVersionWithResponse(context.Background())
-			if err != nil {
-				fmt.Println("error getting lakeFS version: " + err.Error())
-			} else if resp.JSON200 != nil {
-				fmt.Printf("LAKEFS SERVER VERSION: %v\n", *resp.JSON200)
-			} else {
-				fmt.Printf("NOT 2xx: %v\n", *resp)
-			}
-		} else {
-			fmt.Println("CLIENT LAKEFS NIL")
-		}
-		githubTag := &latest.GithubTag{
-			Owner:      "treeverse",
-			Repository: "lakeFS",
-			TagFilterFunc: func(version string) bool {
-				// version start with v is optional and followed by 3 numbers with digits between them.	e.g v0.1.2
-				match, _ := regexp.MatchString(`/^(v*)(0|[1-9]+[0-9]*)\.(0|[1-9]+[0-9]*)\.(0|[1-9]+[0-9]*)$`, version)
-				return match
-			},
-		}
-		res, err := latest.Check(githubTag, "0.1.0")
-		if res == nil {
-			return "its null - err: " + err.Error()
-		}
-		if res.Outdated {
-			return fmt.Sprintf("%s is not latest, you should upgrade to %s", localVersion, res.Current)
-		}
-		if res.New {
-			return fmt.Sprintf("%s is newer than current on source %s", localVersion, res.Current)
-		}
-		return ""
-	})
-	rootCmd.SetVersionTemplate("CHECKL THIS OUT {{.Version}} {{ .Annotations }} LATEST RESPONSE: {{ latestVersion .Version}}")
 }
 
 // initConfig reads in config file and ENV variables if set.
