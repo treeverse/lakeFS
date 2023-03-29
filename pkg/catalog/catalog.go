@@ -1107,6 +1107,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 		return nil, false, fmt.Errorf("%w: list commits without paths", graveler.ErrInvalid)
 	}
 
+	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
 	commitCache, err := lru.New(commitLogCacheSize)
 	if err != nil {
@@ -1339,7 +1340,6 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 			}
 		} else {
 			// check if the key exists in both commits
-
 			// First, check if we can compare the ranges.
 			// If ranges match, or if no ranges for both commits, we can skip the key lookup.
 			lRangeID, err := c.Store.GetRangeIDByKey(ctx, repository, left, key)
