@@ -38,7 +38,7 @@ public class LakeFSLinker {
                     throw e;
                 }
             } catch (ApiException e1) {
-                throw new IOException("link lakeFS path to physical address", e);
+                throw new IOException("failed link lakeFS path to physical address", e);
             }
         }
         lfs.deleteEmptyDirectoryMarkers(new Path(objectLoc.toString()).getParent());
