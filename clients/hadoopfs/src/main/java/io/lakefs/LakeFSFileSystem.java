@@ -1039,11 +1039,4 @@ public class LakeFSFileSystem extends FileSystem {
             return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
         }
     }
-
-    public static void main(String[] args) {
-        import spark.implicits._
-        val df = Array(1,2,3).toSeq.toDF("gaga")
-        df.write.save("lakefs://example-repo/main/tbl")
-
-    }
 }
