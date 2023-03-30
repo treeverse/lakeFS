@@ -61,7 +61,7 @@ jobs:
       - name: Check internal links
         uses: untitaker/hyperlink@0.1.26
         with:
-          args: docs/_site --sources docs --check-anchors --github-actions
+          args: docs/_site --sources docs --check-anchors
 
       - name: Check internal and external links
         id: lychee
