@@ -122,7 +122,7 @@ Once the import is complete, you can merge the changes from the import branch to
 
 ### _lakectl import_
 
-Prerequisite: have [lakectl](../quickstart/first_commit.md#install-lakectl) installed.
+Prerequisite: have [lakectl](/reference/cli.html) installed.
 
 The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to a dedicated branch, with an optional
 flag to merge the changes to `<branch_name>`.

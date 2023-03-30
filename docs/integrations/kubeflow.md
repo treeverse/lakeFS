@@ -61,7 +61,7 @@ Check out the full API [reference](https://docs.lakefs.io/reference/api.html).
 ### Non-function-based ContainerOps
 
 To implement a non-function based ContainerOp, you should use the [`treeverse/lakectl`](https://hub.docker.com/r/treeverse/lakectl) docker image.
-With this image, you can run [lakeFS CLI](../quickstart/first_commit.md) commands to execute the desired lakeFS operation.
+With this image, you can run [lakectl](/reference/cli.html) commands to execute the desired lakeFS operation.
 
 For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configurations as environment variables named:
 
