@@ -65,7 +65,7 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@v1.6.1
         with:
-          args: docs/_site --no-progress --exclude https://ajax.googleapis.com/ --exclude https://www.linkedin.com/company/treeverse --exclude s3:// --exclude lakefs:// --exclude gs://
+          args: docs/_site --no-progress --exclude https://ajax.googleapis.com/ --exclude https://www.linkedin.com/company/treeverse --exclude s3:// --exclude lakefs:// --exclude gs:// --exclude https://account.blob.core.windows.net/ --exclude http://127.0.0.1:8888/  --exclude http://127.0.0.1:8000/setup --exclude https://twitter.com/lakeFS 
           fail: true
           jobSummary: true
           format: markdown
