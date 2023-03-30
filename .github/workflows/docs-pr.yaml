@@ -48,7 +48,7 @@ jobs:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dist: docs/_site
-          failOnError: false
+          failOnError: true
           teardown: true
           build: |
             echo Deploying preview to surge.sh
@@ -61,7 +61,7 @@ jobs:
         uses: lycheeverse/lychee-action@v1.6.1
         with:
           args: docs/_site --no-progress --exclude https://ajax.googleapis.com/ --exclude https://www.linkedin.com/company/treeverse --exclude s3:// --exclude lakefs:// --exclude gs:// --exclude https://account.blob.core.windows.net/ --exclude http://127.0.0.1:8888/  --exclude http://127.0.0.1:8000 --exclude http://127.0.0.1:4000 --exclude https://twitter.com/lakeFS 
-          fail: false
+          fail: true
           jobSummary: true
           format: markdown
         env:
