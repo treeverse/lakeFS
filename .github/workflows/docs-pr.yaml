@@ -9,7 +9,7 @@ on:
 
 jobs:
   preview-site-and-check-links:
-    name: Docs Pull Request
+    name: Docs PR - Publish preview and check links
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out
@@ -33,11 +33,6 @@ jobs:
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/
 
-      - name: Link Checker
-        uses: untitaker/hyperlink@0.1.26
-        with:
-          args: docs/_site
-          
       - name: Publish preview site
         uses: afc163/surge-preview@v1
         id: preview_step
@@ -50,3 +45,8 @@ jobs:
           build: |
             echo Deploying to surge.sh
 
+      - name: Link Checker
+        uses: untitaker/hyperlink@0.1.26
+        with:
+          args: docs/_site
+          
