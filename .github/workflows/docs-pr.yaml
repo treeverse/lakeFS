@@ -33,18 +33,28 @@ jobs:
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/
 
+      - name: inspect build
+        working-directory: docs
+        run: |
+          ls -l _site
+          ls -l .
+          df -h _site
+
       - name: Publish preview site
         uses: afc163/surge-preview@v1
         id: preview_step
+        working-directory: docs
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           # github_token: ${{ secrets.GITHUB_TOKEN }}
-          dist: docs/_site
+          dist: _site
           failOnError: true
           teardown: true
           build: |
-            ls -l
-            echo Deploying to surge.sh
+            echo Deploying preview to surge.sh
+
+      - name: Get the preview_url
+        run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
 
       # - name: Link Checker
       #   uses: untitaker/hyperlink@0.1.26
