@@ -1,0 +1,52 @@
+name: Docs Pull Request
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+
+jobs:
+  preview-site-and-check-links:
+    name: Docs Pull Request
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1.79.0
+        with:
+          working-directory: docs
+          ruby-version: 2.6
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+# unclear if we need this yet
+      # - name: Setup base URL env var
+      #   run: |
+      #     export PRNUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+      #     echo BASEURL="https://rmoff-lakefs-preview-pr-"$PRNUMBER".surge.sh/" >> $GITHUB_ENV
+
+      - name: Build latest
+        id: build-latest
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml -d _site/
+
+      - name: Link Checker
+        uses: untitaker/hyperlink@0.1.26
+        with:
+          args: docs/_site
+          
+      - name: Publish preview site
+        uses: afc163/surge-preview@v1
+        id: preview_step
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          # github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: docs/_site
+          failOnError: true
+          teardown: true
+          build: |
+            echo Deploying to surge.sh
+
