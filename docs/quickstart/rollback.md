@@ -4,7 +4,7 @@ description: lakeFS quickstart / Rollback the changes made to show how lakeFS ca
 parent: ⭐ Quickstart ⭐
 nav_order: 25
 has_children: false
-next: ["Resources for learning more about lakeFS", "./getting-started.html"]
+next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"]
 previous: ["Merge the branch back into main", "./commit-and-merge.html"]
 ---
 

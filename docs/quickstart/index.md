@@ -18,11 +18,11 @@ redirect_from:
 
 # lakeFS Quickstart
 
-**Welcome to lakeFS 👋🏻** `:axolotl-waving:`
+**Welcome to lakeFS 👋🏻**
 
 lakeFS provides a "git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
 
-This quickstart will introduce you to some of the core ideas in lakeFS can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in five short sections: 
+This quickstart will introduce you to some of the core ideas in lakeFS and show what you can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in five short sections: 
 
 
 <div class="quickstart-steps">
@@ -57,7 +57,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS can do by
 </div>
 <div class="col">
 <h3>
-<a href="create-branch.html">Branch</a>
+<a href="branch.html">Branch</a>
 </h3>
 <p>Make changes to the data on a new branch</p>
 </div>
