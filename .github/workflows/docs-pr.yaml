@@ -32,18 +32,15 @@ jobs:
       - name: Overlay PR message on each page
         working-directory: docs/_site
         run: |
-          echo "PR_URL=${{ github.event.pull_request.html_url }}" >> $GITHUB_ENV
-          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          PR_URL=${{ github.event.pull_request.html_url }}
+          PR_NUMBER=${{ github.event.pull_request.number }}
 
           html_files=$(find . -name '*.html')
 
-          sed_script='s|\(.*\)\(</body>\)|<div style="position: fixed; top: 5px; left: 5px; padding: 2px; background-color: #e8ac07; font-weight: bold; z-index: 9999; box-shadow: 0 0 10px rgba(0,0,0,0.5);"><a href="'"$PR_URL"'" style="color: black;">This is a preview of PR '"$PR_NUMBER"'</a></div>\n\1\2|'
-
           for file in $html_files; do
-            sed -i -e "$sed_script" $file
+            sed -i -e "s|\(.*\)\(</body>\)|<div style=\"position: fixed; top: 5px; left: 5px; padding: 2px; background-color: #e8ac07; font-weight: bold; z-index: 9999; box-shadow: 0 0 10px rgba(0,0,0,0.5);\"><a href=\"$PR_URL\" style=\"color: black;\">This is a preview of PR $PR_NUMBER</a></div>\n\1\2|" $file
           done
 
-          echo "preview of change:"
           tail -n10 index.html
        
       - name: Publish preview site
