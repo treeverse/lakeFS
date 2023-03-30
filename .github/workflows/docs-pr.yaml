@@ -40,9 +40,7 @@ jobs:
           for file in $html_files; do
             sed -i -e "s|\(.*\)\(</body>\)|<div style=\"position: fixed; top: 5px; left: 5px; padding: 3px; background-color: #e8ac07; font-weight: bold; z-index: 9999; box-shadow: 0 0 10px rgba(0,0,0,0.5);\">ℹ️ This is a preview of PR <a href=\"$PR_URL\" style=\"color: black;\">#$PR_NUMBER</a></div>\n\1\2|" $file
           done
-
-          tail -n10 index.html
-       
+     
       - name: Publish preview site
         uses: afc163/surge-preview@v1
         id: preview_step
@@ -56,7 +54,7 @@ jobs:
             echo Deploying preview to surge.sh
 
       - name: Get the preview_url
-        run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
+        run: echo "url => https://${{ steps.preview_step.outputs.preview_url }}"
 
       - name: Link Checker
         uses: untitaker/hyperlink@0.1.26
