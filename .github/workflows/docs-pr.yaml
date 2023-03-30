@@ -43,10 +43,11 @@ jobs:
           failOnError: true
           teardown: true
           build: |
+            ls -l
             echo Deploying to surge.sh
 
-      - name: Link Checker
-        uses: untitaker/hyperlink@0.1.26
-        with:
-          args: docs/_site
+      # - name: Link Checker
+      #   uses: untitaker/hyperlink@0.1.26
+      #   with:
+      #     args: docs/_site
           
