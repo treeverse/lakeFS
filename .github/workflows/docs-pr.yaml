@@ -8,7 +8,8 @@ on:
       - master
 
 jobs:
-  preview-site-and-check-links:
+  # This job name kept short because it's used in the preview URL
+  preview:
     name: Docs PR - Publish preview and check links
     runs-on: ubuntu-20.04
     steps:
@@ -22,22 +23,10 @@ jobs:
           ruby-version: 2.6
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
-# unclear if we need this yet
-      # - name: Setup base URL env var
-      #   run: |
-      #     export PRNUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-      #     echo BASEURL="https://rmoff-lakefs-preview-pr-"$PRNUMBER".surge.sh/" >> $GITHUB_ENV
-
       - name: Build latest
         id: build-latest
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/
-
-      - name: inspect build
-        working-directory: docs
-        run: |
-          ls -l _site
-          du -h _site
 
       - name: Publish preview site
         uses: afc163/surge-preview@v1
@@ -54,8 +43,8 @@ jobs:
       - name: Get the preview_url
         run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
 
-      # - name: Link Checker
-      #   uses: untitaker/hyperlink@0.1.26
-      #   with:
-      #     args: docs/_site
+      - name: Link Checker
+        uses: untitaker/hyperlink@0.1.26
+        with:
+          args: docs/_site
           
