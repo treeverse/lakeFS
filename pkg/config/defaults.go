@@ -87,7 +87,7 @@ func setDefaults(local bool) {
 
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)
 	viper.SetDefault("security.audit_check_url", "https://audit.lakefs.io/audit")
-	viper.SetDefault("security.check_for_latest_version", true)
+	viper.SetDefault("security.check_latest_version", true)
 
 	viper.SetDefault("email.limit_every_duration", time.Minute)
 	viper.SetDefault("email.burst", 10)

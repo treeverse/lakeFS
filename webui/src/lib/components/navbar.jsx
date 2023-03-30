@@ -7,6 +7,10 @@ import {useAPI} from "../hooks/api";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
+import {
+    FeedPersonIcon
+} from "@primer/octicons-react";
+import Badge from "react-bootstrap/Badge";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
@@ -14,10 +18,24 @@ const NavUserInfo = () => {
     const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
         return config.getLakeFSVersion()
     }, [])
+
     if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
+    const renderNavBarTitle = () => {
+        return (
+        <>
+        <div className="user-menu-notification-indicator"></div>
+        <FeedPersonIcon size={28} verticalAlign={"middle"}/>  <span style={{marginLeft:6, fontSize:18}}>{user.friendly_name || user.id} </span>
+        </>
+        )
+    }
     return (
-        <NavDropdown title={user.friendly_name || user.id} className="navbar-username" align="end">
+        <NavDropdown title={renderNavBarTitle()} className="navbar-username" align="end">
+            {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
+            <NavDropdown.Item href={versionResponse.upgrade_url}>
+                    <span className="user-menu-notification-indicator"></span>
+                    <small>Newer LakeFS Version is Out!</small>
+            </NavDropdown.Item></>}
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
@@ -30,13 +48,6 @@ const NavUserInfo = () => {
             <NavDropdown.Item disabled={true}>
                 <small>lakeFS {versionResponse.version}</small>
             </NavDropdown.Item></>}
-            <NavDropdown.Item disabled={true}>
-                <small>Web UI __buildVersion</small>
-            </NavDropdown.Item>
-            {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
-                <NavDropdown.Item href={versionResponse.upgrade_url}>
-                    <small>upgrade recommended</small>
-                </NavDropdown.Item></>}
         </NavDropdown>
     );
 };
