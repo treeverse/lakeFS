@@ -27,7 +27,7 @@ See discussion on the original [design PR](https://github.com/treeverse/lakeFS/p
 {: .note}
 
 The uncommitted GC will not clean:
-1. Committed objects. See [Committed Garbage Collection](./garbage-collection.md)
+1. Committed objects. See [Committed Garbage Collection](./garbage-collection.html)
 2. Everything mentioned in [what does not get collected](./gc-internals.md#what-does-_not_-get-collected)
 
 ### Prerequisites
