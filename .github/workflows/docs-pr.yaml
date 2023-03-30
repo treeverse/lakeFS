@@ -58,11 +58,6 @@ jobs:
       - name: Get the preview_url
         run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
 
-      - name: Check internal links
-        uses: untitaker/hyperlink@0.1.26
-        with:
-          args: docs/_site --sources docs --check-anchors
-
       - name: Check internal and external links
         id: lychee
         uses: lycheeverse/lychee-action@v1.6.1
@@ -75,3 +70,9 @@ jobs:
           format: markdown
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}          
+
+      - name: Check internal links
+        uses: untitaker/hyperlink@0.1.26
+        with:
+          args: docs/_site --sources docs --check-anchors
+
