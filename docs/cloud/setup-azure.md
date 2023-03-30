@@ -1,41 +1,19 @@
 ---
 layout: default
-title: lakeFS Cloud
-description: lakeFS Cloud is a managed cloud-based data lake versioning platform that helps organizations manage and analyze large amounts of data. It is designed to enable data engineers and data scientists to store, process, and analyze data in a single, scalable platform.
-nav_order: 95
+title: Setting up lakeFS Cloud on Azure
+description: A guide to setting up lakeFS Cloud on Azure
+parent: lakeFS Cloud
+nav_order: 60
 has_children: false
+redirect_from: "/cloud.html"
 ---
 
-# lakeFS Cloud
+# Setting up lakeFS Cloud on Azure
+{: .no_toc }
 
-[lakeFS Cloud](https://lakefs.cloud) is a managed cloud-based data lake versioning platform that helps organizations manage and analyze large amounts of data. It is designed to enable data engineers and data scientists to store, process, and analyze data in a single, scalable platform.
+{: .pb-3 }
 
-***What are the differences between lakeFS OSS and lakeFS Cloud?***
-
-lakeFS Cloud is a fully-managed lakeFS solution, implemented using our best practices, providing high availability, auto-scaling, support and enterprise ready features, such as:
-* [Role-Based Access Control](./reference/rbac.md)
-* [Auditing](./reference/auditing.md)
-* [Single-Sign-On](./reference/sso.md)
-    * SAML
-    * OIDC
-    * AD FS
-    * Okta
-    * Azure AD
-* [Managed Garbage Collection](./reference/managed-gc.md)
-* [Private-Link](./reference/private-link.md)
-* SOC 2 Type II Compliance
-
-Read more on the differences on our [pricing page](https://lakefs.io/pricing/).
-
-## Onboarding
-
-### AWS
-
-Onboarding to AWS cloud is fully automated through [lakefs.cloud](https://lakefs.cloud) self-service onboarding setup wizard.
-
-### Azure
-
-lakeFS saves all the data and the metadata on your storage account In this manual you will create a dedicated storage account for lakeFS and provide lakefs-cloud access to your storage account
+> **_Note_**: lakeFS saves all the data and the metadata on your storage account In this manual you will create a dedicated storage account for lakeFS and provide lakefs-cloud access to your storage account
 
 #### Setting up a Storage container and App registration:
 1. Open your Azure Portal.
@@ -91,7 +69,3 @@ In order to Treeverse to finish onboarding your environment to Azure, we'll need
 * Client (Application) ID
 * Client Secret Password
 * Directory (Tenant) ID
-
-
-## How lakeFS Cloud interacts with your infrastructure
-![](./assets/img/cloud-diagram.svg)

@@ -1,20 +1,20 @@
 ---
 layout: default
 title: Auditing
-parent: Reference
-description: lakeFS Cloud Auditing
-nav_order: 100
+parent: lakeFS Cloud
+description: Auditing is a solution for lakeFS Cloud which enables tracking of events and activities performed within the solution. These logs capture information such as who accessed the solution, what actions were taken, and when they occurred.
+nav_order: 5
 has_children: false
-redirect_from: "/auditing.html"
+redirect_from: "/cloud.html"
 ---
-
-{: .note}
-> Auditing is only available for [lakeFS Cloud](../cloud.md).
 
 # Auditing
 {: .d-inline-block }
-Cloud
+lakeFS Cloud
 {: .label .label-green }
+
+{: .note}
+> Auditing is only available for [lakeFS Cloud](../cloud/).
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 

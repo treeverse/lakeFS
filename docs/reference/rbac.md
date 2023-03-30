@@ -12,18 +12,18 @@ redirect_from:
 
 # Role-Based Access Control (RBAC)
 {: .d-inline-block }
-Cloud
+lakeFS Cloud
 {: .label .label-green }
 
-Enterprise
+lakeFS Enterprise
 {: .label .label-purple }
 {: .no_toc }
 
 
 {: .note}
-> RBAC is only available for [lakeFS Cloud](../cloud.md) and [lakeFS Enterprise](../enterprise.md).
+> RBAC is available on [lakeFS Cloud](../cloud/) and [lakeFS Enterprise](../enterprise/).
 >
-> Using the Open Source? Read more on [ACL-based authorization mechanism](access-control-list.html). 
+> If you're using the open source version of lakeFS then the [ACL-based authorization mechanism](access-control-list.html) is an alternative to RBAC. 
 
 {% include toc.html %}
 

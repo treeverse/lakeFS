@@ -1,21 +1,22 @@
 ---
 layout: default
-title: Private-Link
-description: This section covers Private-Link for lakeFS Cloud.
-parent: Reference
-nav_order: 65
+title: Private Link
+description: Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
+parent: lakeFS Cloud
+nav_order: 30
 has_children: false
+redirect_from: "/cloud.html"
 ---
-
 
 # Private-Link
 {: .d-inline-block }
-Cloud
+lakeFS Cloud
 {: .label .label-green }
 
-
 {: .note}
-> Private-Link is only available for [lakeFS Cloud](../cloud.md).
+> Private Link is only available for [lakeFS Cloud](../cloud/).
+
+Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
 
 {% include toc.html %}
 
@@ -23,18 +24,18 @@ Cloud
 
 At the moment, we support Private-Link only on top of AWS.
 
-Looking for Private-Link for Azure or GCP? [Contact us](mailto:support@treeverse.io)
+Looking for Private Link for Azure or GCP? [Contact us](mailto:support@treeverse.io)
 
-## Front/Back End Access 
+There are two types of Private Link implementation:
 
-**Front-End Access** refers to the API/UI access, basically, if you'd like your lakeFS application to be exposed only to your infrastructure, and not to the whole internet, front-end access is what you're looking for.
+**Front-End Access** refers to API and UI access. Use this option if you'd like your lakeFS application to be exposed only to your infrastructure and not to the whole internet.
 
-**Back-End Access** refers to the network communication between the lakeFS clusters we host, and your infrastructure, if you'd like lakeFS to communicate with your servers privately, and not over the internet, back-end access is what you're looking for.
+**Back-End Access** refers to the network communication between the lakeFS clusters we host, and your infrastructure. Use this option if you'd like lakeFS to communicate with your servers privately and not over the internet.
 
 Front-End and Back-End access doesn't have to go together, and they don't conflict one with another, meaning, if you'd like only front-end access to be configured for private access your API, that's possible, same goes for the back-end access or both of them together.
 
 
-## Onboarding
+## Setting up Private Link
 
 ### Front-End Access
 

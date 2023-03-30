@@ -1,13 +1,13 @@
 ---
 layout: default
-title: Access Control List (ACL)
+title: Access Control Lists (ACLs)
 parent: Reference
-description: Access Control List (ACL)
+description: Access control lists (ACLs) are one of the resource-based options that you can use to manage access to your repositories and objects. There are limits to managing permissions using ACLs.
 nav_order: 100
 has_children: false
 ---
 
-# Access Control List (ACL)
+# Access Control Lists (ACLs)
 {: .no_toc }
 
 {: .note}
@@ -16,7 +16,7 @@ has_children: false
 
 {% include toc.html %}
 
-## ACL
+## ACLs
 
 You can attach Permissions and scope them to groups in the Groups page.
 There are 4 default groups, named after the 4 permissions. Each group is global (applies for all repositories).
