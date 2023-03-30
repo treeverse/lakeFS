@@ -43,8 +43,8 @@ jobs:
       - name: Publish preview site
         uses: afc163/surge-preview@v1
         id: preview_step
-        working-directory: docs
         with:
+          working-directory: docs
           surge_token: ${{ secrets.SURGE_TOKEN }}
           # github_token: ${{ secrets.GITHUB_TOKEN }}
           dist: _site
