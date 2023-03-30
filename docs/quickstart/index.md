@@ -29,7 +29,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS can do by
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/axolotl01.png" alt="step 1"/>
+<img src="/assets/img/quickstart/quickstart-step-01.png" alt="step 1"/>
 </div>
 <div class="col">
 <h3>
@@ -41,7 +41,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS can do by
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/axolotl02.png" alt="step 2"/>
+<img src="/assets/img/quickstart/quickstart-step-02.png" alt="step 2"/>
 </div>
 <div class="col">
 <h3>
@@ -53,7 +53,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS can do by
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/axolotl03.png" alt="step 3"/>
+<img src="/assets/img/quickstart/quickstart-step-03.png" alt="step 3"/>
 </div>
 <div class="col">
 <h3>
@@ -65,7 +65,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS can do by
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/axolotl04.png" alt="step 4"/>
+<img src="/assets/img/quickstart/quickstart-step-04.png" alt="step 4"/>
 </div>
 <div class="col">
 <h3>
@@ -77,7 +77,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS can do by
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/axolotl05.png" alt="step 5"/>
+<img src="/assets/img/quickstart/quickstart-step-05.png" alt="step 5"/>
 </div>
 <div class="col">
 <h3>
