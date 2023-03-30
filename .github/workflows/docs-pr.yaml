@@ -65,9 +65,7 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@v1.6.1
         with:
-          args: |
-            --base docs/_site 
-            --no-progress
+          args: docs/_site --no-progress
           fail: true
           jobSummary: true
           format: markdown
