@@ -2,13 +2,16 @@ package version
 
 import (
 	"regexp"
+	"strings"
+	"time"
 
 	"github.com/tcnksm/go-latest"
 )
 
 const (
 	// version start with v is optional and followed by 3 numbers with digits between them.	e.g v0.1.2
-	validRelease string = `^(v*)(0|[1-9]+[0-9]*)\.(0|[1-9]+[0-9]*)\.(0|[1-9]+[0-9]*)$`
+	validStableRelease  = `^(v*)(0|[1-9]+[0-9]*)\.(0|[1-9]+[0-9]*)\.(0|[1-9]+[0-9]*)$`
+	defaultVersionCheck = "0.0.1"
 	// releases URL
 	DefaultReleasesURL = "https://github.com/treeverse/lakeFS/releases"
 	GithubRepoOwner    = "treeverse"
@@ -26,14 +29,17 @@ type githubVersionSource struct {
 	githubTag     *latest.GithubTag
 	fetchResponse *latest.FetchResponse
 	fetchErr      error
+	cachePeriod   time.Duration
+	lastCheck     time.Time
 }
 
-func NewReleasesSource() latest.Source {
-	return newGithubVersionSource(validRelease)
+func NewReleasesSource(cachePeriod time.Duration) latest.Source {
+	return newGithubVersionSource(validStableRelease, cachePeriod)
 }
 
-func newGithubVersionSource(validVersionPattern string) *githubVersionSource {
+func newGithubVersionSource(validVersionPattern string, cachePeriod time.Duration) *githubVersionSource {
 	return &githubVersionSource{
+		cachePeriod: cachePeriod,
 		githubTag: &latest.GithubTag{
 			Owner:      GithubRepoOwner,
 			Repository: GithubRepoName,
@@ -50,16 +56,22 @@ func (g *githubVersionSource) Validate() error {
 }
 
 func (g *githubVersionSource) Fetch() (*latest.FetchResponse, error) {
-	if g.fetchResponse == nil && g.fetchErr == nil {
+	// check if never fetched yet or cache expired
+	if time.Since(g.lastCheck) > g.cachePeriod {
 		g.fetchResponse, g.fetchErr = g.githubTag.Fetch()
+		g.lastCheck = time.Now()
 	}
 	return g.fetchResponse, g.fetchErr
 }
 
-func CheckLatestVersion(s latest.Source, targetVersion string) (*latest.CheckResponse, error) {
-	// TODO(isan) what to do when the version is invalid / not comperable? dev, local etc
-	if match, err := regexp.MatchString(validRelease, targetVersion); !match || err != nil {
-		targetVersion = "0.1.0"
+func CheckLatestVersion(s latest.Source) (*latest.CheckResponse, error) {
+	target := Version
+	if IsVersionUnreleased() {
+		target = defaultVersionCheck
 	}
-	return latest.Check(s, targetVersion)
+	return latest.Check(s, target)
+}
+
+func IsVersionUnreleased() bool {
+	return strings.HasPrefix(Version, UnreleasedVersion)
 }

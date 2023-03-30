@@ -314,9 +314,10 @@ type Config struct {
 		FixedID string `mapstructure:"fixed_id"`
 	} `mapstructure:"installation"`
 	Security struct {
-		CheckForLatestVersion bool          `mapstructure:"check_latest_version"`
-		AuditCheckInterval    time.Duration `mapstructure:"audit_check_interval"`
-		AuditCheckURL         string        `mapstructure:"audit_check_url"`
+		CheckLatestVersion      bool          `mapstructure:"check_latest_version"`
+		CheckLatestVersionCache time.Duration `mapstructure:"check_latest_version_cache"`
+		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
+		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
 
 	Email struct {

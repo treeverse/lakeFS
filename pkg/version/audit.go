@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/tcnksm/go-latest"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -21,6 +22,11 @@ var (
 	ErrAuditCheckFailed = errors.New("audit check request failed")
 	ErrMissingCheckURL  = errors.New("missing audit check URL")
 )
+
+type LatestVersionResponse struct {
+	Outdated bool   `json:"outdated"`
+	Current  string `json:"current"`
+}
 
 type Alert struct {
 	ID               string `json:"id"`
@@ -47,13 +53,14 @@ type AuditChecker struct {
 	periodicResponse atomic.Value
 	wg               sync.WaitGroup
 	cancel           context.CancelFunc
+	latestReleases   latest.Source
 }
 
-func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
-	return NewAuditChecker(checkURL, Version, installationID)
+func NewDefaultAuditChecker(checkURL, installationID string, latestReleases latest.Source) *AuditChecker {
+	return NewAuditChecker(checkURL, Version, installationID, latestReleases)
 }
 
-func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
+func NewAuditChecker(checkURL, version, installationID string, latestReleases latest.Source) *AuditChecker {
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{
@@ -61,6 +68,7 @@ func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
 		},
 		Version:        version,
 		InstallationID: installationID,
+		latestReleases: latestReleases,
 	}
 	// initial value for last check - empty value
 	ac.periodicResponse.Store(auditPeriodicResponse{})
@@ -158,6 +166,22 @@ func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Dur
 		}
 	}()
 	return true
+}
+
+// CheckLatestVersion will return the latest version of the current package compared to the current version
+func (a *AuditChecker) CheckLatestVersion() (*LatestVersionResponse, error) {
+	if a == nil || a.latestReleases == nil {
+		return &LatestVersionResponse{}, nil
+	}
+
+	latest, err := CheckLatestVersion(a.latestReleases)
+	if err != nil {
+		return nil, err
+	}
+	return &LatestVersionResponse{
+		Outdated: latest.Outdated,
+		Current:  latest.Current,
+	}, nil
 }
 
 func (a *AuditChecker) StopPeriodicCheck() {

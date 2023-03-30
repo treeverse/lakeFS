@@ -21,20 +21,23 @@ const NavUserInfo = () => {
 
     if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
+    const notifyNewVersion = !versionLoading && !versionError && versionResponse.upgrade_recommended
     const renderNavBarTitle = () => {
         return (
         <>
-        <div className="user-menu-notification-indicator"></div>
-        <FeedPersonIcon size={28} verticalAlign={"middle"}/>  <span style={{marginLeft:6, fontSize:18}}>{user.friendly_name || user.id} </span>
+            {notifyNewVersion && <> <div className="user-menu-notification-indicator"></div> </> }
+            <FeedPersonIcon size={28} verticalAlign={"middle"}/> <span style={{marginLeft:6, fontSize:18}}>{user.friendly_name || user.id} </span>
         </>
         )
     }
     return (
         <NavDropdown title={renderNavBarTitle()} className="navbar-username" align="end">
-            {!versionLoading && !versionError && versionResponse.upgrade_recommended && <>
+            {notifyNewVersion && <>
             <NavDropdown.Item href={versionResponse.upgrade_url}>
-                    <span className="user-menu-notification-indicator"></span>
+                    <>
+                    <div className="menu-item-notification-indicator"></div>
                     <small>Newer LakeFS Version is Out!</small>
+                    </>
             </NavDropdown.Item></>}
             <NavDropdown.Item
                 onClick={()=> {

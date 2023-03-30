@@ -3906,9 +3906,9 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if c.Config.Security.CheckForLatestVersion {
+	if c.Config.Security.CheckLatestVersion {
+		latest, err := c.AuditChecker.CheckLatestVersion()
 		// set upgrade recommended based on latest version
-		latest, err := version.CheckLatestVersion(version.NewReleasesSource(), version.Version)
 		if err != nil {
 			c.Logger.WithError(err).Debug("failed to check latest version in releases")
 		} else if latest != nil {
