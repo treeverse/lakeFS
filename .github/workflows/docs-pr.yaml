@@ -66,7 +66,6 @@ jobs:
       - name: Check internal and external links
         id: lychee
         uses: lycheeverse/lychee-action@v1.6.1
-        working-directory: docs
         with:
           args: |
             --base docs/_site 
