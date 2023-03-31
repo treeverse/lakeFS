@@ -161,7 +161,7 @@ Using the `--merge` flag will merge `_my-branch_imported` to `my-branch` after a
 
 ### _lakectl ingest_
 
-Prerequisite: have [lakectl](../quickstart/first_commit.md#install-lakectl) installed.
+Prerequisite: have [lakectl](/reference/cli.html) installed.
 
 The _ingest_ command adds the objects to lakeFS by listing them on the client side.
 The added objects will appear as uncommitted changes.
