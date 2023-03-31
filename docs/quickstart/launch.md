@@ -46,10 +46,10 @@ Login to lakeFS's web interface at [http://127.0.0.1:8000](http://127.0.0.1:8000
 * **Access Key ID**: `AKIA-EXAMPLE-KEY`
 * **Secret Access Key**: `EXAMPLE-SECRET`
 
-![](/assets/img/quickstart/lakefs-login-screen.png)
+<img src="/assets/img/quickstart/lakefs-login-screen.png" alt="The lakeFS login screen" class="quickstart"/>
 
 You'll see that there's a repository that's been created automagically for you, imaginatively called `quickstart`. Click on the repository name to open it.
 
-![](/assets/img/quickstart/repo-list.png)
+<img src="/assets/img/quickstart/repo-list.png" alt="A list of repositories in lakeFS" class="quickstart"/>
 
 Now we're ready to explore the data that's been loaded into the quickstart environment. 

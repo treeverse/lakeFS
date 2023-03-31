@@ -14,13 +14,13 @@ The lakeFS server has been loaded with a sample parquet datafile. Fittingly enou
 
 You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in git against which you develop software code. 
 
-![](/assets/img/quickstart/repo-contents.png)
+<img src="/assets/img/quickstart/repo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
 
 Let's have a look at the data, ahead of making some changes to it on a branch in the following steps. 
 
 Click on `lakes.parquet` and notice that the built-it DuckDB runs a query to show a preview of the file's contents. 
 
-![](/assets/img/quickstart/duckdb-main-01.png)
+<img src="/assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
 Now we'll run our own query on it to look at the top five countries represented in the data. 
 
@@ -34,6 +34,6 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-![](/assets/img/quickstart/duckdb-main-02.png)
+<img src="/assets/img/quickstart/duckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
 
 Next we're going to make some changes to the data—but on a development branch so that the data in the main branch remains untouched. 

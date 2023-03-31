@@ -158,6 +158,6 @@ GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
 ```
-![](/assets/img/quickstart/duckdb-main-02.png)
+<img src="/assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
 
 In the next step we'll see how to merge our branch back into main. 

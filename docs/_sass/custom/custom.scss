@@ -1010,6 +1010,10 @@ div.highlighter-rouge{
 
 .quickstart-steps {
 	padding: 10px;
+	img {
+		width: 50px;
+		height: 50px;
+	}
 }
 
 .row {
@@ -1021,6 +1025,7 @@ div.highlighter-rouge{
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
+	margin-bottom: 0.3em;
 
 	&.step-num {
 		margin-right: 20px;
@@ -1028,4 +1033,11 @@ div.highlighter-rouge{
 			width: 40px;
 		}
 	}
+}
+
+img.quickstart {
+	box-shadow: 3px 3px 1px #ccc;
+	border-width: thin;
+	border-color: black;
+	border-style: ridge;
 }
