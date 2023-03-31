@@ -15,6 +15,7 @@ has_children: true
 lakeFS Cloud is a fully-managed lakeFS solution, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
 	
 ## Features only available in lakeFS Cloud
+
 * [Role-Based Access Control](../reference/rbac.md)
 * [Auditing](./auditing.md)
 * [Single-Sign-On](./sso.md)
