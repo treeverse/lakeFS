@@ -426,6 +426,9 @@ type KeyValueStore interface {
 	// GetByCommitID returns value from repository / commit by key and error if value does not exist
 	GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error)
 
+	// GetRangeIDByKey returns rangeID from the commitID that contains the key
+	GetRangeIDByKey(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (RangeID, error)
+
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
 	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error
 
@@ -854,6 +857,9 @@ type CommittedManager interface {
 	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
 	// GetRange returns information where rangeID is stored.
 	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
+
+	// GetRangeIDByKey returns the RangeID that contains the given key.
+	GetRangeIDByKey(ctx context.Context, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -1480,6 +1486,14 @@ func (g *Graveler) GetByCommitID(ctx context.Context, repository *RepositoryReco
 		return nil, err
 	}
 	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
+}
+
+func (g *Graveler) GetRangeIDByKey(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (RangeID, error) {
+	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		return "", err
+	}
+	return g.CommittedManager.GetRangeIDByKey(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
 func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error {

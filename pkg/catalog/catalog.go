@@ -1106,6 +1106,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 	if len(params.PathList) == 0 {
 		return nil, false, fmt.Errorf("%w: list commits without paths", graveler.ErrInvalid)
 	}
+
 	// commit/key to value cache - helps when fetching the same commit/key while processing parent commits
 	const commitLogCacheSize = 1024 * 5
 	commitCache, err := lru.New(commitLogCacheSize)
@@ -1338,6 +1339,30 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 				return false, err
 			}
 		} else {
+			// check if the key exists in both commits
+			// First, check if we can compare the ranges.
+			// If ranges match, or if no ranges for both commits, we can skip the key lookup.
+			lRangeID, err := c.Store.GetRangeIDByKey(ctx, repository, left, key)
+			lFound := !errors.Is(err, graveler.ErrNotFound)
+			if err != nil && lFound {
+				return false, err
+			}
+			rRangeID, err := c.Store.GetRangeIDByKey(ctx, repository, right, key)
+			rFound := !errors.Is(err, graveler.ErrNotFound)
+			if err != nil && rFound {
+				return false, err
+			}
+
+			if !lFound && !rFound {
+				// no range matching the key exist in both commits
+				continue
+			}
+			if lRangeID == rRangeID {
+				// It's the same range - the value of the key is identical in both
+				continue
+			}
+
+			// The key possibly exists in both commits, but the range ID is different - the value is needs to be looked at
 			leftObject, err := storeGetCache(ctx, c.Store, repository, left, key, commitCache)
 			if err != nil {
 				return false, err
@@ -1346,6 +1371,7 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 			if err != nil {
 				return false, err
 			}
+
 			// if left or right are missing or doesn't hold the same identify
 			// we want the commit log
 			if leftObject == nil && rightObject != nil ||
