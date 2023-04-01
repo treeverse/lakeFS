@@ -22,6 +22,10 @@ type FakeGraveler struct {
 	hooks                       graveler.HooksHandler
 }
 
+func (g *FakeGraveler) GetRangeIDByKey(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key) (graveler.RangeID, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	panic("implement me")
 }

@@ -29,6 +29,10 @@ type CommittedFake struct {
 	AppliedData   AppliedData
 }
 
+func (c *CommittedFake) GetRangeIDByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (graveler.RangeID, error) {
+	panic("implement me")
+}
+
 type MetaRangeFake struct {
 	id graveler.MetaRangeID
 }

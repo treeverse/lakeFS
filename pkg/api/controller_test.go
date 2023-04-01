@@ -364,7 +364,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 
 			commitsLog := resp.JSON200.Results
 			if len(commitsLog) != 1 {
-				t.Fatalf("Log %d commits, expected %d", len(commitsLog), 1)
+				t.Fatalf("Log %d commits(%v), expected %d", len(commitsLog), commitsLog, 1)
 			}
 			if commitsLog[0].Id != log.Reference {
 				t.Fatalf("Found commit %s, expected %s", commitsLog[0].Id, log.Reference)
@@ -673,6 +673,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 			expectedCommits: []string{commitsMap["commitX"], commitsMap["commitM"], commitsMap["commitP"], commitsMap["commitD"], commitsMap["commitL"], commitsMap["commitC"], commitsMap["commitB"], commitsMap["commitA"]},
 		},
 	}
+
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			resp, err := clt.LogCommitsWithResponse(ctx, "repo3", "main", &api.LogCommitsParams{Objects: c.objectList, Prefixes: c.prefixList})
