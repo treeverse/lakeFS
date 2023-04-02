@@ -18,7 +18,7 @@ export default function GroupPage() {
         <Routes>
             <Route path="" element={<GroupRedirect subPath="/members"/>} />
             <Route path="members" element={<GroupMembersPage/>} />
-            <Route path="acl" element={<GroupACLPage/>} />
+            <Route path="repositories" element={<GroupACLPage/>} />
             <Route path="policies" element={<GroupPoliciesPage/>} />
         </Routes>
     );
