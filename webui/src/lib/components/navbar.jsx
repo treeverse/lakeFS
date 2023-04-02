@@ -10,7 +10,7 @@ import {useLoginConfigContext} from "../hooks/conf";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
-    const { logout_url: logoutUrl } = { logout_url: "/logout", ...useLoginConfigContext() };
+    const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
         return config.getLakeFSVersion()
     }, [])
