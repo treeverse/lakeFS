@@ -18,7 +18,6 @@ func IsVersionUnreleased() bool {
 	return strings.HasPrefix(Version, UnreleasedVersion)
 }
 func CheckLatestVersion(targetVersion string) (*LatestVersionResponse, error) {
-
 	targetV, err := goversion.NewVersion(targetVersion)
 
 	if err != nil {
