@@ -588,6 +588,10 @@ object GarbageCollector {
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
 
+    if (storageType == "azure") {
+      bulkRemover.deleteObjects(_, storageNamespace)
+    }
+
     bulkedKeyStrings
       .mapPartitions(iter => {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
