@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use std::net::SocketAddr;
 
+use deltalake::action::CommitInfo;
 use deltalake::delta::DeltaTable;
 use deltalake::DeltaDataTypeVersion;
 use futures::join;
 use portpicker;
-use serde_json::{Map, Value};
 use tonic::{Code, Request, Response, Status, transport::Server};
 
 use differ::{DiffRequest, DiffResponse, GatewayConfig, table_differ_server::{TableDiffer, TableDifferServer}};
@@ -150,7 +150,7 @@ async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable) -> 
 }
 
 struct HistoryAndVersion {
-    pub history: Vec<Map<String, Value>>,
+    pub history: Vec<CommitInfo>,
     pub version: DeltaDataTypeVersion,
 }
 
@@ -167,7 +167,7 @@ impl HistoryAndVersion {
     }
 }
 
-fn show_history(mut hist: Vec<Map<String, Value>>, mut table_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
+fn show_history(mut hist: Vec<CommitInfo>, mut table_version: DeltaDataTypeVersion) -> Result<Vec<TableOperation>, Status> {
     hist.reverse();
     let mut ans: Vec<TableOperation> = Vec::with_capacity(hist.len());
     for commit in hist {
@@ -216,8 +216,8 @@ fn compare(left_history_version: &mut HistoryAndVersion,
     compare_table_slices(left_commit_slice, right_commit_slice, curr_version, common_ancestor, table_op_list)
 }
 
-fn compare_table_slices(left_commit_slice: &[Map<String, Value>],
-                        right_commit_slice: &[Map<String, Value>],
+fn compare_table_slices(left_commit_slice: &[CommitInfo],
+                        right_commit_slice: &[CommitInfo],
                         mut curr_version: DeltaDataTypeVersion,
                         common_ancestor: DeltaDataTypeVersion,
                         mut table_op_list: Vec<TableOperation>) -> Result<Vec<TableOperation>, Status> {
@@ -239,7 +239,7 @@ fn compare_table_slices(left_commit_slice: &[Map<String, Value>],
     Ok(table_op_list)
 }
 
-fn construct_table_op(commit_info: &Map<String, Value>, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
+fn construct_table_op(commit_info: &CommitInfo, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
     return match utils::construct_table_op(commit_info, version) {
         Ok(table_ops) => Ok(table_ops),
         Err(e) => Err(Status::new(Code::Aborted, format!("Creating operation history aborted due to:\n{:?}", e)))

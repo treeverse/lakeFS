@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use lazy_static::lazy_static;
 
 use deltalake::{DeltaTable, DeltaTableBuilder, DeltaTableError};
-use serde_json::{Map, Value};
+use deltalake::action::CommitInfo;
 use tonic::{Code, Status};
 
 use crate::differ::OperationType;
@@ -35,7 +35,7 @@ async fn create_table_with_config(config: &HashMap<String, String>, path: String
     builder.load().await
 }
 
-pub(crate) async fn history(delta: &mut DeltaTable, limit: Option<usize>) -> Result<Vec<Map<String, Value>>, Status> {
+pub(crate) async fn history(delta: &mut DeltaTable, limit: Option<usize>) -> Result<Vec<CommitInfo>, Status> {
     return match delta.history(limit).await {
         Ok(vec) => {
             Ok(vec)
