@@ -234,7 +234,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
 	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
-	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
+	rootCmd.Flags().BoolP("version", "v", false, "version for lakectl")
 }
 
 // initConfig reads in config file and ENV variables if set.
