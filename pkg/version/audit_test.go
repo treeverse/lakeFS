@@ -163,7 +163,7 @@ func TestAuditChecker_PassVersionOnRequest(t *testing.T) {
 	installationID := "a-sample-installation-id"
 	for _, version := range []string{"v1", "v1.2", "v2.0.1"} {
 		t.Run(version, func(t *testing.T) {
-			auditChecker := NewAuditChecker(svr.URL, version, installationID)
+			auditChecker := NewAuditChecker(svr.URL, version, installationID, nil)
 			_, err := auditChecker.Check(ctx)
 			if err != nil {
 				t.Errorf("Check() error = %v", err)
@@ -215,7 +215,7 @@ func TestAuditChecker_Check(t *testing.T) {
 	installationID := "a-sample-installation-id"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := NewAuditChecker(svr.URL, "v1", installationID)
+			a := NewAuditChecker(svr.URL, "v1", installationID, nil)
 			responseAlerts = tt.alerts
 			responseStatusCode = tt.statusCode
 			got, err := a.Check(ctx)
@@ -249,7 +249,7 @@ func TestAuditChecker_InstallationID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := NewAuditChecker(upgradeURL, "v1", tt.installationID)
+			a := NewAuditChecker(upgradeURL, "v1", tt.installationID, nil)
 
 			if tt.respInstallationID != a.InstallationID {
 				t.Errorf("Check() installation ID: %s, expected: %s", a.InstallationID, tt.respInstallationID)
@@ -282,7 +282,7 @@ func TestAuditChecker_CheckAndLog(t *testing.T) {
 	defer svr.Close()
 
 	installationID := "a-sample-installation-id"
-	checker := NewAuditChecker(svr.URL, "v1.0", installationID)
+	checker := NewAuditChecker(svr.URL, "v1.0", installationID, nil)
 	ctx := context.Background()
 	memLog := &MemLogger{}
 	checker.CheckAndLog(ctx, memLog)
