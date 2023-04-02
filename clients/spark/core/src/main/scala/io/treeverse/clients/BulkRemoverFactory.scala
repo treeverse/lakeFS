@@ -145,24 +145,11 @@ object BulkRemoverFactory {
         storageAccountName: String
     ): BlobBatchClient = {
 
-      println("got to getBlobBatchClient ")
-      // Access the storage using the account key
       val storageAccountKey = hc.get(
         StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
       )
-      val blobServiceClientBuilderWithKey: BlobServiceClientBuilder =
-        new BlobServiceClientBuilder()
-          .endpoint(storageAccountUrl)
-          .retryOptions(
-            new RequestRetryOptions()
-          ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
-          .httpClient(HttpClient.createDefault())
-          .credential(new StorageSharedKeyCredential(storageAccountName, storageAccountKey))
-      val blobServiceClientWithKey: BlobServiceClient =
-        blobServiceClientBuilderWithKey.buildClient
-      return new BlobBatchClientBuilder(blobServiceClientWithKey).buildClient
 
-
+      // Access the storage using the account key
       if (storageAccountKey != null) {
         println("got to type storageAccountKey ")
         val blobServiceClientBuilderWithKey: BlobServiceClientBuilder =
@@ -183,7 +170,6 @@ object BulkRemoverFactory {
           AccountAuthTypePattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
         ) == "OAuth"
       ) {
-        println("got to type OAuth ")
         val tenantId = getTenantId(
           new URI(
             hc.get(
