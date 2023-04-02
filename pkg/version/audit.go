@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tcnksm/go-latest"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -22,11 +21,6 @@ var (
 	ErrAuditCheckFailed = errors.New("audit check request failed")
 	ErrMissingCheckURL  = errors.New("missing audit check URL")
 )
-
-type LatestVersionResponse struct {
-	Outdated bool   `json:"outdated"`
-	Current  string `json:"current"`
-}
 
 type Alert struct {
 	ID               string `json:"id"`
@@ -53,14 +47,14 @@ type AuditChecker struct {
 	periodicResponse atomic.Value
 	wg               sync.WaitGroup
 	cancel           context.CancelFunc
-	latestReleases   latest.Source
+	latestReleases   VersionSource
 }
 
-func NewDefaultAuditChecker(checkURL, installationID string, latestReleases latest.Source) *AuditChecker {
+func NewDefaultAuditChecker(checkURL, installationID string, latestReleases VersionSource) *AuditChecker {
 	return NewAuditChecker(checkURL, Version, installationID, latestReleases)
 }
 
-func NewAuditChecker(checkURL, version, installationID string, latestReleases latest.Source) *AuditChecker {
+func NewAuditChecker(checkURL, version, installationID string, latestReleases VersionSource) *AuditChecker {
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{
@@ -173,15 +167,15 @@ func (a *AuditChecker) CheckLatestVersion() (*LatestVersionResponse, error) {
 	if a == nil || a.latestReleases == nil {
 		return &LatestVersionResponse{}, nil
 	}
-
-	latest, err := CheckLatestVersion(a.latestReleases)
+	latest, err := a.latestReleases.FetchLatestVersion()
 	if err != nil {
 		return nil, err
 	}
-	return &LatestVersionResponse{
-		Outdated: latest.Outdated,
-		Current:  latest.Current,
-	}, nil
+	result, err := CheckLatestVersion(latest)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (a *AuditChecker) StopPeriodicCheck() {

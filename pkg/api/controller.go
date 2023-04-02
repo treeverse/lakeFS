@@ -3912,7 +3912,7 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			c.Logger.WithError(err).Debug("failed to check latest version in releases")
 		} else if latest != nil {
-			latestVersion = swag.String(latest.Current)
+			latestVersion = swag.String(latest.LatestVersion)
 			upgradeRecommended = swag.Bool(latest.Outdated || swag.BoolValue(upgradeRecommended))
 			if latest.Outdated && upgradeURL == nil {
 				upgradeURL = swag.String(version.DefaultReleasesURL)

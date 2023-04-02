@@ -202,7 +202,7 @@ var runCmd = &cobra.Command{
 
 		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
 
-		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID, version.NewReleasesSource(cfg.Security.CheckLatestVersionCache))
+		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(cfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
 		if !version.IsVersionUnreleased() {
 			auditChecker.StartPeriodicCheck(ctx, cfg.Security.AuditCheckInterval, logger)

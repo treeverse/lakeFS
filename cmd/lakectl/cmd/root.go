@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
@@ -124,7 +123,6 @@ var rootCmd = &cobra.Command{
 		// get lakeFS server version
 
 		client := getClient()
-		releases := version.NewReleasesSource(time.Second)
 		resp, err := client.GetLakeFSVersionWithResponse(context.Background())
 		if err != nil {
 			if verbose {
@@ -145,14 +143,20 @@ var rootCmd = &cobra.Command{
 			}
 		}
 		// get lakectl latest version
-		latest, err := version.CheckLatestVersion(releases)
+		ghReleases := version.NewGithubReleases(version.GithubRepoOwner, version.GithubRepoName)
+		latestVer, err := ghReleases.FetchLatestVersion()
 		if err != nil {
 			if verbose {
 				WriteIfVerbose(getLatestVersionErrorTemplate, err)
 			}
 		} else {
-			if latest.Outdated {
-				info.LakectlLatestVersion = latest.Current
+			latest, err := version.CheckLatestVersion(latestVer)
+			if err != nil {
+				if verbose {
+					WriteIfVerbose("failed parsing {{ . }}", err)
+				}
+			} else if latest.Outdated {
+				info.LakectlLatestVersion = latest.LatestVersion
 				if info.UpgradeURL == "" {
 					info.UpgradeURL = version.DefaultReleasesURL
 				}
