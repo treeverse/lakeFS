@@ -8,7 +8,6 @@ has_toc: false
 ---
 
 # lakeFS Cloud
-
 [lakeFS Cloud](https://lakefs.cloud) is a fully-managed lakeFS solution, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
 	
 ## lakeFS Cloud Features
@@ -48,13 +47,10 @@ flowchart TD
 ## Setting up lakeFS Cloud
 
 ### AWS
-
 Setting up lakeFS on AWS is fully automated through a self-service onboarding setup wizard.
 
 ### Azure
-
 Settuping uplakeFS Cloud on Azure is currently a manual process which will be automated in the future. For now, please follow [these instructions](./reference/cloud-setup-azure.md).
 
 ### GCP
-
 Coming soon! [Click here](mailto:support@treeverse.io) to register your interest.
