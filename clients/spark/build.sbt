@@ -131,7 +131,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "com.azure" % "azure-core" % "1.10.0",
     "com.azure" % "azure-storage-blob" % "12.9.0",
     "com.azure" % "azure-storage-blob-batch" % "12.7.0",
-    "com.azure" % "azure-identity" % "1.7.3",
+//    "com.azure" % "azure-identity" % "1.7.3",
     // Snappy is JNI :-(.  However it does claim to work with
     // ClassLoaders, and (even more importantly!) using a preloaded JNI
     // version will probably continue to work because the C language API
