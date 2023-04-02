@@ -1,19 +1,18 @@
 ---
 layout: default
 title: lakeFS Enterprise
-description: lakeFS Enterprise is an enterprise-ready lakeFS solution, implemented using our best practices, providing additional features, such as RBAC, SSO and Support SLA.
+description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing additional features including RBAC, SSO and Support SLA.
 nav_order: 81
 has_children: true
+has_toc: false
 ---
 
 # lakeFS Enterprise
 
-{: .no_toc }
+lakeFS Enterprise is an enterprise-ready lakeFS solution that provides a support SLA and additional features to the open-source version of lakeFS. The additional features are: 
+* [RBAC](/reference/rbac.html)
+* [SSO](/enterprise/sso.html)
 
-lakeFS Enterprise is an enterprise-ready lakeFS solution, implemented using our best practices, providing additional features, such as:
-
-## Features only available in lakeFS Enterprise
-* RBAC
-* SSO
-* Support SLA
+## Support SLA
+TODO(ort): what kind of support SLA we provide
 

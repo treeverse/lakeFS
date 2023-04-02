@@ -3,7 +3,6 @@ layout: default
 title: Managed Garbage Collection
 description: Managed Garbage Collection is a managed garbage collection solution, maintained by Treeverse and operating within strict SLA, it reduces the operational overhead of maintaining a garbage collection manually.
 parent: lakeFS Cloud
-nav_order: 15
 has_children: false
 redirect_from: "/cloud.html"
 ---

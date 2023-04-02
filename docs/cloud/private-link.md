@@ -3,18 +3,14 @@ layout: default
 title: Private Link
 description: Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
 parent: lakeFS Cloud
-nav_order: 30
 has_children: false
 redirect_from: "/cloud.html"
 ---
 
-# Private-Link
+# Private Link
 {: .d-inline-block }
 lakeFS Cloud
 {: .label .label-green }
-
-{: .note}
-> Private Link is only available for [lakeFS Cloud](../cloud/).
 
 Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
 
@@ -22,18 +18,17 @@ Private Link enables lakeFS Cloud to interact with your infrastructure using pri
 
 ## Supported Vendors
 
-At the moment, we support Private-Link only on top of AWS.
+At the moment, we support Private-Link with AWS. If you are looking for Private Link for Azure or GCP please [contact us](mailto:support@treeverse.io).
 
-Looking for Private Link for Azure or GCP? [Contact us](mailto:support@treeverse.io)
+## Access Methods
 
 There are two types of Private Link implementation:
 
-**Front-End Access** refers to API and UI access. Use this option if you'd like your lakeFS application to be exposed only to your infrastructure and not to the whole internet.
+* **Front-End Access** refers to API and UI access. Use this option if you'd like your lakeFS application to be exposed only to your infrastructure and not to the whole internet.
 
-**Back-End Access** refers to the network communication between the lakeFS clusters we host, and your infrastructure. Use this option if you'd like lakeFS to communicate with your servers privately and not over the internet.
+* **Back-End Access** refers to the network communication between the lakeFS clusters we host, and your infrastructure. Use this option if you'd like lakeFS to communicate with your servers privately and not over the internet.
 
-Front-End and Back-End access doesn't have to go together, and they don't conflict one with another, meaning, if you'd like only front-end access to be configured for private access your API, that's possible, same goes for the back-end access or both of them together.
-
+The two types of access are not mutually exclusive nor are they dependent on each other.
 
 ## Setting up Private Link
 
@@ -56,7 +51,7 @@ Steps:
     * Pick the VPC you'd like to expose this service to.
     * Click **Create endpoint**
 
-Now you can access your infrastructure privately using the endpoint DNS name, if you like, we can associate it with a friendly name, please contact support@treeverse.io for more information.
+Now you can access your infrastructure privately using the endpoint DNS name. If you would like to change the DNS name to a friendly one please contact [support@treeverse.io](mailto:support@treeverse.io).
 
 ### Back-End Access
 

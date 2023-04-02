@@ -1,56 +1,54 @@
 ---
 layout: default
-title: Single Sign On (SSO)
-description: This section covers authentication (using SSO) of your lakeFS Cloud or lakeFS Enterprise.
+title: Single Sign On (SSO) in lakeFS Enterprise
+description: How to configure Single Sign On in lakeFS Enterprise.
 parent: lakeFS Enterprise
 nav_order: 65
 has_children: false
 ---
 
-# Single Sign On (SSO)
+# Single Sign On (SSO) in lakeFS Enterprise
+{: .no_toc }
 {: .d-inline-block }
 
 lakeFS Enterprise
 {: .label .label-purple }
-{: .no_toc }
-
 
 {: .note}
-> SSO is only available for [lakeFS Cloud](../cloud/) and [lakeFS Enterprise](../enterprise/).
+> SSO is available for [lakeFS Cloud](../cloud/sso.html) and [lakeFS Enterprise](../enterprise/index.html).
 >
-> Using the Open Source? Read more on [authentication](authentication.html). 
+> Using the open-source version of lakeFS? Read more on [authentication](/reference/authentication.html). 
 
+Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. 
+> If you're using an authentication provider that is not listed below but is based on OpenID Connect or SAML please [contact us](support@treeverse.io) for further assistance.
+{: .note}
+lakeFS Enterprise uses Helm's capabilities to run another set of pods that will take care of the SSO requests, side-by-side with lakeFS Server. Please review the [Helm configuration](#helm).
 {% include toc.html %}
 
-## Supported Protocols and Third Parties
+<div class="tabs">
+  <ul>
+    <li><a href="#adfs">AD FS</a></li>
+    <li><a href="#oidc">OpenID Connect</a></li>
+    <li><a href="#ldap">LDAP</a></li>
+  </ul> 
+  <div markdown="1" id="adfs">
+## Active Directory Federation Services (AD FS) (using SAML)
 
-lakeFS Cloud and lakeFS Enterprise support the commonly used protocols for authentication, such as OpenID Connect and SAML.
+{: .note}
+> AD FS integration uses certificates to sign & encrypt requests going out from Fluffy and decrypt incoming requests from AD FS server.
 
-There are specific authentication utilities that we've already verified that are working, if you're using one that is not listed below but is based on OpenID Connect or SAML, it's probably a small effort for us to make sure it'll work, please [contact us](support@treeverse.io) for more information.
-
-
-## Enterprise
-
-lakeFS Enterprise provides a secondary service, running side-by-side with lakeFS which handles the authentication, this service is called Fluffy.
-Once you've onboarded to [lakeFS Enterprise](../enterprise.md) and have access to the authentication service (Fluffy), you can configure one of the supported authentication methods below.
-lakeFS Enterprise leverage Helm's capabilities to run the sidecar with it's configuration, on top of the specific-authentication method, please review the [Helm configuration](#helm).
-
-### AD FS (using SAML)
-
-> **Note**: AD FS integration is using certificates to sign & encrypt requests going out from Fluffy and decrypt incoming requests from AD FS server.
-
-In order for fluffy to work, some values must be configured, update the relevant values section in this file and comment it out.
+In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
 1. Replace `fluffy.saml_rsa_public_cert` and `fluffy.saml_rsa_private_key` with real certificate values
-2. Replace `fluffyConfig.auth.saml.idp_metadata_url` to the metadata URL of the provider <adfs-auth.company.com>
-3. Replace `fluffyConfig.auth.saml.external_user_id_claim_name` with the claim name representing user id name in ADFS
-4. Replace `lakefs.company.com` with the lakeFS server endpoint.
+2. Replace `fluffyConfig.auth.saml.idp_metadata_url` with the metadata URL of the AD FS provider (e.g `adfs-auth.company.com`)
+3. Replace `fluffyConfig.auth.saml.external_user_id_claim_name` with the claim name representing user id name in AD FS
+4. Replace `lakefs.company.com` with your lakeFS server URL.
 
 If you'd like to generate the certificates using OpenSSL, you can take a look at the following example:
 ```sh
 openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com" -
 ```
 
-lakeFS Enterprise Configuration:
+lakeFS Server Configuration (Update in helm's `values.yaml` file):
 ```yaml
 lakefsConfig: |
   # Important: make sure to include the rest of your lakeFS Configuration here!
@@ -74,7 +72,7 @@ lakefsConfig: |
       rbac: external
 ```
 
-Fluffy Configuration:
+Fluffy Configuration (Update in helm's `values.yaml` file):
 ```yaml
 fluffyConfig: &fluffyConfig |
   logging:
@@ -103,22 +101,20 @@ fluffyConfig: &fluffyConfig |
       # idp_metadata_file_path: 
       # idp_skip_verify_tls_cert: true
 ```
+  </div>
+  <div markdown="1" id="oidc">
+## OpenID Connect
 
-### OpenID Connect
-{: .d-inline-block }
-Enterprise
-{: .label .label-purple }
-
-In order for fluffy to work some values must be configured, update the relevant values section in this file and comment it out. (lakefsConfig and fluffyConfig values)
+In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
 1. Replace `lakefsConfig.friendly_name_claim_name` and `fluffyConfig.friendly_name_claim_name` with the right claim name
-2. Replace `fluffyConfig.auth.logout_redirect_url`:  https://oidc-provider-url.com/logout/path with full URL to logout API of the OIDC provide
-3. Replace `fluffyConfig.auth.oidc.url` with full url to OIDC provider  https://oidc-provider-url.com
-4. Replace in `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters for the target OIDC provider for logout. In this example it's API auth0 returnTo=https://lakefs.company.com/oidc/login
-5. Replace the values in `fluffyConfig.auth.oidc.client_id` and `fluffyConfig.auth.oidc.client_secret` for OIDC. 
-6. Replace the values in `logout_client_id_query_parameter`, note it should match the the key/query param that represents the client id and required by the specific OIDC provider
-7. Replace `lakefs.company.com` with the lakeFS server endpoint.
+2. Replace `fluffyConfig.auth.logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/logout/path`)
+3. Replace `fluffyConfig.auth.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com`)
+4. Replace `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters you'd like to pass to theOIDC provider for logout.
+5. Replace `fluffyConfig.auth.oidc.client_id` and `fluffyConfig.auth.oidc.client_secret` with the client ID & secret for OIDC. 
+6. Replace `fluffyConfig.auth.oidc.logout_client_id_query_parameter` with the query parameter that represent the client_id, note that it should match the the key/query param that represents the client id and required by the specific OIDC provider.
+7. Replace `lakefs.company.com` with the lakeFS server URL.
 
-lakeFS Enterprise Configuration:
+lakeFS Server Configuration (Update in helm's `values.yaml` file):
 ```yaml
 lakefsConfig: |
   # Important: make sure to include the rest of your lakeFS Configuration here!
@@ -138,7 +134,7 @@ lakefsConfig: |
       rbac: external
 ```
 
-Fluffy Configuration:
+Fluffy Configuration (Update in helm's `values.yaml` file):
 ```yaml
 fluffyConfig: &fluffyConfig |
   logging:
@@ -168,16 +164,17 @@ fluffyConfig: &fluffyConfig |
     # encrypt:
     #   secret_key: shared-secrey-key
 ```
+  </div>
+  <div markdown="1" id="ldap">
+## LDAP
 
-### LDAP
+In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
+1. Replace `lakefsConfig.auth.remote_authenticator.endpoint` with the lakeFS server URL combined with the `api/v1/ldap/login` suffix (e.g `http://lakefs.company.com/api/v1/ldap/login`)
+2. Repalce `fluffyConfig.auth.ldap.remote_authenticator.server_endpoint` with your LDAP server endpoint  (e.g `ldaps://ldap.ldap-address.com:636`)
+3. Replace `fluffyConfig.auth.ldap.remote_authenticator.bind_dn` with the LDAP bind user/permissions to query your LDAP server.
+4. Replace `fluffyConfig.auth.ldap.remote_authenticator.user_base_dn` with the user base to search users in.
 
-In order for fluffy to work some values must be configured, update the relevant values section in this file and comment it out. (lakefsConfig and fluffyConfig values)
-1. Replace `lakefsConfig.auth.remote_authenticator.endpoint` to the ingress host with the following path http://lakefs.company.com/api/v1/ldap/login
-2. Repalce `fluffyConfig.auth.ldap.remote_authenticator.server_endpoint` (ldaps://ldap.ldap-address.com:636) with a real LDAP server endpoint 
-3. Replace `fluffyConfig.auth.ldap.remote_authenticator.bind_dn` and `fluffyConfig.auth.ldap.remote_authenticator.base_dn`
-4. Replace optional `fluffyConfig.auth.ldap.remote_authenticator.bind_dn` example: '(objectClass=inetOrgPerson)'
-
-lakeFS Enterprise Configuration:
+lakeFS Server Configuration (Update in helm's `values.yaml` file):
 ```yaml
 lakefsConfig: |
   # Important: make sure to include the rest of your lakeFS Configuration here!
@@ -194,7 +191,7 @@ lakefsConfig: |
       rbac: external
 ```
 
-Fluffy Configuration:
+Fluffy Configuration (Update in helm's `values.yaml` file):
 ```yaml
 fluffyConfig: &fluffyConfig |
   logging:
@@ -216,8 +213,10 @@ fluffyConfig: &fluffyConfig |
       connection_timeout_seconds: 15
       request_timeout_seconds: 7
 ```
+  </div>
+</div>
 
-### Helm
+## Helm
 
 In order to use lakeFS Enterprise and Fluffy, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 

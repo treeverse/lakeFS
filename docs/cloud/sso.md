@@ -1,39 +1,35 @@
 ---
 layout: default
-title: Single Sign On (SSO)
-description: This section covers authentication (using SSO) of your lakeFS Cloud or lakeFS Enterprise.
+title: Single Sign On (SSO) for lakeFS Cloud
+description: How to configure Single Sign On (SSO) for lakeFS Cloud.
 parent: lakeFS Cloud
-nav_order: 40
 has_children: false
 redirect_from: "/cloud.html"
 ---
 
 # Single Sign On (SSO)
+{: .no_toc }
 {: .d-inline-block }
 lakeFS Cloud
 {: .label .label-green }
 
-{: .no_toc }
-
-
 {: .note}
-> SSO is only available for [lakeFS Cloud](../cloud/) and [lakeFS Enterprise](../enterprise/).
+> SSO is only available for [lakeFS Cloud](../cloud/) and [lakeFS Enterprise](/enterprise/sso.html).
 >
-> Using the Open Source? Read more on [authentication](authentication.html). 
+> Using the open-source version of lakeFS? Read more on [authentication](/reference/authentication.html). 
+
+lakeFS Cloud uses Auth0 for authentication and thus support the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
 
 {% include toc.html %}
 
-## Supported Protocols and Third Parties
-
-lakeFS Cloud and lakeFS Enterprise support the commonly used protocols for authentication, such as OpenID Connect and SAML.
-
-There are specific authentication utilities that we've already verified that are working, if you're using one that is not listed below but is based on OpenID Connect or SAML, it's probably a small effort for us to make sure it'll work, please [contact us](support@treeverse.io) for more information.
-
-## Cloud
-
-lakeFS Cloud leverage Auth0's capabilities for authentication, therefore, we're supporting Auth0's identity providers, such as: Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML and Azure Active Directory.
-
-### Okta
+<div class="tabs">
+  <ul>
+    <li><a href="#okta">Okta</a></li>
+    <li><a href="#adfs">AD FS</a></li>
+    <li><a href="#azure-ad">Azure AD</a></li>
+  </ul> 
+  <div markdown="1" id="okta">
+## Okta
 
 > **Note**: this guide is based on [Okta's Create OIDC app integrations guide](https://help.okta.com/en-us/Content/Topics/Apps/Apps_App_Integration_Wizard_OIDC.htm).
 
@@ -53,9 +49,9 @@ Steps:
 9. Select **Save**.
 
 Once you finish registering your application with Okta, save the **Client ID**, **Client Secret** and your **Okta Domain**, send this to Treeverse's team to finish the integration.
-
-
-### Active Directory Federation Services (AD FS)
+  </div>
+  <div markdown="1" id="adfs">
+## Active Directory Federation Services (AD FS)
 
 Prerequisites:
 * Client's AD FS server should be exposed publicly or to Auth0's IP ranges (either directly or using Web Application Proxy)
@@ -74,15 +70,16 @@ Steps:
     **Note**: If your organization data is located in Europe, use `lakefs-cloud.eu.auth0.com` instead of `lakefs-cloud.us.auth0.com`.
 
 Once you finish registering lakeFS Cloud with AD FS, save the **AD FS URL** and send this to Treeverse's team to finish the integration.
-
-### Azure AD
+  </div>
+  <div markdown="1" id="azure-ad">
+## Azure Active Directory (AD)
 
 Prerequisites:
 * Azure account with permissions to manage applications in Azure Active Directory
 
-**Note**: If you've already onboarded to lakeFS Cloud with your Azure account, you can skip the [Register lakeFS Cloud with Azure](#register-lakefs-cloud-with-azure) and [Add client secret](#add-a-secret) and go directly to [Add a redirect URI](#add-a-redirect-uri).
+**Note**: If you've already set uplakeFS Cloud with your Azure account, you can skip the [Register lakeFS Cloud with Azure](#register-lakefs-cloud-with-azure) and [Add client secret](#add-a-secret) and go directly to [Add a redirect URI](#add-a-redirect-uri).
 
-#### Register lakeFS Cloud with Azure
+### Register lakeFS Cloud with Azure
 
 Steps:
 1. Sign in to the Azure portal.
@@ -99,7 +96,7 @@ When registration finishes, the Azure portal displays the app registration's Ove
 
 Important: new app registrations are hidden to users by default. When you are ready for users to see the app on their My Apps page you can enable it. To enable the app, in the Azure portal navigate to Azure Active Directory > Enterprise applications and select the app. Then on the Properties page toggle Visible to users? to Yes.
 
-#### Add a secret
+### Add a secret
 Sometimes called an application password, a client secret is a string value your app can use in place of a certificate to identity itself.
 
 Client secrets are considered less secure than certificate credentials. Application developers sometimes use client secrets during local app development because of their ease of use. However, you should use certificate credentials for any of your applications that are running in production.
@@ -114,7 +111,7 @@ Steps:
 5. Select Add.
 6. Record the secret's value for use in your client application code. This secret value is never displayed again after you leave this page.
 
-#### Add a redirect URI
+### Add a redirect URI
 A redirect URI is the location where the Microsoft identity platform redirects a user's client and sends security tokens after authentication.
 
 You add and modify redirect URIs for your registered applications by configuring their platform settings.
@@ -131,3 +128,11 @@ Steps:
 5. Select Configure to complete the platform configuration.
 
 Once you finish registering lakeFS Cloud with Azure AD, save the **Application (Client) ID**, **Application Secret Value** and send this to Treeverse's team to finish the integration.
+  </div>
+</div>
+
+
+
+
+
+
