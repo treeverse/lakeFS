@@ -23,7 +23,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
-	github.com/golangci/golangci-lint v1.50.1
+	github.com/golangci/golangci-lint v1.27.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hnlq715/golang-lru v0.3.0
@@ -57,7 +57,7 @@ require (
 	github.com/xitongsys/parquet-go-source v0.0.0-20201108113611-f372b7d813be
 	golang.org/x/crypto v0.1.0
 	golang.org/x/oauth2 v0.4.0
-	golang.org/x/term v0.6.0
+	golang.org/x/term v0.4.0
 	google.golang.org/api v0.106.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -87,7 +87,6 @@ require (
 	github.com/hashicorp/go-plugin v1.4.8
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
 	go.uber.org/ratelimit v0.2.0
 )
 
@@ -116,7 +115,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
@@ -144,6 +143,7 @@ require (
 	github.com/sivchari/nosnakecase v1.7.0 // indirect
 	github.com/sivchari/tenv v1.7.0 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
+	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e // indirect
 	github.com/timonwong/loggercheck v0.9.3 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.7.0 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
@@ -182,7 +182,7 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
 	github.com/containerd/continuity v0.2.1 // indirect
-	github.com/daixiang0/gci v0.8.1 // indirect
+	github.com/daixiang0/gci v0.2.9 // indirect
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/docker/cli v20.10.10+incompatible // indirect
 	github.com/docker/docker v20.10.10+incompatible // indirect
@@ -315,11 +315,11 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.7.0
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
-	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/mod v0.6.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/tools v0.2.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230106154932-a12b697841d9 // indirect
