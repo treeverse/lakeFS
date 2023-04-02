@@ -57,6 +57,7 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
+// check if runs
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
