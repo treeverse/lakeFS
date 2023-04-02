@@ -5,10 +5,10 @@ description: How to configure Single Sign On in lakeFS Enterprise.
 parent: lakeFS Enterprise
 nav_order: 65
 has_children: false
+has_toc: false
 ---
 
 # Single Sign On (SSO) in lakeFS Enterprise
-{: .no_toc }
 {: .d-inline-block }
 
 lakeFS Enterprise
@@ -23,7 +23,6 @@ Authentication in lakeFS Enterprise is handled by a secondary service which runs
 > If you're using an authentication provider that is not listed below but is based on OpenID Connect or SAML please [contact us](support@treeverse.io) for further assistance.
 {: .note}
 lakeFS Enterprise uses Helm's capabilities to run another set of pods that will take care of the SSO requests, side-by-side with lakeFS Server. Please review the [Helm configuration](#helm).
-{% include toc.html %}
 
 <div class="tabs">
   <ul>

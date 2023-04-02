@@ -5,10 +5,10 @@ description: How to configure Single Sign On (SSO) for lakeFS Cloud.
 parent: lakeFS Cloud
 has_children: false
 redirect_from: "/cloud.html"
+has_toc: false
 ---
 
-# Single Sign On (SSO)
-{: .no_toc }
+# Single Sign On (SSO) for lakeFS Cloud
 {: .d-inline-block }
 lakeFS Cloud
 {: .label .label-green }
@@ -20,8 +20,6 @@ lakeFS Cloud
 
 lakeFS Cloud uses Auth0 for authentication and thus support the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
 
-{% include toc.html %}
-
 <div class="tabs">
   <ul>
     <li><a href="#okta">Okta</a></li>
@@ -31,7 +29,8 @@ lakeFS Cloud uses Auth0 for authentication and thus support the same identity pr
   <div markdown="1" id="okta">
 ## Okta
 
-> **Note**: this guide is based on [Okta's Create OIDC app integrations guide](https://help.okta.com/en-us/Content/Topics/Apps/Apps_App_Integration_Wizard_OIDC.htm).
+{: .note}
+> this guide is based on [Okta's Create OIDC app integrations guide](https://help.okta.com/en-us/Content/Topics/Apps/Apps_App_Integration_Wizard_OIDC.htm).
 
 Steps:
 1. Login to your Okta account

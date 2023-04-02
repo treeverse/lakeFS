@@ -50,7 +50,7 @@ flowchart TD
 Setting up lakeFS on AWS is fully automated through a self-service onboarding setup wizard.
 
 ### Azure
-Settuping uplakeFS Cloud on Azure is currently a manual process which will be automated in the future. For now, please follow [these instructions](./reference/cloud-setup-azure.md).
+Settuping up lakeFS Cloud on Azure is currently a manual process which will be automated in the future. For now, please follow [these instructions](./setup-azure.md).
 
 ### GCP
 Coming soon! [Click here](mailto:support@treeverse.io) to register your interest.

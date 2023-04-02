@@ -9,10 +9,12 @@ redirect_from: "/cloud.html"
 
 # Setting up lakeFS Cloud on Azure
 {: .no_toc }
-
 {: .pb-3 }
 
-> **_Note_**: lakeFS saves all the data and the metadata on your storage account In this manual you will create a dedicated storage account for lakeFS and provide lakefs-cloud access to your storage account
+{: .note}
+> lakeFS saves all the data and the metadata on your storage account.
+> 
+> In this manual you will create a dedicated storage account for lakeFS and provide lakefs-cloud access to your storage account.
 
 ## Setting up a Storage container and App registration:
 1. Open your Azure Portal.

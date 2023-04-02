@@ -12,7 +12,6 @@ redirect_from: "/cloud.html"
 lakeFS Cloud
 {: .label .label-green }
 
-
 {: .note}
 > Managed Garbage Collection is only available for [lakeFS Cloud](../cloud/).
 >
