@@ -151,6 +151,19 @@ object BulkRemoverFactory {
       val storageAccountKey = hc.get(
         StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
       )
+      val blobServiceClientBuilderWithKey: BlobServiceClientBuilder =
+        new BlobServiceClientBuilder()
+          .endpoint(storageAccountUrl)
+          .retryOptions(
+            new RequestRetryOptions()
+          ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
+          .httpClient(HttpClient.createDefault())
+          .credential(new StorageSharedKeyCredential(storageAccountName, storageAccountKey))
+      val blobServiceClientWithKey: BlobServiceClient =
+        blobServiceClientBuilderWithKey.buildClient
+      return new BlobBatchClientBuilder(blobServiceClientWithKey).buildClient
+
+
       if (storageAccountKey != null) {
         println("got to type storageAccountKey ")
         val blobServiceClientBuilderWithKey: BlobServiceClientBuilder =
