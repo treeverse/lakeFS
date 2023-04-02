@@ -735,9 +735,9 @@ td.entry-type-indicator {
   width: 10px;
 }
 .menu-item-notification-indicator {
-  top: 8px;
-  left: 10px;
+  right: 10px;
   position: relative;
+  display: inline-block;
   background: linear-gradient(#54a3ff, #006eed);
   border-radius: 50%;
   color: white;

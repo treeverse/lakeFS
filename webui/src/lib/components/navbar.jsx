@@ -7,10 +7,7 @@ import {useAPI} from "../hooks/api";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
-import {
-    FeedPersonIcon
-} from "@primer/octicons-react";
-import Badge from "react-bootstrap/Badge";
+import {FeedPersonIcon} from "@primer/octicons-react";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
@@ -36,9 +33,9 @@ const NavUserInfo = () => {
             <NavDropdown.Item href={versionResponse.upgrade_url}>
                     <>
                     <div className="menu-item-notification-indicator"></div>
-                    <small>Newer LakeFS Version is Out!</small>
+                    Newer LakeFS Version is Out!
                     </>
-            </NavDropdown.Item></>}
+            </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
