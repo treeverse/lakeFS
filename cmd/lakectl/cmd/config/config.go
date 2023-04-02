@@ -68,9 +68,11 @@ func ReadConfig() (c *Config) {
 	setDefaults()
 	c.err = viper.ReadInConfig()
 	logger := logging.Default().WithField("file", viper.ConfigFileUsed())
+
 	if errors.Is(c.err, viper.ConfigFileNotFoundError{}) {
 		logger.WithError(c.err).Fatal("failed to read config file")
 	}
+
 	return
 }
 
@@ -80,6 +82,7 @@ const (
 	ConfigServerEndpointURLKey = "server.endpoint_url"
 	ConfigAccessKeyIDKey       = "credentials.access_key_id"
 	ConfigSecretAccessKey      = "credentials.secret_access_key"
+
 	// Defaults
 	DefaultHiveDBLocationURI = "file:/user/hive/warehouse/"
 	DefaultServerEndpointURL = "http://127.0.0.1:8000"
