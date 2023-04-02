@@ -101,7 +101,7 @@ var logCmd = &cobra.Command{
 
 		graph := &dotWriter{
 			w:            os.Stdout,
-			repositoryID: branchURI.Ref,
+			repositoryID: branchURI.Repository,
 		}
 		if dot {
 			graph.Start()

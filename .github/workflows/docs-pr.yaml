@@ -1,0 +1,68 @@
+name: Docs Pull Request
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+
+jobs:
+  # This job name kept short because it's used in the preview URL
+  preview:
+    name: Docs PR - Publish preview and check links
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1.79.0
+        with:
+          working-directory: docs
+          ruby-version: 2.6
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Build latest
+        id: build-latest
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml -d _site/
+
+
+      - name: Overlay PR message on each page
+        working-directory: docs/_site
+        run: |
+          PR_URL=${{ github.event.pull_request.html_url }}
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          html_files=$(find . -name '*.html')
+
+          for file in $html_files; do
+            sed -i -e "s|\(.*\)\(</body>\)|<div style=\"position: fixed; top: 5px; left: 5px; padding: 3px; background-color: #e8ac07; font-weight: bold; z-index: 9999; box-shadow: 0 0 10px rgba(0,0,0,0.5);\">ℹ️ This is a preview of PR <a href=\"$PR_URL\" style=\"color: black;\">#$PR_NUMBER</a></div>\n\1\2|" $file
+          done
+       
+      - name: Publish preview site
+        uses: afc163/surge-preview@v1
+        id: preview_step
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: docs/_site
+          failOnError: true
+          teardown: true
+          build: |
+            echo Deploying preview to surge.sh
+
+      - name: Get the preview_url
+        run: echo "url => https://${{ steps.preview_step.outputs.preview_url }}"
+
+      - name: Check links
+        id: lychee
+        uses: lycheeverse/lychee-action@v1.6.1
+        with:
+          args: docs/_site --no-progress --exclude https://ajax.googleapis.com/ --exclude https://www.linkedin.com/company/treeverse --exclude s3:// --exclude lakefs:// --exclude gs:// --exclude https://account.blob.core.windows.net/ --exclude http://127.0.0.1:8888/  --exclude http://127.0.0.1:8000 --exclude http://127.0.0.1:4000 --exclude https://twitter.com/lakeFS 
+          fail: true
+          jobSummary: true
+          format: markdown
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

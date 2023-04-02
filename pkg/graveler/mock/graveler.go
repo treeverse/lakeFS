@@ -98,6 +98,21 @@ func (mr *MockKeyValueStoreMockRecorder) GetByCommitID(ctx, repository, commitID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByCommitID", reflect.TypeOf((*MockKeyValueStore)(nil).GetByCommitID), ctx, repository, commitID, key)
 }
 
+// GetRangeIDByKey mocks base method.
+func (m *MockKeyValueStore) GetRangeIDByKey(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key) (graveler.RangeID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRangeIDByKey", ctx, repository, commitID, key)
+	ret0, _ := ret[0].(graveler.RangeID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRangeIDByKey indicates an expected call of GetRangeIDByKey.
+func (mr *MockKeyValueStoreMockRecorder) GetRangeIDByKey(ctx, repository, commitID, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeIDByKey", reflect.TypeOf((*MockKeyValueStore)(nil).GetRangeIDByKey), ctx, repository, commitID, key)
+}
+
 // List mocks base method.
 func (m *MockKeyValueStore) List(ctx context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref, batchSize int) (graveler.ValueIterator, error) {
 	m.ctrl.T.Helper()
@@ -2308,6 +2323,21 @@ func (m *MockCommittedManager) GetRange(ctx context.Context, ns graveler.Storage
 func (mr *MockCommittedManagerMockRecorder) GetRange(ctx, ns, rangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRange", reflect.TypeOf((*MockCommittedManager)(nil).GetRange), ctx, ns, rangeID)
+}
+
+// GetRangeIDByKey mocks base method.
+func (m *MockCommittedManager) GetRangeIDByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (graveler.RangeID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRangeIDByKey", ctx, ns, id, key)
+	ret0, _ := ret[0].(graveler.RangeID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRangeIDByKey indicates an expected call of GetRangeIDByKey.
+func (mr *MockCommittedManagerMockRecorder) GetRangeIDByKey(ctx, ns, id, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeIDByKey", reflect.TypeOf((*MockCommittedManager)(nil).GetRangeIDByKey), ctx, ns, id, key)
 }
 
 // List mocks base method.

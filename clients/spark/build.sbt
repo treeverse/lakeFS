@@ -214,7 +214,7 @@ lazy val hadoop3ShadingSettings = assembly / assemblyShadeRules := hadoop3ShadeR
 // Upload assembly jars to S3
 lazy val s3UploadSettings = Seq(
   s3Upload / mappings := Seq(
-    (assemblyOutputPath in assembly).value ->
+    (assembly / assemblyOutputPath).value ->
       s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
   ),
   s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",

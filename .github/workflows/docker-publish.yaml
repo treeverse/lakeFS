@@ -1,7 +1,8 @@
 name: Docker
 on:
   release:
-    types: [published]
+    types: [released]
+  workflow_dispatch:
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
