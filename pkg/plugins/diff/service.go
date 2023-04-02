@@ -20,7 +20,7 @@ import (
 var (
 	ErrTableNotFound = errors.New("table not found")
 	ErrLoadingPlugin = errors.New("failed to load diff plugin")
-	ErrFailedDiff    = errors.New("failed running the diff")
+	ErrFailedDiff    = errors.New("failed to run diff")
 )
 
 const (

@@ -4017,6 +4017,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, tdp)
 	if err != nil {
 		c.Logger.WithError(err).
+			WithContext(ctx).
 			WithField("type", params.Type).
 			WithField("table_diff_paths", fmt.Sprintf("%+v", tdp.TablePaths)).
 			WithField("repo", tdp.Repo).
