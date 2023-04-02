@@ -27,13 +27,13 @@ func TestService_RunDiff(t *testing.T) {
 		{
 			register:    false,
 			description: "failure - no client loaded",
-			expectedErr: ErrNotFound,
+			expectedErr: ErrLoadingPlugin,
 		},
 		{
 			register:    true,
 			diffFailure: true,
 			description: "failure - internal diff failed",
-			expectedErr: ErrDiffFailed,
+			expectedErr: ErrFailedDiff,
 		},
 	}
 	for _, tc := range testCases {
@@ -59,7 +59,7 @@ func Test_registerPlugins(t *testing.T) {
 	customPluginVersion := 9
 	type args struct {
 		service     *Service
-		diffProps   map[string]config.DiffProps
+		diffProps   config.DiffProps
 		pluginProps config.Plugins
 	}
 	testCases := []struct {
@@ -75,10 +75,8 @@ func Test_registerPlugins(t *testing.T) {
 			pluginName:  pluginName,
 			args: args{
 				service: NewMockService(),
-				diffProps: map[string]config.DiffProps{
-					"delta": {
-						PluginName: pluginName,
-					},
+				diffProps: config.DiffProps{
+					Delta: config.DeltaDiffPlugin{PluginName: pluginName},
 				},
 				pluginProps: config.Plugins{},
 			},
@@ -89,55 +87,8 @@ func Test_registerPlugins(t *testing.T) {
 			pluginName:  pluginName,
 			args: args{
 				service: NewMockService(),
-				diffProps: map[string]config.DiffProps{
-					"delta": {
-						PluginName: pluginName,
-					},
-				},
-				pluginProps: config.Plugins{
-					DefaultPath: "",
-					Properties: map[string]config.PluginProps{
-						pluginName: {
-							Path:    customPluginPath,
-							Version: customPluginVersion,
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "register unknown diff plugins - default path - failure",
-			diffTypes:   []string{"unknown1", "unknown2", "unknown3"},
-			args: args{
-				service: NewMockService(),
-				diffProps: map[string]config.DiffProps{
-					"unknown1": {
-						PluginName: pluginName,
-					},
-					"unknown2": {
-						PluginName: pluginName,
-					},
-					"unknown3": {
-						PluginName: pluginName,
-					},
-				},
-				pluginProps: config.Plugins{},
-			},
-			expectedErr: ErrNotFound,
-		},
-		{
-			description: "register delta and unknown diff plugin - custom path and version - success for delta",
-			diffTypes:   []string{"delta"},
-			pluginName:  pluginName,
-			args: args{
-				service: NewMockService(),
-				diffProps: map[string]config.DiffProps{
-					"unknown": {
-						PluginName: "doesntmatter",
-					},
-					"delta": {
-						PluginName: pluginName,
-					},
+				diffProps: config.DiffProps{
+					Delta: config.DeltaDiffPlugin{PluginName: pluginName},
 				},
 				pluginProps: config.Plugins{
 					DefaultPath: "",

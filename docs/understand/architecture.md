@@ -110,12 +110,12 @@ For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/)
 
 ### lakectl
 
-[lakectl](../reference/cli) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
+[lakectl](../reference/cli.html) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
 
 ### Spark Metadata Client
 
 The lakeFS [Spark Metadata Client](../reference/spark-client.md) makes it easy to perform
-operations related to lakeFS metadata, at scale. Examples include [garbage collection](../howto/garbage-collection.md) or [exporting data from lakeFS](../howto/export.md).
+operations related to lakeFS metadata, at scale. Examples include [garbage collection](../howto/garbage-collection-index.html) or [exporting data from lakeFS](../howto/export.md).
 
 ### lakeFS Hadoop FileSystem
 

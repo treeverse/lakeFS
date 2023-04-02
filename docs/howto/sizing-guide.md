@@ -154,7 +154,7 @@ The PostgreSQL instance that was used is a [db.m6g.2xlarge](https://docs.aws.ama
 The example repository we tested against contains the metadata of a large lakeFS installation,
 where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes of data).
 
-All tests are reproducible using the [lakectl abuse command](../reference/cli#lakectl-abuse),
+All tests are reproducible using the [lakectl abuse command](../reference/cli.html#lakectl-abuse),
 so use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
 
 ### Random reads

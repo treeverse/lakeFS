@@ -107,10 +107,15 @@ func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 	}
 	grpcPluginClient, err := c.Client()
 	if err != nil {
+		// The re registration occurs because in some cases the issue is with the binary itself.
+		// If this is the case, the user will be able to fix the issue with the plugin binary without needing to
+		// re-initialize lakeFS.
+		m.closeAndReRegisterClient(name)
 		return ans, nil, err
 	}
 	rawGrpcClientStub, err := grpcPluginClient.Dispense(name) // Returns an implementation of the stub service.
 	if err != nil {
+		m.closePluginClient(name)
 		return ans, nil, err
 	}
 	ans, ok := rawGrpcClientStub.(T)
@@ -119,9 +124,13 @@ func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 		return ans, nil, ErrPluginOfWrongType
 	}
 	return ans, func() {
-		cp := m.closePluginClient(name)
-		m.RegisterPlugin(name, *cp)
+		m.closeAndReRegisterClient(name)
 	}, nil
+}
+
+func (m *Manager[T]) closeAndReRegisterClient(name string) {
+	cp := m.closePluginClient(name)
+	m.RegisterPlugin(name, *cp)
 }
 
 func (m *Manager[T]) closePluginClient(name string) *HCPluginProperties {

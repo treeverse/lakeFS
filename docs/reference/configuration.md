@@ -138,11 +138,11 @@ These configuration items are for the lakeFS key-value store database
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.gs.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
+* `blockstore.gs.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](./presigned-url.html)).
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.azure.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
+* `blockstore.azure.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](./presigned-url.html)).
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)

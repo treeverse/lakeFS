@@ -89,9 +89,14 @@ type Plugins struct {
 	Properties  map[string]PluginProps `mapstructure:"properties"`
 }
 
+// DeltaDiffPlugin includes properties for the Delta Lake diff plugin
+type DeltaDiffPlugin struct {
+	PluginName string `mapstructure:"plugin"`
+}
+
 // DiffProps struct holds the properties that define the details necessary to run a diff.
 type DiffProps struct {
-	PluginName string `mapstructure:"plugin"`
+	Delta DeltaDiffPlugin `mapstructure:"delta"`
 }
 
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -340,8 +345,8 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
-	Diff    map[string]DiffProps `mapstructure:"diff"`
-	Plugins Plugins              `mapstructure:"plugins"`
+	Diff    DiffProps `mapstructure:"diff"`
+	Plugins Plugins   `mapstructure:"plugins"`
 }
 
 func NewConfig() (*Config, error) {

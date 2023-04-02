@@ -43,7 +43,7 @@ To enable the Delta Lake diff feature, you need to install a plugin on the lakeF
 Put the `delta_diff` binary under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
 
 You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
-`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration) file.
+`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration.html#plugins) file.
 
 **Notice**: If you're using the lakeFS [docker image](../quickstart/run.md#running-locally-with-docker), the plugin is installed by default.
 
