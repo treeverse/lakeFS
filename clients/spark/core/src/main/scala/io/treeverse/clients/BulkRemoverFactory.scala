@@ -216,10 +216,6 @@ object BulkRemoverFactory {
       }
       //TODO lynn: change error
       else throw new IllegalArgumentException("Invalid argument.")
-
-      val blobServiceClient: BlobServiceClient = blobServiceClientBuilder.buildClient
-
-      new BlobBatchClientBuilder(blobServiceClient).buildClient
     }
 
     override def getMaxBulkSize(): Int = {
