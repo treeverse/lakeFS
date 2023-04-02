@@ -49,6 +49,14 @@ public class VersionConfigTest {
     }
 
     /**
+     * Test the property 'latestVersion'
+     */
+    @Test
+    public void latestVersionTest() {
+        // TODO: test latestVersion
+    }
+
+    /**
      * Test the property 'upgradeRecommended'
      */
     @Test

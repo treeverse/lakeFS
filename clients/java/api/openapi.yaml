@@ -6483,11 +6483,14 @@ components:
       type: object
     VersionConfig:
       example:
+        latest_version: latest_version
         version: version
         upgrade_recommended: true
         upgrade_url: upgrade_url
       properties:
         version:
+          type: string
+        latest_version:
           type: string
         upgrade_recommended:
           type: boolean
