@@ -20,28 +20,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.lakefs.clients.api.JSON;
 
 /**
  * PrepareGCUncommittedRequest
@@ -52,8 +33,6 @@ public class PrepareGCUncommittedRequest {
   @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
   private String continuationToken;
 
-  public PrepareGCUncommittedRequest() {
-  }
 
   public PrepareGCUncommittedRequest continuationToken(String continuationToken) {
     
@@ -66,6 +45,7 @@ public class PrepareGCUncommittedRequest {
    * @return continuationToken
   **/
   @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public String getContinuationToken() {
     return continuationToken;
@@ -75,7 +55,6 @@ public class PrepareGCUncommittedRequest {
   public void setContinuationToken(String continuationToken) {
     this.continuationToken = continuationToken;
   }
-
 
 
   @Override
@@ -115,91 +94,5 @@ public class PrepareGCUncommittedRequest {
     return o.toString().replace("\n", "\n    ");
   }
 
-
-  public static HashSet<String> openapiFields;
-  public static HashSet<String> openapiRequiredFields;
-
-  static {
-    // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>();
-    openapiFields.add("continuation_token");
-
-    // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>();
-  }
-
- /**
-  * Validates the JSON Object and throws an exception if issues found
-  *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to PrepareGCUncommittedRequest
-  */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!PrepareGCUncommittedRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in PrepareGCUncommittedRequest is not found in the empty JSON string", PrepareGCUncommittedRequest.openapiRequiredFields.toString()));
-        }
-      }
-
-      Set<Entry<String, JsonElement>> entries = jsonObj.entrySet();
-      // check to see if the JSON string contains additional fields
-      for (Entry<String, JsonElement> entry : entries) {
-        if (!PrepareGCUncommittedRequest.openapiFields.contains(entry.getKey())) {
-          throw new IllegalArgumentException(String.format("The field `%s` in the JSON string is not defined in the `PrepareGCUncommittedRequest` properties. JSON: %s", entry.getKey(), jsonObj.toString()));
-        }
-      }
-      if ((jsonObj.get("continuation_token") != null && !jsonObj.get("continuation_token").isJsonNull()) && !jsonObj.get("continuation_token").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `continuation_token` to be a primitive type in the JSON string but got `%s`", jsonObj.get("continuation_token").toString()));
-      }
-  }
-
-  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!PrepareGCUncommittedRequest.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'PrepareGCUncommittedRequest' and its subtypes
-       }
-       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<PrepareGCUncommittedRequest> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(PrepareGCUncommittedRequest.class));
-
-       return (TypeAdapter<T>) new TypeAdapter<PrepareGCUncommittedRequest>() {
-           @Override
-           public void write(JsonWriter out, PrepareGCUncommittedRequest value) throws IOException {
-             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
-             elementAdapter.write(out, obj);
-           }
-
-           @Override
-           public PrepareGCUncommittedRequest read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
-             return thisAdapter.fromJsonTree(jsonObj);
-           }
-
-       }.nullSafe();
-    }
-  }
-
- /**
-  * Create an instance of PrepareGCUncommittedRequest given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of PrepareGCUncommittedRequest
-  * @throws IOException if the JSON string is invalid with respect to PrepareGCUncommittedRequest
-  */
-  public static PrepareGCUncommittedRequest fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, PrepareGCUncommittedRequest.class);
-  }
-
- /**
-  * Convert an instance of PrepareGCUncommittedRequest to an JSON string
-  *
-  * @return JSON string
-  */
-  public String toJson() {
-    return JSON.getGson().toJson(this);
-  }
 }
 

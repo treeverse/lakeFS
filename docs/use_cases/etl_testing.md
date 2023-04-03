@@ -68,7 +68,7 @@ Now you can add, modify or delete objects under the `test-env` branch without af
 
 ## Using lakeFS Python Client API and Jupyter notebook
 
-This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark.html). You can run this tutorial on your local machine.
 
 Follow the tutorial video below to get started with the playground and jupyter notebook, or follow the instructions on this page.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
@@ -132,7 +132,7 @@ client = LakeFSClient(configuration)
 ```
 
 lakeFS can be configured to work with Spark in two ways:
-* Access lakeFS using the [S3A gateway](../integrations/spark.md#use-the-s3-gateway)
+* Access lakeFS using the [S3-compatible API](../integrations/spark.md#use-the-s3-compatible-api)
 * Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#use-the-lakefs-hadoop-filesystem)
 
 ### Upload the sample data to main branch

@@ -63,7 +63,7 @@ body {
 			float: right;
 			position: relative;
 			.main-content-wrap {
-				max-width: 85%;
+				max-width: 1300px;
 				padding: 80px;
 			}
 		}
@@ -83,7 +83,7 @@ body {
 	}
 	p, li{
 		font-family: GalanoGrotesque;
-	    font-size: 14px;
+	    font-size: 1em;
 	}
 
 	h1 {
@@ -165,7 +165,7 @@ body {
 			}
 			a {
 				color: $teal-green;
-				font-size: 14px;
+				font-size: 1em;
 				background-image: none;
 				white-space: normal;
 				&:hover {
@@ -866,7 +866,6 @@ th, td {
 
 .tabs {
 	background: transparent;
-	border: none !important;
 	&.ui-widget {
 		.copy-code-button {
 			font-family: "Font Awesome 6 Free" !important;
@@ -877,11 +876,12 @@ th, td {
 .tabs .ui-widget-header {
 	background: transparent;
 	border: none;
-	border-bottom: 1px solid #c0c0c0;
+	border-bottom: 1px solid #d3d3d3;
 	-moz-border-radius: 0px;
 	-webkit-border-radius: 0px;
 	border-radius: 0px;
 }
+
 .tabs .ui-tabs-nav .ui-state-default {
 	background: transparent;
 	border: none;
@@ -997,4 +997,13 @@ div.highlighter-rouge{
 	a {
 		color: $teal-green !important;
 	}
+}
+
+.badge {
+	padding: 2px 4px;
+	background: $lightpink;
+	text-transform: uppercase;
+	text-align: center;
+	border-radius: 6px;
+	font-size: x-small;
 }

@@ -2,6 +2,21 @@
 
 ## UNRELEASED
 
+## v0.97.5
+
+:bug: Bugs fixed:
+
+- Fix: show GC rules missing warning not showing up (#5582)
+- Fix: dotgraph commit urls are broken (#5583)
+- Fix azure data lake v2 import (#5563)
+- fix presign UI  (#5586)
+
+## v0.97.4
+
+:bug: Bugs fixed:
+
+- Fix lakeFS clients - revert OpenAPI generator cli version (#5572)
+
 ## v0.97.3
 
 :new: What's new:

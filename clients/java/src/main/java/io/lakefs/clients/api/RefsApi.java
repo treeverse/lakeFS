@@ -40,12 +40,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class RefsApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public RefsApi() {
         this(Configuration.getDefaultApiClient());
@@ -61,22 +58,6 @@ public class RefsApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -102,26 +83,13 @@ public class RefsApi {
      </table>
      */
     public okhttp3.Call diffRefsCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/{leftRef}/diff/{rightRef}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "leftRef" + "}", localVarApiClient.escapeString(leftRef.toString()))
-            .replace("{" + "rightRef" + "}", localVarApiClient.escapeString(rightRef.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "leftRef" + "\\}", localVarApiClient.escapeString(leftRef.toString()))
+            .replaceAll("\\{" + "rightRef" + "\\}", localVarApiClient.escapeString(rightRef.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -158,34 +126,36 @@ public class RefsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call diffRefsValidateBeforeCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling diffRefs(Async)");
         }
-
+        
         // verify the required parameter 'leftRef' is set
         if (leftRef == null) {
             throw new ApiException("Missing the required parameter 'leftRef' when calling diffRefs(Async)");
         }
-
+        
         // verify the required parameter 'rightRef' is set
         if (rightRef == null) {
             throw new ApiException("Missing the required parameter 'rightRef' when calling diffRefs(Async)");
         }
+        
 
-        return diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, _callback);
+        okhttp3.Call localVarCall = diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, _callback);
+        return localVarCall;
 
     }
 
@@ -291,24 +261,11 @@ public class RefsApi {
      </table>
      */
     public okhttp3.Call dumpRefsCall(String repository, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/dump"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -325,24 +282,26 @@ public class RefsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call dumpRefsValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling dumpRefs(Async)");
         }
+        
 
-        return dumpRefsCall(repository, _callback);
+        okhttp3.Call localVarCall = dumpRefsCall(repository, _callback);
+        return localVarCall;
 
     }
 
@@ -432,26 +391,13 @@ public class RefsApi {
      </table>
      */
     public okhttp3.Call findMergeBaseCall(String repository, String sourceRef, String destinationBranch, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "sourceRef" + "}", localVarApiClient.escapeString(sourceRef.toString()))
-            .replace("{" + "destinationBranch" + "}", localVarApiClient.escapeString(destinationBranch.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "sourceRef" + "\\}", localVarApiClient.escapeString(sourceRef.toString()))
+            .replaceAll("\\{" + "destinationBranch" + "\\}", localVarApiClient.escapeString(destinationBranch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -468,34 +414,36 @@ public class RefsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call findMergeBaseValidateBeforeCall(String repository, String sourceRef, String destinationBranch, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling findMergeBase(Async)");
         }
-
+        
         // verify the required parameter 'sourceRef' is set
         if (sourceRef == null) {
             throw new ApiException("Missing the required parameter 'sourceRef' when calling findMergeBase(Async)");
         }
-
+        
         // verify the required parameter 'destinationBranch' is set
         if (destinationBranch == null) {
             throw new ApiException("Missing the required parameter 'destinationBranch' when calling findMergeBase(Async)");
         }
+        
 
-        return findMergeBaseCall(repository, sourceRef, destinationBranch, _callback);
+        okhttp3.Call localVarCall = findMergeBaseCall(repository, sourceRef, destinationBranch, _callback);
+        return localVarCall;
 
     }
 
@@ -594,25 +542,12 @@ public class RefsApi {
      </table>
      */
     public okhttp3.Call logCommitsCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/{ref}/commits"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "ref" + "}", localVarApiClient.escapeString(ref.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "ref" + "\\}", localVarApiClient.escapeString(ref.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -649,29 +584,31 @@ public class RefsApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call logCommitsValidateBeforeCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling logCommits(Async)");
         }
-
+        
         // verify the required parameter 'ref' is set
         if (ref == null) {
             throw new ApiException("Missing the required parameter 'ref' when calling logCommits(Async)");
         }
+        
 
-        return logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, _callback);
+        okhttp3.Call localVarCall = logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, _callback);
+        return localVarCall;
 
     }
 
@@ -780,26 +717,13 @@ public class RefsApi {
      </table>
      */
     public okhttp3.Call mergeIntoBranchCall(String repository, String sourceRef, String destinationBranch, Merge merge, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = merge;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "sourceRef" + "}", localVarApiClient.escapeString(sourceRef.toString()))
-            .replace("{" + "destinationBranch" + "}", localVarApiClient.escapeString(destinationBranch.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "sourceRef" + "\\}", localVarApiClient.escapeString(sourceRef.toString()))
+            .replaceAll("\\{" + "destinationBranch" + "\\}", localVarApiClient.escapeString(destinationBranch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -819,32 +743,33 @@ public class RefsApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call mergeIntoBranchValidateBeforeCall(String repository, String sourceRef, String destinationBranch, Merge merge, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling mergeIntoBranch(Async)");
         }
-
+        
         // verify the required parameter 'sourceRef' is set
         if (sourceRef == null) {
             throw new ApiException("Missing the required parameter 'sourceRef' when calling mergeIntoBranch(Async)");
         }
-
+        
         // verify the required parameter 'destinationBranch' is set
         if (destinationBranch == null) {
             throw new ApiException("Missing the required parameter 'destinationBranch' when calling mergeIntoBranch(Async)");
         }
+        
 
-        return mergeIntoBranchCall(repository, sourceRef, destinationBranch, merge, _callback);
+        okhttp3.Call localVarCall = mergeIntoBranchCall(repository, sourceRef, destinationBranch, merge, _callback);
+        return localVarCall;
 
     }
 
@@ -951,24 +876,11 @@ public class RefsApi {
      </table>
      */
     public okhttp3.Call restoreRefsCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = refsDump;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/restore"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -988,27 +900,28 @@ public class RefsApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call restoreRefsValidateBeforeCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling restoreRefs(Async)");
         }
-
+        
         // verify the required parameter 'refsDump' is set
         if (refsDump == null) {
             throw new ApiException("Missing the required parameter 'refsDump' when calling restoreRefs(Async)");
         }
+        
 
-        return restoreRefsCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreRefsCall(repository, refsDump, _callback);
+        return localVarCall;
 
     }
 

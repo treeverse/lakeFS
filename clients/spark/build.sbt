@@ -214,8 +214,8 @@ lazy val hadoop3ShadingSettings = assembly / assemblyShadeRules := hadoop3ShadeR
 // Upload assembly jars to S3
 lazy val s3UploadSettings = Seq(
   s3Upload / mappings := Seq(
-    (assemblyOutputPath in assembly).value ->
-      s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
+    (assembly / assemblyOutputPath).value ->
+      s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
   ),
   s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
   s3Upload / s3Progress := true
@@ -227,7 +227,7 @@ root / publish / skip := true
 lazy val commonSettings = Seq(
   version := projectVersion,
   // Use an older JDK to be Spark compatible
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  javacOptions ++= Seq("-source", "1.11", "-target", "1.8"),
   scalacOptions += "-target:jvm-1.8"
 )
 

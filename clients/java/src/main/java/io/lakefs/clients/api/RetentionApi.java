@@ -39,12 +39,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class RetentionApi {
     private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
     public RetentionApi() {
         this(Configuration.getDefaultApiClient());
@@ -60,22 +57,6 @@ public class RetentionApi {
 
     public void setApiClient(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
-    }
-
-    public int getHostIndex() {
-        return localHostIndex;
-    }
-
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
-
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
-
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
     }
 
     /**
@@ -94,24 +75,11 @@ public class RetentionApi {
      </table>
      */
     public okhttp3.Call deleteGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/rules"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -128,24 +96,26 @@ public class RetentionApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call deleteGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteGarbageCollectionRules(Async)");
         }
+        
 
-        return deleteGarbageCollectionRulesCall(repository, _callback);
+        okhttp3.Call localVarCall = deleteGarbageCollectionRulesCall(repository, _callback);
+        return localVarCall;
 
     }
 
@@ -225,24 +195,11 @@ public class RetentionApi {
      </table>
      */
     public okhttp3.Call getGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/rules"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -259,24 +216,26 @@ public class RetentionApi {
         }
 
         final String[] localVarContentTypes = {
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call getGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getGarbageCollectionRules(Async)");
         }
+        
 
-        return getGarbageCollectionRulesCall(repository, _callback);
+        okhttp3.Call localVarCall = getGarbageCollectionRulesCall(repository, _callback);
+        return localVarCall;
 
     }
 
@@ -361,24 +320,11 @@ public class RetentionApi {
      </table>
      */
     public okhttp3.Call prepareGarbageCollectionCommitsCall(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = garbageCollectionPrepareRequest;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/prepare_commits"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -398,22 +344,23 @@ public class RetentionApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call prepareGarbageCollectionCommitsValidateBeforeCall(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling prepareGarbageCollectionCommits(Async)");
         }
+        
 
-        return prepareGarbageCollectionCommitsCall(repository, garbageCollectionPrepareRequest, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsCall(repository, garbageCollectionPrepareRequest, _callback);
+        return localVarCall;
 
     }
 
@@ -502,24 +449,11 @@ public class RetentionApi {
      </table>
      */
     public okhttp3.Call prepareGarbageCollectionUncommittedCall(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = prepareGCUncommittedRequest;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/prepare_uncommited"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -539,22 +473,23 @@ public class RetentionApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call prepareGarbageCollectionUncommittedValidateBeforeCall(String repository, PrepareGCUncommittedRequest prepareGCUncommittedRequest, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling prepareGarbageCollectionUncommitted(Async)");
         }
+        
 
-        return prepareGarbageCollectionUncommittedCall(repository, prepareGCUncommittedRequest, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionUncommittedCall(repository, prepareGCUncommittedRequest, _callback);
+        return localVarCall;
 
     }
 
@@ -645,24 +580,11 @@ public class RetentionApi {
      </table>
      */
     public okhttp3.Call setGarbageCollectionRulesCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
         Object localVarPostBody = garbageCollectionRules;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/rules"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -682,27 +604,28 @@ public class RetentionApi {
             "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
+        localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
     private okhttp3.Call setGarbageCollectionRulesValidateBeforeCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
+        
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling setGarbageCollectionRules(Async)");
         }
-
+        
         // verify the required parameter 'garbageCollectionRules' is set
         if (garbageCollectionRules == null) {
             throw new ApiException("Missing the required parameter 'garbageCollectionRules' when calling setGarbageCollectionRules(Async)");
         }
+        
 
-        return setGarbageCollectionRulesCall(repository, garbageCollectionRules, _callback);
+        okhttp3.Call localVarCall = setGarbageCollectionRulesCall(repository, garbageCollectionRules, _callback);
+        return localVarCall;
 
     }
 

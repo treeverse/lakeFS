@@ -29,7 +29,7 @@ Server or the S3 Gateway.
 #### Remote Authenticator Service 
 
 lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
-To configure a Remote Authenticator see the [configuration fields](../reference/configuration.md).
+To configure a Remote Authenticator see the [configuration fields](./configuration.html#authentication-and-authorization).
 
 #### LDAP server
 
@@ -44,7 +44,7 @@ at Administration / My Credentials. lakeFS generates an internal user once
 logged in via the LDAP server. Adding this internal user to a group allows
 assigning them a different policy.
 
-Configure the LDAP server using the [configuration fields](../reference/configuration.md):
+Configure the LDAP server using the [configuration fields](./configuration.html):
 
 * `server_endpoint`: the `ldaps:` (or `ldap:`) URL of the LDAP server.
 * `bind_dn`, `bind_password`: Credentials for lakeFS to use to query the
@@ -118,7 +118,7 @@ Essentially, once configured, this enables you the benefit of OpenID connect, su
 
 ### Configuring lakeFS server for OIDC
 
-To support OIDC, add the following to your [lakeFS configuration](./configuration.md):
+To support OIDC, add the following to your [lakeFS configuration](./configuration.html):
 
 ```yaml
 auth:
@@ -137,12 +137,12 @@ OIDC provider. When a user first logs in through the provider, a corresponding u
 
 #### Notes
 {: .no_toc}
-1. As always, you may choose to provide these configurations using [environment variables](./configuration.md#using-environment-variables).
+1. As always, you may choose to provide these configurations using [environment variables](./configuration.html).
 2. You may already have other configuration values under the _auth_ key, so make sure you combine them correctly.
 
 ## User permissions
 
-Authorization is managed via [lakeFS groups and policies](./authorization.md).
+Authorization is managed via [lakeFS groups and policies](./rbac.html).
 
 By default, an externally managed user is assigned to the lakeFS groups configured in the _default_initial_groups_ property above.
 For a user to be assigned to other groups, add the _initial_groups_ claim to their **ID token** claims. The claim should contain a

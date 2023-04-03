@@ -50,21 +50,9 @@ func (m *metaRangeManager) Exists(ctx context.Context, ns graveler.StorageNamesp
 // GetValue finds the matching graveler.ValueRecord in the MetaRange with the rangeID
 func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error) {
 	// Fetch range containing key.
-	v, err := m.metaManager.GetValueGE(ctx, Namespace(ns), ID(id), Key(key))
-	if errors.Is(err, ErrNotFound) {
+	rng, err := m.GetRangeByKey(ctx, ns, id, key)
+	if err != nil {
 		return nil, err
-	}
-	if err != nil {
-		return nil, fmt.Errorf("find metarange in %s: %w", id, err)
-	}
-
-	rng, err := UnmarshalRange(v.Value)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal range data in metarange: %w", err)
-	}
-
-	if !(bytes.Compare(rng.MinKey, key) <= 0 && bytes.Compare(key, rng.MaxKey) <= 0) {
-		return nil, ErrNotFound
 	}
 
 	r, err := m.rangeManager.GetValue(ctx, Namespace(ns), rng.ID, Key(key))
@@ -79,6 +67,33 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 		Key:   key,
 		Value: value,
 	}, nil
+}
+
+func (m *metaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error) {
+	v, err := m.metaManager.GetValueGE(ctx, Namespace(ns), ID(id), Key(key))
+	if errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find range in %s: %w", id, err)
+	}
+
+	gv, err := UnmarshalValue(v.Value)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal value for %s: %w", string(v.Key), err)
+	}
+
+	rng, err := UnmarshalRange(gv.Data)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal %s: %w", string(v.Key), err)
+	}
+
+	if !(bytes.Compare(rng.MinKey, key) <= 0 && bytes.Compare(key, rng.MaxKey) <= 0) {
+		return nil, ErrNotFound
+	}
+
+	rng.ID = ID(gv.Identity)
+	return &rng, nil
 }
 
 func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {

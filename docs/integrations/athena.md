@@ -15,7 +15,7 @@ redirect_from: ../using/athena.html
 Amazon Athena works directly above S3 and can't access lakeFS. Tables created using Athena aren't readable by lakeFS.
 However, tables stored in lakeFS (that were created with [glue/hive](glue_hive_metastore.md)) can be queried by Athena.
 
-To support querying data from lakeFS with Amazon Athena, we will use `create-symlink`, one of the [metastore commands](glue_hive_metastore.md) in [lakectl](../reference/cli).
+To support querying data from lakeFS with Amazon Athena, we will use `create-symlink`, one of the [metastore commands](glue_hive_metastore.md) in [lakectl](../reference/cli.html).
 `create-symlink` receives a source table, destination table, and the table location. It performs two actions:
 1. It creates partitioned directories with symlink files in the underlying S3 bucket.
 1. It creates a table in Glue catalog with symlink format type and location pointing to the created symlinks.

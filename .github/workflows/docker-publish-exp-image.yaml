@@ -5,6 +5,16 @@ on:
       name:
         required: true
         description: The suffix of the published docker image.
+      target:
+        default: 'lakefs-plugins'
+        type: choice
+        options:
+          - lakefs-plugins
+          - lakefs-lakectl
+          - lakectl
+          - build-delta-diff-plugin
+          - build
+
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
   id-token: write
@@ -64,7 +74,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          target: lakefs-plugins
+          target: ${{ inputs.target }}
           push: true
           platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}

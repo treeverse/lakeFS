@@ -21,7 +21,7 @@ redirect_from:
 We plan on implementing support for the lakeFS pre-signed URL API into the [lakeFS Hadoop Filesystem](./integrations/spark.md#use-the-lakefs-hadoop-filesystem).
 Currently, users have to choose between:
 - managing authorization in lakeFS as well as the object store to allow direct access to lakeFS-managed data
-- Use a gateway or proxy component such as the [S3 Gateway](./integrations/spark.md#use-the-s3-gateway) that requires additional sizing
+- Use a gateway or proxy component such as the [S3-compatible API](./integrations/spark.md#use-the-s3-compatible-api) that requires additional sizing
 
 Using pre-signed URLs, users will be able to enjoy both worlds: direct access without a proxy, with access control managed in one place
 

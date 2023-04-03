@@ -18,8 +18,8 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Ref;
 import io.lakefs.clients.api.model.RefList;
 import io.lakefs.clients.api.model.TagCreation;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,54 +29,67 @@ import java.util.Map;
 /**
  * API tests for TagsApi
  */
-@Disabled
+@Ignore
 public class TagsApiTest {
 
     private final TagsApi api = new TagsApi();
 
+    
     /**
      * create tag
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void createTagTest() throws ApiException {
         String repository = null;
         TagCreation tagCreation = null;
-        Ref response = api.createTag(repository, tagCreation);
+                Ref response = api.createTag(repository, tagCreation);
         // TODO: test validations
     }
-
+    
     /**
      * delete tag
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void deleteTagTest() throws ApiException {
         String repository = null;
         String tag = null;
-        api.deleteTag(repository, tag);
+                api.deleteTag(repository, tag);
         // TODO: test validations
     }
-
+    
     /**
      * get tag
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void getTagTest() throws ApiException {
         String repository = null;
         String tag = null;
-        Ref response = api.getTag(repository, tag);
+                Ref response = api.getTag(repository, tag);
         // TODO: test validations
     }
-
+    
     /**
      * list tags
      *
-     * @throws ApiException if the Api call fails
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
      */
     @Test
     public void listTagsTest() throws ApiException {
@@ -84,8 +97,8 @@ public class TagsApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        RefList response = api.listTags(repository, prefix, after, amount);
+                RefList response = api.listTags(repository, prefix, after, amount);
         // TODO: test validations
     }
-
+    
 }
