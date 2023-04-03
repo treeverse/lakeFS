@@ -108,7 +108,7 @@ Alternatively you might want to have a look at [lakeFS Cloud](https://lakefs.clo
 
 The [lakeFS Samples](https://github.com/treeverse/lakeFS-samples) GitHub repository includes some excellent examples including: 
 
-* How to implement cross collection consistency on multiple Delta Tables
+* How to implement multi-table transaction on multiple Delta Tables
 * Notebooks to show integration of lakeFS with Spark, Python, Delta Lake, Airflow and Hooks.
 * Examples of using lakeFS webhooks to run automated data quality checks on different branches.
 * Using lakeFS branching features to create dev/test data environments for ETL testing and experimentation.
