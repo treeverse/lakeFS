@@ -178,6 +178,40 @@ To render the documentation locally and preview changes you can run the Jeykll s
 
 _If you are doing lots of work on the docs you may want to leave the Docker container in place (so that you don't have to wait for the dependencies to load each time you re-create it). To do this replace the `--rm` with `--detach` in the `docker run` command, and use `docker logs -f lakefs_docs` to view the server log._
 
+### Link Checking locally
+
+When making a pull request to lakeFS that involves a `docs/*` file, a [GitHub action](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/docs-pr.yaml) will automagically check the links. You can also run this link checker manually on your local machine: 
+
+1. Build the site: 
+
+   ```
+   docker run --rm \
+            --name lakefs_docs \
+            -e TZ="Etc/UTC" \
+            --volume="$PWD/docs:/srv/jekyll:Z" \
+            --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
+            --interactive --tty \
+            jekyll/jekyll:3.8 \
+            jekyll build --watch
+   ```
+
+2. Check the links: 
+
+   ```
+   docker run --rm \
+            --name lakefs_docs_lychee \
+            --volume "$PWD:/data"\
+            --volume "/tmp:/output"\
+            --tty \
+            lycheeverse/lychee \
+            --exclude-file /data/docs/.lycheeignore \
+            --output /output/lychee_report.md \
+            --format markdown \
+            /data/docs/_site
+   ```
+
+3. Review the `lychee_report.md` in your local `/tmp` folder
+
 ### CHANGELOG.md
 
 Any user-facing change should be labeled with `include-changelog`.
