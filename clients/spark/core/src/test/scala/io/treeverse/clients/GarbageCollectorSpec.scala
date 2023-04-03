@@ -60,7 +60,7 @@ class ARangeGetter(
   }
 }
 
-class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSetup {
+class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSetup with ParallelTestExecution {
   describe("Spark") {
     it("should perform Gauss summation") {
       withSparkSession(spark => {
