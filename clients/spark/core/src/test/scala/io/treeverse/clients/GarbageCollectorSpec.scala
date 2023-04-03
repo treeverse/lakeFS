@@ -108,6 +108,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
               Seq[(String, Boolean)]().toDS,
               "repo",
               "",
+              numRangePartitions,
               numAddressPartitions,
               approxNumRangesToSpreadPerPartition,
               1)
@@ -128,6 +129,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
               Seq(("aaa", true), ("222", true), ("bbb", true)).toDS,
               "repo",
               "s3://some-ns/",
+              numRangePartitions,
               numAddressPartitions,
               approxNumRangesToSpreadPerPartition,
               1)
@@ -148,6 +150,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
               Seq(("aaa", true), ("bbb", true), ("222", false)).toDS,
               "repo",
               "s3://some-other-ns/",
+              numRangePartitions,
               numAddressPartitions,
               approxNumRangesToSpreadPerPartition,
               1)
@@ -168,6 +171,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
               Seq(("aaa", true), ("bbb", true), ("bbb", false)).toDS,
               "repo",
               "s3://some-ns/",
+              numRangePartitions,
               numAddressPartitions,
               approxNumRangesToSpreadPerPartition,
               1)
@@ -188,6 +192,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
               Seq(("aaa", true), ("bbb", true), ("ab12", true), ("bbb", false), ("222", false)).toDS,
               "repo",
               "s3://some-other-ns/",
+              numRangePartitions,
               numAddressPartitions,
               approxNumRangesToSpreadPerPartition,
               1)

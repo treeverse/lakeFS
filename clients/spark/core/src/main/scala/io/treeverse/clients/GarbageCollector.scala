@@ -122,6 +122,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       rangeIDs: Dataset[(String, Boolean)],
       repo: String,
       storageNS: String,
+      numRangePartitions: Int,
       numAddressPartitions: Int,
       approxNumRangesToSpreadPerPartition: Double,
       sampleFraction: Double
@@ -153,13 +154,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       all.iterator
     }
 
-    // Generate lists of all addresses.  This partition size is greater than
-    // numRangePartitions and smaller than numAddressPartitions by equal
-    // factors.  It is safe to do this _before_ expanding with
-    // getDeletableAddresses if we assume ranges have roughly identical
-    // distribution of size.
-    //val numIntermediatePartitions = Math.sqrt(numRangePartitions * numAddressPartitions).round.toInt
-
     def readRanges(ranges: Dataset[(String, Boolean)], name: String): RDD[(String, Boolean)] = {
       val approxNumRows = ranges.cache().rdd.countApprox(10000 /* msecs */, 0.9)
       val numPartitions = (try {
@@ -190,11 +184,17 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     val shouldExpire = (a: Boolean, b: Boolean) => a & b
 
     val dedupedRangeIDs = rangeIDs.rdd
-      .aggregateByKey(0, 400)(((u: Int, expire: Boolean) => u | (if (expire) 1 else 2)),
-                              (a, b: Int) => a | b
-                             )
-      .filter({ case (_, a) => a != 3 }) // Remove keys appearing on both sides
-      .map({ case (r, expireInt) => (r, if (expireInt == 1) true else false) })
+      .aggregateByKey(0, numRangePartitions)(
+        (u: Int, expire: Boolean) => u | (if (expire) 1 else 2),
+        (a, b: Int) => a | b
+      )
+      .map({ case (r, expireInt) =>
+        // Ranges appearing only as expire should expire.  Ranges appearing
+        // only as keep should be kept.  Ranges appearing as both expire and
+        // keep should still be kept - to protect their contents from
+        // expired ranges that intersect.
+        (r, expireInt == 1)
+      })
       .toDS
     // TODO(ariels): Consider merely range-partitioning, reducing each
     // partition in-memory, and _then_ sorting.
@@ -238,6 +238,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
         rangeIDs,
         repo,
         storageNS,
+        numRangePartitions,
         numAddressPartitions,
         approxNumRangesToSpreadPerPartition,
         sampleFraction
