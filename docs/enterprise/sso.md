@@ -18,8 +18,11 @@ lakeFS Enterprise
 
 Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
 
-If you're using an authentication provider that is not listed below but is based on OpenID Connect or SAML please [contact us](support@treeverse.io) for further assistance.
+* [Active Directory Federation Services (AD FS) (using SAML)](#adfs)
+* [OpenID Connect](#oidc)
+* [LDAP](#ldap)
 
+If you're using an authentication provider that is not listed please [contact us](support@treeverse.io) for further assistance.
 
 <div class="tabs">
   <ul>
