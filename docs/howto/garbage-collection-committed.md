@@ -6,7 +6,12 @@ parent: Garbage Collection
 grand_parent: How-To
 nav_order: 10
 has_children: false
-redirect_from: ["../howto/garbage-collection.html", "../reference/garbage-collection.html", "../howto/garbage-collection-index.html"]
+redirect_from: [
+  - "/howto/garbage-collection.html"
+  - "/reference/garbage-collection.html"
+  - "/howto/garbage-collection-index.html"
+  - "/howto/garbage-collection.html"
+  ]
 ---
 
 ## Garbage Collection: committed objects

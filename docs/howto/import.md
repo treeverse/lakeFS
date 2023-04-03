@@ -238,6 +238,6 @@ Another way of getting existing data into a lakeFS repository is by copying it. 
 
 To copy data into lakeFS you can use the following tools:
 
-1. The `lakectl` command line tool - see the [reference](../reference/cli#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
+1. The `lakectl` command line tool - see the [reference](../reference/cli.html#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
 1. Using [rclone](../howto/copying.md#using-rclone)
 1. Using Hadoop's [DistCp](../howto/copying.md#using-distcp)

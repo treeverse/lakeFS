@@ -94,7 +94,7 @@ The uncommitted GC will not clean:
 ### Uncommitted GC job options
 {: .no_toc }
 
-Similar to the [committed GC option](./garbage-collection.md#gc-job-options).
+Similar to the [committed GC option](./garbage-collection-committed.md.md#gc-job-options).
 
 ### Limitations
 
@@ -115,7 +115,7 @@ The uncommitted GC is under development, next releases will include:
     1. Better parallelization of the storage namespace traversal.
     2. Optimized Run: GC will only iterate over objects that were written to the
        repository since the last GC run. For more information see the [proposal](https://github.com/treeverse/lakeFS/blob/master/design/accepted/gc_plus/uncommitted-gc.md#flow-2-optimized-run).
-4. Backup & Restore, similar to [committed GC](./garbage-collection.md#backup-and-restore).
+4. Backup & Restore, similar to [committed GC](./garbage-collection-committed.md#backup-and-restore).
 5. Support for non-S3 repositories.
 
 ### Performance
