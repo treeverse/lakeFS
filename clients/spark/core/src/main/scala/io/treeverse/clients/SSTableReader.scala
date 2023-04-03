@@ -23,11 +23,18 @@ private object local {
 
 class SSTableIterator[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val it: Iterator[PebbleEntry],
+    val resource: Closeable,
     val companion: GeneratedMessageCompanion[Proto]
 ) extends Iterator[Item[Proto]] {
   // TODO(ariels): explicitly make it closeable, and figure out how to close it when used by
   //     Spark.
-  override def hasNext: Boolean = it.hasNext
+  override def hasNext: Boolean = {
+    val ret = it.hasNext
+    if (!ret) {
+      resource.close()
+    }
+    ret
+  }
 
   override def next(): Item[Proto] = {
     val entry = it.next
@@ -66,29 +73,37 @@ object SSTableReader {
     localFile
   }
 
-  def forMetaRange(configuration: Configuration, metaRangeURL: String): SSTableReader[RangeData] = {
+  def forMetaRange(configuration: Configuration, metaRangeURL: String, dontOwn: Boolean = false): SSTableReader[RangeData] = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
-    new SSTableReader(localFile, RangeData.messageCompanion)
+    val ret = new SSTableReader(localFile, RangeData.messageCompanion, dontOwn)
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
+    ret
   }
 
-  def forRange(configuration: Configuration, rangeURL: String): SSTableReader[Entry] = {
+  def forRange(configuration: Configuration, rangeURL: String, dontOwn: Boolean = false): SSTableReader[Entry] = {
     val localFile: File = copyToLocal(configuration, rangeURL)
-    new SSTableReader(localFile, Entry.messageCompanion)
+    val ret = new SSTableReader(localFile, Entry.messageCompanion, dontOwn)
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
+    ret
   }
 }
 
 class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
     val file: java.io.File,
-    val companion: GeneratedMessageCompanion[Proto]
+    val companion: GeneratedMessageCompanion[Proto],
+    val dontOwn: Boolean = false
 ) extends Closeable {
   private val fp = new java.io.RandomAccessFile(file, "r")
   private val reader = new BlockReadableFile(fp)
 
-  def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto]) =
-    this(new java.io.File(sstableFilename), companion)
+  def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto], dontOwn: Boolean) =
+    this(new java.io.File(sstableFilename), companion, dontOwn)
 
   def close(): Unit = {
     fp.close()
+    if (!dontOwn) {
+      file.delete()
+    }
   }
 
   def getProperties: Map[String, Array[Byte]] = {
@@ -99,6 +114,6 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
 
   def newIterator(): SSTableIterator[Proto] = {
     val it = BlockParser.entryIterator(reader)
-    new SSTableIterator(it, companion)
+    new SSTableIterator(it, this, companion)
   }
 }
