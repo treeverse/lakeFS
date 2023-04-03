@@ -23,11 +23,16 @@ jobs:
           ruby-version: 2.6
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
+      - name: Debug 1
+        run: ls -lR docs
+
       - name: Build latest
         id: build-latest
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/ --verbose
 
+      - name: Debug 2
+        run: ls -lR docs
 
       - name: Overlay PR message on each page
         working-directory: docs/_site
