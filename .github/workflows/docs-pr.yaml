@@ -62,6 +62,7 @@ jobs:
         with:
           args: docs/_site --no-progress --exclude-file=docs/.lycheeignore
           fail: true
+          debug: true
           jobSummary: true
           format: markdown
         env:

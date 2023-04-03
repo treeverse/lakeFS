@@ -192,7 +192,7 @@ When making a pull request to lakeFS that involves a `docs/*` file, a [GitHub ac
             --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
             --interactive --tty \
             jekyll/jekyll:3.8 \
-            jekyll build --watch
+            jekyll build --config _config.yml -d _site --watch
    ```
 
 2. Check the links: 
@@ -203,7 +203,7 @@ When making a pull request to lakeFS that involves a `docs/*` file, a [GitHub ac
             --volume "$PWD:/data"\
             --volume "/tmp:/output"\
             --tty \
-            lycheeverse/lychee \
+            lycheeverse/lychee:master \
             --exclude-file /data/docs/.lycheeignore \
             --output /output/lychee_report.md \
             --format markdown \
