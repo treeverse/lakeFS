@@ -19,7 +19,7 @@ const NavUserInfo = () => {
     if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
     const notifyNewVersion = !versionLoading && !versionError && versionResponse.upgrade_recommended
-    const renderNavBarTitle = () => {
+    const NavBarTitle = () => {
         return (
         <>
             {notifyNewVersion && <> <div className="user-menu-notification-indicator"></div> </> }
@@ -28,7 +28,7 @@ const NavUserInfo = () => {
         )
     }
     return (
-        <NavDropdown title={renderNavBarTitle()} className="navbar-username" align="end">
+        <NavDropdown title={<NavBarTitle />} className="navbar-username" align="end">
             {notifyNewVersion && <>
             <NavDropdown.Item href={versionResponse.upgrade_url}>
                     <>

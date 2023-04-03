@@ -26,9 +26,9 @@ import (
 const (
 	DefaultMaxIdleConnsPerHost = 100
 	// version templates
-	getLakeFSVersionErrorTemplate = `{{ print "Failed getting lakectl server version:" | red }} {{ . }}
+	getLakeFSVersionErrorTemplate = `{{ print "Failed getting lakeFS server version:" | red }} {{ . }}
 `
-	getLatestVersionErrorTemplate = `{{ print "Failed getting latest version:" | red }} {{ . }}
+	getLatestVersionErrorTemplate = `{{ print "Failed getting latest lakectl version:" | red }} {{ . }}
 `
 	versionTemplate = `lakectl version: {{.LakectlVersion }}
 {{- if .LakeFSVersion }}{{ "\n" }}lakeFS version: {{.LakeFSVersion}}{{ "\n" }}{{ end -}}
@@ -116,22 +116,17 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		verbose := MustBool(cmd.Flags().GetBool("verbose"))
-
 		info := versionInfo{LakectlVersion: version.Version}
 
 		// get lakeFS server version
 
 		client := getClient()
-		resp, err := client.GetLakeFSVersionWithResponse(context.Background())
+
+		resp, err := client.GetLakeFSVersionWithResponse(cmd.Context())
 		if err != nil {
-			if verbose {
-				WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
-			}
+			WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
 		} else if resp.JSON200 == nil {
-			if verbose {
-				WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
-			}
+			WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
 		} else {
 			lakefsVersion := resp.JSON200
 			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
@@ -146,15 +141,11 @@ var rootCmd = &cobra.Command{
 		ghReleases := version.NewGithubReleases(version.GithubRepoOwner, version.GithubRepoName)
 		latestVer, err := ghReleases.FetchLatestVersion()
 		if err != nil {
-			if verbose {
-				WriteIfVerbose(getLatestVersionErrorTemplate, err)
-			}
+			WriteIfVerbose(getLatestVersionErrorTemplate, err)
 		} else {
 			latest, err := version.CheckLatestVersion(latestVer)
 			if err != nil {
-				if verbose {
-					WriteIfVerbose("failed parsing {{ . }}", err)
-				}
+				WriteIfVerbose("failed parsing {{ . }}", err)
 			} else if latest.Outdated {
 				info.LakectlLatestVersion = latest.LatestVersion
 				if info.UpgradeURL == "" {

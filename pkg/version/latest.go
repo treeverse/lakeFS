@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v50/github"
+	goversion "github.com/hashicorp/go-version"
 )
 
 const (
@@ -89,4 +90,30 @@ func (gh *GithubReleases) FetchLatestVersion() (string, error) {
 	}
 
 	return release.GetTagName(), nil
+}
+
+func CheckLatestVersion(targetVersion string) (*LatestVersionResponse, error) {
+	targetV, err := goversion.NewVersion(targetVersion)
+	if err != nil {
+		return nil, fmt.Errorf("tag parse %s: %w", targetVersion, err)
+	}
+
+	if IsVersionUnreleased() {
+		return &LatestVersionResponse{
+			Outdated:       true,
+			LatestVersion:  targetV.String(),
+			CurrentVersion: Version,
+		}, nil
+	}
+
+	currentV, err := goversion.NewVersion(Version)
+	if err != nil {
+		return nil, fmt.Errorf("version parse %s: %w", Version, err)
+	}
+
+	return &LatestVersionResponse{
+		Outdated:       currentV.LessThan(targetV),
+		LatestVersion:  targetV.String(),
+		CurrentVersion: currentV.String(),
+	}, nil
 }
