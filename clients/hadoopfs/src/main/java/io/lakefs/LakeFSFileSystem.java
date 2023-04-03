@@ -162,7 +162,7 @@ public class LakeFSFileSystem extends FileSystem {
             URI storageURI = URI.create(storageNamespace);
             Path physicalPath = new Path(physicalAddressTranslator.translate(storageURI));
             fsForConfig = physicalPath.getFileSystem(conf);
-        } catch (Exception e) {
+        } catch (ApiException | URISyntaxException | IOException e) {
             failedFSForConfig = true;
             LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
         }
