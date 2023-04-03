@@ -31,6 +31,13 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_otf_diffs(self):
+        """Test case for otf_diffs
+
+        get the available OTF diffs  # noqa: E501
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -52,6 +52,7 @@ docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/NextStep.md
+docs/OTFDiffs.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
@@ -178,6 +179,7 @@ lakefs_client/model/object_stats_list.py
 lakefs_client/model/object_user_metadata.py
 lakefs_client/model/otf_diff_entry.py
 lakefs_client/model/otf_diff_list.py
+lakefs_client/model/otf_diffs.py
 lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
@@ -280,6 +282,7 @@ test/test_objects_api.py
 test/test_otf_diff_api.py
 test/test_otf_diff_entry.py
 test/test_otf_diff_list.py
+test/test_otf_diffs.py
 test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py

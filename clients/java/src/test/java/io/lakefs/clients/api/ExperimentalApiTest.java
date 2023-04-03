@@ -15,6 +15,7 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.OTFDiffs;
 import io.lakefs.clients.api.model.OtfDiffList;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -49,6 +50,20 @@ public class ExperimentalApiTest {
         String tablePath = null;
         String type = null;
                 OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type);
+        // TODO: test validations
+    }
+    
+    /**
+     * get the available OTF diffs
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void otfDiffsTest() throws ApiException {
+                OTFDiffs response = api.otfDiffs();
         // TODO: test validations
     }
     

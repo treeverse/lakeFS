@@ -28,6 +28,7 @@ var allowedProtocols = []plugin.Protocol{
 type Handler[T, I any] interface {
 	RegisterPlugin(string, I)
 	LoadPluginClient(string) (T, func(), error)
+	Plugins() []string
 }
 
 // Manager holds a clientStore and is responsible to register and unregister `plugin.Client`s, and to load
@@ -126,6 +127,14 @@ func (m *Manager[T]) LoadPluginClient(name string) (T, func(), error) {
 	return ans, func() {
 		m.closeAndReRegisterClient(name)
 	}, nil
+}
+
+func (m *Manager[T]) Plugins() []string {
+	ps := make([]string, 0, len(m.pluginApplicationClients.pluginApplicationClients))
+	for k := range m.pluginApplicationClients.pluginApplicationClients {
+		ps = append(ps, k)
+	}
+	return ps
 }
 
 func (m *Manager[T]) closeAndReRegisterClient(name string) {

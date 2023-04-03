@@ -51,6 +51,7 @@ from lakefs_client.model.merge_result_summary import MergeResultSummary
 from lakefs_client.model.meta_range_creation import MetaRangeCreation
 from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
 from lakefs_client.model.next_step import NextStep
+from lakefs_client.model.otf_diffs import OTFDiffs
 from lakefs_client.model.object_copy_creation import ObjectCopyCreation
 from lakefs_client.model.object_error import ObjectError
 from lakefs_client.model.object_error_list import ObjectErrorList

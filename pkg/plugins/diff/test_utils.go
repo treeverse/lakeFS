@@ -35,6 +35,14 @@ func (mh *MockHandler) LoadPluginClient(name string) (Differ, func(), error) {
 	return d, nil, nil
 }
 
+func (mh *MockHandler) Plugins() []string {
+	ps := make([]string, 0, len(mh.differs))
+	for k := range mh.differs {
+		ps = append(ps, k)
+	}
+	return ps
+}
+
 func NewMockHandler() *MockHandler {
 	mh := MockHandler{
 		differs: make(map[string]Differ),

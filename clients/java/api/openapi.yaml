@@ -1721,6 +1721,33 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /otf/diffs:
+    get:
+      operationId: otfDiffs
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTFDiffs'
+          description: available OTF diffs
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get the available OTF diffs
+      tags:
+      - experimental
+      - otf diff
+      x-accepts: application/json
   /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
     get:
       operationId: otfDiff
@@ -5701,6 +5728,18 @@ components:
           type: array
       required:
       - results
+      type: object
+    OTFDiffs:
+      example:
+        diffs:
+        - diffs
+        - diffs
+      properties:
+        diffs:
+          items:
+            type: string
+          type: array
+      title: A list of available OTF diffs.
       type: object
     ResetCreation:
       example:
