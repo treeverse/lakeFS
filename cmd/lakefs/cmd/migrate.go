@@ -8,15 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/config"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	auth_migrate "github.com/treeverse/lakefs/pkg/auth/migrate"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
