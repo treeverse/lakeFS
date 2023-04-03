@@ -260,7 +260,7 @@ func TestAzureDataLakeV2(t *testing.T) {
 				"helloworld/myfile.csv",
 			},
 		},
-		//{
+		//{ // Use this configuration to run import on big dataset of ~620,000 objects
 		//	name:         "adls-big-import",
 		//	prefix:       "",
 		//	filesToCheck: []string{},
@@ -307,8 +307,6 @@ func BenchmarkIngest_Azure(b *testing.B) {
 
 	b.Run("blob_storage_ingest", func(b *testing.B) {
 		benchmarkIngest(b, ctx, repoName, azureImportPath)
-		//var importFilesToCheck []string
-		//verifyImportObjects(b, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, 0) == 29400 objects
 	})
 }
 
@@ -340,8 +338,6 @@ func BenchmarkImport_Azure(b *testing.B) {
 	b.Run("blob_storage_import", func(b *testing.B) {
 		importBranch := fmt.Sprintf("%s-%s", importBranchBase, makeRepositoryName(b.Name()))
 		benchmarkImport(b, ctx, repoName, azureImportPath, importBranch)
-		//var importFilesToCheck []string
-		//verifyImportObjects(b, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, 0) == 29400 objects
 	})
 }
 
