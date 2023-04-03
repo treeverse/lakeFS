@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/pkg/block"
 	"net/url"
 	"testing"
 
@@ -51,16 +52,18 @@ func TestWalkEntryIterator(t *testing.T) {
 				if i < iteratorTestCount-1 {
 					// Last entry since race condition can give inconsistent HasMore.
 					// After it's closed than HasMore must be set to false
-					require.Equal(t, catalog.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque}, sut.Marker())
+					require.Equal(t, catalog.Mark{
+						Mark: block.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque},
+					}, sut.Marker())
 				}
 			}
 			sut.Close()
 			require.NoError(t, sut.Err())
 
 			if i == iteratorTestCount {
-				require.Equal(t, catalog.Mark{LastKey: "", HasMore: false, ContinuationToken: ""}, sut.Marker())
+				require.Equal(t, catalog.Mark{Mark: block.Mark{LastKey: "", HasMore: false, ContinuationToken: ""}}, sut.Marker())
 			} else {
-				require.Equal(t, catalog.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque}, sut.Marker())
+				require.Equal(t, catalog.Mark{Mark: block.Mark{LastKey: w.Entries[i].FullKey, HasMore: true, ContinuationToken: testutils.ContinuationTokenOpaque}}, sut.Marker())
 			}
 			require.NoError(t, sut.Err())
 		})

@@ -84,7 +84,7 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 		if err != nil {
 			return nil, nil, err
 		}
-		if bytes.Compare(prev, record.Key) > 0 { //skip out of order
+		if bytes.Compare(prev, record.Key) > 0 { // skip out of order
 			skipped = append(skipped, record)
 			skipCount++
 			continue

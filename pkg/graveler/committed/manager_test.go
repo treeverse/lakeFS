@@ -69,8 +69,9 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
 
 			it := testutils.NewFakeValueIterator(tt.records)
-			rangeInfo, err := sut.WriteRange(context.Background(), ns, it)
+			rangeInfo, token, err := sut.WriteRange(context.Background(), ns, it)
 			require.NoError(t, err)
+			require.Empty(t, token)
 			require.Equal(t, &graveler.RangeInfo{
 				ID:                      graveler.RangeID(writeResult.RangeID),
 				MinKey:                  graveler.Key(writeResult.First),
