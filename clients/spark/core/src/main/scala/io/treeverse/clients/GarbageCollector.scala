@@ -465,6 +465,8 @@ object GarbageCollector {
     var gcCommitsLocation = ""
     var gcAddressesLocation = ""
     if (runIDToReproduce == "") {
+      prepareResult = apiClient.prepareGarbageCollectionCommits(repo, previousRunID)
+      runID = prepareResult.getRunId
       gcCommitsLocation = hc.get(
         "debug.gc.commits",
         ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
