@@ -92,3 +92,6 @@ The underlying storage is a location in some object store where lakeFS keeps you
 
 Tags are a way to give a meaningful name to a specific commit. [Read More](../understand/model.html#tags)
 
+### Fluffy
+
+lakeFS Enterprise Single-Sign-On service, it's delegated with lakeFS' authentication requests and replies back to lakeFS with the authentication response.
