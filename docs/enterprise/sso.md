@@ -10,19 +10,16 @@ has_toc: false
 
 # Single Sign On (SSO) in lakeFS Enterprise
 {: .d-inline-block }
-
 lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> SSO is available for [lakeFS Cloud](../cloud/sso.html) and [lakeFS Enterprise](../enterprise/index.html).
->
-> Using the open-source version of lakeFS? Read more on [authentication](/reference/authentication.html). 
+> SSO is also available on [lakeFS Cloud](../cloud/sso.html). Using the open-source version of lakeFS? Read more on [authentication](/reference/authentication.html). 
 
-Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. 
-> If you're using an authentication provider that is not listed below but is based on OpenID Connect or SAML please [contact us](support@treeverse.io) for further assistance.
-{: .note}
-lakeFS Enterprise uses Helm's capabilities to run another set of pods that will take care of the SSO requests, side-by-side with lakeFS Server. Please review the [Helm configuration](#helm).
+Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
+
+If you're using an authentication provider that is not listed below but is based on OpenID Connect or SAML please [contact us](support@treeverse.io) for further assistance.
+
 
 <div class="tabs">
   <ul>

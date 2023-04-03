@@ -4,7 +4,6 @@ title: Auditing
 parent: lakeFS Cloud
 description: Auditing is a solution for lakeFS Cloud which enables tracking of events and activities performed within the solution. These logs capture information such as who accessed the solution, what actions were taken, and when they occurred.
 has_children: false
-redirect_from: "/cloud.html"
 ---
 
 # Auditing
