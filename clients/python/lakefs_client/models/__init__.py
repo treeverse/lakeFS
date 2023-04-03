@@ -42,7 +42,8 @@ from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.import_pagination import ImportPagination
 from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
-from lakefs_client.model.inline_object1 import InlineObject1
+from lakefs_client.model.inline_object import InlineObject
+from lakefs_client.model.inline_object2 import InlineObject2
 from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge

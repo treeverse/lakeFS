@@ -63,10 +63,11 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 	return NewValueIterator(it), nil
 }
 
-func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, []graveler.ValueRecord, error) {
+	var skipped []graveler.ValueRecord
 	writer, err := c.RangeManager.GetWriter(ctx, Namespace(ns), nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating range writer: %w", err)
+		return nil, nil, fmt.Errorf("failed creating range writer: %w", err)
 	}
 	writer.SetMetadata(MetadataTypeKey, MetadataRangesType)
 
@@ -75,28 +76,34 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 			c.logger.WithError(err).Error("Aborting write to range")
 		}
 	}()
-
+	prev := []byte("")
+	skipCount := 0
 	for it.Next() {
 		record := *it.Value()
 		v, err := MarshalValue(record.Value)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-
+		if bytes.Compare(prev, record.Key) > 0 { //skip out of order
+			skipped = append(skipped, record)
+			skipCount++
+			continue
+		}
+		prev = record.Key
 		if err := writer.WriteRecord(Record{Key: Key(record.Key), Value: v}); err != nil {
-			return nil, fmt.Errorf("writing record: %w", err)
+			return nil, nil, fmt.Errorf("writing record: %w", err)
 		}
 		if writer.ShouldBreakAtKey(record.Key, c.params) {
 			break
 		}
 	}
 	if err := it.Err(); err != nil {
-		return nil, fmt.Errorf("getting value from iterator: %w", err)
+		return nil, nil, fmt.Errorf("getting value from iterator: %w", err)
 	}
-
+	c.logger.Warning("Skipped count:", skipCount)
 	info, err := writer.Close()
 	if err != nil {
-		return nil, fmt.Errorf("closing writer: %w", err)
+		return nil, nil, fmt.Errorf("closing writer: %w", err)
 	}
 
 	return &graveler.RangeInfo{
@@ -105,7 +112,7 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 		MaxKey:                  graveler.Key(info.Last),
 		Count:                   info.Count,
 		EstimatedRangeSizeBytes: info.EstimatedRangeSizeBytes,
-	}, nil
+	}, skipped, nil
 }
 
 func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {

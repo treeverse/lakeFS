@@ -45,6 +45,10 @@ public class StageRangeCreation {
   @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
   private String continuationToken;
 
+  public static final String SERIALIZED_NAME_STAGING_TOKEN = "staging_token";
+  @SerializedName(SERIALIZED_NAME_STAGING_TOKEN)
+  private String stagingToken;
+
 
   public StageRangeCreation fromSourceURI(String fromSourceURI) {
     
@@ -138,6 +142,29 @@ public class StageRangeCreation {
   }
 
 
+  public StageRangeCreation stagingToken(String stagingToken) {
+    
+    this.stagingToken = stagingToken;
+    return this;
+  }
+
+   /**
+   * Opaque. Client should pass staging_token if received from server on previous request
+   * @return stagingToken
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Opaque. Client should pass staging_token if received from server on previous request")
+
+  public String getStagingToken() {
+    return stagingToken;
+  }
+
+
+  public void setStagingToken(String stagingToken) {
+    this.stagingToken = stagingToken;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -150,12 +177,13 @@ public class StageRangeCreation {
     return Objects.equals(this.fromSourceURI, stageRangeCreation.fromSourceURI) &&
         Objects.equals(this.after, stageRangeCreation.after) &&
         Objects.equals(this.prepend, stageRangeCreation.prepend) &&
-        Objects.equals(this.continuationToken, stageRangeCreation.continuationToken);
+        Objects.equals(this.continuationToken, stageRangeCreation.continuationToken) &&
+        Objects.equals(this.stagingToken, stageRangeCreation.stagingToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fromSourceURI, after, prepend, continuationToken);
+    return Objects.hash(fromSourceURI, after, prepend, continuationToken, stagingToken);
   }
 
   @Override
@@ -166,6 +194,7 @@ public class StageRangeCreation {
     sb.append("    after: ").append(toIndentedString(after)).append("\n");
     sb.append("    prepend: ").append(toIndentedString(prepend)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
+    sb.append("    stagingToken: ").append(toIndentedString(stagingToken)).append("\n");
     sb.append("}");
     return sb.toString();
   }

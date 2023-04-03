@@ -16,7 +16,7 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineObject1;
+import io.lakefs.clients.api.model.InlineObject2;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryList;
@@ -80,8 +80,8 @@ public class RepositoriesApiTest {
     @Test
     public void deleteBranchProtectionRuleTest() throws ApiException {
         String repository = null;
-        InlineObject1 inlineObject1 = null;
-                api.deleteBranchProtectionRule(repository, inlineObject1);
+        InlineObject2 inlineObject2 = null;
+                api.deleteBranchProtectionRule(repository, inlineObject2);
         // TODO: test validations
     }
     

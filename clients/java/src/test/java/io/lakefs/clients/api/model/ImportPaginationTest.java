@@ -64,4 +64,12 @@ public class ImportPaginationTest {
         // TODO: test lastKey
     }
 
+    /**
+     * Test the property 'stagingToken'
+     */
+    @Test
+    public void stagingTokenTest() {
+        // TODO: test stagingToken
+    }
+
 }

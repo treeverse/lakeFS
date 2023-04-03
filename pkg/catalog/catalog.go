@@ -1768,7 +1768,7 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
+func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, stagingToken, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, err
@@ -1786,11 +1786,18 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 	}
 	defer it.Close()
 
-	rangeInfo, err := c.Store.WriteRange(ctx, repository, NewEntryToValueIterator(it))
+	rangeInfo, skipped, err := c.Store.WriteRange(ctx, repository, NewEntryToValueIterator(it))
 	if err != nil {
 		return nil, nil, fmt.Errorf("writing range from entry iterator: %w", err)
 	}
+	if len(skipped) > 0 {
+		stagingToken, err = c.Store.StageObjects(ctx, skipped, stagingToken)
+		if err != nil {
+			return nil, nil, fmt.Errorf("staging skipped keys: %w", err)
+		}
+	}
 	mark := it.Marker()
+	mark.StagingToken = stagingToken
 
 	return rangeInfo, &mark, nil
 }
@@ -1801,6 +1808,14 @@ func (c *Catalog) WriteMetaRange(ctx context.Context, repositoryID string, range
 		return nil, err
 	}
 	return c.Store.WriteMetaRange(ctx, repository, ranges)
+}
+
+func (c *Catalog) UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return c.Store.UpdateBranchToken(ctx, repository, branchID, stagingToken)
 }
 
 func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {

@@ -247,7 +247,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_branch_protection_rule**
-> delete_branch_protection_rule(repository, inline_object1)
+> delete_branch_protection_rule(repository, inline_object2)
 
 
 
@@ -263,8 +263,8 @@ Name | Type | Description  | Notes
 import time
 import lakefs_client
 from lakefs_client.api import repositories_api
+from lakefs_client.model.inline_object2 import InlineObject2
 from lakefs_client.model.error import Error
-from lakefs_client.model.inline_object1 import InlineObject1
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -311,13 +311,13 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
-    inline_object1 = InlineObject1(
+    inline_object2 = InlineObject2(
         pattern="pattern_example",
-    ) # InlineObject1 | 
+    ) # InlineObject2 | 
 
     # example passing only required values which don't have defaults set
     try:
-        api_instance.delete_branch_protection_rule(repository, inline_object1)
+        api_instance.delete_branch_protection_rule(repository, inline_object2)
     except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->delete_branch_protection_rule: %s\n" % e)
 ```
@@ -328,7 +328,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
- **inline_object1** | [**InlineObject1**](InlineObject1.md)|  |
+ **inline_object2** | [**InlineObject2**](InlineObject2.md)|  |
 
 ### Return type
 

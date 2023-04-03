@@ -153,6 +153,9 @@ components:
         last_key:
           type: string
           description: Last object store key that was ingested.
+        staging_token:
+          type: string
+          description: Staging token for skipped objects during ingest
 
     Repository:
       type: object
@@ -1237,6 +1240,9 @@ components:
         continuation_token:
           type: string
           description: Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
+        staging_token:
+          type: string
+          description: Opaque. Client should pass staging_token if received from server on previous request
 
     RangeMetadata:
       type: object
@@ -3305,6 +3311,48 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/stage:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - staging
+      operationId: updateBranchToken
+      summary: modify branch staging token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                staging_token:
+                  type: string
+              required:
+                - staging_token
+      responses:
+        201:
+          description: branch updated successfully
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:

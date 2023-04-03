@@ -126,6 +126,71 @@ type DataLakeWalker struct {
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
+	// we use bucket as container and prefix as path
+	containerURL, prefix, err := extractAzurePrefix(storageURI)
+	if err != nil {
+		return err
+	}
+	var basePath string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		basePath = prefix[:idx+1]
+	}
+
+	qk, err := ResolveBlobURLInfoFromURL(containerURL)
+	if err != nil {
+		return err
+	}
+
+	containerClient := a.client.NewContainerClient(qk.ContainerName)
+	listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+		Marker: &op.ContinuationToken,
+	})
+
+	for listBlob.More() {
+		resp, err := listBlob.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+		if resp.Marker != nil {
+			a.mark.ContinuationToken = *resp.Marker
+		}
+		for _, blobInfo := range resp.Segment.BlobItems {
+			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
+			if op.After != "" && *blobInfo.Name <= op.After {
+				continue
+			}
+
+			if *blobInfo.Properties.ContentLength == 0 && *blobInfo.Properties.ContentType == "" {
+				// Skip folders
+				continue
+			}
+			//fmt.Println(*blobInfo.Name, "etag",
+			//	*blobInfo.Properties.ETag, "content-length",
+			//	*blobInfo.Properties.ContentLength, "content-type", *blobInfo.Properties.ContentType,
+			//	"blob-type", *blobInfo.Properties.BlobType)
+			a.mark.LastKey = *blobInfo.Name
+			if err := walkFn(block.ObjectStoreEntry{
+				FullKey:     *blobInfo.Name,
+				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
+				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
+				ETag:        string(*blobInfo.Properties.ETag),
+				Mtime:       *blobInfo.Properties.LastModified,
+				Size:        *blobInfo.Properties.ContentLength,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	a.mark = block.Mark{
+		HasMore: false,
+	}
+
+	return nil
+}
+
+func (a *DataLakeWalker) Walkbk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	// We are limiting the ADLS Gen2 walker to traverse directories only. This is to avoid a bug where we traverse the parent folder as well
 	// due to the use of NewListBlobsHierarchyPager
 	storageURI = storageURI.JoinPath("/")

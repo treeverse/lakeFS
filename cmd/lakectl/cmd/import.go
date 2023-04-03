@@ -55,6 +55,7 @@ var importCmd = &cobra.Command{
 			continuationToken *string
 			after             string
 			ranges            = make([]api.RangeMetadata, 0)
+			stagingToken      *string
 		)
 		for {
 			rangeResp, err := client.IngestRangeWithResponse(ctx, toURI.Repository, api.IngestRangeJSONRequestBody{
@@ -76,6 +77,7 @@ var importCmd = &cobra.Command{
 
 			continuationToken = rangeResp.JSON201.Pagination.ContinuationToken
 			after = rangeResp.JSON201.Pagination.LastKey
+			stagingToken = rangeResp.JSON201.Pagination.StagingToken
 			if !rangeResp.JSON201.Pagination.HasMore {
 				break
 			}
@@ -107,6 +109,26 @@ var importCmd = &cobra.Command{
 		if commitResp.JSON201 == nil {
 			Die("Bad response from server", 1)
 		}
+
+		if stagingToken != nil && *stagingToken != "" {
+			stageResp, err := client.UpdateBranchTokenWithResponse(ctx, toURI.Repository, importedBranchID, api.UpdateBranchTokenJSONRequestBody{
+				StagingToken: *stagingToken,
+			})
+			DieOnErrorOrUnexpectedStatusCode(stageResp, err, http.StatusCreated)
+		}
+
+		// Commit staged data (skipped files)
+		commitResp, err = client.CommitWithResponse(ctx, toURI.Repository, importedBranchID, &api.CommitParams{}, api.CommitJSONRequestBody{
+			Message: "Import commit for staged objects",
+			Metadata: &api.CommitCreation_Metadata{
+				AdditionalProperties: metadata,
+			},
+		})
+		DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusCreated)
+		if commitResp.JSON201 == nil {
+			Die("Bad response from server", 1)
+		}
+
 		Write(importSummaryTemplate, struct {
 			Objects     int
 			MetaRangeID string

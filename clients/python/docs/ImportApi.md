@@ -201,6 +201,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         after="production/collections/some/file.parquet",
         prepend="collections/",
         continuation_token="continuation_token_example",
+        staging_token="staging_token_example",
     ) # StageRangeCreation | 
 
     # example passing only required values which don't have defaults set

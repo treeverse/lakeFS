@@ -218,7 +218,7 @@ func (g *FakeGraveler) Commit(ctx context.Context, repository *graveler.Reposito
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (g *FakeGraveler) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, []graveler.ValueRecord, error) {
 	panic("implement me")
 }
 

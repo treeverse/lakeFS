@@ -3622,6 +3622,74 @@ paths:
       - import
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/stage:
+    put:
+      operationId: updateBranchToken
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object'
+        content:
+          application/json:
+            schema:
+              properties:
+                staging_token:
+                  type: string
+              required:
+              - staging_token
+              type: object
+        required: true
+      responses:
+        "201":
+          description: branch updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: modify branch staging token
+      tags:
+      - staging
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
       operationId: deleteObject
@@ -3723,7 +3791,7 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object'
+        $ref: '#/components/requestBodies/inline_object_1'
         content:
           multipart/form-data:
             schema:
@@ -4838,7 +4906,7 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object_1'
+        $ref: '#/components/requestBodies/inline_object_2'
         content:
           application/json:
             schema:
@@ -5160,15 +5228,21 @@ components:
   requestBodies:
     inline_object_1:
       content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_object_1'
-      required: true
-    inline_object:
-      content:
         multipart/form-data:
           schema:
+            $ref: '#/components/schemas/inline_object_1'
+    inline_object:
+      content:
+        application/json:
+          schema:
             $ref: '#/components/schemas/inline_object'
+      required: true
+    inline_object_2:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object_2'
+      required: true
   responses:
     Unauthorized:
       content:
@@ -5243,6 +5317,7 @@ components:
     ImportPagination:
       example:
         continuation_token: continuation_token
+        staging_token: staging_token
         has_more: true
         last_key: last_key
       properties:
@@ -5254,6 +5329,9 @@ components:
           type: string
         last_key:
           description: Last object store key that was ingested.
+          type: string
+        staging_token:
+          description: Staging token for skipped objects during ingest
           type: string
       required:
       - has_more
@@ -6797,6 +6875,7 @@ components:
       example:
         fromSourceURI: s3://my-bucket/production/collections/
         continuation_token: continuation_token
+        staging_token: staging_token
         prepend: collections/
         after: production/collections/some/file.parquet
       properties:
@@ -6816,6 +6895,10 @@ components:
         continuation_token:
           description: Opaque. Client should pass the continuation_token received
             from server to continue creation ranges from the same key.
+          type: string
+        staging_token:
+          description: Opaque. Client should pass staging_token if received from server
+            on previous request
           type: string
       required:
       - after
@@ -6859,6 +6942,7 @@ components:
       example:
         pagination:
           continuation_token: continuation_token
+          staging_token: staging_token
           has_more: true
           last_key: last_key
         range:
@@ -6943,12 +7027,19 @@ components:
       type: object
     inline_object:
       properties:
+        staging_token:
+          type: string
+      required:
+      - staging_token
+      type: object
+    inline_object_1:
+      properties:
         content:
           description: Only a single file per upload which must be named "content".
           format: binary
           type: string
       type: object
-    inline_object_1:
+    inline_object_2:
       properties:
         pattern:
           type: string

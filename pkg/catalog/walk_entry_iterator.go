@@ -24,7 +24,10 @@ type walkEntryIterator struct {
 
 // Mark stands for pagination information when listing objects from the blockstore.
 // It is used for server-client communication on the status of range ingestion.
-type Mark block.Mark
+type Mark struct {
+	block.Mark
+	StagingToken string
+}
 
 type EntryWithMarker struct {
 	EntryRecord
@@ -74,7 +77,9 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prep
 						AddressType:  Entry_FULL,
 					},
 				},
-				Mark: Mark(it.walker.Marker()),
+				Mark: Mark{
+					Mark: it.walker.Marker(),
+				},
 			}
 			return nil
 		})
@@ -101,8 +106,10 @@ func (it *walkEntryIterator) Next() bool {
 		if !ok {
 			// entries were exhausted
 			it.curr.Mark = Mark{
-				LastKey: it.curr.LastKey,
-				HasMore: false,
+				Mark: block.Mark{
+					LastKey: it.curr.LastKey,
+					HasMore: false,
+				},
 			}
 		}
 	}
