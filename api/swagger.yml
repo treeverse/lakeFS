@@ -451,7 +451,7 @@ components:
             $ref: "#/components/schemas/OtfDiffEntry"
 
     OTFDiffs:
-      title: A list of available OTF diffs.
+      title: A list of available Output Table Format diffs.
       type: object
       properties:
         diffs:
