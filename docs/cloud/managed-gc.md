@@ -12,9 +12,9 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> Managed Garbage Collection is only available for [lakeFS Cloud](../cloud/). [Garbage collection](../howto/garbage-collection-index.md) is available to run manually when using self-managed lakeFS.
+> Managed Garbage Collection is only available for [lakeFS Cloud](../cloud/). If you are using self-managed lakeFS, [Garbage collection](../howto/garbage-collection-index.md) is available to run manually.
 
-## The benefits of using managed GC onlakeFS cloud are:
+## The benefits of using managed GC on lakeFS cloud are:
 * Advanced Engine to detect and delete objects quickly and safely
 * Managed Solution
 * Garbage Collection SLA

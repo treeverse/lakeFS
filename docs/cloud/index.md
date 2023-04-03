@@ -28,8 +28,8 @@ flowchart TD
     U[Users] --> LFC
 
     subgraph Your Infrastructure
-    IAMM[lakeFS Managed GC IAM Role] --> Object Store[Client's Object Store]
-    IAMA[lakeFS Application IAM Role] --> Object Store
+    IAMM[lakeFS Managed GC IAM Role] --> ObjectStore[Client's Object Store]
+    IAMA[lakeFS Application IAM Role] --> ObjectStore
     end
 
     subgraph Treeverse's Infrastructure
@@ -42,7 +42,7 @@ flowchart TD
         subgraph Client's Tenant
         LFC[lakeFS Cloud] --> DB[Refstore Database]
         end
-
+        
     LFC --> IAMC[lakeFS Connector IAM Role]    
     IAMC -->|ExternalID| IAMA
     end
