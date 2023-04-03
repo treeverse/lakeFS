@@ -9,7 +9,7 @@ import funspec._
 import io.treeverse.lakefs.catalog
 
 import org.apache.commons.io.FileUtils
-import org.apache.spark.{HashPartitioner, SparkConf}
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 import org.json4s._

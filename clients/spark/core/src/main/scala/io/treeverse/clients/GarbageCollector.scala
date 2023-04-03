@@ -10,13 +10,14 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.{HashPartitioner, Partitioner}
+import org.apache.spark.{HashPartitioner}
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
+import java.net.URI
 import java.util.UUID
 import org.apache.commons.lang3.StringUtils
 
