@@ -6,7 +6,6 @@ search_enabled: true
 # Enable support for hyphenated search words:
 search_tokenizer_separator: /[\s/]+/
 
-aux_links_new_tab: true
 
 logo: '/assets/logo.svg'
 logo_link: 'https://lakefs.io'
@@ -27,8 +26,8 @@ aux_links:
     - 'https://github.com/treeverse/lakeFS'
 
 buttons:
-  'lakeFS Cloud':
-      - 'https://lakefs.io/cloud-registration/'
+  'Get Started':
+      - '/quickstart'
 
 # FOOTER
 # use "footer_content" for simple footer
