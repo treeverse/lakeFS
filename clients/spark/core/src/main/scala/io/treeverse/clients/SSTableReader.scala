@@ -73,14 +73,22 @@ object SSTableReader {
     localFile
   }
 
-  def forMetaRange(configuration: Configuration, metaRangeURL: String, dontOwn: Boolean = false): SSTableReader[RangeData] = {
+  def forMetaRange(
+      configuration: Configuration,
+      metaRangeURL: String,
+      dontOwn: Boolean = false
+  ): SSTableReader[RangeData] = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
     val ret = new SSTableReader(localFile, RangeData.messageCompanion, dontOwn)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
 
-  def forRange(configuration: Configuration, rangeURL: String, dontOwn: Boolean = false): SSTableReader[Entry] = {
+  def forRange(
+      configuration: Configuration,
+      rangeURL: String,
+      dontOwn: Boolean = false
+  ): SSTableReader[Entry] = {
     val localFile: File = copyToLocal(configuration, rangeURL)
     val ret = new SSTableReader(localFile, Entry.messageCompanion, dontOwn)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))

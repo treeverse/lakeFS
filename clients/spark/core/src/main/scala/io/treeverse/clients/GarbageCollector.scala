@@ -104,13 +104,16 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       .csv(commitDFLocation)
   }
 
-  def getRangeIDsForCommits(commitIDs: Dataset[(String, Boolean)], repo: String): Dataset[(String, Boolean)] = {
+  def getRangeIDsForCommits(
+      commitIDs: Dataset[(String, Boolean)],
+      repo: String
+  ): Dataset[(String, Boolean)] = {
     import spark.implicits._
 
-    commitIDs.flatMap({
-      case (commitID, expire) =>
-        rangeGetter.getRangeIDs(commitID, repo)
-          .map((_, expire))
+    commitIDs.flatMap({ case (commitID, expire) =>
+      rangeGetter
+        .getRangeIDs(commitID, repo)
+        .map((_, expire))
     })
   }
 
@@ -128,9 +131,9 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
    *  @return all elements in left that are not in right.
    */
   def minus(
-    left: Dataset[String],
-    right: Dataset[String],
-    partitioner: Partitioner
+      left: Dataset[String],
+      right: Dataset[String],
+      partitioner: Partitioner
   ): Dataset[String] = {
     import spark.implicits._
     def mark(f: Int) = (p: Any) => p match { case (t: String) => (t, f) }
@@ -149,12 +152,12 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   }
 
   def getAddressesToDelete(
-    rangeIDs: Dataset[(String, Boolean)],
-    repo: String,
-    storageNS: String,
-    numAddressPartitions: Int,
-    approxNumRangesToSpreadPerPartition: Double,
-    sampleFraction: Double
+      rangeIDs: Dataset[(String, Boolean)],
+      repo: String,
+      storageNS: String,
+      numAddressPartitions: Int,
+      approxNumRangesToSpreadPerPartition: Double,
+      sampleFraction: Double
   ): Dataset[String] = {
     import spark.implicits._
 
@@ -175,10 +178,11 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     def getDeletableAddressesUnion(it: Iterator[(String, Boolean)]): Iterator[(String, Boolean)] = {
       val all = collection.mutable.Set[(String, Boolean)]()
-      it.foreach(
-        { case (rangeID, expire) => {
+      it.foreach({
+        case (rangeID, expire) => {
           all ++= getDeletableAddresses(rangeID).map((x) => (x, expire))
-        }})
+        }
+      })
       all.iterator
     }
 
@@ -201,13 +205,15 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       }) / approxNumRangesToSpreadPerPartition
       println(s"readRanges: use $numPartitions partitions for $name")
 
-      val all = ranges.repartition(Math.max(1, Math.ceil(numPartitions)).toInt)
+      val all = ranges
+        .repartition(Math.max(1, Math.ceil(numPartitions)).toInt)
         .rdd
         .mapPartitionsWithIndex((index: Int, it: Iterator[(String, Boolean)]) => {
           println(s"get addresses partition ${index}")
           getDeletableAddressesUnion(it)
         })
-      if (sampleFraction == 1) all else {
+      if (sampleFraction == 1) all
+      else {
         println(s"readRanges: downsample to ${sampleFraction}")
         all.sample(true, sampleFraction)
       }
@@ -216,11 +222,10 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     // Expire an object _only_ if it is always expired!
     val shouldExpire = (a: Boolean, b: Boolean) => a & b
 
-    val dedupedRangeIDs = rangeIDs
-      .rdd
-      .aggregateByKey(0, 400)(
-        ((u: Int, expire: Boolean) => u | (if (expire) 1 else 2)),
-        (a, b: Int) => a | b)
+    val dedupedRangeIDs = rangeIDs.rdd
+      .aggregateByKey(0, 400)(((u: Int, expire: Boolean) => u | (if (expire) 1 else 2)),
+                              (a, b: Int) => a | b
+                             )
       .filter({ case (_, a) => a != 3 }) // Remove keys appearing on both sides
       .map({ case (r, expireInt) => (r, if (expireInt == 1) true else false) })
       .toDS
@@ -494,11 +499,13 @@ object GarbageCollector {
     if (runIDToReproduce == "") {
       gcCommitsLocation = hc.get(
         "debug.gc.commits",
-        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString)
+        ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType).toString
+      )
       println("gcCommitsLocation: " + gcCommitsLocation)
       gcAddressesLocation = hc.get(
         "debug.gc.addresses",
-        ApiClient.translateURI(new URI(prepareResult.getGcAddressesLocation), storageType).toString)
+        ApiClient.translateURI(new URI(prepareResult.getGcAddressesLocation), storageType).toString
+      )
       println("gcAddressesLocation: " + gcAddressesLocation)
     } else {
       // reproducing a previous run
@@ -517,9 +524,11 @@ object GarbageCollector {
       hc.getInt(LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS, DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS)
     val numAddressPartitions = hc.getInt(LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS,
                                          DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS
+                                        )
+    val approxNumRangesToSpreadPerPartition = hc.getDouble(
+      LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION,
+      DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION
     )
-    val approxNumRangesToSpreadPerPartition = hc.getDouble(LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION,
-                                                           DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION)
     val sampleFraction = hc.getDouble(LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION, 1.0)
 
     val expiredAddresses = gc
