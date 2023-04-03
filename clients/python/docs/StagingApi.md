@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**get_physical_address**](StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 [**link_physical_address**](StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-[**update_branch_token**](StagingApi.md#update_branch_token) | **PUT** /repositories/{repository}/branches/{branch}/stage | modify branch staging token
+[**update_branch_token**](StagingApi.md#update_branch_token) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
 
 
 # **get_physical_address**
@@ -263,7 +263,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **update_branch_token**
-> update_branch_token(repository, branch, inline_object)
+> update_branch_token(repository, branch, update_token)
 
 modify branch staging token
 
@@ -279,7 +279,7 @@ modify branch staging token
 import time
 import lakefs_client
 from lakefs_client.api import staging_api
-from lakefs_client.model.inline_object import InlineObject
+from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -328,14 +328,14 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = staging_api.StagingApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    inline_object = InlineObject(
+    update_token = UpdateToken(
         staging_token="staging_token_example",
-    ) # InlineObject | 
+    ) # UpdateToken | 
 
     # example passing only required values which don't have defaults set
     try:
         # modify branch staging token
-        api_instance.update_branch_token(repository, branch, inline_object)
+        api_instance.update_branch_token(repository, branch, update_token)
     except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->update_branch_token: %s\n" % e)
 ```
@@ -347,7 +347,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **inline_object** | [**InlineObject**](InlineObject.md)|  |
+ **update_token** | [**UpdateToken**](UpdateToken.md)|  |
 
 ### Return type
 

@@ -226,7 +226,7 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-*StagingApi* | [**updateBranchToken**](docs/StagingApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/stage | modify branch staging token
+*StagingApi* | [**updateBranchToken**](docs/StagingApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
 *StatisticsApi* | [**postStatsEvents**](docs/StatisticsApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**deleteTag**](docs/TagsApi.md#deleteTag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
@@ -270,8 +270,7 @@ Class | Method | HTTP request | Description
  - [HookRunList](docs/HookRunList.md)
  - [ImportPagination](docs/ImportPagination.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
- - [InlineObject](docs/InlineObject.md)
- - [InlineObject2](docs/InlineObject2.md)
+ - [InlineObject1](docs/InlineObject1.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
@@ -316,6 +315,7 @@ Class | Method | HTTP request | Description
  - [TagCreation](docs/TagCreation.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
+ - [UpdateToken](docs/UpdateToken.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)

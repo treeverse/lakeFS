@@ -29,7 +29,7 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineObject2;
+import io.lakefs.clients.api.model.InlineObject1;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryList;
@@ -326,7 +326,7 @@ public class RepositoriesApi {
     /**
      * Build call for deleteBranchProtectionRule
      * @param repository  (required)
-     * @param inlineObject2  (required)
+     * @param inlineObject1  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -339,8 +339,8 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteBranchProtectionRuleCall(String repository, InlineObject2 inlineObject2, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = inlineObject2;
+    public okhttp3.Call deleteBranchProtectionRuleCall(String repository, InlineObject1 inlineObject1, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = inlineObject1;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branch_protection"
@@ -371,20 +371,20 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteBranchProtectionRuleValidateBeforeCall(String repository, InlineObject2 inlineObject2, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteBranchProtectionRuleValidateBeforeCall(String repository, InlineObject1 inlineObject1, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteBranchProtectionRule(Async)");
         }
         
-        // verify the required parameter 'inlineObject2' is set
-        if (inlineObject2 == null) {
-            throw new ApiException("Missing the required parameter 'inlineObject2' when calling deleteBranchProtectionRule(Async)");
+        // verify the required parameter 'inlineObject1' is set
+        if (inlineObject1 == null) {
+            throw new ApiException("Missing the required parameter 'inlineObject1' when calling deleteBranchProtectionRule(Async)");
         }
         
 
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleCall(repository, inlineObject2, _callback);
+        okhttp3.Call localVarCall = deleteBranchProtectionRuleCall(repository, inlineObject1, _callback);
         return localVarCall;
 
     }
@@ -393,7 +393,7 @@ public class RepositoriesApi {
      * 
      * 
      * @param repository  (required)
-     * @param inlineObject2  (required)
+     * @param inlineObject1  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -404,15 +404,15 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void deleteBranchProtectionRule(String repository, InlineObject2 inlineObject2) throws ApiException {
-        deleteBranchProtectionRuleWithHttpInfo(repository, inlineObject2);
+    public void deleteBranchProtectionRule(String repository, InlineObject1 inlineObject1) throws ApiException {
+        deleteBranchProtectionRuleWithHttpInfo(repository, inlineObject1);
     }
 
     /**
      * 
      * 
      * @param repository  (required)
-     * @param inlineObject2  (required)
+     * @param inlineObject1  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -424,8 +424,8 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> deleteBranchProtectionRuleWithHttpInfo(String repository, InlineObject2 inlineObject2) throws ApiException {
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject2, null);
+    public ApiResponse<Void> deleteBranchProtectionRuleWithHttpInfo(String repository, InlineObject1 inlineObject1) throws ApiException {
+        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject1, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -433,7 +433,7 @@ public class RepositoriesApi {
      *  (asynchronously)
      * 
      * @param repository  (required)
-     * @param inlineObject2  (required)
+     * @param inlineObject1  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -446,9 +446,9 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteBranchProtectionRuleAsync(String repository, InlineObject2 inlineObject2, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call deleteBranchProtectionRuleAsync(String repository, InlineObject1 inlineObject1, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject2, _callback);
+        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject1, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

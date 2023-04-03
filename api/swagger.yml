@@ -1298,6 +1298,14 @@ components:
           description: The id of the created metarange
           type: string
 
+    UpdateToken:
+      type: object
+      properties:
+        staging_token:
+          type: string
+      required:
+        - staging_token
+
     StatsEvent:
       type: object
       properties:
@@ -3316,7 +3324,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /repositories/{repository}/branches/{branch}/stage:
+  /repositories/{repository}/branches/{branch}/update_token:
     parameters:
       - in: path
         name: repository
@@ -3338,12 +3346,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                staging_token:
-                  type: string
-              required:
-                - staging_token
+              $ref: "#/components/schemas/UpdateToken"
       responses:
         201:
           description: branch updated successfully

@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getPhysicalAddress**](StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 [**linkPhysicalAddress**](StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-[**updateBranchToken**](StagingApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/stage | modify branch staging token
+[**updateBranchToken**](StagingApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
 
 
 <a name="getPhysicalAddress"></a>
@@ -209,7 +209,7 @@ Name | Type | Description  | Notes
 
 <a name="updateBranchToken"></a>
 # **updateBranchToken**
-> updateBranchToken(repository, branch, inlineObject)
+> updateBranchToken(repository, branch, updateToken)
 
 modify branch staging token
 
@@ -258,9 +258,9 @@ public class Example {
     StagingApi apiInstance = new StagingApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    InlineObject inlineObject = new InlineObject(); // InlineObject | 
+    UpdateToken updateToken = new UpdateToken(); // UpdateToken | 
     try {
-      apiInstance.updateBranchToken(repository, branch, inlineObject);
+      apiInstance.updateBranchToken(repository, branch, updateToken);
     } catch (ApiException e) {
       System.err.println("Exception when calling StagingApi#updateBranchToken");
       System.err.println("Status code: " + e.getCode());
@@ -278,7 +278,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **inlineObject** | [**InlineObject**](InlineObject.md)|  |
+ **updateToken** | [**UpdateToken**](UpdateToken.md)|  |
 
 ### Return type
 

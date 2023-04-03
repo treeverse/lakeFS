@@ -66,6 +66,14 @@ type GetEntryParams struct {
 	StageOnly bool
 }
 
+type WriteRangeRequest struct {
+	SourceURI         string
+	Prepend           string
+	After             string
+	StagingToken      string
+	ContinuationToken string
+}
+
 type Interface interface {
 	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
@@ -141,8 +149,7 @@ type Interface interface {
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error)
-
-	WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, stagingToken, continuationToken string) (*graveler.RangeInfo, *Mark, error)
+	WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error)
 	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
 	UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error
 

@@ -1957,7 +1957,13 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 
 	contToken := StringValue(body.ContinuationToken)
 	stagingToken := StringValue(body.StagingToken)
-	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, stagingToken, contToken)
+	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
+		SourceURI:         body.FromSourceURI,
+		Prepend:           body.Prepend,
+		After:             body.After,
+		StagingToken:      stagingToken,
+		ContinuationToken: contToken,
+	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2014,7 +2020,8 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 func (c *Controller) UpdateBranchToken(w http.ResponseWriter, r *http.Request, body UpdateBranchTokenJSONRequestBody, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WriteObjectAction,
+			Action: permissions.WriteObjectAction,
+			// This API writes an entire staging area to a branch and therefore requires permission to write to the entire repository space
 			Resource: permissions.ObjectArn(repository, "*"),
 		},
 	}) {

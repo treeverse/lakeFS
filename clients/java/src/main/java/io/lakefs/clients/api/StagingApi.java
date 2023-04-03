@@ -28,10 +28,10 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineObject;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.clients.api.model.UpdateToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -381,7 +381,7 @@ public class StagingApi {
      * Build call for updateBranchToken
      * @param repository  (required)
      * @param branch  (required)
-     * @param inlineObject  (required)
+     * @param updateToken  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -396,11 +396,11 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call updateBranchTokenCall(String repository, String branch, InlineObject inlineObject, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = inlineObject;
+    public okhttp3.Call updateBranchTokenCall(String repository, String branch, UpdateToken updateToken, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = updateToken;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branches/{branch}/stage"
+        String localVarPath = "/repositories/{repository}/branches/{branch}/update_token"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
             .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
 
@@ -429,7 +429,7 @@ public class StagingApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call updateBranchTokenValidateBeforeCall(String repository, String branch, InlineObject inlineObject, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call updateBranchTokenValidateBeforeCall(String repository, String branch, UpdateToken updateToken, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -441,13 +441,13 @@ public class StagingApi {
             throw new ApiException("Missing the required parameter 'branch' when calling updateBranchToken(Async)");
         }
         
-        // verify the required parameter 'inlineObject' is set
-        if (inlineObject == null) {
-            throw new ApiException("Missing the required parameter 'inlineObject' when calling updateBranchToken(Async)");
+        // verify the required parameter 'updateToken' is set
+        if (updateToken == null) {
+            throw new ApiException("Missing the required parameter 'updateToken' when calling updateBranchToken(Async)");
         }
         
 
-        okhttp3.Call localVarCall = updateBranchTokenCall(repository, branch, inlineObject, _callback);
+        okhttp3.Call localVarCall = updateBranchTokenCall(repository, branch, updateToken, _callback);
         return localVarCall;
 
     }
@@ -457,7 +457,7 @@ public class StagingApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param inlineObject  (required)
+     * @param updateToken  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -470,8 +470,8 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void updateBranchToken(String repository, String branch, InlineObject inlineObject) throws ApiException {
-        updateBranchTokenWithHttpInfo(repository, branch, inlineObject);
+    public void updateBranchToken(String repository, String branch, UpdateToken updateToken) throws ApiException {
+        updateBranchTokenWithHttpInfo(repository, branch, updateToken);
     }
 
     /**
@@ -479,7 +479,7 @@ public class StagingApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param inlineObject  (required)
+     * @param updateToken  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -493,8 +493,8 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> updateBranchTokenWithHttpInfo(String repository, String branch, InlineObject inlineObject) throws ApiException {
-        okhttp3.Call localVarCall = updateBranchTokenValidateBeforeCall(repository, branch, inlineObject, null);
+    public ApiResponse<Void> updateBranchTokenWithHttpInfo(String repository, String branch, UpdateToken updateToken) throws ApiException {
+        okhttp3.Call localVarCall = updateBranchTokenValidateBeforeCall(repository, branch, updateToken, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -503,7 +503,7 @@ public class StagingApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param inlineObject  (required)
+     * @param updateToken  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -518,9 +518,9 @@ public class StagingApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call updateBranchTokenAsync(String repository, String branch, InlineObject inlineObject, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call updateBranchTokenAsync(String repository, String branch, UpdateToken updateToken, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = updateBranchTokenValidateBeforeCall(repository, branch, inlineObject, _callback);
+        okhttp3.Call localVarCall = updateBranchTokenValidateBeforeCall(repository, branch, updateToken, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

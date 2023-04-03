@@ -24,7 +24,7 @@ from lakefs_client.model_utils import (  # noqa: F401
 )
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from lakefs_client.model.error import Error
-from lakefs_client.model.inline_object2 import InlineObject2
+from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_list import RepositoryList
@@ -182,11 +182,11 @@ class RepositoriesApi(object):
             params_map={
                 'all': [
                     'repository',
-                    'inline_object2',
+                    'inline_object1',
                 ],
                 'required': [
                     'repository',
-                    'inline_object2',
+                    'inline_object1',
                 ],
                 'nullable': [
                 ],
@@ -203,15 +203,15 @@ class RepositoriesApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
-                    'inline_object2':
-                        (InlineObject2,),
+                    'inline_object1':
+                        (InlineObject1,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                 },
                 'location_map': {
                     'repository': 'path',
-                    'inline_object2': 'body',
+                    'inline_object1': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -599,7 +599,7 @@ class RepositoriesApi(object):
     def delete_branch_protection_rule(
         self,
         repository,
-        inline_object2,
+        inline_object1,
         **kwargs
     ):
         """delete_branch_protection_rule  # noqa: E501
@@ -607,12 +607,12 @@ class RepositoriesApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_branch_protection_rule(repository, inline_object2, async_req=True)
+        >>> thread = api.delete_branch_protection_rule(repository, inline_object1, async_req=True)
         >>> result = thread.get()
 
         Args:
             repository (str):
-            inline_object2 (InlineObject2):
+            inline_object1 (InlineObject1):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -661,8 +661,8 @@ class RepositoriesApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['repository'] = \
             repository
-        kwargs['inline_object2'] = \
-            inline_object2
+        kwargs['inline_object1'] = \
+            inline_object1
         return self.delete_branch_protection_rule_endpoint.call_with_http_info(**kwargs)
 
     def delete_repository(

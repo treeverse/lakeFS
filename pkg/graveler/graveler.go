@@ -609,11 +609,13 @@ type Plumbing interface {
 	GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error)
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not flush all values to the range.
+	// Returns the created range info and in addition a list of records which were skipped due to out of order listing
+	// which might happen in Azure ADLS Gen2 listing
 	WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, []ValueRecord, error)
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error)
 	// StageObjects stages given object list to stagingToken. If stagingToken is empty, create a new stagingToken
-	StageObjects(ctx context.Context, objects []ValueRecord, stagingToken string) (string, error)
+	StageObjects(ctx context.Context, objects []ValueRecord, stagingToken string) error
 	// UpdateBranchToken updates the given branch stagingToken
 	UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error
 }
@@ -1028,18 +1030,15 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRec
 	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
 }
 
-func (g *Graveler) StageObjects(ctx context.Context, objects []ValueRecord, stagingToken string) (string, error) {
+func (g *Graveler) StageObjects(ctx context.Context, objects []ValueRecord, stagingToken string) error {
 	st := StagingToken(stagingToken)
-	if stagingToken == "" {
-		st = GenerateStagingToken("import", "ingest_range")
-	}
 	for _, obj := range objects {
 		err := g.StagingManager.Set(ctx, st, obj.Key, obj.Value, false)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
-	return st.String(), nil
+	return nil
 }
 
 func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error {
@@ -1048,7 +1047,7 @@ func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *Repository
 		if err != nil {
 			return nil, err
 		}
-		if !isEmpty {
+		if !isEmpty || len(branch.SealedTokens) != 0 {
 			return nil, fmt.Errorf("branch staging is not empty: %w", ErrDirtyBranch)
 		}
 		branch.StagingToken = StagingToken(stagingToken)

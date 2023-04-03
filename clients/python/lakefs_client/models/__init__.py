@@ -42,8 +42,7 @@ from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.import_pagination import ImportPagination
 from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
-from lakefs_client.model.inline_object import InlineObject
-from lakefs_client.model.inline_object2 import InlineObject2
+from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
@@ -89,6 +88,7 @@ from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
+from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList

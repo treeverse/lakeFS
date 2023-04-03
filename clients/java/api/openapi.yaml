@@ -3622,7 +3622,7 @@ paths:
       - import
       x-contentType: application/json
       x-accepts: application/json
-  /repositories/{repository}/branches/{branch}/stage:
+  /repositories/{repository}/branches/{branch}/update_token:
     put:
       operationId: updateBranchToken
       parameters:
@@ -3641,16 +3641,10 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object'
         content:
           application/json:
             schema:
-              properties:
-                staging_token:
-                  type: string
-              required:
-              - staging_token
-              type: object
+              $ref: '#/components/schemas/UpdateToken'
         required: true
       responses:
         "201":
@@ -3791,7 +3785,7 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object_1'
+        $ref: '#/components/requestBodies/inline_object'
         content:
           multipart/form-data:
             schema:
@@ -4906,7 +4900,7 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object_2'
+        $ref: '#/components/requestBodies/inline_object_1'
         content:
           application/json:
             schema:
@@ -5228,21 +5222,15 @@ components:
   requestBodies:
     inline_object_1:
       content:
-        multipart/form-data:
+        application/json:
           schema:
             $ref: '#/components/schemas/inline_object_1'
+      required: true
     inline_object:
       content:
-        application/json:
+        multipart/form-data:
           schema:
             $ref: '#/components/schemas/inline_object'
-      required: true
-    inline_object_2:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_object_2'
-      required: true
   responses:
     Unauthorized:
       content:
@@ -6987,6 +6975,15 @@ components:
           description: The id of the created metarange
           type: string
       type: object
+    UpdateToken:
+      example:
+        staging_token: staging_token
+      properties:
+        staging_token:
+          type: string
+      required:
+      - staging_token
+      type: object
     StatsEvent:
       example:
         name: name
@@ -7027,19 +7024,12 @@ components:
       type: object
     inline_object:
       properties:
-        staging_token:
-          type: string
-      required:
-      - staging_token
-      type: object
-    inline_object_1:
-      properties:
         content:
           description: Only a single file per upload which must be named "content".
           format: binary
           type: string
       type: object
-    inline_object_2:
+    inline_object_1:
       properties:
         pattern:
           type: string

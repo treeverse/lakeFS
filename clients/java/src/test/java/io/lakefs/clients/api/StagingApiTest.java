@@ -15,10 +15,10 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineObject;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.clients.api.model.UpdateToken;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -84,8 +84,8 @@ public class StagingApiTest {
     public void updateBranchTokenTest() throws ApiException {
         String repository = null;
         String branch = null;
-        InlineObject inlineObject = null;
-                api.updateBranchToken(repository, branch, inlineObject);
+        UpdateToken updateToken = null;
+                api.updateBranchToken(repository, branch, updateToken);
         // TODO: test validations
     }
     

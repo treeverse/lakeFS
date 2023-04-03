@@ -23,10 +23,10 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.inline_object import InlineObject
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
+from lakefs_client.model.update_token import UpdateToken
 
 
 class StagingApi(object):
@@ -196,7 +196,7 @@ class StagingApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/repositories/{repository}/branches/{branch}/stage',
+                'endpoint_path': '/repositories/{repository}/branches/{branch}/update_token',
                 'operation_id': 'update_branch_token',
                 'http_method': 'PUT',
                 'servers': None,
@@ -205,12 +205,12 @@ class StagingApi(object):
                 'all': [
                     'repository',
                     'branch',
-                    'inline_object',
+                    'update_token',
                 ],
                 'required': [
                     'repository',
                     'branch',
-                    'inline_object',
+                    'update_token',
                 ],
                 'nullable': [
                 ],
@@ -229,8 +229,8 @@ class StagingApi(object):
                         (str,),
                     'branch':
                         (str,),
-                    'inline_object':
-                        (InlineObject,),
+                    'update_token':
+                        (UpdateToken,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
@@ -239,7 +239,7 @@ class StagingApi(object):
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
-                    'inline_object': 'body',
+                    'update_token': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -411,7 +411,7 @@ class StagingApi(object):
         self,
         repository,
         branch,
-        inline_object,
+        update_token,
         **kwargs
     ):
         """modify branch staging token  # noqa: E501
@@ -419,13 +419,13 @@ class StagingApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.update_branch_token(repository, branch, inline_object, async_req=True)
+        >>> thread = api.update_branch_token(repository, branch, update_token, async_req=True)
         >>> result = thread.get()
 
         Args:
             repository (str):
             branch (str):
-            inline_object (InlineObject):
+            update_token (UpdateToken):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -476,7 +476,7 @@ class StagingApi(object):
             repository
         kwargs['branch'] = \
             branch
-        kwargs['inline_object'] = \
-            inline_object
+        kwargs['update_token'] = \
+            update_token
         return self.update_branch_token_endpoint.call_with_http_info(**kwargs)
 

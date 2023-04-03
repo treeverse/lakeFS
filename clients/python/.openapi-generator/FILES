@@ -42,8 +42,7 @@ docs/HookRunList.md
 docs/ImportApi.md
 docs/ImportPagination.md
 docs/IngestRangeCreationResponse.md
-docs/InlineObject.md
-docs/InlineObject2.md
+docs/InlineObject1.md
 docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
@@ -99,6 +98,7 @@ docs/TagsApi.md
 docs/TemplatesApi.md
 docs/UnderlyingObjectProperties.md
 docs/UpdatePasswordByToken.md
+docs/UpdateToken.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -161,8 +161,7 @@ lakefs_client/model/hook_run.py
 lakefs_client/model/hook_run_list.py
 lakefs_client/model/import_pagination.py
 lakefs_client/model/ingest_range_creation_response.py
-lakefs_client/model/inline_object.py
-lakefs_client/model/inline_object2.py
+lakefs_client/model/inline_object1.py
 lakefs_client/model/login_config.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
@@ -208,6 +207,7 @@ lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/update_password_by_token.py
+lakefs_client/model/update_token.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
@@ -261,8 +261,7 @@ test/test_hook_run_list.py
 test/test_import_api.py
 test/test_import_pagination.py
 test/test_ingest_range_creation_response.py
-test/test_inline_object.py
-test/test_inline_object2.py
+test/test_inline_object1.py
 test/test_login_config.py
 test/test_login_information.py
 test/test_merge.py
@@ -318,6 +317,7 @@ test/test_tags_api.py
 test/test_templates_api.py
 test/test_underlying_object_properties.py
 test/test_update_password_by_token.py
+test/test_update_token.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py

@@ -1768,19 +1768,19 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, stagingToken, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
+func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
+	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI})
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, prepend, after, continuationToken)
+	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
@@ -1790,8 +1790,13 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 	if err != nil {
 		return nil, nil, fmt.Errorf("writing range from entry iterator: %w", err)
 	}
+	stagingToken := params.StagingToken
 	if len(skipped) > 0 {
-		stagingToken, err = c.Store.StageObjects(ctx, skipped, stagingToken)
+		if stagingToken == "" {
+			stagingToken = graveler.GenerateStagingToken("import", "ingest_range").String()
+		}
+
+		err = c.Store.StageObjects(ctx, skipped, stagingToken)
 		if err != nil {
 			return nil, nil, fmt.Errorf("staging skipped keys: %w", err)
 		}
