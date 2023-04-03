@@ -33,7 +33,7 @@ const NavUserInfo = () => {
             <NavDropdown.Item href={versionResponse.upgrade_url}>
                     <>
                     <div className="menu-item-notification-indicator"></div>
-                    Newer LakeFS Version is Out!
+                    New lakeFS version is available!
                     </>
             </NavDropdown.Item><NavDropdown.Divider/></>}
             <NavDropdown.Item
