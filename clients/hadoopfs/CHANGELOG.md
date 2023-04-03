@@ -1,6 +1,8 @@
 # Changelog
 
 ## _Upcoming_
+* Fix bug #5603: fix issues with Delta tables on Databricks 9.1 ML.
+
 ## 0.1.13
 
 * Presigned mode <sup>BETA</sup>: a secure, cloud-agnostic way to use lakeFS with Hadoop.

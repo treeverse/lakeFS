@@ -45,7 +45,7 @@ Put the `delta_diff` binary under `~/.lakefs/plugins/diff` on the machine where 
 You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
 `plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration.html#plugins) file.
 
-**Notice**: If you're using the lakeFS [docker image](../quickstart/run.md#running-locally-with-docker), the plugin is installed by default.
+**Notice**: If you're using the lakeFS [docker image](/deploy/onprem.html#docker), the plugin is installed by default.
 
 ## Spark Configuration
 
