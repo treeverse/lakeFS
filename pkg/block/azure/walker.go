@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"net/url"
 	"strings"
 
@@ -153,27 +154,45 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 		prefix = parentPrefix(after)
 	}
 
+	type listBlobsResp struct {
+		Pager runtime.Pager[container.ListBlobsHierarchyResponse]
+		Page  *container.ListBlobsHierarchyResponse
+	}
+	var (
+		resp *listBlobsResp
+	)
+	var responseStack []*listBlobsResp
 	containerClient := a.client.NewContainerClient(qk.ContainerName)
 	for {
 	LIST:
+		//fmt.Println("PREFIX:", prefix)
 		tokenIdx := len(tokens) - 1
-		l := containerClient.NewListBlobsHierarchyPager("/",
-			&container.ListBlobsHierarchyOptions{
-				Prefix: &prefix,
-				Marker: &tokens[tokenIdx],
-			})
-		for l.More() {
-			resp, err := l.NextPage(ctx)
-			if err != nil {
-				return err
+		if resp == nil {
+			//fmt.Println("NEW REQUEST FOR PREFIX:", prefix)
+			resp = &listBlobsResp{
+				Pager: *containerClient.NewListBlobsHierarchyPager("/",
+					&container.ListBlobsHierarchyOptions{
+						Prefix: &prefix,
+						Marker: &tokens[tokenIdx],
+					}),
 			}
-			if resp.Marker != nil {
-				tokens[tokenIdx] = *resp.Marker
+		}
+		for resp.Page != nil || resp.Pager.More() {
+			if resp.Page == nil {
+				pageResp, err := resp.Pager.NextPage(ctx)
+				if err != nil {
+					return err
+				}
+				resp.Page = &pageResp
+			}
+
+			if resp.Page.Marker != nil {
+				tokens[tokenIdx] = *resp.Page.Marker
 			}
 			a.mark.ContinuationToken = strings.Join(tokens, ",")
 
 			itemIdx, prefIdx := 0, 0
-			items, prefixes := resp.Segment.BlobItems, resp.Segment.BlobPrefixes
+			items, prefixes := resp.Page.Segment.BlobItems, resp.Page.Segment.BlobPrefixes
 			for itemIdx < len(items) || prefIdx < len(prefixes) {
 				var f *container.BlobItem
 				if itemIdx < len(items) {
@@ -214,9 +233,17 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 					tokens = append(tokens, "")
 					prefix = *p.Name
 					after = *p.Name
+					responseStack = append(responseStack, resp)
+					resp = nil
 					goto LIST
 				}
 			}
+			resp.Page = nil // finished with page - throw it
+		}
+		stackIdx := len(responseStack)
+		if stackIdx > 0 {
+			resp = responseStack[stackIdx-1]
+			responseStack = responseStack[:stackIdx-1]
 		}
 		tokens = tokens[:tokenIdx]
 		// no tokens, means done walking
