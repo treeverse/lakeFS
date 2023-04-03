@@ -146,7 +146,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
     }
 
-    private FileSystem getFSForConfig() {
+    private synchronized FileSystem getFSForConfig() {
         if (fsForConfig != null) {
             return fsForConfig;
         }
