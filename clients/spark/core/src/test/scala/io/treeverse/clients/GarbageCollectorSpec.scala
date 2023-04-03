@@ -90,22 +90,6 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
                                )
 
   describe("GarbageCollector") {
-    describe("minus") {
-      it("removes elements in a simple case") {
-        withSparkSession(spark => {
-          import spark.implicits._
-          val sc = spark.sparkContext
-          val gc = new GarbageCollector(getter)
-
-          val partitioner = new HashPartitioner(3)
-          val threes = sc.parallelize(0 to 100 by 3).map(_.toString).toDS
-          val sevens = sc.parallelize(0 to 100 by 7).map(_.toString).toDS
-          val m = gc.minus(threes, sevens, partitioner).map(_.toInt)
-          compareDS(m, sc.parallelize((0 to 100 by 3).filter(x => x % 7 != 0)).toDS)
-        })
-      }
-    }
-
     val approxNumRangesToSpreadPerPartition = Table(
       ("approx_num_ranges_to_spread_per_partition"),
       (0.5), (1.0), (1.1), (10.0), (100.0))

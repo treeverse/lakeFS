@@ -118,40 +118,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     })
   }
 
-  val bitwiseOR = (a: Int, b: Int) => a | b
-
-  /** Compute a distinct antijoin using  partitioner.  This is the same as
-   *
-   *  <pre>
-   *     left.distinct.except(right.distinct)
-   *  </pre>
-   *
-   *  but forces our plan.  Useful when Spark is unable to predict the
-   *  structure and/or size of either argument.
-   *
-   *  @return all elements in left that are not in right.
-   */
-  def minus(
-      left: Dataset[String],
-      right: Dataset[String],
-      partitioner: Partitioner
-  ): Dataset[String] = {
-    import spark.implicits._
-    def mark(f: Int) = (p: Any) => p match { case (t: String) => (t, f) }
-    val both = left.distinct().map(mark(1)).union(right.distinct().map(mark(2)))
-    // For every potential output element in left.union(right), compute the
-    // bitwise OR of its values in both.  This will be:
-    //
-    //     1 if it appears only on left;
-    //     2 if it appears only on right;
-    //     3 if it appears on both left and right;
-    val reduced = both.rdd.reduceByKey(partitioner, bitwiseOR)
-    reduced
-      .filter({ case (_, y) => y == 1 })
-      .map({ case (x, _) => x })
-      .toDS
-  }
-
   def getAddressesToDelete(
       rangeIDs: Dataset[(String, Boolean)],
       repo: String,
