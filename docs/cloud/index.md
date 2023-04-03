@@ -4,11 +4,12 @@ title: lakeFS Cloud
 description: This section includes lakeFS cloud documentation
 nav_order: 80
 has_children: true
+redirect_from: "/cloud.html"
 has_toc: false
 ---
 
 # lakeFS Cloud
-[lakeFS Cloud](https://lakefs.cloud) is a fully-managed lakeFS solution, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
+[lakeFS Cloud](https://lakefs.cloud) is a fully-managed lakeFS solution provided by Treeverse, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
 	
 ## lakeFS Cloud Features
 * [Role-Based Access Control](../reference/rbac.md)
@@ -19,13 +20,16 @@ has_toc: false
 * SOC 2 Type II Compliance
 
 ## How lakeFS Cloud interacts with your infrastructure
+
+Treeverse hosts and manages a dedicated lakeFS instance that interfaces with data held in your object store, such as S3. 
+
 ```mermaid
 flowchart TD
     U[Users] --> LFC
 
     subgraph Your Infrastructure
-    IAMM[lakeFS Managed GC IAM Role] --> S3[Client's S3 Bucket]
-    IAMA[lakeFS Application IAM Role] --> S3
+    IAMM[lakeFS Managed GC IAM Role] --> ObjectStore[Client's Object Store]
+    IAMA[lakeFS Application IAM Role] --> ObjectStore
     end
 
     subgraph Treeverse's Infrastructure
@@ -38,7 +42,7 @@ flowchart TD
         subgraph Client's Tenant
         LFC[lakeFS Cloud] --> DB[Refstore Database]
         end
-
+        
     LFC --> IAMC[lakeFS Connector IAM Role]    
     IAMC -->|ExternalID| IAMA
     end
@@ -47,7 +51,7 @@ flowchart TD
 ## Setting up lakeFS Cloud
 
 ### AWS
-Setting up lakeFS on AWS is fully automated through a self-service onboarding setup wizard.
+Setting up lakeFS on AWS is fully automated through a self-service setup wizard.
 
 ### Azure
 Settuping up lakeFS Cloud on Azure is currently a manual process which will be automated in the future. For now, please follow [these instructions](./setup-azure.md).

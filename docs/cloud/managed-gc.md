@@ -4,7 +4,6 @@ title: Managed Garbage Collection
 description: Managed Garbage Collection is a managed garbage collection solution, maintained by Treeverse and operating within strict SLA, it reduces the operational overhead of maintaining a garbage collection manually.
 parent: lakeFS Cloud
 has_children: false
-redirect_from: "/cloud.html"
 ---
 
 # Managed Garbage Collection
@@ -13,11 +12,9 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> Managed Garbage Collection is only available for [lakeFS Cloud](../cloud/).
->
-> [Garbage collection](../howto/garbage-collection-index.md) is available to run manually when using self-managed lakeFS.
+> Managed Garbage Collection is only available for [lakeFS Cloud](../cloud/). If you are using self-managed lakeFS, [Garbage collection](../howto/garbage-collection-index.md) is available to run manually.
 
-## The benefits of using managed GC onlakeFS cloud are:
+## The benefits of using managed GC on lakeFS cloud are:
 * Advanced Engine to detect and delete objects quickly and safely
 * Managed Solution
 * Garbage Collection SLA

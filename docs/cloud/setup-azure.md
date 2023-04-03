@@ -4,7 +4,6 @@ title: Setting up lakeFS Cloud on Azure
 description: A guide to setting up lakeFS Cloud on Azure
 parent: lakeFS Cloud
 has_children: false
-redirect_from: "/cloud.html"
 ---
 
 # Setting up lakeFS Cloud on Azure
