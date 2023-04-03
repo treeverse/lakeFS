@@ -160,7 +160,7 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				continue
 			}
 
-			if *blobInfo.Properties.ContentLength == 0 && *blobInfo.Properties.ContentType == "" {
+			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
 				// Skip folders
 				continue
 			}

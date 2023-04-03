@@ -240,16 +240,16 @@ func TestAzureDataLakeV2(t *testing.T) {
 		prefix       string
 		filesToCheck []string
 	}{
-		//{
-		//	name:         "full-import",
-		//	prefix:       "",
-		//	filesToCheck: importFilesToCheck,
-		//},
-		//{
-		//	name:         "empty-folders",
-		//	prefix:       adlsTestImportPath,
-		//	filesToCheck: []string{},
-		//},
+		{
+			name:         "import-test-data",
+			prefix:       "",
+			filesToCheck: importFilesToCheck,
+		},
+		{
+			name:         "empty-folders",
+			prefix:       adlsTestImportPath,
+			filesToCheck: []string{},
+		},
 		{
 			name:   "prefix-item-order",
 			prefix: adlsTestImportPath,
