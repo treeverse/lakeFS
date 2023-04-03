@@ -135,7 +135,8 @@ object BulkRemoverFactory {
           .toSeq
       } catch {
         case e: Throwable =>
-          throw e
+          e.printStackTrace()
+          Seq.empty
       }
     }
 
@@ -151,7 +152,6 @@ object BulkRemoverFactory {
 
       // Access the storage using the account key
       if (storageAccountKey != null) {
-        println("got to type storageAccountKey ")
         val blobServiceClientBuilderWithKey: BlobServiceClientBuilder =
           new BlobServiceClientBuilder()
             .endpoint(storageAccountUrl)
@@ -177,7 +177,6 @@ object BulkRemoverFactory {
             )
           )
         )
-        println("got to get tanent id: ", tenantId)
         val clientSecretCredential: ClientSecretCredential = new ClientSecretCredentialBuilder()
           .clientId(
             hc.get(AccountOAuthClientId.replaceFirst(StorageAccNamePlaceHolder, storageAccountName))
@@ -189,7 +188,6 @@ object BulkRemoverFactory {
           )
           .tenantId(tenantId)
           .build()
-        println("clientSecretCredential " + clientSecretCredential)
         val blobServiceClientBuilderWithServivePrincipal: BlobServiceClientBuilder =
           new BlobServiceClientBuilder()
             .endpoint(storageAccountUrl)
@@ -199,9 +197,10 @@ object BulkRemoverFactory {
         val blobServiceClientWithServivePrincipal: BlobServiceClient =
           blobServiceClientBuilderWithServivePrincipal.buildClient
         return new BlobBatchClientBuilder(blobServiceClientWithServivePrincipal).buildClient
-      }
-      //TODO lynn: change error
-      else throw new IllegalArgumentException("Invalid argument.")
+      } else
+        throw new Exception(
+          "Exception create Azure client with credentials. Missing account key or service principal."
+        )
     }
 
     override def getMaxBulkSize(): Int = {

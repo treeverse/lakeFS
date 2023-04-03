@@ -578,7 +578,6 @@ object GarbageCollector {
       region: String,
       storageType: String
   ): Dataset[String] = {
-    println("got to bulk remove")
     import spark.implicits._
     val bulkRemover =
       BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
@@ -587,10 +586,6 @@ object GarbageCollector {
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
-
-    if (storageType == "azure") {
-      bulkRemover.deleteObjects(_, storageNamespace)
-    }
 
     bulkedKeyStrings
       .mapPartitions(iter => {
