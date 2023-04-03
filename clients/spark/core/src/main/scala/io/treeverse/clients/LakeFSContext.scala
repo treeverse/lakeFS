@@ -64,9 +64,11 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = "lakefs.gc.commit.num_partitions"
   val LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = "lakefs.gc.range.num_partitions"
   val LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = "lakefs.gc.address.num_partitions"
+  val LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION = "lakefs.gc.address.approx_num_ranges_to_spread_per_partition"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_ISO_DATETIME_KEY = "lakefs.debug.gc.max_commit_iso_datetime"
   val LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY = "lakefs.debug.gc.max_commit_epoch_seconds"
   val LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY = "lakefs.debug.gc.reproduce_run_id"
+  val LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION = "lakefs.debug.gc.addresses_sample_fraction"
 
   //  Objects that are written during this duration are not collected
   val LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_MIN_AGE_SECONDS_KEY =
@@ -82,7 +84,7 @@ object LakeFSContext {
   val DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = 24
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
-
+  val DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION = 1e5
   // By default, objects that are written in the last 6 hours are not collected
   val DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS = 6 * 60 * 60
 
