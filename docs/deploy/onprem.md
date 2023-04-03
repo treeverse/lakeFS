@@ -1,8 +1,8 @@
 ---
 layout: default
-title: On-Prem
+title: On-Premises Deployment of lakeFS
 parent: Deploy and Setup lakeFS
-description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on premise (or on other cloud providers)
+description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on-premises (or on other cloud providers)
 nav_order: 50
 redirect_from:
    - ./k8s.html
@@ -12,7 +12,7 @@ redirect_from:
 next:  ["Import data into your installation", "../howto/import.html"]
 ---
 
-# On-Prem deployment
+# On-Premises deployment
 {: .no_toc }
 
 ⏰ Expected deployment time: 25 min
