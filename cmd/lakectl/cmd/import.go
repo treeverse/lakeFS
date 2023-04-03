@@ -115,18 +115,17 @@ var importCmd = &cobra.Command{
 				StagingToken: *stagingToken,
 			})
 			DieOnErrorOrUnexpectedStatusCode(stageResp, err, http.StatusCreated)
-		}
-
-		// Commit staged data (skipped files)
-		commitResp, err = client.CommitWithResponse(ctx, toURI.Repository, importedBranchID, &api.CommitParams{}, api.CommitJSONRequestBody{
-			Message: "Import commit for staged objects",
-			Metadata: &api.CommitCreation_Metadata{
-				AdditionalProperties: metadata,
-			},
-		})
-		DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusCreated)
-		if commitResp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			// Commit staged data (skipped files)
+			commitResp, err = client.CommitWithResponse(ctx, toURI.Repository, importedBranchID, &api.CommitParams{}, api.CommitJSONRequestBody{
+				Message: "Import commit for staged objects",
+				Metadata: &api.CommitCreation_Metadata{
+					AdditionalProperties: metadata,
+				},
+			})
+			DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusCreated)
+			if commitResp.JSON201 == nil {
+				Die("Bad response from server", 1)
+			}
 		}
 
 		Write(importSummaryTemplate, struct {
