@@ -146,9 +146,7 @@ object BulkRemoverFactory {
         storageAccountName: String
     ): BlobBatchClient = {
 
-      val storageAccountKey = hc.get(
-        StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
-      )
+      val storageAccountKey = hc.get(String.format(StorageAccountKeyProperty, storageAccountName))
 
       // Access the storage using the account key
       if (storageAccountKey != null) {
@@ -165,27 +163,11 @@ object BulkRemoverFactory {
         return new BlobBatchClientBuilder(blobServiceClientWithKey).buildClient
       }
       // Access the storage using OAuth 2.0 with an Azure service principal
-      else if (
-        hc.get(
-          AccountAuthTypePattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
-        ) == "OAuth"
-      ) {
-        val tenantId = getTenantId(
-          new URI(
-            hc.get(
-              AccountOAuthClientEndpoint.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
-            )
-          )
-        )
+      else if (hc.get(String.format(AccountAuthType, storageAccountName)) == "OAuth") {
+        val tenantId = getTenantId(new URI(hc.get(String.format(AccountOAuthClientEndpoint, storageAccountName))))
         val clientSecretCredential: ClientSecretCredential = new ClientSecretCredentialBuilder()
-          .clientId(
-            hc.get(AccountOAuthClientId.replaceFirst(StorageAccNamePlaceHolder, storageAccountName))
-          )
-          .clientSecret(
-            hc.get(
-              AccountOAuthClientSecret.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
-            )
-          )
+          .clientId(hc.get(String.format(AccountOAuthClientId, storageAccountName)))
+          .clientSecret(hc.get(String.format(AccountOAuthClientSecret, storageAccountName)))
           .tenantId(tenantId)
           .build()
         val blobServiceClientBuilderWithServivePrincipal: BlobServiceClientBuilder =
