@@ -1043,6 +1043,9 @@ func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *Repository
 		if !isEmpty {
 			return nil, fmt.Errorf("branch staging is not empty: %w", ErrDirtyBranch)
 		}
+		tokensToDrop := []StagingToken{branch.StagingToken}
+		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
+		g.dropTokens(ctx, tokensToDrop...)
 		branch.StagingToken = StagingToken(stagingToken)
 		branch.SealedTokens = make([]StagingToken, 0)
 		return branch, nil
