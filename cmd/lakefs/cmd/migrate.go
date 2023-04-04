@@ -144,7 +144,9 @@ var upCmd = &cobra.Command{
 		// -- This part contains the migration to ACL and will be removed in next version
 
 		// skip migrate to ACL for users with External authorizations
-		if !cfg.IsAuthTypeAPI() {
+		if cfg.IsAuthTypeAPI() {
+			fmt.Println("skipping ACL migration - external Authorization")
+		} else {
 			now := time.Now()
 			var doUpdate bool
 			if force {
@@ -162,8 +164,7 @@ var upCmd = &cobra.Command{
 
 		err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLMigrateVersion)
 		if err != nil {
-			// this should not happen
-			fmt.Println("migration succeeded - failed to upgrade version")
+			fmt.Println("migration succeeded - failed to upgrade version, to fix this re-run migration with --force")
 		}
 		// -- migrate to ACL ends here
 
