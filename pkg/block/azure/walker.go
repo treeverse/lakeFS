@@ -117,17 +117,19 @@ func (a *BlobWalker) GetSkippedEntries() []block.ObjectStoreEntry {
 // DataLakeWalker
 //
 
-func NewAzureDataLakeWalker(svc *service.Client) (*DataLakeWalker, error) {
+func NewAzureDataLakeWalker(svc *service.Client, skipOutOfOrder bool) (*DataLakeWalker, error) {
 	return &DataLakeWalker{
-		client: svc,
-		mark:   block.Mark{HasMore: true},
+		client:         svc,
+		mark:           block.Mark{HasMore: true},
+		skipOutOfOrder: skipOutOfOrder,
 	}, nil
 }
 
 type DataLakeWalker struct {
-	client  *service.Client
-	mark    block.Mark
-	skipped []block.ObjectStoreEntry
+	client         *service.Client
+	mark           block.Mark
+	skipped        []block.ObjectStoreEntry
+	skipOutOfOrder bool
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
@@ -172,7 +174,7 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				// Skip folders
 				continue
 			}
-			if strings.Compare(prev, *blobInfo.Name) > 0 { // skip out of order
+			if a.skipOutOfOrder && strings.Compare(prev, *blobInfo.Name) > 0 { // skip out of order
 				a.skipped = append(a.skipped, block.ObjectStoreEntry{
 					FullKey:     *blobInfo.Name,
 					RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),

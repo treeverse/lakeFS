@@ -1775,7 +1775,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 	}
 
 	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI})
+	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI, SkipOutOfOrder: true})
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
