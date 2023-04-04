@@ -132,7 +132,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     // Filter out addresses outside the storage namespace.
     // Returned addresses are either relative ones, or absolute ones that
     // are under the storage namespace.
-    def getDeletableAddresses(rangeID: String): Iterator[String] = {
+    def getOwnedAddresses(rangeID: String): Iterator[String] = {
       println(s"getAddressesToDelete: get addresses for range $rangeID")
       val addresses = rangeGetter
         .getRangeEntries(rangeID, repo)
@@ -144,11 +144,11 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       addresses
     }
 
-    def getDeletableAddressesUnion(it: Iterator[(String, Boolean)]): Iterator[(String, Boolean)] = {
+    def getOwnedAddressesUnion(it: Iterator[(String, Boolean)]): Iterator[(String, Boolean)] = {
       val all = collection.mutable.Set[(String, Boolean)]()
       it.foreach({
         case (rangeID, expire) => {
-          all ++= getDeletableAddresses(rangeID).map((x) => (x, expire))
+          all ++= getOwnedAddresses(rangeID).map((x) => (x, expire))
         }
       })
       all.iterator
@@ -171,7 +171,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
         .rdd
         .mapPartitionsWithIndex((index: Int, it: Iterator[(String, Boolean)]) => {
           println(s"get addresses partition ${index}")
-          getDeletableAddressesUnion(it)
+          getOwnedAddressesUnion(it)
         })
       if (sampleFraction == 1) all
       else {
@@ -185,15 +185,24 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     val dedupedRangeIDs = rangeIDs.rdd
       .aggregateByKey(0, numRangePartitions)(
-        (u: Int, expire: Boolean) => u | (if (expire) 1 else 2),
-        (a, b: Int) => a | b
+        // expiryCode is:
+        //
+        //   * 1 if range appears as to-be-expired;
+        //   * 2 if range appears as to-be-kept;
+        //   * 3 if range appears as both to-be-expired and to-be-kept.
+        //
+        // Ranges that appear _only_ as expired will be expired; ranges that
+        // appear even once as to-be-kept will be kept, preventing
+        // intersecting expired ranges from expiring the intersection.
+        (expiryCode: Int, expire: Boolean) => expiryCode | (if (expire) 1 else 2),
+        (expiryCodeA, expiryCodeB: Int) => expiryCodeA | expiryCodeB
       )
-      .map({ case (r, expireInt) =>
+      .map({ case (rangeID, expiryCode) =>
         // Ranges appearing only as expire should expire.  Ranges appearing
         // only as keep should be kept.  Ranges appearing as both expire and
         // keep should still be kept - to protect their contents from
         // expired ranges that intersect.
-        (r, expireInt == 1)
+        (rangeID, expiryCode == 1)
       })
       .toDS
     // TODO(ariels): Consider merely range-partitioning, reducing each
@@ -496,8 +505,8 @@ object GarbageCollector {
                                          DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS
                                         )
     val approxNumRangesToSpreadPerPartition = hc.getDouble(
-      LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION,
-      DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_TO_SPREAD_PER_PARTITION
+      LAKEFS_CONF_GC_APPROX_NUM_RANGES_PER_PARTITION,
+      DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_PER_PARTITION
     )
     val sampleFraction = hc.getDouble(LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION, 1.0)
 
