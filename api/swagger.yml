@@ -3348,7 +3348,7 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateToken"
       responses:
-        201:
+        204:
           description: branch updated successfully
         400:
           $ref: "#/components/responses/ValidationError"
@@ -3887,7 +3887,7 @@ paths:
       operationId: getMetaRange
       summary: return URI to a meta-range file
       responses:
-        204:
+        200:
           description: meta-range URI
           content:
             application/json:

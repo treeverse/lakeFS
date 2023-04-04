@@ -3647,7 +3647,7 @@ paths:
               $ref: '#/components/schemas/UpdateToken'
         required: true
       responses:
-        "201":
+        "204":
           description: branch updated successfully
         "400":
           content:
@@ -4587,7 +4587,7 @@ paths:
           type: string
         style: simple
       responses:
-        "204":
+        "200":
           content:
             application/json:
               schema:

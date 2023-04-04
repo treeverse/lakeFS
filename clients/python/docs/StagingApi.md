@@ -367,7 +367,7 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | branch updated successfully |  -  |
+**204** | branch updated successfully |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
