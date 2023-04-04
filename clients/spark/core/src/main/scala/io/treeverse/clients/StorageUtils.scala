@@ -48,9 +48,18 @@ object StorageUtils {
   }
 
   object AzureBlob {
-    val StorageAccountKeyPropertyPattern =
-      "fs.azure.account.key.<storageAccountName>.dfs.core.windows.net"
-    val StorageAccNamePlaceHolder = "<storageAccountName>"
+    val AccountAuthType =
+      "fs.azure.account.auth.type.%s.dfs.core.windows.net"
+    val AccountOAuthProviderType =
+      "fs.azure.account.oauth.provider.type.%s.dfs.core.windows.net"
+    val AccountOAuthClientId =
+      "fs.azure.account.oauth2.client.id.%s.dfs.core.windows.net"
+    val AccountOAuthClientSecret =
+      "fs.azure.account.oauth2.client.secret.%s.dfs.core.windows.net"
+    val AccountOAuthClientEndpoint =
+      "fs.azure.account.oauth2.client.endpoint.%s.dfs.core.windows.net"
+    val StorageAccountKeyProperty =
+      "fs.azure.account.key.%s.dfs.core.windows.net"
     // https://docs.microsoft.com/en-us/dotnet/api/overview/azure/storage.blobs.batch-readme#key-concepts
     // Note that there is no official java SDK documentation of the max batch size, therefore assuming the above.
     val AzureBlobMaxBulkSize = 256
@@ -67,6 +76,10 @@ object StorageUtils {
 
     def uriToStorageAccountName(storageNsURI: URI): String = {
       storageNsURI.getHost.split('.')(0)
+    }
+
+    def getTenantId(authorityHost: URI): String = {
+      authorityHost.getPath.split('/')(1)
     }
   }
 

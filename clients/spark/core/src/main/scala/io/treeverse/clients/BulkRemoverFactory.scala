@@ -8,6 +8,7 @@ import com.azure.storage.blob.models.DeleteSnapshotsOptionType
 import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
 import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
+import com.azure.identity.{ClientSecretCredentialBuilder, ClientSecretCredential}
 import io.treeverse.clients.StorageUtils.AzureBlob._
 import io.treeverse.clients.StorageUtils.S3._
 import io.treeverse.clients.StorageUtils._
@@ -144,21 +145,40 @@ object BulkRemoverFactory {
         storageAccountUrl: String,
         storageAccountName: String
     ): BlobBatchClient = {
-      val storageAccountKeyPropName =
-        StorageAccountKeyPropertyPattern.replaceFirst(StorageAccNamePlaceHolder, storageAccountName)
-      val storageAccountKey = hc.get(storageAccountKeyPropName)
 
-      val blobServiceClientSharedKey: BlobServiceClient =
+      val storageAccountKey = hc.get(String.format(StorageAccountKeyProperty, storageAccountName))
+
+      val blobServiceClientBuilder: BlobServiceClientBuilder =
         new BlobServiceClientBuilder()
           .endpoint(storageAccountUrl)
-          .credential(new StorageSharedKeyCredential(storageAccountName, storageAccountKey))
           .retryOptions(
             new RequestRetryOptions()
           ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
           .httpClient(HttpClient.createDefault())
-          .buildClient
 
-      new BlobBatchClientBuilder(blobServiceClientSharedKey).buildClient
+      // Access the storage using the account key
+      if (storageAccountKey != null) {
+        blobServiceClientBuilder.credential(
+          new StorageSharedKeyCredential(storageAccountName, storageAccountKey)
+        )
+      }
+      // Access the storage using OAuth 2.0 with an Azure service principal
+      else if (hc.get(String.format(AccountAuthType, storageAccountName)) == "OAuth") {
+        val tenantId = getTenantId(
+          new URI(hc.get(String.format(AccountOAuthClientEndpoint, storageAccountName)))
+        )
+        val clientSecretCredential: ClientSecretCredential = new ClientSecretCredentialBuilder()
+          .clientId(hc.get(String.format(AccountOAuthClientId, storageAccountName)))
+          .clientSecret(hc.get(String.format(AccountOAuthClientSecret, storageAccountName)))
+          .tenantId(tenantId)
+          .build()
+
+        blobServiceClientBuilder.credential(clientSecretCredential)
+      }
+
+      val blobServiceClient: BlobServiceClient =
+        blobServiceClientBuilder.buildClient
+      return new BlobBatchClientBuilder(blobServiceClient).buildClient
     }
 
     override def getMaxBulkSize(): Int = {
