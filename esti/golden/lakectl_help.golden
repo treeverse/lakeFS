@@ -1,6 +1,7 @@
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
 Usage:
+  lakectl [flags]
   lakectl [command]
 
 Available Commands:

@@ -74,6 +74,10 @@ A cli tool to explore manage and work with lakeFS
 
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
+```
+lakectl [flags]
+```
+
 #### Options
 {:.no_toc}
 
@@ -86,6 +90,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
       --log-output strings   set logging output(s)
       --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
       --verbose              run in verbose mode
+  -v, --version              version for lakectl
 ```
 
 **note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.

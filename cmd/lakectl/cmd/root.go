@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/go-openapi/swag"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -24,7 +25,26 @@ import (
 
 const (
 	DefaultMaxIdleConnsPerHost = 100
+	// version templates
+	getLakeFSVersionErrorTemplate = `{{ print "Failed getting lakeFS server version:" | red }} {{ . }}
+`
+	getLatestVersionErrorTemplate = `{{ print "Failed getting latest lakectl version:" | red }} {{ . }}
+`
+	versionTemplate = `lakectl version: {{.LakectlVersion }}
+{{- if .LakeFSVersion }}{{ "\n" }}lakeFS version: {{.LakeFSVersion}}{{ "\n" }}{{ end -}}
+{{- if .UpgradeURL }}{{ "\n" }}{{ end -}}
+{{- if .LakectlLatestVersion }}{{ print "lakectl out of date!"| yellow }} (Available: {{ .LakectlLatestVersion }}){{ "\n" }}{{ end -}}
+{{- if .LakeFSLatestVersion }}{{ print "lakeFS out of date!"| yellow }} (Available: {{ .LakeFSLatestVersion }}){{ "\n" }}{{ end -}}
+{{- if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }}{{ "\n" }}{{ end -}}`
 )
+
+type versionInfo struct {
+	LakectlVersion       string
+	LakeFSVersion        string
+	LakectlLatestVersion string
+	LakeFSLatestVersion  string
+	UpgradeURL           string
+}
 
 var (
 	cfgFile string
@@ -87,7 +107,55 @@ var rootCmd = &cobra.Command{
 			DieFmt("error unmarshal configuration: %v", err)
 		}
 	},
-	Version: version.Version,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if !MustBool(cmd.Flags().GetBool("version")) {
+			if err := cmd.Help(); err != nil {
+				WriteIfVerbose("failed showing help {{ . }}", err)
+			}
+			return
+		}
+
+		info := versionInfo{LakectlVersion: version.Version}
+
+		// get lakeFS server version
+
+		client := getClient()
+
+		resp, err := client.GetLakeFSVersionWithResponse(cmd.Context())
+		if err != nil {
+			WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
+		} else if resp.JSON200 == nil {
+			WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
+		} else {
+			lakefsVersion := resp.JSON200
+			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
+			if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
+				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
+			}
+			if swag.StringValue(lakefsVersion.UpgradeUrl) != "" {
+				info.UpgradeURL = swag.StringValue(lakefsVersion.UpgradeUrl)
+			}
+		}
+		// get lakectl latest version
+		ghReleases := version.NewGithubReleases(version.GithubRepoOwner, version.GithubRepoName)
+		latestVer, err := ghReleases.FetchLatestVersion()
+		if err != nil {
+			WriteIfVerbose(getLatestVersionErrorTemplate, err)
+		} else {
+			latest, err := version.CheckLatestVersion(latestVer)
+			if err != nil {
+				WriteIfVerbose("failed parsing {{ . }}", err)
+			} else if latest.Outdated {
+				info.LakectlLatestVersion = latest.LatestVersion
+				if info.UpgradeURL == "" {
+					info.UpgradeURL = version.DefaultReleasesURL
+				}
+			}
+		}
+
+		Write(versionTemplate, info)
+	},
 }
 
 func getClient() *api.ClientWithResponses {
@@ -161,6 +229,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
 	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
+	rootCmd.Flags().BoolP("version", "v", false, "version for lakectl")
 }
 
 // initConfig reads in config file and ENV variables if set.
