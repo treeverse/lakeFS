@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/treeverse/lakefs/pkg/block"
 )
@@ -109,136 +108,103 @@ func (a *BlobWalker) Marker() block.Mark {
 	return a.mark
 }
 
+func (a *BlobWalker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return nil
+}
+
 //
 // DataLakeWalker
 //
 
-func NewAzureDataLakeWalker(svc *service.Client) (*DataLakeWalker, error) {
+func NewAzureDataLakeWalker(svc *service.Client, skipOutOfOrder bool) (*DataLakeWalker, error) {
 	return &DataLakeWalker{
-		client: svc,
-		mark:   block.Mark{HasMore: true},
+		client:         svc,
+		mark:           block.Mark{HasMore: true},
+		skipOutOfOrder: skipOutOfOrder,
 	}, nil
 }
 
 type DataLakeWalker struct {
-	client *service.Client
-	mark   block.Mark
+	client         *service.Client
+	mark           block.Mark
+	skipped        []block.ObjectStoreEntry
+	skipOutOfOrder bool
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
-	// We are limiting the ADLS Gen2 walker to traverse directories only. This is to avoid a bug where we traverse the parent folder as well
-	// due to the use of NewListBlobsHierarchyPager
-	storageURI = storageURI.JoinPath("/")
 	// we use bucket as container and prefix as path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
 		return err
 	}
-	basePath := prefix
+	var basePath string
+	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
+		basePath = prefix[:idx+1]
+	}
 
 	qk, err := ResolveBlobURLInfoFromURL(containerURL)
 	if err != nil {
 		return err
 	}
 
-	// restore state - tokens and prefix based on after
-	tokens := strings.Split(op.ContinuationToken, ",")
-	if len(tokens) == 0 {
-		tokens = append(tokens, "")
-	}
-
-	// use a copy of after as we update the value though while listing different levels
-	after := op.After
-	if after != "" {
-		prefix = parentPrefix(after)
-	}
-
 	containerClient := a.client.NewContainerClient(qk.ContainerName)
-	for {
-	LIST:
-		tokenIdx := len(tokens) - 1
-		l := containerClient.NewListBlobsHierarchyPager("/",
-			&container.ListBlobsHierarchyOptions{
-				Prefix: &prefix,
-				Marker: &tokens[tokenIdx],
-			})
-		for l.More() {
-			resp, err := l.NextPage(ctx)
-			if err != nil {
+	listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
+		Prefix: &prefix,
+		Marker: &op.ContinuationToken,
+	})
+
+	skipCount := 0
+	prev := ""
+	for listBlob.More() {
+		resp, err := listBlob.NextPage(ctx)
+		if err != nil {
+			return err
+		}
+		if resp.Marker != nil {
+			a.mark.ContinuationToken = *resp.Marker
+		}
+		for _, blobInfo := range resp.Segment.BlobItems {
+			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
+			if op.After != "" && *blobInfo.Name <= op.After {
+				continue
+			}
+
+			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
+				// Skip folders
+				continue
+			}
+			entry := block.ObjectStoreEntry{
+				FullKey:     *blobInfo.Name,
+				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
+				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
+				ETag:        string(*blobInfo.Properties.ETag),
+				Mtime:       *blobInfo.Properties.LastModified,
+				Size:        *blobInfo.Properties.ContentLength,
+			}
+			if a.skipOutOfOrder && strings.Compare(prev, *blobInfo.Name) > 0 { // skip out of order
+				a.skipped = append(a.skipped, entry)
+				skipCount++
+				continue
+			}
+			prev = *blobInfo.Name
+
+			a.mark.LastKey = *blobInfo.Name
+			if err := walkFn(entry); err != nil {
 				return err
 			}
-			if resp.Marker != nil {
-				tokens[tokenIdx] = *resp.Marker
-			}
-			a.mark.ContinuationToken = strings.Join(tokens, ",")
-
-			itemIdx, prefIdx := 0, 0
-			items, prefixes := resp.Segment.BlobItems, resp.Segment.BlobPrefixes
-			for itemIdx < len(items) || prefIdx < len(prefixes) {
-				var f *container.BlobItem
-				if itemIdx < len(items) {
-					f = items[itemIdx]
-				}
-
-				var p *container.BlobPrefix
-				if prefIdx < len(prefixes) {
-					p = prefixes[prefIdx]
-				}
-
-				// process file or prefix
-				if f != nil && (p == nil || *f.Name < *p.Name) {
-					itemIdx++
-					// skip until we pass 'after'
-					if after != "" && *f.Name <= after {
-						continue
-					}
-					a.mark.LastKey = *f.Name
-					after = *f.Name
-					if err := walkFn(block.ObjectStoreEntry{
-						FullKey:     *f.Name,
-						RelativeKey: strings.TrimPrefix(*f.Name, basePath),
-						Address:     getAzureBlobURL(containerURL, *f.Name).String(),
-						ETag:        string(*f.Properties.ETag),
-						Mtime:       *f.Properties.LastModified,
-						Size:        *f.Properties.ContentLength,
-					}); err != nil {
-						return err
-					}
-				} else if p != nil && (f == nil || *p.Name < *f.Name) {
-					prefIdx++
-					// skip until we pass 'after'
-					if after != "" && *p.Name <= after {
-						continue
-					}
-					// process prefix
-					tokens = append(tokens, "")
-					prefix = *p.Name
-					after = *p.Name
-					goto LIST
-				}
-			}
 		}
-		tokens = tokens[:tokenIdx]
-		// no tokens, means done walking
-		if len(tokens) == 0 {
-			break
-		}
-		prefix = parentPrefix(prefix)
 	}
 	a.mark = block.Mark{
 		HasMore: false,
 	}
-	return nil
-}
 
-func parentPrefix(prefix string) string {
-	prefix = strings.TrimSuffix(prefix, "/")
-	if i := strings.LastIndex(prefix, "/"); i != -1 {
-		return prefix[:i+1]
-	}
-	return ""
+	return nil
 }
 
 func (a *DataLakeWalker) Marker() block.Mark {
 	return a.mark
+}
+
+func (a *DataLakeWalker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return a.skipped
 }

@@ -25,35 +25,35 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * InlineObject1
+ * UpdateToken
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class InlineObject1 {
-  public static final String SERIALIZED_NAME_PATTERN = "pattern";
-  @SerializedName(SERIALIZED_NAME_PATTERN)
-  private String pattern;
+public class UpdateToken {
+  public static final String SERIALIZED_NAME_STAGING_TOKEN = "staging_token";
+  @SerializedName(SERIALIZED_NAME_STAGING_TOKEN)
+  private String stagingToken;
 
 
-  public InlineObject1 pattern(String pattern) {
+  public UpdateToken stagingToken(String stagingToken) {
     
-    this.pattern = pattern;
+    this.stagingToken = stagingToken;
     return this;
   }
 
    /**
-   * Get pattern
-   * @return pattern
+   * Get stagingToken
+   * @return stagingToken
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
-  public String getPattern() {
-    return pattern;
+  public String getStagingToken() {
+    return stagingToken;
   }
 
 
-  public void setPattern(String pattern) {
-    this.pattern = pattern;
+  public void setStagingToken(String stagingToken) {
+    this.stagingToken = stagingToken;
   }
 
 
@@ -65,20 +65,20 @@ public class InlineObject1 {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InlineObject1 inlineObject1 = (InlineObject1) o;
-    return Objects.equals(this.pattern, inlineObject1.pattern);
+    UpdateToken updateToken = (UpdateToken) o;
+    return Objects.equals(this.stagingToken, updateToken.stagingToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(pattern);
+    return Objects.hash(stagingToken);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InlineObject1 {\n");
-    sb.append("    pattern: ").append(toIndentedString(pattern)).append("\n");
+    sb.append("class UpdateToken {\n");
+    sb.append("    stagingToken: ").append(toIndentedString(stagingToken)).append("\n");
     sb.append("}");
     return sb.toString();
   }

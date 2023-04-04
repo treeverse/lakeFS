@@ -548,6 +548,16 @@ class Branches {
         }
         return response.json();
     }
+
+    async updateToken(repoId, branch, staging_token) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}/update_token`, {
+            method: 'PUT',
+            body: JSON.stringify({staging_token: staging_token}),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+    }
 }
 
 
@@ -972,10 +982,10 @@ class BranchProtectionRules {
 }
 
 class Ranges {
-    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "") {
+    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "", staging_token="") {
         const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
             method: 'POST',
-            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token}),
+            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token, staging_token}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));

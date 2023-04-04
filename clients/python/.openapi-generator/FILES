@@ -100,6 +100,7 @@ docs/TagsApi.md
 docs/TemplatesApi.md
 docs/UnderlyingObjectProperties.md
 docs/UpdatePasswordByToken.md
+docs/UpdateToken.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -210,6 +211,7 @@ lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/update_password_by_token.py
+lakefs_client/model/update_token.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
@@ -321,6 +323,7 @@ test/test_tags_api.py
 test/test_templates_api.py
 test/test_underlying_object_properties.py
 test/test_update_password_by_token.py
+test/test_update_token.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py

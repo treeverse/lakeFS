@@ -27,25 +27,25 @@ import org.junit.Test;
 
 
 /**
- * Model tests for InlineObject1
+ * Model tests for UpdateToken
  */
-public class InlineObject1Test {
-    private final InlineObject1 model = new InlineObject1();
+public class UpdateTokenTest {
+    private final UpdateToken model = new UpdateToken();
 
     /**
-     * Model tests for InlineObject1
+     * Model tests for UpdateToken
      */
     @Test
-    public void testInlineObject1() {
-        // TODO: test InlineObject1
+    public void testUpdateToken() {
+        // TODO: test UpdateToken
     }
 
     /**
-     * Test the property 'pattern'
+     * Test the property 'stagingToken'
      */
     @Test
-    public void patternTest() {
-        // TODO: test pattern
+    public void stagingTokenTest() {
+        // TODO: test stagingToken
     }
 
 }

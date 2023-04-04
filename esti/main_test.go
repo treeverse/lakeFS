@@ -59,8 +59,8 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 const (
-	DefaultAdminAccessKeyId     = "AKIAIOSFDNN7EXAMPLEQ"
-	DefaultAdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	DefaultAdminAccessKeyId     = "AKIAJ7VWNB64GNSSR36Q"
+	DefaultAdminSecretAccessKey = "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"
 )
 
 var (
@@ -269,7 +269,7 @@ func deleteAllPolicies(ctx context.Context, client api.ClientWithResponsesInterf
 
 func TestMain(m *testing.M) {
 	systemTests := flag.Bool("system-tests", false, "Run system tests")
-	useLocalCredentials := flag.Bool("use-local-credentials", false, "Generate local API key during `lakefs setup'")
+	useLocalCredentials := flag.Bool("use-local-credentials", true, "Generate local API key during `lakefs setup'")
 	adminAccessKeyID := flag.String("admin-access-key-id", DefaultAdminAccessKeyId, "lakeFS Admin access key ID")
 	adminSecretAccessKey := flag.String("admin-secret-access-key", DefaultAdminSecretAccessKey, "lakeFS Admin secret access key")
 	cleanupEnv := flag.Bool("cleanup-env-pre-run", false, "Clean repositories, groups, users and polices before running esti tests")
@@ -333,7 +333,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func SkipTestIfAskedTo(t *testing.T) {
+func SkipTestIfAskedTo(t testing.TB) {
 	if testsToSkipRegex != nil && testsToSkipRegex.MatchString(t.Name()) {
 		t.SkipNow()
 	}

@@ -24,6 +24,7 @@ const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, b
     let after = "";
     let importBranchResp;
     let sum = 0;
+    let stagingToken = "";
     const rangeArr = [];
     const importStatusUpdate = {
         importPhase: ImportPhase.InProgress,
@@ -34,6 +35,7 @@ const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, b
         const response = await ranges.createRange(repoId, sourceRef, after, prependPath, paginationResp.continuation_token);
         rangeArr.push(response.range);
         paginationResp = response.pagination;
+        stagingToken = paginationResp.staging_token
         after = paginationResp.last_key;
         sum += response.range.count;
         importStatusUpdate.numObj = sum
@@ -51,6 +53,11 @@ const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, b
         }
     }
     await commits.commit(repoId, importBranchResp.id, commitMsg, metadata, metarange.id);
+    
+    if (stagingToken.length > 0) {
+        await branches.updateToken(repoId, importBranchResp.id, stagingToken);
+        await commits.commit(repoId, importBranchResp.id, "Import commit for out of order skipped objects", metadata);
+    }
     importStatusUpdate.importPhase = ImportPhase.Completed;
     updateImportState(importStatusUpdate);
 }

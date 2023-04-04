@@ -22,8 +22,9 @@ import (
 var ErrNotSupported = errors.New("no storage adapter found")
 
 type WalkerOptions struct {
-	S3EndpointURL string
-	StorageURI    string
+	S3EndpointURL  string
+	StorageURI     string
+	SkipOutOfOrder bool
 }
 
 type WalkerWrapper struct {
@@ -44,6 +45,10 @@ func (ww *WalkerWrapper) Walk(ctx context.Context, opts block.WalkOptions, walkF
 
 func (ww *WalkerWrapper) Marker() block.Mark {
 	return ww.walker.Marker()
+}
+
+func (ww *WalkerWrapper) GetSkippedEntries() []block.ObjectStoreEntry {
+	return ww.walker.GetSkippedEntries()
 }
 
 type WalkerFactory struct {
@@ -96,7 +101,7 @@ func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*gs.GCSWalker, erro
 	return gs.NewGCSWalker(svc), nil
 }
 
-func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (block.Walker, error) {
+func (f *WalkerFactory) buildAzureWalker(importURL *url.URL, skipOutOfOrder bool) (block.Walker, error) {
 	storageAccount, err := azure.ExtractStorageAccount(importURL)
 	if err != nil {
 		return nil, err
@@ -124,7 +129,7 @@ func (f *WalkerFactory) buildAzureWalker(importURL *url.URL) (block.Walker, erro
 
 	isHNS := isHierarchicalNamespaceEnabled(importURL)
 	if isHNS {
-		return azure.NewAzureDataLakeWalker(client)
+		return azure.NewAzureDataLakeWalker(client, skipOutOfOrder)
 	}
 	return azure.NewAzureBlobWalker(client)
 }
@@ -159,7 +164,7 @@ func (f *WalkerFactory) GetWalker(ctx context.Context, opts WalkerOptions) (*Wal
 			return nil, fmt.Errorf("creating gs walker: %w", err)
 		}
 	case "http", "https":
-		walker, err = f.buildAzureWalker(uri)
+		walker, err = f.buildAzureWalker(uri, opts.SkipOutOfOrder)
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure walker: %w", err)
 		}

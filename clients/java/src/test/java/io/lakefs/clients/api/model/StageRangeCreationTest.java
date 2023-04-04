@@ -72,4 +72,12 @@ public class StageRangeCreationTest {
         // TODO: test continuationToken
     }
 
+    /**
+     * Test the property 'stagingToken'
+     */
+    @Test
+    public void stagingTokenTest() {
+        // TODO: test stagingToken
+    }
+
 }
