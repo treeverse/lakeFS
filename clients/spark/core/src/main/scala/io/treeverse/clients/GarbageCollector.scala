@@ -181,32 +181,11 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     }
 
     // Expire an object _only_ if it is always expired!
-    val shouldExpire = (a: Boolean, b: Boolean) => a & b
+    val shouldExpire = (expireA: Boolean, expireB: Boolean) => expireA & expireB
 
     val dedupedRangeIDs = rangeIDs.rdd
-      .aggregateByKey(0, numRangePartitions)(
-        // expiryCode is:
-        //
-        //   * 1 if range appears as to-be-expired;
-        //   * 2 if range appears as to-be-kept;
-        //   * 3 if range appears as both to-be-expired and to-be-kept.
-        //
-        // Ranges that appear _only_ as expired will be expired; ranges that
-        // appear even once as to-be-kept will be kept, preventing
-        // intersecting expired ranges from expiring the intersection.
-        (expiryCode: Int, expire: Boolean) => expiryCode | (if (expire) 1 else 2),
-        (expiryCodeA, expiryCodeB: Int) => expiryCodeA | expiryCodeB
-      )
-      .map({ case (rangeID, expiryCode) =>
-        // Ranges appearing only as expire should expire.  Ranges appearing
-        // only as keep should be kept.  Ranges appearing as both expire and
-        // keep should still be kept - to protect their contents from
-        // expired ranges that intersect.
-        (rangeID, expiryCode == 1)
-      })
+      .aggregateByKey(true, numRangePartitions)(shouldExpire, shouldExpire)
       .toDS
-    // TODO(ariels): Consider merely range-partitioning, reducing each
-    // partition in-memory, and _then_ sorting.
 
     // TODO(ariels): Does this partitioner really apply only to the _keys_?
     val partitioner = new HashPartitioner(numAddressPartitions)
