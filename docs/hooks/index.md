@@ -5,7 +5,7 @@ title: Hooks
 description: Learn about lakeFS hooks
 has_children: true  
 redirect_from:
-  - ./reference/hooks.html
-  - ../hooks.html
+  - /reference/hooks.html
+  - /hooks.html
 ---
 

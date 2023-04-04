@@ -6,9 +6,9 @@ parent: Integrations
 nav_order: 50
 has_children: false
 redirect_from: 
-  - ../using/python.html
-  - ../using/boto.html
-  - ./boto.html
+  - /using/python.html
+  - /using/boto.html
+  - /integrations/boto.html
 ---
 
 {% include toc.html %}

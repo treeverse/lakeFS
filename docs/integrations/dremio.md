@@ -5,7 +5,7 @@ description: This section shows how you can start using lakeFS with Dremio, a ne
 parent: Integrations
 nav_order: 150
 has_children: false
-redirect_from: ../using/dremio.html
+redirect_from: /using/dremio.html
 ---
 
 # Using lakeFS with Dremio

@@ -6,7 +6,7 @@ parent: How-To
 nav_order: 40
 has_children: false
 redirect_from: 
-  - ../reference/export.html
+  - /reference/export.html
 ---
 
 # Exporting Data

@@ -6,8 +6,8 @@ parent: How-To
 nav_order: 30
 has_children: false
 redirect_from: 
-  - ../deploying-aws/upgrade.html
-  - ../reference/upgrade.html
+  - /deploying-aws/upgrade.html
+  - /reference/upgrade.html
 ---
 
 # Upgrading lakeFS

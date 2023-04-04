@@ -6,7 +6,7 @@ parent: How-To
 nav_order: 60
 has_children: false
 redirect_from: 
-  - ../reference/protected_branches.html
+  - /reference/protected_branches.html
 ---
 
 # Branch Protection Rules

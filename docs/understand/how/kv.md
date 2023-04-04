@@ -7,7 +7,7 @@ description: Brief introduction to lakeFS over KV
 nav_order: 20
 has_children: false
 redirect_from:
-  - ../kv-in-a-nutshell.html
+  - /understand/kv-in-a-nutshell.html
 ---
 # Internal database structure
 {: .no_toc }

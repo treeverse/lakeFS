@@ -5,7 +5,9 @@ description: This section explains how you can start using lakeFS with Kafka usi
 parent: Integrations
 nav_order: 120
 has_children: false
-redirect_from: ../using/kakfa.html
+redirect_from: 
+    - /using/kakfa.html
+    - /integrations/kakfa.html
 ---
 
 # Using lakeFS with Kafka

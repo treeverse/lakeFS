@@ -6,7 +6,7 @@ parent: How-To
 nav_order: 10
 has_children: false
 redirect_from: 
-  - ../setup/import.html
+  - /setup/import.html
 ---
 
 # Import data into lakeFS

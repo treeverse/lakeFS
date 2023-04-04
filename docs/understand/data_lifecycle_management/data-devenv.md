@@ -6,7 +6,7 @@ grand_parent: Understanding lakeFS
 description: lakeFS enables a safe test environment on your data lake without the need to copy or mock data
 nav_order: 25
 redirect_from:
-  - ../../data_lifecycle_management/data-devenv.html
+  - /data_lifecycle_management/data-devenv.html
 ---
 
 

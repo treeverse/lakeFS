@@ -18,7 +18,7 @@ parent: Reference
 nav_order: 20
 has_children: false
 redirect_from:
-  - ./commands.html
+  - /reference/commands.html
 ---
 
 {% comment %}

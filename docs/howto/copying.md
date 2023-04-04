@@ -6,8 +6,8 @@ parent: How-To
 nav_order: 50
 has_children: false
 redirect_from: 
-  - ../integrations/distcp.html
-  - ../integrations/rclone.html
+  - /integrations/distcp.html
+  - /integrations/rclone.html
 ---
 
 ## Using DistCp

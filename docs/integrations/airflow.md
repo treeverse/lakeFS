@@ -5,7 +5,7 @@ description: Easily build reproducible data pipelines with Airflow and lakeFS us
 parent: Integrations
 nav_order: 40
 has_children: false
-redirect_from: ../using/airflow.html
+redirect_from: /using/airflow.html
 ---
 
 # Using lakeFS with Airflow
