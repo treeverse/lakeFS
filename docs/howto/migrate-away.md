@@ -6,8 +6,8 @@ parent: How-To
 nav_order: 9999
 has_children: false
 redirect_from: 
-  - ../deploying-aws/offboarding.html
-  - ../reference/offboarding.html
+  - /deploying-aws/offboarding.html
+  - /reference/offboarding.html
 ---
 
 # Migrating away from lakeFS

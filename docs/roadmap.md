@@ -5,7 +5,7 @@ description: New features and improvements lined-up for lakeFS. Become part of b
 nav_order: 95
 has_children: false
 redirect_from: 
-  - ../understand/roadmap.html
+  - /understand/roadmap.html
 ---
 
 # Roadmap
