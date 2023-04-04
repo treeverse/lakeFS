@@ -611,11 +611,11 @@ type Plumbing interface {
 	// Keeps Range closing logic, so might not flush all values to the range.
 	// Returns the created range info and in addition a list of records which were skipped due to out of order listing
 	// which might happen in Azure ADLS Gen2 listing
-	WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, []ValueRecord, error)
+	WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error)
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error)
-	// StageObjects stages given object list to stagingToken. If stagingToken is empty, create a new stagingToken
-	StageObjects(ctx context.Context, objects []ValueRecord, stagingToken string) error
+	// StageObject stages given object to stagingToken.
+	StageObject(ctx context.Context, object ValueRecord, stagingToken string) error
 	// UpdateBranchToken updates the given branch stagingToken
 	UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error
 }
@@ -833,7 +833,7 @@ type CommittedManager interface {
 
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not exhaust the iterator.
-	WriteRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*RangeInfo, []ValueRecord, error)
+	WriteRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*RangeInfo, error)
 
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, ns StorageNamespace, ranges []*RangeInfo) (*MetaRangeInfo, error)
@@ -1022,7 +1022,7 @@ func (g *Graveler) ListRepositories(ctx context.Context) (RepositoryIterator, er
 	return g.RefManager.ListRepositories(ctx)
 }
 
-func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, []ValueRecord, error) {
+func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error) {
 	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
 }
 
@@ -1030,15 +1030,8 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRec
 	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
 }
 
-func (g *Graveler) StageObjects(ctx context.Context, objects []ValueRecord, stagingToken string) error {
-	st := StagingToken(stagingToken)
-	for _, obj := range objects {
-		err := g.StagingManager.Set(ctx, st, obj.Key, obj.Value, false)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (g *Graveler) StageObject(ctx context.Context, object ValueRecord, stagingToken string) error {
+	return g.StagingManager.Set(ctx, StagingToken(stagingToken), object.Key, object.Value, false)
 }
 
 func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error {

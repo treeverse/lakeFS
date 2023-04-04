@@ -46,6 +46,10 @@ func (ww *WalkerWrapper) Marker() block.Mark {
 	return ww.walker.Marker()
 }
 
+func (ww *WalkerWrapper) GetSkippedEntries() []block.ObjectStoreEntry {
+	return ww.walker.GetSkippedEntries()
+}
+
 type WalkerFactory struct {
 	params params.AdapterConfig
 }

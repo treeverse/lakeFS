@@ -67,16 +67,7 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prep
 			}
 
 			it.entries <- EntryWithMarker{
-				EntryRecord: EntryRecord{
-					Path: Path(prepend + e.RelativeKey),
-					Entry: &Entry{
-						Address:      e.Address,
-						LastModified: timestamppb.New(e.Mtime),
-						Size:         e.Size,
-						ETag:         e.ETag,
-						AddressType:  Entry_FULL,
-					},
-				},
+				EntryRecord: objectStoreEntryToEntryRecord(e, prepend),
 				Mark: Mark{
 					Mark: it.walker.Marker(),
 				},
@@ -146,4 +137,21 @@ func (it *walkEntryIterator) Close() {
 
 func (it *walkEntryIterator) Marker() Mark {
 	return it.curr.Mark
+}
+
+func (it *walkEntryIterator) GetSkippedEntries() []block.ObjectStoreEntry {
+	return it.walker.GetSkippedEntries()
+}
+
+func objectStoreEntryToEntryRecord(e block.ObjectStoreEntry, prepend string) EntryRecord {
+	return EntryRecord{
+		Path: Path(prepend + e.RelativeKey),
+		Entry: &Entry{
+			Address:      e.Address,
+			LastModified: timestamppb.New(e.Mtime),
+			Size:         e.Size,
+			ETag:         e.ETag,
+			AddressType:  Entry_FULL,
+		},
+	}
 }

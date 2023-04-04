@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"net/url"
 	"strings"
 
@@ -108,6 +109,10 @@ func (a *BlobWalker) Marker() block.Mark {
 	return a.mark
 }
 
+func (a *BlobWalker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return nil
+}
+
 //
 // DataLakeWalker
 //
@@ -120,8 +125,9 @@ func NewAzureDataLakeWalker(svc *service.Client) (*DataLakeWalker, error) {
 }
 
 type DataLakeWalker struct {
-	client *service.Client
-	mark   block.Mark
+	client  *service.Client
+	mark    block.Mark
+	skipped []block.ObjectStoreEntry
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
@@ -146,6 +152,8 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 		Marker: &op.ContinuationToken,
 	})
 
+	skipCount := 0
+	prev := ""
 	for listBlob.More() {
 		resp, err := listBlob.NextPage(ctx)
 		if err != nil {
@@ -164,6 +172,19 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				// Skip folders
 				continue
 			}
+			if strings.Compare(prev, *blobInfo.Name) > 0 { // skip out of order
+				a.skipped = append(a.skipped, block.ObjectStoreEntry{
+					FullKey:     *blobInfo.Name,
+					RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
+					Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
+					ETag:        string(*blobInfo.Properties.ETag),
+					Mtime:       *blobInfo.Properties.LastModified,
+					Size:        *blobInfo.Properties.ContentLength,
+				})
+				skipCount++
+				continue
+			}
+			prev = *blobInfo.Name
 
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(block.ObjectStoreEntry{
@@ -178,7 +199,7 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 			}
 		}
 	}
-
+	logging.Default().Warning("Skipped count:", skipCount)
 	a.mark = block.Mark{
 		HasMore: false,
 	}
@@ -188,4 +209,8 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 
 func (a *DataLakeWalker) Marker() block.Mark {
 	return a.mark
+}
+
+func (a *DataLakeWalker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return a.skipped
 }

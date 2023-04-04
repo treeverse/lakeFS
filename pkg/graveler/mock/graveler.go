@@ -928,18 +928,18 @@ func (mr *MockPlumbingMockRecorder) GetRange(ctx, repository, rangeID interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRange", reflect.TypeOf((*MockPlumbing)(nil).GetRange), ctx, repository, rangeID)
 }
 
-// StageObjects mocks base method.
-func (m *MockPlumbing) StageObjects(ctx context.Context, objects []graveler.ValueRecord, stagingToken string) error {
+// StageObject mocks base method.
+func (m *MockPlumbing) StageObject(ctx context.Context, object graveler.ValueRecord, stagingToken string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StageObjects", ctx, objects, stagingToken)
+	ret := m.ctrl.Call(m, "StageObject", ctx, object, stagingToken)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// StageObjects indicates an expected call of StageObjects.
-func (mr *MockPlumbingMockRecorder) StageObjects(ctx, objects, stagingToken interface{}) *gomock.Call {
+// StageObject indicates an expected call of StageObject.
+func (mr *MockPlumbingMockRecorder) StageObject(ctx, object, stagingToken interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StageObjects", reflect.TypeOf((*MockPlumbing)(nil).StageObjects), ctx, objects, stagingToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StageObject", reflect.TypeOf((*MockPlumbing)(nil).StageObject), ctx, object, stagingToken)
 }
 
 // UpdateBranchToken mocks base method.
@@ -972,13 +972,12 @@ func (mr *MockPlumbingMockRecorder) WriteMetaRange(ctx, repository, ranges inter
 }
 
 // WriteRange mocks base method.
-func (m *MockPlumbing) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, []graveler.ValueRecord, error) {
+func (m *MockPlumbing) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteRange", ctx, repository, it)
 	ret0, _ := ret[0].(*graveler.RangeInfo)
-	ret1, _ := ret[1].([]graveler.ValueRecord)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // WriteRange indicates an expected call of WriteRange.
@@ -2430,13 +2429,12 @@ func (mr *MockCommittedManagerMockRecorder) WriteMetaRangeByIterator(ctx, ns, it
 }
 
 // WriteRange mocks base method.
-func (m *MockCommittedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, []graveler.ValueRecord, error) {
+func (m *MockCommittedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteRange", ctx, ns, it)
 	ret0, _ := ret[0].(*graveler.RangeInfo)
-	ret1, _ := ret[1].([]graveler.ValueRecord)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // WriteRange indicates an expected call of WriteRange.

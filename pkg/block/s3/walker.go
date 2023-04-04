@@ -93,3 +93,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 func (s *Walker) Marker() block.Mark {
 	return s.mark
 }
+
+func (s *Walker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return nil
+}

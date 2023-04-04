@@ -1786,19 +1786,30 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 	}
 	defer it.Close()
 
-	rangeInfo, skipped, err := c.Store.WriteRange(ctx, repository, NewEntryToValueIterator(it))
+	rangeInfo, err := c.Store.WriteRange(ctx, repository, NewEntryToValueIterator(it))
 	if err != nil {
 		return nil, nil, fmt.Errorf("writing range from entry iterator: %w", err)
 	}
+
 	stagingToken := params.StagingToken
+	skipped := it.GetSkippedEntries()
 	if len(skipped) > 0 {
 		if stagingToken == "" {
 			stagingToken = graveler.GenerateStagingToken("import", "ingest_range").String()
 		}
 
-		err = c.Store.StageObjects(ctx, skipped, stagingToken)
-		if err != nil {
-			return nil, nil, fmt.Errorf("staging skipped keys: %w", err)
+		for _, obj := range skipped {
+			entryRecord := objectStoreEntryToEntryRecord(obj, params.Prepend)
+			entry, err := EntryToValue(entryRecord.Entry)
+			if err != nil {
+				return nil, nil, fmt.Errorf("parsing entry: %w", err)
+			}
+			if err := c.Store.StageObject(ctx, graveler.ValueRecord{
+				Key:   graveler.Key(entryRecord.Path),
+				Value: entry,
+			}, stagingToken); err != nil {
+				return nil, nil, fmt.Errorf("staging skipped keys: %w", err)
+			}
 		}
 	}
 	mark := it.Marker()

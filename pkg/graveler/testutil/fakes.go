@@ -102,8 +102,8 @@ func (c *CommittedFake) WriteMetaRangeByIterator(context.Context, graveler.Stora
 	return &c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) WriteRange(context.Context, graveler.StorageNamespace, graveler.ValueIterator) (*graveler.RangeInfo, []graveler.ValueRecord, error) {
-	return &c.RangeInfo, nil, nil
+func (c *CommittedFake) WriteRange(context.Context, graveler.StorageNamespace, graveler.ValueIterator) (*graveler.RangeInfo, error) {
+	return &c.RangeInfo, nil
 }
 
 func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageNamespace, []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {

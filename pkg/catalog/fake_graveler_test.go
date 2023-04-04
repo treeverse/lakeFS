@@ -22,7 +22,7 @@ type FakeGraveler struct {
 	hooks                       graveler.HooksHandler
 }
 
-func (g *FakeGraveler) StageObjects(_ context.Context, _ []graveler.ValueRecord, _ string) error {
+func (g *FakeGraveler) StageObject(_ context.Context, _ graveler.ValueRecord, _ string) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -228,7 +228,7 @@ func (g *FakeGraveler) Commit(ctx context.Context, repository *graveler.Reposito
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, []graveler.ValueRecord, error) {
+func (g *FakeGraveler) WriteRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	panic("implement me")
 }
 
