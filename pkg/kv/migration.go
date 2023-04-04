@@ -55,7 +55,7 @@ func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 		return 0, ErrMigrationRequired
 	}
 	if kvVersion < ACLMigrateVersion {
-		logging.Default().Info("Migration to ACL required. Did you migrate using version v0.98.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-aclsn")
+		logging.Default().Info("Migration to ACL required. Did you migrate using version v0.98.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls")
 		return 0, ErrMigrationRequired
 	}
 
