@@ -9,17 +9,26 @@ import {Link, NavItem} from "../nav";
 
 
 export const UserNav = ({ userId, page = 'groups' }) => {
+    const {RBAC: rbac} = useLoginConfigContext();
     return (
         <Nav justify variant="tabs">
             <Link component={NavItem} active={page === 'groups'} href={{pathname: '/auth/users/:userId/groups', params: {userId}}}>
                 Group Memberships
             </Link>
-            <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
-                Directly Attached Policies
-            </Link>
-            <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
-                Effective Attached Policies
-            </Link>
+            {
+                rbac !== 'simplified' && (
+                <>
+                    <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
+                        Directly Attached Policies
+                    </Link>
+                    <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
+                        Effective Attached Policies
+                    </Link>
+                </>
+                )
+
+            }
+
             <Link component={NavItem} active={page === 'credentials'} href={{pathname: '/auth/users/:userId/credentials', params: {userId}}}>
                 Access Credentials
             </Link>
@@ -36,7 +45,7 @@ export const GroupNav = ({ groupId, page = 'groups' }) => {
                 Group Memberships
             </Link>
             {rbac === 'simplified' ?
-             <Link component={NavItem} active={page === 'acl'} href={{pathname: '/auth/groups/:groupId/acl', params: {groupId}}}>ACL</Link> :
+             <Link component={NavItem} active={page === 'repositories'} href={{pathname: '/auth/groups/:groupId/repositories', params: {groupId}}}>Repositories</Link> :
              <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}}>
                 Attached Policies
          </Link>}

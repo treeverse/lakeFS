@@ -87,7 +87,7 @@ const GroupRepositoriesList = ({ groupId }) => {
                         keyFn={identity}
                         rowFn={(repoId) => {
                             return [
-                                <Link href={{pathname: '/repositories/:repoId', params: {repoId}}}>{repoId}</Link>, <b>{repoId}</b>
+                                <Link href={{pathname: '/repositories/:repoId', params: {repoId}}}>{repoId}</Link>
                             ];
                         }}
                         headers={['Repository']}

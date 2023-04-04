@@ -40,7 +40,7 @@ func RepositoriesToARNs(repositories model.Repositories) []string {
 	}
 	arns := make([]string, len(repositories.List))
 	for i, repo := range repositories.List {
-		arns[i] = permissions.RepoArn(repo)
+		arns[i] = permissions.RepoArn(repo) + "/*"
 	}
 	return arns
 }
@@ -59,12 +59,16 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
+		readConfigStatement, err := auth.MakeStatementForPolicyType("FSReadConfig", all)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
+		}
 
 		ownCredentialsStatement, err := auth.MakeStatementForPolicyType("AuthManageOwnCredentials", ownUserARN)
 		if err != nil {
 			return nil, err
 		}
-		statements = append(statements, ownCredentialsStatement...)
+		statements = append(append(statements, readConfigStatement...), ownCredentialsStatement...)
 	case ACLWrite:
 		statements, err = auth.MakeStatementForPolicyType("FSReadWrite", repoARNs)
 		if err != nil {

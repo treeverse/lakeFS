@@ -105,10 +105,11 @@ const SettingsContainer = () => {
                 repo={repo}
                 onCancel={() => { setShowDeleteModal(false) }}
                 onSubmit={() => {
-                    repositories.delete(repo.id).catch(err => {
-                        setDeletionError(err)
-                    }).then(() => {
+                    repositories.delete(repo.id).then(() => {
                         return router.push('/repositories')
+                    }).catch(err => {
+                        setDeletionError(err)
+                        setShowDeleteModal(true)
                     })
                 }}
                 show={showingDeleteModal}/>
