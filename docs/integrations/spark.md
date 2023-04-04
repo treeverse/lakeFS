@@ -425,7 +425,7 @@ io.lakefs:hadoop-lakefs-assembly:0.1.13
 
 Once installed, it should look something like this:
 
-![Databricks - Adding the lakeFS client Jar](./integrations/assets/img/databricks-install-package.png)
+![Databricks - Adding the lakeFS client Jar](/assets/img/databricks-install-package.png)
 
   </div>
 </div>
