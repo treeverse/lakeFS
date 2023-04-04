@@ -27,7 +27,7 @@ class LocalCache {
 
 const cache = new LocalCache();
 
-export const linkToPath = (repoId, branchId, path, presign=false) => {
+export const linkToPath = (repoId, branchId, path, presign = false) => {
     const query = qs({
         path,
         presign,
@@ -595,7 +595,7 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", presign= false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
+    async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
         const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
@@ -630,7 +630,7 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path, presign= false) {
+    async get(repoId, ref, path, presign = false) {
         const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
@@ -1029,7 +1029,7 @@ class Statistics {
 }
 
 class Staging {
-    async get(repoId, branchId, path, presign= false) {
+    async get(repoId, branchId, path, presign = false) {
         const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'GET'
@@ -1045,6 +1045,18 @@ class Staging {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
             body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes})
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+}
+
+class OTFDiffs {
+    async get() {
+        const response = await apiRequest('/otf/diffs', {
+            method: 'GET'
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -1070,3 +1082,4 @@ export const metaRanges = new MetaRanges();
 export const templates = new Templates();
 export const statistics = new Statistics();
 export const staging = new Staging();
+export const otfDiffs = new OTFDiffs();

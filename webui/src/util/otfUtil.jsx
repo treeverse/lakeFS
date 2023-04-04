@@ -1,4 +1,4 @@
-import {objects} from "../lib/api";
+import {objects, otfDiffs} from "../lib/api";
 
 /**
  * Checks whether a path is a delta table root.
@@ -15,4 +15,17 @@ export async function isDeltaLakeTable(entry, repo, ref) {
 
     let response = await objects.list(repo.id, ref, entry.path + "_delta_log/")
     return response !== null && response.results.length !== 0;
+}
+
+export async function isDeltaLakeDiffEnabled() {
+    let enabledDiffs = await otfDiffs.get();
+    if (enabledDiffs === null || enabledDiffs.diffs.length === 0) {
+        return false
+    }
+    for (let diff of enabledDiffs.diffs) {
+        if (diff.name === "delta") {
+            return true;
+        }
+    }
+    return false;
 }

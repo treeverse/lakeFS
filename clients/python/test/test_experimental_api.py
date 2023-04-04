@@ -24,6 +24,13 @@ class TestExperimentalApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_get_otf_diffs(self):
+        """Test case for get_otf_diffs
+
+        get the available Open Table Format diffs  # noqa: E501
+        """
+        pass
+
     def test_otf_diff(self):
         """Test case for otf_diff
 

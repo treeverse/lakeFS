@@ -450,6 +450,23 @@ components:
           items:
             $ref: "#/components/schemas/OtfDiffEntry"
 
+    DiffProperties:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    OTFDiffs:
+      title: A list of available Output Table Format diffs.
+      type: object
+      properties:
+        diffs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiffProperties"
+
     ResetCreation:
       type: object
       required:
@@ -2240,6 +2257,25 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /otf/diffs:
+    get:
+      tags:
+        - experimental
+        - otf diff
+      operationId: getOtfDiffs
+      summary: get the available Open Table Format diffs
+      responses:
+        200:
+          description: available Open Table Format diffs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OTFDiffs"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
 

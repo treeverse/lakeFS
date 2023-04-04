@@ -3991,7 +3991,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository, leftRef, rightRef string, params OtfDiffParams) {
 	ctx := r.Context()
 	user, _ := auth.GetUser(ctx)
-	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
+	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff", params.Type), r, repository, rightRef, leftRef)
 	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
 		Prefix: "",
 		After:  "",
@@ -4046,6 +4046,21 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 		return
 	}
 	writeResponse(w, r, http.StatusOK, buildOtfDiffListResponse(entries))
+}
+
+func (c *Controller) GetOtfDiffs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	c.LogAction(ctx, "get_otf_diffs", r, "", "", "")
+	diffTypes := c.otfDiffService.EnabledDiffs()
+	diffs := make([]DiffProperties, 0, len(diffTypes))
+	for _, diffType := range diffTypes {
+		diffs = append(diffs, DiffProperties{
+			Name: diffType,
+		})
+	}
+	writeResponse(w, r, http.StatusOK, OTFDiffs{
+		Diffs: &diffs,
+	})
 }
 
 func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList {
