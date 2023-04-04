@@ -24,6 +24,7 @@ docs/CredentialsWithSecret.md
 docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
+docs/DiffProperties.md
 docs/Error.md
 docs/ExperimentalApi.md
 docs/FindMergeBaseResult.md
@@ -52,6 +53,7 @@ docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/NextStep.md
+docs/OTFDiffs.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
@@ -145,6 +147,7 @@ lakefs_client/model/credentials_with_secret.py
 lakefs_client/model/current_user.py
 lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
+lakefs_client/model/diff_properties.py
 lakefs_client/model/error.py
 lakefs_client/model/find_merge_base_result.py
 lakefs_client/model/forgot_password_request.py
@@ -178,6 +181,7 @@ lakefs_client/model/object_stats_list.py
 lakefs_client/model/object_user_metadata.py
 lakefs_client/model/otf_diff_entry.py
 lakefs_client/model/otf_diff_list.py
+lakefs_client/model/otf_diffs.py
 lakefs_client/model/pagination.py
 lakefs_client/model/path_list.py
 lakefs_client/model/policy.py
@@ -241,6 +245,7 @@ test/test_credentials_with_secret.py
 test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
+test/test_diff_properties.py
 test/test_error.py
 test/test_experimental_api.py
 test/test_find_merge_base_result.py
@@ -280,6 +285,7 @@ test/test_objects_api.py
 test/test_otf_diff_api.py
 test/test_otf_diff_entry.py
 test/test_otf_diff_list.py
+test/test_otf_diffs.py
 test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py

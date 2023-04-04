@@ -1721,6 +1721,33 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /otf/diffs:
+    get:
+      operationId: getOtfDiffs
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTFDiffs'
+          description: available Open Table Format diffs
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get the available Open Table Format diffs
+      tags:
+      - experimental
+      - otf diff
+      x-accepts: application/json
   /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
     get:
       operationId: otfDiff
@@ -5701,6 +5728,27 @@ components:
           type: array
       required:
       - results
+      type: object
+    DiffProperties:
+      example:
+        name: name
+      properties:
+        name:
+          type: string
+      required:
+      - name
+      type: object
+    OTFDiffs:
+      example:
+        diffs:
+        - name: name
+        - name: name
+      properties:
+        diffs:
+          items:
+            $ref: '#/components/schemas/DiffProperties'
+          type: array
+      title: A list of available Output Table Format diffs.
       type: object
     ResetCreation:
       example:
