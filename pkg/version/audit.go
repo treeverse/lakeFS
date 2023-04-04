@@ -47,13 +47,14 @@ type AuditChecker struct {
 	periodicResponse atomic.Value
 	wg               sync.WaitGroup
 	cancel           context.CancelFunc
+	latestReleases   VersionSource
 }
 
-func NewDefaultAuditChecker(checkURL, installationID string) *AuditChecker {
-	return NewAuditChecker(checkURL, Version, installationID)
+func NewDefaultAuditChecker(checkURL, installationID string, latestReleases VersionSource) *AuditChecker {
+	return NewAuditChecker(checkURL, Version, installationID, latestReleases)
 }
 
-func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
+func NewAuditChecker(checkURL, version, installationID string, latestReleases VersionSource) *AuditChecker {
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{
@@ -61,6 +62,7 @@ func NewAuditChecker(checkURL, version, installationID string) *AuditChecker {
 		},
 		Version:        version,
 		InstallationID: installationID,
+		latestReleases: latestReleases,
 	}
 	// initial value for last check - empty value
 	ac.periodicResponse.Store(auditPeriodicResponse{})
@@ -158,6 +160,22 @@ func (a *AuditChecker) StartPeriodicCheck(ctx context.Context, interval time.Dur
 		}
 	}()
 	return true
+}
+
+// CheckLatestVersion will return the latest version of the current package compared to the current version
+func (a *AuditChecker) CheckLatestVersion() (*LatestVersionResponse, error) {
+	if a == nil || a.latestReleases == nil {
+		return &LatestVersionResponse{}, nil
+	}
+	latest, err := a.latestReleases.FetchLatestVersion()
+	if err != nil {
+		return nil, err
+	}
+	result, err := CheckLatestVersion(latest)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (a *AuditChecker) StopPeriodicCheck() {

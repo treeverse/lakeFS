@@ -1001,6 +1001,8 @@ components:
       properties:
         version:
           type: string
+        latest_version:
+          type: string
         upgrade_recommended:
           type: boolean
         upgrade_url:
