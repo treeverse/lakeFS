@@ -76,10 +76,10 @@ object SSTableReader {
   def forMetaRange(
       configuration: Configuration,
       metaRangeURL: String,
-      dontOwn: Boolean = false
+      own: Boolean = true
   ): SSTableReader[RangeData] = {
     val localFile: File = copyToLocal(configuration, metaRangeURL)
-    val ret = new SSTableReader(localFile, RangeData.messageCompanion, dontOwn)
+    val ret = new SSTableReader(localFile, RangeData.messageCompanion, own)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
@@ -87,10 +87,10 @@ object SSTableReader {
   def forRange(
       configuration: Configuration,
       rangeURL: String,
-      dontOwn: Boolean = false
+      own: Boolean = true
   ): SSTableReader[Entry] = {
     val localFile: File = copyToLocal(configuration, rangeURL)
-    val ret = new SSTableReader(localFile, Entry.messageCompanion, dontOwn)
+    val ret = new SSTableReader(localFile, Entry.messageCompanion, own)
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => ret.close()))
     ret
   }
@@ -99,17 +99,17 @@ object SSTableReader {
 class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] private (
     val file: java.io.File,
     val companion: GeneratedMessageCompanion[Proto],
-    val dontOwn: Boolean = false
+    val own: Boolean = true
 ) extends Closeable {
   private val fp = new java.io.RandomAccessFile(file, "r")
   private val reader = new BlockReadableFile(fp)
 
-  def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto], dontOwn: Boolean) =
-    this(new java.io.File(sstableFilename), companion, dontOwn)
+  def this(sstableFilename: String, companion: GeneratedMessageCompanion[Proto], own: Boolean) =
+    this(new java.io.File(sstableFilename), companion, own)
 
   def close(): Unit = {
     fp.close()
-    if (!dontOwn) {
+    if (own) {
       file.delete()
     }
   }

@@ -18,7 +18,7 @@ object ReadSSTableBenchmark extends Bench.LocalTime {
     measure method "next" in {
       using (sstables) in {
         sst => {
-          val reader: SSTableReader[Entry] = new SSTableReader(sst, Entry.messageCompanion, true)
+          val reader: SSTableReader[Entry] = new SSTableReader(sst, Entry.messageCompanion, false)
           val count = reader.newIterator.length
         }
       }
