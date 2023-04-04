@@ -40,7 +40,7 @@ func RepositoriesToARNs(repositories model.Repositories) []string {
 	}
 	arns := make([]string, len(repositories.List))
 	for i, repo := range repositories.List {
-		arns[i] = permissions.RepoArn(repo)
+		arns[i] = permissions.RepoArn(repo) + "/*"
 	}
 	return arns
 }
