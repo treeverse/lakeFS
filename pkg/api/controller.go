@@ -1956,7 +1956,14 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 	c.LogAction(ctx, "ingest_range", r, repository, "", "")
 
 	contToken := StringValue(body.ContinuationToken)
-	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
+	stagingToken := StringValue(body.StagingToken)
+	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
+		SourceURI:         body.FromSourceURI,
+		Prepend:           body.Prepend,
+		After:             body.After,
+		StagingToken:      stagingToken,
+		ContinuationToken: contToken,
+	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1973,6 +1980,7 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 			HasMore:           mark.HasMore,
 			ContinuationToken: &mark.ContinuationToken,
 			LastKey:           mark.LastKey,
+			StagingToken:      &mark.StagingToken,
 		},
 	})
 }
@@ -2007,6 +2015,25 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusCreated, MetaRangeCreationResponse{
 		Id: StringPtr(string(info.ID)),
 	})
+}
+
+func (c *Controller) UpdateBranchToken(w http.ResponseWriter, r *http.Request, body UpdateBranchTokenJSONRequestBody, repository, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action: permissions.WriteObjectAction,
+			// This API writes an entire staging area to a branch and therefore requires permission to write to the entire repository space
+			Resource: permissions.ObjectArn(repository, "*"),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "update_branch_token", r, repository, branch, "")
+	err := c.Catalog.UpdateBranchToken(ctx, repository, branch, body.StagingToken)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository, branch string, params CommitParams) {

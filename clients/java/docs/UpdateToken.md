@@ -1,13 +1,13 @@
 
 
-# InlineObject1
+# UpdateToken
 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**pattern** | **String** |  | 
+**stagingToken** | **String** |  | 
 
 
 

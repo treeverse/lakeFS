@@ -13,11 +13,11 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.inline_object1 import InlineObject1
+from lakefs_client.model.update_token import UpdateToken
 
 
-class TestInlineObject1(unittest.TestCase):
-    """InlineObject1 unit test stubs"""
+class TestUpdateToken(unittest.TestCase):
+    """UpdateToken unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +25,10 @@ class TestInlineObject1(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testInlineObject1(self):
-        """Test InlineObject1"""
+    def testUpdateToken(self):
+        """Test UpdateToken"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = InlineObject1()  # noqa: E501
+        # model = UpdateToken()  # noqa: E501
         pass
 
 

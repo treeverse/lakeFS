@@ -38,6 +38,13 @@ class TestStagingApi(unittest.TestCase):
         """
         pass
 
+    def test_update_branch_token(self):
+        """Test case for update_branch_token
+
+        modify branch staging token  # noqa: E501
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

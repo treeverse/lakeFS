@@ -64,7 +64,7 @@ func makeRepositoryName(name string) string {
 	return nonAlphanumericSequence.ReplaceAllString(name, "-")
 }
 
-func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
+func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	SkipTestIfAskedTo(t)
 	ctx := context.Background()
 	name := makeRepositoryName(t.Name())
@@ -79,19 +79,19 @@ func tearDownTest(repoName string) {
 	deleteRepositoryIfAskedTo(ctx, repoName)
 }
 
-func createRepositoryForTest(ctx context.Context, t *testing.T) string {
+func createRepositoryForTest(ctx context.Context, t testing.TB) string {
 	name := strings.ToLower(t.Name())
 	return createRepositoryByName(ctx, t, name)
 }
 
-func createRepositoryByName(ctx context.Context, t *testing.T, name string) string {
+func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := generateUniqueStorageNamespace(name)
 	name = makeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace)
 	return name
 }
 
-func createRepositoryUnique(ctx context.Context, t *testing.T) string {
+func createRepositoryUnique(ctx context.Context, t testing.TB) string {
 	name := generateUniqueRepositoryName()
 	return createRepositoryByName(ctx, t, name)
 }
@@ -108,7 +108,7 @@ func generateUniqueStorageNamespace(repoName string) string {
 	return ns + xid.New().String() + "/" + repoName
 }
 
-func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
+func createRepository(ctx context.Context, t testing.TB, name string, repoStorage string) {
 	logger.WithFields(logging.Fields{
 		"repository":        name,
 		"storage_namespace": repoStorage,
@@ -250,7 +250,7 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 }
 
 // requireBlockstoreType Skips test if blockstore type doesn't match required type
-func requireBlockstoreType(t *testing.T, requiredTypes ...string) {
+func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if !slices.Contains(requiredTypes, blockstoreType) {
 		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, blockstoreType)

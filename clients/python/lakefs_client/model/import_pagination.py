@@ -85,6 +85,7 @@ class ImportPagination(ModelNormal):
             'has_more': (bool,),  # noqa: E501
             'last_key': (str,),  # noqa: E501
             'continuation_token': (str,),  # noqa: E501
+            'staging_token': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class ImportPagination(ModelNormal):
         'has_more': 'has_more',  # noqa: E501
         'last_key': 'last_key',  # noqa: E501
         'continuation_token': 'continuation_token',  # noqa: E501
+        'staging_token': 'staging_token',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class ImportPagination(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             continuation_token (str): Opaque. Token used to import the next range.. [optional]  # noqa: E501
+            staging_token (str): Staging token for skipped objects during ingest. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -232,6 +235,7 @@ class ImportPagination(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             continuation_token (str): Opaque. Token used to import the next range.. [optional]  # noqa: E501
+            staging_token (str): Staging token for skipped objects during ingest. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
