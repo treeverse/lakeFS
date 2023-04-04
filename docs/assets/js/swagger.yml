@@ -3887,7 +3887,7 @@ paths:
       operationId: getMetaRange
       summary: return URI to a meta-range file
       responses:
-        200:
+        204:
           description: meta-range URI
           content:
             application/json:

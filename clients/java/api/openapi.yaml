@@ -4587,7 +4587,7 @@ paths:
           type: string
         style: simple
       responses:
-        "200":
+        "204":
           content:
             application/json:
               schema:
