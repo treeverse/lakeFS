@@ -158,7 +158,7 @@ These configuration items are for the lakeFS key-value store database
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.s3.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url)).
+* `blockstore.s3.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url.html)).
 
 ### Graveler
 
