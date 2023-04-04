@@ -27,7 +27,7 @@ type Node struct {
 }
 
 func RepoArn(repoID string) string {
-	return fsArnPrefix + "repository/" + repoID + "/*"
+	return fsArnPrefix + "repository/" + repoID
 }
 
 func StorageNamespace(namespace string) string {

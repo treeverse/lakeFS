@@ -47,6 +47,12 @@ var statementByName = map[string]model.Statement{
 		},
 		Effect: model.StatementEffectAllow,
 	},
+	"FSReadConfig": {
+		Action: []string{
+			"fs:ReadConfig",
+		},
+		Effect: model.StatementEffectAllow,
+	},
 	"FSRead": {
 		Action: []string{
 			"fs:List*",
