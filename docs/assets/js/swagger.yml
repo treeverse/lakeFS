@@ -450,14 +450,22 @@ components:
           items:
             $ref: "#/components/schemas/OtfDiffEntry"
 
+    DiffProperties:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
     OTFDiffs:
-      title: A list of available OTF diffs.
+      title: A list of available Output Table Format diffs.
       type: object
       properties:
         diffs:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/DiffProperties"
 
     ResetCreation:
       type: object
@@ -2255,11 +2263,11 @@ paths:
       tags:
         - experimental
         - otf diff
-      operationId: otfDiffs
-      summary: get the available OTF diffs
+      operationId: getOtfDiffs
+      summary: get the available Open Table Format diffs
       responses:
         200:
-          description: available OTF diffs
+          description: available Open Table Format diffs
           content:
             application/json:
               schema:

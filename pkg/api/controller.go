@@ -4032,14 +4032,19 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 	writeResponse(w, r, http.StatusOK, buildOtfDiffListResponse(entries))
 }
 
-func (c *Controller) OtfDiffs(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) GetOtfDiffs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	c.LogAction(ctx, "get_otf_diffs", r, "", "", "")
 	diffTypes := c.otfDiffService.EnabledDiffs()
-	diffs := OTFDiffs{
-		Diffs: &diffTypes,
+	diffs := make([]DiffProperties, 0, len(diffTypes))
+	for _, diffType := range diffTypes {
+		diffs = append(diffs, DiffProperties{
+			Name: diffType,
+		})
 	}
-	writeResponse(w, r, http.StatusOK, diffs)
+	writeResponse(w, r, http.StatusOK, OTFDiffs{
+		Diffs: &diffs,
+	})
 }
 
 func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList {

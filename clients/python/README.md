@@ -169,8 +169,8 @@ Class | Method | HTTP request | Description
 *ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *ConfigApi* | [**setup_comm_prefs**](docs/ConfigApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
+*ExperimentalApi* | [**get_otf_diffs**](docs/ExperimentalApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *ExperimentalApi* | [**otf_diff**](docs/ExperimentalApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
-*ExperimentalApi* | [**otf_diffs**](docs/ExperimentalApi.md#otf_diffs) | **GET** /otf/diffs | get the available OTF diffs
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
 *ImportApi* | [**create_meta_range**](docs/ImportApi.md#create_meta_range) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
 *ImportApi* | [**ingest_range**](docs/ImportApi.md#ingest_range) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
@@ -187,8 +187,8 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stage_object**](docs/ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
+*OtfDiffApi* | [**get_otf_diffs**](docs/OtfDiffApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *OtfDiffApi* | [**otf_diff**](docs/OtfDiffApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
-*OtfDiffApi* | [**otf_diffs**](docs/OtfDiffApi.md#otf_diffs) | **GET** /otf/diffs | get the available OTF diffs
 *RefsApi* | [**diff_refs**](docs/RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 *RefsApi* | [**dump_refs**](docs/RefsApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**find_merge_base**](docs/RefsApi.md#find_merge_base) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
@@ -237,6 +237,7 @@ Class | Method | HTTP request | Description
  - [CurrentUser](docs/CurrentUser.md)
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
+ - [DiffProperties](docs/DiffProperties.md)
  - [Error](docs/Error.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
  - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)

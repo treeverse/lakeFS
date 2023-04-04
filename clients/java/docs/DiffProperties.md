@@ -1,13 +1,13 @@
 
 
-# OTFDiffs
+# DiffProperties
 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**diffs** | [**List&lt;DiffProperties&gt;**](DiffProperties.md) |  |  [optional]
+**name** | **String** |  | 
 
 
 

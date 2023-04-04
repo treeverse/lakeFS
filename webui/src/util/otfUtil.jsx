@@ -22,5 +22,10 @@ export async function isDeltaLakeDiffEnabled() {
     if (enabledDiffs === null || enabledDiffs.diffs.length === 0) {
         return false
     }
-    return enabledDiffs.diffs.includes("delta");
+    for (let diff of enabledDiffs.diffs) {
+        if (diff.name === "delta") {
+            return true;
+        }
+    }
+    return false;
 }

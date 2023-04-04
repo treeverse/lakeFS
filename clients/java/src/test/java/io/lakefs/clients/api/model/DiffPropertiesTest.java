@@ -18,37 +18,34 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.DiffProperties;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 
 /**
- * Model tests for OTFDiffs
+ * Model tests for DiffProperties
  */
-public class OTFDiffsTest {
-    private final OTFDiffs model = new OTFDiffs();
+public class DiffPropertiesTest {
+    private final DiffProperties model = new DiffProperties();
 
     /**
-     * Model tests for OTFDiffs
+     * Model tests for DiffProperties
      */
     @Test
-    public void testOTFDiffs() {
-        // TODO: test OTFDiffs
+    public void testDiffProperties() {
+        // TODO: test DiffProperties
     }
 
     /**
-     * Test the property 'diffs'
+     * Test the property 'name'
      */
     @Test
-    public void diffsTest() {
-        // TODO: test diffs
+    public void nameTest() {
+        // TODO: test name
     }
 
 }

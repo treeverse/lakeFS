@@ -35,6 +35,20 @@ public class OtfDiffApiTest {
 
     
     /**
+     * get the available Open Table Format diffs
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getOtfDiffsTest() throws ApiException {
+                OTFDiffs response = api.getOtfDiffs();
+        // TODO: test validations
+    }
+    
+    /**
      * perform otf diff
      *
      * 
@@ -50,20 +64,6 @@ public class OtfDiffApiTest {
         String tablePath = null;
         String type = null;
                 OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type);
-        // TODO: test validations
-    }
-    
-    /**
-     * get the available OTF diffs
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void otfDiffsTest() throws ApiException {
-                OTFDiffs response = api.otfDiffs();
         // TODO: test validations
     }
     

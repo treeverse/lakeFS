@@ -20,51 +20,40 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.DiffProperties;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * OTFDiffs
+ * DiffProperties
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class OTFDiffs {
-  public static final String SERIALIZED_NAME_DIFFS = "diffs";
-  @SerializedName(SERIALIZED_NAME_DIFFS)
-  private List<DiffProperties> diffs = null;
+public class DiffProperties {
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
+  private String name;
 
 
-  public OTFDiffs diffs(List<DiffProperties> diffs) {
+  public DiffProperties name(String name) {
     
-    this.diffs = diffs;
-    return this;
-  }
-
-  public OTFDiffs addDiffsItem(DiffProperties diffsItem) {
-    if (this.diffs == null) {
-      this.diffs = new ArrayList<DiffProperties>();
-    }
-    this.diffs.add(diffsItem);
+    this.name = name;
     return this;
   }
 
    /**
-   * Get diffs
-   * @return diffs
+   * Get name
+   * @return name
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
-  public List<DiffProperties> getDiffs() {
-    return diffs;
+  public String getName() {
+    return name;
   }
 
 
-  public void setDiffs(List<DiffProperties> diffs) {
-    this.diffs = diffs;
+  public void setName(String name) {
+    this.name = name;
   }
 
 
@@ -76,20 +65,20 @@ public class OTFDiffs {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OTFDiffs otFDiffs = (OTFDiffs) o;
-    return Objects.equals(this.diffs, otFDiffs.diffs);
+    DiffProperties diffProperties = (DiffProperties) o;
+    return Objects.equals(this.name, diffProperties.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(diffs);
+    return Objects.hash(name);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class OTFDiffs {\n");
-    sb.append("    diffs: ").append(toIndentedString(diffs)).append("\n");
+    sb.append("class DiffProperties {\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();
   }

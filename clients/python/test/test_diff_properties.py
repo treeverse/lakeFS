@@ -14,12 +14,10 @@ import unittest
 
 import lakefs_client
 from lakefs_client.model.diff_properties import DiffProperties
-globals()['DiffProperties'] = DiffProperties
-from lakefs_client.model.otf_diffs import OTFDiffs
 
 
-class TestOTFDiffs(unittest.TestCase):
-    """OTFDiffs unit test stubs"""
+class TestDiffProperties(unittest.TestCase):
+    """DiffProperties unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,10 +25,10 @@ class TestOTFDiffs(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testOTFDiffs(self):
-        """Test OTFDiffs"""
+    def testDiffProperties(self):
+        """Test DiffProperties"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = OTFDiffs()  # noqa: E501
+        # model = DiffProperties()  # noqa: E501
         pass
 
 
