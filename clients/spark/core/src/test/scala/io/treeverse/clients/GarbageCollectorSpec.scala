@@ -145,6 +145,51 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
         })
       }
 
+      it(
+        "should report all elements in expired ranges that are not imported (i.e. in the same namespace of the repo) and keep others"
+      ) {
+        withSparkSession(spark => {
+          import spark.implicits._
+          val storageNamespace = "s3://repo-ns"
+          val importedDataS3Path = "s3://bucket/of/imported/data"
+          val repoName = "repo-name"
+          val rangeGetter = new ARangeGetter(repoName,
+                                             null,
+                                             Map(
+                                               "aaa" -> Seq("a1",
+                                                            s"$importedDataS3Path/a2",
+                                                            s"$storageNamespace/a3"
+                                                           ),
+                                               "bbb" -> Seq(s"$importedDataS3Path/path/b1",
+                                                            s"$importedDataS3Path/b2",
+                                                            "b3"
+                                                           ),
+                                               "ab12" -> Seq("a1",
+                                                             s"$importedDataS3Path/a2",
+                                                             s"$importedDataS3Path/path/b1",
+                                                             s"$importedDataS3Path/b2"
+                                                            ),
+                                               "222" -> Seq(s"$importedDataS3Path/a2",
+                                                            s"$importedDataS3Path/b2",
+                                                            "c2"
+                                                           )
+                                             )
+                                            )
+          val gc = new GarbageCollector(rangeGetter)
+
+          val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "222", "bbb").toDS,
+                                                       Seq[String]().toDS,
+                                                       repoName,
+                                                       storageNamespace,
+                                                       numRangePartitions,
+                                                       numAddressPartitions
+                                                      )
+          val expectedToDelete = Seq("a1", "a3", "b3", "c2").toDS
+
+          compareDS(actualToDelete, expectedToDelete)
+        })
+      }
+
       it("should not remove kept elements") {
         withSparkSession(spark => {
           import spark.implicits._
@@ -202,35 +247,46 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
   }
 }
 
-class GarbageCollectorJsonOutputSpec extends AnyFunSpec with Matchers with SparkSessionSetup with TempDirectory {
-    describe("writeJsonSummary") {
-      it("should write a summary") {
-        withSparkSession(spark =>
-          withTempDirectory(tempDir => {
-            val sc = spark.sparkContext
-            val configMapper = new ConfigMapper(sc.broadcast(Array[(String, String)]()))
-            val dstRoot = tempDir.resolve("writeJsonSummary/")
-            val numDeletedObjects = 2906
-            val gcRules = "gobble gobble"
-            val time = "I always will remember, 'Twas a year ago November"
+class GarbageCollectorJsonOutputSpec
+    extends AnyFunSpec
+    with Matchers
+    with SparkSessionSetup
+    with TempDirectory {
+  describe("writeJsonSummary") {
+    it("should write a summary") {
+      withSparkSession(spark =>
+        withTempDirectory(tempDir => {
+          val sc = spark.sparkContext
+          val configMapper = new ConfigMapper(sc.broadcast(Array[(String, String)]()))
+          val dstRoot = tempDir.resolve("writeJsonSummary/")
+          val numDeletedObjects = 2906
+          val gcRules = "gobble gobble"
+          val time = "I always will remember, 'Twas a year ago November"
 
-            GarbageCollector.writeJsonSummaryForTesting(configMapper, dstRoot.toAbsolutePath.toString, numDeletedObjects, gcRules, time)
+          GarbageCollector.writeJsonSummaryForTesting(configMapper,
+                                                      dstRoot.toAbsolutePath.toString,
+                                                      numDeletedObjects,
+                                                      gcRules,
+                                                      time
+                                                     )
 
-            val written = FileUtils.listFiles(dstRoot.toFile, null, true)
-              .asScala
-              .iterator
-              .filter((f) => !f.toString.endsWith(".crc"))
-              .toSeq
-            written.size should be(1)
-            val actualBytes = Files.readAllBytes(Paths.get(written(0).toString))
-            // Explicitly verify that we received UTF-8 encoded data!
-            val actual = JsonMethods.parse(new String(actualBytes, "UTF-8"))
-            (actual \ "gc_rules") should be(JString(gcRules))
-            (actual \ "num_deleted_objects") should be(JInt(numDeletedObjects))
-            // TODO(ariels): Verify dt=${time} in path.
-          }))
-      }
+          val written = FileUtils
+            .listFiles(dstRoot.toFile, null, true)
+            .asScala
+            .iterator
+            .filter((f) => !f.toString.endsWith(".crc"))
+            .toSeq
+          written.size should be(1)
+          val actualBytes = Files.readAllBytes(Paths.get(written(0).toString))
+          // Explicitly verify that we received UTF-8 encoded data!
+          val actual = JsonMethods.parse(new String(actualBytes, "UTF-8"))
+          (actual \ "gc_rules") should be(JString(gcRules))
+          (actual \ "num_deleted_objects") should be(JInt(numDeletedObjects))
+          // TODO(ariels): Verify dt=${time} in path.
+        })
+      )
     }
+  }
 }
 
 trait SparkSessionSetup {
