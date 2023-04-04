@@ -10,11 +10,11 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/cobra"
-
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	auth_migrate "github.com/treeverse/lakefs/pkg/auth/migrate"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -71,77 +71,54 @@ func ReportACL(acl model.ACL) string {
 	return ret
 }
 
-var authCmd = &cobra.Command{
-	Use:   "auth-acl",
-	Short: "Apply RBAC-to-ACL migration",
-	Run: func(cmd *cobra.Command, args []string) {
-		logger := logging.FromContext(cmd.Context()).WithField("phase", "migrate")
-		cfg := loadConfig()
-		now := time.Now()
-		kvParams, err := cfg.DatabaseParams()
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
-			os.Exit(1)
-		}
-		ctx := cmd.Context()
-		kvStore, err := kv.Open(ctx, kvParams)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Failed to open KV store: %s\n", err)
-			os.Exit(1)
-		}
-		defer kvStore.Close()
+func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, reallyUpdate bool, updateTime time.Time) bool {
+	authService := auth.NewAuthService(
+		kvStore,
+		crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+		nil,
+		cfg.Auth.Cache,
+		logger.WithField("service", "auth_service"),
+	)
 
-		authService := auth.NewAuthService(
-			kvStore,
-			crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-			nil,
-			cfg.Auth.Cache,
-			logger.WithField("service", "auth_service"),
-		)
-		reallyUpdate, _ := cmd.Flags().GetBool("yes")
+	type Warning struct {
+		GroupID string
+		ACL     model.ACL
+		Warn    error
+	}
+	var groupReports []Warning
 
-		type Warning struct {
-			GroupID string
-			ACL     model.ACL
-			Warn    error
-		}
-		var groupReports []Warning
+	err := auth_migrate.RBACToACL(ctx, authService, reallyUpdate, updateTime, func(groupID string, acl model.ACL, warn error) {
+		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
+	})
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to upgrade RBAC policies to ACLs: %s\n", err)
+		os.Exit(1)
+	}
 
-		err = auth_migrate.RBACToACL(cmd.Context(), authService, reallyUpdate, now, func(groupID string, acl model.ACL, warn error) {
-			groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
-		})
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Failed to upgrade RBAC policies to ACLs: %s\n", err)
-			os.Exit(1)
-		}
-
-		for _, w := range groupReports {
-			fmt.Printf("GROUP %s\n\tACL: %s\n", w.GroupID, ReportACL(w.ACL))
-			if w.Warn != nil {
-				var multi *multierror.Error
-				if errors.As(w.Warn, &multi) {
-					multi.ErrorFormat = multierror.ErrorFormatFunc(func(es []error) string {
-						points := make([]string, len(es))
-						for i, err := range es {
-							points[i] = fmt.Sprintf("* %s", err)
-						}
-						plural := "s"
-						if len(es) == 1 {
-							plural = ""
-						}
-						return fmt.Sprintf(
-							"%d change%s:\n\t%s\n",
-							len(points), plural, strings.Join(points, "\n\t"))
-					})
+	for _, w := range groupReports {
+		fmt.Printf("GROUP %s\n\tACL: %s\n", w.GroupID, ReportACL(w.ACL))
+		if w.Warn != nil {
+			var multi *multierror.Error
+			if errors.As(w.Warn, &multi) {
+				multi.ErrorFormat = func(es []error) string {
+					points := make([]string, len(es))
+					for i, err := range es {
+						points[i] = fmt.Sprintf("* %s", err)
+					}
+					plural := "s"
+					if len(es) == 1 {
+						plural = ""
+					}
+					return fmt.Sprintf(
+						"%d change%s:\n\t%s\n",
+						len(points), plural, strings.Join(points, "\n\t"))
 				}
-				fmt.Println(w.Warn)
 			}
-			fmt.Println()
+			fmt.Println(w.Warn)
 		}
-		if !reallyUpdate {
-			fmt.Println("Updated nothing.  Re-run with --yes to update!")
-		}
-	},
+		fmt.Println()
+	}
+	return len(groupReports) == 0
 }
 
 var upCmd = &cobra.Command{
@@ -162,8 +139,38 @@ var upCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		_ = mustValidateSchemaVersion(ctx, kvStore)
-		fmt.Printf("No migrations to apply.\n")
+		force, _ := cmd.Flags().GetBool("force")
+
+		// -- This part contains the migration to ACL and will be removed in next version
+
+		// skip migrate to ACL for users with External authorizations
+		if cfg.IsAuthTypeAPI() {
+			fmt.Println("skipping ACL migration - external Authorization")
+		} else {
+			now := time.Now()
+			var doUpdate bool
+			if force {
+				doUpdate = true
+			} else {
+				doUpdate = migrateToACL(ctx, kvStore, cfg, logging.Default(), false, now)
+			}
+			if !doUpdate {
+				fmt.Println("Updated nothing.  Re-run with --force to update!")
+				return
+			}
+
+			migrateToACL(ctx, kvStore, cfg, logging.Default(), true, now)
+		}
+
+		err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLMigrateVersion)
+		if err != nil {
+			fmt.Println("migration succeeded - failed to upgrade version, to fix this re-run migration with --force")
+		}
+		// -- migrate to ACL ends here
+
+		// TODO(Guys): return once Migrate to ACL is removed from code
+		// _ = mustValidateSchemaVersion(ctx, kvStore)
+		// fmt.Printf("No migrations to apply.\n")
 	},
 }
 
@@ -196,9 +203,8 @@ func init() {
 	migrateCmd.AddCommand(versionCmd)
 	migrateCmd.AddCommand(upCmd)
 	migrateCmd.AddCommand(gotoCmd)
-	migrateCmd.AddCommand(authCmd)
 	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")
+	_ = upCmd.Flags().Bool("force", false, "force migrate, otherwise, migration will fail on warnings ")
 	_ = gotoCmd.Flags().Bool("force", false, "force migrate")
-	_ = authCmd.Flags().Bool("yes", false, "actually upgrade, otherwise merely print warnings for the pending upgrade")
 }
