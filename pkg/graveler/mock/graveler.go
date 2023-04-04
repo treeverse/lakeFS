@@ -931,15 +931,15 @@ func (mr *MockPlumbingMockRecorder) GetRange(ctx, repository, rangeID interface{
 // StageObject mocks base method.
 func (m *MockPlumbing) StageObject(ctx context.Context, stagingToken string, object graveler.ValueRecord) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StageObject", ctx, object, stagingToken)
+	ret := m.ctrl.Call(m, "StageObject", ctx, stagingToken, object)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StageObject indicates an expected call of StageObject.
-func (mr *MockPlumbingMockRecorder) StageObject(ctx, object, stagingToken interface{}) *gomock.Call {
+func (mr *MockPlumbingMockRecorder) StageObject(ctx, stagingToken, object interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StageObject", reflect.TypeOf((*MockPlumbing)(nil).StageObject), ctx, object, stagingToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StageObject", reflect.TypeOf((*MockPlumbing)(nil).StageObject), ctx, stagingToken, object)
 }
 
 // UpdateBranchToken mocks base method.
