@@ -2033,7 +2033,7 @@ func (c *Controller) UpdateBranchToken(w http.ResponseWriter, r *http.Request, b
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusCreated, nil)
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository, branch string, params CommitParams) {
