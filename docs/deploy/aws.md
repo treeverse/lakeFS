@@ -5,11 +5,11 @@ parent: Deploy and Setup lakeFS
 description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on AWS
 nav_order: 10
 redirect_from:
-   - ../deploying-aws/index.html
-   - ../deploying-aws/install.html
-   - ../deploying-aws/db.html
-   - ../deploying-aws/lb_dns.html
-   - ../setup/storage/s3.html 
+   - /deploying-aws/index.html
+   - /deploying-aws/install.html
+   - /deploying-aws/db.html
+   - /deploying-aws/lb_dns.html
+   - /setup/storage/s3.html 
 next:  ["Import data into your installation", "../howto/import.html"]
 ---
 

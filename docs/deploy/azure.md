@@ -5,7 +5,7 @@ parent: Deploy and Setup lakeFS
 description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Microsoft Azure
 nav_order: 20
 redirect_from:
-   - ../setup/storage/blob.html 
+   - /setup/storage/blob.html 
 next:  ["Import data into your installation", "../howto/import.html"]
 ---
 

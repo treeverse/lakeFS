@@ -6,7 +6,7 @@ parent: Understanding lakeFS
 nav_order: 60
 has_children: false
 redirect_from:
-    - ../reference/glossary.html
+    - /reference/glossary.html
     - /glossary.html
 ---
 
