@@ -19,22 +19,26 @@ import (
 
 const (
 	maxGroups        = 1000
+	maxUsers         = 1000
 	maxGroupPolicies = 1000
+	maxUserPolicies  = 1000
 )
 
 var (
 	// ErrTooMany is returned when this migration does not support a
 	// particular number of resources.  It should not occur on any
 	// reasonably-sized installation.
-	ErrTooMany         = errors.New("too many")
-	ErrTooManyPolicies = fmt.Errorf("%w policies", ErrTooMany)
-	ErrTooManyGroups   = fmt.Errorf("%w groups", ErrTooMany)
-	ErrNotAllowed      = fmt.Errorf("not allowed")
-	ErrAlreadyHasACL   = errors.New("already has ACL")
-	ErrAddedActions    = errors.New("added actions")
-	ErrEmpty           = errors.New("empty")
-	ErrWidened         = errors.New("resource widened")
-	ErrPolicyExists    = errors.New("policy exists")
+	ErrTooMany               = errors.New("too many")
+	ErrTooManyPolicies       = fmt.Errorf("%w policies", ErrTooMany)
+	ErrTooManyGroups         = fmt.Errorf("%w groups", ErrTooMany)
+	ErrTooManyUsers          = fmt.Errorf("%w users", ErrTooMany)
+	ErrPolicyAttachedToUsers = errors.New("user policies attached directly")
+	ErrNotAllowed            = fmt.Errorf("not allowed")
+	ErrAlreadyHasACL         = errors.New("already has ACL")
+	ErrAddedActions          = errors.New("added actions")
+	ErrEmpty                 = errors.New("empty")
+	ErrWidened               = errors.New("resource widened")
+	ErrPolicyExists          = errors.New("policy exists")
 
 	// allPermissions lists all permissions, from most restrictive to
 	// most permissive.  It includes "" for some edge cases.
@@ -114,6 +118,35 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 		messageFunc(group.DisplayName, *newACL, warnings)
 	}
 
+	users, _, err := svc.ListUsers(ctx, &model.PaginationParams{Amount: maxUsers + 1})
+	if err != nil {
+		return fmt.Errorf("list users: %w", err)
+	}
+	if len(users) > maxUsers {
+		return fmt.Errorf("%w (got %d)", ErrTooManyUsers, len(users))
+	}
+	for _, user := range users {
+		var warnings error
+		policies, _, err := svc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{Amount: maxUserPolicies + 1})
+		if err != nil {
+			return fmt.Errorf("list users policies: %w", err)
+		}
+		if len(policies) > maxUsers {
+			return fmt.Errorf("%w (got %d)", ErrTooManyUsers, len(policies))
+		}
+
+		if len(policies) > 0 {
+			warnings = multierror.Append(warnings, fmt.Errorf("%w user %s - all policies will be detached from user", ErrPolicyAttachedToUsers, user.Username))
+		}
+		if doUpdate {
+			for _, policy := range policies {
+				if err := svc.DetachPolicyFromUser(ctx, policy.DisplayName, user.Username); err != nil {
+					return fmt.Errorf("failed detaching policy %s from user %s: %w", policy.DisplayName, user.Username, err)
+				}
+			}
+		}
+		messageFunc(user.Username, model.ACL{}, warnings)
+	}
 	return nil
 }
 
