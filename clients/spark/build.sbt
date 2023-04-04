@@ -131,6 +131,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "com.azure" % "azure-core" % "1.10.0",
     "com.azure" % "azure-storage-blob" % "12.9.0",
     "com.azure" % "azure-storage-blob-batch" % "12.7.0",
+    "com.azure" % "azure-identity" % "1.2.0",
     // Snappy is JNI :-(.  However it does claim to work with
     // ClassLoaders, and (even more importantly!) using a preloaded JNI
     // version will probably continue to work because the C language API
@@ -215,7 +216,7 @@ lazy val hadoop3ShadingSettings = assembly / assemblyShadeRules := hadoop3ShadeR
 lazy val s3UploadSettings = Seq(
   s3Upload / mappings := Seq(
     (assembly / assemblyOutputPath).value ->
-      s"${name.value}/${version.value}/${(assemblyJarName in assembly).value}"
+      s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
   ),
   s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
   s3Upload / s3Progress := true
@@ -227,7 +228,7 @@ root / publish / skip := true
 lazy val commonSettings = Seq(
   version := projectVersion,
   // Use an older JDK to be Spark compatible
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  javacOptions ++= Seq("-source", "1.11", "-target", "1.8"),
   scalacOptions += "-target:jvm-1.8"
 )
 

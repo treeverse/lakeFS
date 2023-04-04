@@ -721,3 +721,28 @@ td.entry-type-indicator {
   width: 1%;
   padding: 2px;
 }
+
+.user-menu-notification-indicator {
+  top: 8px;
+  left: 10px;
+  position: relative;
+  background: linear-gradient(#54a3ff, #006eed);
+  border-radius: 50%;
+  color: white;
+  height: 10px;
+  line-height: 20px;
+  margin-left: 5px;
+  width: 10px;
+}
+.menu-item-notification-indicator {
+  right: 10px;
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(#54a3ff, #006eed);
+  border-radius: 50%;
+  color: white;
+  height: 10px;
+  line-height: 20px;
+  margin-left: 5px;
+  width: 10px;
+}

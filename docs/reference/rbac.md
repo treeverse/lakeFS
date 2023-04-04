@@ -11,12 +11,19 @@ redirect_from:
 
 
 # Role-Based Access Control (RBAC)
+{: .d-inline-block }
+lakeFS Cloud
+{: .label .label-green }
+
+lakeFS Enterprise
+{: .label .label-purple }
 {: .no_toc }
 
 
 {: .note}
-> RBAC is only available when lakeFS is configured with a [remote authenticator](remote-authenticator.html). <br/>[lakeFS cloud](https://lakefs.cloud) is a scalable and fully-managed lakeFS service which includes this remote authenticator functionality and is also SOC 2 compliant.<br/>
-> If you do not want to use RBAC then a simpler [ACL-based authorization mechanism](access-control-lists.html) is available. 
+> RBAC is available on [lakeFS Cloud](../cloud/) and [lakeFS Enterprise](../enterprise/).
+>
+> If you're using the open source version of lakeFS then the [ACL-based authorization mechanism](access-control-lists.html) is an alternative to RBAC. 
 
 {% include toc.html %}
 
@@ -380,4 +387,4 @@ Policy                                                  | Admins | SuperUsers | 
 
 Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used. If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.RBAC` should be set to `external`.
 
-If you are using self-managed lakeFS and do not have a [remote authentication server](remote-authenticator.html) then you should set `auth.ui_config.RBAC` to `simplified` and refer to the [access control list](access-control-lists.md) documentation instead.
+If you are using self-managed lakeFS and do not have a [remote authentication server](remote-authenticator.html) then you should set `auth.ui_config.RBAC` to `simplified` and refer to the [access control list](access-control-lists.html) documentation instead.

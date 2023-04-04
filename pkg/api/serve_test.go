@@ -173,7 +173,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		_ = c.Close()
 	})
 
-	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "")
+	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
 	emailer, err := email.NewEmailer(email.Params(cfg.Email))
 	tmpl := templater.NewService(templates.Content, cfg, authService)
 

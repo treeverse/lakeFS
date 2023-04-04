@@ -83,6 +83,7 @@ public class LakeFSFileSystem extends FileSystem {
     private LakeFSClient lfsClient;
     private int listAmount;
     private FileSystem fsForConfig;
+    private boolean failedFSForConfig = false;
     private PhysicalAddressTranslator physicalAddressTranslator;
     private StorageAccessStrategy storageAccessStrategy;
     private static File emptyFile = new File("/dev/null");
@@ -96,7 +97,8 @@ public class LakeFSFileSystem extends FileSystem {
                 return t;
             }
         });
-
+    
+    @Override
     public URI getUri() {
         return uri;
     }
@@ -142,8 +144,16 @@ public class LakeFSFileSystem extends FileSystem {
         } else {
             throw new IOException("Invalid access mode: " + accessMode);
         }
-        // based on path get underlying FileSystem
-        Path path = new Path(name);
+    }
+
+    private synchronized FileSystem getFSForConfig() {
+        if (fsForConfig != null) {
+            return fsForConfig;
+        }
+        if (failedFSForConfig) {
+            return null;
+        }
+        Path path = new Path(uri);
         ObjectLocation objectLoc = pathToObjectLocation(path);
         RepositoriesApi repositoriesApi = lfsClient.getRepositoriesApi();
         try {
@@ -152,9 +162,11 @@ public class LakeFSFileSystem extends FileSystem {
             URI storageURI = URI.create(storageNamespace);
             Path physicalPath = new Path(physicalAddressTranslator.translate(storageURI));
             fsForConfig = physicalPath.getFileSystem(conf);
-        } catch (ApiException | URISyntaxException e) {
+        } catch (ApiException | URISyntaxException | IOException e) {
+            failedFSForConfig = true;
             LOG.warn("get underlying filesystem for {}: {} (use default values)", path, e);
         }
+        return fsForConfig;
     }
 
     @FunctionalInterface
@@ -164,16 +176,16 @@ public class LakeFSFileSystem extends FileSystem {
 
     @Override
     public long getDefaultBlockSize(Path path) {
-        if (fsForConfig != null) {
-            return fsForConfig.getDefaultBlockSize(path);
+        if (getFSForConfig() != null) {
+            return getFSForConfig().getDefaultBlockSize(path);
         }
         return Constants.DEFAULT_BLOCK_SIZE;
     }
 
     @Override
     public long getDefaultBlockSize() {
-        if (fsForConfig != null) {
-            return fsForConfig.getDefaultBlockSize();
+        if (getFSForConfig() != null) {
+            return getFSForConfig().getDefaultBlockSize();
         }
         return Constants.DEFAULT_BLOCK_SIZE;
     }

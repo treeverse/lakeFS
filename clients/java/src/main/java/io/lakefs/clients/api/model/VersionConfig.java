@@ -33,6 +33,10 @@ public class VersionConfig {
   @SerializedName(SERIALIZED_NAME_VERSION)
   private String version;
 
+  public static final String SERIALIZED_NAME_LATEST_VERSION = "latest_version";
+  @SerializedName(SERIALIZED_NAME_LATEST_VERSION)
+  private String latestVersion;
+
   public static final String SERIALIZED_NAME_UPGRADE_RECOMMENDED = "upgrade_recommended";
   @SerializedName(SERIALIZED_NAME_UPGRADE_RECOMMENDED)
   private Boolean upgradeRecommended;
@@ -62,6 +66,29 @@ public class VersionConfig {
 
   public void setVersion(String version) {
     this.version = version;
+  }
+
+
+  public VersionConfig latestVersion(String latestVersion) {
+    
+    this.latestVersion = latestVersion;
+    return this;
+  }
+
+   /**
+   * Get latestVersion
+   * @return latestVersion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public String getLatestVersion() {
+    return latestVersion;
+  }
+
+
+  public void setLatestVersion(String latestVersion) {
+    this.latestVersion = latestVersion;
   }
 
 
@@ -121,13 +148,14 @@ public class VersionConfig {
     }
     VersionConfig versionConfig = (VersionConfig) o;
     return Objects.equals(this.version, versionConfig.version) &&
+        Objects.equals(this.latestVersion, versionConfig.latestVersion) &&
         Objects.equals(this.upgradeRecommended, versionConfig.upgradeRecommended) &&
         Objects.equals(this.upgradeUrl, versionConfig.upgradeUrl);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, upgradeRecommended, upgradeUrl);
+    return Objects.hash(version, latestVersion, upgradeRecommended, upgradeUrl);
   }
 
   @Override
@@ -135,6 +163,7 @@ public class VersionConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class VersionConfig {\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    latestVersion: ").append(toIndentedString(latestVersion)).append("\n");
     sb.append("    upgradeRecommended: ").append(toIndentedString(upgradeRecommended)).append("\n");
     sb.append("    upgradeUrl: ").append(toIndentedString(upgradeUrl)).append("\n");
     sb.append("}");

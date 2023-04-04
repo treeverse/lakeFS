@@ -11,6 +11,8 @@
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3AEsti">
 		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg" alt="Integration tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml">
+		<img src="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml/badge.svg" alt="Docs Preview & Link Check status" /></a>
 	<a href="https://artifacthub.io/packages/search?repo=lakefs">
 		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
 	<a href="CODE_OF_CONDUCT.md">

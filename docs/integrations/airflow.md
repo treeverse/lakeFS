@@ -107,7 +107,7 @@ in the airflow-provider-lakeFS repository shows how to use all of these.
 Sometimes an operator might not be supported by airflow-provider-lakeFS yet. You can access lakeFS directly by using:
 
 - SimpleHttpOperator to send [API requests](../reference/api.md) to lakeFS. 
-- BashOperator with [lakeCTL](../quickstart/first_commit.md) commands.
+- BashOperator with [lakectl](/reference/cli.html) commands.
 For example, deleting a branch using BashOperator:
 ```bash
 commit_extract = BashOperator(
