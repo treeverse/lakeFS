@@ -213,7 +213,7 @@ func testImport(t testing.TB, ctx context.Context, repoName, importPath, importB
 	if stagingToken != "" {
 		stageResp, err := client.UpdateBranchTokenWithResponse(ctx, repoName, importBranch, api.UpdateBranchTokenJSONRequestBody{StagingToken: stagingToken})
 		require.NoError(t, err, "failed to change branch token")
-		require.Equal(t, http.StatusCreated, stageResp.StatusCode(), "failed to change branch token")
+		require.Equal(t, http.StatusNoContent, stageResp.StatusCode(), "failed to change branch token")
 
 		commitResp, err = client.CommitWithResponse(ctx, repoName, importBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
 			Message: "created by import on skipped objects",

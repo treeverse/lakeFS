@@ -56,7 +56,7 @@ const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, b
     
     if (stagingToken.length > 0) {
         await branches.updateToken(repoId, importBranchResp.id, stagingToken);
-        await commits.commit(repoId, importBranchResp.id, "Import commit for staged objects", metadata);
+        await commits.commit(repoId, importBranchResp.id, "Import commit for out of order skipped objects", metadata);
     }
     importStatusUpdate.importPhase = ImportPhase.Completed;
     updateImportState(importStatusUpdate);

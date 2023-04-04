@@ -10,7 +10,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
@@ -174,34 +173,27 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				// Skip folders
 				continue
 			}
-			if a.skipOutOfOrder && strings.Compare(prev, *blobInfo.Name) > 0 { // skip out of order
-				a.skipped = append(a.skipped, block.ObjectStoreEntry{
-					FullKey:     *blobInfo.Name,
-					RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
-					Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-					ETag:        string(*blobInfo.Properties.ETag),
-					Mtime:       *blobInfo.Properties.LastModified,
-					Size:        *blobInfo.Properties.ContentLength,
-				})
-				skipCount++
-				continue
-			}
-			prev = *blobInfo.Name
-
-			a.mark.LastKey = *blobInfo.Name
-			if err := walkFn(block.ObjectStoreEntry{
+			entry := block.ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
 				ETag:        string(*blobInfo.Properties.ETag),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
-			}); err != nil {
+			}
+			if a.skipOutOfOrder && strings.Compare(prev, *blobInfo.Name) > 0 { // skip out of order
+				a.skipped = append(a.skipped, entry)
+				skipCount++
+				continue
+			}
+			prev = *blobInfo.Name
+
+			a.mark.LastKey = *blobInfo.Name
+			if err := walkFn(entry); err != nil {
 				return err
 			}
 		}
 	}
-	logging.Default().Warning("Skipped count:", skipCount)
 	a.mark = block.Mark{
 		HasMore: false,
 	}

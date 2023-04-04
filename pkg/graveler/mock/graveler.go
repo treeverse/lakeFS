@@ -929,7 +929,7 @@ func (mr *MockPlumbingMockRecorder) GetRange(ctx, repository, rangeID interface{
 }
 
 // StageObject mocks base method.
-func (m *MockPlumbing) StageObject(ctx context.Context, object graveler.ValueRecord, stagingToken string) error {
+func (m *MockPlumbing) StageObject(ctx context.Context, stagingToken string, object graveler.ValueRecord) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StageObject", ctx, object, stagingToken)
 	ret0, _ := ret[0].(error)

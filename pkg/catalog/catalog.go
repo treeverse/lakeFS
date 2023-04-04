@@ -1794,6 +1794,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 	stagingToken := params.StagingToken
 	skipped := it.GetSkippedEntries()
 	if len(skipped) > 0 {
+		c.log.Warning("Skipped count:", len(skipped))
 		if stagingToken == "" {
 			stagingToken = graveler.GenerateStagingToken("import", "ingest_range").String()
 		}
@@ -1804,10 +1805,10 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 			if err != nil {
 				return nil, nil, fmt.Errorf("parsing entry: %w", err)
 			}
-			if err := c.Store.StageObject(ctx, graveler.ValueRecord{
+			if err := c.Store.StageObject(ctx, stagingToken, graveler.ValueRecord{
 				Key:   graveler.Key(entryRecord.Path),
 				Value: entry,
-			}, stagingToken); err != nil {
+			}); err != nil {
 				return nil, nil, fmt.Errorf("staging skipped keys: %w", err)
 			}
 		}

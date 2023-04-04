@@ -615,7 +615,7 @@ type Plumbing interface {
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error)
 	// StageObject stages given object to stagingToken.
-	StageObject(ctx context.Context, object ValueRecord, stagingToken string) error
+	StageObject(ctx context.Context, stagingToken string, object ValueRecord) error
 	// UpdateBranchToken updates the given branch stagingToken
 	UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error
 }
@@ -1030,7 +1030,7 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRec
 	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
 }
 
-func (g *Graveler) StageObject(ctx context.Context, object ValueRecord, stagingToken string) error {
+func (g *Graveler) StageObject(ctx context.Context, stagingToken string, object ValueRecord) error {
 	return g.StagingManager.Set(ctx, StagingToken(stagingToken), object.Key, object.Value, false)
 }
 

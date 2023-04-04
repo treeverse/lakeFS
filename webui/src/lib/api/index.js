@@ -549,7 +549,7 @@ class Branches {
         return response.json();
     }
 
-    async updateToken(repoId, branch, staging_token="") {
+    async updateToken(repoId, branch, staging_token) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}/update_token`, {
             method: 'PUT',
             body: JSON.stringify({staging_token: staging_token}),

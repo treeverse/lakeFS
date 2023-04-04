@@ -22,7 +22,7 @@ type FakeGraveler struct {
 	hooks                       graveler.HooksHandler
 }
 
-func (g *FakeGraveler) StageObject(_ context.Context, _ graveler.ValueRecord, _ string) error {
+func (g *FakeGraveler) StageObject(ctx context.Context, stagingToken string, object graveler.ValueRecord) error {
 	//TODO implement me
 	panic("implement me")
 }

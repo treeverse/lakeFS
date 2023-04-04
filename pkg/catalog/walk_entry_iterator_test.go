@@ -2,11 +2,11 @@ package catalog_test
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/block"
 	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
