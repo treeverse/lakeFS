@@ -1040,10 +1040,11 @@ func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *Repository
 		if err != nil {
 			return nil, err
 		}
-		if !isEmpty || len(branch.SealedTokens) != 0 {
+		if !isEmpty {
 			return nil, fmt.Errorf("branch staging is not empty: %w", ErrDirtyBranch)
 		}
 		branch.StagingToken = StagingToken(stagingToken)
+		branch.SealedTokens = make([]StagingToken, 0)
 		return branch, nil
 	})
 	return err
