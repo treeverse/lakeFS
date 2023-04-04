@@ -166,19 +166,12 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     // are under the storage namespace.
     def getDeletableAddresses(rangeID: String): Iterator[String] = {
       println(s"getAddressesToDelete: get addresses for range $rangeID")
-      println(s"getAddressesToDelete: current storage namespace: $storageNS")
       rangeGetter
         .getRangeEntries(rangeID, repo)
         .filter(e => e.addressType.isRelative || e.address.startsWith(storageNS))
         .map(e =>
           if (e.addressType.isRelative) e.address
-          else {
-            var objName = StringUtils.removeStart(e.address, storageNS)
-            if (!StringUtils.endsWith(storageNS, "/")) {
-              objName = StringUtils.removeStart(objName, "/")
-            }
-            objName
-          }
+          else StringUtils.removeStart(e.address, storageNS)
         )
     }
 

@@ -180,7 +180,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "222", "bbb").toDS,
                                                        Seq[String]().toDS,
                                                        repoName,
-                                                       storageNamespace,
+            s"$storageNamespace/",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
