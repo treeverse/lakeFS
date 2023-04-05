@@ -763,7 +763,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupPoliciesParams) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -820,7 +820,7 @@ func serializePolicy(p *model.Policy) Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -842,7 +842,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -865,7 +865,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -904,7 +904,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body CreatePolicyJSONRequestBody) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -950,7 +950,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -976,7 +976,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1004,7 +1004,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1350,7 +1350,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params ListUserPoliciesParams) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1395,7 +1395,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1417,7 +1417,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthTypeAPI() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -3759,9 +3759,12 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL
 		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel
 	)
-
+	uiRBAC := "simplified"
+	if c.IsAuthTypeAPI() {
+		uiRBAC = "external"
+	}
 	return &LoginConfig{
-		RBAC:               &c.Auth.UIConfig.RBAC,
+		RBAC:               &uiRBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &loginFailedMessage,
 		FallbackLoginUrl:   fallbackLoginURL,

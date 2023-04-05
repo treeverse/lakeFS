@@ -261,7 +261,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 }
 
 func SetupBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
-	if cfg.IsAuthUISimplified() {
+	if !cfg.IsAuthTypeAPI() {
 		return SetupACLBaseGroups(ctx, authService, ts)
 	}
 	return SetupRBACBaseGroups(ctx, authService, ts)

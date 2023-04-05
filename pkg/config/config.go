@@ -197,7 +197,6 @@ type Config struct {
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 		LoginDuration     time.Duration `mapstructure:"login_duration"`
 		UIConfig          struct {
-			RBAC               string   `mapstructure:"rbac"`
 			LoginURL           string   `mapstructure:"login_url"`
 			LoginFailedMessage string   `mapstructure:"login_failed_message"`
 			FallbackLoginURL   *string  `mapstructure:"fallback_login_url"`
@@ -597,10 +596,6 @@ func (c *Config) CommittedParams() committed.Params {
 		RangeSizeEntriesRaggedness: c.Committed.Permanent.RangeRaggednessEntries,
 		MaxUploaders:               c.Committed.LocalCache.MaxUploadersPerWriter,
 	}
-}
-
-func (c *Config) IsAuthUISimplified() bool {
-	return c.Auth.UIConfig.RBAC == "simplified"
 }
 
 func (c *Config) IsAuthTypeAPI() bool {
