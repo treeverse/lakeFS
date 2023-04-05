@@ -87,7 +87,7 @@ func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 	}
 	var groupReports []Warning
 
-	err := auth_migrate.RBACToACL(ctx, authService, reallyUpdate, updateTime, func(groupID string, acl model.ACL, warn error) {
+	usersWithPolicies, err := auth_migrate.RBACToACL(ctx, authService, reallyUpdate, updateTime, func(groupID string, acl model.ACL, warn error) {
 		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
 	})
 	if err != nil {
@@ -118,7 +118,10 @@ func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		}
 		fmt.Println()
 	}
-	return len(groupReports) == 0
+	for _, username := range usersWithPolicies {
+		fmt.Printf("USER (%s)  has directly attached policies that will be detached\n", username)
+	}
+	return len(groupReports)+len(usersWithPolicies) == 0
 }
 
 var upCmd = &cobra.Command{

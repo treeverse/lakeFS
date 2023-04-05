@@ -19,26 +19,23 @@ import (
 
 const (
 	maxGroups        = 1000
-	maxUsers         = 1000
+	pageSize         = 1000
 	maxGroupPolicies = 1000
-	maxUserPolicies  = 1000
 )
 
 var (
 	// ErrTooMany is returned when this migration does not support a
 	// particular number of resources.  It should not occur on any
 	// reasonably-sized installation.
-	ErrTooMany               = errors.New("too many")
-	ErrTooManyPolicies       = fmt.Errorf("%w policies", ErrTooMany)
-	ErrTooManyGroups         = fmt.Errorf("%w groups", ErrTooMany)
-	ErrTooManyUsers          = fmt.Errorf("%w users", ErrTooMany)
-	ErrPolicyAttachedToUsers = errors.New("user policies attached directly")
-	ErrNotAllowed            = fmt.Errorf("not allowed")
-	ErrAlreadyHasACL         = errors.New("already has ACL")
-	ErrAddedActions          = errors.New("added actions")
-	ErrEmpty                 = errors.New("empty")
-	ErrWidened               = errors.New("resource widened")
-	ErrPolicyExists          = errors.New("policy exists")
+	ErrTooMany         = errors.New("too many")
+	ErrTooManyPolicies = fmt.Errorf("%w policies", ErrTooMany)
+	ErrTooManyGroups   = fmt.Errorf("%w groups", ErrTooMany)
+	ErrNotAllowed      = fmt.Errorf("not allowed")
+	ErrAlreadyHasACL   = errors.New("already has ACL")
+	ErrAddedActions    = errors.New("added actions")
+	ErrEmpty           = errors.New("empty")
+	ErrWidened         = errors.New("resource widened")
+	ErrPolicyExists    = errors.New("policy exists")
 
 	// allPermissions lists all permissions, from most restrictive to
 	// most permissive.  It includes "" for some edge cases.
@@ -66,29 +63,30 @@ func CheckPolicyACLName(ctx context.Context, svc auth.Service, name string) erro
 // RBACToACL translates all groups on svc to use ACLs instead of RBAC
 // policies.  It updates svc only if doUpdate.  It calls messageFunc to
 // report increased permissions.
-func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTime time.Time, messageFunc func(string, model.ACL, error)) error {
+// returns a list of users with directly attached policies
+func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTime time.Time, messageFunc func(string, model.ACL, error)) ([]string, error) {
 	mig := NewACLsMigrator(svc, doUpdate)
 
 	groups, _, err := svc.ListGroups(ctx, &model.PaginationParams{Amount: maxGroups + 1})
 	if err != nil {
-		return fmt.Errorf("list groups: %w", err)
+		return nil, fmt.Errorf("list groups: %w", err)
 	}
 	if len(groups) > maxGroups {
-		return fmt.Errorf("%w (got %d)", ErrTooManyGroups, len(groups))
+		return nil, fmt.Errorf("%w (got %d)", ErrTooManyGroups, len(groups))
 	}
 	for _, group := range groups {
 		var warnings error
 
 		policies, _, err := svc.ListGroupPolicies(ctx, group.DisplayName, &model.PaginationParams{Amount: maxGroupPolicies + 1})
 		if err != nil {
-			return fmt.Errorf("list group %+v policies: %w", group, err)
+			return nil, fmt.Errorf("list group %+v policies: %w", group, err)
 		}
 		if len(policies) > maxGroupPolicies {
-			return fmt.Errorf("group %+v: %w (got %d)", group, ErrTooManyPolicies, len(policies))
+			return nil, fmt.Errorf("group %+v: %w (got %d)", group, ErrTooManyPolicies, len(policies))
 		}
 		newACL, warn, err := mig.NewACLForPolicies(ctx, policies)
 		if err != nil {
-			return fmt.Errorf("create ACL for group %+v: %w", group, err)
+			return nil, fmt.Errorf("create ACL for group %+v: %w", group, err)
 		}
 		if warn != nil {
 			warnings = multierror.Append(warnings, warn)
@@ -111,43 +109,55 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 			if errors.Is(err, auth.ErrAlreadyExists) {
 				warnings = multierror.Append(warnings, err)
 			} else if err != nil {
-				return err
+				return nil, err
 			}
 		}
 
 		messageFunc(group.DisplayName, *newACL, warnings)
 	}
-
-	users, _, err := svc.ListUsers(ctx, &model.PaginationParams{Amount: maxUsers + 1})
-	if err != nil {
-		return fmt.Errorf("list users: %w", err)
-	}
-	if len(users) > maxUsers {
-		return fmt.Errorf("%w (got %d)", ErrTooManyUsers, len(users))
-	}
-	for _, user := range users {
-		var warnings error
-		policies, _, err := svc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{Amount: maxUserPolicies + 1})
+	var usersWithPolicies []string
+	hasMoreUser := true
+	afterUser := ""
+	for hasMoreUser {
+		// get membership groups to user
+		users, userPaginator, err := svc.ListUsers(ctx, &model.PaginationParams{
+			After:  afterUser,
+			Amount: pageSize,
+		})
 		if err != nil {
-			return fmt.Errorf("list users policies: %w", err)
+			return nil, err
 		}
-		if len(policies) > maxUsers {
-			return fmt.Errorf("%w (got %d)", ErrTooManyUsers, len(policies))
-		}
-
-		if len(policies) > 0 {
-			warnings = multierror.Append(warnings, fmt.Errorf("%w user %s - all policies will be detached from user", ErrPolicyAttachedToUsers, user.Username))
-		}
-		if doUpdate {
-			for _, policy := range policies {
-				if err := svc.DetachPolicyFromUser(ctx, policy.DisplayName, user.Username); err != nil {
-					return fmt.Errorf("failed detaching policy %s from user %s: %w", policy.DisplayName, user.Username, err)
+		for _, user := range users {
+			// get policies attracted to user
+			hasMoreGroupPolicy := true
+			afterGroupPolicy := ""
+			for hasMoreGroupPolicy {
+				userPolicies, userPoliciesPaginator, err := svc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{
+					After:  afterGroupPolicy,
+					Amount: pageSize,
+				})
+				if err != nil {
+					return nil, fmt.Errorf("list user policies: %w", err)
 				}
+				if len(userPolicies) > 0 {
+					usersWithPolicies = append(usersWithPolicies, user.Username)
+				}
+				if !doUpdate {
+					break
+				}
+				for _, policy := range userPolicies {
+					if err := svc.DetachPolicyFromUser(ctx, policy.DisplayName, user.Username); err != nil {
+						return nil, fmt.Errorf("failed detaching policy %s from user %s: %w", policy.DisplayName, user.Username, err)
+					}
+				}
+				afterGroupPolicy = userPoliciesPaginator.NextPageToken
+				hasMoreGroupPolicy = userPoliciesPaginator.NextPageToken != ""
 			}
+			afterUser = userPaginator.NextPageToken
+			hasMoreUser = userPaginator.NextPageToken != ""
 		}
-		messageFunc(user.Username, model.ACL{}, warnings)
 	}
-	return nil
+	return usersWithPolicies, nil
 }
 
 // ACLsMigrator migrates from policies to ACLs.
