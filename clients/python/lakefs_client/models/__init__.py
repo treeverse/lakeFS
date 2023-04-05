@@ -9,6 +9,7 @@
 # import sys
 # sys.setrecursionlimit(n)
 
+from lakefs_client.model.acl import ACL
 from lakefs_client.model.access_key_credentials import AccessKeyCredentials
 from lakefs_client.model.action_run import ActionRun
 from lakefs_client.model.action_run_list import ActionRunList
@@ -29,6 +30,7 @@ from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.diff_properties import DiffProperties
 from lakefs_client.model.error import Error
+from lakefs_client.model.error_no_acl import ErrorNoACL
 from lakefs_client.model.find_merge_base_result import FindMergeBaseResult
 from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig

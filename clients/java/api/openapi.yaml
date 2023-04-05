@@ -1537,6 +1537,88 @@ paths:
       tags:
       - auth
       x-accepts: application/json
+  /auth/groups/{groupId}/acl:
+    get:
+      operationId: getGroupACL
+      parameters:
+      - explode: false
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ACL'
+          description: ACL of group
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNoACL'
+          description: Group not found, or group found but has no ACL
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get ACL of group
+      tags:
+      - auth
+      x-accepts: application/json
+    post:
+      operationId: setGroupACL
+      parameters:
+      - explode: false
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ACL'
+        required: true
+      responses:
+        "201":
+          description: ACL successfully changed
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: set ACL of group
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories:
     get:
       operationId: listRepositories
@@ -5259,6 +5341,12 @@ components:
           schema:
             $ref: '#/components/schemas/inline_object'
   responses:
+    NotFoundOrNoACL:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorNoACL'
+      description: Group not found, or group found but has no ACL
     Unauthorized:
       content:
         application/json:
@@ -6082,6 +6170,17 @@ components:
       required:
       - errors
       type: object
+    ErrorNoACL:
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+        no_acl:
+          description: true if the group exists but has no ACL
+          type: boolean
+      required:
+      - message
+      type: object
     User:
       example:
         friendly_name: friendly_name
@@ -6562,6 +6661,33 @@ components:
       required:
       - pagination
       - results
+      type: object
+    ACL:
+      example:
+        all_repositories: true
+        repositories:
+        - repositories
+        - repositories
+        permission: permission
+      properties:
+        permission:
+          description: |
+            Permission level to give this ACL.  "Read", "Write", "Super" and
+            "Admin" are all supported.
+          type: string
+        all_repositories:
+          description: |
+            If true, this ACL applies to all repositories, including those
+            added in future.  Permission "Admin" allows changing ACLs, so
+            this is necessarily true for that permission.
+          type: boolean
+        repositories:
+          description: Apply this ACL only to these repositories.
+          items:
+            type: string
+          type: array
+      required:
+      - permission
       type: object
     StorageConfig:
       example:
