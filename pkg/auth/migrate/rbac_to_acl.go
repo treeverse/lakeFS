@@ -129,11 +129,11 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 		}
 		for _, user := range users {
 			// get policies attracted to user
-			hasMoreGroupPolicy := true
-			afterGroupPolicy := ""
-			for hasMoreGroupPolicy {
+			hasMoreUserPolicy := true
+			afterUserPolicy := ""
+			for hasMoreUserPolicy {
 				userPolicies, userPoliciesPaginator, err := svc.ListUserPolicies(ctx, user.Username, &model.PaginationParams{
-					After:  afterGroupPolicy,
+					After:  afterUserPolicy,
 					Amount: pageSize,
 				})
 				if err != nil {
@@ -150,8 +150,8 @@ func RBACToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 						return nil, fmt.Errorf("failed detaching policy %s from user %s: %w", policy.DisplayName, user.Username, err)
 					}
 				}
-				afterGroupPolicy = userPoliciesPaginator.NextPageToken
-				hasMoreGroupPolicy = userPoliciesPaginator.NextPageToken != ""
+				afterUserPolicy = userPoliciesPaginator.NextPageToken
+				hasMoreUserPolicy = userPoliciesPaginator.NextPageToken != ""
 			}
 			afterUser = userPaginator.NextPageToken
 			hasMoreUser = userPaginator.NextPageToken != ""
