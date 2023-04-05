@@ -40,10 +40,12 @@ Statements:
 var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
 ` + policyDetailsTemplate
 
+var permissionTemplate = "Group {{ .Group }}:{{ .Permission }}\n"
+
 var authCmd = &cobra.Command{
 	Use:   "auth [sub-command]",
 	Short: "Manage authentication and authorization",
-	Long:  "manage authentication and authorization including users, groups and policies",
+	Long:  "manage authentication and authorization including users, groups and ACLs",
 }
 
 var authUsers = &cobra.Command{
@@ -152,6 +154,7 @@ var authUsersGroupsList = &cobra.Command{
 var authUsersPolicies = &cobra.Command{
 	Use:   "policies",
 	Short: "Manage user policies",
+	Long:  "Manage user policies.  Requires an external authorization server with matching support.",
 }
 
 var authUsersPoliciesList = &cobra.Command{
@@ -444,6 +447,7 @@ var authGroupsRemoveMember = &cobra.Command{
 var authGroupsPolicies = &cobra.Command{
 	Use:   "policies",
 	Short: "Manage group policies",
+	Long:  "Manage group policies.  Requires an external authorization server with matching support.",
 }
 
 var authGroupsPoliciesList = &cobra.Command{
@@ -636,6 +640,73 @@ var authPoliciesDelete = &cobra.Command{
 	},
 }
 
+var aclGroupCmd = &cobra.Command{
+	Use:   "acl [sub-command]",
+	Short: "Manage ACLs",
+	Long:  "manage ACLs of groups",
+}
+
+var aclGroupACLGet = &cobra.Command{
+	Use:   "get",
+	Short: "Get ACL of group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		clt := getClient()
+
+		resp, err := clt.GetGroupACLWithResponse(cmd.Context(), id)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+
+		Write(permissionTemplate, struct{ Group, Permission string }{id, resp.JSON200.Permission})
+		repositories := resp.JSON200.Repositories
+		if *resp.JSON200.AllRepositories {
+			Write("{{\"All repositories\" | red | bold}}\n", nil)
+		} else {
+			rows := make([][]interface{}, len(*repositories))
+			for i, r := range *repositories {
+				rows[i] = []interface{}{r}
+			}
+			pagination := api.Pagination{
+				HasMore:    false,
+				MaxPerPage: len(rows),
+				Results:    len(rows),
+			}
+			PrintTable(rows, []interface{}{"Repository"}, &pagination, len(rows))
+		}
+	},
+}
+
+var aclGroupACLSet = &cobra.Command{
+	Use:   "set",
+	Short: "Set ACL of group",
+	Long:  `Set ACL of group.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		permission, _ := cmd.Flags().GetString("permission")
+		useAllRepositories, _ := cmd.Flags().GetBool("all-repositories")
+		useRepositories, _ := cmd.Flags().GetStringSlice("repositories")
+
+		if !useAllRepositories && len(useRepositories) == 0 {
+			DieFmt("Must specify exactly one of --all-repositories or --repositories")
+		}
+
+		clt := getClient()
+
+		repositories := make([]string, 0, len(useRepositories))
+		if !useAllRepositories {
+			repositories = useRepositories
+		}
+
+		acl := api.SetGroupACLJSONRequestBody{
+			Permission:      permission,
+			AllRepositories: &useAllRepositories,
+			Repositories:    &repositories,
+		}
+
+		resp, err := clt.SetGroupACL(cmd.Context(), id, acl)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+	},
+}
+
 func addPaginationFlags(cmd *cobra.Command) {
 	cmd.Flags().SortFlags = false
 	cmd.Flags().Int("amount", defaultAmountArgumentValue, "how many results to return")
@@ -735,11 +806,25 @@ func init() {
 	authGroupsPolicies.AddCommand(authGroupsPoliciesAttach)
 	authGroupsPolicies.AddCommand(authGroupsPoliciesDetach)
 
+	aclGroupACLGet.Flags().String("id", "", "Group identifier")
+	_ = aclGroupACLGet.MarkFlagRequired("id")
+
+	aclGroupACLSet.Flags().String("id", "", "Group identifier")
+	_ = aclGroupACLSet.MarkFlagRequired("id")
+	aclGroupACLSet.Flags().String("permission", "", `Permission, typically one of "Reader", "Writer", "Super" or "Admin"`)
+	_ = aclGroupACLSet.MarkFlagRequired("permission")
+	aclGroupACLSet.Flags().Bool("all-repositories", false, "If set, allow all repositories (current and future)")
+	aclGroupACLSet.Flags().StringSlice("repositories", nil, "List of specific repositories to allow for permission")
+
+	aclGroupCmd.AddCommand(aclGroupACLGet)
+	aclGroupCmd.AddCommand(aclGroupACLSet)
+
 	authGroups.AddCommand(authGroupsDelete)
 	authGroups.AddCommand(authGroupsCreate)
 	authGroups.AddCommand(authGroupsList)
 	authGroups.AddCommand(authGroupsMembers)
 	authGroups.AddCommand(authGroupsPolicies)
+	authGroups.AddCommand(aclGroupCmd)
 	authCmd.AddCommand(authGroups)
 
 	// policies

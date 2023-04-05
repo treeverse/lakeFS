@@ -109,6 +109,7 @@ var runCmd = &cobra.Command{
 
 		// initialize auth service
 		var authService auth.Service
+
 		if cfg.IsAuthTypeAPI() {
 			var apiEmailer *email.Emailer
 			if !cfg.Auth.API.SupportsInvites {

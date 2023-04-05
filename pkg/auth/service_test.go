@@ -17,14 +17,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/mock"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	auth_testutil "github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
+
+const creationDate = 12345678
 
 var (
 	someSecret = []byte("some secret")
@@ -53,15 +58,8 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func setupService(t *testing.T, ctx context.Context) *auth.AuthService {
-	t.Helper()
-	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
-		Enabled: false,
-	}, logging.Default())
-}
-
 func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
+	t.Helper()
 	ctx := context.Background()
 	userName := uuid.New().String()
 	_, err := s.CreateUser(ctx, &model.User{
@@ -85,6 +83,23 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 	}
 
 	return userName
+}
+
+func userWithACLs(t testing.TB, s auth.Service, a model.ACL) string {
+	t.Helper()
+	statements, err := acl.ACLToStatement(a)
+	if err != nil {
+		t.Fatal("ACLToStatement: ", err)
+	}
+	creationTime := time.Unix(creationDate, 0)
+
+	policy := &model.Policy{
+		CreatedAt:   creationTime,
+		DisplayName: model.CreateID(),
+		Statement:   statements,
+		ACL:         a,
+	}
+	return userWithPolicies(t, s, []*model.Policy{policy})
 }
 
 func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
@@ -197,7 +212,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := setupService(t, ctx)
+	authService := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -265,7 +280,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := setupService(t, ctx)
+	authService := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -349,7 +364,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := setupService(t, ctx)
+	authService := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -559,6 +574,109 @@ func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.AuthService, userNam
 		if err != nil {
 			b.Fatal("Failed to list effective policies", err)
 		}
+	}
+}
+
+func describeAllowed(allowed bool) string {
+	if allowed {
+		return "allowed"
+	}
+	return "forbidden"
+}
+
+func TestACL(t *testing.T) {
+	hierarchy := []model.ACLPermission{acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
+
+	type PermissionFrom map[model.ACLPermission][]permissions.Permission
+	type TestCase struct {
+		// Name is an identifier for this test case.
+		Name string
+		// ACL is the ACL to test.  ACL.Permission will be tested
+		// with each of hierarchy.
+		ACL model.ACL
+		// PermissionFrom holds permissions that must hold starting
+		// at the ACLPermission key in the hierarchy.
+		PermissionFrom PermissionFrom
+	}
+
+	tests := []TestCase{
+		{
+			Name: "all repos",
+			ACL: model.ACL{
+				Repositories: model.Repositories{All: true},
+			},
+			PermissionFrom: PermissionFrom{
+				acl.ACLRead: []permissions.Permission{
+					{Action: permissions.ReadObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
+					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("foo", "some/path")},
+					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("quux", "")},
+					{Action: permissions.CreateCredentialsAction, Resource: permissions.UserArn("${user}")},
+				},
+				acl.ACLWrite: []permissions.Permission{
+					{Action: permissions.WriteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
+					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
+					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
+					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
+				},
+				acl.ACLSuper: []permissions.Permission{
+					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
+					{Action: permissions.AttachStorageNamespace, Resource: permissions.StorageNamespace("storage://bucket/path")},
+					{Action: permissions.ImportFromStorage, Resource: permissions.StorageNamespace("storage://bucket/path")},
+				},
+				acl.ACLAdmin: []permissions.Permission{
+					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			s := auth_testutil.SetupService(t, ctx, someSecret)
+			userID := make(map[model.ACLPermission]string, len(hierarchy))
+			for _, aclPermission := range hierarchy {
+				tt.ACL.Permission = aclPermission
+				userID[aclPermission] = userWithACLs(t, s, tt.ACL)
+			}
+			tt.ACL.Permission = ""
+
+			for from, pp := range tt.PermissionFrom {
+				for _, p := range pp {
+					t.Run(fmt.Sprintf("%+v", p), func(t *testing.T) {
+						n := permissions.Node{Permission: p}
+						allow := false
+						for _, aclPermission := range hierarchy {
+							t.Run(string(aclPermission), func(t *testing.T) {
+								if aclPermission == from {
+									allow = true
+								}
+								origResource := n.Permission.Resource
+								defer func() {
+									n.Permission.Resource = origResource
+								}()
+								n.Permission.Resource = strings.ReplaceAll(n.Permission.Resource, "${user}", userID[aclPermission])
+
+								r, err := s.Authorize(ctx, &auth.AuthorizationRequest{
+									Username:            userID[aclPermission],
+									RequiredPermissions: n,
+								})
+								if err != nil {
+									t.Errorf("Authorize failed: %v", err)
+								}
+								if (allow && r.Error != nil) || !allow && !errors.Is(r.Error, auth.ErrInsufficientPermissions) {
+									t.Errorf("Authorization response error: %v", err)
+								}
+								if r.Allowed != allow {
+									t.Errorf("%s but expected %s", describeAllowed(r.Allowed), describeAllowed(allow))
+								}
+							})
+						}
+					})
+				}
+			}
+		})
 	}
 }
 
@@ -1287,7 +1405,6 @@ func TestAPIAuthService_GetCredentialsForUser(t *testing.T) {
 func TestAPIAuthService_ListGroups(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1340,7 +1457,6 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 func TestAPIAuthService_ListUsers(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1385,7 +1501,6 @@ func TestAPIAuthService_ListUsers(t *testing.T) {
 func TestAPIAuthService_ListGroupUsers(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const userNamePrefix = "userNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1585,7 +1700,6 @@ func TestAPIAuthService_RemoveUserFromGroup(t *testing.T) {
 func TestAPIAuthService_ListUserGroups(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const groupNamePrefix = "groupNamePrefix"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {
@@ -1631,7 +1745,6 @@ func TestAPIAuthService_ListUserGroups(t *testing.T) {
 func TestAPIAuthService_ListUserCredentials(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	const accessKeyPrefix = "AKIA"
-	const creationDate = 12345678
 	amounts := []int{0, 1, 5}
 	for _, amount := range amounts {
 		t.Run(fmt.Sprintf("amount_%d", amount), func(t *testing.T) {

@@ -25,8 +25,10 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -564,6 +566,127 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
+	aclPolicyName := acl.ACLPolicyName(groupID)
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadGroupAction,
+					Resource: permissions.GroupArn(groupID),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadPolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "get_group_acl", r, "", "", "")
+	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
+		Amount: 2, //nolint:gomnd
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	var acl model.ACL
+	switch len(policies) {
+	case 0: // Blank ACL is valid and allows nothing
+		break
+	case 1:
+		acl = policies[0].ACL
+		if len(acl.Permission) == 0 {
+			c.Logger.
+				WithContext(ctx).
+				WithField("policy", fmt.Sprintf("%+v", policies[0])).
+				WithField("acl", fmt.Sprintf("%+v", acl)).
+				WithField("group", groupID).
+				Warn("Policy attached to group has no ACL")
+			response := NotFoundOrNoACL{
+				Message: "Policy attached to group has no ACL",
+				NoAcl:   swag.Bool(true),
+			}
+			writeResponse(w, r, http.StatusNotFound, response)
+			return
+		}
+	default:
+		c.Logger.
+			WithContext(ctx).
+			WithField("num_policies", len(policies)).
+			WithField("group", groupID).
+			Warn("Wrong number of policies found")
+		response := NotFoundOrNoACL{
+			Message: "Multiple policies attached to group - no ACL",
+			NoAcl:   swag.Bool(true),
+		}
+		writeResponse(w, r, http.StatusNotFound, response)
+		return
+	}
+
+	response := ACL{
+		Permission:      string(acl.Permission),
+		AllRepositories: swag.Bool(acl.Repositories.All),
+		Repositories:    &acl.Repositories.List,
+	}
+
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body SetGroupACLJSONRequestBody, groupID string) {
+	aclPolicyName := acl.ACLPolicyName(groupID)
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadGroupAction,
+					Resource: permissions.GroupArn(groupID),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.AttachPolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.UpdatePolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "set_group_acl", r, "", "", "")
+
+	newACL := model.ACL{
+		Permission: model.ACLPermission(body.Permission),
+		Repositories: model.Repositories{
+			All:  swag.BoolValue(body.AllRepositories),
+			List: *body.Repositories,
+		},
+	}
+
+	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusCreated, nil)
+}
+
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupMembersParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -640,6 +763,10 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupPoliciesParams) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
@@ -693,6 +820,10 @@ func serializePolicy(p *model.Policy) Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -711,6 +842,10 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -730,6 +865,10 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListPoliciesAction,
@@ -765,6 +904,10 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body CreatePolicyJSONRequestBody) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreatePolicyAction,
@@ -807,6 +950,10 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeletePolicyAction,
@@ -829,6 +976,10 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadPolicyAction,
@@ -853,6 +1004,10 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.UpdatePolicyAction,
@@ -1195,6 +1350,10 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params ListUserPoliciesParams) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
@@ -1236,6 +1395,10 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -1254,6 +1417,10 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
+	if c.Config.IsAuthTypeAPI() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -3620,9 +3787,12 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL
 		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel
 	)
-
+	uiRBAC := "simplified"
+	if c.IsAuthTypeAPI() {
+		uiRBAC = "external"
+	}
 	return &LoginConfig{
-		RBAC:               &c.Auth.UIConfig.RBAC,
+		RBAC:               &uiRBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &loginFailedMessage,
 		FallbackLoginUrl:   fallbackLoginURL,
@@ -3693,9 +3863,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	}
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
 	} else {
-		cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)

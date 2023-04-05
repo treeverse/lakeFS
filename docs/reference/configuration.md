@@ -1,99 +1,75 @@
 ---
 layout: default
-title: Server Configuration
-description: Reference for lakeFS Server configuration items and several examples of confriguation for different deployment permutations.
+title: Configuration
+description: Configuring lakeFS is done using a YAML configuration file. This reference uses `.` to denote the nesting of values.
 parent: Reference
 nav_order: 10
 has_children: false
 ---
 
-# Server Configuration
+# Configuration Reference
 {: .no_toc }
 
 {% include toc.html %}
 
 Configuring lakeFS is done using a YAML configuration file and/or environment variable.
+The configuration file's location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
+1. ./config.yaml
+1. `$HOME`/lakefs/config.yaml
+1. /etc/lakefs/config.yaml
+1. `$HOME`/.lakefs.yaml
 
-The configuration file's location can be set with the `--config` flag. If not specified, the first file found in the following order will be used:
-1. `./config.yaml`
-1. `$HOME/lakefs/config.yaml`
-1. `/etc/lakefs/config.yaml`
-1. `$HOME/.lakefs.yaml`
+Configuration items can each be controlled by an environment variable. The variable name will have a prefix of *LAKEFS_*, followed by the name of the configuration, replacing every '.' with a '_'.
+Example: `LAKEFS_LOGGING_LEVEL` controls `logging.level`.
 
-All the configuration properties can be set or overridden using environment variables. The variable name should have a prefix of *`LAKEFS_`*, followed by the name of the configuration, replacing every '`.`' with a '`_`'.
+This reference uses `.` to denote the nesting of values.
 
-For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
-
-
-## Configuration Reference
-
-This reference uses '`.`' to denote the nesting of values. See the [examples below](#example-lakefs-server-configuration) for sample YAML. 
-
-### Logging
+## Reference
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
 
-  **Note:** If you configure this field to be lower than the main logger level, you won't be able to get the audit logs 
+  **Note:** In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs 
   {: .note }
 * `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
 * `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
-
-### Actions (Hooks)
-
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed
-
-### Database
-
-These configuration items are for the lakeFS key-value store database
-
-* `database.type` `(string ["postgres"|"dynamodb"|"local"] : )` - lakeFS database type 
-* `database.postgres` - Configuration section when using `database.type="postgres"`
-  + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
-  + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
-  + `database.postgres.max_idle_connections` `(int : 25)` - Maximum number of connections in the idle connection pool
-  + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
-* `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
-  + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
-  + `database.dynamodb.scan_limit` `(int : 1025)` - Maximal number of items per page during scan operation
-  
-    **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
-    {: .note }
-  + `database.dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
-  + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
-  + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
-  + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
-  + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-  + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
-    {: .note }
-  + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
-* `database.local` - Configuration section when using `database.type="local"`
-  + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
-  + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
-  + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
-  + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
-
 * ~~`database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use~~
 * ~~`database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database~~
 * ~~`database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool~~
 * ~~`database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused~~
 
-  **Note:** Deprecated
+  **Note:** Deprecated - See `database` section 
   {: .note }
-
-### Miscellaneous
-
+* `database` - Configuration section for the lakeFS key-value store database
+  + `database.type` `(string ["postgres"|"dynamodb"|"local"] : )` - lakeFS database type 
+  + `database.postgres` - Configuration section when using `database.type="postgres"`
+    + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
+    + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
+    + `database.postgres.max_idle_connections` `(int : 25)` - Maximum number of connections in the idle connection pool
+    + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)` 
+  + `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
+    + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
+    + `database.dynamodb.scan_limit` `(int : 1025)` - Maximal number of items per page during scan operation
+    
+      **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
+      {: .note }
+    + `database.dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
+    + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
+    + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
+    + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
+    + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
+    + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
+      {: .note }
+    + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
+  + `database.local` - Configuration section when using `database.type="local"`
+    + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
+    + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
+    + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
+    + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
-* `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
-* `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
-* `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
-* `security.audit_check_interval` `(duration : 24h)` - Duration in which we check for security audit.
-* `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary  
-
-### Authentication and Authorization
-
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
@@ -120,13 +96,6 @@ These configuration items are for the lakeFS key-value store database
 * `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set. 
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
-* `auth.ui_config.RBAC` `(string: "simplified")` - "simplified" or
-  "external".  In simplified mode, do not display policy in GUI.  If you
-  have configured an external auth server you can set this to "external" to
-  support the policy editor.
-
-### Blockstore
-
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories. 
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
@@ -138,11 +107,9 @@ These configuration items are for the lakeFS key-value store database
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.gs.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](./presigned-url.html)).
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.azure.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](./presigned-url.html)).
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
@@ -158,10 +125,6 @@ These configuration items are for the lakeFS key-value store database
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
-* `blockstore.s3.disable_pre_signed_ui` `(bool: true)` - When enabled the UI will use a pre-signed URL to get and upload objects from the UI ([reference](presigned-url.html)).
-
-### Graveler
-
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
 * `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
@@ -198,9 +161,6 @@ These configuration items are for the lakeFS key-value store database
   `max_range_size_bytes`).
 + `committed.sstable.memory.cache_size_bytes` (`int` : `200_000_000`) - maximal size of
   in-memory cache used for each SSTable reader.
-
-### Email
-
 + `email.smtp_host` `(string)` - A string representing the URL of the SMTP host.
 + `email.smtp_port` (`int`) - An integer representing the port of the SMTP service (465, 587, 993, 25 are some standard ports)
 + `email.use_ssl` (`bool : false`) - Use SSL connection with SMTP host.
@@ -211,25 +171,28 @@ These configuration items are for the lakeFS key-value store database
 + `email.limit_every_duration` `(duration : 1m)` - The average time between sending emails. If zero is entered, there is no limit to the amount of emails that can be sent.
 + `email.burst` `(int: 10)` - Maximal burst of emails before applying `limit_every_duration`. The zero value means no burst and therefore no emails can be sent.
 + `email.lakefs_base_url` `(string : "http://localhost:8000")` - A string representing the base lakefs endpoint to be directed to when emails are sent inviting users, reseting passwords etc. 
-
-### S3 Gateway
-
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
   local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be in, it should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
+* `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
+* `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
+* `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
+* `security.audit_check_interval` `(duration : 24h)` - Duration in which we check for security audit.
+* `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary  
+{: .ref-list }
 
-### Plugins
+## Using Environment Variables
 
-* `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin. 
-* `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
-* `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
-* `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
+All the configuration variables can be set or overridden using environment variables.
+To set an environment variable, prepend `LAKEFS_` to its name, convert it to upper case, and replace `.` with `_`:
 
-## Examples
-### Local Development with PostgreSQL database
+For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
+
+
+## Example: Local Development with PostgreSQL database
 
 ```yaml
 ---
@@ -260,7 +223,7 @@ gateways:
 ```
 
 
-### AWS Deployment with DynamoDB database
+## Example: AWS Deployment with DynamoDB database
 
 ```yaml
 ---
@@ -290,7 +253,7 @@ blockstore:
 [aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
 
 
-### Google Storage
+## Example: Google Storage
 
 ```yaml
 ---
@@ -315,7 +278,7 @@ blockstore:
 
 ```
 
-### MinIO
+## Example: MinIO
 
 ```yaml
 ---
@@ -344,7 +307,7 @@ blockstore:
       secret_access_key: minioadmin
 
 ```
-### Azure Blob Storage
+## Example: Azure blob storage
 
 ```yaml
 ---

@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -60,7 +61,7 @@ var superuserCmd = &cobra.Command{
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), authMetadataManager, metadataProvider)
-		credentials, err := auth.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
+		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
 				CreatedAt: time.Now(),
 				Username:  userName,
