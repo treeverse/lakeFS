@@ -119,7 +119,7 @@ func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		fmt.Println()
 	}
 	for _, username := range usersWithPolicies {
-		fmt.Printf("USER (%s)  has directly attached policies that will be detached\n", username)
+		fmt.Printf("USER (%s)  detaching directly-attached policies\n", username)
 	}
 	return len(groupReports)+len(usersWithPolicies) == 0
 }
