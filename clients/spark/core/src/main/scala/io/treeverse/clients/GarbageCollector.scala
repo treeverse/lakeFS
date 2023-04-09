@@ -489,7 +489,7 @@ object GarbageCollector {
     )
     val sampleFraction = hc.getDouble(LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION, 1.0)
 
-    val expiredAddressesToWrite = gc
+    val expiredAddresses = gc
       .getExpiredAddresses(repo,
                            storageNS,
                            runID,
@@ -505,14 +505,10 @@ object GarbageCollector {
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
-    expiredAddressesToWrite.write
+    expiredAddresses.write
       .partitionBy(MARK_ID_KEY)
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
-
-    // Read expired addresses as written for further processing.  It may be
-    // too large to hold in memory or even on local disk!
-    val expiredAddresses = spark.read.parquet(gcAddressesLocation)
 
     println(f"Total expired addresses: ${expiredAddresses.count()}")
     println("Expired addresses:")
