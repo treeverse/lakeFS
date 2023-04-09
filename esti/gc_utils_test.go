@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 func getSparkSubmitArgs(entryPoint string) []string {
@@ -30,25 +32,30 @@ func getDockerArgs(workingDirectory string, localJar string) []string {
 	}
 }
 
-// runCommand runs the given command. It redirects the output of the command:
-// 1. stdout is redirected to the logger.
-// 2. stderr is simply printed out.
-func runCommand(cmdName string, cmd *exec.Cmd) error {
-	handlePipe := func(pipe io.ReadCloser, log func(format string, args ...interface{})) {
-		reader := bufio.NewReader(pipe)
-		go func() {
-			defer func() {
-				_ = pipe.Close()
-			}()
-			for {
-				str, err := reader.ReadString('\n')
-				if err != nil {
-					break
-				}
-				log(strings.TrimSuffix(str, "\n"))
+// handlePipe calls log on each line of pipe, and writes nil or an error to
+// ch when done.
+func handlePipe(pipe io.ReadCloser, log func(messages ...interface{}), ch chan<- error) {
+	reader := bufio.NewReader(pipe)
+	go func() {
+		var err error
+		for {
+			str, err := reader.ReadString('\n')
+			if err != nil {
+				break
 			}
-		}()
-	}
+			log(strings.TrimSuffix(str, "\n"))
+		}
+		if err == io.EOF {
+			err = nil
+		}
+		ch <- err
+		pipe.Close()
+	}()
+}
+
+// runCommand runs cmd. It logs the outputs of cmd with an appropriate field
+// to distinguish stdout from stderr.
+func runCommand(cmdName string, cmd *exec.Cmd) error {
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to get stdout from command: %w", err)
@@ -57,13 +64,29 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 	if err != nil {
 		return fmt.Errorf("failed to get stderr from command: %w", err)
 	}
-	handlePipe(stdoutPipe, logger.WithField("source", cmdName).Infof)
-	handlePipe(stderrPipe, func(format string, args ...interface{}) {
-		println(format, args)
-	})
+
+	cmdErrs := make(chan error, 2)
+	handlePipe(stdoutPipe, logger.WithFields(logging.Fields{
+		"source": cmdName,
+		"std":    "out",
+	}).Info, cmdErrs)
+	handlePipe(stderrPipe, logger.WithFields(logging.Fields{
+		"source": cmdName,
+		"std":    "err",
+	}).Info, cmdErrs)
+
 	err = cmd.Start()
 	if err != nil {
 		return err
+	}
+
+	err = <-cmdErrs
+	if err != nil {
+		logger.WithFields(logging.Fields{"source": cmdName, "component": "handlePipe"}).WithError(err).Error("Error reading command pipe")
+	}
+	err = <-cmdErrs
+	if err != nil {
+		logger.WithFields(logging.Fields{"source": cmdName, "component": "handlePipe"}).WithError(err).Error("Error reading command pipe")
 	}
 	return cmd.Wait()
 }
