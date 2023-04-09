@@ -10,7 +10,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.{HashPartitioner}
+import org.apache.spark.HashPartitioner
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -510,17 +510,22 @@ object GarbageCollector {
       .mode(SaveMode.Overwrite)
       .parquet(gcAddressesLocation)
 
+    println(f"Total expired addresses: ${expiredAddresses.count()}")
     println("Expired addresses:")
     expiredAddresses.show()
 
-    // Enable source for rclone backup and resource
-    // write expired addresses as text - output to '.../addresses_path+".text"'
-    val gcAddressesPath = new Path(gcAddressesLocation)
-    val gcTextAddressesPath = new Path(gcAddressesPath.getParent, gcAddressesPath.getName + ".text")
-    expiredAddresses.write
-      .partitionBy(MARK_ID_KEY)
-      .mode(SaveMode.Overwrite)
-      .text(gcTextAddressesPath.toString)
+    if (hc.getBoolean(LAKEFS_CONF_GC_WRITE_EXPIRED_AS_TEXT, true)) {
+      // Enable source for rclone backup and resource
+      // write expired addresses as text - output to '.../addresses_path+".text"'
+      val gcAddressesPath = new Path(gcAddressesLocation)
+      val gcTextAddressesPath =
+        new Path(gcAddressesPath.getParent, gcAddressesPath.getName + ".text")
+      expiredAddresses.write
+        .partitionBy(MARK_ID_KEY)
+        .mode(SaveMode.Overwrite)
+        .text(gcTextAddressesPath.toString)
+    }
+
     writeAddressesMarkMetadata(runID, markID, gcAddressesLocation, gcCommitsLocation)
 
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
@@ -557,21 +562,11 @@ object GarbageCollector {
       configMapper: ConfigMapper
   ) = {
     val reportLogsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "summary")
-    val reportExpiredDst = concatToGCLogsPrefix(storageNSForHadoopFS, "expired_addresses")
     val deletedObjectsDst = concatToGCLogsPrefix(storageNSForHadoopFS, "deleted_objects")
 
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
-    try {
-      writeParquetReport(expiredAddresses, reportExpiredDst, time)
-      val expiredDF = spark.read.parquet(f"${reportExpiredDst}/dt=${time}/")
-      println(f"Total expired addresses: ${expiredDF.count()}")
-    } catch {
-      case e: Throwable => {
-        println("Error when trying to get expired addresses count, moving on:")
-        e.printStackTrace()
-      }
-    }
+
     try {
       val removedCount = removed.count()
       writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
