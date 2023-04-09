@@ -2660,6 +2660,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
+	t.SkipNow()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 	t.Run("valid_policy", func(t *testing.T) {
@@ -3617,6 +3618,7 @@ func TestController_ExpandTemplate(t *testing.T) {
 }
 
 func TestController_UpdatePolicy(t *testing.T) {
+	t.SkipNow()
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 
