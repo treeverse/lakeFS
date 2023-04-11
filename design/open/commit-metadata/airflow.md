@@ -46,8 +46,9 @@ extremes:
 We always need the normalized data pointer, it is the only real identifier
 of the run.[^1] The lakeFS UI can offer the best integration when lakeFS is
 the source of truth.  Initially we shall allow users to select what metadata
-to copy.  The default will be _all_.  We may revisit this decision after
-feedback from users.
+to copy.  The default will be _all_.  For velocity we will avoid adding any
+metadata that is in any way difficult to produce in the lakeFS Airflow
+commit operator.  We may revisit this decision after feedback from users.
 
 [^1]: Naively the run ID would be sufficient.  But that imposes an
     assumption of a single Airflow instance.
@@ -111,11 +112,11 @@ If the domain name of the Airflow system changes then URLs stop working.
 The DAG run URL is still a useful _identifier_, but it cannot be used to
 query for information.
 
-We offer a simple future-proof method to allow changing URLs: Configure a
-number of "URL endpoints" on lakeFS.  They will look like variable
-expansions ("`http://$my_airflow/path/to/dag`") in commit metadata.  
-Configuring the current Airflow base URL in the lakeFS configuration allows
-both uniqueness and forwards compatibility to work.
+In a second phase, we may offer a simple future-proof method to allow
+changing URLs: Configure a number of "URL endpoints" on lakeFS.  They will
+look like variable expansions ("`http://$my_airflow/path/to/dag`") in commit
+metadata.  Configuring the current Airflow base URL in the lakeFS
+configuration allows both uniqueness and forwards compatibility to work.
 
 Users are not required to use these shortcuts, of course -- and small or
 test installations might choose to avoid them entirely.
@@ -152,19 +153,15 @@ Airflow can be framed in a UI.  By default this is allowed but it can be
 x_frame_enabled = False
 ```
 
-This is phrased as a security advantage: it prevents clickjacking.  It is
-not clear how this works.  We might be able to bypass it by setting
-```html
-<iframe referrerpolicy="no-referrer" src="..."/>
-```
-when embedding.
+This is phrased as a security advantage: it prevents clickjacking.
+Unfortunately there is no way around this -- it's an HTML + website feature.
 
 ## Non-Airflow systems
 
 Structured naming of metadata allows the UI to behave in a more generic
 manner.  We can implement this shortly after implementing the original
 Airflow-only UI.  It might optionally scan metadata for _all_ keys of the
-form `::lakefs::Product::property", and use their types to display
+form `::lakefs::Product::property"`, and use their types to display
 correctly.
 
 For instance, merely adding a property
