@@ -10,9 +10,9 @@ previous: ["Quickstart introduction", "./index.html"]
 
 # 👩🏻‍💻 Spin up the environment 👨🏻‍💻
 
-_The quickstart uses Docker Compose to bring up the lakeFS container, pre-populate it with some data, and also provide a DuckDB container from where we can interact with the data. You'll need [Docker](https://docs.docker.com/get-docker/) and [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed to run this._
+_The quickstart uses Docker Compose to bring up the lakeFS container, pre-populate it with some data, and also provide a DuckDB container from where we can interact with the data. You'll need [Docker](https://docs.docker.com/get-docker/) and [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed to run this._
 
-The first step is to clone the lakeFS git repository:
+The first step is to clone the lakeFS Git repository:
 
 ```bash
 git clone git@github.com:treeverse/lakeFS.git

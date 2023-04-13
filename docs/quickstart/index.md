@@ -20,7 +20,7 @@ redirect_from:
 
 **Welcome to lakeFS 👋🏻**
 
-lakeFS provides a "git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
+lakeFS provides a "Git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
 
 This quickstart will introduce you to some of the core ideas in lakeFS and show what you can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in five short sections: 
 

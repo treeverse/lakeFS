@@ -35,6 +35,7 @@ In addition, see the following storage provider specific instructions:
 <div markdown="1" id="aws-s3">
 
 ### AWS S3: Importing from public buckets
+{: .no_toc }
 
 lakeFS needs access to the imported location to first list the files to import and later read the files upon users request.
 
@@ -78,6 +79,7 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
 ### Azure Data Lake Gen2
+{: .no_toc }
 
 lakeFS requires a hint in the import source URL to understand that the provided storage account is ADLS Gen2
 

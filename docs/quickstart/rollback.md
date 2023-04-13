@@ -12,7 +12,7 @@ previous: ["Merge the branch back into main", "./commit-and-merge.html"]
 
 Our intrepid user (you) merged a change back into the `main` branch and realised that they had made a mistake 🤦🏻. 
 
-The good news for them (you) is that lakeFS can revert changes made, similar to how you would in git 😅. 
+The good news for them (you) is that lakeFS can revert changes made, similar to how you would in Git 😅. 
 
 From your terminal window run `lakectl` with the `revert` command:
 
