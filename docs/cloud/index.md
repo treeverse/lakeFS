@@ -1,7 +1,7 @@
 ---
 layout: default
 title: lakeFS Cloud
-description: This section includes lakeFS cloud documentation
+description: This section includes lakeFS Cloud documentation
 nav_order: 80
 has_children: true
 redirect_from: "/cloud.html"
@@ -51,7 +51,7 @@ flowchart TD
 ## Setting up lakeFS Cloud
 
 ### AWS
-Please follow the self-service setup wizard on [lakefs Cloud](https://lakefs.cloud)
+Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
 ### Azure
 Please follow [these instructions](./setup-azure.md) to onboard to lakeFS Cloud on Azure.

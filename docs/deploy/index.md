@@ -8,5 +8,5 @@ has_children: true
 
 # Deploy and setup lakeFS
 
-Note: Optionally, for a hosted lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
+Note: Optionally, for a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
