@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.7.0 - 2023-03-13
+
+=== Performance improvements===
+
+No user-visible parts inside, but some parameters...
+
+* Write expired addresses to fewer locations
+  * Only write text-format expired addresses if new Hadoop config option
+    `lakefs.gc.address.write_as_text` is set.
+	* Remove one (unused) expired address location.
+* Handle huge metaranges: New Hadoop config option
+  `lakefs.gc.address.approx_num_ranges_to_spread_per_partition` can be set
+  when there are very many ranges.  Values 20..100 are probably best.
+* For debugging performance
+
+  Guaranteed to produce incorrect results!  You probably **never want to set
+  this** in production or on any repository you care about.
+  * New Hadoop config option `lakefs.debug.gc.addresses_sample_fraction` can
+	be set below 1.0 _to debug performance **only**_.
+
+
 ## v0.6.5 - 2023-03-14
 
 Bug fix:
