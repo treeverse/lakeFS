@@ -131,30 +131,7 @@ commit metadata if this is available.
 ### Flow
 
 When displaying a commit, and if enabled, scan its metadata for URLs of type
-`[url:ui]`.  If one is found, expand config variables in it and render it in
-an [HTML iframe][mdn-iframe]:
-
-```html
-<iframe title="Airflow UI" src="https://path/to/airflow"/>
-```
-
-Users may want to add `sandbox=` restrictions.  Initially we shall support
-only copying an entire sandbox restrictions string from configuration.
-
-No server-side changes are required to implement this.
-
-### Potential issues
-
-Airflow can be framed in a UI.  By default this is allowed but it can be
-[disabled by configuring][airflow-framing].
-
-```ini
-[webserver]
-x_frame_enabled = False
-```
-
-This is phrased as a security advantage: it prevents clickjacking.
-Unfortunately there is no way around this -- it's an HTML + website feature.
+`[url:ui]`.  If one is found, expand config variables in it and render it as a green button labelled "Open Airflow UI".
 
 ## Non-Airflow systems
 
@@ -170,6 +147,37 @@ For instance, merely adding a property
 ```
 should be enough to link a particular commit on GitHub, and even name it "GitHub".
 
+## Future
+
+### Framing Airflow
+
+In future we might render the UI in an [HTML iframe][mdn-iframe]:
+
+```html
+<iframe title="Airflow UI" src="https://path/to/airflow"/>
+```
+
+Airflow can supposedly be framed in a UI.  By default this is allowed but it
+can be [disabled by configuring][airflow-framing].
+
+```ini
+[webserver]
+x_frame_enabled = False
+```
+
+This is phrased as a security advantage: it prevents clickjacking.
+Unfortunately there is no way around this -- it's an HTML + website feature.
+
+But it turns out that even this is hard:
+
+* Airflow used to [treat the configuration `X_FRAME_ENABLED` _in
+  reverse_][airflow-reversed-x-frame_enabled].  So even configuring it on an
+  older Airflow version (2.2.4 and below) will be confusing, and many
+  upgraded installations may have it backwards!
+* The Astronomer login flow does not appear to understand this variable, and
+  I was unable to embed Astronomer Airflow into an iframe.
+
 [get-dag-run]:  https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/get_dag_run
 [airflow-framing]:  https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/security/webserver.html#rendering-airflow-ui-in-a-web-frame-from-another-site
 [mdn-iframe]:  https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
+[airflow-reversed-x-frame-enabled]:  https://github.com/apache/airflow/blob/main/RELEASE_NOTES.rst#the-webserverx_frame_enabled-configuration-works-according-to-description-now-23222
