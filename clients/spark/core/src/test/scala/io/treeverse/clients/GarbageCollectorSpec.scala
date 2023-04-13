@@ -152,25 +152,33 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           import spark.implicits._
           val storageNamespace = "s3://repo-ns"
           val importedDataS3Path = "s3://bucket/of/imported/data"
+
+          def pathBuilder(namespace: String): String => String = {
+            (path: String) => s"$namespace/$path"
+          }
+
+          val externalS3Path: String => String = pathBuilder(importedDataS3Path);
+          val lakeFSS3Path: String => String = pathBuilder(storageNamespace);
+
           val repoName = "repo-name"
           val rangeGetter = new ARangeGetter(repoName,
                                              null,
                                              Map(
                                                "aaa" -> Seq("a1",
-                                                            s"$importedDataS3Path/a2",
-                                                            s"$storageNamespace/a3"
+                                                            externalS3Path("a2"),
+                                                            lakeFSS3Path("a3")
                                                            ),
-                                               "bbb" -> Seq(s"$importedDataS3Path/path/b1",
-                                                            s"$importedDataS3Path/b2",
+                                               "bbb" -> Seq(externalS3Path("path/b1"),
+                                                            externalS3Path("b2"),
                                                             "b3"
                                                            ),
                                                "ab12" -> Seq("a1",
-                                                             s"$importedDataS3Path/a2",
-                                                             s"$importedDataS3Path/path/b1",
-                                                             s"$importedDataS3Path/b2"
+                                                             externalS3Path("a2"),
+                                                             externalS3Path("path/b1"),
+                                                             externalS3Path("b2")
                                                             ),
-                                               "222" -> Seq(s"$importedDataS3Path/a2",
-                                                            s"$importedDataS3Path/b2",
+                                               "222" -> Seq(externalS3Path("a2"),
+                                                            externalS3Path("b2"),
                                                             "c2"
                                                            )
                                              )
@@ -180,7 +188,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           val actualToDelete = gc.getAddressesToDelete(Seq("aaa", "222", "bbb").toDS,
                                                        Seq[String]().toDS,
                                                        repoName,
-            s"$storageNamespace/",
+                                                       s"$storageNamespace/",
                                                        numRangePartitions,
                                                        numAddressPartitions
                                                       )
