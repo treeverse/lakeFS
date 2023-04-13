@@ -144,7 +144,7 @@ Read the payload (string) as the contents of a Parquet file and return its schem
 ### `lakefs`
 
 The Lua Hook library allows calling back to the lakeFS API using the identity of the user that triggered the action.
-For example, if user A tries to commit and triggers a `pre-commit` hook - any call made inside that hook to the lakefs
+For example, if user A tries to commit and triggers a `pre-commit` hook - any call made inside that hook to the lakeFS
 API, will automatically use user A's identity for authorization and auditing purposes.
 
 ### `lakefs/create_tag(repository_id, reference_id, tag_id)`
