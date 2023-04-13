@@ -132,4 +132,4 @@ Finally, make sure to drop by to say hi on [Twitter](https://twitter.com/lakeFS)
 
 ## lakeFS Concepts and Internals
 
-We describe lakeFS as "_git for data_" but what does that actually mean? Have a look at the [concepts](/understand/model.html) and [architecture](/understand/architecture.html) guides, as well as the explanation of [how merges are handled](/understand/how/merge.html). To go deeper you might be interested in [the internals of versioning](/understand/how/versioning-internals.htm) and our [internal database structure](/understand/how/kv.html).
+We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](/understand/model.html) and [architecture](/understand/architecture.html) guides, as well as the explanation of [how merges are handled](/understand/how/merge.html). To go deeper you might be interested in [the internals of versioning](/understand/how/versioning-internals.htm) and our [internal database structure](/understand/how/kv.html).

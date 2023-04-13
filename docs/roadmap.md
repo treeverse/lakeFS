@@ -100,7 +100,7 @@ This will also allow auto-provisioning of a CosmosDB database and table as part 
 
 Committing (along with attaching useful information to the commit) makes a lot of sense for batch workloads: 
 - run a job or a pipeline on a separate branch and commit,
-- record information such as the git hash of the code executed, the versions of frameworks used, and information about the data artifacts,
+- record information such as the Git hash of the code executed, the versions of frameworks used, and information about the data artifacts,
 - once the pipeline has completed successfully, commit, and attach the recorded information as metadata.
 
 
