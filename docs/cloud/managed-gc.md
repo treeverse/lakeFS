@@ -19,7 +19,7 @@ If you are using the self-managed lakeFS, garbage collection is [available to ru
 * Expired objects are deleted quickly and safely.
 * No operational overhead
 * SLA for when your objects are deleted
-* Get support if something seems off.
+* Get support from the Treeverse team.
 
 ## How does it work?
 Similarly to the self-managed lakeFS, managed GC uses [garbage collection rules](../howto/garbage-collection-index.md) to determine which objects to delete.
