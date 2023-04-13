@@ -80,7 +80,7 @@ To instantly spin up a lakeFS environment and to work with sample data, use [lak
 Before getting started, you will need [docker](https://docs.docker.com/engine/install/) installed on your machine.
 
 {: .note}
-Once you have docker installed and a lakeFS instance running, you can access the lakeFS demo notebooks by cloning the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples) git repo.
+Once you have docker installed and a lakeFS instance running, you can access the lakeFS demo notebooks by cloning the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples) Git repo.
 
 Follow along the steps below to create dev/test environment with lakeFS.
 

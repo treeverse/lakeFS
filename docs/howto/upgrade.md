@@ -13,7 +13,7 @@ redirect_from:
 # Upgrading lakeFS
 {: .no_toc }
 
-Note: For a fully managed lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
+Note: For a fully managed lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
 
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version if you're using the binary).

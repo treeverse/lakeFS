@@ -174,7 +174,7 @@ This reference uses `.` to denote the nesting of values.
 + `email.sender` `(string)` - A string representing the email account which is set as the sender.
 + `email.limit_every_duration` `(duration : 1m)` - The average time between sending emails. If zero is entered, there is no limit to the amount of emails that can be sent.
 + `email.burst` `(int: 10)` - Maximal burst of emails before applying `limit_every_duration`. The zero value means no burst and therefore no emails can be sent.
-+ `email.lakefs_base_url` `(string : "http://localhost:8000")` - A string representing the base lakefs endpoint to be directed to when emails are sent inviting users, reseting passwords etc. 
++ `email.lakefs_base_url` `(string : "http://localhost:8000")` - A string representing the base lakeFS endpoint to be directed to when emails are sent inviting users, reseting passwords etc. 
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for

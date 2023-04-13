@@ -9,4 +9,4 @@ has_children: false
 
 # SAML Authentication Integration
 
-SAML authentication integration is available at [lakeFS cloud](https://lakefs.cloud), a fully managed hosted lakeFS service with guaranteed SLAs. 
+SAML authentication integration is available at [lakeFS Cloud](https://lakefs.cloud), a fully managed hosted lakeFS service with guaranteed SLAs. 

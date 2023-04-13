@@ -34,7 +34,7 @@ To configure a Remote Authenticator see the [configuration fields](./configurati
 #### LDAP server
 
 **Note**
-This feature is deprecated ([learn more](../posts/security_update.html)). For single sign-on with lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+This feature is deprecated ([learn more](../posts/security_update.html)). For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
 
 Configure lakeFS to authenticate users on an LDAP server. Once configured,
@@ -109,7 +109,7 @@ See [this example for authenticating with the AWS CLI](../integrations/aws_cli.m
 ## OIDC support
 
 **Note**
-This feature is deprecated. For single sign-on with lakeFS, try [lakeFS cloud](https://lakefs.cloud)
+This feature is deprecated. For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
 
 OpenID Connect (OIDC) is a simple identity layer on top of the OAuth 2.0 protocol.
