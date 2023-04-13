@@ -71,7 +71,7 @@ func ReportACL(acl model.ACL) string {
 	return ret
 }
 
-func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, reallyUpdate bool, updateTime time.Time) bool {
+func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, reallyUpdate bool, updateTime time.Time, printMessages bool) bool {
 	authService := auth.NewAuthService(
 		kvStore,
 		crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
@@ -94,34 +94,41 @@ func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to upgrade RBAC policies to ACLs: %s\n", err)
 		os.Exit(1)
 	}
-
+	hasWarnings := false
 	for _, w := range groupReports {
-		fmt.Printf("GROUP %s\n\tACL: %s\n", w.GroupID, ReportACL(w.ACL))
+		if printMessages {
+			fmt.Printf("GROUP %s\n\tACL: %s\n", w.GroupID, ReportACL(w.ACL))
+		}
 		if w.Warn != nil {
-			var multi *multierror.Error
-			if errors.As(w.Warn, &multi) {
-				multi.ErrorFormat = func(es []error) string {
-					points := make([]string, len(es))
-					for i, err := range es {
-						points[i] = fmt.Sprintf("* %s", err)
+			hasWarnings = true
+			if printMessages {
+				var multi *multierror.Error
+				if errors.As(w.Warn, &multi) {
+					multi.ErrorFormat = func(es []error) string {
+						points := make([]string, len(es))
+						for i, err := range es {
+							points[i] = fmt.Sprintf("* %s", err)
+						}
+						plural := "s"
+						if len(es) == 1 {
+							plural = ""
+						}
+						return fmt.Sprintf(
+							"%d change%s:\n\t%s\n",
+							len(points), plural, strings.Join(points, "\n\t"))
 					}
-					plural := "s"
-					if len(es) == 1 {
-						plural = ""
-					}
-					return fmt.Sprintf(
-						"%d change%s:\n\t%s\n",
-						len(points), plural, strings.Join(points, "\n\t"))
 				}
+				fmt.Println(w.Warn)
 			}
-			fmt.Println(w.Warn)
 		}
 		fmt.Println()
 	}
 	for _, username := range usersWithPolicies {
-		fmt.Printf("USER (%s)  detaching directly-attached policies\n", username)
+		if printMessages {
+			fmt.Printf("USER (%s)  detaching directly-attached policies\n", username)
+		}
 	}
-	return len(groupReports)+len(usersWithPolicies) == 0
+	return hasWarnings || len(usersWithPolicies) == 0
 }
 
 var upCmd = &cobra.Command{
@@ -152,17 +159,19 @@ var upCmd = &cobra.Command{
 		} else {
 			now := time.Now()
 			var doUpdate bool
+			printMessages := true
 			if force {
 				doUpdate = true
 			} else {
-				doUpdate = migrateToACL(ctx, kvStore, cfg, logging.Default(), false, now)
+				doUpdate = migrateToACL(ctx, kvStore, cfg, logging.Default(), false, now, true)
+				printMessages = false
 			}
 			if !doUpdate {
 				fmt.Println("Updated nothing.  Re-run with --force to update!")
 				return
 			}
 
-			migrateToACL(ctx, kvStore, cfg, logging.Default(), true, now)
+			migrateToACL(ctx, kvStore, cfg, logging.Default(), true, now, printMessages)
 		}
 
 		err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLMigrateVersion)
