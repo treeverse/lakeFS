@@ -22,63 +22,73 @@ type FakeGraveler struct {
 	hooks                       graveler.HooksHandler
 }
 
-func (g *FakeGraveler) GetRangeIDByKey(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, key graveler.Key) (graveler.RangeID, error) {
+func (g *FakeGraveler) StageObject(ctx context.Context, stagingToken string, object graveler.ValueRecord) error {
+	//TODO implement me
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
+func (g *FakeGraveler) UpdateBranchToken(_ context.Context, _ *graveler.RepositoryRecord, _, _ string) error {
+	//TODO implement me
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ResolveRawRef(ctx context.Context, repository *graveler.RepositoryRecord, rawRef graveler.RawRef) (*graveler.ResolvedRef, error) {
+func (g *FakeGraveler) GetRangeIDByKey(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.CommitID, _ graveler.Key) (graveler.RangeID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
+func (g *FakeGraveler) ParseRef(_ graveler.Ref) (graveler.RawRef, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetGarbageCollectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.GarbageCollectionRules, error) {
+func (g *FakeGraveler) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.RawRef) (*graveler.ResolvedRef, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SetGarbageCollectionRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) error {
+func (g *FakeGraveler) SaveGarbageCollectionCommits(_ context.Context, _ *graveler.RepositoryRecord, _ string) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
+func (g *FakeGraveler) GetGarbageCollectionRules(_ context.Context, _ *graveler.RepositoryRecord) (*graveler.GarbageCollectionRules, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) LoadCommits(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) error {
+func (g *FakeGraveler) SetGarbageCollectionRules(_ context.Context, _ *graveler.RepositoryRecord, _ *graveler.GarbageCollectionRules) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) LoadBranches(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) error {
+func (g *FakeGraveler) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.StorageNamespace, _ graveler.BranchID) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) LoadTags(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) error {
+func (g *FakeGraveler) LoadCommits(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) DumpCommits(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) LoadBranches(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) DumpBranches(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) LoadTags(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) DumpTags(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) DumpCommits(_ context.Context, _ *graveler.RepositoryRecord) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+func (g *FakeGraveler) DumpBranches(_ context.Context, _ *graveler.RepositoryRecord) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) GetRange(ctx context.Context, repository *graveler.RepositoryRecord, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
+func (g *FakeGraveler) DumpTags(_ context.Context, _ *graveler.RepositoryRecord) (*graveler.MetaRangeID, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) GetMetaRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) GetRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.RangeID) (graveler.RangeAddress, error) {
 	panic("implement me")
 }
 
@@ -218,7 +228,7 @@ func (g *FakeGraveler) Commit(ctx context.Context, repository *graveler.Reposito
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (g *FakeGraveler) WriteRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	panic("implement me")
 }
 

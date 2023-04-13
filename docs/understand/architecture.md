@@ -6,8 +6,8 @@ description: lakeFS architecture overview. Learn more about lakeFS components, i
 nav_order: 10
 has_children: false
 redirect_from:
-    - ../architecture/index.html
-    - ../architecture/overview.html
+    - /architecture/index.html
+    - /architecture/overview.html
 ---
 # Architecture Overview
 {: .no_toc }

@@ -1768,19 +1768,19 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, prepend, after, continuationToken string) (*graveler.RangeInfo, *Mark, error) {
+func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: fromSourceURI})
+	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI, SkipOutOfOrder: true})
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, prepend, after, continuationToken)
+	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
@@ -1790,7 +1790,31 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID, fromSourceURI, p
 	if err != nil {
 		return nil, nil, fmt.Errorf("writing range from entry iterator: %w", err)
 	}
+
+	stagingToken := params.StagingToken
+	skipped := it.GetSkippedEntries()
+	if len(skipped) > 0 {
+		c.log.Warning("Skipped count:", len(skipped))
+		if stagingToken == "" {
+			stagingToken = graveler.GenerateStagingToken("import", "ingest_range").String()
+		}
+
+		for _, obj := range skipped {
+			entryRecord := objectStoreEntryToEntryRecord(obj, params.Prepend)
+			entry, err := EntryToValue(entryRecord.Entry)
+			if err != nil {
+				return nil, nil, fmt.Errorf("parsing entry: %w", err)
+			}
+			if err := c.Store.StageObject(ctx, stagingToken, graveler.ValueRecord{
+				Key:   graveler.Key(entryRecord.Path),
+				Value: entry,
+			}); err != nil {
+				return nil, nil, fmt.Errorf("staging skipped keys: %w", err)
+			}
+		}
+	}
 	mark := it.Marker()
+	mark.StagingToken = stagingToken
 
 	return rangeInfo, &mark, nil
 }
@@ -1801,6 +1825,14 @@ func (c *Catalog) WriteMetaRange(ctx context.Context, repositoryID string, range
 		return nil, err
 	}
 	return c.Store.WriteMetaRange(ctx, repository, ranges)
+}
+
+func (c *Catalog) UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return c.Store.UpdateBranchToken(ctx, repository, branchID, stagingToken)
 }
 
 func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {

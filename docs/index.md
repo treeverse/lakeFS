@@ -3,7 +3,7 @@ layout: default
 title: What is lakeFS
 description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
 nav_order: 0
-redirect_from: ./downloads.html
+redirect_from: /downloads.html
 ---
 
 ## What is lakeFS

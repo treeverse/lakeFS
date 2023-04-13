@@ -6,7 +6,7 @@ parent: Reference
 nav_order: 20
 has_children: false
 redirect_from:
-  - ./commands.html
+  - /reference/commands.html
 ---
 
 {% comment %}
@@ -454,7 +454,7 @@ Manage authentication and authorization
 #### Synopsis
 {:.no_toc}
 
-manage authentication and authorization including users, groups and policies
+manage authentication and authorization including users, groups and ACLs
 
 #### Options
 {:.no_toc}
@@ -474,6 +474,91 @@ Manage groups
 
 ```
   -h, --help   help for groups
+```
+
+
+
+### lakectl auth groups acl
+
+Manage ACLs
+
+#### Synopsis
+{:.no_toc}
+
+manage ACLs of groups
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for acl
+```
+
+
+
+### lakectl auth groups acl get
+
+Get ACL of group
+
+```
+lakectl auth groups acl get [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help        help for get
+      --id string   Group identifier
+```
+
+
+
+### lakectl auth groups acl help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type acl help [path to command] for full details.
+
+```
+lakectl auth groups acl help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl auth groups acl set
+
+Set ACL of group
+
+#### Synopsis
+{:.no_toc}
+
+Set ACL of group.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.
+
+```
+lakectl auth groups acl set [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --all-repositories       If set, allow all repositories (current and future)
+  -h, --help                   help for set
+      --id string              Group identifier
+      --permission string      Permission, typically one of "Reader", "Writer", "Super" or "Admin"
+      --repositories strings   List of specific repositories to allow for permission
 ```
 
 
@@ -653,6 +738,11 @@ lakectl auth groups members remove [flags]
 ### lakectl auth groups policies
 
 Manage group policies
+
+#### Synopsis
+{:.no_toc}
+
+Manage group policies.  Requires an external authorization server with matching support.
 
 #### Options
 {:.no_toc}
@@ -1120,6 +1210,11 @@ lakectl auth users list [flags]
 ### lakectl auth users policies
 
 Manage user policies
+
+#### Synopsis
+{:.no_toc}
+
+Manage user policies.  Requires an external authorization server with matching support.
 
 #### Options
 {:.no_toc}

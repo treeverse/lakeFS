@@ -41,6 +41,10 @@ public class ImportPagination {
   @SerializedName(SERIALIZED_NAME_LAST_KEY)
   private String lastKey;
 
+  public static final String SERIALIZED_NAME_STAGING_TOKEN = "staging_token";
+  @SerializedName(SERIALIZED_NAME_STAGING_TOKEN)
+  private String stagingToken;
+
 
   public ImportPagination hasMore(Boolean hasMore) {
     
@@ -111,6 +115,29 @@ public class ImportPagination {
   }
 
 
+  public ImportPagination stagingToken(String stagingToken) {
+    
+    this.stagingToken = stagingToken;
+    return this;
+  }
+
+   /**
+   * Staging token for skipped objects during ingest
+   * @return stagingToken
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Staging token for skipped objects during ingest")
+
+  public String getStagingToken() {
+    return stagingToken;
+  }
+
+
+  public void setStagingToken(String stagingToken) {
+    this.stagingToken = stagingToken;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class ImportPagination {
     ImportPagination importPagination = (ImportPagination) o;
     return Objects.equals(this.hasMore, importPagination.hasMore) &&
         Objects.equals(this.continuationToken, importPagination.continuationToken) &&
-        Objects.equals(this.lastKey, importPagination.lastKey);
+        Objects.equals(this.lastKey, importPagination.lastKey) &&
+        Objects.equals(this.stagingToken, importPagination.stagingToken);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hasMore, continuationToken, lastKey);
+    return Objects.hash(hasMore, continuationToken, lastKey, stagingToken);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class ImportPagination {
     sb.append("    hasMore: ").append(toIndentedString(hasMore)).append("\n");
     sb.append("    continuationToken: ").append(toIndentedString(continuationToken)).append("\n");
     sb.append("    lastKey: ").append(toIndentedString(lastKey)).append("\n");
+    sb.append("    stagingToken: ").append(toIndentedString(stagingToken)).append("\n");
     sb.append("}");
     return sb.toString();
   }

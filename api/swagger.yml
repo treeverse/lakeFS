@@ -71,6 +71,13 @@ components:
         type: string
 
   responses:
+    NotFoundOrNoACL:
+      description: Group not found, or group found but has no ACL
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorNoACL"
+            
     Unauthorized:
       description: Unauthorized
       content:
@@ -153,6 +160,9 @@ components:
         last_key:
           type: string
           description: Last object store key that was ingested.
+        staging_token:
+          type: string
+          description: Staging token for skipped objects during ingest
 
     Repository:
       type: object
@@ -450,6 +460,23 @@ components:
           items:
             $ref: "#/components/schemas/OtfDiffEntry"
 
+    DiffProperties:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    OTFDiffs:
+      title: A list of available Output Table Format diffs.
+      type: object
+      properties:
+        diffs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiffProperties"
+
     ResetCreation:
       type: object
       required:
@@ -640,6 +667,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ObjectError"
+
+    ErrorNoACL:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+        no_acl:
+          description: "true if the group exists but has no ACL"
+          type: boolean
 
     User:
       type: object
@@ -971,6 +1010,28 @@ components:
           items:
             $ref: "#/components/schemas/Policy"
 
+    ACL:
+      type: object
+      required:
+        - permission
+      properties:
+        permission:
+          type: string
+          description: |
+            Permission level to give this ACL.  "Read", "Write", "Super" and
+            "Admin" are all supported.
+        all_repositories:
+          type: boolean
+          description: |
+            If true, this ACL applies to all repositories, including those
+            added in future.  Permission "Admin" allows changing ACLs, so
+            this is necessarily true for that permission.
+        repositories:
+          type: array
+          items:
+            type: string
+          description: Apply this ACL only to these repositories.
+
     StorageConfig:
       type: object
       required:
@@ -1239,6 +1300,9 @@ components:
         continuation_token:
           type: string
           description: Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
+        staging_token:
+          type: string
+          description: Opaque. Client should pass staging_token if received from server on previous request
 
     RangeMetadata:
       type: object
@@ -1293,6 +1357,14 @@ components:
         id:
           description: The id of the created metarange
           type: string
+
+    UpdateToken:
+      type: object
+      properties:
+        staging_token:
+          type: string
+      required:
+        - staging_token
 
     StatsEvent:
       type: object
@@ -2148,6 +2220,54 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /auth/groups/{groupId}/acl:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+
+    post:
+      tags:
+        - auth
+      operationId: setGroupACL
+      summary: set ACL of group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ACL"
+      responses:
+        201:
+          description: ACL successfully changed
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    get:
+      tags:
+        - auth
+      operationId: getGroupACL
+      summary: get ACL of group
+      responses:
+        200:
+          description: ACL of group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ACL"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFoundOrNoACL"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories:
     get:
       tags:
@@ -2240,6 +2360,25 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /otf/diffs:
+    get:
+      tags:
+        - experimental
+        - otf diff
+      operationId: getOtfDiffs
+      summary: get the available Open Table Format diffs
+      responses:
+        200:
+          description: available Open Table Format diffs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OTFDiffs"
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3307,6 +3446,43 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/update_token:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - staging
+      operationId: updateBranchToken
+      summary: modify branch staging token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateToken"
+      responses:
+        204:
+          description: branch updated successfully
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:

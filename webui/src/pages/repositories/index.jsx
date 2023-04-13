@@ -81,11 +81,11 @@ const GetStarted = ({onCreateRepo}) => {
 const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return repositories.list(prefix, after)
-    }, [refresh, prefix, after])
+        return repositories.list(prefix, after);
+    }, [refresh, prefix, after]);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>
+    if (error) return <Error error={error}/>;
     if (!after && !prefix && results.length === 0) {
         return <GetStarted onCreateRepo={onCreateRepo}/>;
     }

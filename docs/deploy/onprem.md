@@ -5,10 +5,10 @@ parent: Deploy and Setup lakeFS
 description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on-premises (or on other cloud providers)
 nav_order: 50
 redirect_from:
-   - ./k8s.html
-   - ./docker.html 
-   - ../integrations/minio.html
-   - ../using/minio.html
+   - /deploy/k8s.html
+   - /deploy/docker.html 
+   - /integrations/minio.html
+   - /using/minio.html
 next:  ["Import data into your installation", "../howto/import.html"]
 ---
 

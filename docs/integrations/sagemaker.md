@@ -5,7 +5,7 @@ description: This section explains how to integrate your SageMaker installation 
 parent: Integrations
 nav_order: 130
 has_children: false
-redirect_from: ../using/sagemaker.html
+redirect_from: /using/sagemaker.html
 ---
 
 # Using lakeFS with SageMaker 

@@ -149,6 +149,10 @@ func (s *Service) appendClosingFunction(diffType string, f func()) {
 	}
 }
 
+func (s *Service) EnabledDiffs() []string {
+	return s.pluginHandler.Plugins()
+}
+
 // NewService is used to initialize a new Differ service. The returned function is a closing function for the service.
 func NewService(diffProps config.DiffProps, pluginProps config.Plugins) (*Service, func()) {
 	service := &Service{

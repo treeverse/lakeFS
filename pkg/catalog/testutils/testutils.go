@@ -178,6 +178,10 @@ type FakeWalker struct {
 	err                             error
 }
 
+func (w *FakeWalker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return nil
+}
+
 const (
 	randomKeyLength = 64
 	entrySize       = 132

@@ -73,8 +73,9 @@ var ingestCmd = &cobra.Command{
 		}
 		go func() {
 			walker, err := store.NewFactory(nil).GetWalker(ctx, store.WalkerOptions{
-				S3EndpointURL: s3EndpointURL,
-				StorageURI:    from,
+				S3EndpointURL:  s3EndpointURL,
+				StorageURI:     from,
+				SkipOutOfOrder: false,
 			})
 			if err != nil {
 				DieFmt("error creating object-store walker: %v", err)

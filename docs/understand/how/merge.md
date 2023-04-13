@@ -7,8 +7,8 @@ grand_parent: Understanding lakeFS
 nav_order: 9999
 has_children: false
 redirect_from:
-  - ../reference/merge.html
-  - understand/merge.html
+  - /reference/merge.html
+  - /understand/merge.html
 ---
 
 # Merge

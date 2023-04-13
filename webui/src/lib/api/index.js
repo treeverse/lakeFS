@@ -27,7 +27,7 @@ class LocalCache {
 
 const cache = new LocalCache();
 
-export const linkToPath = (repoId, branchId, path, presign=false) => {
+export const linkToPath = (repoId, branchId, path, presign = false) => {
     const query = qs({
         path,
         presign,
@@ -243,6 +243,28 @@ class Auth {
             throw new Error(`could not list group members: ${await extractError(response)}`);
         }
         return response.json();
+    }
+
+    async getACL(groupId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/acl`);
+        if (response.status !== 200) {
+            throw new Error(`could not get ACL for group ${groupId}: ${await extractError(response)}`);
+        }
+        const ret = await response.json();
+        if (ret.repositories === null || ret.repositories === undefined) {
+            ret.repositories = [];
+        }
+        return ret;
+    }
+
+    async putACL(groupId, acl) {
+        const response = await apiRequest(`/auth/groups/${groupId}/acl`, {
+            method: 'POST',
+            body: JSON.stringify(acl),
+        });
+        if (response.status !== 201) {
+            throw new Error(`could not set ACL for group ${groupId}: ${await extractError(response)}`);
+        }
     }
 
     async addUserToGroup(userId, groupId) {
@@ -548,6 +570,16 @@ class Branches {
         }
         return response.json();
     }
+
+    async updateToken(repoId, branch, staging_token) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}/update_token`, {
+            method: 'PUT',
+            body: JSON.stringify({staging_token: staging_token}),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+    }
 }
 
 
@@ -595,7 +627,7 @@ class Tags {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", presign= false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
+    async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
         const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
         if (response.status !== 200) {
@@ -630,7 +662,7 @@ class Objects {
         }
     }
 
-    async get(repoId, ref, path, presign= false) {
+    async get(repoId, ref, path, presign = false) {
         const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
@@ -972,10 +1004,10 @@ class BranchProtectionRules {
 }
 
 class Ranges {
-    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "") {
+    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "", staging_token="") {
         const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
             method: 'POST',
-            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token}),
+            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token, staging_token}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -1029,7 +1061,7 @@ class Statistics {
 }
 
 class Staging {
-    async get(repoId, branchId, path, presign= false) {
+    async get(repoId, branchId, path, presign = false) {
         const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'GET'
@@ -1045,6 +1077,18 @@ class Staging {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
             body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes})
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+}
+
+class OTFDiffs {
+    async get() {
+        const response = await apiRequest('/otf/diffs', {
+            method: 'GET'
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -1070,3 +1114,4 @@ export const metaRanges = new MetaRanges();
 export const templates = new Templates();
 export const statistics = new Statistics();
 export const staging = new Staging();
+export const otfDiffs = new OTFDiffs();

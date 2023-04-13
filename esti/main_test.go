@@ -333,7 +333,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func SkipTestIfAskedTo(t *testing.T) {
+func SkipTestIfAskedTo(t testing.TB) {
 	if testsToSkipRegex != nil && testsToSkipRegex.MatchString(t.Name()) {
 		t.SkipNow()
 	}

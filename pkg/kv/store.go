@@ -15,6 +15,7 @@ import (
 
 const (
 	InitialMigrateVersion = 1
+	ACLMigrateVersion     = 2
 	PathDelimiter         = "/"
 	MetadataPartitionKey  = "kv-internal-metadata"
 )
