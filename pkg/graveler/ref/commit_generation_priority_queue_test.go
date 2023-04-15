@@ -81,6 +81,8 @@ func TestCommitsGenerationPriorityQueue_Less(t *testing.T) {
 	}{
 		{Name: "generation_ascend", Commit1: graveler.Commit{Generation: 0}, Commit2: graveler.Commit{Generation: 1}, Expected: false},
 		{Name: "generation_descent", Commit1: graveler.Commit{Generation: 1}, Commit2: graveler.Commit{Generation: 0}, Expected: true},
+		{Name: "generation_ascend_creation_ascend", Commit1: graveler.Commit{Generation: 0, CreationDate: ts1}, Commit2: graveler.Commit{Generation: 1, CreationDate: ts2}, Expected: false},
+		{Name: "generation_descent_creation_descent", Commit1: graveler.Commit{Generation: 1, CreationDate: ts2}, Commit2: graveler.Commit{Generation: 0, CreationDate: ts1}, Expected: true},
 		{Name: "same_generation_creation_ascend", Commit1: graveler.Commit{Generation: 0, CreationDate: ts1}, Commit2: graveler.Commit{Generation: 0, CreationDate: ts2}, Expected: false},
 		{Name: "same_generation_creation_descent", Commit1: graveler.Commit{Generation: 0, CreationDate: ts2}, Commit2: graveler.Commit{Generation: 0, CreationDate: ts1}, Expected: true},
 		{Name: "same_generation_and_creation", Commit1: graveler.Commit{Generation: 0, CreationDate: ts1}, Commit2: graveler.Commit{Generation: 0, CreationDate: ts1}, Expected: false},
