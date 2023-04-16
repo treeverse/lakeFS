@@ -95,13 +95,10 @@ The REST API suggests the following suffixes:
 
   `execution_date` is deprecated by Airflow and equal to `logical_date`, so
   it is _not_ included.
-* `start_date[iso8601]`: ISO 8601
-* `end_date[iso8601]`: ISO 8601
 * `data_interval_start[iso8601]`: ISO 8601
 * `data_interval_end[iso8601]`: ISO 8601
 * `last_scheduling_decision[iso8601]`:  ISO 8601
 * `run_type`: string
-* `state`: string (presumably always "success")
 * `external_trigger[boolean]`: boolean encoded as "`true`" or "`false`"
 * `conf[json]`: string encoding a JSON object of conf
 * `note`: string
