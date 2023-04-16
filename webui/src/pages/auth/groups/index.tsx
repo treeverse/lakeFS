@@ -149,7 +149,7 @@ const GroupsContainer = () => {
 
             <DataTable
                 results={results}
-                headers={['', 'Group ID', 'Permission', 'Created At', 'Repositories']}
+                headers={['', 'Group ID', 'Permission', 'Created At']}
                 keyFn={group => group.id}
                 rowFn={group => [
                     <Checkbox
@@ -165,8 +165,6 @@ const GroupsContainer = () => {
                             .then(() => setPutACLError(null), (e) => setPutACLError(e)))
                     }/> : <></>,
                     <FormattedDate dateValue={group.creation_date}/>,
-                    group.acl ? <span>{(group.acl.all_repositories ? '*' : group.acl.repositories.length)}</span> :
-                        <span>n/a</span>
             ]}/>
 
             <Paginator
