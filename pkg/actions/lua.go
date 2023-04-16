@@ -84,7 +84,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		return err
 	}
 	l := lua.NewState()
-	lualibs.OpenSafe(l, ctx, &loggingBuffer{buf: buf, ctx: ctx})
+	lualibs.OpenSafe(l, ctx, h.Config.Lua, &loggingBuffer{buf: buf, ctx: ctx})
 	injectHookContext(l, ctx, user, h.Endpoint, h.Args)
 	applyRecord(l, h.ActionName, h.ID, record)
 
@@ -165,7 +165,7 @@ func DescendArgs(args interface{}) (descended interface{}, err error) {
 	}
 }
 
-func NewLuaHook(h ActionHook, action *Action, e *http.Server) (Hook, error) {
+func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook, error) {
 	// optional args
 	args := make(map[string]interface{})
 	argsVal, hasArgs := h.Properties["args"]
@@ -197,6 +197,7 @@ func NewLuaHook(h ActionHook, action *Action, e *http.Server) (Hook, error) {
 			HookBase: HookBase{
 				ID:         h.ID,
 				ActionName: action.Name,
+				Config:     cfg,
 				Endpoint:   e,
 			},
 			Script: script,
@@ -219,6 +220,7 @@ func NewLuaHook(h ActionHook, action *Action, e *http.Server) (Hook, error) {
 		HookBase: HookBase{
 			ID:         h.ID,
 			ActionName: action.Name,
+			Config:     cfg,
 			Endpoint:   e,
 		},
 		ScriptPath: scriptFile,

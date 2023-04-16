@@ -23,7 +23,7 @@ import (
 // most classes here are taken from: https://github.com/Shopify/goluago
 // See the original MIT license with copyright at ./LICENSE.md
 
-func Open(l *lua.State, ctx context.Context) {
+func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	regexp.Open(l)
 	strings.Open(l)
 	json.Open(l)
@@ -37,5 +37,7 @@ func Open(l *lua.State, ctx context.Context) {
 	parquet.Open(l)
 	path.Open(l)
 	aws.Open(l, ctx)
-	http.Open(l)
+	if cfg.NetHTTPEnabled {
+		http.Open(l)
+	}
 }

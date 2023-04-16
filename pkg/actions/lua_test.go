@@ -3,10 +3,15 @@ package actions_test
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	nanoid "github.com/matoous/go-nanoid/v2"
 
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -14,6 +19,15 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
+
+var testActionConfig = actions.Config{
+	Enabled: true,
+	Lua: struct {
+		NetHTTPEnabled bool
+	}{
+		NetHTTPEnabled: true,
+	},
+}
 
 func TestNewLuaHook(t *testing.T) {
 	_, err := actions.NewLuaHook(
@@ -31,6 +45,7 @@ func TestNewLuaHook(t *testing.T) {
 			On:          nil,
 			Hooks:       nil,
 		},
+		testActionConfig,
 		nil)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
@@ -53,6 +68,7 @@ func TestLuaRun(t *testing.T) {
 			On:          nil,
 			Hooks:       nil,
 		},
+		testActionConfig,
 		nil)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
@@ -85,6 +101,59 @@ func TestLuaRun(t *testing.T) {
 	expected := "83650"
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output\n%s\n------- got\n%s-------", expected, output)
+	}
+}
+
+func TestLuaRun_NetHttp(t *testing.T) {
+	content := "hello-" + nanoid.Must(20)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, content)
+	}))
+	defer ts.Close()
+
+	h, err := actions.NewLuaHook(
+		actions.ActionHook{
+			ID:   "myLuaHook",
+			Type: actions.HookTypeLua,
+			Properties: map[string]interface{}{
+				"script": `
+local http = require("net/http")
+local code, body, headers, status = http.request("` + ts.URL + `")
+print(code .. " " .. body .. " " .. status)
+`,
+			},
+		},
+		&actions.Action{},
+		testActionConfig,
+		nil)
+	if err != nil {
+		t.Fatalf("unexpedcted error: %v", err)
+	}
+	out := &bytes.Buffer{}
+	ctx := auth.WithUser(context.Background(), &model.User{
+		Username: "user1",
+	})
+	err = h.Run(ctx, graveler.HookRecord{
+		RunID:            "abc123",
+		EventType:        graveler.EventTypePreCreateBranch,
+		RepositoryID:     "example123",
+		StorageNamespace: "local://foo/bar",
+		SourceRef:        "abc123",
+		BranchID:         "my-branch",
+		Commit: graveler.Commit{
+			Version: 1,
+		},
+		CommitID: "123456789",
+		PreRunID: "3498032432",
+		TagID:    "",
+	}, out)
+	if err != nil {
+		t.Fatalf("unexpected error running hook: %v", err)
+	}
+	output := out.String()
+	expected := "200 " + content + " 200 OK"
+	if !strings.Contains(output, expected) {
+		t.Fatalf("expected output\n%s\n------- got\n%s-------", expected, output)
 	}
 }
 
@@ -150,6 +219,7 @@ func TestLuaRunTable(t *testing.T) {
 					On:          nil,
 					Hooks:       nil,
 				},
+				testActionConfig,
 				nil)
 			if err != nil {
 				t.Errorf("unexpedcted error: %v", err)
