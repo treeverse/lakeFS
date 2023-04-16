@@ -11,6 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/hex"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/json"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
+	"github.com/treeverse/lakefs/pkg/actions/lua/net/http"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
@@ -36,4 +37,5 @@ func Open(l *lua.State, ctx context.Context) {
 	parquet.Open(l)
 	path.Open(l)
 	aws.Open(l, ctx)
+	http.Open(l)
 }
