@@ -230,29 +230,25 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 			Name:     "ExactlyFSFullAccess",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSFullAccess")},
 			ACL: model.ACL{
-				Permission:   acl.ACLSuper,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLSuper,
 			},
 		}, {
 			Name:     "GroupSuperUsers",
 			Policies: getPolicies(t, ctx, svc, "SuperUsers"),
 			ACL: model.ACL{
-				Permission:   acl.ACLSuper,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLSuper,
 			},
 		}, {
 			Name:     "ExactlyFSReadAll",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSReadAll")},
 			ACL: model.ACL{
-				Permission:   acl.ACLRead,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLRead,
 			},
 		}, {
 			Name:     "GroupViewers",
 			Policies: getPolicies(t, ctx, svc, "Viewers"),
 			ACL: model.ACL{
-				Permission:   acl.ACLRead,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLRead,
 			},
 		},
 	}
