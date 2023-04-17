@@ -608,6 +608,9 @@ public class LakeFSFileSystem extends FileSystem {
                 LakeFSFileStatus status = getFileStatus(f);
                 if (status.isDirectory() && status.isEmptyDirectory()) {
                     deleteHelper(objectLocation.toDirectory());
+                } else {
+                    // not an empty directory, so the parent ain't empty either
+                    break;
                 }
             } catch (IOException ignored) {
             }
@@ -864,7 +867,7 @@ public class LakeFSFileSystem extends FileSystem {
         // number of objects so that it costs about the same to list that
         // many objects as it does to list 1.
         try {
-            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 123 /* TODO(ariels): configure! */, "", objectLoc.getPath());
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 5, "", objectLoc.getPath());
             List<ObjectStats> l = osl.getResults();
             if (l.isEmpty()) {
                 // No object with any name that starts with objectLoc.
