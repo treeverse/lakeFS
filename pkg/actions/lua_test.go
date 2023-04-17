@@ -118,10 +118,6 @@ func TestLuaRun_NetHttpDisabled(t *testing.T) {
 			Description: "na",
 			Properties: map[string]interface{}{
 				"script": `local http = require("net/http")`,
-
-				//local code, body = http.request("https://example.com")
-				//print(code, body)
-				//`,
 			},
 		},
 		&actions.Action{
