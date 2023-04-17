@@ -24,8 +24,11 @@ _where current implementation cost is unaffected_, this design is _forwards
 compatible_:
 
 * Airflow metadata added today should remain usable.
-* **If** we ever add UI support for metadata from another (non-Airflow)
-  system, it should work with metadata added today.
+* If all goes well eventually we will add more generic UI support for
+  metadata from other non-Airflow systems.  Metadata added today should
+  ideally work there without carving out special cases.  So it needs to be
+  self-contained -- for instance, an "Airflow" label should be derivable
+  from the metadata.
 
 ### Source of truth
 
@@ -50,6 +53,18 @@ to copy.  The default will be _all_.  For velocity we will avoid adding any
 metadata that is in any way difficult to produce in the lakeFS Airflow
 commit operator.  We may revisit this decision after feedback from users.
 
+We identify runs by:
+
+* Their Airflow run URL;
+* The task_id;
+* The task try_number.
+
+This yields an identifying URL
+`https://{AIRFLOW_HOST}/api/v1/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/`.
+However this URL is _not_ good for displaying in the GUI; there we give the
+URL of the well-known DAG run GUI.
+
+
 [^1]: Naively the run ID would be sufficient.  But that imposes an
     assumption of a single Airflow instance.
 
@@ -64,13 +79,11 @@ We add to each commit metadata for these items:
   * Airflow system identifier
   * Airflow logical ("execution") date
   * Notes (an Airflow metadata concept)
-  * Conf.
 
   We allow all items that can be retrieved by [Get a DAG run][get-dag-run]
   in the REST API, and copy terminology from there.
 
-  All optionals must be exactly that.  Most importantly, conf can contain
-  secrets and _must_ be optional.
+  All optionals must be exactly that.
   
 ### Naming
 
@@ -100,8 +113,21 @@ The REST API suggests the following suffixes:
 * `last_scheduling_decision[iso8601]`:  ISO 8601
 * `run_type`: string
 * `external_trigger[boolean]`: boolean encoded as "`true`" or "`false`"
-* `conf[json]`: string encoding a JSON object of conf
 * `note`: string
+
+So we might end up with the following metadata:
+
+| key                                                    | value                                |
+|:-------------------------------------------------------|:-------------------------------------|
+| `::lakefs::Airflow::dag_run_id`                        | scheduled__2023-04-13T05:40:00+00:00 |
+| `::lakefs::Airflow::dag_id`                            | big_data_dag                         |
+| `::lakefs::Airflow::logical_date[iso8601]`             | 2023-04-14T01:02:03+00:00            |
+| `::lakefs::Airflow::data_interval_start[iso8601]`      | 2023-04-14T00:11:22+00:00            |
+| `::lakefs::Airflow::data_interval_end[iso8601]`        | 2023-04-14T00:22:25+00:00            |
+| `::lakefs::Airflow::last_scheduling_decision[iso8601]` | 2023-04-14T01:02:01+00:00            |
+| `::lakefs::Airflow::run_type`                          | scheduled                            |
+| `::lakefs::Airflow::external_trigger[boolean]`         | false                                |
+| `::lakefs::Airflow::note`                              | This time for sure!                  |
 
 #### Changing Airflows
 
@@ -135,7 +161,7 @@ When displaying a commit, and if enabled, scan its metadata for URLs of type
 Structured naming of metadata allows the UI to behave in a more generic
 manner.  We can implement this shortly after implementing the original
 Airflow-only UI.  It might optionally scan metadata for _all_ keys of the
-form `::lakefs::Product::property"`, and use their types to display
+form "`::lakefs::Product::property`", and use their types to display
 correctly.
 
 For instance, merely adding a property
