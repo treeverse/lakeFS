@@ -14,22 +14,12 @@ import (
 	"time"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
-
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
-
-var testActionConfig = actions.Config{
-	Enabled: true,
-	Lua: struct {
-		NetHTTPEnabled bool
-	}{
-		NetHTTPEnabled: true,
-	},
-}
 
 func TestNewLuaHook(t *testing.T) {
 	_, err := actions.NewLuaHook(
@@ -47,7 +37,14 @@ func TestNewLuaHook(t *testing.T) {
 			On:          nil,
 			Hooks:       nil,
 		},
-		testActionConfig,
+		actions.Config{
+			Enabled: true,
+			Lua: struct {
+				NetHTTPEnabled bool
+			}{
+				NetHTTPEnabled: true,
+			},
+		},
 		nil)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
@@ -70,7 +67,14 @@ func TestLuaRun(t *testing.T) {
 			On:          nil,
 			Hooks:       nil,
 		},
-		testActionConfig,
+		actions.Config{
+			Enabled: true,
+			Lua: struct {
+				NetHTTPEnabled bool
+			}{
+				NetHTTPEnabled: true,
+			},
+		},
 		nil)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
@@ -103,6 +107,57 @@ func TestLuaRun(t *testing.T) {
 	expected := "83650"
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output\n%s\n------- got\n%s-------", expected, output)
+	}
+}
+
+func TestLuaRun_NetHttpDisabled(t *testing.T) {
+	h, err := actions.NewLuaHook(
+		actions.ActionHook{
+			ID:          "myHook",
+			Type:        actions.HookTypeLua,
+			Description: "na",
+			Properties: map[string]interface{}{
+				"script": `local http = require("net/http")`,
+
+				//local code, body = http.request("https://example.com")
+				//print(code, body)
+				//`,
+			},
+		},
+		&actions.Action{
+			Name:        "",
+			Description: "",
+			On:          nil,
+			Hooks:       nil,
+		},
+		actions.Config{Enabled: true},
+		nil)
+	if err != nil {
+		t.Errorf("unexpedcted error: %v", err)
+	}
+	out := &bytes.Buffer{}
+	ctx := context.Background()
+	ctx = auth.WithUser(ctx, &model.User{
+		CreatedAt: time.Time{},
+		Username:  "user1",
+	})
+	err = h.Run(ctx, graveler.HookRecord{
+		RunID:            "abc123",
+		EventType:        graveler.EventTypePreCreateBranch,
+		RepositoryID:     "example123",
+		StorageNamespace: "local://foo/bar",
+		SourceRef:        "abc123",
+		BranchID:         "my-branch",
+		Commit: graveler.Commit{
+			Version: 1,
+		},
+		CommitID: "123456789",
+		PreRunID: "3498032432",
+		TagID:    "",
+	}, out)
+	const expectedErr = "module 'net/http' not found"
+	if err == nil || !strings.Contains(err.Error(), expectedErr) {
+		t.Fatalf("Error=%v, expected: '%s'", err, expectedErr)
 	}
 }
 
@@ -208,7 +263,14 @@ print(code .. " " .. body .. " " .. status)
 					},
 				},
 				&actions.Action{},
-				testActionConfig,
+				actions.Config{
+					Enabled: true,
+					Lua: struct {
+						NetHTTPEnabled bool
+					}{
+						NetHTTPEnabled: true,
+					},
+				},
 				nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -305,7 +367,14 @@ func TestLuaRunTable(t *testing.T) {
 					On:          nil,
 					Hooks:       nil,
 				},
-				testActionConfig,
+				actions.Config{
+					Enabled: true,
+					Lua: struct {
+						NetHTTPEnabled bool
+					}{
+						NetHTTPEnabled: true,
+					},
+				},
 				nil)
 			if err != nil {
 				t.Errorf("unexpedcted error: %v", err)
