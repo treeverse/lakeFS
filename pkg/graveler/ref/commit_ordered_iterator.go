@@ -105,7 +105,7 @@ func (i *OrderedCommitIterator) Close() {
 	}
 }
 
-// getAllFirstParents returns a set of all commits following the first parent for a given repository.
+// getAllFirstParents returns a set of all commits that are the first parent of some other commit for a given repository.
 func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (map[string]bool, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.RepoPartition(repo),
