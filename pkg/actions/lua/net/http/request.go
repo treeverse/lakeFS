@@ -4,10 +4,13 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
+
+const defaultRequestTimeout = 30 * time.Second
 
 func Open(l *lua.State) {
 	open := func(l *lua.State) int {
@@ -28,6 +31,25 @@ var httpLibrary = []lua.RegistryFunction{
 //		method is by default GET or POST in case body is set.
 //	Returns code, body, headers, status.
 func httpRequest(l *lua.State) int {
+	req, err := prepareRequest(l)
+	client := http.Client{
+		Timeout: defaultRequestTimeout,
+	}
+	resp, err := client.Do(req)
+	check(l, err)
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	check(l, err)
+
+	// push return
+	l.PushInteger(resp.StatusCode)
+	l.PushString(string(body))
+	pushResponseHeader(l, resp.Header)
+	l.PushString(resp.Status)
+	return 4
+}
+
+func prepareRequest(l *lua.State) (*http.Request, error) {
 	var (
 		reqMethod  = http.MethodGet
 		reqURL     string
@@ -71,16 +93,7 @@ func httpRequest(l *lua.State) int {
 	req, err := http.NewRequest(reqMethod, reqURL, reqBody)
 	check(l, err)
 	requestAddHeader(reqHeaders, req)
-	resp, err := http.DefaultClient.Do(req)
-	check(l, err)
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(resp.Body)
-	check(l, err)
-	l.PushInteger(resp.StatusCode)
-	l.PushString(string(body))
-	pushResponseHeader(l, resp.Header)
-	l.PushString(resp.Status)
-	return 4
+	return req, err
 }
 
 // requestAddHeader add headers to request. each table value can be single a string or array(table) of strings
