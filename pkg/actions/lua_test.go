@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -105,55 +107,139 @@ func TestLuaRun(t *testing.T) {
 }
 
 func TestLuaRun_NetHttp(t *testing.T) {
-	content := "hello-" + nanoid.Must(20)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, content)
+		codeVal := r.URL.Query().Get("code")
+		statusCode, _ := strconv.Atoi(codeVal)
+		if statusCode != 0 {
+			w.WriteHeader(statusCode)
+		}
+		_, _ = fmt.Fprint(w, "hello-"+r.Method)
+		body, _ := io.ReadAll(r.Body)
+		if len(body) > 0 {
+			_, _ = w.Write([]byte{' '})
+			_, _ = w.Write(body)
+		}
 	}))
 	defer ts.Close()
 
-	h, err := actions.NewLuaHook(
-		actions.ActionHook{
-			ID:   "myLuaHook",
-			Type: actions.HookTypeLua,
-			Properties: map[string]interface{}{
-				"script": `
-local http = require("net/http")
+	tests := []struct {
+		Name     string
+		Script   string
+		Expected string
+	}{
+		{
+			Name: "simple_get",
+			Script: `local http = require("net/http")
 local code, body, headers, status = http.request("` + ts.URL + `")
 print(code .. " " .. body .. " " .. status)
 `,
-			},
+			Expected: "200 hello-GET 200 OK",
 		},
-		&actions.Action{},
-		testActionConfig,
-		nil)
-	if err != nil {
-		t.Fatalf("unexpedcted error: %v", err)
-	}
-	out := &bytes.Buffer{}
-	ctx := auth.WithUser(context.Background(), &model.User{
-		Username: "user1",
-	})
-	err = h.Run(ctx, graveler.HookRecord{
-		RunID:            "abc123",
-		EventType:        graveler.EventTypePreCreateBranch,
-		RepositoryID:     "example123",
-		StorageNamespace: "local://foo/bar",
-		SourceRef:        "abc123",
-		BranchID:         "my-branch",
-		Commit: graveler.Commit{
-			Version: 1,
+		{
+			Name: "simple_post",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("` + ts.URL + `", "name=value")
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-POST name=value 200 OK",
 		},
-		CommitID: "123456789",
-		PreRunID: "3498032432",
-		TagID:    "",
-	}, out)
-	if err != nil {
-		t.Fatalf("unexpected error running hook: %v", err)
+		{
+			Name: "simple_get_404",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("` + ts.URL + `/?code=404")
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "404 hello-GET 404 Not Found",
+		},
+		{
+			Name: "table_get",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `",
+	method="GET",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-GET 200 OK",
+		},
+		{
+			Name: "table_post",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `",
+	body="name=value",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-POST name=value 200 OK",
+		},
+		{
+			Name: "table_post_method",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `",
+	method="POST",
+	body="name=value",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-POST name=value 200 OK",
+		},
+		{
+			Name: "table_get_404",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `/?code=404",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "404 hello-GET 404 Not Found",
+		},
 	}
-	output := out.String()
-	expected := "200 " + content + " 200 OK"
-	if !strings.Contains(output, expected) {
-		t.Fatalf("expected output\n%s\n------- got\n%s-------", expected, output)
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			h, err := actions.NewLuaHook(
+				actions.ActionHook{
+					ID:   "myLuaHook",
+					Type: actions.HookTypeLua,
+					Properties: map[string]interface{}{
+						"script": tt.Script,
+					},
+				},
+				&actions.Action{},
+				testActionConfig,
+				nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			out := &bytes.Buffer{}
+			ctx := auth.WithUser(context.Background(), &model.User{
+				Username: "user1",
+			})
+			runID := nanoid.Must(20)
+			err = h.Run(ctx, graveler.HookRecord{
+				RunID:            runID,
+				EventType:        graveler.EventTypePreCreateBranch,
+				RepositoryID:     "example123",
+				StorageNamespace: "local://foo/bar",
+				SourceRef:        "abc123",
+				BranchID:         "my-branch",
+				Commit: graveler.Commit{
+					Version: 1,
+				},
+				CommitID: "123456789",
+				PreRunID: "3498032432",
+				TagID:    "",
+			}, out)
+			if err != nil {
+				t.Fatalf("unexpected error running hook: %v", err)
+			}
+			output := out.String()
+			if !strings.Contains(output, tt.Expected) {
+				t.Fatalf("expected output\n%s\n------- got\n%s-------", tt.Expected, output)
+			}
+		})
 	}
 }
 

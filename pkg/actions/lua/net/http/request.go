@@ -24,8 +24,9 @@ var httpLibrary = []lua.RegistryFunction{
 
 // httpRequest - perform http request
 //
-//		Accepts arguments (url, body) or table with url, method, body, headers. Value for url is required. method is by default GET.
-//	 Returns code, body, headers, status.
+//	Accepts arguments (url, body) or table with url, method, body, headers. Value for url is required.
+//		method is by default GET or POST in case body is set.
+//	Returns code, body, headers, status.
 func httpRequest(l *lua.State) int {
 	var (
 		reqMethod  = http.MethodGet
@@ -35,24 +36,26 @@ func httpRequest(l *lua.State) int {
 	)
 	switch l.TypeOf(1) {
 	case lua.TypeString:
+		// url and optional body
 		reqURL = lua.CheckString(l, 1)
-		// get optional body as string
 		if s, ok := l.ToString(2); ok {
 			reqBody = strings.NewReader(s)
+			reqMethod = http.MethodPost
 		}
 	case lua.TypeTable:
-		// extract request params from table
+		// extract request parameters from table
 		value, err := util.PullTable(l, 1)
 		check(l, err)
 		tbl := value.(map[string]interface{})
 		if s, ok := tbl["url"].(string); ok {
 			reqURL = s
 		}
-		if s, ok := tbl["method"].(string); ok {
-			reqMethod = s
-		}
 		if s, ok := tbl["body"].(string); ok {
 			reqBody = strings.NewReader(s)
+			reqMethod = http.MethodPost
+		}
+		if s, ok := tbl["method"].(string); ok {
+			reqMethod = s
 		}
 		if m, ok := tbl["headers"].(map[string]interface{}); ok {
 			reqHeaders = m
