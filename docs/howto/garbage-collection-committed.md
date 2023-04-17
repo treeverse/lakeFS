@@ -136,6 +136,9 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   </div>
 
   <div markdown="1" id="azure-option">
+
+   If you want to access your storage using the account key:
+
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
   --packages org.apache.hadoop:hadoop-aws:3.2.1 \
@@ -147,10 +150,28 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   example-repo
   ```
 
+   Or, if you want to access your storage using an Azure service principal:
+
+  ```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  --packages org.apache.hadoop:hadoop-aws:3.2.1 \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+  -c spark.hadoop.fs.azure.account.auth.type.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=OAuth \
+  -c spark.hadoop.fs.azure.account.oauth.provider.type.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider \
+  -c spark.hadoop.fs.azure.account.oauth2.client.id.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<application-id> \
+  -c spark.hadoop.fs.azure.account.oauth2.client.secret.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<service-credential-key> \
+  -c spark.hadoop.fs.azure.account.oauth2.client.endpoint.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=https://login.microsoftonline.com/<directory-id>/oauth2/token \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  example-repo
+  ```
+
 **Notes:**
 * On Azure, GC was tested only on Spark 3.3.0, but may work with other Spark and Hadoop versions.
 * In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
 * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
+</div>
 </div>
 
 You will find the list of objects hard-deleted by the job in the storage
