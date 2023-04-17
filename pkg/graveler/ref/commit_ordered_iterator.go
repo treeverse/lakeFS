@@ -105,7 +105,7 @@ func (i *OrderedCommitIterator) Close() {
 	}
 }
 
-// getAllFirstParents returns a set of all commits that are not a first parent of other commit in the given repository.
+// getAllFirstParents returns a set of all commits following the first parent for a given repository.
 func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (map[string]bool, error) {
 	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.CommitData{}).ProtoReflect().Type(),
 		graveler.RepoPartition(repo),
@@ -119,11 +119,12 @@ func getAllFirstParents(ctx context.Context, store kv.Store, repo *graveler.Repo
 		entry := it.Entry()
 		commit := entry.Value.(*graveler.CommitData)
 		if len(commit.Parents) > 0 {
+			parentNo := 0
 			if graveler.CommitVersion(commit.Version) < graveler.CommitVersionParentSwitch && len(commit.Parents) > 1 {
-				firstParents[commit.Parents[1]] = true
-			} else {
-				firstParents[commit.Parents[0]] = true
+				parentNo = 1
 			}
+			parent := commit.Parents[parentNo]
+			firstParents[parent] = true
 		}
 	}
 	return firstParents, nil
