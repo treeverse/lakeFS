@@ -28,7 +28,7 @@ var httpLibrary = []lua.RegistryFunction{
 // httpRequest - perform http request
 //
 //	Accepts arguments (url, body) or table with url, method, body, headers. Value for url is required.
-//		method is by default GET or POST in case body is set.
+//	The `method` is by default GET or POST in case body is set.
 //	Returns code, body, headers, status.
 func httpRequest(l *lua.State) int {
 	req := prepareRequest(l)
