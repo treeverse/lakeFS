@@ -320,7 +320,7 @@ Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: 
 ### `net/http` (optional)
 
 Provides a `request` function that performs an HTTP request.
-Note that this package is not enabled by default for security reasons. It enables http request coming out from lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](../reference/configuration.md).
+For security reasons, this package is not available by default. This enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](../reference/configuration.md).
 
 ```lua
 http.request(url [, body])
