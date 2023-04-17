@@ -31,7 +31,7 @@ var httpLibrary = []lua.RegistryFunction{
 //		method is by default GET or POST in case body is set.
 //	Returns code, body, headers, status.
 func httpRequest(l *lua.State) int {
-	req, err := prepareRequest(l)
+	req := prepareRequest(l)
 	client := http.Client{
 		Timeout: defaultRequestTimeout,
 	}
@@ -49,7 +49,7 @@ func httpRequest(l *lua.State) int {
 	return 4
 }
 
-func prepareRequest(l *lua.State) (*http.Request, error) {
+func prepareRequest(l *lua.State) *http.Request {
 	var (
 		reqMethod  = http.MethodGet
 		reqURL     string
@@ -93,7 +93,7 @@ func prepareRequest(l *lua.State) (*http.Request, error) {
 	req, err := http.NewRequest(reqMethod, reqURL, reqBody)
 	check(l, err)
 	requestAddHeader(reqHeaders, req)
-	return req, err
+	return req
 }
 
 // requestAddHeader add headers to request. each table value can be single a string or array(table) of strings
