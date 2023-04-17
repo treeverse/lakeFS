@@ -55,6 +55,9 @@ func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.22.0", []string{
 		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	domain := "azurite.test" // TLD for test
 	accountHost := accountName + "." + domain
@@ -65,14 +68,14 @@ func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	closer := func() {
 		err := dockerPool.Purge(resource)
 		if err != nil {
-			panic("could not kill postgres containerName")
+			panic("could not purge Azurite container: " + err.Error())
 		}
 	}
 
 	// expire, just to make sure
 	err = resource.Expire(azuriteContainerTimeoutSeconds)
 	if err != nil {
-		panic("could not expire Azurite container")
+		panic("could not expire Azurite container: " + err.Error())
 	}
 
 	// create connection and test container
