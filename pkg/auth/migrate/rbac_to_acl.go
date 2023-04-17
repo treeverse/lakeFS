@@ -245,16 +245,6 @@ func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*mode
 	if len(addedActions) > 0 {
 		warn = multierror.Append(warn, fmt.Errorf("%w: %s", ErrAddedActions, strings.Join(addedActions, ", ")))
 	}
-
-	if allRepositories {
-		acl.Repositories.All = true
-	} else {
-		rs := make([]string, 0, len(repositories))
-		for r := range repositories {
-			rs = append(rs, r)
-		}
-		acl.Repositories.List = rs
-	}
 	return acl, warn, err
 }
 

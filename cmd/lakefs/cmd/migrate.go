@@ -62,13 +62,7 @@ func mustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
 }
 
 func ReportACL(acl model.ACL) string {
-	ret := string(acl.Permission) + " on "
-	if acl.Repositories.All {
-		ret += "[ALL repositories]"
-	} else {
-		ret += strings.Join(acl.Repositories.List, ", ")
-	}
-	return ret
+	return string(acl.Permission) + " on [ALL repositories]"
 }
 
 func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, reallyUpdate bool, updateTime time.Time, printMessages bool) bool {
