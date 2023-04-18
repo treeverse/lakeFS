@@ -35,6 +35,13 @@ var (
 	ErrNilValue = errors.New("nil value")
 )
 
+type Config struct {
+	Enabled bool
+	Lua     struct {
+		NetHTTPEnabled bool
+	}
+}
+
 // StoreService is an implementation of actions.Service that saves
 // the run data to the blockstore and to the actions.Store (which is a
 // fancy name for a DB - kv style or postgres directly)
@@ -47,8 +54,7 @@ type StoreService struct {
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
 	stats    stats.Collector
-	runHooks bool
-
+	cfg      Config
 	endpoint *http.Server
 }
 
@@ -204,18 +210,18 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, runHooks bool) *StoreService {
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, cfg Config) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
 	return &StoreService{
-		Store:    store,
-		Source:   source,
-		Writer:   writer,
-		ctx:      ctx,
-		idGen:    idGen,
-		cancel:   cancel,
-		wg:       sync.WaitGroup{},
-		stats:    stats,
-		runHooks: runHooks,
+		Store:  store,
+		Source: source,
+		Writer: writer,
+		ctx:    ctx,
+		idGen:  idGen,
+		cancel: cancel,
+		wg:     sync.WaitGroup{},
+		stats:  stats,
+		cfg:    cfg,
 	}
 }
 
@@ -255,7 +261,7 @@ func (s *StoreService) asyncRun(ctx context.Context, record graveler.HookRecord)
 
 // Run load and run actions based on the event information
 func (s *StoreService) Run(ctx context.Context, record graveler.HookRecord) error {
-	if !s.runHooks {
+	if !s.cfg.Enabled {
 		logging.FromContext(ctx).WithField("record", record).Debug("Hooks are disabled, skipping hooks execution")
 		return nil
 	}
@@ -301,7 +307,7 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
 		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action, s.endpoint)
+			h, err := NewHook(hook, action, s.cfg, s.endpoint)
 			if err != nil {
 				return nil, err
 			}

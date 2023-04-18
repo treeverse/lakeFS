@@ -35,7 +35,8 @@ This reference uses `.` to denote the nesting of values.
 * `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
 * `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
-* `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed
+* `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed.
+* `actions.lua.net_http_enabled` `(bool : false)` - Setting this to true will load the `net/http` package.
 * ~~`database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use~~
 * ~~`database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database~~
 * ~~`database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool~~

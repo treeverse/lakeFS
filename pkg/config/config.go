@@ -108,6 +108,9 @@ type Config struct {
 	Actions struct {
 		// ActionsEnabled set to false will block any hook execution
 		Enabled bool `mapstructure:"enabled"`
+		Lua     struct {
+			NetHTTPEnabled bool `mapstructure:"net_http_enabled"`
+		} `mapstructure:"lua"`
 	}
 
 	Logging struct {
