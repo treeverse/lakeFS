@@ -1,36 +1,50 @@
 ---
 layout: default
-title: What is lakeFS
+title: lakeFS
 description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
 nav_order: 0
 redirect_from: /downloads.html
 ---
 
-## What is lakeFS
+# Welcome to the Lake! 
+
+<img src="/assets/img/waving-axolotl-transparent.gif" width="90"/>
+
 {: .no_toc }
 
-lakeFS brings software engineering best practices and applies them to data engineering. 
-Concepts such as Dev/Test environments and CI/CD are harder to implement in data engineering, since the data, and not just the code, should be managed.
-lakeFS provides version control over the data lake, and uses Git-like semantics to create and access those versions, so every engineer feels at home with lakeFS in a few minutes.
+**lakeFS brings software engineering best practices and applies them to data engineering.** 
+
+lakeFS provides version control over the data lake, and uses Git-like semantics to create and access those versions. If you know git, you'll be right at home with lakeFS.
+
+With lakeFS, you can use concepts on your data lake such as **branch** to create an isolated version of the data, **commit** to create a reproducible point in time, and **merge** in order to incorporate your changes in one atomic action.
+
+## How Do I Get Started? 
+
+**[The hands-on quickstart](/quickstart) guides you through some of core features of lakeFS**. 
+
+These include [branching](/quickstart/branch.html), [merging](quickstart/commit-and-merge.html), and [rolling back changes](quickstart/rollback.html) to data. 
+
+## Key lakeFS Features
+
+* It is format-agnostic.
+* It works with numerous data tools and platforms.
+* Your data stays in place.
+* It minimizes data duplication via a copy-on-write mechanism.
+* It maintains high performance over data lakes of any size.
+* It includes configurable garbage collection capabilities.
+* It is proven in production and has an active community.
+
+<img src="/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
+
+## How Does lakeFS Work With Other Tools? 
+
+lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and includes an S3 compatibility layer.
 
 <p class="center">
     <img src="assets/what_is.png"/>
 </p>
-<p class="center">
-<em>In this reference diagram, lakeFS enables Python applications and Spark jobs with Git-like operations such as branching, committing and rolling back</em>
-</p>
-
-With lakeFS, you can use concepts such as ״branch״ to create an isolated version of the data, ״commit״, to create a reproducible point it time, and “merge” in order to incorporate your changes in one atomic action.
-
-lakeFS is an open source project that supports managing data in  AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and even features an S3 compatibility layer.
-
-The vision of lakeFS is bringing this functionality across all the data sources in your data pipelines, from analytics databases to key value stores - and to allow one system from which you can easily manage the underlying data in all data stores, with atomic Git-like actions.
-
 
 {: .pb-5 }
-
-
-## How do I use lakeFS?
 
 lakeFS maintains compatibility with the S3 API to minimize adoption
 friction. You can use it as a drop-in replacement for S3 from the perspective of
@@ -50,21 +64,17 @@ df = spark.read.parquet("s3a://my-repo/main-branch/collections/foo/")
 
 You can use the same methods and syntax you are already using to read and write data when using a lakeFS repository. This simplifies the adoption of lakeFS - minimal changes are needed to get started, making further changes an incremental process.
 
-## Why is lakeFS the data solution you've been missing?
+## lakeFS is Git for Data
 
-Working with data in a lakeFS repository &mdash; as opposed to a bucket &mdash; enables simplified workflows when developing data lake pipelines.
+Git conquered the world of code because it had best supported engineering best practices required by developers, in particular:
 
-lakeFS performs all the following operations safely and efficiently:
+* Collaborate during development.
+* Develop and Test in isolation
+* Revert code repository to a sable version in case of an error
+* Reproduce and troubleshoot issues with a given version of the code
+* Continuously integrate and deploy new code (CI/CD)
 
-* **Copying objects between prefixes to promote new data.**
-* **Deleting specific objects to recover from data errors.**
-* **Maintaining auxilliary jobs that populate a development environment with data.**
-
-If you spend time performing any of these actions today, adopting lakeFS
-will speed up your development and deployment cycles, reduce the chance of
-incorrect data making it into production, and make recovery less painful if it does.
-
-Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
+lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive Git-like inetrface to easily manage their data like they manage code. Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
 
 * **branch:** a consistent copy of a repository, isolated from other branches and their changes. Initial creation of a branch is a metadata operation that does not duplicate objects.
 * **commit:** an immutable checkpoint containing a complete snapshot of a repository.
@@ -78,11 +88,11 @@ full list of commands.*
 
 Incorporating these operations into your data lake pipelines provides the same collaboration and organizational benefits you get when managing application code with source control.
 
-### The lakeFS promotion workflow
+### The lakeFS Promotion Workflow
 
 Here's how lakeFS *branches* and *merges* improve the universal process of updating collections with the latest data.
 
-<img src="{{ site.baseurl }}/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
+<img src="/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
 
 1. First, create a new **branch** from `main` to instantly generate a complete "copy" of your production data.
 2. Apply changes or make updates on the isolated branch to understand their impact prior to exposure.
@@ -90,11 +100,11 @@ Here's how lakeFS *branches* and *merges* improve the universal process of updat
 
 Following this pattern, lakeFS facilitates a streamlined data deployment workflow that consistently produces data assets you can have total confidence in.
 
-## What else does lakeFS do?
+## How Can lakeFS Help Me?
 
-lakeFS helps you maintain a tidy data lake in several other ways, including:
+lakeFS helps you maintain a tidy data lake in several ways, including:
 
-#### Recovery from data errors
+### Recovery from data errors
 
 Human error, misconfiguration, or wide-ranging systematic effects are
 unavoidable. When they do happen, erroneous data may make it into
@@ -110,9 +120,9 @@ in deletion or corruption events becomes an instant one-line operation with
 lakeFS: just identify a good historical commit, and then restore to it or
 copy from it.
 
-Reverting your data lake back to previous version using our command-line tool is explained [here](https://docs.lakefs.io/reference/commands.html#lakectl-branch-revert).
+Reverting your data lake back to previous version using our command-line tool is explained [here](/reference/commands.html#lakectl-branch-revert).
 
-#### Data reprocessing and backfills
+### Data reprocessing and backfills
 
 Occasionally, we might need to reprocess historical data. This can be due to several reasons:
 
@@ -123,7 +133,7 @@ This is tricky as it often involves huge volumes of historical data. In addition
 
 lakeFS allows you to manage the reprocess on an isolated branch before merging to ensure the reprocessed data is exposed atomically. It also allows you to easily access the different versions of reprocessed data using any tag or a historical commit ID.
 
-#### Cross-collection consistency guarantees
+### Multi-Table Transactions guarantees
 
 Data engineers typically need to implement custom logic in scripts to guarantee
 two or more data assets are updated synchronously. This logic often
@@ -133,9 +143,9 @@ implement this logic yourself.
 
 Instead, make updates to the desired data assets on a branch and then utilize a lakeFS merge to atomically expose the data to downstream consumers.
 
-To learn more about atomic cross-collection updates, check out [this video](https://www.youtube.com/watch?v=9OsjUvk5UJU) which describes the concept in more detail.
+To learn more about atomic cross-collection updates, check out [this video](https://www.youtube.com/watch?v=9OsjUvk5UJU) which describes the concept in more detail, along with [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/01-multi-table-transaction-consistency-deltalake-lakefs/lakeFS-DeltaLake-multi-table-transaction-consistency.ipynb).
 
-#### Troubleshooting production problems
+### Troubleshooting production problems
 
 Data engineers are often asked to validate the data. A user might report inconsistencies, question the accuracy, or simply report it to be incorrect. Since the data continuously changes, it is challenging to understand its state at the time of the error.
 
@@ -144,47 +154,18 @@ Once you implement a regular commit cadence in lakeFS, each commit represents an
 
 To learn more on how to access a specific historical commit in a repository, see our seminal post on [data reproducibility](https://lakefs.io/solving-data-reproducibility/).
 
-#### Establishing data quality guarantees
+### Establishing data quality guarantees
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
 With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
+## Downloads
 
-### Additional things you should know about lakeFS: 
-
-* It is format-agnostic.
-* Your data stays in place.
-* It minimizes data duplication via a copy-on-write mechanism.
-* It maintains high performance over data lakes of any size.
-* It includes configurable garbage collection capabilities.
-* It is highly available and production-ready.
-
-<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
-
-### Is lakeFS Git for Data?
-
-Git had conquered the world of code because it had best supported engineering best practices required by developers, mainly:
-
-* Collaborate during development.
-* Develop and Test in isolation
-* Revert code repository to a sable version in case of an error
-* Reproduce and troubleshoot issues with a given version of the code
-* Continuously integrate and deploy new code (CI/CD)
-
-lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive Git-like inetrface to easily manage their data like they manage code. Therefore, lakeFS can definitely be regarded as Git for data.
-
-### Downloads
-
-#### Binary Releases
+### Binary Releases
 
 Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
 
-#### Docker Images
+### Docker Images
 
 The official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="_blank" }
-
-
-### Next steps
-
-Get started and [set up lakeFS on your preferred cloud environemnt](https://docs.lakefs.io/deploy/)
