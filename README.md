@@ -1,7 +1,7 @@
 <p align="center">
   <img src="docs/assets/img/logo_large.png"/>
 </p>
-
+ 
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
 		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
