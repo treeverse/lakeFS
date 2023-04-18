@@ -1041,3 +1041,5 @@ img.quickstart {
 	border-color: black;
 	border-style: ridge;
 }
+
+a:not([class]) { text-decoration-color: inherit; }
