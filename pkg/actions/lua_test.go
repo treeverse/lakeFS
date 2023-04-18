@@ -176,7 +176,7 @@ func TestLuaRun_NetHttp(t *testing.T) {
 	tests := []struct {
 		Name        string
 		Script      string
-		ExpectError bool
+		ExpectedErr bool
 		Expected    string
 	}{
 		{
@@ -193,7 +193,8 @@ print(code .. " " .. body .. " " .. status)
 local code, body, headers, status = http.request("https://invalid.place.com")
 print(code .. " " .. body .. " " .. status)
 `,
-			Expected: "no such host",
+			ExpectedErr: true,
+			Expected:    "no such host",
 		},
 		{
 			Name: "simple_post",
@@ -299,7 +300,7 @@ print(code .. " " .. body .. " " .. status)
 				PreRunID: "3498032432",
 				TagID:    "",
 			}, out)
-			if tt.ExpectError {
+			if tt.ExpectedErr {
 				if err == nil {
 					t.Fatal("Expected error - got none.")
 				}
