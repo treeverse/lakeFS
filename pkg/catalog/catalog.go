@@ -1990,23 +1990,13 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-// CopyEntry copy entry information by using the block adapter to make a
-// copy of the data to a new physical address.
+// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
 func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, error) {
-	var (
-		entry    *DBEntry // set to the entry we created (shallow or copy)
-		srcEntry *DBEntry // in case we load entry from staging we can reuse on full-copy
-		err      error
-	)
-
 	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
 	// fetch src entry if needed - optimization in case we already have the entry
-	// get an entry if needed
-	if srcEntry == nil {
-		srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
-		if err != nil {
-			return nil, err
-		}
+	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
+	if err != nil {
+		return nil, err
 	}
 
 	// load repositories information for storage namespace
@@ -2043,14 +2033,13 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	if err != nil {
 		return nil, err
 	}
-	entry = &dstEntry
 
 	// create entry for the final copy
-	err = c.CreateEntry(ctx, destRepository, destBranch, *entry)
+	err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry)
 	if err != nil {
 		return nil, err
 	}
-	return entry, nil
+	return &dstEntry, nil
 }
 
 func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
