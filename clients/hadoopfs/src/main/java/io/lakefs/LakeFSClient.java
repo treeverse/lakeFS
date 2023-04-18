@@ -69,8 +69,6 @@ public class LakeFSClient {
         return configApi;
     }
 
-    public BranchesApi getBranches() { return branches; }
-
     public CounterInterceptor getInterceptor() {
         return interceptor;
     }
