@@ -195,7 +195,7 @@ var runCmd = &cobra.Command{
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 			idGen,
 			bufferedCollector,
-			cfg.Actions.Enabled,
+			actions.Config(cfg.Actions),
 		)
 
 		// wire actions into entry catalog

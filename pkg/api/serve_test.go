@@ -154,6 +154,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	testutil.MustDo(t, "build catalog", err)
 
 	// wire actions
+	actionsConfig := actions.Config{Enabled: true}
+	actionsConfig.Lua.NetHTTPEnabled = true
 	actionsService := actions.NewService(
 		ctx,
 		actionsStore,
@@ -161,7 +163,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
 		idGen,
 		collector,
-		true,
+		actionsConfig,
 	)
 
 	c.SetHooksHandler(actionsService)

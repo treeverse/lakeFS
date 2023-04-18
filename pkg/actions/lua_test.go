@@ -3,11 +3,17 @@ package actions_test
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -31,6 +37,14 @@ func TestNewLuaHook(t *testing.T) {
 			On:          nil,
 			Hooks:       nil,
 		},
+		actions.Config{
+			Enabled: true,
+			Lua: struct {
+				NetHTTPEnabled bool
+			}{
+				NetHTTPEnabled: true,
+			},
+		},
 		nil)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
@@ -52,6 +66,14 @@ func TestLuaRun(t *testing.T) {
 			Description: "",
 			On:          nil,
 			Hooks:       nil,
+		},
+		actions.Config{
+			Enabled: true,
+			Lua: struct {
+				NetHTTPEnabled bool
+			}{
+				NetHTTPEnabled: true,
+			},
 		},
 		nil)
 	if err != nil {
@@ -85,6 +107,216 @@ func TestLuaRun(t *testing.T) {
 	expected := "83650"
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output\n%s\n------- got\n%s-------", expected, output)
+	}
+}
+
+func TestLuaRun_NetHttpDisabled(t *testing.T) {
+	h, err := actions.NewLuaHook(
+		actions.ActionHook{
+			ID:          "myHook",
+			Type:        actions.HookTypeLua,
+			Description: "na",
+			Properties: map[string]interface{}{
+				"script": `local http = require("net/http")`,
+			},
+		},
+		&actions.Action{
+			Name:        "",
+			Description: "",
+			On:          nil,
+			Hooks:       nil,
+		},
+		actions.Config{Enabled: true},
+		nil)
+	if err != nil {
+		t.Errorf("unexpedcted error: %v", err)
+	}
+	out := &bytes.Buffer{}
+	ctx := context.Background()
+	ctx = auth.WithUser(ctx, &model.User{
+		CreatedAt: time.Time{},
+		Username:  "user1",
+	})
+	err = h.Run(ctx, graveler.HookRecord{
+		RunID:            "abc123",
+		EventType:        graveler.EventTypePreCreateBranch,
+		RepositoryID:     "example123",
+		StorageNamespace: "local://foo/bar",
+		SourceRef:        "abc123",
+		BranchID:         "my-branch",
+		Commit: graveler.Commit{
+			Version: 1,
+		},
+		CommitID: "123456789",
+		PreRunID: "3498032432",
+		TagID:    "",
+	}, out)
+	const expectedErr = "module 'net/http' not found"
+	if err == nil || !strings.Contains(err.Error(), expectedErr) {
+		t.Fatalf("Error=%v, expected: '%s'", err, expectedErr)
+	}
+}
+
+func TestLuaRun_NetHttp(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		codeVal := r.URL.Query().Get("code")
+		statusCode, _ := strconv.Atoi(codeVal)
+		if statusCode != 0 {
+			w.WriteHeader(statusCode)
+		}
+		_, _ = fmt.Fprint(w, "hello-"+r.Method)
+		body, _ := io.ReadAll(r.Body)
+		if len(body) > 0 {
+			_, _ = w.Write([]byte{' '})
+			_, _ = w.Write(body)
+		}
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		Name        string
+		Script      string
+		ExpectedErr bool
+		Expected    string
+	}{
+		{
+			Name: "simple_get",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("` + ts.URL + `")
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-GET 200 OK",
+		},
+		{
+			Name: "invalid_address",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("https://invalid.place.com")
+print(code .. " " .. body .. " " .. status)
+`,
+			ExpectedErr: true,
+			Expected:    "no such host",
+		},
+		{
+			Name: "simple_post",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("` + ts.URL + `", "name=value")
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-POST name=value 200 OK",
+		},
+		{
+			Name: "simple_get_404",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("` + ts.URL + `/?code=404")
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "404 hello-GET 404 Not Found",
+		},
+		{
+			Name: "table_get",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `",
+	method="GET",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-GET 200 OK",
+		},
+		{
+			Name: "table_post",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `",
+	body="name=value",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-POST name=value 200 OK",
+		},
+		{
+			Name: "table_post_method",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `",
+	method="POST",
+	body="name=value",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "200 hello-POST name=value 200 OK",
+		},
+		{
+			Name: "table_get_404",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request{
+	url="` + ts.URL + `/?code=404",
+}
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "404 hello-GET 404 Not Found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			h, err := actions.NewLuaHook(
+				actions.ActionHook{
+					ID:   "myLuaHook",
+					Type: actions.HookTypeLua,
+					Properties: map[string]interface{}{
+						"script": tt.Script,
+					},
+				},
+				&actions.Action{},
+				actions.Config{
+					Enabled: true,
+					Lua: struct {
+						NetHTTPEnabled bool
+					}{
+						NetHTTPEnabled: true,
+					},
+				},
+				nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			out := &bytes.Buffer{}
+			ctx := auth.WithUser(context.Background(), &model.User{
+				Username: "user1",
+			})
+			runID := nanoid.Must(20)
+			err = h.Run(ctx, graveler.HookRecord{
+				RunID:            runID,
+				EventType:        graveler.EventTypePreCreateBranch,
+				RepositoryID:     "example123",
+				StorageNamespace: "local://foo/bar",
+				SourceRef:        "abc123",
+				BranchID:         "my-branch",
+				Commit: graveler.Commit{
+					Version: 1,
+				},
+				CommitID: "123456789",
+				PreRunID: "3498032432",
+				TagID:    "",
+			}, out)
+			if tt.ExpectedErr {
+				if err == nil {
+					t.Fatal("Expected error - got none.")
+				}
+				if !strings.Contains(err.Error(), tt.Expected) {
+					t.Fatalf("Error '%s' expected to contain '%s'", err.Error(), tt.Expected)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error running hook: %v", err)
+			}
+			output := out.String()
+			if !strings.Contains(output, tt.Expected) {
+				t.Fatalf("expected output\n%s\n------- got\n%s-------", tt.Expected, output)
+			}
+		})
 	}
 }
 
@@ -149,6 +381,14 @@ func TestLuaRunTable(t *testing.T) {
 					Description: "",
 					On:          nil,
 					Hooks:       nil,
+				},
+				actions.Config{
+					Enabled: true,
+					Lua: struct {
+						NetHTTPEnabled bool
+					}{
+						NetHTTPEnabled: true,
+					},
 				},
 				nil)
 			if err != nil {

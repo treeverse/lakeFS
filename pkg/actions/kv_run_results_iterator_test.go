@@ -138,7 +138,7 @@ func createTestData(t *testing.T, ctx context.Context, kvStore kv.Store) (map[st
 	writer := mock.NewMockOutputWriter(ctrl)
 	mockStatsCollector := NewActionStatsMockCollector()
 	testSource := mock.NewMockSource(ctrl)
-	actionService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), testSource, writer, &TestDecreasingIDGenerator{num: math.MaxInt32}, &mockStatsCollector, false)
+	actionService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), testSource, writer, &TestDecreasingIDGenerator{num: math.MaxInt32}, &mockStatsCollector, actions.Config{})
 	msgIdx := 0
 	run := actions.RunResultData{
 		RunId:     "",

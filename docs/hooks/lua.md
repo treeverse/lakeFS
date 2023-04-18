@@ -317,6 +317,65 @@ The `value` string should be in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601
 
 Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: target="_blank" } in string representation.
 
+### `net/http` (optional)
+
+Provides a `request` function that performs an HTTP request.
+For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](../reference/configuration.md).
+Request will time out after 30 seconds.
+
+```lua
+http.request(url [, body])
+http.request{
+  url = string,
+  [method = string,]
+  [headers = header-table,]
+  [body = string,]
+}
+```
+
+Returns a code (number), body (string), headers (table) and status (string).
+
+ - code - status code number
+ - body - string with the response body
+ - headers - table with the response request headers (key/value or table of values)
+ - status - status code text
+
+The first form of the call will perform GET requests or POST requests if the body parameter is passed.
+
+The second form accepts a table and allows you to customize the request method and headers.
+
+
+Example of a GET request
+
+```lua
+local http = require("net/http")
+local code, body = http.request("https://example.com")
+if code == 200 then
+    print(body)
+else
+    print("Failed to get example.com - status code: " .. code)
+end
+
+```
+
+Example of a POST request
+
+```lua
+local http = require("net/http")
+local code, body = http.request{
+    url="https://httpbin.org/post",
+    method="POST",
+    body="custname=tester",
+    headers={["Content-Type"]="application/x-www-form-urlencoded"},
+}
+if code == 200 then
+    print(body)
+else
+    print("Failed to post data - status code: " .. code)
+end
+```
+
+
 ## Example Hooks
 
 This example will simply print out a JSON representation of the event that occurred:
