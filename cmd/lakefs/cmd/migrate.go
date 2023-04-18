@@ -80,10 +80,25 @@ func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		Warn    error
 	}
 	var groupReports []Warning
-
-	usersWithPolicies, err := auth_migrate.RBACToACL(ctx, authService, reallyUpdate, updateTime, func(groupID string, acl model.ACL, warn error) {
-		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
-	})
+	// handle migrate within ACLs
+	version, err := kv.GetDBSchemaVersion(ctx, kvStore)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to get KV version: %s\n", err)
+		os.Exit(1)
+	}
+	var usersWithPolicies []string
+	if version == kv.ACLMigrateVersion {
+		if reallyUpdate {
+			return true
+		} else {
+			_, _ = fmt.Fprintln(os.Stderr, "Migrating from previous version of ACL will leave repository level groups until the group is re-editted - prease run migrate again with --force flag or contact us")
+			os.Exit(1)
+		}
+	} else {
+		usersWithPolicies, err = auth_migrate.RBACToACL(ctx, authService, reallyUpdate, updateTime, func(groupID string, acl model.ACL, warn error) {
+			groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
+		})
+	}
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to upgrade RBAC policies to ACLs: %s\n", err)
 		os.Exit(1)
@@ -146,7 +161,6 @@ var upCmd = &cobra.Command{
 		force, _ := cmd.Flags().GetBool("force")
 
 		// -- This part contains the migration to ACL and will be removed in next version
-
 		// skip migrate to ACL for users with External authorizations
 		if cfg.IsAuthTypeAPI() {
 			fmt.Println("skipping ACL migration - external Authorization")
@@ -168,7 +182,7 @@ var upCmd = &cobra.Command{
 			migrateToACL(ctx, kvStore, cfg, logging.Default(), true, now, printMessages)
 		}
 
-		err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLMigrateVersion)
+		err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
 		if err != nil {
 			fmt.Println("migration succeeded - failed to upgrade version, to fix this re-run migration with --force")
 		}
