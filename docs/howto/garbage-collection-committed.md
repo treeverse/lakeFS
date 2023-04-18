@@ -206,7 +206,6 @@ gs://<STORAGE_NAMESPACE>/_lakefs/logs/gc/expired_addresses/
 ```
 
 Note that this is a path in your Google Storage bucket, and not in your lakeFS repository.
-
 For example, if your repository's underlying storage is `gs://example-bucket/example-path`, you will find the list in:
 ```
 gs://example-bucket/example-path/_lakefs/logs/gc/expired_addresses/dt=<TIMESTAMP>/
