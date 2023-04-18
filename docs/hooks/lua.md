@@ -340,8 +340,10 @@ Returns a code (number), body (string), headers (table) and status (string).
  - headers - table with the response request headers (key/value or table of values)
  - status - status code text
 
-The first form of the call will perform GET request or POST in case body passed to the request.
-The second form allows to customize the specific method and the request headers by passing a table with request information.
+The first form of the call will perform GET requests or POST requests if the body parameter is passed.
+
+The second form accepts a table and allows you to customize the request method and headers.
+
 
 Example of a GET request
 
