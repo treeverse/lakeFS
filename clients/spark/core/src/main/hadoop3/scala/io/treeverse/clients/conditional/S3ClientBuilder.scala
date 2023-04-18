@@ -1,9 +1,9 @@
 package io.treeverse.clients.conditional
 
 import com.amazonaws.ClientConfiguration
-import com.amazonaws.retry.RetryPolicy
+import com.amazonaws.retry.{PredefinedBackoffStrategies, RetryPolicy}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import io.treeverse.clients.S3RetryCondition
+import io.treeverse.clients.S3RetryDeleteObjectsCondition
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
@@ -16,8 +16,12 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
     import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
 
-    val retryPolicy = new RetryPolicy(new S3RetryCondition(), null, numRetries, true)
-    val configuration = new ClientConfiguration().withRetryPolicy(retryPolicy)
+    val backoffStrategy = new PredefinedBackoffStrategies.FullJitterBackoffStrategy(1000, 120000)
+    val retryPolicy = new RetryPolicy(new S3RetryDeleteObjectsCondition(), backoffStrategy, numRetries, true)
+    val configuration = new ClientConfiguration()
+      .withRetryPolicy(retryPolicy)
+      .withThrottledRetries(true)
+
     val s3Endpoint = hc.get(Constants.ENDPOINT, null)
 
     // TODO(ariels): Support different per-bucket configuration methods.
