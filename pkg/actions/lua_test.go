@@ -174,9 +174,10 @@ func TestLuaRun_NetHttp(t *testing.T) {
 	defer ts.Close()
 
 	tests := []struct {
-		Name     string
-		Script   string
-		Expected string
+		Name        string
+		Script      string
+		ExpectError bool
+		Expected    string
 	}{
 		{
 			Name: "simple_get",
@@ -185,6 +186,14 @@ local code, body, headers, status = http.request("` + ts.URL + `")
 print(code .. " " .. body .. " " .. status)
 `,
 			Expected: "200 hello-GET 200 OK",
+		},
+		{
+			Name: "invalid_address",
+			Script: `local http = require("net/http")
+local code, body, headers, status = http.request("https://invalid.place.com")
+print(code .. " " .. body .. " " .. status)
+`,
+			Expected: "no such host",
 		},
 		{
 			Name: "simple_post",
@@ -290,6 +299,15 @@ print(code .. " " .. body .. " " .. status)
 				PreRunID: "3498032432",
 				TagID:    "",
 			}, out)
+			if tt.ExpectError {
+				if err == nil {
+					t.Fatal("Expected error - got none.")
+				}
+				if !strings.Contains(err.Error(), tt.Expected) {
+					t.Fatalf("Error '%s' expected to contain '%s'", err.Error(), tt.Expected)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("unexpected error running hook: %v", err)
 			}
