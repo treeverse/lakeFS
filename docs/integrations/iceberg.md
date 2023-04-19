@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Iceberg
-description: This section describes lakeFS's Iceberg integration.
+description: lakeFS-Iceberg integration.
 parent: Integrations
 nav_order: 10000 # last! TODO: put this near the top once we fully support Iceberg :)
 has_children: false

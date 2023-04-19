@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Remote Authenticator
-description: This section covers lakeFS's remote authenticator architecture for integrating with existing security infrastructure
+description: Integrate lakeFS with your existing security infrastructure
 parent: Reference
 nav_order: 62
 has_children: false

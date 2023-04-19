@@ -77,6 +77,6 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
 
 The upgrade will detach every directly attached policy from users 
 
-Note that moving to `ACL` from `RBAC` may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
+Note that moving to ACL from RBAC may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).

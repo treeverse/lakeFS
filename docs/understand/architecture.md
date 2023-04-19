@@ -58,7 +58,7 @@ to lakeFS server(s) would do.
 
 ### S3 Gateway
 
-The S3 Gateway implements lakeFS's compatibility with S3. It implements a compatible subset of the S3 API to ensure most data systems can use lakeFS as a drop-in replacement for S3.
+The S3 Gateway is the layer in lakeFS responsible for the compatibility with S3. It implements a compatible subset of the S3 API to ensure most data systems can use lakeFS as a drop-in replacement for S3.
 
 See the [S3 API Reference](../reference/s3.md) section for information on supported API operations.
 

@@ -116,7 +116,7 @@ The [lakeFS Samples](https://github.com/treeverse/lakeFS-samples) GitHub reposit
 
 ## lakeFS Community
 
-lakeFS' community is important to us. Our **guiding principles** are: 
+The community is important to us. Our **guiding principles** are: 
 
 * Fully open, in code and conversation
 * We learn and grow together
@@ -124,7 +124,7 @@ lakeFS' community is important to us. Our **guiding principles** are:
 
 We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#say-hello`. Or just lurk and soak up the vibes 😎
 
-If you're interested in getting involved in lakeFS' development head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](/contributing.html) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help. 
+If you're interested in getting involved in the development of lakeFS, head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](/contributing.html) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help. 
 
 We love speaking at meetups and chatting to community members at them - you can find a list of these [here](https://lakefs.io/community/). 
 
