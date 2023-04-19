@@ -28,6 +28,9 @@ const (
 	tasksPrefix  = "tasks"
 	branchPrefix = "branches"
 	commitPrefix = "commits"
+
+	generalContinueOnErrorPropertyKey = "continue_on_error"
+	generalOnFailurePropertyKey       = "on_failure"
 )
 
 var (
@@ -59,14 +62,16 @@ type StoreService struct {
 }
 
 type Task struct {
-	RunID     string
-	HookRunID string
-	Action    *Action
-	HookID    string
-	Hook      Hook
-	Err       error
-	StartTime time.Time
-	EndTime   time.Time
+	RunID           string
+	HookRunID       string
+	Action          *Action
+	HookID          string
+	Hook            Hook
+	ContinueOnError bool
+	OnFailure       bool
+	Err             error
+	StartTime       time.Time
+	EndTime         time.Time
 }
 
 type RunResult struct {
@@ -311,12 +316,16 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 			if err != nil {
 				return nil, err
 			}
+			continueOnError, _ := hook.Properties[generalContinueOnErrorPropertyKey].(bool)
+			onFailure, _ := hook.Properties[generalOnFailurePropertyKey].(bool)
 			task := &Task{
-				RunID:     runID,
-				HookRunID: NewHookRunID(actionIdx, hookIdx),
-				Action:    action,
-				HookID:    hook.ID,
-				Hook:      h,
+				RunID:           runID,
+				HookRunID:       NewHookRunID(actionIdx, hookIdx),
+				Action:          action,
+				HookID:          hook.ID,
+				Hook:            h,
+				ContinueOnError: continueOnError,
+				OnFailure:       onFailure,
 			}
 			// append new task or chain to the last one based on the current action
 			actionTasks = append(actionTasks, task)
@@ -333,7 +342,14 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 	for _, actionTasks := range tasks {
 		actionTasks := actionTasks // pin
 		g.Go(func() error {
+			var actionErr error
 			for _, task := range actionTasks {
+				// skip tasks
+				//  - on error, just steps marked with on_failure
+				//  - no error, just tasks without on_failure
+				if (actionErr != nil) != task.OnFailure {
+					continue
+				}
 				hookOutputWriter := &HookOutputWriter{
 					Writer:           s.Writer,
 					StorageNamespace: record.StorageNamespace.String(),
@@ -342,9 +358,9 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 					ActionName:       task.Action.Name,
 					HookID:           task.HookID,
 				}
-				buf := bytes.Buffer{}
-				task.StartTime = time.Now().UTC()
 
+				task.StartTime = time.Now().UTC()
+				var buf bytes.Buffer
 				task.Err = task.Hook.Run(ctx, record, &buf)
 				task.EndTime = time.Now().UTC()
 
@@ -359,15 +375,21 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 
 				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
 				if err != nil {
+					// non task error - we stop the tasks processing
 					return fmt.Errorf("failed to write action log. Run id '%s' action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, err)
 				}
-				if task.Err != nil {
-					// stop execution of tasks and return error
-					return task.Err
+
+				// stop execution if needed - keep using lastErr for return value.
+				// we do not return here as we like to process all the steps
+				if !task.ContinueOnError && task.Err != nil {
+					// capture the first error
+					if actionErr == nil {
+						actionErr = task.Err
+					}
 				}
 			}
-			return nil
+			return actionErr
 		})
 	}
 	return g.Wait().ErrorOrNil()
