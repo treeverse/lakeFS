@@ -13,7 +13,6 @@ Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/ac
 - Lua optional net http request (#5679)
 - bisect lakectl support (#5381)
 - Migrate up to ACL if there are no warning (#5657)
-- bisect lakectl support (#5381)
 - Remove Repositories from ACL (#5680))
 - Reduce listObjects calls and amount (#5683)
 - Write expired addresses once (#5631)
