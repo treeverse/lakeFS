@@ -1,7 +1,10 @@
 # Changelog
 
 ## _Upcoming_
+
+## 0.1.14
 * Fix bug #5603: fix issues with Delta tables on Databricks 9.1 ML.
+* Reduce listObjects calls and results amount (#5683) 
 
 ## 0.1.13
 
