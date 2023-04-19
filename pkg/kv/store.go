@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	InitialMigrateVersion = 1
-	ACLMigrateVersion     = 2
-	PathDelimiter         = "/"
-	MetadataPartitionKey  = "kv-internal-metadata"
+	InitialMigrateVersion    = 1
+	ACLMigrateVersion        = 2
+	ACLNoReposMigrateVersion = 3
+	PathDelimiter            = "/"
+	MetadataPartitionKey     = "kv-internal-metadata"
 )
 
 var (

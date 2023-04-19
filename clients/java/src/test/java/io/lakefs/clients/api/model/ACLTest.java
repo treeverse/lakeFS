@@ -21,8 +21,6 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,22 +46,6 @@ public class ACLTest {
     @Test
     public void permissionTest() {
         // TODO: test permission
-    }
-
-    /**
-     * Test the property 'allRepositories'
-     */
-    @Test
-    public void allRepositoriesTest() {
-        // TODO: test allRepositories
-    }
-
-    /**
-     * Test the property 'repositories'
-     */
-    @Test
-    public void repositoriesTest() {
-        // TODO: test repositories
     }
 
 }
