@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -599,4 +600,46 @@ func TestLakectlCherryPick(t *testing.T) {
 		RunCmdAndVerifyFailure(t, Lakectl()+" cherry-pick lakefs://"+repoName+"/"+branch1+" lakefs://"+repoName+"/"+branch2, false,
 			fmt.Sprintf("Branch: lakefs://%s/%s\nupdate branch: conflict found\n409 Conflict\n", repoName, branch2), nil)
 	})
+}
+
+func TestLakectlBisect(t *testing.T) {
+	SkipTestIfAskedTo(t)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
+	runCmd(t, r.Replace("{lakectl} repo create lakefs://{repo} {storage}"), false, false, nil)
+
+	// generate to test data
+	for i := 0; i < 5; i++ {
+		obj := fmt.Sprintf("file%d", i)
+		runCmd(t, r.Replace("{lakectl} fs upload -s files/ro_1k lakefs://{repo}/{branch}/")+obj, false, false, nil)
+		commit := fmt.Sprintf("commit%d", i)
+		runCmd(t, r.Replace("{lakectl} commit lakefs://{repo}/{branch} -m ")+commit, false, false, nil)
+	}
+	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} bisect good"), false,
+		"lakectl_bisect_good_invalid", vars)
+	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} bisect bad"), false,
+		"lakectl_bisect_bad_invalid", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect start lakefs://{repo}/{branch} lakefs://{repo}/{branch}~5"), false,
+		"lakectl_bisect_start", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect view"), false,
+		"lakectl_bisect_view1", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect good"), false,
+		"lakectl_bisect_good1", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect view"), false,
+		"lakectl_bisect_view2", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect log"), false,
+		"lakectl_bisect_log1", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect bad"), false,
+		"lakectl_bisect_bad1", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect log"), false,
+		"lakectl_bisect_log2", vars)
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect reset"), false,
+		"lakectl_bisect_reset", vars)
 }

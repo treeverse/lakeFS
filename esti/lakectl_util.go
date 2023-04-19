@@ -54,6 +54,7 @@ func Lakectl() string {
 }
 
 func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, error) {
+	t.Helper()
 	t.Logf("Run shell command '%s'", command)
 	// Assuming linux. Not sure if this is correct
 	cmd := exec.Command("/bin/sh", "-c", command)
@@ -164,7 +165,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, i
 	} else {
 		content, err := os.ReadFile(goldenFile)
 		if err != nil {
-			t.Fatal("Failed to read ", goldenFile, err)
+			t.Fatal("Failed to read", goldenFile, "-", err)
 		}
 		expected := sanitize(string(content), vars)
 		runCmdAndVerifyResult(t, cmd, expectFail, isTerminal, expected, vars)
@@ -192,6 +193,7 @@ func RunCmdAndVerifyFailure(t *testing.T, cmd string, isTerminal bool, expected 
 }
 
 func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map[string]string) string {
+	t.Helper()
 	result, err := runShellCommand(t, cmd, isTerminal)
 	if expectFail {
 		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
