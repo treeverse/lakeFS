@@ -31,7 +31,21 @@ For more information, see the [documentation](https://docs.lakefs.io).
 
 ## Getting Started
 
-**👉🏻 Head over to [the Quickstart](https://docs.lakefs.io/quickstart/) and follow the hands-on guide to jump right in!**
+You can spin up a standalone sandbox instance of lakeFS quickly under Docker by running the following:
+
+```bash
+docker run --pull always \
+		   --name lakefs \
+		   -p 8000:8000 \
+		   treeverse/lakefs:latest \
+		   run --local-settings
+```
+
+Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
+
+### Quickstart
+
+**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
 
 Make sure to also have a look at the [lakeFS samples](https://github.com/treeverse/lakeFS-samples). These are a rich resource of examples of end-to-end applications that you can build with lakeFS.
 
