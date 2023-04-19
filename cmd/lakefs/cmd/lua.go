@@ -28,7 +28,7 @@ var luaRunCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		l := lua.NewStateEx()
-		lualibs.OpenSafe(l, ctx, os.Stdout)
+		lualibs.OpenSafe(l, ctx, lualibs.OpenSafeConfig{NetHTTPEnabled: true}, os.Stdout)
 		luautil.DeepPush(l, args)
 		l.SetGlobal("args") // add cmd line args as lua args
 		if err := lua.DoFile(l, filename); err != nil {

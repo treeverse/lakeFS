@@ -348,7 +348,11 @@ func BaseOpen(buf io.StringWriter) glua.Function {
 	}
 }
 
-func OpenSafe(l *glua.State, ctx context.Context, buf io.StringWriter) {
+type OpenSafeConfig struct {
+	NetHTTPEnabled bool
+}
+
+func OpenSafe(l *glua.State, ctx context.Context, cfg OpenSafeConfig, buf io.StringWriter) {
 	// a thin version of the standard library that doesn't include 'io'
 	//  along with a set of globals that omit anything that loads something external or reaches out to OS.
 	libs := []glua.RegistryFunction{
@@ -367,6 +371,5 @@ func OpenSafe(l *glua.State, ctx context.Context, buf io.StringWriter) {
 
 	// utils adapted from goluago, skipping anything that allows network or storage access.
 	// additionally, the "goluago" namespace is removed from import tokens
-
-	Open(l, ctx)
+	Open(l, ctx, cfg)
 }

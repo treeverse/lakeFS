@@ -3,7 +3,7 @@ layout: default
 title: What is lakeFS
 description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
 nav_order: 0
-redirect_from: ./downloads.html
+redirect_from: /downloads.html
 ---
 
 ## What is lakeFS
@@ -11,7 +11,7 @@ redirect_from: ./downloads.html
 
 lakeFS brings software engineering best practices and applies them to data engineering. 
 Concepts such as Dev/Test environments and CI/CD are harder to implement in data engineering, since the data, and not just the code, should be managed.
-lakeFS provides version control over the data lake, and uses git-like semantics to create and access those versions, so every engineer feels at home with lakeFS in a few minutes.
+lakeFS provides version control over the data lake, and uses Git-like semantics to create and access those versions, so every engineer feels at home with lakeFS in a few minutes.
 
 <p class="center">
     <img src="assets/what_is.png"/>
@@ -24,7 +24,7 @@ With lakeFS, you can use concepts such as ״branch״ to create an isolated versi
 
 lakeFS is an open source project that supports managing data in  AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and even features an S3 compatibility layer.
 
-The vision of lakeFS is bringing this functionality across all the data sources in your data pipelines, from analytics databases to key value stores - and to allow one system from which you can easily manage the underlying data in all data stores, with atomic git-like actions.
+The vision of lakeFS is bringing this functionality across all the data sources in your data pipelines, from analytics databases to key value stores - and to allow one system from which you can easily manage the underlying data in all data stores, with atomic Git-like actions.
 
 
 {: .pb-5 }
@@ -172,7 +172,7 @@ Git had conquered the world of code because it had best supported engineering be
 * Reproduce and troubleshoot issues with a given version of the code
 * Continuously integrate and deploy new code (CI/CD)
 
-lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive git-like inetrface to easily manage their data like they manage code. Therefore, lakeFS can definitely be regarded as git for data.
+lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive Git-like inetrface to easily manage their data like they manage code. Therefore, lakeFS can definitely be regarded as Git for data.
 
 ### Downloads
 

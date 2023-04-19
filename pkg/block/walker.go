@@ -10,6 +10,7 @@ import (
 type Walker interface {
 	Walk(ctx context.Context, storageURI *url.URL, op WalkOptions, walkFn func(e ObjectStoreEntry) error) error
 	Marker() Mark
+	GetSkippedEntries() []ObjectStoreEntry
 }
 
 type ObjectStoreEntry struct {

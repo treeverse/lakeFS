@@ -6,7 +6,7 @@ parent: How-To
 nav_order: 40
 has_children: false
 redirect_from: 
-  - ../reference/export.html
+  - /reference/export.html
 ---
 
 # Exporting Data
@@ -72,7 +72,7 @@ Otherwise, add `spark.hadoop.fs.s3a.access.key` and `spark.hadoop.fs.s3a.secret.
 
 Spark export communicates with the lakeFS server.  Very large repositories
 may require increasing a read timeout.  If you run into timeout errors
-during communication from the Spark job to lakefs consider increasing these
+during communication from the Spark job to lakeFS consider increasing these
 timeouts:
 
 * Add `-c spark.hadoop.lakefs.api.read.timeout_seconds=TIMEOUT_IN_SECONDS`

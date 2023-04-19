@@ -6,7 +6,7 @@ parent: Understanding lakeFS
 nav_order: 60
 has_children: false
 redirect_from:
-    - ../reference/glossary.html
+    - /reference/glossary.html
     - /glossary.html
 ---
 
@@ -72,7 +72,7 @@ Every Git repository has the main branch (unless you take explicit steps to remo
 Where there is data, there is also metadata. lakeFS uses metadata to define schema, data types, data versions, relations to other datasets, etc. This helps to improve discoverability and manageability. lakeFS performs data versioning through metadata operations. 
 
 ### Merge
-lakeFS merge command, similar to git merge functionality, allows you to merge data branches. Once you commit data, you can review it and then merge the committed data into the target branch. A merge generates a commit on the target branch with all your changes. lakeFS guarantees atomic merges that are fast, given they don’t involve copying data. [Read More](../understand/model.html#merge).
+lakeFS merge command, similar to the Git merge functionality, allows you to merge data branches. Once you commit data, you can review it and then merge the committed data into the target branch. A merge generates a commit on the target branch with all your changes. lakeFS guarantees atomic merges that are fast, given they don’t involve copying data. [Read More](../understand/model.html#merge).
 
 ### Repository
 

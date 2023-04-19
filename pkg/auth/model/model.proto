@@ -22,11 +22,20 @@ message GroupData {
     string display_name = 2;
 }
 
+// message data model for model.ACL struct
+message ACLData {
+    string permission = 1;
+    bool all_repositories = 2 [deprecated = true];
+    repeated string repositories = 3 [deprecated = true];
+}
+
 // message data model for model.Policy struct
 message PolicyData {
     google.protobuf.Timestamp created_at = 1;
     string display_name = 2;
     repeated StatementData statements = 3;
+
+    ACLData acl = 4;
 }
 
 // message data model for model.Credential struct
@@ -50,3 +59,14 @@ message TokenData {
     google.protobuf.Timestamp expired_at = 2;
 }
 
+// message data model for repositories / all repositories in UI
+message RepositoriesData {
+    bool all = 1;
+    repeated string list = 2;
+}
+
+// message data model for UI structure
+message UIData {
+    string permission = 1;
+    RepositoriesData repositories = 2;
+}

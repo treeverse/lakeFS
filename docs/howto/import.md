@@ -6,7 +6,7 @@ parent: How-To
 nav_order: 10
 has_children: false
 redirect_from: 
-  - ../setup/import.html
+  - /setup/import.html
 ---
 
 # Import data into lakeFS
@@ -35,6 +35,7 @@ In addition, see the following storage provider specific instructions:
 <div markdown="1" id="aws-s3">
 
 ### AWS S3: Importing from public buckets
+{: .no_toc }
 
 lakeFS needs access to the imported location to first list the files to import and later read the files upon users request.
 
@@ -78,14 +79,12 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
 ### Azure Data Lake Gen2
+{: .no_toc }
 
-The following requirements and limitations apply when the import source is an ADLS Gen2 account:
-
-1. Import is supported only from a folder. Prefix import will not work.
-2. lakeFS requires a hint in the URL to understand that the provided account URL is ADLS Gen2
+lakeFS requires a hint in the import source URL to understand that the provided storage account is ADLS Gen2
 
 ```
-   For account URL:
+   For source account URL:
       https://<my-account>.core.windows.net/path/to/import/
 
    Please add the *adls* subdomain to the URL as follows:

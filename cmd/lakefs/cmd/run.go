@@ -57,6 +57,17 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
+var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to "external" without setting an external auth service`)
+
+func checkAuthModeSupport(cfg *config.Config) error {
+	switch {
+	case !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI():
+		return errSimplifiedOrExternalAuth
+	default:
+		return nil
+	}
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
@@ -109,6 +120,10 @@ var runCmd = &cobra.Command{
 
 		// initialize auth service
 		var authService auth.Service
+
+		if err := checkAuthModeSupport(cfg); err != nil {
+			logger.WithError(err).Fatal("Unsupported auth mode")
+		}
 		if cfg.IsAuthTypeAPI() {
 			var apiEmailer *email.Emailer
 			if !cfg.Auth.API.SupportsInvites {
@@ -180,7 +195,7 @@ var runCmd = &cobra.Command{
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 			idGen,
 			bufferedCollector,
-			cfg.Actions.Enabled,
+			actions.Config(cfg.Actions),
 		)
 
 		// wire actions into entry catalog

@@ -2,6 +2,46 @@
 
 ## UNRELEASED
 
+## v0.99.0
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
+
+:new: What's new:
+- Lua optional net http request (#5679)
+- bisect lakectl support (#5381)
+- Migrate up to ACL if there are no warning (#5657)
+- Remove Repositories from ACL (#5680))
+- Reduce listObjects calls and amount (#5683)
+- Write expired addresses once (#5631)
+- Add configuration for RBAC type in UI (#5656)
+- [GC] Partition and aggregate expired addresses more efficiently (#5618)
+
+- :bug: Bugs fixed:
+- Fix priority queue used by merge find base (#5668)
+
+## v0.98.0
+
+This release requires running database migration.
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+Please refer to this [upgrade documentation](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) for more information on the specific migration from RBAC to ACL
+
+
+:new: What's new:
+- change authorization from RBAC to ACL (#5338)
+- Notify new lakefs version in lakectl and Web UI (#5608)
+- Added code highlighting for markdown code blocks + prettier formatting (#5590)
+- Preview Build and Check links for any doc PRs (#5601)
+- Bump Java version in SBT (#5615)
+- Safer fs for config in HadoopFS (#5602)
+- Added support for Azure service principal (#5549)
+
+:bug: Bugs fixed:
+- Fix adls import (#5625)
+
 ## v0.97.5
 
 :bug: Bugs fixed:

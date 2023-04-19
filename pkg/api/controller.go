@@ -25,8 +25,10 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -564,6 +566,121 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
+	aclPolicyName := acl.ACLPolicyName(groupID)
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadGroupAction,
+					Resource: permissions.GroupArn(groupID),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadPolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "get_group_acl", r, "", "", "")
+	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
+		Amount: 2, //nolint:gomnd
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	var acl model.ACL
+	switch len(policies) {
+	case 0: // Blank ACL is valid and allows nothing
+		break
+	case 1:
+		acl = policies[0].ACL
+		if len(acl.Permission) == 0 {
+			c.Logger.
+				WithContext(ctx).
+				WithField("policy", fmt.Sprintf("%+v", policies[0])).
+				WithField("acl", fmt.Sprintf("%+v", acl)).
+				WithField("group", groupID).
+				Warn("Policy attached to group has no ACL")
+			response := NotFoundOrNoACL{
+				Message: "Policy attached to group has no ACL",
+				NoAcl:   swag.Bool(true),
+			}
+			writeResponse(w, r, http.StatusNotFound, response)
+			return
+		}
+	default:
+		c.Logger.
+			WithContext(ctx).
+			WithField("num_policies", len(policies)).
+			WithField("group", groupID).
+			Warn("Wrong number of policies found")
+		response := NotFoundOrNoACL{
+			Message: "Multiple policies attached to group - no ACL",
+			NoAcl:   swag.Bool(true),
+		}
+		writeResponse(w, r, http.StatusNotFound, response)
+		return
+	}
+
+	response := ACL{
+		Permission: string(acl.Permission),
+	}
+
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body SetGroupACLJSONRequestBody, groupID string) {
+	aclPolicyName := acl.ACLPolicyName(groupID)
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadGroupAction,
+					Resource: permissions.GroupArn(groupID),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.AttachPolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.UpdatePolicyAction,
+					Resource: permissions.PolicyArn(aclPolicyName),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "set_group_acl", r, "", "", "")
+
+	newACL := model.ACL{
+		Permission: model.ACLPermission(body.Permission),
+	}
+
+	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusCreated, nil)
+}
+
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupMembersParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -640,6 +757,10 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params ListGroupPoliciesParams) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadGroupAction,
@@ -693,6 +814,10 @@ func serializePolicy(p *model.Policy) Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -711,6 +836,10 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -730,6 +859,10 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params ListPoliciesParams) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ListPoliciesAction,
@@ -765,6 +898,10 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body CreatePolicyJSONRequestBody) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreatePolicyAction,
@@ -807,6 +944,10 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body C
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeletePolicyAction,
@@ -829,6 +970,10 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadPolicyAction,
@@ -853,6 +998,10 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body UpdatePolicyJSONRequestBody, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.UpdatePolicyAction,
@@ -1195,6 +1344,10 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params ListUserPoliciesParams) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadUserAction,
@@ -1236,6 +1389,10 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DetachPolicyAction,
@@ -1254,6 +1411,10 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
+	if c.Config.IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.AttachPolicyAction,
@@ -1956,7 +2117,14 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 	c.LogAction(ctx, "ingest_range", r, repository, "", "")
 
 	contToken := StringValue(body.ContinuationToken)
-	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, body.FromSourceURI, body.Prepend, body.After, contToken)
+	stagingToken := StringValue(body.StagingToken)
+	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
+		SourceURI:         body.FromSourceURI,
+		Prepend:           body.Prepend,
+		After:             body.After,
+		StagingToken:      stagingToken,
+		ContinuationToken: contToken,
+	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1973,6 +2141,7 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 			HasMore:           mark.HasMore,
 			ContinuationToken: &mark.ContinuationToken,
 			LastKey:           mark.LastKey,
+			StagingToken:      &mark.StagingToken,
 		},
 	})
 }
@@ -2007,6 +2176,25 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusCreated, MetaRangeCreationResponse{
 		Id: StringPtr(string(info.ID)),
 	})
+}
+
+func (c *Controller) UpdateBranchToken(w http.ResponseWriter, r *http.Request, body UpdateBranchTokenJSONRequestBody, repository, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action: permissions.WriteObjectAction,
+			// This API writes an entire staging area to a branch and therefore requires permission to write to the entire repository space
+			Resource: permissions.ObjectArn(repository, "*"),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "update_branch_token", r, repository, branch, "")
+	err := c.Catalog.UpdateBranchToken(ctx, repository, branch, body.StagingToken)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJSONRequestBody, repository, branch string, params CommitParams) {
@@ -3666,9 +3854,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	}
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = auth.CreateInitialAdminUser(ctx, c.Auth, c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
 	} else {
-		cred, err = auth.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -3991,7 +4179,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository, leftRef, rightRef string, params OtfDiffParams) {
 	ctx := r.Context()
 	user, _ := auth.GetUser(ctx)
-	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff\n", params.Type), r, repository, rightRef, leftRef)
+	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff", params.Type), r, repository, rightRef, leftRef)
 	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
 		Prefix: "",
 		After:  "",
@@ -4046,6 +4234,21 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 		return
 	}
 	writeResponse(w, r, http.StatusOK, buildOtfDiffListResponse(entries))
+}
+
+func (c *Controller) GetOtfDiffs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	c.LogAction(ctx, "get_otf_diffs", r, "", "", "")
+	diffTypes := c.otfDiffService.EnabledDiffs()
+	diffs := make([]DiffProperties, 0, len(diffTypes))
+	for _, diffType := range diffTypes {
+		diffs = append(diffs, DiffProperties{
+			Name: diffType,
+		})
+	}
+	writeResponse(w, r, http.StatusOK, OTFDiffs{
+		Diffs: &diffs,
+	})
 }
 
 func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) OtfDiffList {

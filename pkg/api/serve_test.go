@@ -126,6 +126,9 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
 	viper.Set("database.type", mem.DriverName)
+	// Fake external mode using the internal service (this only works in
+	// tests).
+	viper.Set("auth.ui_config.rbac", "external")
 
 	collector := &memCollector{}
 
@@ -151,6 +154,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	testutil.MustDo(t, "build catalog", err)
 
 	// wire actions
+	actionsConfig := actions.Config{Enabled: true}
+	actionsConfig.Lua.NetHTTPEnabled = true
 	actionsService := actions.NewService(
 		ctx,
 		actionsStore,
@@ -158,7 +163,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		catalog.NewActionsOutputWriter(c.BlockAdapter),
 		idGen,
 		collector,
-		true,
+		actionsConfig,
 	)
 
 	c.SetHooksHandler(actionsService)

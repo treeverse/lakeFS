@@ -5,7 +5,7 @@ description: This section explains how to query data from lakeFS branches in ser
 parent: Integrations
 nav_order: 60
 has_children: false
-redirect_from: ../using/glue_hive_metastore.html
+redirect_from: /using/glue_hive_metastore.html
 ---
 
 {% include toc.html %}

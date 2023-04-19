@@ -7,9 +7,9 @@ description: This section explains how versioning works in lakeFS.
 nav_order: 10
 has_children: false
 redirect_from: 
-  - ../architecture/data-model.html
-  - ../understand/data-model.html
-  - ../versioning-internals.html
+  - /understand/architecture/data-model.html
+  - /understand/understand/data-model.html
+  - /understand/versioning-internals.html
 --- 
 
 

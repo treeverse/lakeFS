@@ -6,6 +6,6 @@ nav_order: 50
 parent: Understanding lakeFS
 has_children: true
 redirect_from:
-    - ../branching/recommendations.html
-    - ../using_lakefs.html
+    - /branching/recommendations.html
+    - /using_lakefs.html
 ---

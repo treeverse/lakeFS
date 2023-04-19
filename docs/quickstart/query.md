@@ -12,7 +12,7 @@ previous: ["Launch the quickstart environment", "./launch.html"]
 
 The lakeFS server has been loaded with a sample parquet datafile. Fittingly enough for a piece of software to help users of data lakes, the `lakes.parquet` file holds data about lakes around the world. 
 
-You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in git against which you develop software code. 
+You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in Git against which you develop software code. 
 
 <img src="/assets/img/quickstart/repo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
 

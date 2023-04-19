@@ -24,9 +24,7 @@ Garbage collection rules in lakeFS define for how long to retain objects after t
 lakeFS provides a Spark program to hard-delete objects whose retention period has ended according to the GC rules.
 
 This program does not remove any commits: you will still be able to use commits containing hard-deleted objects,
-but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.
-
-At this point, lakeFS supports Garbage Collection only on S3 and Azure.  We have [concrete plans](https://github.com/treeverse/lakeFS/issues/3626) to extend the support to GCP.     
+but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status. 
 {: .note}
 
 [lakeFS Cloud](https://lakefs.cloud) users enjoy a managed Garbage Collection service, and do not need to run this Spark program.
@@ -98,6 +96,7 @@ The job will hard-delete objects that were deleted and whose retention period ha
     <li><a href="#aws-301-option">On AWS (Spark 3.0.1)</a></li>
     <li><a href="#aws-247-option">On AWS (Spark 2.x)</a></li>
     <li><a href="#azure-option">On Azure</a></li>
+    <li><a href="#gcp-option">On GCP</a></li>
   </ul>
   <div markdown="1" id="aws-option">
   ```bash
@@ -140,6 +139,9 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   </div>
 
   <div markdown="1" id="azure-option">
+
+   If you want to access your storage using the account key:
+
   ```bash
 spark-submit --class io.treeverse.clients.GarbageCollector \
   --packages org.apache.hadoop:hadoop-aws:3.2.1 \
@@ -151,10 +153,66 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   example-repo
   ```
 
+   Or, if you want to access your storage using an Azure service principal:
+
+  ```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  --packages org.apache.hadoop:hadoop-aws:3.2.1 \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+  -c spark.hadoop.fs.azure.account.auth.type.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=OAuth \
+  -c spark.hadoop.fs.azure.account.oauth.provider.type.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider \
+  -c spark.hadoop.fs.azure.account.oauth2.client.id.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<application-id> \
+  -c spark.hadoop.fs.azure.account.oauth2.client.secret.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<service-credential-key> \
+  -c spark.hadoop.fs.azure.account.oauth2.client.endpoint.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=https://login.microsoftonline.com/<directory-id>/oauth2/token \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  example-repo
+  ```
+
 **Notes:**
 * On Azure, GC was tested only on Spark 3.3.0, but may work with other Spark and Hadoop versions.
 * In case you don't have `hadoop-azure` package as part of your environment, you should add the package to your spark-submit with `--packages org.apache.hadoop:hadoop-azure:3.2.1`
 * For GC to work on Azure blob, [soft delete](https://docs.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview) should be disabled.
+</div>
+
+<div markdown="1" id="gcp-option">
+⚠️ At the moment, only the "mark" phase of the Garbage Collection is supported for GCP.
+That is, this program will output a list of expired objects, and you will have to delete them manually.
+We have [concrete plans](https://github.com/treeverse/lakeFS/issues/3626) to extend this support to actually delete the objects.
+{: .note .note-warning }
+
+```bash
+spark-submit --class io.treeverse.clients.GarbageCollector \
+  --jars https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar \
+  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
+  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
+  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
+  -c spark.hadoop.google.cloud.auth.service.account.enable=true \
+  -c spark.hadoop.google.cloud.auth.service.account.json.keyfile=<PATH_TO_JSON_KEYFILE> \
+  -c spark.hadoop.fs.gs.project.id=<GCP_PROJECT_ID> \
+  -c spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem \
+  -c spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS \
+  -c spark.hadoop.lakefs.gc.do_sweep=false  \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  example-repo
+```
+
+This program will not delete anything.
+Instead, it will find all the objects that are safe to delete and save a list containing all their keys, in Parquet format.
+The list will then be found under the path:
+```
+gs://<STORAGE_NAMESPACE>/_lakefs/logs/gc/expired_addresses/
+```
+
+Note that this is a path in your Google Storage bucket, and not in your lakeFS repository.
+For example, if your repository's underlying storage is `gs://example-bucket/example-path`, you will find the list in:
+```
+gs://example-bucket/example-path/_lakefs/logs/gc/expired_addresses/dt=<TIMESTAMP>/
+```
+
+You can now delete the objects appearing in the list from your Google Storage bucket.
+</div>
 </div>
 
 You will find the list of objects hard-deleted by the job in the storage
@@ -246,7 +304,7 @@ rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/ad
 #### Example
 {: .no_toc }
 
-The following of commands used to backup/resource a configured remote 'azure' (Azure blob storage) to access example repository storange namespace `https://lakefs.blob.core.windows.net/repo/example/`:
+The following of commands used to backup/resource a configured remote 'azure' (Azure blob storage) to access example repository storage namespace `https://lakefs.blob.core.windows.net/repo/example/`:
 
 ```shell
 # Backup

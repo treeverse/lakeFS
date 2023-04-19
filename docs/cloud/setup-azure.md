@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Setting up lakeFS Cloud on Azure
+title: On Azure
 description: A guide to setting up lakeFS Cloud on Azure
 parent: lakeFS Cloud
 has_children: false

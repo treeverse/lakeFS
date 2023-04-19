@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package pluginsTest;
-option go_package = "github.com/treeverse/lakefs/plugins";
+option go_package = "github.com/treeverse/lakefs/plugins/internal";
 
 enum Sound {
   PING = 0;

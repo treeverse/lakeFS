@@ -6,13 +6,13 @@ parent: Integrations
 nav_order: 10
 has_children: false
 redirect_from: 
-  - ../using/spark.html
-  - ../using/databricks.html
-  - ./databricks.html
-  - ./emr.html
-  - ../using/emr.html
-  - ./glue_etl.html
-  - ../using/glue_etl.html
+  - /integrations/databricks.html
+  - /integrations/emr.html
+  - /integrations/glue_etl.html
+  - /using/databricks.html
+  - /using/emr.html
+  - /using/glue_etl.html
+  - /using/spark.html
 ---
 
 # Using lakeFS with Spark
@@ -412,7 +412,7 @@ interact with your data on lakeFS.
 Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.13
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.14
   ```
 
   </div>
@@ -420,12 +420,12 @@ Add the package to your `spark-submit` command:
 In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
 ```
-io.lakefs:hadoop-lakefs-assembly:0.1.13
+io.lakefs:hadoop-lakefs-assembly:0.1.14
 ```
 
 Once installed, it should look something like this:
 
-![Databricks - Adding the lakeFS client Jar](../assets/img/databricks-install-package.png)
+![Databricks - Adding the lakeFS client Jar](/assets/img/databricks-install-package.png)
 
   </div>
 </div>
@@ -461,7 +461,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.13 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.14 \
               io.example.ExampleClass
 ```
   </div>
@@ -594,7 +594,7 @@ spark-shell --conf spark.hadoop.fs.access.mode=presigned \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.13 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.14 \
               io.example.ExampleClass
 ```
   </div>

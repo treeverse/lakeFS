@@ -6,8 +6,8 @@ description: This section provides a detailed sizing guide for deploying lakeFS.
 nav_order: 10000  # always last
 has_children: false
 redirect_from:
-    - ../architecture/sizing-guide.html
-    - ../understand/sizing-guide.html
+    - /architecture/sizing-guide.html
+    - /understand/sizing-guide.html
 ---
 # Sizing guide
 {: .no_toc }
@@ -15,7 +15,7 @@ redirect_from:
 
 {% include toc.html %}
 
-Note: For a scalable managed lakeFS service with guaranteed SLAs, try [lakeFS cloud](https://lakefs.cloud)
+Note: For a scalable managed lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
 
 ## System Requirements

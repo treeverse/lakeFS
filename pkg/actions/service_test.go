@@ -59,7 +59,9 @@ type getService func(t *testing.T, ctx context.Context, source actions.Source, w
 func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, runHooks)
+	cfg := actions.Config{Enabled: runHooks}
+	cfg.Lua.NetHTTPEnabled = true
+	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg)
 }
 
 func TestServiceRun(t *testing.T) {

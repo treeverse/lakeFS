@@ -5,7 +5,7 @@ description: This section covers how you can start using lakeFS with Apache Hive
 parent: Integrations
 nav_order: 140
 has_children: false
-redirect_from: ../using/hive.html
+redirect_from: /using/hive.html
 ---
 
 # Using lakeFS with Hive

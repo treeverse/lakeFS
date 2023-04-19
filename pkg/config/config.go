@@ -108,6 +108,9 @@ type Config struct {
 	Actions struct {
 		// ActionsEnabled set to false will block any hook execution
 		Enabled bool `mapstructure:"enabled"`
+		Lua     struct {
+			NetHTTPEnabled bool `mapstructure:"net_http_enabled"`
+		} `mapstructure:"lua"`
 	}
 
 	Logging struct {
@@ -615,6 +618,10 @@ func (c *Config) CommittedParams() committed.Params {
 		RangeSizeEntriesRaggedness: c.Committed.Permanent.RangeRaggednessEntries,
 		MaxUploaders:               c.Committed.LocalCache.MaxUploadersPerWriter,
 	}
+}
+
+func (c *Config) IsAuthUISimplified() bool {
+	return c.Auth.UIConfig.RBAC == "simplified"
 }
 
 func (c *Config) IsAuthTypeAPI() bool {

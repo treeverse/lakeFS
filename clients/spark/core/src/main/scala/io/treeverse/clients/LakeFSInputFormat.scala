@@ -95,7 +95,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
     // TODO(johnnyaug) should we cache this?
-    sstableReader = new SSTableReader(localFile.getAbsolutePath, companion)
+    sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
       val props = sstableReader.getProperties

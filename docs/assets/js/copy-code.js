@@ -13,5 +13,10 @@ $(() => {
         document.execCommand('copy');
         selection.removeAllRanges();
         document.body.removeChild(tempTextArea);
+        $(this).removeClass("fa-copy").removeClass("far").addClass("fa").addClass("fa-check");
+        const that = this;
+        setTimeout(function() {
+            $(that).addClass("fa-copy").addClass("far").removeClass("fa").removeClass("fa-check");
+        }, 300);
     });
 });

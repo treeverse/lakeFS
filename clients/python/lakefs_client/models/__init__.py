@@ -9,6 +9,7 @@
 # import sys
 # sys.setrecursionlimit(n)
 
+from lakefs_client.model.acl import ACL
 from lakefs_client.model.access_key_credentials import AccessKeyCredentials
 from lakefs_client.model.action_run import ActionRun
 from lakefs_client.model.action_run_list import ActionRunList
@@ -27,7 +28,9 @@ from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
+from lakefs_client.model.diff_properties import DiffProperties
 from lakefs_client.model.error import Error
+from lakefs_client.model.error_no_acl import ErrorNoACL
 from lakefs_client.model.find_merge_base_result import FindMergeBaseResult
 from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
@@ -51,6 +54,7 @@ from lakefs_client.model.merge_result_summary import MergeResultSummary
 from lakefs_client.model.meta_range_creation import MetaRangeCreation
 from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
 from lakefs_client.model.next_step import NextStep
+from lakefs_client.model.otf_diffs import OTFDiffs
 from lakefs_client.model.object_copy_creation import ObjectCopyCreation
 from lakefs_client.model.object_error import ObjectError
 from lakefs_client.model.object_error_list import ObjectErrorList
@@ -88,6 +92,7 @@ from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
+from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList

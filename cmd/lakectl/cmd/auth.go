@@ -40,10 +40,12 @@ Statements:
 var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
 ` + policyDetailsTemplate
 
+var permissionTemplate = "Group {{ .Group }}:{{ .Permission }}\n"
+
 var authCmd = &cobra.Command{
 	Use:   "auth [sub-command]",
 	Short: "Manage authentication and authorization",
-	Long:  "manage authentication and authorization including users, groups and policies",
+	Long:  "manage authentication and authorization including users, groups and ACLs",
 }
 
 var authUsers = &cobra.Command{
@@ -152,6 +154,7 @@ var authUsersGroupsList = &cobra.Command{
 var authUsersPolicies = &cobra.Command{
 	Use:   "policies",
 	Short: "Manage user policies",
+	Long:  "Manage user policies.  Requires an external authorization server with matching support.",
 }
 
 var authUsersPoliciesList = &cobra.Command{
@@ -444,6 +447,7 @@ var authGroupsRemoveMember = &cobra.Command{
 var authGroupsPolicies = &cobra.Command{
 	Use:   "policies",
 	Short: "Manage group policies",
+	Long:  "Manage group policies.  Requires an external authorization server with matching support.",
 }
 
 var authGroupsPoliciesList = &cobra.Command{
@@ -636,6 +640,45 @@ var authPoliciesDelete = &cobra.Command{
 	},
 }
 
+var aclGroupCmd = &cobra.Command{
+	Use:   "acl [sub-command]",
+	Short: "Manage ACLs",
+	Long:  "manage ACLs of groups",
+}
+
+var aclGroupACLGet = &cobra.Command{
+	Use:   "get",
+	Short: "Get ACL of group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		clt := getClient()
+
+		resp, err := clt.GetGroupACLWithResponse(cmd.Context(), id)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+
+		Write(permissionTemplate, struct{ Group, Permission string }{id, resp.JSON200.Permission})
+	},
+}
+
+var aclGroupACLSet = &cobra.Command{
+	Use:   "set",
+	Short: "Set ACL of group",
+	Long:  `Set ACL of group. permission will be attached to all repositories.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		permission, _ := cmd.Flags().GetString("permission")
+
+		clt := getClient()
+
+		acl := api.SetGroupACLJSONRequestBody{
+			Permission: permission,
+		}
+
+		resp, err := clt.SetGroupACL(cmd.Context(), id, acl)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+	},
+}
+
 func addPaginationFlags(cmd *cobra.Command) {
 	cmd.Flags().SortFlags = false
 	cmd.Flags().Int("amount", defaultAmountArgumentValue, "how many results to return")
@@ -735,11 +778,23 @@ func init() {
 	authGroupsPolicies.AddCommand(authGroupsPoliciesAttach)
 	authGroupsPolicies.AddCommand(authGroupsPoliciesDetach)
 
+	aclGroupACLGet.Flags().String("id", "", "Group identifier")
+	_ = aclGroupACLGet.MarkFlagRequired("id")
+
+	aclGroupACLSet.Flags().String("id", "", "Group identifier")
+	_ = aclGroupACLSet.MarkFlagRequired("id")
+	aclGroupACLSet.Flags().String("permission", "", `Permission, typically one of "Read", "Write", "Super" or "Admin"`)
+	_ = aclGroupACLSet.MarkFlagRequired("permission")
+
+	aclGroupCmd.AddCommand(aclGroupACLGet)
+	aclGroupCmd.AddCommand(aclGroupACLSet)
+
 	authGroups.AddCommand(authGroupsDelete)
 	authGroups.AddCommand(authGroupsCreate)
 	authGroups.AddCommand(authGroupsList)
 	authGroups.AddCommand(authGroupsMembers)
 	authGroups.AddCommand(authGroupsPolicies)
+	authGroups.AddCommand(aclGroupCmd)
 	authCmd.AddCommand(authGroups)
 
 	// policies

@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.clients.api.model.UpdateToken;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -68,6 +69,23 @@ public class StagingApiTest {
         String path = null;
         StagingMetadata stagingMetadata = null;
                 ObjectStats response = api.linkPhysicalAddress(repository, branch, path, stagingMetadata);
+        // TODO: test validations
+    }
+    
+    /**
+     * modify branch staging token
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void updateBranchTokenTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        UpdateToken updateToken = null;
+                api.updateBranchToken(repository, branch, updateToken);
         // TODO: test validations
     }
     

@@ -60,11 +60,11 @@ Upgrading the lakeFS version will require migrating to the new ACL authorization
 
 In order to run the migration run:
 ```
-lakefs migrate auth-acl
+lakefs migrate up
 ```
 
-The command defaults to dry-run. We recommend running the script only after running the dry-run and going over the warnings. 
-To apply the migration, re-run with the  `--yes`  flag
+The command will run the migration to ACL. The migration process might adjust the current authorization policies to fit ACL, in that case the command will not make any changes, only print warnings.  
+In case of warnings to apply the migration, re-run with the  `--force`  flag
 
 The upgrade will ensure that the 4 default groups exist, and modify existing groups to fit into the new ACLs model:
 -  When creating the 4 default global groups: if another group exists and has the desired name, upgrading will rename it by appending ".orig". So after upgrading the 4 default global groups exist, with these known names.
@@ -74,7 +74,9 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
     3. If any actions outside of "fs:" and manage own credentials are allowed, the group becomes an Admin group, a warning is printed, and no further changes apply.
     4. The upgrade script unifies repositories: If a resource applies to a set of repositories with a wildcard, permissions are unified to all repositories. Otherwise they apply to the list of all repositories, in all the policies.
     5. The upgrade script unifies actions: it selects the least permission of Read, Write, Super that contains all of the allowed actions.
-    
-Once you have completed the migration you should update the lakeFS server configuration for `auth.ui_config.RBAC` to `simplified`. Note that moving to `simplified` from `external` may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
+
+The upgrade will detach every directly attached policy from users 
+
+Note that moving to `ACL` from `RBAC` may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).

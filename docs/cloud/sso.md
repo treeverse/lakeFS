@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Single Sign On (SSO) for lakeFS Cloud
+title: Single Sign On (SSO)
 description: How to configure Single Sign On (SSO) for lakeFS Cloud.
 parent: lakeFS Cloud
 has_children: false

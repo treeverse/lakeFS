@@ -1537,6 +1537,88 @@ paths:
       tags:
       - auth
       x-accepts: application/json
+  /auth/groups/{groupId}/acl:
+    get:
+      operationId: getGroupACL
+      parameters:
+      - explode: false
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ACL'
+          description: ACL of group
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNoACL'
+          description: Group not found, or group found but has no ACL
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get ACL of group
+      tags:
+      - auth
+      x-accepts: application/json
+    post:
+      operationId: setGroupACL
+      parameters:
+      - explode: false
+        in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ACL'
+        required: true
+      responses:
+        "201":
+          description: ACL successfully changed
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: set ACL of group
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories:
     get:
       operationId: listRepositories
@@ -1720,6 +1802,33 @@ paths:
       summary: get repository
       tags:
       - repositories
+      x-accepts: application/json
+  /otf/diffs:
+    get:
+      operationId: getOtfDiffs
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OTFDiffs'
+          description: available Open Table Format diffs
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get the available Open Table Format diffs
+      tags:
+      - experimental
+      - otf diff
       x-accepts: application/json
   /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
     get:
@@ -3622,6 +3731,68 @@ paths:
       - import
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/update_token:
+    put:
+      operationId: updateBranchToken
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateToken'
+        required: true
+      responses:
+        "204":
+          description: branch updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: modify branch staging token
+      tags:
+      - staging
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
       operationId: deleteObject
@@ -5170,6 +5341,12 @@ components:
           schema:
             $ref: '#/components/schemas/inline_object'
   responses:
+    NotFoundOrNoACL:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorNoACL'
+      description: Group not found, or group found but has no ACL
     Unauthorized:
       content:
         application/json:
@@ -5243,6 +5420,7 @@ components:
     ImportPagination:
       example:
         continuation_token: continuation_token
+        staging_token: staging_token
         has_more: true
         last_key: last_key
       properties:
@@ -5254,6 +5432,9 @@ components:
           type: string
         last_key:
           description: Last object store key that was ingested.
+          type: string
+        staging_token:
+          description: Staging token for skipped objects during ingest
           type: string
       required:
       - has_more
@@ -5702,6 +5883,27 @@ components:
       required:
       - results
       type: object
+    DiffProperties:
+      example:
+        name: name
+      properties:
+        name:
+          type: string
+      required:
+      - name
+      type: object
+    OTFDiffs:
+      example:
+        diffs:
+        - name: name
+        - name: name
+      properties:
+        diffs:
+          items:
+            $ref: '#/components/schemas/DiffProperties'
+          type: array
+      title: A list of available Output Table Format diffs.
+      type: object
     ResetCreation:
       example:
         path: path
@@ -5967,6 +6169,17 @@ components:
           type: array
       required:
       - errors
+      type: object
+    ErrorNoACL:
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+        no_acl:
+          description: true if the group exists but has no ACL
+          type: boolean
+      required:
+      - message
       type: object
     User:
       example:
@@ -6449,6 +6662,18 @@ components:
       - pagination
       - results
       type: object
+    ACL:
+      example:
+        permission: permission
+      properties:
+        permission:
+          description: |
+            Permission level to give this ACL.  "Read", "Write", "Super" and
+            "Admin" are all supported.
+          type: string
+      required:
+      - permission
+      type: object
     StorageConfig:
       example:
         blockstore_namespace_example: blockstore_namespace_example
@@ -6800,6 +7025,7 @@ components:
       example:
         fromSourceURI: s3://my-bucket/production/collections/
         continuation_token: continuation_token
+        staging_token: staging_token
         prepend: collections/
         after: production/collections/some/file.parquet
       properties:
@@ -6819,6 +7045,10 @@ components:
         continuation_token:
           description: Opaque. Client should pass the continuation_token received
             from server to continue creation ranges from the same key.
+          type: string
+        staging_token:
+          description: Opaque. Client should pass staging_token if received from server
+            on previous request
           type: string
       required:
       - after
@@ -6862,6 +7092,7 @@ components:
       example:
         pagination:
           continuation_token: continuation_token
+          staging_token: staging_token
           has_more: true
           last_key: last_key
         range:
@@ -6905,6 +7136,15 @@ components:
         id:
           description: The id of the created metarange
           type: string
+      type: object
+    UpdateToken:
+      example:
+        staging_token: staging_token
+      properties:
+        staging_token:
+          type: string
+      required:
+      - staging_token
       type: object
     StatsEvent:
       example:

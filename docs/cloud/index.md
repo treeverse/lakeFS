@@ -1,7 +1,7 @@
 ---
 layout: default
 title: lakeFS Cloud
-description: This section includes lakeFS cloud documentation
+description: This section includes lakeFS Cloud documentation
 nav_order: 80
 has_children: true
 redirect_from: "/cloud.html"
@@ -51,10 +51,10 @@ flowchart TD
 ## Setting up lakeFS Cloud
 
 ### AWS
-Setting up lakeFS on AWS is fully automated through a self-service setup wizard.
+Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
 ### Azure
-Settuping up lakeFS Cloud on Azure is currently a manual process which will be automated in the future. For now, please follow [these instructions](./setup-azure.md).
+Please follow [these instructions](./setup-azure.md) to onboard to lakeFS Cloud on Azure.
 
 ### GCP
-Coming soon! [Click here](mailto:support@treeverse.io) to register your interest.
+Please [contact us](mailto:support@treeverse.io) for onboarding insructions.

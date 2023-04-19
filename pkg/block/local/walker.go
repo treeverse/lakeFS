@@ -185,3 +185,7 @@ func calcFileETag(ent block.ObjectStoreEntry) (string, error) {
 func (l *Walker) Marker() block.Mark {
 	return l.mark
 }
+
+func (l *Walker) GetSkippedEntries() []block.ObjectStoreEntry {
+	return nil
+}

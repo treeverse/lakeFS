@@ -28,7 +28,7 @@ const (
 	usersPrefix            = "users"
 	policiesPrefix         = "policies"
 	usersPoliciesPrefix    = "uPolicies"
-	usersCredentialsPrefix = "uCredentials" //#nosec G101 -- False positive: this is only a kv key prefix
+	usersCredentialsPrefix = "uCredentials" // #nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
 	expiredTokensPrefix    = "expiredTokens"
 	metadataPrefix         = "installation_metadata"
@@ -143,10 +143,17 @@ type DBGroup struct {
 	Group
 }
 
+type ACLPermission string
+
+type ACL struct {
+	Permission ACLPermission `json:"permission"`
+}
+
 type Policy struct {
 	CreatedAt   time.Time  `db:"created_at"`
 	DisplayName string     `db:"display_name" json:"display_name"`
 	Statement   Statements `db:"statement"`
+	ACL         ACL        `db:"acl" json:"acl,omitempty"`
 }
 
 type DBPolicy struct {
@@ -261,11 +268,17 @@ func ProtoFromGroup(g *Group) *GroupData {
 }
 
 func PolicyFromProto(pb *PolicyData) *Policy {
-	return &Policy{
+	policy := &Policy{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		Statement:   *statementsFromProto(pb.Statements),
 	}
+	if pb.Acl != nil {
+		policy.ACL = ACL{
+			Permission: ACLPermission(pb.Acl.Permission),
+		}
+	}
+	return policy
 }
 
 func ProtoFromPolicy(p *Policy) *PolicyData {
@@ -273,6 +286,9 @@ func ProtoFromPolicy(p *Policy) *PolicyData {
 		CreatedAt:   timestamppb.New(p.CreatedAt),
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
+		Acl: &ACLData{
+			Permission: string(p.ACL.Permission),
+		},
 	}
 }
 

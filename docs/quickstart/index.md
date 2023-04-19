@@ -6,21 +6,21 @@ has_children: true
 has_toc: false
 next: ["Launch the quickstart environment", "./launch.html"]
 redirect_from: 
-    - "./installing.html"
-    - "./try.html"
-    - "/quickstart.html"
-    - "./add_data.html"
-    - "./more_quickstart_options.html"
-    - "./repository.html"
-    - "./run.html"
-    - "./first_commit.html"
+  - /quickstart.html
+  - /quickstart/installing.html
+  - /quickstart/try.html
+  - /quickstart/add_data.html
+  - /quickstart/more_quickstart_options.html
+  - /quickstart/repository.html
+  - /quickstart/run.html
+  - /quickstart/first_commit.html
 ---
 
 # lakeFS Quickstart
 
 **Welcome to lakeFS 👋🏻**
 
-lakeFS provides a "git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
+lakeFS provides a "Git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
 
 This quickstart will introduce you to some of the core ideas in lakeFS and show what you can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in five short sections: 
 

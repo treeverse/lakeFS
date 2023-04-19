@@ -609,9 +609,15 @@ type Plumbing interface {
 	GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error)
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not flush all values to the range.
+	// Returns the created range info and in addition a list of records which were skipped due to out of order listing
+	// which might happen in Azure ADLS Gen2 listing
 	WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error)
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error)
+	// StageObject stages given object to stagingToken.
+	StageObject(ctx context.Context, stagingToken string, object ValueRecord) error
+	// UpdateBranchToken updates the given branch stagingToken
+	UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error
 }
 
 type Dumper interface {
@@ -1022,6 +1028,29 @@ func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord,
 
 func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error) {
 	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
+}
+
+func (g *Graveler) StageObject(ctx context.Context, stagingToken string, object ValueRecord) error {
+	return g.StagingManager.Set(ctx, StagingToken(stagingToken), object.Key, object.Value, false)
+}
+
+func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error {
+	err := g.RefManager.BranchUpdate(ctx, repository, BranchID(branchID), func(branch *Branch) (*Branch, error) {
+		isEmpty, err := g.isStagingEmpty(ctx, repository, branch)
+		if err != nil {
+			return nil, err
+		}
+		if !isEmpty {
+			return nil, fmt.Errorf("branch staging is not empty: %w", ErrDirtyBranch)
+		}
+		tokensToDrop := []StagingToken{branch.StagingToken}
+		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
+		g.dropTokens(ctx, tokensToDrop...)
+		branch.StagingToken = StagingToken(stagingToken)
+		branch.SealedTokens = make([]StagingToken, 0)
+		return branch, nil
+	})
+	return err
 }
 
 func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error) {

@@ -81,7 +81,7 @@ Normally this should not be needed.
 {: .no_toc }
 
 Garbage collection communicates with the lakeFS server.  Very large
-repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakefs consider increasing these timeouts:
+repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakeFS consider increasing these timeouts:
 
 * Add `-c spark.hadoop.lakefs.api.read.timeout_seconds=TIMEOUT_IN_SECONDS`
   (default 10) to allow lakeFS more time to respond to requests.
