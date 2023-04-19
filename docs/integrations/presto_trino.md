@@ -33,7 +33,7 @@ In the following examples, we set AWS credentials at runtime for clarity. In pro
 
 ### Configure the Hive connector
 
-Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the `hive` catalog, replacing `example.net:9083` with the correct host and port for your Hive Metastore Thrift service:
+Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the Hive catalog, replacing `example.net:9083` with the correct host and port for your Hive Metastore Thrift service:
 ```properties
 connector.name=hive-hadoop2
 hive.metastore.uri=thrift://example.net:9083
