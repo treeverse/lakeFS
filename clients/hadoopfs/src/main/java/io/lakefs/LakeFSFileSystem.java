@@ -609,7 +609,7 @@ public class LakeFSFileSystem extends FileSystem {
                 if (status.isDirectory() && status.isEmptyDirectory()) {
                     deleteHelper(objectLocation.toDirectory());
                 } else {
-                    // not an empty directory, so the parent ain't empty either
+                    // not an empty directory, so the parent cannot be empty either
                     break;
                 }
             } catch (IOException ignored) {
@@ -867,6 +867,9 @@ public class LakeFSFileSystem extends FileSystem {
         // number of objects so that it costs about the same to list that
         // many objects as it does to list 1.
         try {
+            // TODO(ariels,itaiad200): configure the "5" to the right value.
+            // "Right" being: the number of objects that costs about the same to list as 1.
+            // 5 is a good guess for now since that in DynamoDB backends listing 5 objects cost the same as 1.
             ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 5, "", objectLoc.getPath());
             List<ObjectStats> l = osl.getResults();
             if (l.isEmpty()) {
