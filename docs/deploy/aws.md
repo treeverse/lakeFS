@@ -214,10 +214,10 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    }
       ```
 
-      * Replace _[BUCKET_NAME]_, _[ACCOUNT_ID]_ and _[IAM_ROLE]_ with values relevant to your environment.
-      * _[BUCKET_NAME_AND_PREFIX]_ can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
+      * Replace `[BUCKET_NAME]`, `[ACCOUNT_ID]` and `[IAM_ROLE]` with values relevant to your environment.
+      * `[BUCKET_NAME_AND_PREFIX]` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
         This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace](../understand/model.md#repository)).
-      * lakeFS will try to assume the role _[IAM_ROLE]_.
+      * lakeFS will try to assume the role `[IAM_ROLE]`.
    </div>
    <div markdown="1" id="bucket-policy-minimal">
    This permission is useful if you are using the [lakeFS Hadoop FileSystem Spark integration](../integrations/spark.md#use-the-lakefs-hadoop-filesystem).
