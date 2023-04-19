@@ -1,0 +1,3 @@
+Repository: ${REPO}
+Bisecting: 0 commits left to test after this (roughly 1 steps)
+Current commit lakefs://${REPO}/<COMMIT_ID> commit4
