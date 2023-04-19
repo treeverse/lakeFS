@@ -544,7 +544,7 @@ Set ACL of group
 #### Synopsis
 {:.no_toc}
 
-Set ACL of group.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.
+Set ACL of group. permission will be attached to all repositories.
 
 ```
 lakectl auth groups acl set [flags]
@@ -554,11 +554,9 @@ lakectl auth groups acl set [flags]
 {:.no_toc}
 
 ```
-      --all-repositories       If set, allow all repositories (current and future)
-  -h, --help                   help for set
-      --id string              Group identifier
-      --permission string      Permission, typically one of "Reader", "Writer", "Super" or "Admin"
-      --repositories strings   List of specific repositories to allow for permission
+  -h, --help                help for set
+      --id string           Group identifier
+      --permission string   Permission, typically one of "Read", "Write", "Super" or "Admin"
 ```
 
 

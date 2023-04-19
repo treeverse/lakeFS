@@ -36,7 +36,7 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 		return fmt.Errorf("failed to setup KV store: %w", err)
 	}
 	if version < InitialMigrateVersion { // 0 In case of ErrNotFound
-		return SetDBSchemaVersion(ctx, kvStore, ACLMigrateVersion)
+		return SetDBSchemaVersion(ctx, kvStore, ACLNoReposMigrateVersion)
 	}
 	return nil
 }
@@ -54,8 +54,8 @@ func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 		logging.Default().Info("Migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration")
 		return 0, ErrMigrationRequired
 	}
-	if kvVersion < ACLMigrateVersion {
-		logging.Default().Info("Migration to ACL required. Did you migrate using version v0.98.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls")
+	if kvVersion < ACLNoReposMigrateVersion {
+		logging.Default().Info("Migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls")
 		return 0, ErrMigrationRequired
 	}
 

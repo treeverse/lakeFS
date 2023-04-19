@@ -33,29 +33,15 @@ var (
 	ErrBadACLPermission = fmt.Errorf("%w: Bad ACL permission", model.ErrValidationError)
 )
 
-func RepositoriesToARNs(repositories model.Repositories) []string {
-	if repositories.All {
-		// "*" always treated globally, no specific ARN.
-		return all
-	}
-	arns := make([]string, len(repositories.List))
-	for i, repo := range repositories.List {
-		arns[i] = permissions.RepoArn(repo) + "/*"
-	}
-	return arns
-}
-
 func ACLToStatement(acl model.ACL) (model.Statements, error) {
 	var (
 		statements model.Statements
 		err        error
 	)
 
-	repoARNs := RepositoriesToARNs(acl.Repositories)
-
 	switch acl.Permission {
 	case ACLRead:
-		statements, err = auth.MakeStatementForPolicyType("FSRead", repoARNs)
+		statements, err = auth.MakeStatementForPolicyType("FSRead", all)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
@@ -70,7 +56,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 		}
 		statements = append(append(statements, readConfigStatement...), ownCredentialsStatement...)
 	case ACLWrite:
-		statements, err = auth.MakeStatementForPolicyType("FSReadWrite", repoARNs)
+		statements, err = auth.MakeStatementForPolicyType("FSReadWrite", all)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
 		}
@@ -87,7 +73,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 
 		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
 	case ACLSuper:
-		statements, err = auth.MakeStatementForPolicyType("FSFullAccess", repoARNs)
+		statements, err = auth.MakeStatementForPolicyType("FSFullAccess", all)
 		if err != nil {
 			return nil, fmt.Errorf("%s: get FSFullAccess: %w", acl.Permission, ErrBadACLPermission)
 		}

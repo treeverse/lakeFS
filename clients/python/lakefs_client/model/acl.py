@@ -83,8 +83,6 @@ class ACL(ModelNormal):
         """
         return {
             'permission': (str,),  # noqa: E501
-            'all_repositories': (bool,),  # noqa: E501
-            'repositories': ([str],),  # noqa: E501
         }
 
     @cached_property
@@ -94,8 +92,6 @@ class ACL(ModelNormal):
 
     attribute_map = {
         'permission': 'permission',  # noqa: E501
-        'all_repositories': 'all_repositories',  # noqa: E501
-        'repositories': 'repositories',  # noqa: E501
     }
 
     read_only_vars = {
@@ -142,8 +138,6 @@ class ACL(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            all_repositories (bool): If true, this ACL applies to all repositories, including those added in future.  Permission \"Admin\" allows changing ACLs, so this is necessarily true for that permission. . [optional]  # noqa: E501
-            repositories ([str]): Apply this ACL only to these repositories.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -229,8 +223,6 @@ class ACL(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            all_repositories (bool): If true, this ACL applies to all repositories, including those added in future.  Permission \"Admin\" allows changing ACLs, so this is necessarily true for that permission. . [optional]  # noqa: E501
-            repositories ([str]): Apply this ACL only to these repositories.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

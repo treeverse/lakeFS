@@ -412,7 +412,7 @@ interact with your data on lakeFS.
 Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.13
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.14
   ```
 
   </div>
@@ -420,7 +420,7 @@ Add the package to your `spark-submit` command:
 In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
 ```
-io.lakefs:hadoop-lakefs-assembly:0.1.13
+io.lakefs:hadoop-lakefs-assembly:0.1.14
 ```
 
 Once installed, it should look something like this:
@@ -461,7 +461,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.13 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.14 \
               io.example.ExampleClass
 ```
   </div>
@@ -594,7 +594,7 @@ spark-shell --conf spark.hadoop.fs.access.mode=presigned \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.13 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.14 \
               io.example.ExampleClass
 ```
   </div>

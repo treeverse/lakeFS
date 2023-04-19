@@ -322,7 +322,7 @@ body {
 						color: $white;
 						margin: 0 0 0 20px;
 						padding: 18px;
-						border-radius: 2px;
+						border-radius: 6px;
 						background-color: $teal-green;
 						border: 2px solid $teal-green;
 						&:hover {
@@ -477,9 +477,19 @@ body {
 			}
 		}
 
-        .nav-version {
-            padding: 12px 40px 12px calc(100% - 290px);
-        }
+		.nav-version {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 12px 40px 12px calc(100% - 290px);
+			text-transform: none;
+
+			select {
+				height: 2em;
+				margin: 0 0 0 10px;
+				flex-grow: 1;
+			}
+		}
 
 		.search {
 			margin-top: 35px;
@@ -493,7 +503,7 @@ body {
 			.search-input {
 				background-color: $whitegrey;
 				border: 1px solid $border-grey;
-				border-radius: 4px;
+				border-radius: 6px;
 				color: $battleship-grey;
 				font-family: GalanoGrotesque-Medium;
 				&:focus,
@@ -725,7 +735,7 @@ footer {
 									}
 									.button {
 										.site-button {
-											border-radius: 2px;
+											border-radius: 6px;
 											border: solid 2px $teal-green;
 											background-color: $white;
 											color: $teal-green;
@@ -822,14 +832,11 @@ footer {
 	position: absolute;
 	right: 0.3em;
 }
-.copy-code-button:hover {
-	color: $teal-green;
-}
 
-.copy-code-button:active {
-	color: $white;
-}
 .copy-code-button {
+	&:hover{
+		color: $teal-green !important;
+	}
 	align-items: center;
 	justify-content: center;
 	border: none;
@@ -1042,5 +1049,7 @@ img.quickstart {
 }
 
 .note {
-	a:not([class]) { text-decoration-color: inherit; }
+	a:not([class]) {
+		text-decoration-color: inherit;
+	}
 }

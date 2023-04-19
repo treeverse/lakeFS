@@ -632,9 +632,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	response := ACL{
-		Permission:      string(acl.Permission),
-		AllRepositories: swag.Bool(acl.Repositories.All),
-		Repositories:    &acl.Repositories.List,
+		Permission: string(acl.Permission),
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -673,10 +671,6 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body Se
 
 	newACL := model.ACL{
 		Permission: model.ACLPermission(body.Permission),
-		Repositories: model.Repositories{
-			All:  swag.BoolValue(body.AllRepositories),
-			List: *body.Repositories,
-		},
 	}
 
 	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
