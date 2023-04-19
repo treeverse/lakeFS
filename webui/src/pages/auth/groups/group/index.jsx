@@ -4,7 +4,6 @@ import {Navigate, Route, Routes} from "react-router-dom";
 import {useRouter} from "../../../../lib/hooks/router";
 import GroupMembersPage from "./members";
 import GroupPoliciesPage from "./policies";
-import GroupACLPage from './acl';
 
 
 const GroupRedirect = ({ subPath }) => {
@@ -18,7 +17,6 @@ export default function GroupPage() {
         <Routes>
             <Route path="" element={<GroupRedirect subPath="/members"/>} />
             <Route path="members" element={<GroupMembersPage/>} />
-            <Route path="repositories" element={<GroupACLPage/>} />
             <Route path="policies" element={<GroupPoliciesPage/>} />
         </Routes>
     );

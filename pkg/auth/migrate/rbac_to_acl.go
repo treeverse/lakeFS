@@ -201,8 +201,6 @@ func NewACLsMigrator(svc auth.Service, doUpdate bool) *ACLsMigrator {
 func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*model.Policy) (acl *model.ACL, warn error, err error) {
 	warn = nil
 	acl = new(model.ACL)
-	repositories := make(map[string]struct{}, 0)
-	allRepositories := false
 
 	allAllowedActions := make(map[string]struct{})
 	for _, p := range policies {
@@ -225,35 +223,11 @@ func (mig *ACLsMigrator) NewACLForPolicies(ctx context.Context, policies []*mode
 			if BroaderPermission(sp, acl.Permission) {
 				acl.Permission = sp
 			}
-
-			added, all, w := mig.GetRepositories(s.Resource)
-			if w != nil {
-				warn = multierror.Append(warn, w)
-			}
-			if all {
-				allRepositories = true
-				repositories = nil
-			}
-			if !allRepositories {
-				for _, r := range added {
-					repositories[r] = struct{}{}
-				}
-			}
 		}
 	}
 	addedActions := mig.ComputeAddedActions(acl.Permission, allAllowedActions)
 	if len(addedActions) > 0 {
 		warn = multierror.Append(warn, fmt.Errorf("%w: %s", ErrAddedActions, strings.Join(addedActions, ", ")))
-	}
-
-	if allRepositories {
-		acl.Repositories.All = true
-	} else {
-		rs := make([]string, 0, len(repositories))
-		for r := range repositories {
-			rs = append(rs, r)
-		}
-		acl.Repositories.List = rs
 	}
 	return acl, warn, err
 }
@@ -372,64 +346,6 @@ func (mig *ACLsMigrator) ComputeAddedActions(permission model.ACLPermission, alr
 		addedActionsSlice = append(addedActionsSlice, action)
 	}
 	return addedActionsSlice
-}
-
-// GetRepositories returns the repositories to which resource refers, rounding
-// up.
-//
-//   - It ignores all ARNs except "arn:lakefs:fs:::repository/.
-//   - If an explicit repository is provided, it returns [repo], false, nil.
-//   - Otherwise, if _any_ wildcards appears in the repository, it returns no
-//     repo, true ("all"), and possibly a warning about widening resource.
-func (mig *ACLsMigrator) GetRepositories(resource string) ([]string, bool, error) {
-	const arnPrefix = "arn:lakefs:fs:::"
-
-	suffix := resource
-
-	if suffix == "*" {
-		return nil, true, nil
-	}
-
-	if !strings.HasPrefix(suffix, arnPrefix) {
-		return nil, false, nil
-	}
-	suffix = strings.TrimPrefix(suffix, arnPrefix)
-
-	if !strings.HasPrefix(suffix, "repository/") {
-		return nil, true, fmt.Errorf("%w: %s: no repository", ErrWidened, suffix)
-	}
-	suffix = strings.TrimPrefix(suffix, "repository/")
-
-	repo := suffix
-	index := strings.Index(suffix, "/")
-	if index != -1 {
-		repo = suffix[:index]
-	}
-
-	var widened []string
-
-	if idx := strings.Index(suffix, "/objects/"); idx != -1 {
-		widened = append(widened, fmt.Sprintf("path limitation \"%s\" dropped", suffix[idx:]))
-	}
-
-	var (
-		repos []string
-		all   bool
-	)
-
-	if !strings.ContainsAny(repo, "*?") {
-		repos = []string{repo}
-	} else {
-		if repo != "*" && !all {
-			widened = append(widened, "all repositories allowed")
-		}
-		all = true
-	}
-	if widened == nil {
-		return repos, all, nil
-	}
-	warn := fmt.Errorf("%w: %s: %s", ErrWidened, suffix, strings.Join(widened, " and "))
-	return repos, all, warn
 }
 
 // BroaderPermission returns true if a offers strictly more permissions that b.

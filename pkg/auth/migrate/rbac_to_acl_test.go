@@ -123,49 +123,6 @@ func TestComputePermission(t *testing.T) {
 	}
 }
 
-func TestGetRepositories(t *testing.T) {
-	tests := []struct {
-		Resource     string
-		Repositories []string
-		All          bool
-		Warn         error
-	}{
-		{Resource: "arn:lakefs:fs:::repository/foo", Repositories: []string{"foo"}},
-		{Resource: "arn:lakefs:fs:::repository/*", All: true},
-		{Resource: "arn:lakefs:fs:::*", All: true, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::quuxen", All: true, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/dev-*", All: true, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/dev-*/objects/a*", All: true, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/dev-?", All: true, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/foo/objects/", Repositories: []string{"foo"}, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/foo/objects/a*", Repositories: []string{"foo"}, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/foo/objects/a?", Repositories: []string{"foo"}, Warn: migrate.ErrWidened},
-		{Resource: "arn:lakefs:fs:::repository/*/objects/", All: true, Warn: migrate.ErrWidened},
-		{Resource: "*", All: true},
-	}
-
-	mig := migrate.NewACLsMigrator(nil, false)
-
-	for _, tt := range tests {
-		t.Run(tt.Resource, func(t *testing.T) {
-			repos, all, warn := mig.GetRepositories(tt.Resource)
-			if diffs := deep.Equal(repos, tt.Repositories); diffs != nil {
-				t.Errorf("Expected different repositories: %s", diffs)
-			}
-			if tt.All && !all {
-				t.Error("Did not get all repositories as expected")
-			} else if !tt.All && all {
-				t.Error("Got all repositories which was not expected")
-			}
-			if tt.Warn != nil && !errors.Is(warn, tt.Warn) {
-				t.Errorf("Got unexpected warning %s != %s", warn, tt.Warn)
-			} else if tt.Warn == nil && warn != nil {
-				t.Errorf("Got unexpected warning %s", warn)
-			}
-		})
-	}
-}
-
 func TestBroaderPermission(t *testing.T) {
 	perms := []model.ACLPermission{"", acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
 	for i, a := range perms {
@@ -230,29 +187,25 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 			Name:     "ExactlyFSFullAccess",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSFullAccess")},
 			ACL: model.ACL{
-				Permission:   acl.ACLSuper,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLSuper,
 			},
 		}, {
 			Name:     "GroupSuperUsers",
 			Policies: getPolicies(t, ctx, svc, "SuperUsers"),
 			ACL: model.ACL{
-				Permission:   acl.ACLSuper,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLSuper,
 			},
 		}, {
 			Name:     "ExactlyFSReadAll",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSReadAll")},
 			ACL: model.ACL{
-				Permission:   acl.ACLRead,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLRead,
 			},
 		}, {
 			Name:     "GroupViewers",
 			Policies: getPolicies(t, ctx, svc, "Viewers"),
 			ACL: model.ACL{
-				Permission:   acl.ACLRead,
-				Repositories: model.Repositories{All: true},
+				Permission: acl.ACLRead,
 			},
 		},
 	}

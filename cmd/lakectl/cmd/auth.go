@@ -657,49 +657,21 @@ var aclGroupACLGet = &cobra.Command{
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
 		Write(permissionTemplate, struct{ Group, Permission string }{id, resp.JSON200.Permission})
-		repositories := resp.JSON200.Repositories
-		if *resp.JSON200.AllRepositories {
-			Write("{{\"All repositories\" | red | bold}}\n", nil)
-		} else {
-			rows := make([][]interface{}, len(*repositories))
-			for i, r := range *repositories {
-				rows[i] = []interface{}{r}
-			}
-			pagination := api.Pagination{
-				HasMore:    false,
-				MaxPerPage: len(rows),
-				Results:    len(rows),
-			}
-			PrintTable(rows, []interface{}{"Repository"}, &pagination, len(rows))
-		}
 	},
 }
 
 var aclGroupACLSet = &cobra.Command{
 	Use:   "set",
 	Short: "Set ACL of group",
-	Long:  `Set ACL of group.  permission will be attached to all-repositories or to specified repositories.  You must specify exactly one of --all-repositories or --repositories.`,
+	Long:  `Set ACL of group. permission will be attached to all repositories.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		permission, _ := cmd.Flags().GetString("permission")
-		useAllRepositories, _ := cmd.Flags().GetBool("all-repositories")
-		useRepositories, _ := cmd.Flags().GetStringSlice("repositories")
-
-		if !useAllRepositories && len(useRepositories) == 0 {
-			DieFmt("Must specify exactly one of --all-repositories or --repositories")
-		}
 
 		clt := getClient()
 
-		repositories := make([]string, 0, len(useRepositories))
-		if !useAllRepositories {
-			repositories = useRepositories
-		}
-
 		acl := api.SetGroupACLJSONRequestBody{
-			Permission:      permission,
-			AllRepositories: &useAllRepositories,
-			Repositories:    &repositories,
+			Permission: permission,
 		}
 
 		resp, err := clt.SetGroupACL(cmd.Context(), id, acl)
@@ -811,10 +783,8 @@ func init() {
 
 	aclGroupACLSet.Flags().String("id", "", "Group identifier")
 	_ = aclGroupACLSet.MarkFlagRequired("id")
-	aclGroupACLSet.Flags().String("permission", "", `Permission, typically one of "Reader", "Writer", "Super" or "Admin"`)
+	aclGroupACLSet.Flags().String("permission", "", `Permission, typically one of "Read", "Write", "Super" or "Admin"`)
 	_ = aclGroupACLSet.MarkFlagRequired("permission")
-	aclGroupACLSet.Flags().Bool("all-repositories", false, "If set, allow all repositories (current and future)")
-	aclGroupACLSet.Flags().StringSlice("repositories", nil, "List of specific repositories to allow for permission")
 
 	aclGroupCmd.AddCommand(aclGroupACLGet)
 	aclGroupCmd.AddCommand(aclGroupACLSet)

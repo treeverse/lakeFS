@@ -602,9 +602,7 @@ func TestACL(t *testing.T) {
 	tests := []TestCase{
 		{
 			Name: "all repos",
-			ACL: model.ACL{
-				Repositories: model.Repositories{All: true},
-			},
+			ACL:  model.ACL{},
 			PermissionFrom: PermissionFrom{
 				acl.ACLRead: []permissions.Permission{
 					{Action: permissions.ReadObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},

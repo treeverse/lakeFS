@@ -25,8 +25,8 @@ message GroupData {
 // message data model for model.ACL struct
 message ACLData {
     string permission = 1;
-    bool all_repositories = 2;
-    repeated string repositories = 3;
+    bool all_repositories = 2 [deprecated = true];
+    repeated string repositories = 3 [deprecated = true];
 }
 
 // message data model for model.Policy struct
