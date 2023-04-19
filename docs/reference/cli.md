@@ -1307,6 +1307,164 @@ lakectl auth users policies list [flags]
 
 
 
+### lakectl bisect
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Binary search to find the commit that introduced a bug
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for bisect
+```
+
+
+
+### lakectl bisect bad
+
+Set 'bad' commit that is known to contain the bug
+
+```
+lakectl bisect bad [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for bad
+```
+
+
+
+### lakectl bisect good
+
+Set current commit as 'good' commit that is known to be before the bug was introduced
+
+```
+lakectl bisect good [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for good
+```
+
+
+
+### lakectl bisect help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type bisect help [path to command] for full details.
+
+```
+lakectl bisect help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl bisect log
+
+Print out the current bisect state
+
+```
+lakectl bisect log [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for log
+```
+
+
+
+### lakectl bisect reset
+
+Clean up the bisection state
+
+```
+lakectl bisect reset [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for reset
+```
+
+
+
+### lakectl bisect run
+
+Bisecting based on command status code
+
+```
+lakectl bisect run <command> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for run
+```
+
+
+
+### lakectl bisect start
+
+Start a bisect session
+
+```
+lakectl bisect start <bad ref> <good ref> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for start
+```
+
+
+
+### lakectl bisect view
+
+Current bisect commits
+
+```
+lakectl bisect view [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for view
+```
+
+
+
 ### lakectl branch
 
 Create and manage branches within a repository
