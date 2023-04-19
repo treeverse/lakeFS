@@ -91,7 +91,7 @@ func migrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		if reallyUpdate {
 			return true
 		} else {
-			_, _ = fmt.Fprintln(os.Stderr, "Migrating from previous version of ACL will leave repository level groups until the group is re-editted - prease run migrate again with --force flag or contact us")
+			_, _ = fmt.Fprintln(os.Stderr, "Migrating from previous version of ACL will leave repository level groups until the group is re-edited - please run migrate again with --force flag or contact services@treeverse.io")
 			os.Exit(1)
 		}
 	} else {
