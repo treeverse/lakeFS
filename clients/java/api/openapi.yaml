@@ -6664,10 +6664,6 @@ components:
       type: object
     ACL:
       example:
-        all_repositories: true
-        repositories:
-        - repositories
-        - repositories
         permission: permission
       properties:
         permission:
@@ -6675,17 +6671,6 @@ components:
             Permission level to give this ACL.  "Read", "Write", "Super" and
             "Admin" are all supported.
           type: string
-        all_repositories:
-          description: |
-            If true, this ACL applies to all repositories, including those
-            added in future.  Permission "Admin" allows changing ACLs, so
-            this is necessarily true for that permission.
-          type: boolean
-        repositories:
-          description: Apply this ACL only to these repositories.
-          items:
-            type: string
-          type: array
       required:
       - permission
       type: object

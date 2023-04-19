@@ -27,10 +27,8 @@ func TestAdminPermissionss(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
 	// setting a group ACL should succeed
-	repositories := []string{"foo", "bar"}
 	resSetACL, err := adminClient.SetGroupACLWithResponse(ctx, gid, api.SetGroupACLJSONRequestBody{
-		Permission:   "Write",
-		Repositories: &repositories,
+		Permission: "Write",
 	})
 	require.NoError(t, err, "Admin failed while setting group ACL")
 	require.Equal(t, http.StatusCreated, resSetACL.StatusCode(), "Admin unexpectedly failed to set group ACL")

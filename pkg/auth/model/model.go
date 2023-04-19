@@ -28,7 +28,7 @@ const (
 	usersPrefix            = "users"
 	policiesPrefix         = "policies"
 	usersPoliciesPrefix    = "uPolicies"
-	usersCredentialsPrefix = "uCredentials" //#nosec G101 -- False positive: this is only a kv key prefix
+	usersCredentialsPrefix = "uCredentials" // #nosec G101 -- False positive: this is only a kv key prefix
 	credentialsPrefix      = "credentials"
 	expiredTokensPrefix    = "expiredTokens"
 	metadataPrefix         = "installation_metadata"
@@ -143,16 +143,10 @@ type DBGroup struct {
 	Group
 }
 
-type Repositories struct {
-	All  bool     `json:"all,omitempty"`
-	List []string `json:"list,omitempty"`
-}
-
 type ACLPermission string
 
 type ACL struct {
-	Permission   ACLPermission `json:"permission"`
-	Repositories Repositories  `json:"repositories,omitempty"`
+	Permission ACLPermission `json:"permission"`
 }
 
 type Policy struct {
@@ -282,10 +276,6 @@ func PolicyFromProto(pb *PolicyData) *Policy {
 	if pb.Acl != nil {
 		policy.ACL = ACL{
 			Permission: ACLPermission(pb.Acl.Permission),
-			Repositories: Repositories{
-				All:  pb.Acl.AllRepositories,
-				List: pb.Acl.Repositories,
-			},
 		}
 	}
 	return policy
@@ -297,9 +287,7 @@ func ProtoFromPolicy(p *Policy) *PolicyData {
 		DisplayName: p.DisplayName,
 		Statements:  protoFromStatements(&p.Statement),
 		Acl: &ACLData{
-			Permission:      string(p.ACL.Permission),
-			AllRepositories: p.ACL.Repositories.All,
-			Repositories:    p.ACL.Repositories.List,
+			Permission: string(p.ACL.Permission),
 		},
 	}
 }
