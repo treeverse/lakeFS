@@ -634,7 +634,8 @@ object GarbageCollector {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
+    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
+      .toDF(schema.fieldNames: _*)
   }
 
   private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {

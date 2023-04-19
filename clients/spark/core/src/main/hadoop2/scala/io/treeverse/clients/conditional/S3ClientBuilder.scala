@@ -19,7 +19,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     val retryPolicy = new RetryPolicy(new S3RetryDeleteObjectsCondition(), backoffStrategy, numRetries, true)
     val configuration = new ClientConfiguration()
       .withRetryPolicy(retryPolicy)
-      .withThrottleRetries(true)
+      .withThrottledRetries(true)
     val s3Endpoint = hc.get(Constants.ENDPOINT, null)
 
     val credentialsProvider =

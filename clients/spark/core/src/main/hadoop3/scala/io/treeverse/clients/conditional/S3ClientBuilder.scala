@@ -17,7 +17,8 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
 
     val backoffStrategy = new PredefinedBackoffStrategies.FullJitterBackoffStrategy(1000, 120000)
-    val retryPolicy = new RetryPolicy(new S3RetryDeleteObjectsCondition(), backoffStrategy, numRetries, true)
+    val retryPolicy =
+      new RetryPolicy(new S3RetryDeleteObjectsCondition(), backoffStrategy, numRetries, true)
     val configuration = new ClientConfiguration()
       .withRetryPolicy(retryPolicy)
       .withThrottledRetries(true)
