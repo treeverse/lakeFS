@@ -19,7 +19,15 @@ Customizing the lakeFS docs site should follow the following guidelines: [Just T
 
 ### Test your changes locally
 
-To render the documentation locally and preview changes you can run the Jeykll server under Docker. 
+If you have the necessary dependencies installed, you can run Jekyll to build and serve the documentation from your machine using the provided Makefile target: 
+
+```sh
+make docs-serve
+```
+
+The alternative is to use Docker which has the benefit of handling all the dependencies for you. 
+
+#### Docker
 
 1. Launch the Docker container:
 
