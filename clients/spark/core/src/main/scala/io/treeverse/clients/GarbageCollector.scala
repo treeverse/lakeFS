@@ -311,6 +311,8 @@ object GarbageCollector {
 
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
 
+    println(s"Got mark_id $markID")
+
     if (!maxCommitIsoDatetime.isEmpty) {
       hc.setLong(
         LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
@@ -567,23 +569,16 @@ object GarbageCollector {
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
 
-    try {
-      val removedCount = removed.count()
-      writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
-      removed
-        .withColumn(MARK_ID_KEY, lit(markID))
-        .withColumn(RUN_ID_KEY, lit(runID))
-        .write
-        .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-        .mode(SaveMode.Overwrite)
-        .parquet(f"${deletedObjectsDst}/dt=$time")
-      println(f"Total objects deleted (or already had been deleted): ${removedCount}")
-    } catch {
-      case e: Throwable => {
-        println("Error when trying to write the summary, moving on:")
-        e.printStackTrace()
-      }
-    }
+    val removedCount = removed.count()
+    println(s"Total objects to delete (some may already have been deleted): ${removedCount}")
+    writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
+    removed
+      .withColumn(MARK_ID_KEY, lit(markID))
+      .withColumn(RUN_ID_KEY, lit(runID))
+      .write
+      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
+      .mode(SaveMode.Overwrite)
+      .parquet(f"${deletedObjectsDst}/dt=$time")
   }
 
   private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
@@ -639,7 +634,8 @@ object GarbageCollector {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
+    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
+      .toDF(schema.fieldNames: _*)
   }
 
   private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {
