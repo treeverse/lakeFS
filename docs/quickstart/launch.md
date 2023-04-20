@@ -48,7 +48,7 @@ Login to the lakeFS web interface at [http://127.0.0.1:8000](http://127.0.0.1:80
 
 <img src="/assets/img/quickstart/lakefs-login-screen.png" alt="The lakeFS login screen" class="quickstart"/>
 
-You'll see that there's a repository that's been created automagically for you, imaginatively called _quickstart_. Click on the repository name to open it.
+You'll see that there's a repository that's been created automagically for you, imaginatively called `quickstart`. Click on the repository name to open it.
 
 <img src="/assets/img/quickstart/repo-list.png" alt="A list of repositories in lakeFS" class="quickstart"/>
 

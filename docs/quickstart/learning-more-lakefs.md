@@ -116,7 +116,7 @@ The [lakeFS Samples](https://github.com/treeverse/lakeFS-samples) GitHub reposit
 
 ## lakeFS Community
 
-The community is important to us. Our **guiding principles** are: 
+The lakeFS community is important to us. Our **guiding principles** are: 
 
 * Fully open, in code and conversation
 * We learn and grow together
