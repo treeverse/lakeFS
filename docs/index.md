@@ -43,6 +43,9 @@ You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/registe
 
 lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and includes an S3 compatibility layer.
 
+{: .note}
+For more details and a full list see [the integrations pages](/integrations/).
+
 <p class="center">
     <img src="assets/what_is.png"/>
 </p>
