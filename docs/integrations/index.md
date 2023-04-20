@@ -4,15 +4,37 @@ title: Integrations
 description: You can integrate lakeFS with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 nav_order: 20
 has_children: true
+has_toc: false
 redirect_from: /using
 ---
 
 # Integrations
 
+<table>
+<tr></tr><td><a href="https://docs.lakefs.io/integrations/airbyte.html">Airbyte</a></td>
+<td><a href="https://docs.lakefs.io/integrations/athena.html">Amazon Athena</a></td>
+<td><a href="https://docs.lakefs.io/integrations/airflow.html">Apache Airflow</a></td></tr>
+<tr></tr><td><a href="https://docs.lakefs.io/integrations/hive.html">Apache Hive</a></td>
+<td><a href="https://docs.lakefs.io/integrations/iceberg.html">Apache Iceberg</a></td>
+<td><a href="https://docs.lakefs.io/integrations/kafka.html">Apache Kafka</a></td></tr>
+<tr></tr><td><a href="https://docs.lakefs.io/integrations/spark.html">Apache Spark</a></td>
+<td><a href="https://docs.lakefs.io/integrations/aws_cli.html">AWS CLI</a></td>
+<td><a href="https://docs.lakefs.io/integrations/dbt.html">dbt</a></td></tr>
+<tr></tr><td><a href="https://docs.lakefs.io/integrations/delta.html">Delta Lake</a></td>
+<td><a href="https://docs.lakefs.io/integrations/dremio.html">Dremio</a></td>
+<td><a href="https://docs.lakefs.io/integrations/duckdb.html">DuckDB</a></td></tr>
+<tr></tr><td><a href="https://docs.lakefs.io/integrations/glue_hive_metastore.html">Glue / Hive metastore</a></td>
+<td><a href="https://docs.lakefs.io/integrations/kubeflow.html">Kubeflow</a></td>
+<td><a href="https://docs.lakefs.io/integrations/presto_trino.html">Presto/Trino</a></td></tr>
+<tr></tr><td><a href="https://docs.lakefs.io/integrations/python.html">Python</a></td>
+<td><a href="https://docs.lakefs.io/integrations/sagemaker.html">SageMaker</a></td><td>&nbsp;</td></tr>
+</table>
+
    **💡 Help improve lakeFS**<br/>
    Part of lakeFS' mission is to seamlessly integrate with all data frameworks and tools.
    If there's a integration you're missing or one you believe should be improved, feel free to [discuss on GitHub](https://github.com/treeverse/lakeFS/issues?q=is%3Aissue+is%3Aopen+label%3Aarea%2Fintegrations).
    {: .note }
+
 
 ## Integrating using the S3 Gateway
 
