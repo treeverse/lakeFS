@@ -3,7 +3,6 @@ layout: default
 title: SageMaker
 description: This section explains how to integrate your SageMaker installation to work with lakeFS.
 parent: Integrations
-nav_order: 130
 has_children: false
 redirect_from: /using/sagemaker.html
 ---

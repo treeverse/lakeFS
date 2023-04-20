@@ -1,14 +1,13 @@
 ---
 layout: default
-title: Airflow
-description: Easily build reproducible data pipelines with Airflow and lakeFS using commits, without modifying the code or logic of your job.
+title: Apache Airflow
+description: Easily build reproducible data pipelines with Apache Airflow and lakeFS using commits, without modifying the code or logic of your job.
 parent: Integrations
-nav_order: 40
 has_children: false
 redirect_from: /using/airflow.html
 ---
 
-# Using lakeFS with Airflow
+# Using lakeFS with Apache Airflow
 
 [Apache Airflow](https://airflow.apache.org/) is a platform that allows users to programmatically author, schedule, and monitor workflows.
 
