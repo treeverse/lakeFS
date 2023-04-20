@@ -375,13 +375,13 @@ They have the following policies granted to them:
 
 Policy                                                  | Admins | SuperUsers | Developers| Viewers |
 --------------------------------------------------------|--------|------------|-----------|---------|
-[_FSFullAccess_](#fsfullaccess)                         |   ✅   |     ✅     |           |         |
-[_AuthFullAccess_](#authfullaccess)                     |   ✅   |            |           |         | 
-[_RepoManagementFullAccess_](#repomanagementfullaccess) |   ✅   |            |           |         | 
-[_AuthManageOwnCredentials_](#authmanageowncredentials) |        |     ✅     |    ✅     |   ✅    |
-[_RepoManagementReadAll_](#repomanagementreadall)       |        |     ✅     |    ✅     |         |
-[_FSReadWriteAll_](#fsreadwriteall)                     |        |            |    ✅     |         |
-[_FSReadAll_](#fsreadall)                               |        |            |           |   ✅    |
+[`FSFullAccess`](#fsfullaccess)                         |   ✅   |     ✅     |           |         |
+[`AuthFullAccess`](#authfullaccess)                     |   ✅   |            |           |         | 
+[`RepoManagementFullAccess`](#repomanagementfullaccess) |   ✅   |            |           |         | 
+[`AuthManageOwnCredentials`](#authmanageowncredentials) |        |     ✅     |    ✅     |   ✅    |
+[`RepoManagementReadAll`](#repomanagementreadall)       |        |     ✅     |    ✅     |         |
+[`FSReadWriteAll`](#fsreadwriteall)                     |        |            |    ✅     |         |
+[`FSReadAll`](#fsreadall)                               |        |            |           |   ✅    |
 
 ## Pluggable Authentication and Authorization
 
