@@ -10,7 +10,7 @@ search_tokenizer_separator: /[\s/]+/
 logo: '/assets/logo.svg'
 logo_link: 'https://lakefs.io'
 
-remote_theme: pmarsceill/just-the-docs@v0.4.1
+remote_theme: pmarsceill/just-the-docs@v0.5.0
 
 
 
