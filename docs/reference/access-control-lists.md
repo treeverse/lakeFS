@@ -22,13 +22,12 @@ redirect_from: access-control-list.html
 You can attach Permissions and scope them to groups in the Groups page.
 There are 4 default groups, named after the 4 permissions. Each group is global (applies for all repositories).
 
-| Group ID    | Allows | 
-|-------------|--------------------|
-| **Read**    | Read operations, creating access keys               |`
-| **Write**   | Allows all data read and write operations.              |`
-| **Super**   | Allows all operations except auth.              |`
-| **Admin**   | Allows all operations.              |`
-
+| Group ID  | Allows                                     | 
+|-----------|--------------------------------------------|
+| **Read**  | Read operations, creating access keys      |
+| **Write** | Allows all data read and write operations. |
+| **Super** | Allows all operations except auth.         |
+| **Admin** | Allows all operations.                     |
 
 ## Pluggable Authentication and Authorization
 
