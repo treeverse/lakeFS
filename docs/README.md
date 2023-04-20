@@ -43,6 +43,8 @@ The alternative is to use Docker which has the benefit of handling all the depen
               jekyll serve --livereload
    ```
 
+   _If you have `make` installed, you can also run `make docs-serve-docker` instead._ 
+
 2. The first time you run the container it will need to download dependencies and will take several minutes to be ready. 
 
    Once you see the following output, the docs server is ready to [open in your web browser](http://localhost:4000): 
