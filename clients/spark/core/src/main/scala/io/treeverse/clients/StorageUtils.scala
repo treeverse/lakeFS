@@ -3,6 +3,7 @@ package io.treeverse.clients
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
+import com.amazonaws.retry.RetryUtils
 import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.{
@@ -85,7 +86,7 @@ object StorageUtils {
 
   object S3 {
     val S3MaxBulkSize = 1000
-    val S3NumRetries = 1000
+    val S3NumRetries = 20
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
@@ -170,13 +171,31 @@ object StorageUtils {
   }
 }
 
-class S3RetryCondition extends SDKDefaultRetryCondition {
+class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
+  private val XML_PARSE_BROKEN = "Failed to parse XML document"
+
+  private val clock = java.time.Clock.systemDefaultZone
+
   override def shouldRetry(
       originalRequest: AmazonWebServiceRequest,
       exception: AmazonClientException,
       retriesAttempted: Int
   ): Boolean = {
-    super.shouldRetry(originalRequest, exception, retriesAttempted) || exception
-      .isInstanceOf[SdkClientException]
+    val now = clock.instant
+    exception match {
+      case ce: SdkClientException =>
+        if (ce.getMessage contains XML_PARSE_BROKEN) {
+          println(s"Retry $originalRequest @$now: Received non-XML: $ce")
+        } else if (RetryUtils.isThrottlingException(ce)) {
+          println(s"Retry $originalRequest @$now: Throttled: $ce")
+        } else {
+          println(s"Retry $originalRequest @$now: Other client exception: $ce")
+        }
+        true
+      case e => {
+        println(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
+        super.shouldRetry(originalRequest, exception, retriesAttempted)
+      }
+    }
   }
 }
