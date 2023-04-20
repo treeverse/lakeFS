@@ -31,7 +31,7 @@ For more information, see the [documentation](https://docs.lakefs.io).
 
 ## Getting Started
 
-You can spin up a standalone sandbox instance of lakeFS quickly under Docker by running the following:
+You can spin up a standalone sandbox instance of lakeFS using Docker:
 
 ```bash
 docker run --pull always \
