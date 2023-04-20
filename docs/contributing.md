@@ -121,7 +121,7 @@ Any contribution to the docs, whether it is in conjunction with a code contribut
 Documentation of features and changes in behaviour should be included in the pull request.
 You can create separate pull requests for documentation changes only.
 
-Documentation is in the `/docs` folder of the lakeFS repository. In this folder you'll find a guide on making changes to the documentation and details on how to build it locally. 
+To learn how to contribute to the lakeFS documentation see the [README in the `/docs` folder of the lakeFS repository](https://github.com/treeverse/lakeFS/blob/master/docs/README.md). The README also includes details on how to build the documentation locally. 
 
 ## CHANGELOG.md
 
