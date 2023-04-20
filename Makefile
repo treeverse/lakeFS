@@ -85,6 +85,17 @@ docs: docs/assets/js/swagger.yml
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
 
+docs-serve-docker: ### Serve local docs from Docker
+	docker run --rm \
+			--name lakefs_docs \
+			-e TZ="Etc/UTC" \
+			--publish 4000:4000 --publish 35729:35729 \
+			--volume="$$PWD/docs:/srv/jekyll:Z" \
+			--volume="$$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
+			--interactive --tty \
+			jekyll/jekyll:3.8 \
+			jekyll serve --livereload
+
 gen-docs: ## Generate CLI docs automatically
 	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/cli.md
 
