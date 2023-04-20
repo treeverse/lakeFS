@@ -4,18 +4,18 @@ Any contribution to the docs, whether it is in conjunction with a code contribut
 
 Please see [the contributing guide](contributing.md) for details on contributing to lakeFS in general. 
 
-📝  Notice! lakeFS documentation is written using Markdown. make sure to familiarize yourself with the [Markdown Guide](https://www.markdownguide.org/basic-syntax/#heading-best-practices).
+📝  Notice! lakeFS documentation is written using Markdown.  Make sure to familiarize yourself with the [Markdown Guide](https://www.markdownguide.org/basic-syntax/#heading-best-practices).
 
 Customizing the lakeFS docs site should follow the following guidelines: [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) and style-guide.
 
 ### lakeFS Style Guide:
 * Don't use unnecessary tech jargon or vague/wordy constructions - keep it friendly, not condescending.
-* Be inclusive and welcoming - use gender-neutral words and pronouns when talking about abstract people like developers).
+* Be inclusive and welcoming - use gender-neutral words and pronouns when talking about abstract people like users and developers.
 * Replace complex expressions with simpler ones.
 * Keep it short - 25-30 words max per sentence.  Otherwise, your readers might get lost on the way. 
 * Use active voice instead of passive. For example: This feature can be used to do task X. vs. You can use this feature to do task X. The second one reads much better, right?
 * You can explain things better by including examples. Show, not tell. Use illustrations, images, gifs, code snippets, etc.
-* Establish a visual hierarchy to help people quickly find the information they need. Use text formatting to create levels of title and subtitle (such as h1 to h6 headings in HTML).
+* Establish a visual hierarchy to help people quickly find the information they need. Use text formatting to create levels of title and subtitle (such as `#` to `######` markdown headings).  The title of every page should use the topmost heading `#`; all other headings on the page should use lower headers `##` to `######`.
 
 ### Test your changes locally
 
