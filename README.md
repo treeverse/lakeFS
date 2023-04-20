@@ -1,7 +1,6 @@
 <p align="center">
   <img src="docs/assets/img/logo_large.png"/>
 </p>
-
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
 		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
@@ -28,12 +27,29 @@ With lakeFS you can build repeatable, atomic, and versioned data lake operations
 
 lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, DuckDB, and Presto.
 
-To get started see [Getting Started](#getting-started) below.
-
 For more information, see the [documentation](https://docs.lakefs.io).
 
+## Getting Started
 
-## Capabilities
+You can spin up a standalone sandbox instance of lakeFS using Docker:
+
+```bash
+docker run --pull always \
+		   --name lakefs \
+		   -p 8000:8000 \
+		   treeverse/lakefs:latest \
+		   run --local-settings
+```
+
+Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
+
+### Quickstart
+
+**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
+
+Make sure to also have a look at the [lakeFS samples](https://github.com/treeverse/lakeFS-samples). These are a rich resource of examples of end-to-end applications that you can build with lakeFS.
+
+## Why Do I Need lakeFS?
 
 ### ETL Testing with Isolated Dev/Test Environment
 
@@ -66,34 +82,6 @@ A rollback operation is used to to fix critical data errors immediately.
 What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
 Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors. Since lakeFS provides versions of the data without making copies of the data, you can time travel between versions and roll back to the version of the data before the error was presented.
-
-## Getting Started
-
-You can spin up a standalone sandbox instance of lakeFS quickly under Docker by running the following:
-
-```bash
-docker run --pull always \
-		   --name lakefs \
-		   -p 8000:8000 \
-		   treeverse/lakefs \
-		   	 run --local-settings
-```
-
-### Other quickstart methods
-
-If you don't want to use Docker you can [install and run lakeFS locally](https://docs.lakefs.io/quickstart/more_quickstart_options.html#using-the-binary).
-
-### What next after running it? 
-
-Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser and follow the prompts to set up an admin user. After that go ahead and [create your first repository](https://docs.lakefs.io/quickstart/repository).
-
-The [lakeFS samples](https://github.com/treeverse/lakeFS-samples) are a rich resource of examples of end-to-end applications that you can build with lakeFS.
-
-
-## Deploying lakeFS
-
-For a production-suitable deployments including on-premises with Kubernetes and on AWS, GCP, and Azure clouds see the [docs](https://docs.lakefs.io/deploy/). 
-
 
 ## Community
 
