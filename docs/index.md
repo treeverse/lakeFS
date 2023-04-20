@@ -176,6 +176,9 @@ With lakeFS, you can achieve this by tying data quality tests to commit and merg
 
 ## Downloads
 
+{: .note}
+lakeFS is also available as a fully-managed hosted service on [lakeFS Cloud](https://lakefs.cloud/)
+
 ### Binary Releases
 
 Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
