@@ -24,6 +24,9 @@ With lakeFS, you can use concepts on your data lake such as **branch** to create
 
 These include [branching](/quickstart/branch.html), [merging](quickstart/commit-and-merge.html), and [rolling back changes](quickstart/rollback.html) to data. 
 
+{: .note}
+You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
+
 ## Key lakeFS Features
 
 * It is format-agnostic.
@@ -104,7 +107,33 @@ Following this pattern, lakeFS facilitates a streamlined data deployment workflo
 
 lakeFS helps you maintain a tidy data lake in several ways, including:
 
-### Recovery from data errors
+### Isolated Dev/Test Environments with copy-on-write
+
+lakeFS makes creating isolated dev/test environments for ETL testing instantaneous, and through its use of copy-on-write, cheap. This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
+
+👉🏻 [Read more](/use_cases/etl_testing.html)
+
+### Reproducability: What Did My Data Look Like at a Point In Time?
+
+Being able to look at data as it was at a given point is particularly useful in at least two scenarios: 
+
+1. Reproducability of ML experiments
+
+    ML experimentation is usually an iterative process, and being able to reproduce a specific iteration is important. 
+    
+    With lakeFS you can version all components of an ML experiment including its data, as well as make use of copy-on-write to minimise the footprint of versions of the data
+
+2. Troubleshooting production problems
+
+    Data engineers are often asked to validate the data. A user might report inconsistencies, question the accuracy, or simply report it to be incorrect. 
+    
+    Since the data continuously changes, it is challenging to understand its state at the time of the error.
+
+    With lakeFS you can create a branch from a commit to debug an issue in isolation.
+
+👉🏻 [Read More](/use_cases/reproducibility.html)
+
+### Rollback of Data Changes and Recovery from Data Errors
 
 Human error, misconfiguration, or wide-ranging systematic effects are
 unavoidable. When they do happen, erroneous data may make it into
@@ -120,18 +149,7 @@ in deletion or corruption events becomes an instant one-line operation with
 lakeFS: just identify a good historical commit, and then restore to it or
 copy from it.
 
-Reverting your data lake back to previous version using our command-line tool is explained [here](/reference/commands.html#lakectl-branch-revert).
-
-### Data reprocessing and backfills
-
-Occasionally, we might need to reprocess historical data. This can be due to several reasons:
-
-* Implementing new logic.
-* Late arriving data that wasn’t included in previous analysis, and need to be backfilled after the fact.
-
-This is tricky as it often involves huge volumes of historical data. In addition, auditing requirements may necessitate keeping the old version of the data.
-
-lakeFS allows you to manage the reprocess on an isolated branch before merging to ensure the reprocessed data is exposed atomically. It also allows you to easily access the different versions of reprocessed data using any tag or a historical commit ID.
+👉🏻 [Read more](/use_cases/rollback.html)
 
 ### Multi-Table Transactions guarantees
 
@@ -145,14 +163,7 @@ Instead, make updates to the desired data assets on a branch and then utilize a 
 
 To learn more about atomic cross-collection updates, check out [this video](https://www.youtube.com/watch?v=9OsjUvk5UJU) which describes the concept in more detail, along with [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/01-multi-table-transaction-consistency-deltalake-lakefs/lakeFS-DeltaLake-multi-table-transaction-consistency.ipynb).
 
-### Troubleshooting production problems
 
-Data engineers are often asked to validate the data. A user might report inconsistencies, question the accuracy, or simply report it to be incorrect. Since the data continuously changes, it is challenging to understand its state at the time of the error.
-
-The best way to investigate is by having a snapshot of the data as close as possible to the time of the error.
-Once you implement a regular commit cadence in lakeFS, each commit represents an accessible historical snapshot of the data. When needed, you may create a branch from a commit ID to debug an issue in isolation.
-
-To learn more on how to access a specific historical commit in a repository, see our seminal post on [data reproducibility](https://lakefs.io/solving-data-reproducibility/).
 
 ### Establishing data quality guarantees
 
