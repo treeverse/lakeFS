@@ -78,6 +78,7 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_DO_MARK = "lakefs.gc.do_mark"
   val LAKEFS_CONF_GC_DO_SWEEP = "lakefs.gc.do_sweep"
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
+  val LAKEFS_CONF_GC_PREV_RUN_ID = "lakefs.gc.incremental.run_id"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
   val MARK_ID_KEY = "mark_id"
