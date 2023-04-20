@@ -168,11 +168,13 @@ To learn more about atomic cross-collection updates, check out [this video](http
 
 
 
-### Establishing data quality guarantees
+### Establishing data quality guarantees - CI/CD for data
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
 With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+
+👉🏻 [Read more](/use_cases/cicd_for_data.html)
 
 ## Downloads
 
