@@ -171,18 +171,7 @@ object StorageUtils {
   }
 }
 
-class S3RetryCondition extends SDKDefaultRetryCondition {
-  override def shouldRetry(
-      originalRequest: AmazonWebServiceRequest,
-      exception: AmazonClientException,
-      retriesAttempted: Int
-  ): Boolean = {
-    super.shouldRetry(originalRequest, exception, retriesAttempted) || exception
-      .isInstanceOf[SdkClientException]
-  }
-}
-
-class S3RetryDeleteObjectsCondition extends S3RetryCondition {
+class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
 
   private val clock = java.time.Clock.systemDefaultZone
@@ -205,10 +194,8 @@ class S3RetryDeleteObjectsCondition extends S3RetryCondition {
         true
       case e => {
         println(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
-        false
+        super.shouldRetry(originalRequest, exception, retriesAttempted)
       }
     }
-    super.shouldRetry(originalRequest, exception, retriesAttempted) || exception
-      .isInstanceOf[SdkClientException]
   }
 }
