@@ -26,11 +26,24 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	o.Incr("abort_mpu", o.Principal, o.Repository.Name, o.Reference)
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
+
+	mpu, err := o.MultipartTracker.Get(req.Context(), uploadID)
+	if err != nil {
+		o.Log(req).WithError(err).Error("upload id not found in tracker")
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		return
+	}
+	if mpu.Path != o.Path {
+		o.Log(req).Error("could not match multipart upload with multipart tracker record")
+		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		return
+	}
+
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
-	err := o.BlockStore.AbortMultiPartUpload(req.Context(), block.ObjectPointer{
+	err = o.BlockStore.AbortMultiPartUpload(req.Context(), block.ObjectPointer{
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
-		Identifier:       o.Path,
+		Identifier:       mpu.PhysicalAddress,
 	}, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not abort multipart upload")
