@@ -80,7 +80,7 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
   val LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = "lakefs.gc.s3.min_backoff_secs"
   val LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = "lakefs.gc.s3.max_backoff_secs"
-  val LAKEFS_CONF_GC_PREV_RUN_ID = "lakefs.gc.incremental.run_id"
+  val LAKEFS_CONF_GC_PREV_RUN_ID = "lakefs.gc.incremental.previous_run_id"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
   val MARK_ID_KEY = "mark_id"
