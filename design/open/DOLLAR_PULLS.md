@@ -148,13 +148,22 @@ enforce actions to be run on the source ref before merge.
 #### Actions
 
 * Add a new trigger type: `manual-trigger`
-* Implement asynchronous (pollable) hooks. Once might state we can start 
-  without, but the whole reason for implementing any of the suggestion is 
-  the ability to run long-running actions which are not bounded by the 
-  timeout of a pending HTTP request. 
+* Add an API endpoint for triggering actions:
+POST `/repositories/{repository}/refs/{ref}/actions/{action}/trigger`
+The request will execute the action on the provided ref if it exists on the 
+  ref and one of the action triggers is `manual-trigger`. Otherwise, it will 
+  fail with BadRequest. The request will not wait for the hook execution to 
+  complete.
 
 Open questions:
 * Should hook re-run be implemented at first?
   * We can get away with not implementing it, and implement it in the future.
     It means that reruns would occur by pushing a new commit to the source 
     branch. Not ideal, but reruns are mostly useful for transient failures.
+* Should asynchronous (pollable) hooks be implemented at first? 
+  * Since the HTTP request doesn't wait for the action run to complete, we 
+    can get away with not implementing it, and implement it in the future.
+    By decoupling the hook execution from the context of a lakeFS operation 
+    (pre-merge, pre-commit, etc.), we can now run as long as we want without 
+    blocking anything. This means that we can run long CI/CD processes, and 
+    possibly just log that the action is running.
