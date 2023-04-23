@@ -205,9 +205,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   def getExpiredAddresses(
       repo: String,
       storageNS: String,
-      runID: String,
       commitDFLocation: String,
-      numCommitPartitions: Int,
       numRangePartitions: Int,
       numAddressPartitions: Int,
       approxNumRangesToSpreadPerPartition: Double,
@@ -313,7 +311,7 @@ object GarbageCollector {
 
     println(s"Got mark_id $markID")
 
-    if (!maxCommitIsoDatetime.isEmpty) {
+    if (maxCommitIsoDatetime.nonEmpty) {
       hc.setLong(
         LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
         LocalDateTime
@@ -447,8 +445,7 @@ object GarbageCollector {
       storageNSForHadoopFS: String
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
-    val previousRunID =
-      "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
+    val previousRunID = hc.get(LAKEFS_CONF_GC_PREV_RUN_ID, "")
 
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
@@ -494,9 +491,7 @@ object GarbageCollector {
     val expiredAddresses = gc
       .getExpiredAddresses(repo,
                            storageNS,
-                           runID,
                            gcCommitsLocation,
-                           numCommitPartitions,
                            numRangePartitions,
                            numAddressPartitions,
                            approxNumRangesToSpreadPerPartition,
