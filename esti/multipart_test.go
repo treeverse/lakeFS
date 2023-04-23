@@ -56,12 +56,12 @@ func TestMultipartUpload(t *testing.T) {
 	}
 }
 
-func TestMultipartUpload_Cancel(t *testing.T) {
+func TestMultipartUploadAbort(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	t.Run("exists", func(t *testing.T) {
-		const objPath = mainBranch + "/multipart_file"
+		const objPath = mainBranch + "/multipart_file1"
 		createInput := &s3.CreateMultipartUploadInput{
 			Bucket: aws.String(repo),
 			Key:    aws.String(objPath),
@@ -88,13 +88,8 @@ func TestMultipartUpload_Cancel(t *testing.T) {
 		require.NoError(t, err, "CreateMultipartUpload")
 
 		uploadID := aws.StringValue(createResp.UploadId)
-
 		// reverse the upload id to get valid unknown upload id
-		runes := []rune(uploadID)
-		for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-			runes[i], runes[j] = runes[j], runes[i]
-		}
-		unknownUploadID := string(runes)
+		unknownUploadID := reverse(uploadID)
 
 		abortInput := &s3.AbortMultipartUploadInput{
 			Bucket:   aws.String(repo),
@@ -122,6 +117,14 @@ func TestMultipartUpload_Cancel(t *testing.T) {
 		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
 		require.Error(t, err, "AbortMultipartUploadWithContext should fail with unknown key")
 	})
+}
+
+func reverse(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
 }
 
 func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
