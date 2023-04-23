@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -229,7 +228,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		return "", err
 	}
 	commitsStr := b.String()
-	runID := uuid.New().String()
+	runID := m.NewID()
 	csvLocation, err := m.GetCommitsCSVLocation(runID, repository.StorageNamespace)
 	if err != nil {
 		return "", err
