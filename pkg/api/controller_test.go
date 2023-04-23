@@ -2495,8 +2495,9 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			},
 		})
 		testutil.Must(t, err)
-		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
-			t.Fatalf("expected error linking the same physical address twice")
+		expectedStatusCode := http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
 		}
 	})
 }

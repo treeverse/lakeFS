@@ -372,8 +372,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
 			"expected_type":   expectedType,
 			"blockstore_type": blockStoreType,
-		}).
-			Error("invalid blockstore type")
+		}).Error("invalid blockstore type")
 		c.handleAPIError(ctx, w, r, fmt.Errorf("invalid blockstore type: %w", block.ErrInvalidAddress))
 		return
 	}
@@ -383,8 +382,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	// validate token
 	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
-	if err != nil {
-		c.handleAPIError(ctx, w, r, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -406,12 +404,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if errors.Is(err, graveler.ErrNotFound) {
-		writeError(w, r, http.StatusNotFound, err)
-		return
-	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -1990,7 +1983,13 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	log := c.Logger.WithContext(ctx).WithError(err)
 
+	// order of case is important, more specific errors should be first
 	switch {
+	case errors.Is(err, graveler.ErrAddressTokenNotFound),
+		errors.Is(err, graveler.ErrAddressTokenExpired):
+		log.Debug("Expired or invalid address token")
+		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
+
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
@@ -2042,11 +2041,6 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrTooManyTries):
 		log.Debug("Retried too many times")
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
-
-	case errors.Is(err, graveler.ErrAddressTokenNotFound),
-		errors.Is(err, graveler.ErrAddressTokenExpired):
-		log.Debug("Expired or invalid address token")
-		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
