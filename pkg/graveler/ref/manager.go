@@ -564,11 +564,15 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 		}
 		return err
 	}
-	_, err = m.IsLinkAddressExpired(&data)
+	expired, err := m.IsLinkAddressExpired(&data)
 	if err != nil {
 		return err
 	}
-	return deleteLinkAddress(ctx, m.kvStore, repository, token)
+	if expired {
+		err = graveler.ErrAddressTokenExpired
+	}
+	_ = deleteLinkAddress(ctx, m.kvStore, repository, token)
+	return err
 }
 
 func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, token string) error {
@@ -585,10 +589,7 @@ func (m *Manager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, e
 	if err != nil {
 		return false, err
 	}
-	if time.Since(creationTime) > LinkAddressTime {
-		return true, nil
-	}
-	return false, nil
+	return time.Since(creationTime) > LinkAddressTime, nil
 }
 
 func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
