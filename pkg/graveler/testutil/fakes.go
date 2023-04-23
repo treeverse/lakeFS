@@ -417,7 +417,7 @@ func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ..
 	return &graveler.Commit{}, nil
 }
 
-func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID) (graveler.CommitIterator, error) {
+func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID, bool) (graveler.CommitIterator, error) {
 	return m.CommitIter, nil
 }
 
