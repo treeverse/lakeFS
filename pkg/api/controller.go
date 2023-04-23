@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -45,6 +46,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
+	sample "github.com/treeverse/lakefs/sample_repository"
 )
 
 const (
@@ -67,6 +69,12 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
+	// Sample Repo
+	sampleRepoName              = "sample-repo"
+	sampleRepoStorageNamespace  = "local://sample-repo"
+	sampleRepoDefaultBranchName = "main"
+	sampleRepoFSRootPath        = "sample"
+	sampleRepoPathPrefix        = sampleRepoFSRootPath + "/"
 )
 
 type actionsHandler interface {
@@ -1577,6 +1585,83 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 }
 
 var errStorageNamespaceInUse = errors.New("storage namespace already in use")
+
+func (c *Controller) createSampleRepository(ctx context.Context) error {
+	// create the repository
+	newRepo, err := c.Catalog.CreateRepository(ctx, sampleRepoName, sampleRepoStorageNamespace, sampleRepoDefaultBranchName)
+	if err != nil {
+		return err
+	}
+
+	// populate repo from embedded sample data
+	err = c.populateSampleRepo(ctx, newRepo)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) populateSampleRepo(ctx context.Context, repo *catalog.Repository) error {
+	// upload sample data
+	// we skip checking if the repo and branch exist, since we just created them
+	// we also skip checking if the file exists, since we know the repo is empty
+
+	err := fs.WalkDir(sample.SampleData, sampleRepoFSRootPath, func(path string, d fs.DirEntry, topLevelErr error) error {
+		// handle a top-level error
+		if topLevelErr != nil {
+			return topLevelErr
+		}
+
+		if d.IsDir() {
+			// noop for directories
+			return nil
+		}
+
+		// open file from embedded FS
+		file, err := sample.SampleData.Open(path)
+		if err != nil {
+			return err
+		}
+		// since we're not writing to the file, not a big risk in disregarding the error possibly returned by Close
+		defer file.Close()
+
+		// get file stats for size
+		fileInfo, err := file.Stat()
+		if err != nil {
+			return err
+		}
+
+		// write file to storage
+		address := c.PathProvider.NewPath()
+		blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, file, fileInfo.Size(), block.PutOpts{})
+		if err != nil {
+			return err
+		}
+
+		// create metadata entry
+		writeTime := time.Now()
+		entryBuilder := catalog.NewDBEntryBuilder().
+			Path(strings.TrimPrefix(path, sampleRepoPathPrefix)).
+			PhysicalAddress(blob.PhysicalAddress).
+			CreationDate(writeTime).
+			Size(blob.Size).
+			Checksum(blob.Checksum).
+			AddressType(catalog.AddressTypeRelative)
+
+		entry := entryBuilder.Build()
+
+		// write metadata entry
+		err = c.Catalog.CreateEntry(ctx, repo.Name, sampleRepoDefaultBranchName, entry)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+}
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
@@ -3859,6 +3944,14 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
+
+	// if we're using the local block adapter, create the sample repository
+	if c.BlockAdapter.BlockstoreType() == "local" {
+		err := c.createSampleRepository(ctx)
+		if err != nil {
+			c.Logger.WithError(err).Warn("failed to create sample repository")
+		}
+	}
 
 	response := CredentialsWithSecret{
 		AccessKeyId:     cred.AccessKeyID,

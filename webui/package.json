@@ -36,6 +36,7 @@
     "react-router-dom": "^6.5.0",
     "react-simple-code-editor": "^0.13.1",
     "react-syntax-highlighter": "^15.5.0",
+    "rehype-raw": "^6.1.1",
     "remark": "^14.0.2",
     "remark-gfm": "^3.0.1",
     "remark-html": "^15.0.1",

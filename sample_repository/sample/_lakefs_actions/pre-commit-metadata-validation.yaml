@@ -1,0 +1,14 @@
+name: pre commit metadata field check
+on:
+  pre-commit:
+    branches:
+      - main
+      - stage
+hooks:
+  - id: check_commit_metadata
+    type: lua
+    properties:
+      script_path: scripts/commit_metadata_validator.lua
+      args:
+        owner: {}
+        environment: {"pattern": "^(production|staging|development)$"}

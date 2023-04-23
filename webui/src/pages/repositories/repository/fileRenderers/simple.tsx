@@ -7,6 +7,7 @@ import { Error, Loading } from "../../../../lib/components/controls";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
+import rehypeRaw from "rehype-raw";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { githubGist as syntaxHighlightStyle } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
@@ -87,6 +88,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
         remarkGfm,
         remarkHtml,
       ]}
+      rehypePlugins={[rehypeRaw]}
       linkTarget={"_blank"}
     >
       {text}
