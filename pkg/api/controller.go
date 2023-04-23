@@ -3295,6 +3295,9 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	w.Header().Set("Last-Modified", lastModified)
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Content-Type", entry.ContentType)
+	// for security, make sure the browser and any proxies en route don't cache the response
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
+	w.Header().Set("Expires", "0")
 
 	// calculate possible byte range, if any.
 	if params.Range != nil {
