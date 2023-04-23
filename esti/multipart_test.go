@@ -56,6 +56,74 @@ func TestMultipartUpload(t *testing.T) {
 	}
 }
 
+func TestMultipartUpload_Cancel(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	t.Run("exists", func(t *testing.T) {
+		const objPath = mainBranch + "/multipart_file"
+		createInput := &s3.CreateMultipartUploadInput{
+			Bucket: aws.String(repo),
+			Key:    aws.String(objPath),
+		}
+		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
+		require.NoError(t, err, "CreateMultipartUpload")
+
+		abortInput := &s3.AbortMultipartUploadInput{
+			Bucket:   aws.String(repo),
+			Key:      aws.String(objPath),
+			UploadId: createResp.UploadId,
+		}
+		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
+		require.NoError(t, err, "AbortMultipartUploadWithContext")
+	})
+
+	t.Run("unknown_upload_id", func(t *testing.T) {
+		const objPath = mainBranch + "/multipart_file2"
+		createInput := &s3.CreateMultipartUploadInput{
+			Bucket: aws.String(repo),
+			Key:    aws.String(objPath),
+		}
+		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
+		require.NoError(t, err, "CreateMultipartUpload")
+
+		uploadID := aws.StringValue(createResp.UploadId)
+
+		// reverse the upload id to get valid unknown upload id
+		runes := []rune(uploadID)
+		for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+			runes[i], runes[j] = runes[j], runes[i]
+		}
+		unknownUploadID := string(runes)
+
+		abortInput := &s3.AbortMultipartUploadInput{
+			Bucket:   aws.String(repo),
+			Key:      aws.String(objPath),
+			UploadId: aws.String(unknownUploadID),
+		}
+		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
+		require.Error(t, err, "AbortMultipartUploadWithContext should fail with unknown upload id")
+	})
+
+	t.Run("unknown_key", func(t *testing.T) {
+		const objPath = mainBranch + "/multipart_file3"
+		createInput := &s3.CreateMultipartUploadInput{
+			Bucket: aws.String(repo),
+			Key:    aws.String(objPath),
+		}
+		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
+		require.NoError(t, err, "CreateMultipartUpload")
+
+		abortInput := &s3.AbortMultipartUploadInput{
+			Bucket:   aws.String(repo),
+			Key:      aws.String(mainBranch + "/unknown_file"),
+			UploadId: createResp.UploadId,
+		}
+		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
+		require.Error(t, err, "AbortMultipartUploadWithContext should fail with unknown key")
+	})
+}
+
 func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
 	count := len(parts)
 	completedParts := make([]*s3.CompletedPart, count)
