@@ -74,8 +74,8 @@ const FileObjectsViewerPage = () => {
     // We'll need to convert the API service to get rid of this any
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contentType = getContentType((response as any)?.headers);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sizeBytes = parseInt(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (response as any)?.headers.get("Content-Length")
     );
     content = (
