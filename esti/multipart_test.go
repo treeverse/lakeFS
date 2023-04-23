@@ -46,7 +46,7 @@ func TestMultipartUpload(t *testing.T) {
 	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
-	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
+	logger.WithField("key", aws.StringValue(completeResponse.Key)).Info("Completed multipart request successfully")
 
 	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
