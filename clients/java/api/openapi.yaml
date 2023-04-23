@@ -2407,6 +2407,15 @@ paths:
         schema:
           type: boolean
         style: form
+      - description: if set to true, follow only the first parent upon reaching a
+          merge commit
+        explode: true
+        in: query
+        name: firstParent
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:

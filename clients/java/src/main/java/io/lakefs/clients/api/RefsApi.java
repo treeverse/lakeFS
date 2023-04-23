@@ -529,6 +529,7 @@ public class RefsApi {
      * @param objects list of paths, each element is a path of a specific object (optional)
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
+     * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -541,7 +542,7 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call logCommitsCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call logCommitsCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -575,6 +576,10 @@ public class RefsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("limit", limit));
         }
 
+        if (firstParent != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("firstParent", firstParent));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -594,7 +599,7 @@ public class RefsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call logCommitsValidateBeforeCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call logCommitsValidateBeforeCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -607,7 +612,7 @@ public class RefsApi {
         }
         
 
-        okhttp3.Call localVarCall = logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, _callback);
+        okhttp3.Call localVarCall = logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, _callback);
         return localVarCall;
 
     }
@@ -622,6 +627,7 @@ public class RefsApi {
      * @param objects list of paths, each element is a path of a specific object (optional)
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
+     * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
      * @return CommitList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -633,8 +639,8 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public CommitList logCommits(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit) throws ApiException {
-        ApiResponse<CommitList> localVarResp = logCommitsWithHttpInfo(repository, ref, after, amount, objects, prefixes, limit);
+    public CommitList logCommits(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent) throws ApiException {
+        ApiResponse<CommitList> localVarResp = logCommitsWithHttpInfo(repository, ref, after, amount, objects, prefixes, limit, firstParent);
         return localVarResp.getData();
     }
 
@@ -648,6 +654,7 @@ public class RefsApi {
      * @param objects list of paths, each element is a path of a specific object (optional)
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
+     * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
      * @return ApiResponse&lt;CommitList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -659,8 +666,8 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<CommitList> logCommitsWithHttpInfo(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit) throws ApiException {
-        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, null);
+    public ApiResponse<CommitList> logCommitsWithHttpInfo(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent) throws ApiException {
+        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, null);
         Type localVarReturnType = new TypeToken<CommitList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -675,6 +682,7 @@ public class RefsApi {
      * @param objects list of paths, each element is a path of a specific object (optional)
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
+     * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -687,9 +695,9 @@ public class RefsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call logCommitsAsync(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, final ApiCallback<CommitList> _callback) throws ApiException {
+    public okhttp3.Call logCommitsAsync(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, final ApiCallback<CommitList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, _callback);
+        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, _callback);
         Type localVarReturnType = new TypeToken<CommitList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
