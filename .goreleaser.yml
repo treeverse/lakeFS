@@ -49,7 +49,7 @@ archives:
     - goos: windows
       format: zip
   files:
-    - src: 'delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
+    - src: 'delta/artifacts/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
       strip_parent: true
   builds:
    - lakefs

@@ -280,9 +280,6 @@ help:  ## Show Help menu
 # helpers
 gen: gen-ui gen-api clients gen-docs
 
-delta-plugin: validate-cargo
+delta-plugin: ## Build delta plugin
 	cargo clean --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
 	cargo build --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
-
-validate-cargo:
-	$(or $(shell which cargo), $(error "Missing dependency - no cargo in PATH"))
