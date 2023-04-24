@@ -78,7 +78,8 @@ blobs:
    - lakectl
 brews:
 - name: lakefs
-  homepage: https://github.com/treeverse/homebrew-lakefs 
+  homepage: https://github.com/treeverse/lakefs 
+  description: "lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code."
   ids:
     - default
   tap:
