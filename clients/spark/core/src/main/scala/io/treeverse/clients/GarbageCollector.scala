@@ -1,25 +1,29 @@
 package io.treeverse.clients
 
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.model.ObjectMetadata
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
+import io.treeverse.clients.StorageClients.Azure
+import io.treeverse.clients.StorageClients.S3.getS3Client
+import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import org.apache.spark.HashPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.HashPartitioner
+import org.apache.spark.storage.StorageLevel
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
+import java.io.ByteArrayInputStream
+import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
-import java.net.URI
 import java.util.UUID
-import org.apache.commons.lang3.StringUtils
 
 trait RangeGetter extends Serializable {
 
@@ -399,7 +403,7 @@ object GarbageCollector {
 
         val region = getRegion(args)
 
-        remove(configMapper,
+        val removed = remove(configMapper,
                storageNSForSdkClient,
                gcAddressesLocation,
                expiredAddresses,
@@ -408,6 +412,29 @@ object GarbageCollector {
                storageType,
                schema
               )
+        if(storageType == StorageUtils.StorageTypeS3) {
+          println("--[]__S3 starting")
+          val uri = new URI(storageNSForSdkClient)
+          val bucket = uri.getHost
+          val s3Client = getS3Client(hc, bucket, region, StorageUtils.S3.S3NumRetries)
+          val input: ByteArrayInputStream = new ByteArrayInputStream(new Array[Byte](0))
+          val meta = new ObjectMetadata()
+          meta.setContentLength(1)
+          s3Client.putObject(bucket, getRunIDMarkerLocation(runID, storageNSForSdkClient), input, meta)
+          println("--[]__S3 ending")
+        } else if (storageType == StorageUtils.StorageTypeAzure) {
+          println("--[]__Azure starting")
+          val uri = new URI(storageNSForSdkClient)
+          val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
+          val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
+          val containerName = StorageUtils.AzureBlob.uriToContainerName(uri)
+          val input: ByteArrayInputStream = new ByteArrayInputStream(new Array[Byte](0))
+          val blobClient = Azure.getBlobContainerClient(hc, storageAccountUrl, storageAccountName, containerName)
+          blobClient.getBlobClient(getRunIDMarkerLocation(runID, storageNSForSdkClient))
+            .upload(input, 1)
+          println("--[]__Azure ending")
+        }
+        removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
@@ -633,8 +660,12 @@ object GarbageCollector {
       .toDF(schema.fieldNames: _*)
   }
 
-  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {
+  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String): String = {
     s"$gcAddressesLocation/$markId.meta"
+  }
+
+  private def getRunIDMarkerLocation(runID: String, storageNamespace: String): String = {
+    s"${storageNamespace.stripSuffix("/")}/_lakefs/retention/gc/run_id/$runID"
   }
 
   private def getMarkMetadata(markId: String, gcAddressesLocation: String): DataFrame = {

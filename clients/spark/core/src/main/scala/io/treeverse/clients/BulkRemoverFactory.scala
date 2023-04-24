@@ -1,16 +1,10 @@
 package io.treeverse.clients
 
-import com.amazonaws.services.s3.{AmazonS3, model}
+import com.amazonaws.services.s3.model
 import com.amazonaws.services.s3.model.MultiObjectDeleteException
-import com.azure.core.http.HttpClient
 import com.azure.core.http.rest.Response
-import com.azure.storage.blob.batch.{BlobBatchClient, BlobBatchClientBuilder}
 import com.azure.storage.blob.models.DeleteSnapshotsOptionType
-import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
-import com.azure.storage.common.StorageSharedKeyCredential
-import com.azure.storage.common.policy.RequestRetryOptions
-import com.azure.identity.{ClientSecretCredentialBuilder, ClientSecretCredential}
-
+import io.treeverse.clients.StorageClients.Azure
 import io.treeverse.clients.StorageUtils.AzureBlob._
 import io.treeverse.clients.StorageUtils.S3._
 import io.treeverse.clients.StorageUtils._
@@ -19,7 +13,7 @@ import org.apache.hadoop.conf.Configuration
 import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 trait BulkRemover {
 
@@ -69,8 +63,8 @@ object BulkRemoverFactory {
       extends BulkRemover {
     import scala.collection.JavaConversions._
 
-    val uri = new URI(storageNamespace)
-    val bucket = uri.getHost
+    private val uri = new URI(storageNamespace)
+    private val bucket = uri.getHost
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
@@ -78,7 +72,7 @@ object BulkRemoverFactory {
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
-      val s3Client = getS3Client(hc, bucket, region, S3NumRetries)
+      val s3Client = StorageClients.S3.getS3Client(hc, bucket, region, S3NumRetries)
       try {
         val res = s3Client.deleteObjects(delObjReq)
         res.getDeletedObjects.asScala.map(_.getKey())
@@ -99,14 +93,6 @@ object BulkRemoverFactory {
       }
     }
 
-    private def getS3Client(
-        hc: Configuration,
-        bucket: String,
-        region: String,
-        numRetries: Int
-    ): AmazonS3 =
-      io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
-
     override def getMaxBulkSize(): Int = {
       S3MaxBulkSize
     }
@@ -114,17 +100,17 @@ object BulkRemoverFactory {
 
   private class AzureBlobBulkRemover(hc: Configuration, storageNamespace: String)
       extends BulkRemover {
-    val EmptyString = ""
-    val uri = new URI(storageNamespace)
-    val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
-    val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
+    private val EmptyString = ""
+    private val uri = new URI(storageNamespace)
+    private val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
+    private val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
       println(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.asJava
 
-      val blobBatchClient = getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
+      val blobBatchClient = Azure.getBlobBatchClient(hc, storageAccountUrl, storageAccountName)
 
       val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URI]() {
         def apply(response: Response[Void]): URI = {
@@ -159,46 +145,7 @@ object BulkRemoverFactory {
       }
     }
 
-    private def getBlobBatchClient(
-        hc: Configuration,
-        storageAccountUrl: String,
-        storageAccountName: String
-    ): BlobBatchClient = {
 
-      val storageAccountKey = hc.get(String.format(StorageAccountKeyProperty, storageAccountName))
-
-      val blobServiceClientBuilder: BlobServiceClientBuilder =
-        new BlobServiceClientBuilder()
-          .endpoint(storageAccountUrl)
-          .retryOptions(
-            new RequestRetryOptions()
-          ) // Sets the default retry options for each request done through the client https://docs.microsoft.com/en-us/java/api/com.azure.storage.common.policy.requestretryoptions.requestretryoptions?view=azure-java-stable#com-azure-storage-common-policy-requestretryoptions-requestretryoptions()
-          .httpClient(HttpClient.createDefault())
-
-      // Access the storage using the account key
-      if (storageAccountKey != null) {
-        blobServiceClientBuilder.credential(
-          new StorageSharedKeyCredential(storageAccountName, storageAccountKey)
-        )
-      }
-      // Access the storage using OAuth 2.0 with an Azure service principal
-      else if (hc.get(String.format(AccountAuthType, storageAccountName)) == "OAuth") {
-        val tenantId = getTenantId(
-          new URI(hc.get(String.format(AccountOAuthClientEndpoint, storageAccountName)))
-        )
-        val clientSecretCredential: ClientSecretCredential = new ClientSecretCredentialBuilder()
-          .clientId(hc.get(String.format(AccountOAuthClientId, storageAccountName)))
-          .clientSecret(hc.get(String.format(AccountOAuthClientSecret, storageAccountName)))
-          .tenantId(tenantId)
-          .build()
-
-        blobServiceClientBuilder.credential(clientSecretCredential)
-      }
-
-      val blobServiceClient: BlobServiceClient =
-        blobServiceClientBuilder.buildClient
-      return new BlobBatchClientBuilder(blobServiceClient).buildClient
-    }
 
     override def getMaxBulkSize(): Int = {
       AzureBlobMaxBulkSize

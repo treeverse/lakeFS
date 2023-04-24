@@ -6,13 +6,7 @@ import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
 import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.{
-  AmazonClientException,
-  AmazonServiceException,
-  AmazonWebServiceRequest,
-  ClientConfiguration,
-  SdkClientException
-}
+import com.amazonaws._
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -77,6 +71,10 @@ object StorageUtils {
 
     def uriToStorageAccountName(storageNsURI: URI): String = {
       storageNsURI.getHost.split('.')(0)
+    }
+
+    def uriToContainerName(storageNsURI: URI): String = {
+      storageNsURI.getPath.split('/')(0)
     }
 
     def getTenantId(authorityHost: URI): String = {
