@@ -67,10 +67,6 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
-
-	httpHeaderCopyType        = "X-Lakefs-Copy-Type"
-	httpHeaderCopyTypeFull    = "full"
-	httpHeaderCopyTypeShallow = "shallow"
 )
 
 type actionsHandler interface {
@@ -2588,7 +2584,6 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	w.Header().Set(httpHeaderCopyType, httpHeaderCopyTypeFull)
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),

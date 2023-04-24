@@ -4182,8 +4182,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		return *uploadResp.JSON201
 	}
 
-	const copyTypeHeaderName = "X-Lakefs-Copy-Type"
-
 	t.Run("same_branch", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar"
@@ -4197,8 +4195,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
-		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
@@ -4226,8 +4222,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
-		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
@@ -4268,8 +4262,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
-		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
