@@ -250,7 +250,7 @@ func TestExpiredCommits(t *testing.T) {
 					  \
 					 <C-4-previously_expired>--<E-3-previously_expired>--<F-2>--<HEAD2-1>
 		*/
-		"previously_expired_commit_becomes_active": {
+		"previously_expired_commits_become_active": {
 			commits: map[string]testCommit{
 				"A":     newTestCommit(4),
 				"B":     newTestCommit(3, "A"),
