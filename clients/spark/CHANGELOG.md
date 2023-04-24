@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.7 - 2023-04-24
+## v0.7.1 - 2023-04-24
 
 === Performance improvements===
 
