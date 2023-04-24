@@ -3,7 +3,6 @@ layout: default
 title: Python
 description: Use Python to interact with your objects on lakeFS
 parent: Integrations
-nav_order: 50
 has_children: false
 redirect_from: 
   - /using/python.html

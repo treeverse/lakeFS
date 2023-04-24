@@ -3,7 +3,6 @@ layout: default
 title: dbt
 description: This guide covers maintaining environments with dbt and lakeFS.
 parent: Integrations
-nav_order: 110
 has_children: false
 redirect_from: /using/dbt.html
 ---

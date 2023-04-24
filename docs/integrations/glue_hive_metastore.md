@@ -1,16 +1,15 @@
 ---
 layout: default
-title: Glue / Hive metastore
+title: Glue / Apache Hive metastore
 description: This section explains how to query data from lakeFS branches in services backed by Glue/Hive Metastore.
 parent: Integrations
-nav_order: 60
 has_children: false
 redirect_from: /using/glue_hive_metastore.html
 ---
 
 {% include toc.html %}
 
-# About Glue / Hive Metastore
+# About Glue / Apache Hive Metastore
 
 This part explains about how Glue/Hive Metastore work with lakeFS.
 
