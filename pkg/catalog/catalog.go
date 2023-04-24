@@ -1072,7 +1072,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
-	it, err := c.Store.Log(ctx, repository, commitID)
+	it, err := c.Store.Log(ctx, repository, commitID, params.FirstParent)
 	if err != nil {
 		return nil, false, err
 	}

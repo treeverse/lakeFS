@@ -8,15 +8,16 @@ import (
 )
 
 type CommitIterator struct {
-	manager    graveler.RefManager
-	ctx        context.Context
-	repository *graveler.RepositoryRecord
-	start      graveler.CommitID
-	value      *graveler.CommitRecord
-	queue      commitsPriorityQueue
-	visit      map[graveler.CommitID]struct{}
-	state      commitIteratorState
-	err        error
+	manager     graveler.RefManager
+	ctx         context.Context
+	repository  *graveler.RepositoryRecord
+	start       graveler.CommitID
+	firstParent bool
+	value       *graveler.CommitRecord
+	queue       commitsPriorityQueue
+	visit       map[graveler.CommitID]struct{}
+	state       commitIteratorState
+	err         error
 }
 
 type commitIteratorState int
@@ -59,16 +60,24 @@ func (c *commitsPriorityQueue) Pop() interface{} {
 	return item
 }
 
+type CommitIteratorConfig struct {
+	repository  *graveler.RepositoryRecord
+	start       graveler.CommitID
+	firstParent bool
+	manager     graveler.RefManager
+}
+
 // NewCommitIterator returns an iterator over all commits in the given repository.
 // Ordering is based on the Commit Creation Date.
-func NewCommitIterator(ctx context.Context, repository *graveler.RepositoryRecord, start graveler.CommitID, manager graveler.RefManager) *CommitIterator {
+func NewCommitIterator(ctx context.Context, config *CommitIteratorConfig) *CommitIterator {
 	return &CommitIterator{
-		ctx:        ctx,
-		repository: repository,
-		start:      start,
-		queue:      make(commitsPriorityQueue, 0),
-		visit:      make(map[graveler.CommitID]struct{}),
-		manager:    manager,
+		ctx:         ctx,
+		repository:  config.repository,
+		start:       config.start,
+		queue:       make(commitsPriorityQueue, 0),
+		visit:       make(map[graveler.CommitID]struct{}),
+		manager:     config.manager,
+		firstParent: config.firstParent,
 	}
 }
 
@@ -110,7 +119,11 @@ func (ci *CommitIterator) Next() bool {
 	// as long as we have something in the queue we will
 	// set it as the current value and push the current commits parents to the queue
 	ci.value = heap.Pop(&ci.queue).(*graveler.CommitRecord)
-	for _, p := range ci.value.Parents {
+	parents := ci.value.Parents
+	if ci.firstParent && len(parents) > 1 {
+		parents = parents[:1]
+	}
+	for _, p := range parents {
 		// skip commits we already visited
 		if _, visited := ci.visit[p]; visited {
 			continue

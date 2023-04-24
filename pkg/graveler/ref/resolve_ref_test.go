@@ -51,7 +51,7 @@ func TestResolveRawRef(t *testing.T) {
 		ts.Add(time.Minute)
 	}
 
-	iter, err := r.Log(ctx, repository, previous)
+	iter, err := r.Log(ctx, repository, previous, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 	c4 := addCommit("c4", c3)
 	c5 := addCommit("c5", c4, c2)
 
-	it, err := r.Log(ctx, repository, c5)
+	it, err := r.Log(ctx, repository, c5, false)
 	testutil.MustDo(t, "Log request", err)
 	var commitIDs []graveler.CommitID
 	for it.Next() {

@@ -3228,6 +3228,7 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 		FromReference: paginationAfter(params.After),
 		Amount:        paginationAmount(params.Amount),
 		Limit:         swag.BoolValue(params.Limit),
+		FirstParent:   swag.BoolValue(params.FirstParent),
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return

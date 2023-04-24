@@ -441,8 +441,9 @@ lakectl annotate <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help        help for annotate
-  -r, --recursive   recursively annotate all entries under a given path or prefix
+      --first-parent   follow only the first parent commit upon seeing a merge commit
+  -h, --help           help for annotate
+  -r, --recursive      recursively annotate all entries under a given path or prefix
 ```
 
 
@@ -2578,6 +2579,7 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
       --after string         show results after this value (used for pagination)
       --amount int           number of results to return. By default, all results are returned
       --dot                  return results in a dotgraph format
+      --first-parent         follow only the first parent commit upon seeing a merge commit
   -h, --help                 help for log
       --limit                limit result just to amount. By default, returns whether more items are available.
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together

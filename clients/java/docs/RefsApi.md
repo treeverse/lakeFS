@@ -307,7 +307,7 @@ Name | Type | Description  | Notes
 
 <a name="logCommits"></a>
 # **logCommits**
-> CommitList logCommits(repository, ref, after, amount, objects, prefixes, limit)
+> CommitList logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent)
 
 get commit log from ref. If both objects and prefixes are empty, return all commits.
 
@@ -361,8 +361,9 @@ public class Example {
     List<String> objects = Arrays.asList(); // List<String> | list of paths, each element is a path of a specific object
     List<String> prefixes = Arrays.asList(); // List<String> | list of paths, each element is a path of a prefix
     Boolean limit = true; // Boolean | limit the number of items in return to 'amount'. Without further indication on actual number of items.
+    Boolean firstParent = true; // Boolean | if set to true, follow only the first parent upon reaching a merge commit
     try {
-      CommitList result = apiInstance.logCommits(repository, ref, after, amount, objects, prefixes, limit);
+      CommitList result = apiInstance.logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RefsApi#logCommits");
@@ -386,6 +387,7 @@ Name | Type | Description  | Notes
  **objects** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a specific object | [optional]
  **prefixes** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional]
  **limit** | **Boolean**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
+ **firstParent** | **Boolean**| if set to true, follow only the first parent upon reaching a merge commit | [optional]
 
 ### Return type
 

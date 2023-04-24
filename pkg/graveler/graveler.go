@@ -483,7 +483,7 @@ type VersionController interface {
 	ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error)
 
 	// Log returns an iterator starting at commit ID up to repository root
-	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
 	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
@@ -794,7 +794,7 @@ type RefManager interface {
 	FindMergeBase(ctx context.Context, repository *RepositoryRecord, commitIDs ...CommitID) (*Commit, error)
 
 	// Log returns an iterator starting at commit ID up to repository root
-	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error)
+	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool) (CommitIterator, error)
 
 	// ListCommits returns an iterator over all known commits, ordered by their commit ID
 	ListCommits(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
@@ -1317,8 +1317,8 @@ func (g *Graveler) ResolveRawRef(ctx context.Context, repository *RepositoryReco
 	return g.RefManager.ResolveRawRef(ctx, repository, rawRef)
 }
 
-func (g *Graveler) Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (CommitIterator, error) {
-	return g.RefManager.Log(ctx, repository, commitID)
+func (g *Graveler) Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool) (CommitIterator, error) {
+	return g.RefManager.Log(ctx, repository, commitID, firstParent)
 }
 
 func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error) {
