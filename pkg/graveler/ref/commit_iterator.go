@@ -111,15 +111,15 @@ func (ci *CommitIterator) Next() bool {
 	// set it as the current value and push the current commits parents to the queue
 	ci.value = heap.Pop(&ci.queue).(*graveler.CommitRecord)
 	for _, p := range ci.value.Parents {
+		// skip commits we already visited
+		if _, visited := ci.visit[p]; visited {
+			continue
+		}
 		rec, err := ci.getCommitRecord(p)
 		if err != nil {
 			ci.value = nil
 			ci.err = err
 			return false
-		}
-		// skip commits we already visited
-		if _, visited := ci.visit[rec.CommitID]; visited {
-			continue
 		}
 		ci.visit[rec.CommitID] = struct{}{}
 		heap.Push(&ci.queue, rec)
