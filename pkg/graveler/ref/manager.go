@@ -521,8 +521,13 @@ func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.Reposi
 	return FindMergeBase(ctx, m, repository, commitIDs[0], commitIDs[1])
 }
 
-func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID) (graveler.CommitIterator, error) {
-	return NewCommitIterator(ctx, repository, from, m), nil
+func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+	return NewCommitIterator(ctx, &CommitIteratorConfig{
+		repository:  repository,
+		start:       from,
+		firstParent: firstParent,
+		manager:     m,
+	}), nil
 }
 
 func (m *Manager) ListCommits(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {

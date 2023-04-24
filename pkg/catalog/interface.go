@@ -41,6 +41,7 @@ type LogParams struct {
 	FromReference string
 	Amount        int
 	Limit         bool
+	FirstParent   bool
 }
 
 type ExpireResult struct {

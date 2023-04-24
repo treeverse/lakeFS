@@ -734,7 +734,7 @@ func TestManager_Log(t *testing.T) {
 		ts = ts.Add(time.Second)
 	}
 
-	iter, err := r.Log(context.Background(), repository, previous)
+	iter, err := r.Log(context.Background(), repository, previous, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -785,77 +785,103 @@ func TestManager_LogGraph(t *testing.T) {
 		DefaultBranchID:  "main",
 	})
 	testutil.MustDo(t, "Create repository", err)
-
-	/*
-		---1----2----4----7
-		    \	           \
-			 3----5----6----8---
-	*/
-	nextCommitNumber := 0
-	nextCommitTS, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
-	addNextCommit := func(parents ...graveler.CommitID) graveler.CommitID {
-		nextCommitTS = nextCommitTS.Add(time.Minute)
-		nextCommitNumber++
-		id := "c" + strconv.Itoa(nextCommitNumber)
-		c := graveler.Commit{
-			Committer:    "user1",
-			Message:      id,
-			MetaRangeID:  "fefe1221",
-			CreationDate: nextCommitTS,
-			Parents:      parents,
-			Metadata:     graveler.Metadata{"foo": "bar"},
-		}
-		cid, err := r.AddCommit(ctx, repository, c)
-		testutil.MustDo(t, "Add commit "+id, err)
-		return cid
+	dag := map[string][]string{
+		"c1": {},
+		"c2": {"c1"},
+		"c3": {"c1"},
+		"c4": {"c2"},
+		"c5": {"c3"},
+		"c6": {"c5"},
+		"c7": {"c4"},
+		"c8": {"c6", "c7"},
 	}
-	c1 := addNextCommit()
-	c2 := addNextCommit(c1)
-	c3 := addNextCommit(c1)
-	c4 := addNextCommit(c2)
-	c5 := addNextCommit(c3)
-	c6 := addNextCommit(c5)
-	c7 := addNextCommit(c4)
-	c8 := addNextCommit(c6, c7)
-
-	expected := []string{
-		"c8", "c7", "c6", "c5", "c4", "c3", "c2", "c1",
+	tests := map[string]struct {
+		firstParent bool
+		seek        string
+		start       string
+		expected    []string
+	}{
+		/*
+			---1----2----4----7
+			    \	           \
+				 3----5----6----8---
+		*/
+		"full_graph": {
+			start:    "c8",
+			expected: []string{"c8", "c7", "c6", "c5", "c4", "c3", "c2", "c1"},
+		},
+		"full_graph_first_parent": {
+			start:       "c8",
+			firstParent: true,
+			expected:    []string{"c8", "c6", "c5", "c3", "c1"},
+		},
+		"with_seek": {
+			start:    "c8",
+			seek:     "c4",
+			expected: []string{"c4", "c3", "c2", "c1"},
+		},
+		"with_seek_first_parent": {
+			start:       "c8",
+			seek:        "c5",
+			firstParent: true,
+			expected:    []string{"c5", "c3", "c1"},
+		},
+		"start_from": {
+			start:    "c7",
+			expected: []string{"c7", "c4", "c2", "c1"},
+		},
 	}
-
-	// iterate over the commits
-	it, err := r.Log(ctx, repository, c8)
-	if err != nil {
-		t.Fatal("Error during create Log iterator", err)
-	}
-	defer it.Close()
-
-	var commits []string
-	for it.Next() {
-		c := it.Value()
-		commits = append(commits, c.Message)
-	}
-	if err := it.Err(); err != nil {
-		t.Fatal("Iteration ended with error", err)
-	}
-	if diff := deep.Equal(commits, expected); diff != nil {
-		t.Fatal("Found diff between expected commits:", diff)
-	}
-
-	// test SeekGE to "c4"
-	it.SeekGE(c4)
-	expectedAfterSeek := []string{
-		"c4", "c3", "c2", "c1",
-	}
-	var commitsAfterSeek []string
-	for it.Next() {
-		c := it.Value()
-		commitsAfterSeek = append(commitsAfterSeek, c.Message)
-	}
-	if err := it.Err(); err != nil {
-		t.Fatal("Iteration ended with error", err)
-	}
-	if diff := deep.Equal(commitsAfterSeek, expectedAfterSeek); diff != nil {
-		t.Fatal("Found diff between expected commits (after seek):", diff)
+	for name, tst := range tests {
+		t.Run(name, func(t *testing.T) {
+			nextCommitTS, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
+			commitNameToID := map[string]graveler.CommitID{}
+			addCommit := func(commitName string, parentNames ...string) graveler.CommitID {
+				nextCommitTS = nextCommitTS.Add(time.Minute)
+				parentIDs := make([]graveler.CommitID, 0, len(parentNames))
+				for _, parentName := range parentNames {
+					parentIDs = append(parentIDs, graveler.CommitID(commitNameToID[parentName]))
+				}
+				c := graveler.Commit{
+					Committer:    "user1",
+					Message:      commitName,
+					MetaRangeID:  "fefe1221",
+					CreationDate: nextCommitTS,
+					Parents:      parentIDs,
+					Metadata:     graveler.Metadata{"foo": "bar"},
+				}
+				cid, err := r.AddCommit(ctx, repository, c)
+				commitNameToID[commitName] = cid
+				testutil.MustDo(t, "Add commit "+commitName, err)
+				return cid
+			}
+			commitNames := make([]string, 0, len(dag))
+			for commitName := range dag {
+				commitNames = append(commitNames, commitName)
+			}
+			sort.Strings(commitNames)
+			for _, commitName := range commitNames {
+				addCommit(commitName, dag[commitName]...)
+			}
+			it, err := r.Log(ctx, repository, commitNameToID[tst.start], tst.firstParent)
+			if err != nil {
+				t.Fatal("Error during create Log iterator", err)
+			}
+			defer it.Close()
+			if tst.seek != "" {
+				it.SeekGE(commitNameToID[tst.seek])
+			}
+			var commits []string
+			for it.Next() {
+				c := it.Value()
+				commits = append(commits, c.Message)
+			}
+			if err := it.Err(); err != nil {
+				t.Fatal("Iteration ended with error", err)
+			}
+			if diff := deep.Equal(commits, tst.expected); diff != nil {
+				t.Fatal("Found diff between expected commits:", diff)
+			}
+		})
 	}
 }
 

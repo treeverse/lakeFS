@@ -209,7 +209,7 @@ func (g *FakeGraveler) ListTags(ctx context.Context, repository *graveler.Reposi
 	return g.TagIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (graveler.CommitIterator, error) {
+func (g *FakeGraveler) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, _ bool) (graveler.CommitIterator, error) {
 	panic("implement me")
 }
 

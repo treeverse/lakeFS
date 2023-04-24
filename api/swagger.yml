@@ -2681,6 +2681,11 @@ paths:
           description: limit the number of items in return to 'amount'. Without further indication on actual number of items.
           schema:
             type: boolean
+        - in: query
+          name: first_parent
+          description: if set to true, follow only the first parent upon reaching a merge commit
+          schema:
+            type: boolean
       responses:
         200:
           description: commit log
