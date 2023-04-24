@@ -140,7 +140,7 @@ func TestExpiredCommits(t *testing.T) {
 				"b":  newTestCommit(5, "a"),
 				"c":  newTestCommit(5, "a"),
 			},
-			headsRetentionDays: map[string]int32{"c": 7, "b": 7},
+			headsRetentionDays: map[string]int32{"c": 6, "b": 6},
 			previouslyExpired:  []string{"e1", "e2", "e3", "e4", "e5", "e6", "e7"},
 			expectedActiveIDs:  []string{"a", "b", "c"},
 			expectedExpiredIDs: []string{},
@@ -261,10 +261,10 @@ func TestExpiredCommits(t *testing.T) {
 				"HEAD1": newTestCommit(0, "D"),
 				"HEAD2": newTestCommit(1, "F"),
 			},
-			headsRetentionDays: map[string]int32{"HEAD1": 3, "HEAD2": 4},
-			previouslyExpired:  []string{"A, B, C, E"},
-			expectedActiveIDs:  []string{"B", "C", "D", "E", "F", "HEAD1", "HEAD2"},
-			expectedExpiredIDs: []string{"A"},
+			headsRetentionDays: map[string]int32{"HEAD1": 3, "HEAD2": 3},
+			previouslyExpired:  []string{"A", "B", "C", "E"},
+			expectedActiveIDs:  []string{"B", "D", "E", "F", "HEAD1", "HEAD2"},
+			expectedExpiredIDs: []string{},
 		},
 	}
 	for name, tst := range tests {
