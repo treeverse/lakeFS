@@ -2682,7 +2682,7 @@ paths:
           schema:
             type: boolean
         - in: query
-          name: firstParent
+          name: first_parent
           description: if set to true, follow only the first parent upon reaching a merge commit
           schema:
             type: boolean

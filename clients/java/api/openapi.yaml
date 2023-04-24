@@ -2411,7 +2411,7 @@ paths:
           merge commit
         explode: true
         in: query
-        name: firstParent
+        name: first_parent
         required: false
         schema:
           type: boolean

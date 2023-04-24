@@ -577,7 +577,7 @@ public class RefsApi {
         }
 
         if (firstParent != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("firstParent", firstParent));
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("first_parent", firstParent));
         }
 
         final String[] localVarAccepts = {

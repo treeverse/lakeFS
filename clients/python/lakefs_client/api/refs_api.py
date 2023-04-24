@@ -342,7 +342,7 @@ class RefsApi(object):
                     'objects': 'objects',
                     'prefixes': 'prefixes',
                     'limit': 'limit',
-                    'first_parent': 'firstParent',
+                    'first_parent': 'first_parent',
                 },
                 'location_map': {
                     'repository': 'path',

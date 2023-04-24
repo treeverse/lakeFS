@@ -120,7 +120,7 @@ func (ci *CommitIterator) Next() bool {
 	// set it as the current value and push the current commits parents to the queue
 	ci.value = heap.Pop(&ci.queue).(*graveler.CommitRecord)
 	parents := ci.value.Parents
-	if ci.firstParent && len(parents) >= 1 {
+	if ci.firstParent && len(parents) > 1 {
 		parents = parents[:1]
 	}
 	for _, p := range parents {
