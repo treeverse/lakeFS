@@ -245,6 +245,27 @@ func TestExpiredCommits(t *testing.T) {
 			expectedActiveIDs:  []string{"head1", "head2", "x"},
 			expectedExpiredIDs: []string{"root"},
 		},
+		/*
+			<A-4-previously_expired>--<B-3-previously_expired>--<D-2>--<HEAD1-0>
+					  \
+					 <C-4-previously_expired>--<E-3-previously_expired>--<F-2>--<HEAD2-1>
+		*/
+		"previously_expired_commit_becomes_active": {
+			commits: map[string]testCommit{
+				"A":     newTestCommit(4),
+				"B":     newTestCommit(3, "A"),
+				"C":     newTestCommit(4, "A"),
+				"D":     newTestCommit(2, "B"),
+				"E":     newTestCommit(3, "C"),
+				"F":     newTestCommit(2, "E"),
+				"HEAD1": newTestCommit(0, "D"),
+				"HEAD2": newTestCommit(1, "F"),
+			},
+			headsRetentionDays: map[string]int32{"HEAD1": 3, "HEAD2": 4},
+			previouslyExpired:  []string{"A, B, C, E"},
+			expectedActiveIDs:  []string{"B", "C", "D", "E", "F", "HEAD1", "HEAD2"},
+			expectedExpiredIDs: []string{"A"},
+		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
