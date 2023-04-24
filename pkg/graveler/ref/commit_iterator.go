@@ -124,15 +124,15 @@ func (ci *CommitIterator) Next() bool {
 		parents = parents[:1]
 	}
 	for _, p := range parents {
+		// skip commits we already visited
+		if _, visited := ci.visit[p]; visited {
+			continue
+		}
 		rec, err := ci.getCommitRecord(p)
 		if err != nil {
 			ci.value = nil
 			ci.err = err
 			return false
-		}
-		// skip commits we already visited
-		if _, visited := ci.visit[rec.CommitID]; visited {
-			continue
 		}
 		ci.visit[rec.CommitID] = struct{}{}
 		heap.Push(&ci.queue, rec)
