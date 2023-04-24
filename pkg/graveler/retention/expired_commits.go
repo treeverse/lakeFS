@@ -98,21 +98,6 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 		// Start traversing the commit's ancestors (path):
 		for commitNode.MainParent != "" {
 			nextCommitID := commitNode.MainParent
-			// If the parent commit was expired in a previous GC run (incremental GC case)
-			if _, ok = previouslyExpiredMap[nextCommitID]; ok {
-				parentCommit, ok := commitsMap[nextCommitID]
-				if !ok {
-					return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, nextCommitID)
-				}
-				// If the commit is not expired anymore (for instance, because of an update of the GC rules)
-				if parentCommit.CreationDate.After(branchExpirationThreshold) {
-					// Remove it from `previouslyExpiredMap` and continue processing it.
-					delete(previouslyExpiredMap, nextCommitID)
-				} else {
-					// stop the processing of it and its ancestors as they were processed as well in this path
-					break
-				}
-			}
 			var previousThreshold time.Time
 			if previousThreshold, ok = processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
 				// If the parent commit was already processed and its threshold was longer than the current threshold,
@@ -127,7 +112,12 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
 			} else if _, ok = activeMap[nextCommitID]; !ok {
-				// If the parent commit isn't in the active map, and the current commit's creation time isn't after the
+				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
+				// both expired in this run and the previous (in this path)
+				if _, ok = previouslyExpiredMap[nextCommitID]; ok {
+					break
+				}
+				// Else, if the parent commit isn't in the active map, and the current commit's creation time isn't after the
 				// threshold, then the parent has expired.
 				expiredMap[nextCommitID] = struct{}{}
 			}
