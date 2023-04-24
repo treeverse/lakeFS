@@ -88,17 +88,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16.17.1"
-
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19.2
-        id: go
-
       - name: Retrieve generated code
         uses: actions/download-artifact@v3
         with:
@@ -127,11 +116,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Export ECR parameters
-        run: |
-          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-          echo "ECR_REPOSITORY_LAKEFS=lakefs" >> $GITHUB_ENV
-
       - name: Login to GitHub Docker Registry
         uses: docker/login-action@v2
         with:
@@ -139,44 +123,42 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull last built docker image cache
+      - name: Prepare tags
         run: |
-          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
-          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
-          true
-
-      - name: Build Docker image with cache and push
-        run: |
-          set -ex
-          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2
-          ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
-          if [[ -n $GITHUB_REF ]]; then
-              ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
-          else
-              ghr_ref_tag=''
-          fi
-          ecr_tag="-t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}"
-          docker build . \
-              ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
-              --build-arg VERSION=${{ steps.version.outputs.tag }} \
-              --label db-schema-version=${{ steps.schema.outputs.dbschema_version }} \
-              --cache-from=${ghr}
-          docker push ${ghr_build_tag#-t }
-          if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
-        env:
-          DOCKER_BUILDKIT: "1"
-
-      - name: Push to Amazon ECR
-        run: |
-          set +e
-          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
-          if [ $? -eq 0 ]; then
-            echo "Image exists"
-          else
-            echo "Image doesn't exist"
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
-          fi
-
+          import os
+          github_repository = os.environ["GITHUB_REPOSITORY"].lower()
+          ghr = f"ghcr.io/{github_repository}/build-cache-2"
+          ghr_ref_tag = ""
+          if os.environ.get("GITHUB_HEAD_REF"):
+            github_ref = os.environ["GITHUB_HEAD_REF"].split("/")[-1]
+            ghr_ref_tag = f"{ghr}:{github_ref}"
+          ecr_registry = ${{ steps.login-ecr.outputs.registry }}
+          ecr_tag = f"{ecr_registry}/lakefs:${{ steps.version.outputs.tag }}"
+          ghr_build_tag = f"{ghr}:${{ steps.version.outputs.tag }}"
+          push_tags = ",".join([ecr_tag, ghr_build_tag])
+          with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
+            print(f"ghr={ghr}", file=f)
+            print(f"ghr_build_tag={ghr_build_tag}", file=f)
+            print(f"ecr_tag={ecr_tag}", file=f)
+            print(f"ghr_ref_tag={ghr_ref_tag}", file=f)
+            print(f"push_tags={push_tags}", file=f)
+        id: tags
+        shell: python
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and Push
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ steps.tags.outputs.push_tags }}
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          context: .
+          labels: db-schema-version=${{ steps.schema.outputs.dbschema_version }}
+          cache-from: |
+            type=gha
+            type=gha,scope=master
+          cache-to: |
+            type=gha,mode=max
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [check-secrets]
@@ -530,16 +512,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Export ECR parameters
-        run: |
-          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: Build and Push to Amazon ECR
-        run: |
-          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
-          docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
-        env:
-          DOCKER_BUILDKIT: "1"
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          context: deployments/tools/export
 
 
   hadoopfs-tests:
