@@ -39,11 +39,7 @@ builds:
 archives:
 - id: default
   rlcp: true
-  name_template: >-
-    {{ .ProjectName }}_
-    {{ .Version }}_
-    {{- title .Os }}_
-    {{- if eq .Arch "amd64" }}x86_64{{- else }}{{ .Arch }}{{ end }}
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else }}{{ .Arch }}{{ end }}'
   format: tar.gz
   format_overrides:
     - goos: windows
@@ -60,12 +56,7 @@ archives:
     - goos: windows
       format: zip
   format: binary
-  name_template: >-
-    {{- title .Os }}_
-    {{- if eq .Arch "amd64" }}x86_64
-    {{- else if eq .Arch "386" }}i386
-    {{- else }}{{ .Arch }}{{ end }}/
-    lakectl
+  name_template: '{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else if eq .Arch "386" }}i386{{- else }}{{ .Arch }}{{ end }}/lakectl'
   builds:
    - lakectl
 checksum:
