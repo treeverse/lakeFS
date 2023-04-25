@@ -63,7 +63,17 @@ jobs:
         with:
           node-version: "16.17.1"
 
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
+        with:
+          path: /tmp/generated.tar.gz
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/api/**', './pkg/auth/**') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Generate code
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
@@ -520,7 +530,7 @@ jobs:
         working-directory: test/lakefsfs_contract
         run: ./setup-test.sh
         env:
-          AWS_ACCESS_KEY_ID: minio
+          AWS_ACCESS_KEY_ID:  minio
           AWS_SECRET_ACCESS_KEY: minio123
           STORAGE_NAMESPACE: s3://test-bucket/data
           REPOSITORY: lakefsfs-contract-test
