@@ -1,0 +1,4 @@
+lakefs_client
+jupysql==0.5.2
+# matplotlib==3.6.3
+# scipy==1.10.0
