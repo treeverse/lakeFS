@@ -826,7 +826,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ghcr.io/treeverse/hive-metastore:${{ github.sha }}
+          tags: ghcr.io/treeverse/hive-metastore:${{ needs.deploy-image.outputs.tag }}
           context: test/lakectl_metastore/hive
           cache-from: type=gha,scope=hive-metastore
           cache-to: type=gha,mode=max,scope=hive-metastore
@@ -834,7 +834,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ghcr.io/treeverse/dbt:${{ github.sha }}
+          tags: ghcr.io/treeverse/dbt:${{ needs.deploy-image.outputs.tag }}
           context: test/lakectl_metastore/dbt
           cache-from: type=gha,scope=dbt
           cache-to: type=gha,mode=max,scope=dbt
