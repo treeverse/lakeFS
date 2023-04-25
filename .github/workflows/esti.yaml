@@ -819,7 +819,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: false
-          tags: localhost:5000/hive-metastore:latest
+          tags: ghcr.io/treeverse/hive-metastore:${{ env.GITHUB_SHA }}
           context: test/lakectl_metastore/hive
           cache-from: type=gha,scope=hive-metastore
           cache-to: type=gha,mode=max,scope=hive-metastore
@@ -827,7 +827,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: false
-          tags: localhost:5000/dbt:latest
+          tags: ghcr.io/treeverse/hive-metastore:${{ env.GITHUB_SHA }}
           context: test/lakectl_metastore/dbt
           cache-from: type=gha,scope=dbt
           cache-to: type=gha,mode=max,scope=dbt
