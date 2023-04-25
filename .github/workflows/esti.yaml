@@ -804,8 +804,6 @@ jobs:
     name: Test metastore client commands using trino and dbt
     needs: [gen-code]
     runs-on: ubuntu-20.04
-    env:
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
