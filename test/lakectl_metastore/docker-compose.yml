@@ -65,6 +65,8 @@ services:
       - ./etc/lakefs.properties:/etc/trino/catalog/lakefs.properties
     ports:
       - "8080:8085"
+    healthcheck:
+      test: curl "http://trino:8080/v1/info" | jq '.starting|contains("false")'
 
   trino-client:
     image: trinodb/trino:358
@@ -80,8 +82,8 @@ services:
   dbt:
     image: dbt:latest
     depends_on:
-      - trino
-    profiles: ["client"]
+      trino:
+        condition: service_healthy
     environment:
       - AWS_ACCOUNT_ID
       - LAKECTL_METASTORE_GLUE_CATALOG_ID=${AWS_ACCOUNT_ID}
