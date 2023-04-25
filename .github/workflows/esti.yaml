@@ -123,8 +123,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-        id: tags
-        shell: python
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push
