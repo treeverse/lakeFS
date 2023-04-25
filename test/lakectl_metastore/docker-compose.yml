@@ -39,12 +39,7 @@ services:
       MYSQL_DATABASE: metastore_db
 
   hive-metastore:
-    image: ghcr.io/hive-metastore-cache:latest
-    build:
-      context: ./hive
-      cache_from:
-        - ghcr.io/hive-metastore-cache:latest
-
+    image: hive-metastore:latest
     container_name: hive
     depends_on:
       - mariadb
