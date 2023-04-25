@@ -798,12 +798,6 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19.2
-        id: go
-
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
@@ -836,9 +830,8 @@ jobs:
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Pull last built docker image cache
-        run: |
-          docker-compose push -t ghcr.io/hive-metastore-cache:latest
+      - name: Push image to cache
+        run: docker-compose push hive-metastore
       - name: Build lakectl for dbt container
         run: go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
 
