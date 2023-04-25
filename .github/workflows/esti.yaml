@@ -819,16 +819,16 @@ jobs:
       - name: Build and Push hive-metastore
         uses: docker/build-push-action@v4
         with:
-          push: false
-          tags: hive-metastore:latest
+          push: true
+          tags: localhost:5000/hive-metastore:latest
           context: test/lakectl_metastore/hive
           cache-from: type=gha,scope=hive-metastore
           cache-to: type=gha,mode=max,scope=hive-metastore
       - name: Build and Push dbt
         uses: docker/build-push-action@v4
         with:
-          push: false
-          tags: dbt:latest
+          push: true
+          tags: localhost:5000/dbt:latest
           context: test/lakectl_metastore/dbt
           cache-from: type=gha,scope=dbt
           cache-to: type=gha,mode=max,scope=dbt

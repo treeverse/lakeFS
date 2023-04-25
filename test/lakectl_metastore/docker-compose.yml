@@ -39,7 +39,7 @@ services:
       MYSQL_DATABASE: metastore_db
 
   hive-metastore:
-    image: hive-metastore:latest
+    image: localhost:5000/hive-metastore:latest
     container_name: hive
     depends_on:
       - mariadb
@@ -80,7 +80,7 @@ services:
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
-    image: dbt:latest
+    image: localhost:5000/dbt:latest
     depends_on:
       trino:
         condition: service_healthy
