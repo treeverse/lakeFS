@@ -79,8 +79,8 @@ services:
   dbt:
     image: ghcr.io/treeverse/dbt:${TAG}
     depends_on:
-      trino:
-        condition: service_healthy
+      - trino
+    profiles: ["client"]
     environment:
       - AWS_ACCOUNT_ID
       - LAKECTL_METASTORE_GLUE_CATALOG_ID=${AWS_ACCOUNT_ID}

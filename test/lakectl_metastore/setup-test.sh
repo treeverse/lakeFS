@@ -8,5 +8,7 @@ docker-compose exec -T lakefs sh -c 'lakefs setup --user-name tester --access-ke
 
 docker-compose exec -T lakefs sh -c 'lakectl repo create lakefs://example ${STORAGE_NAMESPACE} -d main'
 
+docker-compose run --entrypoint '/usr/app/wait-for-trino.sh' dbt
+
 docker-compose exec -T trino sh -c "trino --catalog lakefs --execute \"create schema dbt_main with ( location = 's3://example/main/dbt/' )\" "
 
