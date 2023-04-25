@@ -32,21 +32,32 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
+        with:
+          path: /tmp/generated.tar.gz
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/api/**', './pkg/auth/**') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       # No way to share code between workflows :-( If you change this, find and change the
       # same code wherever "Find Go module and build caches" appears!
       - name: Find Go module and build caches
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
           echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
           cat $GITHUB_ENV
 
       - name: Setup Go
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v3
         with:
           go-version: 1.19.2
         id: go
 
       - name: Cache Go modules and builds
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
@@ -60,17 +71,9 @@ jobs:
             ${{ runner.os }}-
 
       - uses: actions/setup-node@v3
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           node-version: "16.17.1"
-
-      - name: Restore cache
-        uses: actions/cache@v3
-        id: restore-cache
-        with:
-          path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/api/**', './pkg/auth/**') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
 
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -81,7 +84,6 @@ jobs:
           tar -cf /tmp/generated.tar.gz .
 
       - name: Store generated code
-        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v3
         with:
           name: generated-code
