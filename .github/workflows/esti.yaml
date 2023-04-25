@@ -860,7 +860,7 @@ jobs:
           REPOSITORY: gateway-test
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/lakectl_metastore
-        run: docker-compose run dbt
+        run: docker-compose --profile client run dbt
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
