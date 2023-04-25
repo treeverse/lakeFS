@@ -533,7 +533,7 @@ jobs:
         working-directory: test/lakefsfs_contract
         run: ./setup-test.sh
         env:
-          AWS_ACCESS_KEY_ID:  minio
+          AWS_ACCESS_KEY_ID: minio
           AWS_SECRET_ACCESS_KEY: minio123
           STORAGE_NAMESPACE: s3://test-bucket/data
           REPOSITORY: lakefsfs-contract-test
@@ -822,16 +822,16 @@ jobs:
           push: false
           tags: hive-metastore:latest
           context: test/lakectl_metastore/hive
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=hive-metastore
+          cache-to: type=gha,mode=max,scope=hive-metastore
       - name: Build and Push dbt
         uses: docker/build-push-action@v4
         with:
           push: false
           tags: dbt:latest
           context: test/lakectl_metastore/dbt
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=dbt
+          cache-to: type=gha,mode=max,scope=dbt
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
