@@ -1,4 +1,4 @@
-version: "3"
+version: "3.7"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
@@ -40,6 +40,7 @@ services:
 
   hive-metastore:
     image: localhost:5000/hive-metastore:latest
+    pull_policy: missing
     container_name: hive
     depends_on:
       - mariadb
@@ -81,6 +82,7 @@ services:
 
   dbt:
     image: localhost:5000/dbt:latest
+    pull_policy: missing
     depends_on:
       trino:
         condition: service_healthy
