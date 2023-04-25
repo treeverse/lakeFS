@@ -40,7 +40,7 @@ services:
 
   hive-metastore:
     image: localhost:5000/hive-metastore:latest
-    pull_policy: missing
+    pull_policy: if_not_present
     container_name: hive
     depends_on:
       - mariadb
@@ -82,7 +82,7 @@ services:
 
   dbt:
     image: localhost:5000/dbt:latest
-    pull_policy: missing
+    pull_policy: if_not_present
     depends_on:
       trino:
         condition: service_healthy
