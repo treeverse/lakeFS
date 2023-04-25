@@ -822,7 +822,7 @@ jobs:
       - name: Build and Push hive-metastore
         uses: docker/build-push-action@v4
         with:
-          push: false
+          push: true
           tags: ghcr.io/treeverse/hive-metastore:${{ github.sha }}
           context: test/lakectl_metastore/hive
           cache-from: type=gha,scope=hive-metastore
@@ -830,7 +830,7 @@ jobs:
       - name: Build and Push dbt
         uses: docker/build-push-action@v4
         with:
-          push: false
+          push: true
           tags: ghcr.io/treeverse/hive-metastore:${{ github.sha }}
           context: test/lakectl_metastore/dbt
           cache-from: type=gha,scope=dbt
