@@ -65,11 +65,6 @@ services:
       - ./etc/lakefs.properties:/etc/trino/catalog/lakefs.properties
     ports:
       - "8080:8085"
-    healthcheck:
-      test: curl "http://trino:8080/v1/info" | jq '.starting|contains("false")'
-      interval: 5s
-      retries: 30
-      timeout: 3s
   trino-client:
     image: trinodb/trino:358
     profiles: ["client"]
