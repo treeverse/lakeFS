@@ -844,6 +844,7 @@ jobs:
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
       - name: Push image to cache
+        working-directory: test/lakectl_metastore
         run: docker-compose push hive-metastore
       - name: Build lakectl for dbt container
         run: go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
