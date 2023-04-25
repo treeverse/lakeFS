@@ -9,15 +9,13 @@ RUN apk add --no-cache build-base
 
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg go mod download
 
 # Copy project
 COPY . ./
 
 # Build a binaries
 ARG TARGETOS TARGETARCH
-
-RUN go mod download
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
