@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
@@ -78,7 +78,7 @@ services:
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
-    build: dbt
+    image: dbt:latest
     depends_on:
       - trino
     profiles: ["client"]

@@ -824,6 +824,13 @@ jobs:
           context: test/lakectl_metastore/hive
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - uses: docker/build-push-action@v4
+        with:
+          push: false
+          tags: dbt:latest
+          context: test/lakectl_metastore/dbt
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
