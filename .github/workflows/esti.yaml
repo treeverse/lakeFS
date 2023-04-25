@@ -132,7 +132,7 @@ jobs:
           if os.environ.get("GITHUB_HEAD_REF"):
             github_ref = os.environ["GITHUB_HEAD_REF"].split("/")[-1]
             ghr_ref_tag = f"{ghr}:{github_ref}"
-          ecr_registry = ${{ steps.login-ecr.outputs.registry }}
+          ecr_registry = "${{ steps.login-ecr.outputs.registry }}"
           ecr_tag = f"{ecr_registry}/lakefs:${{ steps.version.outputs.tag }}"
           ghr_build_tag = f"{ghr}:${{ steps.version.outputs.tag }}"
           push_tags = ",".join([ecr_tag, ghr_build_tag])
