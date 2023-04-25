@@ -1,0 +1,2 @@
+lakefs_client
+jupysql==0.5.2
