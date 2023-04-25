@@ -81,6 +81,7 @@ jobs:
           tar -cf /tmp/generated.tar.gz .
 
       - name: Store generated code
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v3
         with:
           name: generated-code
