@@ -37,7 +37,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './webui/**') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
           restore-keys: |
             ${{ runner.os }}-go-
       # No way to share code between workflows :-( If you change this, find and change the
