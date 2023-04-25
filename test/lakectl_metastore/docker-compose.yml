@@ -1,4 +1,4 @@
-version: "3"
+version: "3.7"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
@@ -39,7 +39,12 @@ services:
       MYSQL_DATABASE: metastore_db
 
   hive-metastore:
-    build: hive
+    image: ghcr.io/hive-metastore-cache:latest
+    build:
+      context: ./hive
+      cache_from:
+        - ghcr.io/hive-metastore-cache:latest
+
     container_name: hive
     depends_on:
       - mariadb

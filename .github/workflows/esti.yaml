@@ -808,6 +808,18 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull last built docker image cache
+        run: |
+          docker pull ghcr.io/hive-metastore-cache:latest || \
+          true
+
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -823,6 +835,10 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Pull last built docker image cache
+        run: |
+          docker-compose push -t ghcr.io/hive-metastore-cache:latest
       - name: Build lakectl for dbt container
         run: go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
 
