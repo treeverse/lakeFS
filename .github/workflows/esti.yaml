@@ -811,13 +811,19 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push hive-metastore
         uses: docker/build-push-action@v4
         with:
           push: false
-          tags: ghcr.io/treeverse/hive-metastore:${{ env.GITHUB_SHA }}
+          tags: ghcr.io/treeverse/hive-metastore:${{ github.sha }}
           context: test/lakectl_metastore/hive
           cache-from: type=gha,scope=hive-metastore
           cache-to: type=gha,mode=max,scope=hive-metastore
@@ -825,7 +831,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: false
-          tags: ghcr.io/treeverse/hive-metastore:${{ env.GITHUB_SHA }}
+          tags: ghcr.io/treeverse/hive-metastore:${{ github.sha }}
           context: test/lakectl_metastore/dbt
           cache-from: type=gha,scope=dbt
           cache-to: type=gha,mode=max,scope=dbt
