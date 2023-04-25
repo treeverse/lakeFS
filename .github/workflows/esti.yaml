@@ -81,7 +81,7 @@ jobs:
           make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
           touch webui/dist/index.html
-          tar -cf /tmp/generated.tar.gz ./pkg
+          tar -cf /tmp/generated.tar.gz ./pkg ./webui
 
       - name: Store generated code
         uses: actions/upload-artifact@v3
