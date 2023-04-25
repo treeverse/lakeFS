@@ -134,10 +134,9 @@ jobs:
           context: .
           labels: db-schema-version=${{ steps.schema.outputs.dbschema_version }}
           cache-from: |
-            type=s3,region=us-east-1,bucket=yoni-test3,name=${{ env.GITHUB_HEAD_REF }}
-            type=s3,region=us-east-1,bucket=yoni-test3,name=master
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
           cache-to: |
-            type=s3,region=us-east-1,bucket=yoni-test3,name=${{ env.GITHUB_HEAD_REF }},mode=max
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [check-secrets]
