@@ -805,7 +805,7 @@ jobs:
     needs: [gen-code]
     runs-on: ubuntu-20.04
     env:
-      TAG: ${{ env.GITHUB_SHA }}
+      TAG: ${{ github.sha }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
