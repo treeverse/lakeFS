@@ -1,8 +1,7 @@
 version: "3.7"
 services:
   lakefs:
-    image: "${REPO:-treeverse}/lakefs:latest"
-    pull_policy: if_not_present
+    image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
     container_name: lakefs
     ports:
       - "8000:8000"
@@ -40,7 +39,7 @@ services:
       MYSQL_DATABASE: metastore_db
 
   hive-metastore:
-    image: ghcr.io/treeveres/hive-metastore:${TAG}
+    image: ghcr.io/treeverse/hive-metastore:${TAG}
     container_name: hive
     depends_on:
       - mariadb
@@ -81,7 +80,7 @@ services:
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
-    image: ghcr.io/treeveres/dbt:${TAG}
+    image: ghcr.io/treeverse/dbt:${TAG}
     depends_on:
       trino:
         condition: service_healthy
