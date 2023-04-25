@@ -134,10 +134,10 @@ jobs:
           context: .
           labels: db-schema-version=${{ steps.schema.outputs.dbschema_version }}
           cache-from: |
-            type=gha
-            type=gha,scope=master
+            type=s3,region=us-east-1,bucket=yoni-test3,name=${{ env.GITHUB_HEAD_REF }}
+            type=s3,region=us-east-1,bucket=yoni-test3,name=master
           cache-to: |
-            type=gha,mode=max
+            type=s3,region=us-east-1,bucket=yoni-test3,name=${{ env.GITHUB_HEAD_REF }},mode=max
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [check-secrets]
