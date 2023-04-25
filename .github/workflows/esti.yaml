@@ -802,10 +802,11 @@ jobs:
 
   metastore-client-with-trino:
     name: Test metastore client commands using trino and dbt
-    needs: [gen-code]
+    needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
-      TAG: ${{ github.sha }}
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -867,7 +868,7 @@ jobs:
           REPOSITORY: gateway-test
           SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
         working-directory: test/lakectl_metastore
-        run: docker-compose --profile client run dbt
+        run: docker-compose run dbt
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
