@@ -816,7 +816,7 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Build and Push
+      - name: Build and Push hive-metastore
         uses: docker/build-push-action@v4
         with:
           push: false
@@ -824,7 +824,8 @@ jobs:
           context: test/lakectl_metastore/hive
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: docker/build-push-action@v4
+      - name: Build and Push dbt
+        uses: docker/build-push-action@v4
         with:
           push: false
           tags: dbt:latest
