@@ -804,6 +804,8 @@ jobs:
     name: Test metastore client commands using trino and dbt
     needs: [gen-code]
     runs-on: ubuntu-20.04
+    env:
+      TAG: ${{ env.GITHUB_SHA }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
@@ -840,7 +842,6 @@ jobs:
         with:
           compose-directory: test/lakectl_metastore
         env:
-          TAG: ${{ env.GITHUB_SHA }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
           LAKEFS_BLOCKSTORE_TYPE: s3
