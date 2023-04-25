@@ -847,6 +847,8 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+      - name: Build lakectl for dbt container
+        run: go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
 
       - name: Setup lakeFS for tests
         working-directory: test/lakectl_metastore
