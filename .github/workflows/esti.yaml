@@ -831,7 +831,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ghcr.io/treeverse/hive-metastore:${{ github.sha }}
+          tags: ghcr.io/treeverse/dbt:${{ github.sha }}
           context: test/lakectl_metastore/dbt
           cache-from: type=gha,scope=dbt
           cache-to: type=gha,mode=max,scope=dbt
