@@ -123,25 +123,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare tags
-        run: |
-          import os
-          github_repository = os.environ["GITHUB_REPOSITORY"].lower()
-          ghr = f"ghcr.io/{github_repository}/build-cache-2"
-          ghr_ref_tag = ""
-          if os.environ.get("GITHUB_HEAD_REF"):
-            github_ref = os.environ["GITHUB_HEAD_REF"].split("/")[-1]
-            ghr_ref_tag = f"{ghr}:{github_ref}"
-          ecr_registry = "${{ steps.login-ecr.outputs.registry }}"
-          ecr_tag = f"{ecr_registry}/lakefs:${{ steps.version.outputs.tag }}"
-          ghr_build_tag = f"{ghr}:${{ steps.version.outputs.tag }}"
-          push_tags = ",".join([ecr_tag, ghr_build_tag])
-          with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-            print(f"ghr={ghr}", file=f)
-            print(f"ghr_build_tag={ghr_build_tag}", file=f)
-            print(f"ecr_tag={ecr_tag}", file=f)
-            print(f"ghr_ref_tag={ghr_ref_tag}", file=f)
-            print(f"push_tags={push_tags}", file=f)
         id: tags
         shell: python
       - name: Set up Docker Buildx
@@ -150,7 +131,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ steps.tags.outputs.push_tags }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
           build-args: VERSION=${{ steps.version.outputs.tag }}
           context: .
           labels: db-schema-version=${{ steps.schema.outputs.dbschema_version }}
