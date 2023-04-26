@@ -1,4 +1,4 @@
-FROM jupyter/pyspark-notebook:notebook-6.5.4
+FROM jupyter/pyspark-notebook:spark-3.3.2
 
 ENV HADOOP_AWS_VERSION=3.3.1
 ENV AWS_SDK_VERSION=1.11.901
