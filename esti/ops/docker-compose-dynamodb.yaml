@@ -37,6 +37,7 @@ services:
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
+      - lakefs:testmultipartuploadabort.s3.local.lakefs.io
       - lakefs:testdeleteobjects.s3.local.lakefs.io
       - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
       - lakefs:migrate.s3.local.lakefs.io
