@@ -54,6 +54,7 @@ type ActionHook struct {
 	ID          string     `yaml:"id"`
 	Type        HookType   `yaml:"type"`
 	Description string     `yaml:"description"`
+	If          string     `yaml:"if"`
 	Properties  Properties `yaml:"properties"`
 }
 
