@@ -11,7 +11,7 @@ import (
 
 func getSparkSubmitArgs(entryPoint string) []string {
 	return []string{
-		"--master", "spark://localhost:7077",
+		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
