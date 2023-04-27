@@ -178,6 +178,7 @@ func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bo
 			"--conf", "spark.hadoop.lakefs.api.connection.timeout_seconds=3", "--conf", "spark.hadoop.lakefs.api.read.timeout_seconds=8",
 			"--conf", fmt.Sprintf("spark.hadoop.fs.azure.account.key.%s.dfs.core.windows.net=%s", azureStorageAccount, azureStorageAccessKey))
 	}
+	extraSubmitArgs = append(extraSubmitArgs, "--conf", "spark.hadoop.lakefs.gc.commit.num_partitions=1")
 	return &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaclientJarPath,
