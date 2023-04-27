@@ -302,8 +302,6 @@ jobs:
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          SPARK_WORKER_MEMORY: 4G
-          SPARK_WORKER_CORES: 4
         ports:
           - '8080:8080'
           - '7077:7077'
@@ -313,7 +311,7 @@ jobs:
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077
-          SPARK_WORKER_MEMORY: 4G
+          SPARK_WORKER_MEMORY: 1G
           SPARK_WORKER_CORES: 4
           SPARK_RPC_AUTHENTICATION_ENABLED: no
           SPARK_RPC_ENCRYPTION_ENABLED: no
