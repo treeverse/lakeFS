@@ -1,4 +1,4 @@
-version: "3"
+version: "3.7"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
@@ -39,7 +39,7 @@ services:
       MYSQL_DATABASE: metastore_db
 
   hive-metastore:
-    build: hive
+    image: ghcr.io/treeverse/hive-metastore:${TAG}
     container_name: hive
     depends_on:
       - mariadb
@@ -65,7 +65,6 @@ services:
       - ./etc/lakefs.properties:/etc/trino/catalog/lakefs.properties
     ports:
       - "8080:8085"
-
   trino-client:
     image: trinodb/trino:358
     profiles: ["client"]
@@ -78,7 +77,7 @@ services:
     entrypoint: ["trino", "--server", "trino:8080", "--catalog", "lakefs", "--execute", "drop schema if exists dbt_main; create schema dbt_main with (location = 's3://example/main/dbt' )"]
 
   dbt:
-    build: dbt
+    image: ghcr.io/treeverse/dbt:${TAG}
     depends_on:
       - trino
     profiles: ["client"]
