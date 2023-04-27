@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -336,6 +338,160 @@ hooks:
 
 			require.Error(t, actionsService.Run(ctx, record))
 			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+		})
+	}
+}
+
+func TestHookIf(t *testing.T) {
+	ctx := context.Background()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		if statusCode, err := strconv.Atoi(code); err == nil {
+			w.WriteHeader(statusCode)
+		}
+		_, _ = fmt.Fprintln(w, "Hi, hook")
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		Name                string
+		Action              string
+		ExpectedErr         bool
+		ExpectedHookIndexes []int
+	}{
+		{
+			Name: "run",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    properties:
+      url: ` + ts.URL + `
+`,
+			ExpectedHookIndexes: []int{0},
+		},
+		{
+			Name: "skip_using_false",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    if: false
+    properties:
+      url: ` + ts.URL + `
+  - id: id2
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{1},
+		},
+		{
+			Name: "fail_run_always",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    properties:
+      url: ` + ts.URL + `?code=500
+  - id: id2
+    if: failure()
+    type: webhook
+    properties:
+      url: ` + ts.URL + `
+  - id: id3
+    if: true
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{0, 1, 2},
+			ExpectedErr:         true,
+		},
+		{
+			Name: "fail_skip_always",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    type: webhook
+    properties:
+      url: ` + ts.URL + `?code=500
+  - id: id2
+    type: webhook
+    properties:
+      url: ` + ts.URL + `
+  - id: id3
+    if: true
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{0, 2},
+			ExpectedErr:         true,
+		},
+		{
+			Name: "invalid_if_expression",
+			Action: `---
+name: test action
+on:
+  pre-commit: {}
+hooks:
+  - id: id1
+    if: looks_bad
+    type: webhook
+    properties:
+      url: ` + ts.URL,
+			ExpectedHookIndexes: []int{0},
+			ExpectedErr:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			testOutputWriter, ctrl, _, record := setupTest(t)
+			defer ctrl.Finish()
+			outputWriteReturn := func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				_, err := io.ReadAll(reader)
+				return err
+			}
+			for _, idx := range tt.ExpectedHookIndexes {
+				hookRunID := actions.NewHookRunID(0, idx)
+				testOutputWriter.EXPECT().
+					OutputWrite(gomock.Any(), record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, hookRunID), gomock.Any(), gomock.Any()).
+					Return(nil).
+					DoAndReturn(outputWriteReturn)
+			}
+			testOutputWriter.EXPECT().
+				OutputWrite(gomock.Any(), record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+				Return(nil).
+				DoAndReturn(outputWriteReturn)
+
+			testSource := mock.NewMockSource(ctrl)
+			testSource.EXPECT().List(ctx, record).Return([]string{"act.yaml"}, nil)
+			testSource.EXPECT().Load(ctx, record, "act.yaml").Return([]byte(tt.Action), nil)
+
+			mockStatsCollector := NewActionStatsMockCollector()
+			actionsService := GetKVService(t, ctx, testSource, testOutputWriter, &mockStatsCollector, true)
+			defer actionsService.Stop()
+
+			err := actionsService.Run(ctx, record)
+			if tt.ExpectedErr {
+				if err == nil {
+					t.Fatal("Expected run to fail with an error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Run failed with error: %s", err)
+			}
 		})
 	}
 }
