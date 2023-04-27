@@ -27,7 +27,8 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
 
-	mpu, err := o.MultipartTracker.Get(req.Context(), uploadID)
+	ctx := req.Context()
+	mpu, err := o.MultipartTracker.Get(ctx, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("upload id not found in tracker")
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
@@ -39,8 +40,8 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 		return
 	}
 
-	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.UploadIDFieldKey: uploadID}))
-	err = o.BlockStore.AbortMultiPartUpload(req.Context(), block.ObjectPointer{
+	req = req.WithContext(logging.AddFields(ctx, logging.Fields{logging.UploadIDFieldKey: uploadID}))
+	err = o.BlockStore.AbortMultiPartUpload(ctx, block.ObjectPointer{
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       mpu.PhysicalAddress,
@@ -50,7 +51,11 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
-	// done.
+
+	if err := o.MultipartTracker.Delete(ctx, uploadID); err != nil {
+		o.Log(req).WithError(err).Warn("could not delete multipart record")
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
