@@ -180,8 +180,8 @@ func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bo
 	}
 	extraSubmitArgs = append(extraSubmitArgs,
 		"--conf", "spark.hadoop.lakefs.gc.commit.num_partitions=1",
-		"--conf", "spark.hadoop.lakefs.gc.range.num_partitions=8",
-		"--conf", "spark.hadoop.lakefs.gc.address.num_partitions=16")
+		"--conf", "spark.hadoop.lakefs.gc.range.num_partitions=4",
+		"--conf", "spark.hadoop.lakefs.gc.address.num_partitions=8")
 	return &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaclientJarPath,
