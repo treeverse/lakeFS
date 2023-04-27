@@ -348,17 +348,17 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 					HookID:           task.HookID,
 				}
 
-				ifHook, err := runHookIfEval(task, actionErr)
-				if err == nil && !ifHook {
-					// skip hook if expression evaluated as false
+				// evaluate if expression and keep error for later
+				var ifHook bool
+				ifHook, task.Err = runHookIfEval(task, actionErr)
+				if task.Err != nil && !ifHook {
 					continue
 				}
 
+				// execute hook if expression evaluated as true or if expression is empty
 				task.StartTime = time.Now().UTC()
 				var buf bytes.Buffer
-				if err != nil {
-					task.Err = err // report the eval error if found as the step failed
-				} else {
+				if task.Err == nil {
 					task.Err = task.Hook.Run(ctx, record, &buf)
 				}
 				task.EndTime = time.Now().UTC()
@@ -372,7 +372,7 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 						task.HookRunID, task.Action.Name, task.HookID, task.Err)
 				}
 
-				err = hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
+				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
 				if err != nil {
 					// non task error - we stop the tasks processing
 					return fmt.Errorf("failed to write action log. Run id '%s' action '%s' hook '%s': %w",
