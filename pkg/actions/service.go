@@ -351,7 +351,7 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				// evaluate if expression and keep error for later
 				var ifHook bool
 				ifHook, task.Err = runHookIfEval(task, actionErr)
-				if task.Err != nil && !ifHook {
+				if task.Err == nil && !ifHook {
 					continue
 				}
 
