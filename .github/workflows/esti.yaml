@@ -356,7 +356,7 @@ jobs:
 
       - name: GC test
         run: |
-          go test -timeout 30m -v ./esti \
+          go test -timeout 30m -v -parallel 8 ./esti \
             -system-tests -use-local-credentials -run=TestCommittedGC \
             -spark-image-tag=${{ matrix.spark.version }} \
             -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
