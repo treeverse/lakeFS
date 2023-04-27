@@ -72,6 +72,7 @@ services:
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     ports:
       - 18080:8080
+      - 7077:7077
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
@@ -103,36 +104,6 @@ services:
       - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
-  spark-submit:
-    image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
-    profiles: ["command"]
-    volumes:
-      - ./:/local
-      - ../../clients/hadoopfs/target:/target
-    environment:
-      - input
-      - output
-      - s3input
-      - s3output
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
-      - CLIENT_JAR
-      - EXPORT_LOCATION
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
-      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    extra_hosts:
-      - "s3.docker.lakefs.io:10.5.0.55"
-      - "docker.lakefs.io:10.5.0.55"
-      - "example.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
-      - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
-      - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
-
 networks:
   default:
     driver: bridge
