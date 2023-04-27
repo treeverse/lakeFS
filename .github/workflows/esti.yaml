@@ -38,8 +38,7 @@ jobs:
         with:
           path: /tmp/generated.tar.gz
           key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          restore-keys: ${{ runner.os }}-go-
       # No way to share code between workflows :-( If you change this, find and change the
       # same code wherever "Find Go module and build caches" appears!
       - name: Find Go module and build caches
