@@ -29,8 +29,6 @@ jobs:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
     steps:
-      - name: Check-out code
-        uses: actions/checkout@v3
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -39,14 +37,6 @@ jobs:
           path: /tmp/generated.tar.gz
           key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
           restore-keys: ${{ runner.os }}-go-
-      # No way to share code between workflows :-( If you change this, find and change the
-      # same code wherever "Find Go module and build caches" appears!
-      - name: Find Go module and build caches
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        run: |
-          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
-          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
-          cat $GITHUB_ENV
 
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -54,25 +44,6 @@ jobs:
         with:
           go-version: 1.19.2
         id: go
-
-      - name: Cache Go modules and builds
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
-        with:
-          path: |
-            ${{ env.GOMODCACHE }}
-            ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
-          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - uses: actions/setup-node@v3
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        with:
-          node-version: "16.17.1"
 
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -87,7 +58,6 @@ jobs:
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
-
 
   deploy-image:
     name: Build and push Docker image
