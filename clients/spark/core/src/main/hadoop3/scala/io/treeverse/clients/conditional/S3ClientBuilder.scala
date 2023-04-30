@@ -19,7 +19,7 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
-    cache.putIfAbsent(
+    cache.computeIfAbsent(
       bucket, {
         val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
                                         LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS

@@ -213,7 +213,7 @@ object BulkRemoverFactory {
       storageNamespace: String,
       region: String
   ): BulkRemover = {
-    cache.putIfAbsent(
+    cache.computeIfAbsent(
       storageNamespace, {
         if (storageType == StorageTypeS3) {
           new S3BulkRemover(hc, storageNamespace, region)
