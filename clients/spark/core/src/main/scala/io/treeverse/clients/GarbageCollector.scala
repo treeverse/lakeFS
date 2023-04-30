@@ -629,7 +629,7 @@ object GarbageCollector {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
+    bulkRemove(configMapper, df, storageNamespace, region, storageType)
       .toDF(schema.fieldNames: _*)
   }
 
