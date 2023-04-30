@@ -16,20 +16,20 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
-    val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
-                                    LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
-                                   ) * 1000
-    val maxBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS,
-                                    LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS
-                                   ) * 1000
-
-    val backoffStrategy =
-      new PredefinedBackoffStrategies.FullJitterBackoffStrategy(minBackoffMsecs, maxBackoffMsecs)
-    val retryPolicy =
-      new RetryPolicy(new S3RetryDeleteObjectsCondition(), backoffStrategy, numRetries, true)
+//    val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
+//                                    LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
+//                                   ) * 1000
+//    val maxBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS,
+//                                    LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS
+//                                   ) * 1000
+//
+//    val backoffStrategy =
+//      new PredefinedBackoffStrategies.FullJitterBackoffStrategy(minBackoffMsecs, maxBackoffMsecs)
+//    val retryPolicy =
+//      new RetryPolicy(new S3RetryDeleteObjectsCondition(), backoffStrategy, numRetries, true)
     val configuration = new ClientConfiguration()
-      .withRetryPolicy(retryPolicy)
-      .withThrottledRetries(true)
+//      .withRetryPolicy(retryPolicy)
+//      .withThrottledRetries(true)
     val s3Endpoint = hc.get(Constants.ENDPOINT, null)
 
     val credentialsProvider =
