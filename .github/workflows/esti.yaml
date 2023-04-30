@@ -877,7 +877,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/export/
-          key: metadata-client-${{ matrix.spark.project-variable }}-${{ hashFiles('./client/spark/**') }}
+          key: metadata-client-${{ matrix.spark.project-variable }}-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
         if: steps.restore-cache.outputs.cache-hit != 'true'
