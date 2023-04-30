@@ -20,6 +20,7 @@ import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
 import collection.JavaConverters._
+import java.util.concurrent.ConcurrentHashMap
 
 trait BulkRemover {
 
@@ -65,6 +66,7 @@ trait BulkRemover {
 }
 
 object BulkRemoverFactory {
+  val cache = new ConcurrentHashMap[String, BulkRemover]()
   private class S3BulkRemover(hc: Configuration, storageNamespace: String, region: String)
       extends BulkRemover {
     import scala.collection.JavaConversions._
@@ -211,12 +213,16 @@ object BulkRemoverFactory {
       storageNamespace: String,
       region: String
   ): BulkRemover = {
-    if (storageType == StorageTypeS3) {
-      new S3BulkRemover(hc, storageNamespace, region)
-    } else if (storageType == StorageTypeAzure) {
-      new AzureBlobBulkRemover(hc, storageNamespace)
-    } else {
-      throw new IllegalArgumentException("Invalid argument.")
-    }
+    cache.putIfAbsent(
+      storageNamespace, {
+        if (storageType == StorageTypeS3) {
+          new S3BulkRemover(hc, storageNamespace, region)
+        } else if (storageType == StorageTypeAzure) {
+          new AzureBlobBulkRemover(hc, storageNamespace)
+        } else {
+          throw new IllegalArgumentException("Invalid argument.")
+        }
+      }
+    )
   }
 }

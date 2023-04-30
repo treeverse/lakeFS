@@ -7,10 +7,11 @@ import io.treeverse.clients.S3RetryDeleteObjectsCondition
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
+import java.util.concurrent.ConcurrentHashMap
 
 object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString + "[hadoop3]")
-  val cache = collection.mutable.Map.empty[String, AmazonS3]
+  val cache = new ConcurrentHashMap[String, AmazonS3]
 
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
@@ -18,9 +19,8 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
-    cache.getOrElseUpdate(
-      bucket,
-      synchronized {
+    cache.putIfAbsent(
+      bucket, {
         val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
                                         LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
                                        ) * 1000
@@ -64,15 +64,13 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
           .standard()
           .withPathStyleAccessEnabled(hc.getBoolean(S3A_PATH_STYLE_ACCESS, true))
 
-        val res = createAndValidateS3Client(configuration,
-                                            credentialsProvider,
-                                            builder,
-                                            s3Endpoint,
-                                            region,
-                                            bucket
-                                           )
-        cache(bucket) = res
-        res
+        createAndValidateS3Client(configuration,
+                                  credentialsProvider,
+                                  builder,
+                                  s3Endpoint,
+                                  region,
+                                  bucket
+                                 )
       }
     )
   }
