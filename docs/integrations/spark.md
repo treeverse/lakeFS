@@ -406,6 +406,7 @@ interact with your data on lakeFS.
   <ul>
     <li><a href="#install-standalone">Spark Standalone</a></li>
     <li><a href="#install-databricks">Databricks</a></li>
+    <li><a href="#install-cloudera-spark">Cloudera Spark</a></li>
   </ul> 
   <div markdown="1" id="install-standalone">
 
@@ -427,6 +428,33 @@ Once installed, it should look something like this:
 
 ![Databricks - Adding the lakeFS client Jar](/assets/img/databricks-install-package.png)
 
+  </div>
+  <div markdown="3" id="install-cloudera-spark">
+
+Add the package to your `pyspark` or `spark-submit` command:
+
+  ```
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.14
+  ```
+
+Add the configuration to access the S3 bucket used by lakeFS to your `pyspark` or `spark-submit` command or add this configuration at the Cloudera cluster level (see below):
+
+  ```
+  --conf spark.yarn.access.hadoopFileSystems=s3a://bucket-name
+  ```
+
+Add the configuration to access the S3 bucket used by lakeFS at the Cloudera cluster level:
+1. Log in to the CDP (Cloudera Data Platform) web interface.
+1. From the CDP home screen, click the `Management Console` icon.
+1. In the Management Console, select `Data Hub Clusters` from the navigation pane.
+1. Select the cluster you want to configure. Click on `CM-UI` link under Services:
+  ![Cloudera - Management Console](/assets/img/cloudera/ManagementConsole.png)
+1. In Cloudera Manager web interface, click on `Clusters` from the navigation pane and click on `spark_on_yarn` option:
+  ![Cloudera - Cloudera Manager](/assets/img/cloudera/ClouderaManager.png)
+1. Click on `Configuration` tab and search for `spark.yarn.access.hadoopFileSystems` in the search box:
+  ![Cloudera - spark_on_yarn](/assets/img/cloudera/spark_on_yarn.png)
+1. Add S3 bucket used by lakeFS `s3a://bucket-name` in the `spark.yarn.access.hadoopFileSystems` list:
+  ![Cloudera - hadoopFileSystems](/assets/img/cloudera/hadoopFileSystems.png)
   </div>
 </div>
 

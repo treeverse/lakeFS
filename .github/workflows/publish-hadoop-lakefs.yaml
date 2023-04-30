@@ -49,7 +49,7 @@ jobs:
         run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}

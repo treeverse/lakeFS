@@ -67,7 +67,9 @@ This allows configuration-as-code inside lakeFS, where Action files are declarat
 {: .no_toc }
 
 An **Action** is a list of Hooks with the same trigger configuration, i.e. an event will trigger all Hooks under an Action or none at all.
-The Hooks under an Action are ordered and so is their execution. A Hook will only be executed if all the previous Hooks that were triggered with it had passed.
+The Hooks under an Action are ordered and so is their execution.
+Before each hook execution the `if` boolean expression is evaluated. The expression can use `success()` which evaluate to true in case of no error was occured while running the hoook's actions. It can also use `failure()` which evaluate to true when previous step failed - can be used to report failures.
+By default, when `if` is empty or omitted, the step will run only if no error occurred (same as evaluate of success function).
 
 ### Hook
 {: .no_toc }
@@ -80,15 +82,17 @@ The failure of a single Hook will stop the execution of the containing Action an
 
 Schema of the Action file:
 
-| Property           | Description                                           | Data Type  | Required | Default Value                                                           |
-|--------------------|-------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
-| name               | Identify the Action file                              | String     | false    | If missing, filename is used instead                                    |
-| on                 | List of events that will trigger the hooks            | List       | true     |                                                                         |
-| on<event>.branches | Glob pattern list of branches that triggers the hooks | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
-| hooks              | List of hooks to be executed                          | List       | true     |                                                                         |
-| hook.id            | ID of the hook, must be unique within the `Action`    | String     | true     |                                                                         |
-| hook.type          | Type of the hook ([types](#hook-types))               | String     | true     |                                                                         |
-| hook.properties    | Hook's specific configuration                         | Dictionary | true     |                                                                         |
+| Property           | Description                                               | Data Type  | Required | Default Value                                                           |
+|--------------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
+| name               | Identify the Action file                                  | String     | false    | If missing, filename is used instead                                    |
+| on                 | List of events that will trigger the hooks                | List       | true     |                                                                         |
+| on<event>.branches | Glob pattern list of branches that triggers the hooks     | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
+| hooks              | List of hooks to be executed                              | List       | true     |                                                                         |
+| hook.id            | ID of the hook, must be unique within the `Action`        | String     | true     |                                                                         |
+| hook.type          | Type of the hook ([types](#hook-types))                   | String     | true     |                                                                         |
+| hook.description   | Optional description for the hook                         | String     | false    |                                                                         |
+| hook.if            | Expression that will be evaluated before execute the hook | String     | false    | No value is the same as evaluate `success()`                            |
+| hook.properties    | Hook's specific configuration                             | Dictionary | true     |                                                                         |
 
 Example:
 
@@ -111,6 +115,22 @@ hooks:
     description: check production is not in dev freeze
     properties:
       url: "https://your.domain.io/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+  - id: alert
+    type: webhook
+    if: failure()
+    description: notify alert system when check failed
+    properties:
+       url: "https://your.domain.io/alert"
+       query_params:
+          title: good files webhook failed
+  - id: notification
+    type: webhook
+    if: true
+    description: notify that will always run - no matter if one of the previous steps failed
+    properties:
+       url: "https://your.domain.io/notification"
+       query_params:
+          title: good files completed
 ```
 
 **Note:** lakeFS will validate action files only when an **Event** has occurred. <br/>
