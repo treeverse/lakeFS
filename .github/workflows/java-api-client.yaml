@@ -1,0 +1,52 @@
+name: java-api-client
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag/version to publish
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    environment: Treeverse signing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+        # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
+      - name: Extract version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_OUTPUT
+          else
+            echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_OUTPUT
+          fi
+        id: version
+
+      - name: Java generate package
+        run: make client-java PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+
+      - name: Install secret key for signing
+        run: |
+          cat <(echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}') | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Set up Java and Maven Central Repository
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+
+      - name: Build and publish package
+        working-directory: clients/java
+        run: mvn --batch-mode deploy -Dgpg.executable="${GITHUB_WORKSPACE}/scripts/gpg_loopback.sh" --activate-profiles sign-artifacts
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
