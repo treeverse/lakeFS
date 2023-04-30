@@ -194,12 +194,15 @@ jobs:
           go-version: 1.19.2
         id: go
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient
-          path: test/spark/metaclient
+          path: /tmp/export/
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
+
+      - name: Move Metaclient
+        run: mv /tmp/export/* ./test/spark/metaclient/
 
       - name: Generate uniquifying value
         id: unique
@@ -318,12 +321,15 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: /tmp/export/
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
+
+      - name: Move Metaclient
+        run: mv /tmp/export/* ./test/spark/metaclient/
 
       - name: GC test
         run: |
@@ -420,12 +426,15 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: /tmp/export/
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
+
+      - name: Move Metaclient
+        run: mv /tmp/export/* ./test/spark/metaclient/
 
       - name: GC test
         run: |
@@ -877,7 +886,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/export/
-          key: metadata-client-${{ matrix.spark.project-variable }}-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client-${{ matrix.spark.artifact-suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -902,13 +911,13 @@ jobs:
           mkdir -p /tmp/export
           cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar /tmp/export/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
-      - name: Export Metaclient
-        uses: actions/upload-artifact@v3
-        with:
-          name: metaclient${{ matrix.spark.artifact-suffix }}
-          path: /tmp/export/
-          if-no-files-found: error
-          retention-days: 7
+#      - name: Export Metaclient
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: metaclient${{ matrix.spark.artifact-suffix }}
+#          path: /tmp/export/
+#          if-no-files-found: error
+#          retention-days: 7
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
@@ -930,13 +939,15 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
-
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: /tmp/export/
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
+
+      - name: Move Metaclient
+        run: mv /tmp/export/* ./test/spark/metaclient/
 
       - name: Generate uniquifying value
         id: unique
@@ -968,7 +979,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          CLIENT_JAR: ./metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
