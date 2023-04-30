@@ -1,4 +1,4 @@
-FROM rclone/rclone:1.57 AS rclone
+FROM rclone/rclone:1.62 AS rclone
 
 FROM python:3.11-slim-buster
 
