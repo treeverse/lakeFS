@@ -979,7 +979,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ./metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
+          CLIENT_JAR: $(pwd)/metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
