@@ -1,0 +1,120 @@
+name: releaser
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  issues: write
+  id-token: write
+  contents: write
+
+jobs:
+  rust-releaser:
+    strategy:
+      matrix:
+        builds:
+          - os: macos-12
+            target: x86_64-apple-darwin
+            exec_name: delta_diff
+          - os: macos-12
+            target: aarch64-apple-darwin
+            exec_name: delta_diff
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-musl
+            exec_name: delta_diff
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-musl
+            exec_name: delta_diff
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            exec_name: delta_diff.exe
+          - os: windows-2022
+            target: aarch64-pc-windows-msvc
+            exec_name: delta_diff.exe
+    runs-on: ${{ matrix.builds.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.builds.target }}
+          override: true
+      - name: Rust Cache
+        id: cache-rust
+        uses: Swatinem/rust-cache@v2.2.1
+        with:
+          workspaces: pkg/plugins/diff/delta_diff_server -> target
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Cargo
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: delta-${{ matrix.builds.target }}
+          path: pkg/plugins/diff/delta_diff_server/target/release/${{ matrix.builds.exec_name }}
+          if-no-files-found: error
+
+  goreleaser:
+    runs-on: ubuntu-20.04
+    needs: [rust-releaser]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          path: delta/artifacts
+
+      - name: Rename artifacts to match goreleaser artifacts
+        working-directory: ${{steps.download.outputs.download-path}}
+        run: |
+          mv delta-aarch64-apple-darwin delta-darwin-arm64
+          mv delta-x86_64-apple-darwin delta-darwin-amd64
+          mv delta-aarch64-pc-windows-msvc delta-windows-arm64
+          mv delta-x86_64-pc-windows-msvc delta-windows-amd64
+          mv delta-aarch64-unknown-linux-musl delta-linux-arm64
+          mv delta-x86_64-unknown-linux-musl delta-linux-amd64
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.17.1'
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Make lakectl public
+        run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE
