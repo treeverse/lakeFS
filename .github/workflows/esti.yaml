@@ -877,21 +877,23 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/export/
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
-          restore-keys: ${{ runner.os }}-go-
+          key: metadata-client-${{ matrix.spark.project-variable }}-${{ hashFiles('./client/spark/**') }}
 
       - uses: actions/setup-java@v3
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
 
       - name: Package Metaclient
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: clients/spark
         run: |
           sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client-${{ matrix.spark.project-suffix }}/assembly
 
       - name: Prepare Metaclient location for export
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         # upload-artifact cannot take a working-directory option (that only
         # applies to "run" steps), so copy the compiled metaclient to a
         # known location.
