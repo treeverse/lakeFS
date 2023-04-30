@@ -29,6 +29,8 @@ jobs:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v3
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -870,6 +872,13 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
+        with:
+          path: /tmp/export/
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
+          restore-keys: ${{ runner.os }}-go-
 
       - uses: actions/setup-java@v3
         with:
