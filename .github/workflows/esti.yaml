@@ -202,7 +202,7 @@ jobs:
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Move Metaclient
-        run: mv /tmp/export/* ./test/spark/metaclient/
+        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: Generate uniquifying value
         id: unique
@@ -329,7 +329,7 @@ jobs:
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Move Metaclient
-        run: mv /tmp/export/* ./test/spark/metaclient/
+        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: GC test
         run: |
@@ -434,7 +434,7 @@ jobs:
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Move Metaclient
-        run: mv /tmp/export/* ./test/spark/metaclient/
+        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: GC test
         run: |
@@ -947,7 +947,7 @@ jobs:
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Move Metaclient
-        run: mv /tmp/export/* ./test/spark/metaclient/
+        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: Generate uniquifying value
         id: unique
