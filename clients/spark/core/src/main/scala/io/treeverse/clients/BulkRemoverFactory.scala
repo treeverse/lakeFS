@@ -213,8 +213,8 @@ object BulkRemoverFactory {
       storageNamespace: String,
       region: String
   ): BulkRemover = {
-    cache.computeIfAbsent(
-      storageNamespace, {
+    val doBuild = new java.util.function.Function[String, BulkRemover]() {
+      override def apply(k: String): BulkRemover = {
         if (storageType == StorageTypeS3) {
           new S3BulkRemover(hc, storageNamespace, region)
         } else if (storageType == StorageTypeAzure) {
@@ -223,6 +223,7 @@ object BulkRemoverFactory {
           throw new IllegalArgumentException("Invalid argument.")
         }
       }
-    )
+    }
+    cache.computeIfAbsent(storageNamespace, doBuild)
   }
 }

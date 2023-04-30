@@ -9,24 +9,27 @@ import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.ConcurrentHashMap
 
+private class BuildParams(hc: Configuration, bucket: String, region: String, numRetries: Int)
+
 object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString + "[hadoop3]")
   val cache = new ConcurrentHashMap[String, AmazonS3]
+  import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
+  import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
+  import io.treeverse.clients.LakeFSContext
+  import org.apache.hadoop.fs.s3a.Constants
 
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
-    import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
-    import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
-    import io.treeverse.clients.LakeFSContext
-    import org.apache.hadoop.fs.s3a.Constants
-
-    cache.computeIfAbsent(
-      bucket, {
-        val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
-                                        LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
-                                       ) * 1000
-        val maxBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS,
-                                        LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS
-                                       ) * 1000
+    val doBuild = new java.util.function.Function[String, AmazonS3]() {
+      override def apply(k: String): AmazonS3 = {
+        val minBackoffMsecs =
+          hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
+                    LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
+                   ) * 1000
+        val maxBackoffMsecs =
+          hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS,
+                    LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS
+                   ) * 1000
         val backoffStrategy =
           new PredefinedBackoffStrategies.FullJitterBackoffStrategy(minBackoffMsecs,
                                                                     maxBackoffMsecs
@@ -71,7 +74,9 @@ object S3ClientBuilder extends io.treeverse.clients.S3ClientBuilder {
                                   region,
                                   bucket
                                  )
+
       }
-    )
+    }
+    cache.computeIfAbsent(bucket, doBuild)
   }
 }

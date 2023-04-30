@@ -191,10 +191,10 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     val partitioner = new HashPartitioner(numAddressPartitions)
     val addresses = readRanges(dedupedRangeIDs, "ranges")
       .aggregateByKey(true, partitioner)(shouldExpire, shouldExpire)
-      .persist(StorageLevel.MEMORY_ONLY_SER)
+      .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     // Report some rows on expiry proportions
-//    addresses.sample(true, 0.01).toDS.show()
+    addresses.sample(true, 0.01).toDS.show()
 
     addresses
       .filter({ case (_, expire) => expire })
@@ -217,7 +217,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     val commitsDS = getCommitsDF(commitDFLocation)
       .as[(String, Boolean)]
       .repartition(numCommitPartitions)
-      .persist(StorageLevel.MEMORY_ONLY_SER)
+      .persist(StorageLevel.MEMORY_AND_DISK_SER)
     val rangeIDs = getRangeIDsForCommits(commitsDS, repo)
 
     try {
@@ -501,7 +501,7 @@ object GarbageCollector {
                           )
       .toDF("address")
       .withColumn(MARK_ID_KEY, lit(markID))
-      .persist(StorageLevel.MEMORY_ONLY_SER)
+      .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     expiredAddresses.write
@@ -511,7 +511,7 @@ object GarbageCollector {
 
     println(f"Total expired addresses: ${expiredAddresses.count()}")
     println("Expired addresses:")
-//    expiredAddresses.show()
+    expiredAddresses.show()
 
     if (hc.getBoolean(LAKEFS_CONF_GC_WRITE_EXPIRED_AS_TEXT, true)) {
       // Enable source for rclone backup and resource
@@ -631,7 +631,7 @@ object GarbageCollector {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df, storageNamespace, region, storageType)
+    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
       .toDF(schema.fieldNames: _*)
   }
 
