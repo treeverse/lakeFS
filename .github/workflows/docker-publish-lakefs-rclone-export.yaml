@@ -55,7 +55,7 @@ jobs:
         with:
           context: deployments/tools/export
           push: true
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
             treeverse/lakefs-rclone-export:${{ steps.version.outputs.tag }}
