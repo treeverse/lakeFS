@@ -296,12 +296,14 @@ func MustParseRepoURI(name, s string) *uri.URI {
 }
 
 func MustParseRefURI(name, s string) *uri.URI {
+
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
 	}
+
 	if !u.IsRef() {
-		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+		DieFmt("Invalid %s: %s\n\nURIs should not have a trailing slash - did you perhaps mean to run this?\n	lakectl diff %s", name, uri.ErrInvalidRefURI, strings.TrimSuffix(s, "/"))
 	}
 	return u
 }
@@ -318,12 +320,13 @@ func MustParseBranchURI(name, s string) *uri.URI {
 }
 
 func MustParsePathURI(name, s string) *uri.URI {
+
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
 	}
 	if !u.IsFullyQualified() {
-		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
+		DieFmt("Invalid '%s': %s\n\nURIs should not have a trailing slash - did you perhaps mean to run this?\n	lakectl fs ls %s/", name, uri.ErrInvalidPathURI, s)
 	}
 	return u
 }
