@@ -39,14 +39,6 @@ jobs:
           path: /tmp/generated.tar.gz
           key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
           restore-keys: ${{ runner.os }}-go-
-      # No way to share code between workflows :-( If you change this, find and change the
-      # same code wherever "Find Go module and build caches" appears!
-      - name: Find Go module and build caches
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        run: |
-          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
-          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
-          cat $GITHUB_ENV
 
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -54,25 +46,6 @@ jobs:
         with:
           go-version: 1.19.2
         id: go
-
-      - name: Cache Go modules and builds
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
-        with:
-          path: |
-            ${{ env.GOMODCACHE }}
-            ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
-          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - uses: actions/setup-node@v3
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-        with:
-          node-version: "16.17.1"
 
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -87,7 +60,6 @@ jobs:
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
-
 
   deploy-image:
     name: Build and push Docker image
@@ -222,12 +194,12 @@ jobs:
           go-version: 1.19.2
         id: go
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Generate uniquifying value
         id: unique
@@ -344,12 +316,12 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: GC test
         run: |
@@ -446,12 +418,12 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: GC test
         run: |
@@ -898,34 +870,35 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
+        with:
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.artifact-suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
 
       - name: Package Metaclient
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: clients/spark
         run: |
           sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client-${{ matrix.spark.project-suffix }}/assembly
 
       - name: Prepare Metaclient location for export
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         # upload-artifact cannot take a working-directory option (that only
         # applies to "run" steps), so copy the compiled metaclient to a
         # known location.
         working-directory: clients/spark
         run: |
-          mkdir -p /tmp/export
-          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar /tmp/export/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
-
-      - name: Export Metaclient
-        uses: actions/upload-artifact@v3
-        with:
-          name: metaclient${{ matrix.spark.artifact-suffix }}
-          path: /tmp/export/
-          if-no-files-found: error
-          retention-days: 7
+          mkdir -p ${{ github.workspace }}/test/spark/metaclient
+          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
@@ -947,13 +920,12 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
-
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Generate uniquifying value
         id: unique
@@ -985,7 +957,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
