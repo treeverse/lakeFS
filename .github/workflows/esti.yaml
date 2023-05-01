@@ -198,11 +198,8 @@ jobs:
         uses: actions/cache@v3
         id: restore-cache
         with:
-          path: /tmp/export/
+          path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
-
-      - name: Move Metaclient
-        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: Generate uniquifying value
         id: unique
@@ -325,11 +322,8 @@ jobs:
         uses: actions/cache@v3
         id: restore-cache
         with:
-          path: /tmp/export/
+          path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
-
-      - name: Move Metaclient
-        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: GC test
         run: |
@@ -430,11 +424,8 @@ jobs:
         uses: actions/cache@v3
         id: restore-cache
         with:
-          path: /tmp/export/
+          path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
-
-      - name: Move Metaclient
-        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: GC test
         run: |
@@ -885,7 +876,7 @@ jobs:
         uses: actions/cache@v3
         id: restore-cache
         with:
-          path: /tmp/export/
+          path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ matrix.spark.artifact-suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
@@ -908,8 +899,8 @@ jobs:
         # known location.
         working-directory: clients/spark
         run: |
-          mkdir -p /tmp/export
-          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar /tmp/export/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
+          mkdir -p ${{ github.workspace }}/test/spark/metaclient
+          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
@@ -935,11 +926,8 @@ jobs:
         uses: actions/cache@v3
         id: restore-cache
         with:
-          path: /tmp/export/
+          path: ${{ github.workspace }}/test/spark/metaclient
           key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
-
-      - name: Move Metaclient
-        run: mkdir ./test/spark/metaclient && mv /tmp/export/* ./test/spark/metaclient/
 
       - name: Generate uniquifying value
         id: unique
