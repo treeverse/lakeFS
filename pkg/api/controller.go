@@ -2107,6 +2107,117 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) Import(w http.ResponseWriter, r *http.Request, body ImportJSONRequestBody, repository, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ImportFromStorage,
+					Resource: permissions.StorageNamespace(body.SourceUri),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, body.Prepend),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateBranchAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.BranchArn(repository, branch),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "import", r, repository, branch, body.SourceUri)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing user")
+		return
+	}
+	var metadata map[string]string
+	if body.Metadata != nil {
+		metadata = body.Metadata.AdditionalProperties
+	}
+	committer := user.Username
+	importID, err := c.Catalog.Import(r.Context(), repository, branch, catalog.ImportRequest{
+		SourceURI:     body.SourceUri,
+		Prepend:       body.Prepend,
+		CommitMessage: body.CommitMessage,
+		Committer:     committer,
+		Metadata:      metadata,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusCreated, ImportCreationResponse{
+		Id: importID,
+	})
+}
+
+func importStatusToResponse(status *graveler.ImportStatus) ImportStatusResp {
+	resp := ImportStatusResp{
+		Completed:      status.Completed,
+		ImportBranch:   status.ImportBranch,
+		ImportProgress: int(status.Progress),
+		UpdateTime:     status.UpdatedAt,
+	}
+
+	if status.Error != nil {
+		resp.Error = &Error{Message: status.Error.Error()}
+	}
+	if status.MetaRangeID != nil {
+		metarange := status.MetaRangeID.String()
+		resp.MetarangeId = &metarange
+	}
+	commitLog := catalog.CommitRecordToLog(status.Commit)
+	if commitLog != nil {
+		resp.Commit = &Commit{
+			Committer:    commitLog.Committer,
+			CreationDate: commitLog.CreationDate.Unix(),
+			Id:           commitLog.Reference,
+			Message:      commitLog.Message,
+			MetaRangeId:  commitLog.MetaRangeID,
+			Metadata:     &Commit_Metadata{AdditionalProperties: commitLog.Metadata},
+			Parents:      commitLog.Parents,
+		}
+	}
+
+	return resp
+}
+
+func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, body ImportStatusJSONRequestBody, repository, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadBranchAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "get_import_status", r, repository, branch, "")
+	status, err := c.Catalog.GetImportStatus(ctx, repository, body.ImportID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := importStatusToResponse(status)
+	writeResponse(w, r, http.StatusOK, resp)
+}
+
 func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
@@ -2121,6 +2232,12 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
 					Resource: permissions.ObjectArn(repository, body.Prepend),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateMetaRangeAction,
+					Resource: permissions.RepoArn(repository),
 				},
 			},
 		},
@@ -2250,16 +2367,13 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 }
 
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
-	newMetadata := Commit_Metadata{
-		AdditionalProperties: map[string]string(newCommit.Metadata),
-	}
 	response := Commit{
 		Committer:    newCommit.Committer,
 		CreationDate: newCommit.CreationDate.Unix(),
 		Id:           newCommit.Reference,
 		Message:      newCommit.Message,
 		MetaRangeId:  newCommit.MetaRangeID,
-		Metadata:     &newMetadata,
+		Metadata:     &Commit_Metadata{AdditionalProperties: newCommit.Metadata},
 		Parents:      newCommit.Parents,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -2713,16 +2827,13 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	metadata := Commit_Metadata{
-		AdditionalProperties: map[string]string(commit.Metadata),
-	}
 	response := Commit{
 		Id:           commit.Reference,
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
-		Metadata:     &metadata,
+		Metadata:     &Commit_Metadata{AdditionalProperties: commit.Metadata},
 		Parents:      commit.Parents,
 	}
 	writeResponse(w, r, http.StatusOK, response)

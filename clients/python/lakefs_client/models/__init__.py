@@ -43,7 +43,11 @@ from lakefs_client.model.group_creation import GroupCreation
 from lakefs_client.model.group_list import GroupList
 from lakefs_client.model.hook_run import HookRun
 from lakefs_client.model.hook_run_list import HookRunList
+from lakefs_client.model.import_creation import ImportCreation
+from lakefs_client.model.import_creation_response import ImportCreationResponse
 from lakefs_client.model.import_pagination import ImportPagination
+from lakefs_client.model.import_status import ImportStatus
+from lakefs_client.model.import_status_resp import ImportStatusResp
 from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
 from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_config import LoginConfig

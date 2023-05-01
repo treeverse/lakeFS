@@ -1274,6 +1274,37 @@ components:
       required:
         - pattern
 
+    ImportCreation:
+      type: object
+      required:
+        - source_uri
+        - prepend
+        - commit_message
+      properties:
+        source_uri:
+          type: string
+          description: The source location of the ingested files. Must match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+        prepend:
+          type: string
+          description: A prefix to prepend to ingested objects.
+          example: collections/
+        commit_message:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          
+    ImportStatus:
+      type: object
+      required:
+        - importID
+      properties:
+        importID:
+          type: string
+          description: Unique identifier for the import process
+
     StageRangeCreation:
       type: object
       required:
@@ -1335,6 +1366,39 @@ components:
           $ref: "#/components/schemas/RangeMetadata"
         pagination:
           $ref: "#/components/schemas/ImportPagination"
+
+    ImportStatusResp:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        import_progress:
+          description: Number of objects processed so far
+          type: integer
+        import_branch:
+          type: string
+        metarange_id:
+          type: string
+        commit:
+          $ref: "#/components/schemas/Commit"
+        error:
+          $ref: "#/components/schemas/Error"
+      required: 
+        - import_progress
+        - update_time
+        - completed
+    
+    ImportCreationResponse:
+      type: object
+      properties:
+        id:
+          description: The id of the import process
+          type: string
+      required: 
+        - id
 
     MetaRangeCreation:
       type: object
@@ -3378,6 +3442,69 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/import:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - import
+      operationId: importStatus
+      summary: get import status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportStatus"
+      responses:
+        200:
+          description: import status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportStatusResp"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - import
+      operationId: import
+      summary: import data from object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportCreation"
+      responses:
+        201:
+          description: Import started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportCreationResponse"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
 

@@ -75,6 +75,14 @@ type WriteRangeRequest struct {
 	ContinuationToken string
 }
 
+type ImportRequest struct {
+	SourceURI     string
+	Prepend       string
+	CommitMessage string
+	Committer     string
+	Metadata      Metadata
+}
+
 type Interface interface {
 	// CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error)
@@ -146,6 +154,8 @@ type Interface interface {
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error)
+	Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error)
+	GetImportStatus(ctx context.Context, repositoryID, importID string) (*graveler.ImportStatus, error)
 	WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error)
 	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
 	UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error

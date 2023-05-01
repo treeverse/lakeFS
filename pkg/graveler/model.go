@@ -2,7 +2,6 @@ package graveler
 
 import (
 	"fmt"
-
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -16,6 +15,7 @@ const (
 	commitsPrefix          = "commits"
 	settingsPrefix         = "settings"
 	addressesPrefix        = "link-addresses"
+	importsPrefix          = "imports"
 )
 
 //nolint:gochecknoinits
@@ -69,6 +69,10 @@ func SettingsPath(key string) string {
 
 func LinkedAddressPath(key string) string {
 	return kv.FormatPath(addressesPrefix, key)
+}
+
+func ImportsPath(key string) string {
+	return kv.FormatPath(importsPrefix, key)
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
@@ -152,5 +156,66 @@ func TagFromProto(pb *TagData) *TagRecord {
 	return &TagRecord{
 		TagID:    TagID(pb.Id),
 		CommitID: CommitID(pb.CommitId),
+	}
+}
+
+func ImportStatusFromProto(pb *ImportStatusData) *ImportStatus {
+	var commit *CommitRecord
+	if pb.Commit != nil {
+		commit = &CommitRecord{
+			CommitID: CommitID(pb.Commit.Id),
+			Commit:   CommitFromProto(pb.Commit),
+		}
+	}
+	var statusErr error
+	if pb.Error != "" {
+		statusErr = fmt.Errorf("%w: %s", ErrImport, pb.Error)
+	}
+	var metarangeID *MetaRangeID
+	if pb.MetarangeId != "" {
+		metarangeID = (*MetaRangeID)(&pb.MetarangeId)
+	}
+	var importBranch *string
+	if pb.ImportBranch != "" {
+		importBranch = &pb.ImportBranch
+	}
+	return &ImportStatus{
+		ID:           ImportID(pb.Id),
+		Completed:    pb.Completed,
+		UpdatedAt:    pb.UpdatedAt.AsTime(),
+		Progress:     pb.Progress,
+		ImportBranch: importBranch,
+		MetaRangeID:  metarangeID,
+		Commit:       commit,
+		Error:        statusErr,
+	}
+}
+
+func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
+	var commit *CommitData
+	if status.Commit != nil {
+		commit = ProtoFromCommit(status.Commit.CommitID, status.Commit.Commit)
+	}
+	var statusErr string
+	if status.Error != nil {
+		statusErr = status.Error.Error()
+	}
+	var metarangeID string
+	if status.MetaRangeID != nil {
+		metarangeID = status.MetaRangeID.String()
+	}
+	var importBranch string
+	if status.ImportBranch != nil {
+		importBranch = *status.ImportBranch
+	}
+	return &ImportStatusData{
+		Id:           status.ID.String(),
+		Completed:    status.Completed,
+		UpdatedAt:    timestamppb.New(status.UpdatedAt),
+		Progress:     status.Progress,
+		ImportBranch: importBranch,
+		MetarangeId:  metarangeID,
+		Commit:       commit,
+		Error:        statusErr,
 	}
 }

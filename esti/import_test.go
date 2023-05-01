@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
@@ -135,6 +136,8 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 	hasMore := true
 	after := api.PaginationAfter("")
 	count := 0
+	// TODO: Remove
+	s := ""
 	for hasMore {
 		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &api.ListObjectsParams{After: &after})
 		require.NoError(t, err, "list objects failed")
@@ -144,6 +147,7 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 		after = api.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
 		prev := api.ObjectStats{}
 		for _, obj := range listResp.JSON200.Results {
+			s += obj.Path
 			count++
 			require.True(t, strings.HasPrefix(obj.Path, prefix), "obj with wrong prefix imported", obj.Path, prefix)
 			require.True(t, strings.Compare(prev.Path, obj.Path) < 0, "Wrong listing order", prev.Path, obj.Path)
@@ -346,4 +350,77 @@ func benchmarkImport(b *testing.B, ctx context.Context, repoName, importPath, im
 	for n := 0; n < b.N; n++ {
 		testImport(b, ctx, repoName, importPath, fmt.Sprintf("%s-%s", importBranch, xid.New().String()))
 	}
+}
+
+func TestImportNew(t *testing.T) {
+	const defaultExpectedContentLength = 1024
+
+	importPath := ""
+	expectedContentLength := defaultExpectedContentLength
+	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
+	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		importPath = s3ImportPath
+	case block.BlockstoreTypeGS:
+		importPath = gsImportPath
+	case block.BlockstoreTypeAzure:
+		importPath = azureImportPath
+	case block.BlockstoreTypeLocal:
+		importPath = setupLocalImportPath(t)
+		expectedContentLength = 0
+	default:
+		t.Skip("import isn't supported for non-production block adapters")
+	}
+
+	ctx, _, repoName := setupTest(t)
+	defer tearDownTest(repoName)
+
+	t.Run("default", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
+		importBranch := testImportNew(t, ctx, repoName, importPath, branch)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+	})
+
+	t.Run("parent", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
+		if blockstoreType == block.BlockstoreTypeLocal {
+			t.Skip("local always assumes import path is dir")
+		}
+		// import without the directory separator as suffix to include the parent directory
+		importPathParent := strings.TrimSuffix(importPath, "/")
+		importBranch := testImportNew(t, ctx, repoName, importPathParent, branch)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
+	})
+}
+
+func testImportNew(t testing.TB, ctx context.Context, repoName, importPath, importBranch string) string {
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   importBranch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", importBranch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
+
+	importResp, err := client.ImportWithResponse(ctx, repoName, importBranch, api.ImportJSONRequestBody{
+		CommitMessage: "created by import",
+		Metadata:      &api.ImportCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		Prepend:       importTargetPrefix,
+		SourceUri:     importPath,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, importResp.JSON201, "failed to start import", err)
+
+	completed := false
+	var statusResp *api.ImportStatusResponse
+	for !completed {
+		time.Sleep(1 * time.Second)
+		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, api.ImportStatusJSONRequestBody{
+			ImportID: importResp.JSON201.Id,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		completed = statusResp.JSON200.Completed
+		t.Log("Import progress:", statusResp.JSON200.ImportProgress)
+	}
+	return *statusResp.JSON200.ImportBranch
 }

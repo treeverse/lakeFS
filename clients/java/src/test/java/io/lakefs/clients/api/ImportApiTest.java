@@ -15,6 +15,10 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ImportCreation;
+import io.lakefs.clients.api.model.ImportCreationResponse;
+import io.lakefs.clients.api.model.ImportStatus;
+import io.lakefs.clients.api.model.ImportStatusResp;
 import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
 import io.lakefs.clients.api.model.MetaRangeCreationResponse;
@@ -37,6 +41,23 @@ public class ImportApiTest {
 
     
     /**
+     * import data from object store
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void callImportTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        ImportCreation importCreation = null;
+                ImportCreationResponse response = api.callImport(repository, branch, importCreation);
+        // TODO: test validations
+    }
+    
+    /**
      * create a lakeFS metarange file from the given ranges
      *
      * 
@@ -49,6 +70,23 @@ public class ImportApiTest {
         String repository = null;
         MetaRangeCreation metaRangeCreation = null;
                 MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
+        // TODO: test validations
+    }
+    
+    /**
+     * get import status
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importStatusTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        ImportStatus importStatus = null;
+                ImportStatusResp response = api.importStatus(repository, branch, importStatus);
         // TODO: test validations
     }
     

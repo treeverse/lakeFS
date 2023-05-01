@@ -222,6 +222,20 @@ type MetaRangeID string
 // RangeID represents a part of a MetaRange, useful only for plumbing.
 type RangeID string
 
+// ImportID represents an import process id in the ref-store
+type ImportID string
+
+type ImportStatus struct {
+	ID           ImportID
+	Completed    bool
+	UpdatedAt    time.Time
+	Progress     int64
+	ImportBranch *string
+	MetaRangeID  *MetaRangeID
+	Commit       *CommitRecord
+	Error        error
+}
+
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
 
@@ -954,6 +968,10 @@ func (id StagingToken) String() string {
 }
 
 func (id MetaRangeID) String() string {
+	return string(id)
+}
+
+func (id ImportID) String() string {
 	return string(id)
 }
 

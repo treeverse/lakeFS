@@ -60,6 +60,7 @@ var (
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
 	ErrTooManyTries                 = errors.New("too many tries")
 	ErrSkipValueUpdate              = errors.New("skip value update")
+	ErrImport                       = errors.New("import error")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

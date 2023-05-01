@@ -24,10 +24,24 @@ class TestImportApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_call_import(self):
+        """Test case for call_import
+
+        import data from object store  # noqa: E501
+        """
+        pass
+
     def test_create_meta_range(self):
         """Test case for create_meta_range
 
         create a lakeFS metarange file from the given ranges  # noqa: E501
+        """
+        pass
+
+    def test_import_status(self):
+        """Test case for import_status
+
+        get import status  # noqa: E501
         """
         pass
 
