@@ -73,8 +73,9 @@ object StorageUtils {
       storageNsURI.getHost.split('.')(0)
     }
 
+    // https://<storage_account>.blob.core.windows.net/<container>/<blob/path>
     def uriToContainerName(storageNsURI: URI): String = {
-      storageNsURI.getPath.split('/')(0)
+      storageNsURI.getPath.split('/')(1)
     }
 
     def getTenantId(authorityHost: URI): String = {
