@@ -160,6 +160,7 @@ Open questions:
   * We can get away with not implementing it, and implement it in the future.
     It means that reruns would occur by pushing a new commit to the source 
     branch. Not ideal, but reruns are mostly useful for transient failures.
+    *Decision*: Start without.
 * Should asynchronous (pollable) hooks be implemented at first? 
   * Since the HTTP request doesn't wait for the action run to complete, we 
     can get away with not implementing it, and implement it in the future.
@@ -167,3 +168,4 @@ Open questions:
     (pre-merge, pre-commit, etc.), we can now run as long as we want without 
     blocking anything. This means that we can run long CI/CD processes, and 
     possibly just log that the action is running.
+    *Decision*: Implement for the first step.
