@@ -1,7 +1,5 @@
 package io.treeverse.gc
 
-import io.treeverse.clients.APIConfigurations
-import io.treeverse.clients.ApiClient
 import io.treeverse.clients.GarbageCollector._
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.clients._
@@ -14,8 +12,9 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 
 import java.net.URI
-import java.util.Date
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import scala.collection.JavaConversions.asScalaIterator
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
@@ -103,7 +102,6 @@ object UncommittedGarbageCollector {
     var runID = ""
     var firstSlice = ""
     var success = false
-    var markedAddresses = spark.emptyDataFrame.withColumn("address", lit(""))
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val repo = args(0)
     val hc = spark.sparkContext.hadoopConfiguration
@@ -182,16 +180,21 @@ object UncommittedGarbageCollector {
           .repartition(dataDF.col("address"))
           .except(committedDF)
           .except(uncommittedDF)
+          .cache()
+
+        committedDF.unpersist()
+        uncommittedDF.unpersist()
       }
-      var jobID = runID
+
+      // delete marked addresses
       if (shouldSweep) {
-        if (shouldMark) { // get the expired addresses from the mark id run
-          markedAddresses = addressesToDelete
+        val markedAddresses = if (shouldMark) {
+          println("deleting marked addresses from run ID: " + runID)
+          addressesToDelete
         } else {
-          jobID = markID
-          markedAddresses = readMarkedAddresses(storageNamespace, markID)
+          println("deleting marked addresses from mark ID: " + markID)
+          readMarkedAddresses(storageNamespace, markID)
         }
-        println("deleting marked addresses from job: " + jobID)
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
         val region = getRegion(args)
@@ -199,12 +202,9 @@ object UncommittedGarbageCollector {
           HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
         )
         val configMapper = new ConfigMapper(hcValues)
-
-        val removed = GarbageCollector
-          .bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
-          .toDF()
-        removed.collect()
+        bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
       }
+
       // Flow completed successfully - set success to true
       success = true
     } finally {
@@ -219,7 +219,31 @@ object UncommittedGarbageCollector {
           addressesToDelete
         )
       }
+
       spark.close()
+    }
+  }
+
+  def bulkRemove(
+      configMapper: ConfigMapper,
+      readKeysDF: DataFrame,
+      storageNamespace: String,
+      region: String,
+      storageType: String
+  ): Unit = {
+    import spark.implicits._
+
+    val it = readKeysDF
+      .select("address")
+      .map(_.getString(0))
+      .toLocalIterator()
+
+    while (it.hasNext) {
+      val bulkRemover =
+        BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+      val chunkSize = bulkRemover.getMaxBulkSize()
+      val chunk = it.take(chunkSize).toSeq
+      bulkRemover.deleteObjects(chunk, storageNamespace)
     }
   }
 
@@ -235,9 +259,8 @@ object UncommittedGarbageCollector {
     val reportDst = formatRunPath(storageNamespace, runID)
     println(s"Report for mark_id=$runID path=$reportDst")
 
-    val cachedAddresses = expiredAddresses.cache()
-    cachedAddresses.write.parquet(s"$reportDst/deleted")
-    cachedAddresses.write.text(s"$reportDst/deleted.text")
+    expiredAddresses.write.parquet(s"$reportDst/deleted")
+    expiredAddresses.write.text(s"$reportDst/deleted.text")
 
     val summary =
       writeJsonSummary(reportDst,
