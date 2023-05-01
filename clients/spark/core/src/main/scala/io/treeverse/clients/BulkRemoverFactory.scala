@@ -145,8 +145,6 @@ object BulkRemoverFactory {
       }
     }
 
-
-
     override def getMaxBulkSize(): Int = {
       AzureBlobMaxBulkSize
     }

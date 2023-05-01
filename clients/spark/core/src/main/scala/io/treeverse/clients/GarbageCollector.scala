@@ -405,14 +405,14 @@ object GarbageCollector {
         val region = getRegion(args)
 
         val removed = remove(configMapper,
-               storageNSForSdkClient,
-               gcAddressesLocation,
-               expiredAddresses,
-               markID,
-               region,
-               storageType,
-               schema
-              )
+                             storageNSForSdkClient,
+                             gcAddressesLocation,
+                             expiredAddresses,
+                             markID,
+                             region,
+                             storageType,
+                             schema
+                            )
         logRunId(runID, storageType, storageNSForSdkClient, hc, region)
         removed
       } else {
@@ -440,7 +440,13 @@ object GarbageCollector {
     spark.close()
   }
 
-  private def logRunId(runID: String, storageType: String, storageNamespace: String, hc: Configuration, region: String): Unit = {
+  private def logRunId(
+      runID: String,
+      storageType: String,
+      storageNamespace: String,
+      hc: Configuration,
+      region: String
+  ): Unit = {
     val uri = new URI(storageNamespace)
     val runIDMarkerInputStream = new ByteArrayInputStream(new Array[Byte](0))
     if (storageType == StorageUtils.StorageTypeS3) {
@@ -448,15 +454,21 @@ object GarbageCollector {
       val s3Client = getS3Client(hc, bucket, region, StorageUtils.S3.S3NumRetries)
       val meta = new ObjectMetadata()
       meta.setContentLength(0)
-      s3Client.putObject(bucket, getRunIDMarkerLocation(runID, uri.getPath), runIDMarkerInputStream, meta)
+      s3Client.putObject(bucket,
+                         getRunIDMarkerLocation(runID, uri.getPath),
+                         runIDMarkerInputStream,
+                         meta
+                        )
     } else if (storageType == StorageUtils.StorageTypeAzure) {
       val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
       val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
       val containerName = StorageUtils.AzureBlob.uriToContainerName(uri)
-      val blobClient = Azure.getBlobContainerClient(hc, storageAccountUrl, storageAccountName, containerName)
+      val blobClient =
+        Azure.getBlobContainerClient(hc, storageAccountUrl, storageAccountName, containerName)
       val pathArray = uri.getPath.split("/")
       val key = pathArray.slice(2, pathArray.length).reduce((a1, a2) => a1 + "/" + a2)
-      blobClient.getBlobClient(getRunIDMarkerLocation(runID, key))
+      blobClient
+        .getBlobClient(getRunIDMarkerLocation(runID, key))
         .upload(runIDMarkerInputStream, 0)
     }
   }
@@ -668,7 +680,7 @@ object GarbageCollector {
 
   private def getRunIDMarkerLocation(runID: String, storagePrefix: String): String = {
     var prefix: String = storagePrefix.stripPrefix("/").stripSuffix("/")
-    prefix = if(prefix.nonEmpty) prefix.concat("/_lakefs") else "_lakefs"
+    prefix = if (prefix.nonEmpty) prefix.concat("/_lakefs") else "_lakefs"
     s"$prefix/retention/gc/run_ids/$runID"
   }
 
