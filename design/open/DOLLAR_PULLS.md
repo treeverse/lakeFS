@@ -120,7 +120,7 @@ From this view, it will be possible to create new $PULLS, re-run failed $PULLS a
 ![$PULLS create](diagrams/pulls-create.png)
 
 
-## Suggestion 2: Keep it minimal - Manual Triggers
+## Suggestion 2 (**ACCEPTED**): Keep it minimal - Manual Triggers 
 
 ### How it will work
 
