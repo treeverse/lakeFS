@@ -194,11 +194,16 @@ object UncommittedGarbageCollector {
         addressesToDelete.write.parquet(s"$reportDst/deleted")
         addressesToDelete.write.text(s"$reportDst/deleted.text")
       }
+
       // delete marked addresses
       if (shouldSweep) {
-        val jobID = if (shouldMark) runID else markID
-        println("deleting marked addresses from job ID: " + jobID)
-        val markedAddresses = readMarkedAddresses(storageNamespace, jobID)
+        val markedAddresses = if (shouldMark) {
+          println("deleting marked addresses from run ID: " + runID)
+          addressesToDelete
+        } else {
+          println("deleting marked addresses from mark ID: " + markID)
+          readMarkedAddresses(storageNamespace, markID)
+        }
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
         val region = getRegion(args)
