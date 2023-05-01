@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.7.1 - 2023-04-24
+
+=== Performance improvements===
+
+No user-visible parts inside, but some parameters...
+
+Deletion now retries S3 deleteObjects, a **lot**.  Parameters
+`lakefs.gc.s3.min_backoff_secs`, `lakefs.gc.s3.max_backoff_secs` control how
+long it will try.
+
 ## v0.7.0 - 2023-03-13
 
 === Performance improvements===

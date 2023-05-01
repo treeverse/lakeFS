@@ -575,9 +575,9 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, err
 	}
-	uploadID := *resp.UploadId
+	uploadID := aws.StringValue(resp.UploadId)
 	a.log(ctx).WithFields(logging.Fields{
-		"upload_id":     *resp.UploadId,
+		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
 		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
@@ -603,13 +603,18 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	_, err = client.AbortMultipartUploadWithContext(ctx, input)
-	a.log(ctx).WithFields(logging.Fields{
+	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
 		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
-	}).Debug("aborted multipart upload")
-	return err
+	})
+	if err != nil {
+		lg.Error("Failed to abort multipart upload")
+		return err
+	}
+	lg.Debug("aborted multipart upload")
+	return nil
 }
 
 func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUploadCompletion) *s3.CompletedMultipartUpload {

@@ -14,6 +14,7 @@ import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
 import {appendMoreResults} from "../../changes";
+import {MetadataRow, MetadataUIButton} from "./metadata";
 
 const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
@@ -88,11 +89,16 @@ const CommitActions = ({ repo, commit }) => {
     );
 };
 
+const getKeysOrNull = (metadata: Record<string>): Array<string> | null => {
+    if (!metadata) return null;
+    const keys = Object.getOwnPropertyNames(metadata);
+    if (keys.length === 0) return null;
+    return keys;
+};
 
 const CommitMetadataTable = ({ commit }) => {
-    if (!commit.metadata) return <></>
-    const keys = Object.getOwnPropertyNames(commit.metadata)
-    if (keys.length === 0) return <></>
+    const keys = getKeysOrNull(commit.metadata);
+    if (!keys) return null;
 
     return (
         <>
@@ -104,15 +110,22 @@ const CommitMetadataTable = ({ commit }) => {
                 </tr>
             </thead>
             <tbody>
-            {keys.map(key => (
-                <tr key={key}>
-                    <td><code>{key}</code></td>
-                    <td><code>{commit.metadata[key]}</code></td>
-                </tr>
-            ))}
+                {keys.map(key =>
+                    <MetadataRow metadata_key={key} metadata_value={commit.metadata[key]}/>)}
             </tbody>
         </Table>
         </>
+    );
+};
+
+const CommitMetadataUIButtons = ({ commit }) => {
+    const keys = getKeysOrNull(commit.metadata);
+    if (!keys) return null;
+
+    return (
+        <>{
+            keys.map((key) => <MetadataUIButton metadata_key={key} metadata_value={commit.metadata[key]}/>)
+        }</>
     );
 };
 
@@ -192,6 +205,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
 
                     <div className="mt-4">
                         <CommitInfo repo={repo} commit={commit}/>
+                        <CommitMetadataUIButtons commit={commit}/>
                         <CommitMetadataTable commit={commit}/>
                     </div>
                 </Card.Body>

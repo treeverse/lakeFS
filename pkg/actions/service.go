@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/antonmedv/expr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -31,8 +32,9 @@ const (
 )
 
 var (
-	ErrNotFound = errors.New("not found")
-	ErrNilValue = errors.New("nil value")
+	ErrNotFound      = errors.New("not found")
+	ErrNilValue      = errors.New("nil value")
+	ErrIfExprNotBool = errors.New("hook 'if' expression should evaluate to a boolean")
 )
 
 type Config struct {
@@ -64,6 +66,7 @@ type Task struct {
 	Action    *Action
 	HookID    string
 	Hook      Hook
+	If        string
 	Err       error
 	StartTime time.Time
 	EndTime   time.Time
@@ -317,6 +320,7 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 				Action:    action,
 				HookID:    hook.ID,
 				Hook:      h,
+				If:        hook.If,
 			}
 			// append new task or chain to the last one based on the current action
 			actionTasks = append(actionTasks, task)
@@ -333,6 +337,7 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 	for _, actionTasks := range tasks {
 		actionTasks := actionTasks // pin
 		g.Go(func() error {
+			var actionErr error
 			for _, task := range actionTasks {
 				hookOutputWriter := &HookOutputWriter{
 					Writer:           s.Writer,
@@ -342,10 +347,20 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 					ActionName:       task.Action.Name,
 					HookID:           task.HookID,
 				}
-				buf := bytes.Buffer{}
-				task.StartTime = time.Now().UTC()
 
-				task.Err = task.Hook.Run(ctx, record, &buf)
+				// evaluate if expression and keep error for later
+				var ifHook bool
+				ifHook, task.Err = runHookIfEval(task, actionErr)
+				if task.Err == nil && !ifHook {
+					continue
+				}
+
+				// execute hook if expression evaluated as true or if expression is empty
+				task.StartTime = time.Now().UTC()
+				var buf bytes.Buffer
+				if task.Err == nil {
+					task.Err = task.Hook.Run(ctx, record, &buf)
+				}
 				task.EndTime = time.Now().UTC()
 
 				s.stats.CollectEvent(stats.Event{Class: "actions_service", Name: string(record.EventType)})
@@ -359,18 +374,43 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 
 				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))
 				if err != nil {
+					// non task error - we stop the tasks processing
 					return fmt.Errorf("failed to write action log. Run id '%s' action '%s' hook '%s': %w",
 						task.HookRunID, task.Action.Name, task.HookID, err)
 				}
+
+				// stop execution if needed - keep using lastErr for return value.
+				// we do not return here as we like to process all the steps
 				if task.Err != nil {
-					// stop execution of tasks and return error
-					return task.Err
+					// capture the first error
+					if actionErr == nil {
+						actionErr = task.Err
+					}
 				}
 			}
-			return nil
+			return actionErr
 		})
 	}
 	return g.Wait().ErrorOrNil()
+}
+
+func runHookIfEval(task *Task, actionErr error) (bool, error) {
+	result := actionErr == nil // by default, we run based on current status - success: no error
+	if task.If == "" {
+		return result, nil
+	}
+	env := map[string]any{
+		"success": func() bool { return actionErr == nil },
+		"failure": func() bool { return actionErr != nil },
+	}
+	output, err := expr.Eval(task.If, env)
+	if err != nil {
+		return false, err
+	}
+	if b, ok := output.(bool); ok {
+		return b, nil
+	}
+	return false, ErrIfExprNotBool
 }
 
 func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {

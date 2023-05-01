@@ -37,30 +37,27 @@ builds:
   - linux
   - windows
 archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
-  format_overrides:
-    - goos: windows
-      format: zip
-  format: binary
-  id: lakectl
-  name_template: "{{ .Os }}_{{ .Arch }}/lakectl"
-  builds:
-   - lakectl
-- name_template: >-
-    {{ .ProjectName }}_{{ .Version }}_{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else }}{{ .Arch }}{{ end }}
+- id: default
+  rlcp: true
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else }}{{ .Arch }}{{ end }}'
   format: tar.gz
   format_overrides:
     - goos: windows
       format: zip
   files:
-    - src: '{{ .Env.DELTA_ARTIFACTS_LOCATION }}/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
+    - src: 'delta/artifacts/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
       strip_parent: true
   builds:
    - lakefs
+   - lakectl
+- id: lakectl
+  rlcp: true
+  format_overrides:
+    - goos: windows
+      format: zip
+  format: binary
+  name_template: '{{- title .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else if eq .Arch "386" }}i386{{- else }}{{ .Arch }}{{ end }}/lakectl'
+  builds:
    - lakectl
 checksum:
   name_template: 'checksums.txt'
@@ -79,3 +76,12 @@ blobs:
   folder: "lakectl/{{.Version}}"
   ids:
    - lakectl
+brews:
+- name: lakefs
+  homepage: https://github.com/treeverse/lakefs 
+  description: "lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code."
+  ids:
+    - default
+  tap:
+    owner: treeverse
+    name: homebrew-lakefs

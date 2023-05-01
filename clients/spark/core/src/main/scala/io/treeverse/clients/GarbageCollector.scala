@@ -210,6 +210,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       repo: String,
       storageNS: String,
       commitDFLocation: String,
+      numCommitPartitions: Int,
       numRangePartitions: Int,
       numAddressPartitions: Int,
       approxNumRangesToSpreadPerPartition: Double,
@@ -219,7 +220,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     val commitsDS = getCommitsDF(commitDFLocation)
       .as[(String, Boolean)]
-      .repartition(numRangePartitions)
+      .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
     val rangeIDs = getRangeIDsForCommits(commitsDS, repo)
 
@@ -519,6 +520,7 @@ object GarbageCollector {
       .getExpiredAddresses(repo,
                            storageNS,
                            gcCommitsLocation,
+                           numCommitPartitions,
                            numRangePartitions,
                            numAddressPartitions,
                            approxNumRangesToSpreadPerPartition,
