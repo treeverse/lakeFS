@@ -186,15 +186,6 @@ object UncommittedGarbageCollector {
         uncommittedDF.unpersist()
       }
 
-      // write addresses to delete
-      if (shouldMark) {
-        val reportDst = formatRunPath(storageNamespace, runID)
-        println(s"Report for mark_id=$runID path=$reportDst")
-
-        addressesToDelete.write.parquet(s"$reportDst/deleted")
-        addressesToDelete.write.text(s"$reportDst/deleted.text")
-      }
-
       // delete marked addresses
       if (shouldSweep) {
         val markedAddresses = if (shouldMark) {
@@ -267,6 +258,10 @@ object UncommittedGarbageCollector {
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID)
     println(s"Report for mark_id=$runID path=$reportDst")
+
+    expiredAddresses.write.parquet(s"$reportDst/deleted")
+    expiredAddresses.write.text(s"$reportDst/deleted.text")
+
     val summary =
       writeJsonSummary(reportDst,
                        runID,
