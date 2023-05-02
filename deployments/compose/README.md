@@ -63,23 +63,23 @@ In order to use the Trino adapter set `profile: 'trino'` in the `dbt_project.yam
 
 The default schema configured in th DBT container (`properties.yaml`) is `dbt_main`.
 To create the `dbt_main` schema run:
-```bash
-docker-compose run create-dbt-schema-main
+```sh
+docker compose run create-dbt-schema-main
 ```
 
 ### Running DBT commands
 
-Run DBT commands using `docker-compose run dbt`.
+Run DBT commands using `docker compose run dbt`.
 The DBT commands run on the DBT project in `dbt/dbt-project`.
 
 You could start by checking the environment:
-```bash
-docker-compose run dbt debug
+```sh
+docker compose run dbt debug
 ```
 
 Run your dbt project with:
-```bash
-docker-compose run dbt run
+```sh
+docker compose run dbt run
 ```
 
 You could now see the generated objects in lakeFS (under path `lakefs://example/main/dbt/my_first_dbt_model/`) and query table `dbt_main.my_first_dbt_model` using the trino-client.
@@ -90,3 +90,31 @@ Jupyter notebook is the 'notebook' service.
 It serves on port 8888.
 The login password is set to 'lakefs'.
 
+### Airflow
+
+Airflow requires multiple services and is _not_ included in
+`docker-compose.yml`.  Use `docker-compose-airflow.yml` to start an Airflow
+instance with a lakeFS connector:
+
+```sh
+docker compose -f ./docker-compose-airflow.yml up -d
+```
+
+Access the Airflow UI on http://localhost:8080/.  Module
+`airflow-provider-lakefs` is automatically installed on Airflow and
+connector `conn_lakefs` is defined and hooked up to the lakeFS instance.
+
+This is a slightly modified version of the [Airflow `docker-compose`
+file](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html).
+It uses these mapped directories:
+
+* `dags/`: Holds all installed dags.  For example, if you have a copy of
+  `lakefs-dag.py` from the Airflow lakeFS provider, then
+
+  ```sh
+  cp .../airflow-provider-lakeFS/lakefs_provider/example_dags/lakefs-dag.py ./dags/
+  ```
+  
+  to install it in `dags/`.
+* `logs`: Holds logs from all Airflow services.
+* `plugins`: Can hold additional Airflow plugins.
