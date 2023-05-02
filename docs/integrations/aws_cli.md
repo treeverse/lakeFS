@@ -31,7 +31,7 @@ To configure the lakeFS credentials, run:
 ```shell
 aws configure --profile lakefs
 ```
-You will be prompted to enter ```AWS Access Key ID``` and ```AWS Secret Access Key```.
+You will be prompted to enter the _AWS Access Key ID_ and the _AWS Secret Access Key_.
 
 It should look like this:
 ```shell

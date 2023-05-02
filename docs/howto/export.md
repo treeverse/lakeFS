@@ -119,11 +119,11 @@ Some files should be exported before others, e.g., a Spark `_SUCCESS` file expor
 the same prefix might send the wrong indication.
 
 The export operation may contain several *rounds* within the same export.
-A failing round will stop the export of all the files of the next `rounds`.
+A failing round will stop the export of all the files of the next rounds.
 
-By default, lakeFS will use the `SparkFilter` and have 2 `rounds` for each export.
+By default, lakeFS will use the `SparkFilter` and have 2 rounds for each export.
 The first round will export any non-Spark `_SUCCESS` files. Second round will export all Spark's `_SUCCESS` files.
-You may override the default behavior by passing a custom `filter` to the `Exporter`.  
+You may override the default behavior by passing a custom `filter` to the Exporter.  
 
 ## Example
 

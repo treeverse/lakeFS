@@ -39,8 +39,8 @@ The audit log includes the following fields:
   - 3xx - Redirection
   - 4xx - Client error
   - 5xx - Server error
-- Action - Specific lakeFS action (such as `Login`, `Commit`, `ListRepositories`, `CreateUser`, etc...)
-- Resource - Full URL of the command (e.g for a commit on branch `main` we would see the Action `Commit` and the resource `/api/v1/repositories/e2e-monitoring/branches/main/commits`)
+- Action - Specific lakeFS action (such as _Login_, _Commit_, _ListRepositories_, _CreateUser_, etc...)
+- Resource - Full URL of the command (e.g for a commit on branch `main` we would see the action _Commit_ and the resource `/api/v1/repositories/e2e-monitoring/branches/main/commits`)
 
 ## Filtering
 

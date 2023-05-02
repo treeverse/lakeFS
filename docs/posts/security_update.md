@@ -46,7 +46,7 @@ lakeFS Cloud will continue to support and maintain more advanced authentication 
 
 Trust is our core value, and security topics are never taken lightly. 
 
-Even though this decision was difficult, it was necessary to continue building a solid foundation for lakeFS's data version control.
+Even though this decision was difficult, it was necessary to continue building a solid foundation for our data version control.
 
 We remain [committed](../commitment.html) to making lakeFS the best, most scalable, open source version control system for data practitioners, while not compromising on its security.
 

@@ -274,7 +274,7 @@ Running in sweep only mode, GC will hard-delete the expired objects marked by a 
    An object which is later deleted from `main` will always be present in the stale branch, preventing it from being hard-deleted.
 
 1. lakeFS will never delete objects outside your repository's storage namespace.
-   In particular, objects that were imported using `lakectl ingest` or `UI Import Wizard` will not be affected by GC jobs.
+   In particular, objects that were imported using `lakectl ingest` or the UI import wizard will not be affected by GC jobs.
 
 1. In cases where deleted objects are brought back to life while a GC job is running, said objects may or may not be
    deleted. Such actions include:
