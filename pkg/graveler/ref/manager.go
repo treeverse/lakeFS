@@ -521,8 +521,13 @@ func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.Reposi
 	return FindMergeBase(ctx, m, repository, commitIDs[0], commitIDs[1])
 }
 
-func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID) (graveler.CommitIterator, error) {
-	return NewCommitIterator(ctx, repository, from, m), nil
+func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+	return NewCommitIterator(ctx, &CommitIteratorConfig{
+		repository:  repository,
+		start:       from,
+		firstParent: firstParent,
+		manager:     m,
+	}), nil
 }
 
 func (m *Manager) ListCommits(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
@@ -564,11 +569,15 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 		}
 		return err
 	}
-	_, err = m.IsLinkAddressExpired(&data)
+	expired, err := m.IsLinkAddressExpired(&data)
 	if err != nil {
 		return err
 	}
-	return deleteLinkAddress(ctx, m.kvStore, repository, token)
+	if expired {
+		err = graveler.ErrAddressTokenExpired
+	}
+	_ = deleteLinkAddress(ctx, m.kvStore, repository, token)
+	return err
 }
 
 func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, token string) error {
@@ -585,10 +594,7 @@ func (m *Manager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, e
 	if err != nil {
 		return false, err
 	}
-	if time.Since(creationTime) > LinkAddressTime {
-		return true, nil
-	}
-	return false, nil
+	return time.Since(creationTime) > LinkAddressTime, nil
 }
 
 func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {

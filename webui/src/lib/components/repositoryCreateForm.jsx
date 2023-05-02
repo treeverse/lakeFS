@@ -89,10 +89,12 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             <Form.Group as={Row} className="mb-3">
                 <Form.Label column sm={fieldNameOffset}>
                     <span>Storage Namespace&nbsp;
-                    <OverlayTrigger placement="bottom" overlay={<Tooltip style={{"font-size": "s"}}>What should I type here?</Tooltip>}>
-                        <a href="https://docs.lakefs.io/setup/create-repo.html#create-the-repository" target={"_blank"} tabIndex="-1" rel="noopener noreferrer">
-                            <InfoIcon />
-                        </a>
+                    <OverlayTrigger placement="bottom" overlay={
+                        <Tooltip style={{"font-size": "s"}}>
+                            A path to a location in the underlying object store. lakeFS will use this path to store data and metadata.
+                        </Tooltip>
+                    }>
+                        <a href={"#"}><InfoIcon /></a>
                     </OverlayTrigger></span>
                 </Form.Label>
                 <Col sm={sm}>

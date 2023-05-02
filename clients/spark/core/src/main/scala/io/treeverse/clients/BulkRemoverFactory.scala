@@ -1,6 +1,7 @@
 package io.treeverse.clients
 
 import com.amazonaws.services.s3.{AmazonS3, model}
+import com.amazonaws.services.s3.model.MultiObjectDeleteException
 import com.azure.core.http.HttpClient
 import com.azure.core.http.rest.Response
 import com.azure.storage.blob.batch.{BlobBatchClient, BlobBatchClientBuilder}
@@ -9,6 +10,7 @@ import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
 import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
 import com.azure.identity.{ClientSecretCredentialBuilder, ClientSecretCredential}
+
 import io.treeverse.clients.StorageUtils.AzureBlob._
 import io.treeverse.clients.StorageUtils.S3._
 import io.treeverse.clients.StorageUtils._
@@ -63,9 +65,10 @@ trait BulkRemover {
 }
 
 object BulkRemoverFactory {
-
   private class S3BulkRemover(hc: Configuration, storageNamespace: String, region: String)
       extends BulkRemover {
+    import scala.collection.JavaConversions._
+
     val uri = new URI(storageNamespace)
     val bucket = uri.getHost
 
@@ -76,8 +79,24 @@ object BulkRemoverFactory {
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
       val s3Client = getS3Client(hc, bucket, region, S3NumRetries)
-      val res = s3Client.deleteObjects(delObjReq)
-      res.getDeletedObjects.asScala.map(_.getKey())
+      try {
+        val res = s3Client.deleteObjects(delObjReq)
+        res.getDeletedObjects.asScala.map(_.getKey())
+      } catch {
+        case mde: MultiObjectDeleteException => {
+          // TODO(ariels): Delete one-by-one?!
+
+          // TODO(ariels): Metric!
+          val errors = mde.getErrors();
+          println(s"deleteObjects: Partial failure: ${errors.size} errors: ${errors}")
+          errors.foreach((de) => println(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}"))
+          mde.getDeletedObjects.asScala.map(_.getKey)
+        }
+        case e: Exception => {
+          println(s"deleteObjects failed: ${e}")
+          throw e
+        }
+      }
     }
 
     private def getS3Client(

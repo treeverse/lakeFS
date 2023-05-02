@@ -103,7 +103,7 @@ jobs:
           go-version: 1.19.2
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -115,7 +115,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DELTA_ARTIFACTS_LOCATION: delta/artifacts
 
       - name: Make lakectl public
         run: aws s3 cp --recursive --acl public-read "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" "s3://treeverse-clients-us-east/lakectl/$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" --metadata-directive REPLACE

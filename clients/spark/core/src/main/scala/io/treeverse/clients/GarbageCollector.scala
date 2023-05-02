@@ -205,7 +205,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   def getExpiredAddresses(
       repo: String,
       storageNS: String,
-      runID: String,
       commitDFLocation: String,
       numCommitPartitions: Int,
       numRangePartitions: Int,
@@ -217,7 +216,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
 
     val commitsDS = getCommitsDF(commitDFLocation)
       .as[(String, Boolean)]
-      .repartition(numRangePartitions)
+      .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
     val rangeIDs = getRangeIDsForCommits(commitsDS, repo)
 
@@ -311,7 +310,9 @@ object GarbageCollector {
 
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
 
-    if (!maxCommitIsoDatetime.isEmpty) {
+    println(s"Got mark_id $markID")
+
+    if (maxCommitIsoDatetime.nonEmpty) {
       hc.setLong(
         LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
         LocalDateTime
@@ -445,8 +446,7 @@ object GarbageCollector {
       storageNSForHadoopFS: String
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
-    val previousRunID =
-      "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
+    val previousRunID = hc.get(LAKEFS_CONF_GC_PREV_RUN_ID, "")
 
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
@@ -492,7 +492,6 @@ object GarbageCollector {
     val expiredAddresses = gc
       .getExpiredAddresses(repo,
                            storageNS,
-                           runID,
                            gcCommitsLocation,
                            numCommitPartitions,
                            numRangePartitions,
@@ -567,23 +566,16 @@ object GarbageCollector {
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
 
-    try {
-      val removedCount = removed.count()
-      writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
-      removed
-        .withColumn(MARK_ID_KEY, lit(markID))
-        .withColumn(RUN_ID_KEY, lit(runID))
-        .write
-        .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-        .mode(SaveMode.Overwrite)
-        .parquet(f"${deletedObjectsDst}/dt=$time")
-      println(f"Total objects deleted (or already had been deleted): ${removedCount}")
-    } catch {
-      case e: Throwable => {
-        println("Error when trying to write the summary, moving on:")
-        e.printStackTrace()
-      }
-    }
+    val removedCount = removed.count()
+    println(s"Total objects to delete (some may already have been deleted): ${removedCount}")
+    writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
+    removed
+      .withColumn(MARK_ID_KEY, lit(markID))
+      .withColumn(RUN_ID_KEY, lit(runID))
+      .write
+      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
+      .mode(SaveMode.Overwrite)
+      .parquet(f"${deletedObjectsDst}/dt=$time")
   }
 
   private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
@@ -639,7 +631,8 @@ object GarbageCollector {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
+    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
+      .toDF(schema.fieldNames: _*)
   }
 
   private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {

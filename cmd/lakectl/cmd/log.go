@@ -76,6 +76,7 @@ var logCmd = &cobra.Command{
 		after := MustString(cmd.Flags().GetString("after"))
 		limit := MustBool(cmd.Flags().GetBool("limit"))
 		dot := MustBool(cmd.Flags().GetBool("dot"))
+		firstParent := MustBool(cmd.Flags().GetBool("first-parent"))
 		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
 		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
 
@@ -88,9 +89,10 @@ var logCmd = &cobra.Command{
 			amountForPagination = internalPageSize
 		}
 		logCommitsParams := &api.LogCommitsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amountForPagination),
-			Limit:  &limit,
+			After:       api.PaginationAfterPtr(after),
+			Amount:      api.PaginationAmountPtr(amountForPagination),
+			Limit:       &limit,
+			FirstParent: &firstParent,
 		}
 		if len(objectsList) > 0 {
 			logCommitsParams.Objects = &objectsList
@@ -154,6 +156,7 @@ func init() {
 	logCmd.Flags().Bool("limit", false, "limit result just to amount. By default, returns whether more items are available.")
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("dot", false, "return results in a dotgraph format")
+	logCmd.Flags().Bool("first-parent", false, "follow only the first parent commit upon seeing a merge commit")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")

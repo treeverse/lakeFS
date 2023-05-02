@@ -22,20 +22,12 @@ redirect_from: access-control-list.html
 You can attach Permissions and scope them to groups in the Groups page.
 There are 4 default groups, named after the 4 permissions. Each group is global (applies for all repositories).
 
-| Group ID    | Allows | Repositories |
-|-------------|--------------------|--------------|
-| **Read**    | Read operations, creating access keys               | All          |
-| **Write**   | Allows all data read and write operations.              | All          |
-| **Super**   | Allows all operations except auth.              | All          |
-| **Admin**   | Allows all operations.              | All          |
-
-
-## Scopes
-
-When granted to a group, permissions Read, Write, and Super may be scoped to a set of repositories.
-
-Admin includes global abilities that apply across repos and cannot be scoped to a set of repositories
-
+| Group ID  | Allows                                     | 
+|-----------|--------------------------------------------|
+| **Read**  | Read operations, creating access keys      |
+| **Write** | Allows all data read and write operations. |
+| **Super** | Allows all operations except auth.         |
+| **Admin** | Allows all operations.                     |
 
 ## Pluggable Authentication and Authorization
 
@@ -72,7 +64,7 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
     1. Any "Deny" rules are stripped, and a warning printed.
     2. "Manage own credentials" is added.
     3. If any actions outside of "fs:" and manage own credentials are allowed, the group becomes an Admin group, a warning is printed, and no further changes apply.
-    4. The upgrade script unifies repositories: If a resource applies to a set of repositories with a wildcard, permissions are unified to all repositories. Otherwise they apply to the list of all repositories, in all the policies.
+    4. The upgrade script unifies repositories: If a resource applies to a set of repositories, permissions are unified to all repositories.
     5. The upgrade script unifies actions: it selects the least permission of Read, Write, Super that contains all of the allowed actions.
 
 The upgrade will detach every directly attached policy from users 

@@ -72,44 +72,62 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
 		}
 		if startingPoint.BranchID == "" {
-			// not a branch HEAD - add a hypothetical HEAD as its parent
+			// If the current commit is NOT a branch HEAD (a dangling commit) - add a hypothetical HEAD as its parent
 			commitNode = CommitNode{
 				CreationDate: commitNode.CreationDate,
 				MainParent:   startingPoint.CommitID,
 			}
 		} else {
+			// If the current commit IS a branch HEAD - fetch and retention rules for this branch and...
 			var branchRetentionDays int32
 			if branchRetentionDays, ok = rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
 				retentionDays = int(branchRetentionDays)
 			}
+			// set it as active (we don't delete branch HEADs), and remove it from the expired list if it was put there
+			// by some other commit path traversal.
 			activeMap[startingPoint.CommitID] = struct{}{}
 			delete(expiredMap, startingPoint.CommitID)
 		}
+		// Calculate the expiration time for the current commit
 		branchExpirationThreshold := now.AddDate(0, 0, -retentionDays)
 		if startingPoint.BranchID != "" {
-			processed[startingPoint.CommitID] = now.AddDate(0, 0, -retentionDays)
+			// If the current commit IS a branch's HEAD, add it to the `processed` with the calculated expiration threshold.
+			// (it will be optionally examined later on by different commit paths to get the longest expiration threshold for a given commit)
+			processed[startingPoint.CommitID] = branchExpirationThreshold
 		}
+		// Start traversing the commit's ancestors (path):
 		for commitNode.MainParent != "" {
 			nextCommitID := commitNode.MainParent
-			if _, ok = previouslyExpiredMap[nextCommitID]; ok {
-				// commit was already expired in a previous run
-				break
-			}
 			var previousThreshold time.Time
 			if previousThreshold, ok = processed[nextCommitID]; ok && !previousThreshold.After(branchExpirationThreshold) {
-				// was already here with earlier expiration date
+				// If the parent commit was already processed and its threshold was longer than the current threshold,
+				// i.e. the current threshold doesn't hold for it, stop processing it because the other path decision
+				// wins
 				break
 			}
 			if commitNode.CreationDate.After(branchExpirationThreshold) {
+				// If the current commit creation time is after the threshold, then its parent is active because the
+				// definition for 'active' is either creation time is after the threshold, or the first beyond
+				// the threshold. In either way, the PARENT is active.
 				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
 			} else if _, ok = activeMap[nextCommitID]; !ok {
+				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
+				// both expired in this run and the previous (in this path)
+				if _, ok = previouslyExpiredMap[nextCommitID]; ok {
+					break
+				}
+				// Else, if the parent commit isn't in the active map, and the current commit's creation time isn't after the
+				// threshold, then the parent has expired.
 				expiredMap[nextCommitID] = struct{}{}
 			}
+			// Continue down the rabbit hole.
 			commitNode, ok = commitsMap[nextCommitID]
 			if !ok {
 				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, nextCommitID)
 			}
+			// Set the parent commit ID's expiration threshold as the current (this is true because this one is the
+			// longest, because we wouldn't have gotten here otherwise)
 			processed[nextCommitID] = branchExpirationThreshold
 		}
 	}

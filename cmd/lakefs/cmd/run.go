@@ -381,18 +381,6 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 	}
 	job1.SingletonMode()
 
-	// delete expired tracked physical addresses
-	const (
-		deleteTrackedLowerTimeMin = 50
-		deleteTrackedUpperTimeMin = 70
-	)
-	job2, err := s.EveryRandom(deleteTrackedLowerTimeMin, deleteTrackedUpperTimeMin).Minute().Do(func() {
-		c.DeleteTrackedPhysicalAddresses(ctx)
-	})
-	if err != nil {
-		return err
-	}
-	job2.SingletonMode()
 	return nil
 }
 

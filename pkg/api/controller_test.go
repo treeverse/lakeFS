@@ -2495,8 +2495,9 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			},
 		})
 		testutil.Must(t, err)
-		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
-			t.Fatalf("expected error linking the same physical address twice")
+		expectedStatusCode := http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
 		}
 	})
 }
@@ -4181,9 +4182,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		return *uploadResp.JSON201
 	}
 
-	const copyTypeHeaderName = "X-Lakefs-Copy-Type"
-
-	t.Run("shallow", func(t *testing.T) {
+	t.Run("same_branch", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar"
 			destPath = "foo/bar-shallow-copy"
@@ -4196,19 +4195,12 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
-		require.Equal(t, copyType, "shallow")
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
-		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
-
-		// Verify all else is equal
-		objStat.Mtime = copyStat.Mtime
-		objStat.Path = copyStat.Path
-		require.Nil(t, deep.Equal(objStat, *copyStat))
 
 		// get back info
 		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
@@ -4216,7 +4208,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("full_different_branch", func(t *testing.T) {
+	t.Run("different_branch", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar2"
 			destPath = "foo/bar-full-from-branch"
@@ -4230,8 +4222,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
-		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
@@ -4252,7 +4242,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("full_committed", func(t *testing.T) {
+	t.Run("committed", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar3"
 			destPath = "foo/bar-full-committed"
@@ -4272,8 +4262,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		copyType := copyResp.HTTPResponse.Header.Get(copyTypeHeaderName)
-		require.Equal(t, copyType, "full")
 		// Verify creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)

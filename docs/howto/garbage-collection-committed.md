@@ -55,10 +55,16 @@ Objects present in the `dev` branch (but not in any other branch) are retained f
 
 ### Configuring GC rules
 
-#### Using lakectl
-{: .no_toc }
+To define garbage collection rules, either use the `lakectl` command or the lakeFS web UI:
 
-Use the `lakectl` CLI to define the GC rules: 
+<div class="tabs">
+  <ul>
+    <li><a href="#lakectl-option">CLI</a></li>
+    <li><a href="#ui-option">Web UI</a></li>
+  </ul>
+  <div markdown="1" id="lakectl-option">
+
+Create a JSON file with your GC rules:
 
 ```bash
 cat <<EOT >> example_repo_gc_rules.json
@@ -70,12 +76,16 @@ cat <<EOT >> example_repo_gc_rules.json
   ]
 }
 EOT
+```
 
+Set the GC rules using `lakectl`:
+```bash
 lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json 
 ```
 
-#### From the lakeFS UI
-{: .no_toc }
+</div>
+<div markdown="1" id="ui-option">
+From the lakeFS web UI:
 
 1. Navigate to the main page of your repository.
 2. Go to _Settings_ -> _Retention_.
@@ -83,7 +93,8 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 4. Save your changes.
 
 ![GC Rules From UI]({{ site.baseurl }}/assets/img/gc_rules_from_ui.png)
-
+</div>
+</div>
 
 ### Running the GC job
  
