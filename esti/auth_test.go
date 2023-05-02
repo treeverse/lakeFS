@@ -149,7 +149,7 @@ func TestReaderPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 
 	// generate the reader client
-	readerClient := newClientFromGroup(t, ctx, logger, "reader", []string{"Readers", "Viewer"})
+	readerClient := newClientFromGroup(t, ctx, logger, "reader", []string{"Readers", "Viewers"})
 
 	// listing the available branches should succeed
 	resListBranches, err := readerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
