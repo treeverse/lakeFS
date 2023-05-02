@@ -760,6 +760,7 @@ td.entry-type-indicator {
 }
 
 .getting-started-card {
+  margin-top: 64px;
   background-color: #f5f5f5;
   border: none;
   color: #22262A;
@@ -769,8 +770,7 @@ td.entry-type-indicator {
 
 .getting-started-card > .main-title {
   font-style: normal;
-  font-style: normal;
-  font-weight: 500;
+  font-weight: 300;
   font-size: 48px;
   line-height: 64px;
 }
@@ -781,7 +781,7 @@ td.entry-type-indicator {
 }
 
 .getting-started-card > .text-container h4 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 32px;
   font-style: normal;
@@ -789,9 +789,17 @@ td.entry-type-indicator {
 }
 
 .getting-started-card > .text-container p {
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 24px;
+  font-size: 20px;
+  font-weight: 200;
+  line-height: 32px;
+  font-style: normal;
+  color: #22262A;
+}
+
+.getting-started-card > .text-container p .sub-title {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 32px;
   font-style: normal;
   color: #22262A;
 }
@@ -811,7 +819,7 @@ td.entry-type-indicator {
   width: 665px;
   position: absolute;
   right: 0;
-  bottom: -45px;
+  bottom: -43px;
 }
 
 .create-sample-repo-button {
@@ -819,4 +827,12 @@ td.entry-type-indicator {
   height: 56px;
   font-size: 16px;
   line-height: 24px;
+}
+
+.create-sample-repo-button.btn-link {
+  text-decoration: none;
+}
+
+.create-sample-repo-button.btn-link:hover {
+  background: none;
 }

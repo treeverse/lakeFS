@@ -27,7 +27,13 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
     const repoNameField = useRef(null);
-    const smapleDataCheckbox = useRef(null);
+    const sampleDataCheckbox = useRef(null);
+
+    useEffect(() => {
+        if (sampleDataCheckbox.current) {
+            sampleDataCheckbox.current.checked = samlpleRepoChecked;
+        }
+    }, [samlpleRepoChecked, sampleDataCheckbox.current]);
 
     const onRepoNameChange = () => {
         const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
@@ -72,7 +78,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                 name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value,
-                sample_data: smapleDataCheckbox.current.checked,
+                sample_data: sampleDataCheckbox.current.checked,
             });
         }}>
         {config?.warnings && <Warnings warnings={config.warnings}/>}
@@ -121,7 +127,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             </Form.Group>
             <Form.Group as={Row} controlId="sampleData" className="mb-3">
                 <Col sm={{ span: sm, offset: 3 }}>
-                    <Form.Check ref={smapleDataCheckbox} type="checkbox" label="Add sample data, hooks, and configuration" checked={samlpleRepoChecked} />
+                    <Form.Check ref={sampleDataCheckbox} type="checkbox" label="Add sample data, hooks, and configuration" />
                 </Col>
             </Form.Group>
 

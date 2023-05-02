@@ -8,7 +8,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
 
-import {RepoIcon, SearchIcon, BeakerIcon} from "@primer/octicons-react";
+import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -36,10 +36,10 @@ const CreateRepositoryButton = ({variant = "success", enabled = false, onClick})
     );
 }
 
-const CreateSampleRepoButton = ({variant = "success", enabled = false, onClick}) => {
+const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, style = {}}) => {
     return (
-        <Button className="create-sample-repo-button d-flex align-items-center" variant={variant} disabled={!enabled} onClick={onClick}>
-            <BeakerIcon className="me-2" /> Create Sample Repository
+        <Button className="create-sample-repo-button" style={style} variant={variant} disabled={!enabled} onClick={onClick}>
+            {text}
         </Button>
     );
 }
@@ -73,34 +73,33 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
     );
 };
 
-const GetStarted = ({onCreateSampleRepo}) => {
+const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo}) => {
     return (
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
             <Row className="text-container">
                 <Col>
-                    <h4>New here? Not sure where to start?</h4>
-                    <p>{`It's ok, we've all been there.`} <br />
-                    {`A great place to start is with a sample repository.`} <br />
-                    {`It includes sample data, sample hooks, and a README to guide you through your first steps.`}</p>
+                    <p>{`To get started, create your first sample repository.`}<br />
+                    {`This includes sample data, hooks, and README documentation.`} <br />
+                    {`So let's dive in!`}</p>
                 </Col>
             </Row>
             <Row className="button-container">
                 <Col>
-                    <CreateSampleRepoButton variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
+                    <GettingStartedCreateRepoButton text="Create Sample Repository" variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
                 </Col>
             </Row>
             <Row>
-                <Col>
-                    <span className="learn-more">Want to learn more about lakeFS? Find out how <a href="https://www.google.com" target="_blank" rel="noreferrer">repositories</a> work.</span>
+                <Col className="d-flex justify-content-start align-items-center">
+                    <span className="learn-more">Already working with lakeFS and just need an empty repository?</span><GettingStartedCreateRepoButton style={{ padding: 0, width: "auto", marginLeft: "8px" }} text="Click here" variant={"link"} enabled={true} onClick={onCreateEmptyRepo} />
                 </Col>
             </Row>
-            <img src="/getting-started.svg" alt="getting-started" className="getting-started-image" />
+            <img src="/getting-started.png" alt="getting-started" className="getting-started-image" />
         </Card>
     );
 };
 
-const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo }) => {
+const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after);
@@ -109,8 +108,10 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
     if (loading) return <Loading/>;
     if (error) return <Error error={error}/>;
     if (!after && !prefix && results.length === 0) {
-        return <GetStarted onCreateSampleRepo={onCreateSampleRepo}/>;
+        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} />;
     }
+
+    toggleShowActionsBar();
 
     return (
         <div>
@@ -154,6 +155,7 @@ const RepositoriesPage = () => {
     const [createRepoError, setCreateRepoError] = useState(null);
     const [refresh, setRefresh] = useState(false);
     const [creatingRepo, setCreatingRepo] = useState(false);
+    const [showActionsBar, setShowActionsBar] = useState(false);
 
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
@@ -161,13 +163,17 @@ const RepositoriesPage = () => {
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
 
-    const CreateRepositoryButtonCallback = useCallback(() => {
+    const toggleShowActionsBar = useCallback((show = true) => {
+        setShowActionsBar(show);
+    }, [setShowActionsBar]);
+
+    const createRepositoryButtonCallback = useCallback(() => {
         setSampleRepoChecked(false);
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    const CreateSampleRepoButtonCallback = useCallback(() => {
+    const createSampleRepoButtonCallback = useCallback(() => {
         setSampleRepoChecked(true);
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
@@ -193,7 +199,7 @@ const RepositoriesPage = () => {
     return (
         <Layout>
             <Container fluid="xl" className="mt-3">
-                <ActionsBar>
+                {showActionsBar && <ActionsBar>
                     <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
                         <Form.Group>
                             <Col>
@@ -212,9 +218,9 @@ const RepositoriesPage = () => {
                         </Form.Group>
                     </Form>
                     <ButtonToolbar className="ms-auto mb-2">
-                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={CreateRepositoryButtonCallback} />
+                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
                     </ButtonToolbar>
-                </ActionsBar>
+                </ActionsBar> }
 
                 <RepositoryList
                     prefix={routerPfx}
@@ -225,7 +231,9 @@ const RepositoriesPage = () => {
                         if (router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});
                     }}
-                    onCreateSampleRepo={CreateSampleRepoButtonCallback}
+                    onCreateSampleRepo={createSampleRepoButtonCallback}
+                    onCreateEmptyRepo={createRepositoryButtonCallback}
+                    toggleShowActionsBar={toggleShowActionsBar}
                     />
 
                 <CreateRepositoryModal
