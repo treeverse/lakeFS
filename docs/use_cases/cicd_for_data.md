@@ -99,7 +99,7 @@ To get a local lakeFS instance running on docker, you can use everything bagel d
 git clone https://github.com/treeverse/lakeFS.git && cd lakeFS/deployments/compose
 ```
 
-The python flask server image we built in the above section needs to be added to everything bagel `docker-compose.yaml` file. So add the following contents to the yaml file. For lakeFS instance running on everything bagel, the `lakeFS endpoint`, `access key id` and `secret key` are found in `docker-compose.yaml` file under `lakefs` section.
+The python flask server image we built in the above section needs to be added to everything bagel `docker-compose.yaml` file. So add the following contents to the yaml file. For lakeFS instance running on everything bagel, the lakeFS endpoint, access key id and secret key are found in the `docker-compose.yaml` file under `lakefs` section.
 
 ```bash
   lakefs-webhooks:

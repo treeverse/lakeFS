@@ -41,7 +41,7 @@ lakefs  | ------------------------------------------------
 
 You're now ready to dive into lakeFS! 
 
-Login to lakeFS's web interface at [http://127.0.0.1:8000](http://127.0.0.1:8000) using these credentials:
+Login to the lakeFS web interface at [http://127.0.0.1:8000](http://127.0.0.1:8000) using these credentials:
 
 * **Access Key ID**: `AKIA-EXAMPLE-KEY`
 * **Secret Access Key**: `EXAMPLE-SECRET`
