@@ -50,7 +50,6 @@ object StorageClients {
   }
 
   class Azure(hc: Configuration) extends StorageClient {
-
     def getBlobContainerClient(
         storageAccountUrl: String,
         storageAccountName: String,
