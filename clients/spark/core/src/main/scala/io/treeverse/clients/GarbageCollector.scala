@@ -1,11 +1,8 @@
 package io.treeverse.clients
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.ObjectMetadata
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
-import io.treeverse.clients.StorageClients.Azure
-import io.treeverse.clients.StorageClients.S3.getS3Client
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
@@ -19,7 +16,6 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
-import java.io.ByteArrayInputStream
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
@@ -403,6 +399,7 @@ object GarbageCollector {
         }
 
         val region = getRegion(args)
+        val storageClient: StorageClient = StorageClients(storageType, hc)
 
         val removed = remove(configMapper,
                              storageNSForSdkClient,
@@ -410,10 +407,10 @@ object GarbageCollector {
                              expiredAddresses,
                              markID,
                              region,
-                             storageType,
+                             storageClient,
                              schema
                             )
-        logRunId(runID, storageType, storageNSForSdkClient, hc, region)
+        storageClient.logRunID(runID, storageNSForSdkClient, region)
         removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
@@ -428,49 +425,8 @@ object GarbageCollector {
     }
 
     val commitsDF = gc.getCommitsDF(gcCommitsLocation)
-    writeReports(storageNSForHadoopFS,
-                 gcRules,
-                 runID,
-                 markID,
-                 commitsDF,
-                 expiredAddresses,
-                 removed,
-                 configMapper
-                )
+    writeReports(storageNSForHadoopFS, gcRules, runID, markID, commitsDF, removed, configMapper)
     spark.close()
-  }
-
-  private def logRunId(
-      runID: String,
-      storageType: String,
-      storageNamespace: String,
-      hc: Configuration,
-      region: String
-  ): Unit = {
-    val uri = new URI(storageNamespace)
-    val runIDMarkerInputStream = new ByteArrayInputStream(new Array[Byte](0))
-    if (storageType == StorageUtils.StorageTypeS3) {
-      val bucket = uri.getHost
-      val s3Client = getS3Client(hc, bucket, region, StorageUtils.S3.S3NumRetries)
-      val meta = new ObjectMetadata()
-      meta.setContentLength(0)
-      s3Client.putObject(bucket,
-                         getRunIDMarkerLocation(runID, uri.getPath),
-                         runIDMarkerInputStream,
-                         meta
-                        )
-    } else if (storageType == StorageUtils.StorageTypeAzure) {
-      val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
-      val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
-      val containerName = StorageUtils.AzureBlob.uriToContainerName(uri)
-      val blobClient =
-        Azure.getBlobContainerClient(hc, storageAccountUrl, storageAccountName, containerName)
-      val pathArray = uri.getPath.split("/")
-      val key = pathArray.slice(2, pathArray.length).reduce((a1, a2) => a1 + "/" + a2)
-      blobClient
-        .getBlobClient(getRunIDMarkerLocation(runID, key))
-        .upload(runIDMarkerInputStream, 0)
-    }
   }
 
   private def markAddresses(
@@ -595,7 +551,6 @@ object GarbageCollector {
       runID: String,
       markID: String,
       commitsDF: DataFrame,
-      expiredAddresses: DataFrame,
       removed: DataFrame,
       configMapper: ConfigMapper
   ) = {
@@ -633,28 +588,30 @@ object GarbageCollector {
       readKeysDF: DataFrame,
       storageNamespace: String,
       region: String,
-      storageType: String
+      storageClient: StorageClient
   ): Dataset[String] = {
     import spark.implicits._
     val bulkRemover =
-      BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+      BulkRemoverFactory(storageClient, storageNamespace, region)
     val bulkSize = bulkRemover.getMaxBulkSize()
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
 
-    bulkedKeyStrings
+    val ds = bulkedKeyStrings
       .mapPartitions(iter => {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
         // bulkRemover created above because it was created on the driver and it is not a serializable object. Therefore,
         // we create new bulkRemovers.
         val bulkRemover =
-          BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+          BulkRemoverFactory(storageClient, storageNamespace, region)
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
       })
+
+    ds
   }
 
   def remove(
@@ -664,13 +621,13 @@ object GarbageCollector {
       expiredAddresses: Dataset[Row],
       markID: String,
       region: String,
-      storageType: String,
+      storageClient: StorageClient,
       schema: StructType
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
+    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageClient)
       .toDF(schema.fieldNames: _*)
   }
 
