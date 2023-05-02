@@ -191,6 +191,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         name="wr1c2v7s6djuy1zmeto",
         storage_namespace="s3://example-bucket/",
         default_branch="main",
+        sample_data=True,
     ) # RepositoryCreation | 
     bare = False # bool | If true, create a bare repository with no initial commit and branch (optional) if omitted the server will use the default value of False
 

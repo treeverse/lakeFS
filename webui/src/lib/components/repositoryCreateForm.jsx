@@ -13,7 +13,7 @@ import {OverlayTrigger} from "react-bootstrap";
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
-export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null, inProgress = false, sm = 6 }) => {
+export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null, inProgress = false, sm = 6, samlpleRepoChecked = false }) => {
     const fieldNameOffset = 3;
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
@@ -27,6 +27,7 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
     const repoNameField = useRef(null);
+    const smapleDataCheckbox = useRef(null);
 
     const onRepoNameChange = () => {
         const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
@@ -70,7 +71,8 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             onSubmit({
                 name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
-                default_branch: defaultBranchField.current.value
+                default_branch: defaultBranchField.current.value,
+                sample_data: smapleDataCheckbox.current.checked,
             });
         }}>
         {config?.warnings && <Warnings warnings={config.warnings}/>}
@@ -115,6 +117,11 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                         Invalid Branch.
                     </Form.Text>
                     }
+                </Col>
+            </Form.Group>
+            <Form.Group as={Row} controlId="sampleData" className="mb-3">
+                <Col sm={{ span: sm, offset: 3 }}>
+                    <Form.Check ref={smapleDataCheckbox} type="checkbox" label="Add sample data, hooks, and configuration" checked={samlpleRepoChecked} />
                 </Col>
             </Form.Group>
 

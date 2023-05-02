@@ -95,6 +95,7 @@ class RepositoryCreation(ModelNormal):
             'name': (str,),  # noqa: E501
             'storage_namespace': (str,),  # noqa: E501
             'default_branch': (str,),  # noqa: E501
+            'sample_data': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -106,6 +107,7 @@ class RepositoryCreation(ModelNormal):
         'name': 'name',  # noqa: E501
         'storage_namespace': 'storage_namespace',  # noqa: E501
         'default_branch': 'default_branch',  # noqa: E501
+        'sample_data': 'sample_data',  # noqa: E501
     }
 
     read_only_vars = {
@@ -154,6 +156,7 @@ class RepositoryCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             default_branch (str): [optional]  # noqa: E501
+            sample_data (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -242,6 +245,7 @@ class RepositoryCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             default_branch (str): [optional]  # noqa: E501
+            sample_data (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

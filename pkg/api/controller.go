@@ -1575,6 +1575,15 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
+	if body.SampleData != nil && *body.SampleData {
+		// add sample data, hooks, etc.
+		err = c.populateSampleRepo(ctx, newRepo)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
+			return
+		}
+	}
+
 	response := Repository{
 		CreationDate:     newRepo.CreationDate.Unix(),
 		DefaultBranch:    newRepo.DefaultBranch,
@@ -1582,24 +1591,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		StorageNamespace: newRepo.StorageNamespace,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
-}
-
-var errStorageNamespaceInUse = errors.New("storage namespace already in use")
-
-func (c *Controller) createSampleRepository(ctx context.Context) error {
-	// create the repository
-	newRepo, err := c.Catalog.CreateRepository(ctx, sampleRepoName, sampleRepoStorageNamespace, sampleRepoDefaultBranchName)
-	if err != nil {
-		return err
-	}
-
-	// populate repo from embedded sample data
-	err = c.populateSampleRepo(ctx, newRepo)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *Controller) populateSampleRepo(ctx context.Context, repo *catalog.Repository) error {
@@ -1662,6 +1653,8 @@ func (c *Controller) populateSampleRepo(ctx context.Context, repo *catalog.Repos
 
 	return err
 }
+
+var errStorageNamespaceInUse = errors.New("storage namespace already in use")
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
@@ -3944,14 +3937,6 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
-
-	// if we're using the local block adapter, create the sample repository
-	if c.BlockAdapter.BlockstoreType() == "local" {
-		err := c.createSampleRepository(ctx)
-		if err != nil {
-			c.Logger.WithError(err).Warn("failed to create sample repository")
-		}
-	}
 
 	response := CredentialsWithSecret{
 		AccessKeyId:     cred.AccessKeyID,

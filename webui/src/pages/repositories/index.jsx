@@ -8,7 +8,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
 
-import {RepoIcon, SearchIcon} from "@primer/octicons-react";
+import {RepoIcon, SearchIcon, BeakerIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -24,7 +24,6 @@ import {useRouter} from "../../lib/hooks/router";
 
 import {Route, Routes} from "react-router-dom";
 import RepositoryPage from './repository';
-import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 
 dayjs.extend(relativeTime);
@@ -34,10 +33,18 @@ const CreateRepositoryButton = ({variant = "success", enabled = false, onClick})
         <Button variant={variant} disabled={!enabled} onClick={onClick}>
             <RepoIcon/> Create Repository
         </Button>
-    )
+    );
 }
 
-const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
+const CreateSampleRepoButton = ({variant = "success", enabled = false, onClick}) => {
+    return (
+        <Button className="create-sample-repo-button d-flex align-items-center" variant={variant} disabled={!enabled} onClick={onClick}>
+            <BeakerIcon className="me-2" /> Create Sample Repository
+        </Button>
+    );
+}
+
+const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, samlpleRepoChecked = false }) => {
 
     const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
@@ -60,25 +67,40 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
                 <ModalTitleContainer/>
             </Modal.Header>
             <Modal.Body>
-                <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel}/>
+                <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel} inProgress={inProgress} samlpleRepoChecked={samlpleRepoChecked} />
             </Modal.Body>
         </Modal>
     );
 };
 
-const GetStarted = ({onCreateRepo}) => {
+const GetStarted = ({onCreateSampleRepo}) => {
     return (
-        <Alert variant={"secondary"}>
-            <h4>You don&apos;t have any repositories yet.</h4>
-            {/* eslint-disable-next-line react/jsx-no-target-blank */}
-            <Link onClick={onCreateRepo} href="#">Create your first repository</Link> or <a
-            href="https://docs.lakefs.io/understand/model.html#repository" target="_blank">learn more about
-            repositories in lakeFS</a>.
-        </Alert>
+        <Card className="getting-started-card">
+            <h2 className="main-title">Welcome to lakeFS!</h2>
+            <Row className="text-container">
+                <Col>
+                    <h4>New here? Not sure where to start?</h4>
+                    <p>{`It's ok, we've all been there.`} <br />
+                    {`A great place to start is with a sample repository.`} <br />
+                    {`It includes sample data, sample hooks, and a README to guide you through your first steps.`}</p>
+                </Col>
+            </Row>
+            <Row className="button-container">
+                <Col>
+                    <CreateSampleRepoButton variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <span className="learn-more">Want to learn more about lakeFS? Find out how <a href="https://www.google.com" target="_blank" rel="noreferrer">repositories</a> work.</span>
+                </Col>
+            </Row>
+            <img src="/getting-started.svg" alt="getting-started" className="getting-started-image" />
+        </Card>
     );
 };
 
-const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) => {
+const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after);
@@ -87,7 +109,7 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
     if (loading) return <Loading/>;
     if (error) return <Error error={error}/>;
     if (!after && !prefix && results.length === 0) {
-        return <GetStarted onCreateRepo={onCreateRepo}/>;
+        return <GetStarted onCreateSampleRepo={onCreateSampleRepo}/>;
     }
 
     return (
@@ -128,8 +150,10 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateRepo }) =>
 const RepositoriesPage = () => {
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
+    const [sampleRepoChecked, setSampleRepoChecked] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
     const [refresh, setRefresh] = useState(false);
+    const [creatingRepo, setCreatingRepo] = useState(false);
 
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
     const [prefix, setPrefix] = useDebouncedState(
@@ -138,12 +162,20 @@ const RepositoriesPage = () => {
     );
 
     const CreateRepositoryButtonCallback = useCallback(() => {
+        setSampleRepoChecked(false);
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
-    }, [showCreateRepositoryModal, setShowCreateRepositoryModal])
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
+
+    const CreateSampleRepoButtonCallback = useCallback(() => {
+        setSampleRepoChecked(true);
+        setShowCreateRepositoryModal(true);
+        setCreateRepoError(null);
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
     const createRepo = async (repo, presentRepo = true) => {
         try {
+            setCreatingRepo(true);
             await repositories.create(repo);
             setRefresh(!refresh);
             setCreateRepoError(null);
@@ -152,6 +184,7 @@ const RepositoriesPage = () => {
             }
             return true;
         } catch (error) {
+            setCreatingRepo(false);
             setCreateRepoError(error);
             return false;
         }
@@ -192,7 +225,7 @@ const RepositoriesPage = () => {
                         if (router.query.prefix) query.prefix = router.query.prefix;
                         router.push({pathname: `/repositories`, query});
                     }}
-                    onCreateRepo={() => setShowCreateRepositoryModal(true)}
+                    onCreateSampleRepo={CreateSampleRepoButtonCallback}
                     />
 
                 <CreateRepositoryModal
@@ -202,7 +235,10 @@ const RepositoriesPage = () => {
                     }}
                     show={showCreateRepositoryModal}
                     error={createRepoError}
-                    onSubmit={(repo) => createRepo(repo, true)}/>
+                    onSubmit={(repo) => createRepo(repo, true)}
+                    samlpleRepoChecked={sampleRepoChecked}
+                    inProgress={creatingRepo}
+                    />
 
             </Container>
         </Layout>
