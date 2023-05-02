@@ -49,7 +49,6 @@ func handlePipe(pipe io.ReadCloser, log func(messages ...interface{}), ch chan<-
 			err = nil
 		}
 		ch <- err
-		pipe.Close()
 	}()
 }
 
