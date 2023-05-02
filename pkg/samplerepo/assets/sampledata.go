@@ -1,8 +1,8 @@
-package sample
+package assets
 
 import "embed"
 
 var (
-	//go:embed sample all:*
+	//go:embed all:sample
 	SampleData embed.FS
 )

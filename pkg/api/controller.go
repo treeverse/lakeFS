@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -41,12 +40,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
-	sample "github.com/treeverse/lakefs/sample_repository"
 )
 
 const (
@@ -69,12 +68,6 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
-	// Sample Repo
-	sampleRepoName              = "sample-repo"
-	sampleRepoStorageNamespace  = "local://sample-repo"
-	sampleRepoDefaultBranchName = "main"
-	sampleRepoFSRootPath        = "sample"
-	sampleRepoPathPrefix        = sampleRepoFSRootPath + "/"
 )
 
 type actionsHandler interface {
@@ -1575,9 +1568,15 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	if body.SampleData != nil && *body.SampleData {
+	if swag.BoolValue(body.SampleData) {
 		// add sample data, hooks, etc.
-		err = c.populateSampleRepo(ctx, newRepo)
+		user, err := auth.GetUser(ctx)
+		if err != nil {
+			writeError(w, r, http.StatusUnauthorized, "missing user")
+			return
+		}
+
+		err = samplerepo.PopulateSampleRepo(ctx, newRepo, c.Catalog, c.PathProvider, c.BlockAdapter, user)
 		if err != nil {
 			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
 			return
@@ -1591,67 +1590,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		StorageNamespace: newRepo.StorageNamespace,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
-}
-
-func (c *Controller) populateSampleRepo(ctx context.Context, repo *catalog.Repository) error {
-	// upload sample data
-	// we skip checking if the repo and branch exist, since we just created them
-	// we also skip checking if the file exists, since we know the repo is empty
-
-	err := fs.WalkDir(sample.SampleData, sampleRepoFSRootPath, func(path string, d fs.DirEntry, topLevelErr error) error {
-		// handle a top-level error
-		if topLevelErr != nil {
-			return topLevelErr
-		}
-
-		if d.IsDir() {
-			// noop for directories
-			return nil
-		}
-
-		// open file from embedded FS
-		file, err := sample.SampleData.Open(path)
-		if err != nil {
-			return err
-		}
-		// since we're not writing to the file, not a big risk in disregarding the error possibly returned by Close
-		defer file.Close()
-
-		// get file stats for size
-		fileInfo, err := file.Stat()
-		if err != nil {
-			return err
-		}
-
-		// write file to storage
-		address := c.PathProvider.NewPath()
-		blob, err := upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, file, fileInfo.Size(), block.PutOpts{})
-		if err != nil {
-			return err
-		}
-
-		// create metadata entry
-		writeTime := time.Now()
-		entryBuilder := catalog.NewDBEntryBuilder().
-			Path(strings.TrimPrefix(path, sampleRepoPathPrefix)).
-			PhysicalAddress(blob.PhysicalAddress).
-			CreationDate(writeTime).
-			Size(blob.Size).
-			Checksum(blob.Checksum).
-			AddressType(catalog.AddressTypeRelative)
-
-		entry := entryBuilder.Build()
-
-		// write metadata entry
-		err = c.Catalog.CreateEntry(ctx, repo.Name, sampleRepoDefaultBranchName, entry)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	return err
 }
 
 var errStorageNamespaceInUse = errors.New("storage namespace already in use")
