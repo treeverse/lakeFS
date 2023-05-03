@@ -43,8 +43,8 @@ This is different from creating a long-living test environment used as a staging
 
 lakeFS supports UI, CLI (`lakectl` commandline utility) and several client API [integrations](../integrations) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
-## Using lakeFS Playground UI
-In this tutorial, we will use [lakeFS playground](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. Playground allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
+## Using lakeFS Playground experience
+In this tutorial, we will use [a lakeFS playground environment](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
 First, let us spin up a [playground](https://demo.lakefs.io/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
