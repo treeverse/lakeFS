@@ -59,7 +59,7 @@ The complete `spark-submit` command would look as follows:
 spark-submit --conf spark.hadoop.lakefs.api.url=https://<LAKEFS_ENDPOINT>/api/v1 \
   --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY_ID> \
   --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_ACCESS_KEY> \
-  --packages io.lakefs:lakefs-spark-client-301_2.12:0.6.5 \
+  --packages io.lakefs:lakefs-spark-client-301_2.12:0.7.2 \
   --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/prefix \
   --branch=example-branch
 ```
