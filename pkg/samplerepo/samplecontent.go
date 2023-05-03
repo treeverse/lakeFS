@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	sampleRepoFSRootPath      = "sample"
-	sampleRepoCommitMsg       = "Add sample data"
-	sampleRepoProtectedBranch = "main"
+	sampleRepoFSRootPath = "sample"
+	sampleRepoCommitMsg  = "Add sample data"
 )
 
 func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catalog.Interface, pathProvider upload.PathProvider, blockAdapter block.Adapter, user *model.User) error {
@@ -93,7 +92,7 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 func SampleRepoAddBranchProtection(ctx context.Context, repo *catalog.Repository, cat catalog.Interface) error {
 	// Set branch protection on main branch
 
-	err := cat.CreateBranchProtectionRule(ctx, repo.Name, sampleRepoProtectedBranch, []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
+	err := cat.CreateBranchProtectionRule(ctx, repo.Name, repo.DefaultBranch, []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
 
 	return err
 }
