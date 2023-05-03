@@ -16,7 +16,7 @@ import (
 
 const (
 	sampleRepoFSRootPath = "sample"
-	sampleRepoCommitMsg  = "Initial commit"
+	sampleRepoCommitMsg  = "Add sample data"
 )
 
 func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catalog.Interface, pathProvider upload.PathProvider, blockAdapter block.Adapter, user *model.User) error {
@@ -76,12 +76,14 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 		return nil
 	})
 
-	// if we succeeded, commit the changes
-	if err == nil {
-		// commit changes
-		_, err = cat.Commit(ctx, repo.Name, repo.DefaultBranch, sampleRepoCommitMsg,
-			user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil)
+	if err != nil {
+		return err
 	}
+
+	// if we succeeded, commit the changes
+	// commit changes
+	_, err = cat.Commit(ctx, repo.Name, repo.DefaultBranch, sampleRepoCommitMsg,
+		user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil)
 
 	return err
 }
