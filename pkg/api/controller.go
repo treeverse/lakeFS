@@ -1584,10 +1584,9 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 		err = samplerepo.SampleRepoAddBranchProtection(ctx, newRepo, c.Catalog)
 		if err != nil {
-			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error adding branch protection to sample repository: %w", err))
 			return
 		}
-
 	}
 
 	response := Repository{
