@@ -10,13 +10,15 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/samplerepo/assets"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 const (
-	sampleRepoFSRootPath = "sample"
-	sampleRepoCommitMsg  = "Add sample data"
+	sampleRepoFSRootPath      = "sample"
+	sampleRepoCommitMsg       = "Add sample data"
+	sampleRepoProtectedBranch = "main"
 )
 
 func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catalog.Interface, pathProvider upload.PathProvider, blockAdapter block.Adapter, user *model.User) error {
@@ -84,6 +86,14 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 	// commit changes
 	_, err = cat.Commit(ctx, repo.Name, repo.DefaultBranch, sampleRepoCommitMsg,
 		user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil)
+
+	return err
+}
+
+func SampleRepoAddBranchProtection(ctx context.Context, repo *catalog.Repository, cat catalog.Interface) error {
+	// Set branch protection on main branch
+
+	err := cat.CreateBranchProtectionRule(ctx, repo.Name, sampleRepoProtectedBranch, []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
 
 	return err
 }

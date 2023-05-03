@@ -1581,6 +1581,13 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
 			return
 		}
+
+		err = samplerepo.SampleRepoAddBranchProtection(ctx, newRepo, c.Catalog)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
+			return
+		}
+
 	}
 
 	response := Repository{
