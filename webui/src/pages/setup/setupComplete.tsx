@@ -73,7 +73,7 @@ server:
                         <h5>lakectl</h5>
                         <div className="ms-2 mt-2">
                             <a target="_blank" rel="noreferrer" 
-                               href="https://docs.lakefs.io/reference/commands.html">lakectl</a> is a CLI tool for working with lakeFS.
+                               href="https://docs.lakefs.io/reference/cli.html">lakectl</a> is a CLI tool for working with lakeFS.
                             <p className="mt-2">
                             Download lakectl as part of the <a target="_blank" rel="noreferrer" href="https://github.com/treeverse/lakeFS/releases">lakeFS release package</a> and save the above credentials file as <code>~/.lakectl.yaml</code>.
                             </p>
