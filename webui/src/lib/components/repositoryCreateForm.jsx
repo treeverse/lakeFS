@@ -39,9 +39,9 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     };
 
     const checkStorageNamespaceValidity = () => {
-        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value)
+        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value);
         setStorageNamespaceValid(isStorageNamespaceValid);
-        setFormValid(isStorageNamespaceValid && defaultBranchValid && repoValid);
+        setFormValid(isStorageNamespaceValid && defaultBranchValid && repoValidityRegex.test(repoNameField.current.value));
     };
 
     const checkDefaultBranchValidity = () => {
