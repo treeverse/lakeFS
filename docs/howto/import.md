@@ -22,6 +22,22 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 
 ### Prerequisites
 
+#### User Permissions
+
+The lakeFS user running the import must have the following permissions:
+`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit` and 
+`fs:ImportFromStorage`. The first 3 permissions are available by default to 
+users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
+Writers group ([ACL](../reference/access-control-lists.md)). The last 
+permission enables the user to import data from any location of the storage 
+provider that lakeFS has access to. Thus, it's only available to users in the 
+default SuperUsers group ([RBAC](../reference/rbac.md)) or the Super 
+group ([ACL](../reference/access-control-lists.md)). RBAC installations can 
+add that permission to any group, including Developers.
+
+
+#### lakeFS Permissions
+
 lakeFS must have permissions to list the objects in the source object store,
 and the source bucket must be in the same region of your destination bucket.  
 In addition, see the following storage provider specific instructions:
@@ -34,7 +50,8 @@ In addition, see the following storage provider specific instructions:
 </ul>
 <div markdown="1" id="aws-s3">
 
-### AWS S3: Importing from public buckets
+
+#### AWS S3: Importing from public buckets
 {: .no_toc }
 
 lakeFS needs access to the imported location to first list the files to import and later read the files upon users request.
@@ -78,7 +95,7 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 <div markdown="1" id="azure-storage">
 See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
-### Azure Data Lake Gen2
+#### Azure Data Lake Gen2
 {: .no_toc }
 
 lakeFS requires a hint in the import source URL to understand that the provided storage account is ADLS Gen2
