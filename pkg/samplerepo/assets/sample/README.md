@@ -20,7 +20,8 @@ You might also be interested in this list of [additional lakeFS resources](#reso
 ## Setup
 
 **`<TODO: how to run from Docker>`**
-**`<TODO: how to install & configure lakectl>`**
+**`<TODO: if not docker: how to install & configure lakectl>`**
+**`<TODO: if not docker: how to install DuckDB>`**
 
 <a name="query"></a>
 
