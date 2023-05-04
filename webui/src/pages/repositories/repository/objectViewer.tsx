@@ -16,6 +16,7 @@ import { RefContextProvider } from "../../../lib/hooks/repo";
 import { linkToPath } from "../../../lib/api";
 
 import "../../../styles/ipynb.css";
+import "../../../styles/quickstart.css";
 
 type ObjectViewerPathParams = {
   objectName: string;
