@@ -89,7 +89,6 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
         remarkHtml,
       ]}
       rehypePlugins={[rehypeRaw]}
-      linkTarget={"_blank"}
     >
       {text}
     </ReactMarkdown>
