@@ -1,35 +1,7 @@
-.quickstart-steps {
-	padding: 10px;
-}
-
-.quickstart-steps img {
-    width: 50px;
-	height: 50px;
-}
-
-.row {
-	display: flex;
-	flex-direction: row;
-}
-
-.col {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	margin-bottom: 0.3em;
-}
-
-.col .step-num {
-    margin-right: 20px;
-}
-
-.col .step-num img {
-    width: 40px;
-}
-
 img.quickstart {
 	box-shadow: 3px 3px 1px #ccc;
 	border-width: thin;
 	border-color: black;
 	border-style: ridge;
+	margin-bottom: 20px;
 }
