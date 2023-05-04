@@ -80,8 +80,8 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo}) => {
             <Row className="text-container">
                 <Col>
                     <p>{`To get started, create your first sample repository.`}<br />
-                    {`This includes sample data, hooks, and README documentation.`} <br />
-                    {`So let's dive in!`}</p>
+                    {`This includes sample data, quickstart instructions, and more!`} <br />
+                    {`Let's dive in 🤿`}</p>
                 </Col>
             </Row>
             <Row className="button-container">
