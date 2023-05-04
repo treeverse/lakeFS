@@ -1,6 +1,6 @@
 # Welcome to the Lake!
 
-<img src="/api/v1/repositories/sample/refs/main/objects?path=images%2Fwaving-axolotl-transparent.gif" width=90 alt="Waving Axolotl"/>
+<img src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fwaving-axolotl-transparent.gif" width=90 alt="Waving Axolotl"/>
 
 **lakeFS brings software engineering best practices and applies them to data engineering.** 
 
@@ -62,31 +62,20 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 </div>
 
 
+<a name="query"></a>
+## Let's get started 😺
 
-
-<details>
-  <summary>Launch</summary>
-  <a name="launch"></a>
-  You've done this bit already, otherwise you wouldn't be here!
-</details>
-
-<details>
-  <summary>Query</summary>
-  <a name="query"></a>
-
-# Let's Query Something 👀 
-
-The lakeFS server has been loaded with a sample parquet datafile. Fittingly enough for a piece of software to help users of data lakes, the `lakes.parquet` file holds data about lakes around the world. 
+We'll start off by querying the sample data to orient ourselves around what it is we're working with. The lakeFS server has been loaded with a sample parquet datafile. Fittingly enough for a piece of software to help users of data lakes, the `lakes.parquet` file holds data about lakes around the world. 
 
 You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in Git against which you develop software code. 
 
-<img src="https://docs.lakefs.io/assets/img/quickstart/repo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
+<img width="75%" src="https://docs.lakefs.io/assets/img/quickstart/repo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
 
 Let's have a look at the data, ahead of making some changes to it on a branch in the following steps. 
 
-Click on `lakes.parquet` and notice that the built-it DuckDB runs a query to show a preview of the file's contents. 
+Click on [`lakes.parquet`](/repositories/quickstart/object?ref=main&path=data%2Flakes.parquet) from the object browser and notice that the built-it DuckDB runs a query to show a preview of the file's contents. 
 
-<img src="https://docs.lakefs.io/assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
+<img width="75%" src="https://docs.lakefs.io/assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
 Now we'll run our own query on it to look at the top five countries represented in the data. 
 
@@ -100,7 +89,7 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-<img src="https://docs.lakefs.io/assets/img/quickstart/duckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
+<img width="75%" src="https://docs.lakefs.io/assets/img/quickstart/duckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
 
 Next we're going to make some changes to the data—but on a development branch so that the data in the main branch remains untouched. 
 </details>
