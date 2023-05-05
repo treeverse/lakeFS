@@ -35,24 +35,20 @@ After a few moments you should see the lakeFS container ready to use:
 
 You're now ready to dive into lakeFS! 
 
-Login to lakeFS's web interface at [http://127.0.0.1:8000](http://127.0.0.1:8000). Enter your email address and click on **Setup**
+1. Login to lakeFS's web interface at [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup). Enter your email address and click on **Setup**.
 
-<img src="/assets/img/quickstart/user_config.png" alt="User Configuration Screen" class="quickstart"/>
+2. On the next screen you'll see the generated authentication key pair - make a note of these (or download them using the button provided). 
 
-On the next screen you'll see the generated authentication key pair - make a note of these (or download them using the button provided). 
+3. Click on **Go To Login** and sign in using your new credentials. 
 
-Click on **Go To Login** and sign in using your new credentials. 
+4. You notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
 
-You notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
+    <img width="75%" src="/assets/img/quickstart/empty-repo-list.png" alt="Empty lakeFS Repository list" class="quickstart"/>
 
-<img src="/assets/img/quickstart/empty-repo-list.png" alt="Empty lakeFS Repository list" class="quickstart"/>
+5. Specify `quickstart` as the repository name, leave the other settings unchanged, and click **Create Repository**
 
-Specify `quickstart` as the repository name, leave the other settings unchanged, and click **Create Repository**
-
-<img src="/assets/img/quickstart/create-quickstart-repo.png" alt="Creating the quickstart sample repo in lakeFS" class="quickstart"/>
+    <img width="50%" src="/assets/img/quickstart/create-quickstart-repo.png" alt="Creating the quickstart sample repo in lakeFS" class="quickstart"/>
 
 You will see the sample repository created and the quickstart guide within it. You can follow along there, or here - it's the same :) 
 
-<img src="/assets/img/quickstart/quickstart-repo.png" alt="The quickstart sample repo in lakeFS" class="quickstart"/>
-
-Now we're ready to explore the data that's been loaded into the quickstart environment. 
+<img width="75%" src="/assets/img/quickstart/quickstart-repo.png" alt="The quickstart sample repo in lakeFS" class="quickstart"/>
