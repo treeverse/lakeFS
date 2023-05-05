@@ -29,8 +29,22 @@ If you're running lakeFS with Docker then all the tools you need (`lakectl`, `du
 ```bash
 docker run --name lakefs \
            --publish 8000:8000 \
-           treeverse/lakefs:dev \
+           treeverse/lakefs:latest \
            run --local-settings
+```
+
+You can optionally pre-create the user with the alternative command to above: 
+
+```bash
+docker run --name lakefs \
+           --rm --publish 8000:8000 \
+           --entrypoint "/bin/sh" \
+           --env "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIA-EXAMPLE-KEY" \
+           --env "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=EXAMPLE-SECRET" \
+           --env "LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000" \
+           treeverse/lakefs:latest -c \
+           "lakefs setup --local-settings --user-name admin --access-key-id \"AKIA-EXAMPLE-KEY\" --secret-access-key \"EXAMPLE-SECRET\"; \ 
+            lakefs run --local-settings"
 ```
 
 </details>

@@ -18,6 +18,9 @@ Launch the lakeFS container:
 docker run --name lakefs \
            --rm --publish 8000:8000 \
            --entrypoint "/bin/sh" \
+           --env "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIA-EXAMPLE-KEY" \
+           --env "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=EXAMPLE-SECRET" \
+           --env "LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000" \
            treeverse/lakefs:latest -c \
            "lakefs setup --local-settings --user-name admin --access-key-id \"AKIA-EXAMPLE-KEY\" --secret-access-key \"EXAMPLE-SECRET\"; \ 
             lakefs run --local-settings"
