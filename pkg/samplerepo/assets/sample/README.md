@@ -19,9 +19,37 @@ You might also be interested in this list of [additional lakeFS resources](#reso
 
 ## Setup
 
-**`<TODO: how to run from Docker>`**
-**`<TODO: if not docker: how to install & configure lakectl>`**
-**`<TODO: if not docker: how to install DuckDB>`**
+If you're reading this within the sample repository on lakeFS then you've already got lakeFS running! In this quickstart we'll reference different ways to perform tasks depending on how you're running lakeFS. See below for how you need to set up your environment for these. 
+
+<details>
+  <summary>Docker</summary>
+
+If you're running lakeFS with Docker then all the tools you need (`lakectl`, `duckdb`) are included in the image already. 
+
+```bash
+docker run --name lakefs \
+           --publish 8000:8000 \
+           treeverse/lakefs:dev \
+           run --local-settings
+```
+
+</details>
+
+<details>
+  <summary>Local install</summary>
+
+1. When you download [lakeFS from the GitHub repository](https://github.com/treeverse/lakeFS/releases) the distribution includes the `lakectl` tool. 
+
+    Add this to your `$PATH`, or when invoking it reference it from the downloaded folder
+2. [Configure](https://docs.lakefs.io/reference/cli.html#configuring-credentials-and-api-endpoint) `lakectl` by running
+
+    ```bash
+    lakectl config
+    ```
+3. Install [DuckDB](https://duckdb.org/docs/installation/)
+
+</details>
+
 
 <a name="query"></a>
 
@@ -33,13 +61,13 @@ _You'll notice that the branch is set to `main`. This is conceptually the same a
 
 <img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Frepo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
 
-_Let's have a look at the data, ahead of making some changes to it on a branch in the following steps..
+_Let's have a look at the data, ahead of making some changes to it on a branch in the following steps._.
 
 Click on [`lakes.parquet`](object?ref=main&path=lakes.parquet) from the object browser and notice that the built-it DuckDB runs a query to show a preview of the file's contents.
 
 <img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fduckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
-_Now we'll run our own query on it to look at the top five countries represented in the data..
+_Now we'll run our own query on it to look at the top five countries represented in the data_.
 
 Copy and paste the following SQL statement into the DuckDB query panel and click on Execute.
 
@@ -127,7 +155,8 @@ _Now we'll make a change to the data. lakeFS has several native clients, as well
 Run the following in a terminal window to launch the DuckDB CLI:
 
 ```bash
-docker exec -it duckdb duckdb
+docker exec --interactive --tty \
+            lakefs duckdb
 ```
 
 </details>
@@ -171,7 +200,7 @@ SET s3_secret_access_key='EXAMPLE-SECRET';
 _Now we'll load the lakes data into a DuckDB table so that we can manipulate it._
 
 ```sql
-CREATE TABLE lakes A.
+CREATE TABLE lakes AS
     SELECT * FROM READ_PARQUET('s3://quickstart/denmark-lakes/lakes.parquet');
 ```
 
@@ -237,7 +266,7 @@ _The changes so far have only been to DuckDB's copy of the data. Let's now push 
 _Note the S3 path is different this time as we're writing it to the `denmark-lakes` branch, not `main`._
 
 ```sql
-COPY lakes TO 's3://quickstart/denmark-lakes/lakes.parquet.
+COPY lakes TO 's3://quickstart/denmark-lakes/lakes.parquet'
     (FORMAT 'PARQUET', ALLOW_OVERWRITE TRUE);
 ```
 
@@ -422,13 +451,6 @@ _Have no fear; lakeFS can revert changes. Keep reading for the final part of the
 _Our intrepid user (you) merged a change back into the `main` branch and realised that they had made a mistake 🤦🏻._
 
 _The good news for them (you) is that lakeFS can revert changes made, similar to how you would in Git 😅._
-
-<details>
-  <summary>Web UI</summary>
-
-`TODO`
-
-</details>
 
 <details>
   <summary>CLI (Docker)</summary>
