@@ -2107,7 +2107,7 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) Import(w http.ResponseWriter, r *http.Request, body ImportJSONRequestBody, repository, branch string) {
+func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ImportStartJSONRequestBody, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -2216,6 +2216,25 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, body I
 
 	resp := importStatusToResponse(status)
 	writeResponse(w, r, http.StatusOK, resp)
+}
+
+func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, body ImportCancelJSONRequestBody, repository, branch string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ImportFromStorage,
+			Resource: permissions.StorageNamespace("*"),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "cancel_import", r, repository, branch, "")
+	err := c.Catalog.CancelImport(ctx, repository, body.ImportID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {

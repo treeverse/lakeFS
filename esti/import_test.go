@@ -17,10 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
 const (
+	defaultExpectedContentLength = 1024
+
 	s3ImportPath       = "s3://esti-system-testing-data/import-test-data/"
 	gsImportPath       = "gs://esti-system-testing-data/import-test-data/"
 	azureImportPath    = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
@@ -46,11 +49,11 @@ var importFilesToCheck = []string{
 	"prefix-7/file000001",
 }
 
-func TestImport(t *testing.T) {
-	const defaultExpectedContentLength = 1024
-
+func setupByBlockstoreType(t testing.TB) (string, string, int) {
+	t.Helper()
 	importPath := ""
 	expectedContentLength := defaultExpectedContentLength
+
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	switch blockstoreType {
 	case block.BlockstoreTypeS3:
@@ -65,9 +68,13 @@ func TestImport(t *testing.T) {
 	default:
 		t.Skip("import isn't supported for non-production block adapters")
 	}
+	return blockstoreType, importPath, expectedContentLength
+}
 
+func TestImport(t *testing.T) {
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
+	blockstoreType, importPath, expectedContentLength := setupByBlockstoreType(t)
 
 	t.Run("default", func(t *testing.T) {
 		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "default")
@@ -87,7 +94,7 @@ func TestImport(t *testing.T) {
 	})
 }
 
-func setupLocalImportPath(t *testing.T) string {
+func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
 	importDir := filepath.Join(t.TempDir(), "import-test-data")
 	if err := os.Mkdir(importDir, dirPerm); err != nil {
@@ -292,6 +299,140 @@ func TestAzureDataLakeV2(t *testing.T) {
 	}
 }
 
+func TestImportNew(t *testing.T) {
+	blockstoreType, importPath, expectedContentLength := setupByBlockstoreType(t)
+
+	ctx, _, repoName := setupTest(t)
+	defer tearDownTest(repoName)
+
+	t.Run("default", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
+		importID, importBranch := testImportNew(t, ctx, repoName, importPath, branch)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+
+		// Verify we cannot cancel a completed import
+		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, api.ImportCancelJSONRequestBody{
+			ImportID: importID,
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusConflict, cancelResp.StatusCode())
+
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, api.ImportStatusJSONRequestBody{
+			ImportID: importID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		require.Nil(t, statusResp.JSON200.Error)
+	})
+
+	t.Run("parent", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
+		if blockstoreType == block.BlockstoreTypeLocal {
+			t.Skip("local always assumes import path is dir")
+		}
+		// import without the directory separator as suffix to include the parent directory
+		importPathParent := strings.TrimSuffix(importPath, "/")
+		_, importBranch := testImportNew(t, ctx, repoName, importPathParent, branch)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
+	})
+}
+
+func TestImportCancel(t *testing.T) {
+	ctx, _, repoName := setupTest(t)
+	defer tearDownTest(repoName)
+	_, importPath, _ := setupByBlockstoreType(t)
+
+	t.Run("canceled", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
+		createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+			Name:   branch,
+			Source: "main",
+		})
+		require.NoError(t, err, "failed to create branch", branch)
+		require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
+
+		importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, api.ImportStartJSONRequestBody{
+			CommitMessage: "created by import",
+			Metadata:      &api.ImportCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+			Prepend:       importTargetPrefix,
+			SourceUri:     importPath,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, importResp.JSON201, "failed to start import", err)
+
+		// Wait 1 second and cancel request
+		time.Sleep(1 * time.Second)
+		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, api.ImportCancelJSONRequestBody{
+			ImportID: importResp.JSON201.Id,
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
+
+		// Check status is canceled
+		var updateTime *time.Time
+		for {
+			statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, api.ImportStatusJSONRequestBody{
+				ImportID: importResp.JSON201.Id,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+			require.Contains(t, statusResp.JSON200.Error.Message, catalog.ImportCanceled)
+
+			if updateTime == nil {
+				updateTime = &statusResp.JSON200.UpdateTime
+			} else {
+				require.Equal(t, *updateTime, statusResp.JSON200.UpdateTime)
+				break
+			}
+			time.Sleep(5 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
+		}
+	})
+}
+
+func testImportNew(t testing.TB, ctx context.Context, repoName, importPath, importBranch string) (string, string) {
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   importBranch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", importBranch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
+
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, api.ImportStartJSONRequestBody{
+		CommitMessage: "created by import",
+		Metadata:      &api.ImportCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		Prepend:       importTargetPrefix,
+		SourceUri:     importPath,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, importResp.JSON201, "failed to start import", err)
+
+	completed := false
+	var (
+		statusResp *api.ImportStatusResponse
+		updateTime time.Time
+	)
+	for !completed {
+		time.Sleep(10 * time.Second)
+		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, api.ImportStatusJSONRequestBody{
+			ImportID: importResp.JSON201.Id,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		status := statusResp.JSON200
+		require.Nil(t, status.Error)
+		require.NotEqual(t, updateTime, status.UpdateTime)
+		updateTime = status.UpdateTime
+		completed = status.Completed
+		t.Log("Import progress:", status.ImportProgress)
+	}
+	return importResp.JSON201.Id, *statusResp.JSON200.ImportBranch
+}
+
+// #####################################################################################################################
+// #																																																										#
+// #																							BENCHMARKS																														#
+// #																																																										#
+// #####################################################################################################################
 func BenchmarkIngest_Azure(b *testing.B) {
 	requireBlockstoreType(b, block.BlockstoreTypeAzure)
 	ctx, _, repoName := setupTest(b)
@@ -350,77 +491,4 @@ func benchmarkImport(b *testing.B, ctx context.Context, repoName, importPath, im
 	for n := 0; n < b.N; n++ {
 		testImport(b, ctx, repoName, importPath, fmt.Sprintf("%s-%s", importBranch, xid.New().String()))
 	}
-}
-
-func TestImportNew(t *testing.T) {
-	const defaultExpectedContentLength = 1024
-
-	importPath := ""
-	expectedContentLength := defaultExpectedContentLength
-	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
-	switch blockstoreType {
-	case block.BlockstoreTypeS3:
-		importPath = s3ImportPath
-	case block.BlockstoreTypeGS:
-		importPath = gsImportPath
-	case block.BlockstoreTypeAzure:
-		importPath = azureImportPath
-	case block.BlockstoreTypeLocal:
-		importPath = setupLocalImportPath(t)
-		expectedContentLength = 0
-	default:
-		t.Skip("import isn't supported for non-production block adapters")
-	}
-
-	ctx, _, repoName := setupTest(t)
-	defer tearDownTest(repoName)
-
-	t.Run("default", func(t *testing.T) {
-		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
-		importBranch := testImportNew(t, ctx, repoName, importPath, branch)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
-	})
-
-	t.Run("parent", func(t *testing.T) {
-		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
-		if blockstoreType == block.BlockstoreTypeLocal {
-			t.Skip("local always assumes import path is dir")
-		}
-		// import without the directory separator as suffix to include the parent directory
-		importPathParent := strings.TrimSuffix(importPath, "/")
-		importBranch := testImportNew(t, ctx, repoName, importPathParent, branch)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
-	})
-}
-
-func testImportNew(t testing.TB, ctx context.Context, repoName, importPath, importBranch string) string {
-	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
-		Name:   importBranch,
-		Source: "main",
-	})
-	require.NoError(t, err, "failed to create branch", importBranch)
-	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
-
-	importResp, err := client.ImportWithResponse(ctx, repoName, importBranch, api.ImportJSONRequestBody{
-		CommitMessage: "created by import",
-		Metadata:      &api.ImportCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
-		Prepend:       importTargetPrefix,
-		SourceUri:     importPath,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, importResp.JSON201, "failed to start import", err)
-
-	completed := false
-	var statusResp *api.ImportStatusResponse
-	for !completed {
-		time.Sleep(1 * time.Second)
-		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, api.ImportStatusJSONRequestBody{
-			ImportID: importResp.JSON201.Id,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
-		completed = statusResp.JSON200.Completed
-		t.Log("Import progress:", statusResp.JSON200.ImportProgress)
-	}
-	return *statusResp.JSON200.ImportBranch
 }

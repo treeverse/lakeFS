@@ -64,6 +64,8 @@ const (
 	// Total per entry ~52 bytes
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
+
+	ImportCanceled = "Canceled"
 )
 
 type Path string
@@ -1792,11 +1794,23 @@ func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.R
 	return err
 }
 
-func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID string, importStatus graveler.ImportStatus, params ImportRequest, it *walkEntryIterator) {
+func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID string, importStatus graveler.ImportStatus, params ImportRequest) {
+	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
+	logger := c.log.WithField("import_id", importStatus.ID)
+	defer cancel()
+	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
+	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI, SkipOutOfOrder: true})
+	if err != nil {
+		logger.WithError(err).Error("creating object-store walker")
+		return
+	}
+	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, "", "")
+	if err != nil {
+		logger.WithError(err).Error("creating walk iterator")
+		return
+	}
 	defer it.Close()
 
-	logger := c.log.WithField("import_id", importStatus.ID)
-	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	statusChan := make(chan graveler.ImportStatus, 1)
 	// Update import status
 	go func() {
@@ -1910,11 +1924,11 @@ func (c *Catalog) importStatusAsync(ctx context.Context, cancel context.CancelFu
 	statusData := graveler.ImportStatusData{}
 	currStatus := graveler.ImportStatus{}
 	timer := time.NewTimer(statusUpdateInterval)
-
+	done := false
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			done = true
 		case s := <-statusChan:
 			currStatus = s
 		case <-timer.C:
@@ -1938,6 +1952,10 @@ func (c *Catalog) importStatusAsync(ctx context.Context, cancel context.CancelFu
 					return err
 				}
 			}
+			// Check if context was canceled, we want to do that only after we update the import state
+			if done {
+				return nil
+			}
 			timer.Reset(statusUpdateInterval)
 		}
 	}
@@ -1954,16 +1972,6 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 		return "", err
 	}
 
-	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI, SkipOutOfOrder: true})
-	if err != nil {
-		return "", fmt.Errorf("creating object-store walker: %w", err)
-	}
-	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, "", "")
-	if err != nil {
-		return "", fmt.Errorf("creating walk iterator: %w", err)
-	}
-
 	id := xid.New().String()
 	importStatus := graveler.ImportStatus{
 		ID:        graveler.ImportID(id),
@@ -1976,9 +1984,36 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 
 	// Run import
 	go func() {
-		c.importAsync(repository, branchID, importStatus, params, it)
+		c.importAsync(repository, branchID, importStatus, params)
 	}()
 	return id, nil
+}
+
+func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID string) error {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	importStatus, err := c.getImportStatus(ctx, repository, importID)
+	if err != nil {
+		return err
+	}
+	if importStatus.Completed {
+		return graveler.ErrConflictFound
+	}
+	importStatus.Error = ImportCanceled
+	return kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(importID), importStatus)
+}
+
+func (c *Catalog) getImportStatus(ctx context.Context, repository *graveler.RepositoryRecord, importID string) (*graveler.ImportStatusData, error) {
+	repoPartition := graveler.RepoPartition(repository)
+	data := &graveler.ImportStatusData{}
+	_, err := kv.GetMsg(ctx, c.KVStore, repoPartition, []byte(importID), data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func (c *Catalog) GetImportStatus(ctx context.Context, repositoryID, importID string) (*graveler.ImportStatus, error) {
@@ -1987,9 +2022,7 @@ func (c *Catalog) GetImportStatus(ctx context.Context, repositoryID, importID st
 		return nil, err
 	}
 
-	repoPartition := graveler.RepoPartition(repository)
-	data := &graveler.ImportStatusData{}
-	_, err = kv.GetMsg(ctx, c.KVStore, repoPartition, []byte(importID), data)
+	data, err := c.getImportStatus(ctx, repository, importID)
 	if err != nil {
 		return nil, err
 	}

@@ -3484,7 +3484,7 @@ paths:
     post:
       tags:
         - import
-      operationId: import
+      operationId: importStart
       summary: import data from object store
       requestBody:
         required: true
@@ -3503,6 +3503,28 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - import
+      operationId: importCancel
+      summary: cancel ongoing import
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportStatus"
+      responses:
+        204:
+          description: import canceled successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         default:
