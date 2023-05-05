@@ -54,10 +54,6 @@ SET s3_use_ssl=false;
 .changes on
 ```
 
-{: .note}
-Make sure to replace `AKIA-EXAMPLE-KEY` and `EXAMPLE-SECRET` with the credentials that you got when you setup your user in the first step.
-
-
 Now we'll load the lakes data into a DuckDB table so that we can manipulate it:
 
 ```sql
