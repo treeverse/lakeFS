@@ -28,7 +28,7 @@ const (
 
 func TestSimpleWriteRead(t *testing.T) {
 	ctx := context.Background()
-	namespace := uuid.New().String()
+	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 
 	content := []byte("hello world!")
@@ -57,20 +57,24 @@ func TestReadFailDuringWrite(t *testing.T) {
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
-	testEviction(t, uuid.New().String())
+	testEviction(t, uniqueNamespace())
+}
+
+func uniqueNamespace() string {
+	return "mem://" + uuid.New().String()
 }
 
 func TestEvictionMultipleNamespaces(t *testing.T) {
-	testEviction(t, uuid.New().String(),
-		uuid.New().String(),
-		uuid.New().String())
+	testEviction(t,
+		uniqueNamespace(),
+		uniqueNamespace(),
+		uniqueNamespace(),
+	)
 }
 
 func TestStartup(t *testing.T) {
 	ctx := context.Background()
-	fsName := uuid.New().String()
-	namespace := uuid.New().String()
-
+	fsName := uniqueNamespace()
 	// cleanup
 	baseDir := path.Join(os.TempDir(), fsName)
 	defer func() {
@@ -83,15 +87,15 @@ func TestStartup(t *testing.T) {
 		}
 	}()
 
-	namespacePath := path.Join(baseDir, namespace)
-	workspacePath := path.Join(namespacePath, workspaceDir)
+	uniquePath := path.Join(baseDir, uuid.New().String())
+	workspacePath := path.Join(uniquePath, workspaceDir)
 	if err := os.MkdirAll(workspacePath, os.ModePerm); err != nil {
 		t.Fatal("make dir under", workspacePath, err)
 	}
 
 	filename := "ThisShouldStay"
 	content := []byte("This Should Stay - I'm telling You!!!!")
-	if err := os.WriteFile(path.Join(namespacePath, filename), content, os.ModePerm); err != nil {
+	if err := os.WriteFile(path.Join(uniquePath, filename), content, os.ModePerm); err != nil {
 		t.Fatal("write file", filename, err)
 	}
 
@@ -122,7 +126,7 @@ func TestStartup(t *testing.T) {
 	// package os this does not matter.
 	assert.Error(t, err, os.ErrNotExist, "expected %s not to exist", workspacePath)
 
-	f, err := localFS.Open(ctx, namespace, filename)
+	f, err := localFS.Open(ctx, uniqueNamespace(), filename)
 	defer func() { _ = f.Close() }()
 	assert.NoError(t, err)
 
@@ -165,7 +169,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	defer func() { _ = os.RemoveAll(baseDir) }()
 
 	// write a single file to lookup later
-	namespace := uuid.New().String()
+	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 	content := []byte("hello world!")
 	writeToFile(t, ctx, namespace, filename, content)
