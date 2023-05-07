@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.3 - 2023-05-07
+
+Bug fixes:
+* Fix uncommitted gc to handle no uncommitted location (#5817)
+
 ## v0.7.2 - 2023-05-02
 
 Bug fixes:
