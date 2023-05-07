@@ -30,9 +30,7 @@ To run import you need the following permissions:
 users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
 Writers group ([ACL](../reference/access-control-lists.md)). The last 
 permission enables the user to import data from any location of the storage 
-provider that lakeFS has access to. Thus, it's only available to users in the 
-default SuperUsers group ([RBAC](../reference/rbac.md)) or the Super 
-group ([ACL](../reference/access-control-lists.md)). RBAC installations can 
+provider that lakeFS has access to. Thus, it's only available to users in group Supers ([ACL](../reference/access-control-lists.md)) or SuperUsers ([RBAC](../reference/rbac.md)). RBAC installations can 
 modify policies to add that permission to any group, such as Developers.
 
 
