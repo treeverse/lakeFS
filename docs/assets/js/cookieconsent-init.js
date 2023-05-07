@@ -24,7 +24,7 @@ cc.run({
           role: "settings", //'settings' or 'accept_necessary'
         },
         revision_message:
-          "<br><br> Dear user, terms and conditions have changed since the last time you visisted!",
+          "<br><br> Dear user, terms and conditions have changed since the last time you visited!",
       },
       settings_modal: {
         title: "Cookie settings",

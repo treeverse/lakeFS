@@ -1741,7 +1741,9 @@
             })(fresh_script, curr_script);
 
             // set src (if data-src found)
-            src ? (fresh_script.src = src) : (src = curr_script.src);
+            src
+              ? (fresh_script.src = encodeURIComponent(src))
+              : (src = curr_script.src);
 
             // if script has "src" attribute
             // try loading it sequentially
