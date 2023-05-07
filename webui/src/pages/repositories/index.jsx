@@ -30,7 +30,7 @@ import Button from "react-bootstrap/Button";
 dayjs.extend(relativeTime);
 
 const LOCAL_BLOCKSTORE_TYPE = "local";
-const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = "quickstart2";
+const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = "quickstart";
 const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = "main";
 
 const CreateRepositoryButton = ({variant = "success", enabled = false, onClick}) => {
