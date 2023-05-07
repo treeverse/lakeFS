@@ -252,6 +252,9 @@ var fsUploadCmd = &cobra.Command{
 		ctx := cmd.Context()
 		transport := transportMethodFromFlags(direct, preSignMode)
 		if !recursive {
+			if pathURI.GetPath() == "" {
+				Die("target path is not a valid URI", 1)
+			}
 			stat, err := upload(ctx, client, source, pathURI, contentType, transport)
 			if err != nil {
 				DieErr(err)
@@ -259,6 +262,7 @@ var fsUploadCmd = &cobra.Command{
 			Write(fsStatTemplate, stat)
 			return
 		}
+
 		// copy recursively
 		var totals struct {
 			Bytes int64
