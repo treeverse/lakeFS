@@ -299,6 +299,6 @@ ThisBuild / organizationName := "Treeverse Labs"
 ThisBuild / organizationHomepage := Some(url("http://treeverse.io"))
 ThisBuild / description := "Spark client for lakeFS object metadata."
 ThisBuild / licenses := List(
-  "Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt")
+  "Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")
 )
 ThisBuild / homepage := Some(url("https://lakefs.io"))
