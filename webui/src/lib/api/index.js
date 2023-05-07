@@ -552,7 +552,7 @@ class Branches {
         }
     }
 
-    async revert(repoId, branch, options) {
+    async reset(repoId, branch, options) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}`, {
             method: 'PUT',
             body: JSON.stringify(options),
