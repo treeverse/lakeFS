@@ -26,6 +26,10 @@ const SetupContents = () => {
     }, [error, response]);
 
     const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, updatesChecked, securityChecked) => {
+        if (!adminUser) {
+            setSetupError("Please enter your admin username.");
+            return;
+        }
         if (!userEmail) {
             setSetupError("Please enter your email address.");
             return;
