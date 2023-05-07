@@ -23,6 +23,7 @@ import {Link} from "../../../lib/components/nav";
 import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
+import {useLoginConfigContext} from "../../../lib/hooks/conf";
 
 
 const permissions = {
@@ -93,6 +94,8 @@ const GroupsContainer = () => {
 
     if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
+    const {RBAC: rbac} = useLoginConfigContext();
+    const headers = rbac !== 'simplified' ? ['', 'Group ID', 'Created At']:['', 'Group ID', 'Permission', 'Created At'] ;
 
     return (
         <>
@@ -149,23 +152,26 @@ const GroupsContainer = () => {
 
             <DataTable
                 results={results}
-                headers={['', 'Group ID', 'Permission', 'Created At']}
+                headers={headers}
                 keyFn={group => group.id}
-                rowFn={group => [
-                    <Checkbox
-                        name={group.id}
-                        onAdd={() => setSelected([...selected, group])}
-                        onRemove={() => setSelected(selected.filter(g => g !== group))}
-                    />,
-                    <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
-                        {group.id}
-                    </Link>,
-                    group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
-                        ((permission) => auth.putACL(group.id, {...group.acl, permission})
-                            .then(() => setPutACLError(null), (e) => setPutACLError(e)))
-                    }/> : <></>,
-                    <FormattedDate dateValue={group.creation_date}/>,
-            ]}/>
+                rowFn={group => {
+                    const elements = [
+                        <Checkbox
+                            name={group.id}
+                            onAdd={() => setSelected([...selected, group])}
+                            onRemove={() => setSelected(selected.filter(g => g !== group))}
+                        />,
+                        <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
+                            {group.id}
+                        </Link>]
+                    rbac === 'simplified' && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
+                            ((permission) => auth.putACL(group.id, {...group.acl, permission})
+                                .then(() => setPutACLError(null), (e) => setPutACLError(e)))
+                        }/> : <></>)
+                    elements.push(<FormattedDate dateValue={group.creation_date}/>)
+
+                    return elements;
+                }}/>
 
             <Paginator
                 nextPage={nextPage}
