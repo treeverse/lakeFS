@@ -38,7 +38,7 @@ func TestSimpleWriteRead(t *testing.T) {
 
 func TestReadFailDuringWrite(t *testing.T) {
 	ctx := context.Background()
-	namespace := uuid.New().String()
+	namespace := uniqueNamespace()
 	filename := "file1"
 	f, err := fs.Create(ctx, namespace)
 	require.NoError(t, err)
@@ -87,7 +87,8 @@ func TestStartup(t *testing.T) {
 		}
 	}()
 
-	uniquePath := path.Join(baseDir, uuid.New().String())
+	namespaceID := uuid.New().String()
+	uniquePath := path.Join(baseDir, namespaceID)
 	workspacePath := path.Join(uniquePath, workspaceDir)
 	if err := os.MkdirAll(workspacePath, os.ModePerm); err != nil {
 		t.Fatal("make dir under", workspacePath, err)
@@ -126,7 +127,7 @@ func TestStartup(t *testing.T) {
 	// package os this does not matter.
 	assert.Error(t, err, os.ErrNotExist, "expected %s not to exist", workspacePath)
 
-	f, err := localFS.Open(ctx, uniqueNamespace(), filename)
+	f, err := localFS.Open(ctx, "mem://"+namespaceID, filename)
 	defer func() { _ = f.Close() }()
 	assert.NoError(t, err)
 

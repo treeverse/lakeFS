@@ -111,7 +111,12 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.R
 }
 
 func verifyObjectPointer(obj block.ObjectPointer) error {
-	if !strings.HasPrefix(obj.StorageNamespace, "mem://") {
+	const prefix = "mem://"
+	if obj.StorageNamespace == "" {
+		if !strings.HasPrefix(obj.Identifier, prefix) {
+			return fmt.Errorf("mem block adapter: %w identifier: %s", block.ErrInvalidAddress, obj.Identifier)
+		}
+	} else if !strings.HasPrefix(obj.StorageNamespace, prefix) {
 		return fmt.Errorf("mem block adapter: %w storage namespace: %s", block.ErrInvalidAddress, obj.StorageNamespace)
 	}
 	return nil
