@@ -24,8 +24,8 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 
 #### User Permissions
 
-The lakeFS user running the import must have the following permissions:
-`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit` and 
+To run import you need the following permissions:
+`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, and 
 `fs:ImportFromStorage`. The first 3 permissions are available by default to 
 users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
 Writers group ([ACL](../reference/access-control-lists.md)). The last 
@@ -33,7 +33,7 @@ permission enables the user to import data from any location of the storage
 provider that lakeFS has access to. Thus, it's only available to users in the 
 default SuperUsers group ([RBAC](../reference/rbac.md)) or the Super 
 group ([ACL](../reference/access-control-lists.md)). RBAC installations can 
-add that permission to any group, including Developers.
+modify policies to add that permission to any group, such as Developers.
 
 
 #### lakeFS Permissions
