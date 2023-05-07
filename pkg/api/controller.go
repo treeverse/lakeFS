@@ -1514,7 +1514,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
-	if params.Bare != nil && *params.Bare {
+	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
 		repo, err := c.Catalog.CreateBareRepository(ctx,
@@ -1536,9 +1536,11 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
 	if err != nil {
-		reason := "unknown"
-		var retErr error
-		var urlErr *url.Error
+		var (
+			reason string
+			retErr error
+			urlErr *url.Error
+		)
 		switch {
 		case errors.As(err, &urlErr) && urlErr.Op == "parse":
 			retErr = err
@@ -1551,6 +1553,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			reason = "already_in_use"
 		default:
 			retErr = ErrFailedToAccessStorage
+			reason = "unknown"
 		}
 		c.Logger.
 			WithError(err).
