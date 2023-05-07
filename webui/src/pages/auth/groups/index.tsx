@@ -24,6 +24,7 @@ import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
+import {hasOwnProperty} from "react-syntax-highlighter";
 
 
 const permissions = {
@@ -94,8 +95,9 @@ const GroupsContainer = () => {
 
     if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
-    const {RBAC: rbac} = useLoginConfigContext();
-    const headers = rbac !== 'simplified' ? ['', 'Group ID', 'Created At']:['', 'Group ID', 'Permission', 'Created At'] ;
+    const lc = useLoginConfigContext();
+    const simplified = lc.RBAC !== undefined && lc.RBAC === 'simplified';
+    const headers = simplified ?   ['', 'Group ID', 'Permission', 'Created At'] : ['', 'Group ID', 'Created At'];
 
     return (
         <>
@@ -164,7 +166,7 @@ const GroupsContainer = () => {
                         <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                             {group.id}
                         </Link>]
-                    rbac === 'simplified' && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
+                    simplified && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
                             ((permission) => auth.putACL(group.id, {...group.acl, permission})
                                 .then(() => setPutACLError(null), (e) => setPutACLError(e)))
                         }/> : <></>)
