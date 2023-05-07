@@ -152,19 +152,19 @@ object UncommittedGarbageCollector {
         // Process uncommitted
         val uncommittedGCRunInfo =
           new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
-        val uncommittedLocation = ApiClient
-          .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
-        val uncommittedPath = new Path(uncommittedLocation)
-        val fs = uncommittedPath.getFileSystem(hc)
         var uncommittedDF =
-          // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
-          if (uncommittedGCRunInfo.uncommittedLocation != "" && fs.exists(uncommittedPath)) {
-            spark.read.parquet(uncommittedLocation.toString)
-          } else {
-            // in case of no uncommitted entries, lakefs server should return an empty uncommittedLocation
-            spark.emptyDataFrame.withColumn("physical_address", lit(""))
-          }
+          spark.emptyDataFrame.withColumn("physical_address", lit(""))
 
+        if (uncommittedGCRunInfo.uncommittedLocation != "") {
+          val uncommittedLocation = ApiClient
+            .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
+          val uncommittedPath = new Path(uncommittedLocation)
+          val fs = uncommittedPath.getFileSystem(hc)
+          // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
+          if (fs.exists(uncommittedPath)) {
+            uncommittedDF = spark.read.parquet(uncommittedLocation.toString)
+          }
+        }
         uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
         uncommittedDF = uncommittedDF.repartition(uncommittedDF.col("address"))
         runID = uncommittedGCRunInfo.runID
