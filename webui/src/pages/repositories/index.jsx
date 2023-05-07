@@ -7,6 +7,7 @@ import Card from "react-bootstrap/Card";
 import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
+import Spinner from "react-bootstrap/Spinner";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
@@ -28,6 +29,10 @@ import Button from "react-bootstrap/Button";
 
 dayjs.extend(relativeTime);
 
+const LOCAL_BLOCKSTORE_TYPE = "local";
+const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = "quickstart2";
+const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = "main";
+
 const CreateRepositoryButton = ({variant = "success", enabled = false, onClick}) => {
     return (
         <Button variant={variant} disabled={!enabled} onClick={onClick}>
@@ -36,9 +41,10 @@ const CreateRepositoryButton = ({variant = "success", enabled = false, onClick})
     );
 }
 
-const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, style = {}}) => {
+const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, creatingRepo, style = {}}) => {
     return (
-        <Button className="create-sample-repo-button" style={style} variant={variant} disabled={!enabled} onClick={onClick}>
+        <Button className="create-sample-repo-button" style={style} variant={variant} disabled={!enabled || creatingRepo} onClick={onClick}>
+            { creatingRepo && <><Spinner as="span" role="status" aria-hidden="true" animation="border" size="sm" className="me-2"/><span className="visually-hidden">Loading...</span></> }
             {text}
         </Button>
     );
@@ -49,7 +55,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
     const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
     const showError = (error) ? error : err;
-    if (loading)
+    if (loading) {
         return (
             <Modal show={show} onHide={onCancel} size="lg">
                 <Modal.Header closeButton>
@@ -60,6 +66,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
                 </Modal.Body>
             </Modal>
         );
+    }
 
     return (
         <Modal show={show} onHide={onCancel} size="lg">
@@ -73,7 +80,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
     );
 };
 
-const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo}) => {
+const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo}) => {
     return (
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
@@ -86,20 +93,19 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo}) => {
             </Row>
             <Row className="button-container">
                 <Col>
-                    <GettingStartedCreateRepoButton text="Create Sample Repository" variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
+                    <GettingStartedCreateRepoButton text="Create Sample Repository" creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
                 </Col>
             </Row>
-            <Row>
-                <Col className="d-flex justify-content-start align-items-center">
-                    <span className="learn-more">Already working with lakeFS and just need an empty repository?</span><GettingStartedCreateRepoButton style={{ padding: 0, width: "auto", marginLeft: "8px" }} text="Click here" variant={"link"} enabled={true} onClick={onCreateEmptyRepo} />
-                </Col>
-            </Row>
+            <div className="d-flex flex-direction-row align-items-center">
+                <span className="learn-more">Already working with lakeFS and just need an empty repository?</span>
+                <GettingStartedCreateRepoButton style={{ padding: 0, width: "auto", marginLeft: "8px", display: "inline-block" }} text="Click here" variant={"link"} enabled={true} onClick={onCreateEmptyRepo} />
+            </div>
             <img src="/getting-started.png" alt="getting-started" className="getting-started-image" />
         </Card>
     );
 };
 
-const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar }) => {
+const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after);
@@ -108,7 +114,7 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
     if (loading) return <Loading/>;
     if (error) return <Error error={error}/>;
     if (!after && !prefix && results.length === 0) {
-        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} />;
+        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} />;
     }
 
     toggleShowActionsBar();
@@ -163,21 +169,7 @@ const RepositoriesPage = () => {
         (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
     );
 
-    const toggleShowActionsBar = useCallback((show = true) => {
-        setShowActionsBar(show);
-    }, [setShowActionsBar]);
-
-    const createRepositoryButtonCallback = useCallback(() => {
-        setSampleRepoChecked(false);
-        setShowCreateRepositoryModal(true);
-        setCreateRepoError(null);
-    }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
-
-    const createSampleRepoButtonCallback = useCallback(() => {
-        setSampleRepoChecked(true);
-        setShowCreateRepositoryModal(true);
-        setCreateRepoError(null);
-    }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
+    const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
     const createRepo = async (repo, presentRepo = true) => {
         try {
@@ -194,7 +186,35 @@ const RepositoriesPage = () => {
             setCreateRepoError(error);
             return false;
         }
-    }
+    };
+
+    const toggleShowActionsBar = useCallback((show = true) => {
+        setShowActionsBar(show);
+    }, [setShowActionsBar]);
+
+    const createRepositoryButtonCallback = useCallback(() => {
+        setSampleRepoChecked(false);
+        setShowCreateRepositoryModal(true);
+        setCreateRepoError(null);
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
+
+    const createSampleRepoButtonCallback = useCallback(async () => {
+        if (loading) return;
+        if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
+            const sampleRepo = {
+                name: LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME,
+                storage_namespace: `local://${LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME}`,
+                default_branch: LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH,
+                sample_data: true,
+            }
+    
+            await createRepo(sampleRepo);
+            return;
+        }
+        setSampleRepoChecked(true);
+        setShowCreateRepositoryModal(true);
+        setCreateRepoError(null);
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, response, createRepo]);
 
     return (
         <Layout>
@@ -234,6 +254,7 @@ const RepositoriesPage = () => {
                     onCreateSampleRepo={createSampleRepoButtonCallback}
                     onCreateEmptyRepo={createRepositoryButtonCallback}
                     toggleShowActionsBar={toggleShowActionsBar}
+                    creatingRepo={creatingRepo}
                     />
 
                 <CreateRepositoryModal
