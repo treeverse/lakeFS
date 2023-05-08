@@ -114,20 +114,27 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   }
 
   def getRangeIDsForCommits(
-      commitIDs: Dataset[(String, Boolean, String)],
+      commits: Dataset[Row],
       repo: String,
       storageNS: String
   ): Dataset[(String, Boolean)] = {
     import spark.implicits._
-    commitIDs.flatMap({
-      case (commitID, expire, metaRangeID) => {
+    commits.flatMap({
+      case (row) => {
+        var metaRangeID: String = null
+        val commitID = row.getString(0)
+        val expired = row.getBoolean(1)
+        if (row.schema.fieldNames.contains("metarange_id")) {
+          metaRangeID = row.getString(row.fieldIndex("metarange_id"))
+        }
+
         var metaRangeURL: String = null
         if (StringUtils.isNotBlank(metaRangeID)) {
           metaRangeURL = storageNS + "_lakefs/" + metaRangeID
         }
         rangeGetter
           .getRangeIDs(commitID, repo, metaRangeURL)
-          .map((_, expire))
+          .map((_, expired))
       }
     })
   }
@@ -226,10 +233,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       approxNumRangesToSpreadPerPartition: Double,
       sampleFraction: Double
   ): Dataset[String] = {
-    import spark.implicits._
-    val df = getCommitsDF(commitDFLocation)
-    val commitsDS = df
-      .as[(String, Boolean, String)]
+    val commitsDS = getCommitsDF(commitDFLocation)
       .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
