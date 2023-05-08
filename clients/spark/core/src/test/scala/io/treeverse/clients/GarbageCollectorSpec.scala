@@ -355,14 +355,12 @@ class GarbageCollectorJsonOutputSpec
 
 trait SparkSessionSetup {
   def withSparkSession(testMethod: (SparkSession) => Any) {
-    val spark = SparkSession
-      .builder()
-      .master("local")
-      .appName("sparktest")
-      .config("spark.sql.shuffle.partitions", "17")
-      .config("spark.eventLog.enabled", "false")
-      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-      .getOrCreate
+    val conf = new SparkConf()
+      .setMaster("local")
+      .setAppName("Spark test")
+      .set("spark.sql.shuffle.partitions", "17")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    val spark = new SparkSession.Builder().config(conf).getOrCreate
     testMethod(spark)
     // TODO(ariels): Can/should we "finally spark.stop()" just once, at the
     //     end of the entire suite?
