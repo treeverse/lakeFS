@@ -119,13 +119,14 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       storageNS: String
   ): Dataset[(String, Boolean)] = {
     import spark.implicits._
+    val hasMetaRangeIDs = commits.schema.fields.length == 3
     commits.flatMap({
       case (row) => {
         var metaRangeID: String = null
         val commitID = row.getString(0)
         val expired = row.getBoolean(1)
-        if (row.schema.fieldNames.contains("metarange_id")) {
-          metaRangeID = row.getString(row.fieldIndex("metarange_id"))
+        if (hasMetaRangeIDs) {
+          metaRangeID = row.getString(2)
         }
 
         var metaRangeURL: String = null
