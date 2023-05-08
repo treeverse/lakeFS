@@ -6931,11 +6931,16 @@ components:
     GarbageCollectionPrepareRequest:
       example:
         previous_run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
+        include_metarange_ids: true
       properties:
         previous_run_id:
           description: run id of a previous successful GC job
           example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
           type: string
+        include_metarange_ids:
+          description: include the metarange ID as a column in the returned commit
+            set
+          type: boolean
       type: object
     GarbageCollectionPrepareResponse:
       example:

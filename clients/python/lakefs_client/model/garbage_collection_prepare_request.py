@@ -83,6 +83,7 @@ class GarbageCollectionPrepareRequest(ModelNormal):
         """
         return {
             'previous_run_id': (str,),  # noqa: E501
+            'include_metarange_ids': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -92,6 +93,7 @@ class GarbageCollectionPrepareRequest(ModelNormal):
 
     attribute_map = {
         'previous_run_id': 'previous_run_id',  # noqa: E501
+        'include_metarange_ids': 'include_metarange_ids',  # noqa: E501
     }
 
     read_only_vars = {
@@ -136,6 +138,7 @@ class GarbageCollectionPrepareRequest(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             previous_run_id (str): run id of a previous successful GC job. [optional]  # noqa: E501
+            include_metarange_ids (bool): include the metarange ID as a column in the returned commit set. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -218,6 +221,7 @@ class GarbageCollectionPrepareRequest(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             previous_run_id (str): run id of a previous successful GC job. [optional]  # noqa: E501
+            include_metarange_ids (bool): include the metarange ID as a column in the returned commit set. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

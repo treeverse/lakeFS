@@ -186,7 +186,7 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 func writeRecords(w *csv.Writer, commits map[graveler.CommitID]graveler.MetaRangeID, expired bool, includeMetaRangeIDs bool) error {
 	for commitID, metaRangeID := range commits {
 		var record []string
-		if (includeMetaRangeIDs) {
+		if includeMetaRangeIDs {
 			record = []string{string(commitID), swag.FormatBool(expired), string(metaRangeID)}
 		} else {
 			record = []string{string(commitID), swag.FormatBool(expired)}

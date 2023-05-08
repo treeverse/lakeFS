@@ -1871,7 +1871,7 @@ func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID s
 	return c.Store.CreateBranchProtectionRule(ctx, repository, pattern, blockedActions)
 }
 
-func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string,  includeMetaRangeIDs bool) (*graveler.GarbageCollectionRunMetadata, error) {
+func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string, includeMetaRangeIDs bool) (*graveler.GarbageCollectionRunMetadata, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
