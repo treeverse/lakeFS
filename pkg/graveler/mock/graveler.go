@@ -777,7 +777,7 @@ func (mr *MockVersionControllerMockRecorder) Revert(ctx, repository, branchID, r
 }
 
 // SaveGarbageCollectionCommits mocks base method.
-func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {
+func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, previousRunID string, includeMetaRangeIDs bool) (*graveler.GarbageCollectionRunMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, previousRunID)
 	ret0, _ := ret[0].(*graveler.GarbageCollectionRunMetadata)

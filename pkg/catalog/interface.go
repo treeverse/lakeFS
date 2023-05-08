@@ -152,7 +152,7 @@ type Interface interface {
 
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
-	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)
+	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string, includeMetaRangeIds bool) (*graveler.GarbageCollectionRunMetadata, error)
 	// PrepareGCUncommitted Creates parquet files listing of all uncommitted objects in the given repositoryID and saves them under the GC runID in the object store
 	// Since this operation might take a very long time, we save 20MB files at a time and return a mark of the next item to read, which can be provided to a consecutive call
 	// Consecutive calls must be made using the returned run ID, upon completion mark will return nil

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -182,7 +183,23 @@ func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, sto
 	return res, nil
 }
 
-func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func writeRecords(w *csv.Writer, commits map[graveler.CommitID]graveler.MetaRangeID, expired bool, includeMetaRangeIDs bool) error {
+	for commitID, metaRangeID := range commits {
+		var record []string
+		if (includeMetaRangeIDs) {
+			record = []string{string(commitID), swag.FormatBool(expired), string(metaRangeID)}
+		} else {
+			record = []string{string(commitID), swag.FormatBool(expired)}
+		}
+		err := w.Write(record)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID, includeMetaRangeIDs bool) (string, error) {
 	commitGetter := &RepositoryCommitGetter{
 		refManager: m.refManager,
 		repository: repository,
@@ -206,16 +223,20 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	err = csvWriter.Write([]string{"commit_id", "expired", "metarange_id"}) // write headers
-	if err != nil {
+	headers := []string{"commit_id", "expired"}
+	if includeMetaRangeIDs {
+		headers = append(headers, "metarange_id")
+	}
+	if err = csvWriter.Write(headers); err != nil {
 		return "", err
 	}
-	for commitID, metaRangeID := range gcCommits.expired {
-		err := csvWriter.Write([]string{string(commitID), "true", string(metaRangeID)})
-		if err != nil {
-			return "", err
-		}
+	if err = writeRecords(csvWriter, gcCommits.expired, true, includeMetaRangeIDs); err != nil {
+		return "", err
 	}
+	if err = writeRecords(csvWriter, gcCommits.active, false, includeMetaRangeIDs); err != nil {
+		return "", err
+	}
+
 	for commitID, metaRangeID := range gcCommits.active {
 		err := csvWriter.Write([]string{string(commitID), "false", string(metaRangeID)})
 		if err != nil {
