@@ -3,6 +3,7 @@ package io.treeverse.clients
 import io.treeverse.lakefs.catalog
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.StringUtils
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.SparkSession
 import org.json4s._
