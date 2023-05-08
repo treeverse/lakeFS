@@ -9,8 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-const metadataDumpTemplate = `
-{{ .Response | json }}
+const metadataDumpTemplate = `{{ .Response | json }}
 `
 
 const refsRestoreSuccess = `
@@ -62,7 +61,6 @@ var refsDumpCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		repoURI := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", repoURI.String())
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
