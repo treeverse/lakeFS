@@ -42,13 +42,14 @@ class ARangeGetter(
     }
   }
 
-  def getRangeIDs(commitID: String, repo: String, metaRangeURL: String): Iterator[String] = {
+  def getRangeIDs(metaRangeURL: String): Iterator[String] = {
     verifyRepo(repo)
-    if (metaRangeURL == null) {
-      commitRanges(commitID).iterator
-    } else {
-      commitRanges(StringUtils.substringAfterLast(metaRangeURL, "/mr-")).iterator
-    }
+    commitRanges(StringUtils.substringAfterLast(metaRangeURL, "/mr-")).iterator
+  }
+
+  def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
+    verifyRepo(repo)
+    commitRanges(commitID).iterator
   }
 
   def getRangeEntries(rangeID: String, repo: String): Iterator[catalog.Entry] = {
@@ -294,6 +295,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
           compareDS(actualRanges, expectedRanges)
         })
       }
+
       it("should fetch ranges when commits include metarange ids") {
         withSparkSession(spark => {
           import spark.implicits._
