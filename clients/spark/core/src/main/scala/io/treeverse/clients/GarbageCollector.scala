@@ -25,7 +25,7 @@ trait RangeGetter extends Serializable {
 
   /** @return all rangeIDs in metarange of commitID on repo.
    */
-  def getRangeIDs(commitID: String, repo: String): Iterator[String]
+  def getRangeIDs(commitID: String, repo: String, metaRangeURL: String): Iterator[String]
 
   /** @return all object addresses in range rangeID on repo.
    */
@@ -34,15 +34,22 @@ trait RangeGetter extends Serializable {
 
 class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
     extends RangeGetter {
-  def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
+  // private def getMetaRangeID(commitID: String, repo:String) {
+
+  // }
+  def getRangeIDs(commitID: String, repo: String, metaRangeURL: String): Iterator[String] = {
     val conf = configMapper.configuration
-    val apiClient = ApiClient.get(apiConf)
-    val commit = apiClient.getCommit(repo, commitID)
-    val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
-    if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
-      return Iterator.empty
+    var location = metaRangeURL
+
+    if (StringUtils.isBlank(location)) {
+      val apiClient = ApiClient.get(apiConf)
+      val commit = apiClient.getCommit(repo, commitID)
+      val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
+      if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
+        return Iterator.empty
+      }
+      location = apiClient.getMetaRangeURL(repo, commit)
     }
-    val location = apiClient.getMetaRangeURL(repo, commit)
     // continue on empty location, empty location is a result of a commit
     // with no metaRangeID (e.g 'Repository created' commit)
     if (location == "") Iterator.empty
@@ -106,15 +113,20 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   }
 
   def getRangeIDsForCommits(
-      commitIDs: Dataset[(String, Boolean)],
-      repo: String
+      commitIDs: Dataset[(String, Boolean, String)],
+      repo: String,
+      storageNS: String
   ): Dataset[(String, Boolean)] = {
     import spark.implicits._
-
-    commitIDs.flatMap({ case (commitID, expire) =>
+    commitIDs.flatMap({ case (commitID, expire, metaRangeID) => {
+      var metaRangeURL : String = null
+      if (StringUtils.isNotBlank(metaRangeID)) {
+        metaRangeURL = storageNS + "_lakefs/" + metaRangeID
+      }
       rangeGetter
-        .getRangeIDs(commitID, repo)
+        .getRangeIDs(commitID, repo, metaRangeURL)
         .map((_, expire))
+      }
     })
   }
 
@@ -213,12 +225,19 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       sampleFraction: Double
   ): Dataset[String] = {
     import spark.implicits._
+    val df = getCommitsDF(commitDFLocation)
 
-    val commitsDS = getCommitsDF(commitDFLocation)
-      .as[(String, Boolean)]
+    if (df.schema.fieldNames.contains("metarange_id")) {
+
+    } else {
+
+    }
+    val commitsDS = df
+      .as[(String, Boolean, String)]
       .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
-    val rangeIDs = getRangeIDsForCommits(commitsDS, repo)
+
+    val rangeIDs = getRangeIDsForCommits(commitsDS, repo, storageNS)
 
     try {
       getAddressesToDelete(

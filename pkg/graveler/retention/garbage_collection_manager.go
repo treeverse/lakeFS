@@ -206,7 +206,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	err = csvWriter.Write([]string{"commit_id", "expired"}) // write headers
+	err = csvWriter.Write([]string{"commit_id", "expired", "metarange_id"}) // write headers
 	if err != nil {
 		return "", err
 	}
