@@ -235,7 +235,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     val commitsDS = getCommitsDF(commitDFLocation)
       .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
-
     val rangeIDs = getRangeIDsForCommits(commitsDS, repo, storageNS)
 
     try {
