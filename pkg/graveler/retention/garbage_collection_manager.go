@@ -210,14 +210,14 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	if err != nil {
 		return "", err
 	}
-	for _, commitID := range gcCommits.expired {
-		err := csvWriter.Write([]string{string(commitID), "true"})
+	for commitID, metaRangeID := range gcCommits.expired {
+		err := csvWriter.Write([]string{string(commitID), "true", string(metaRangeID)})
 		if err != nil {
 			return "", err
 		}
 	}
-	for _, commitID := range gcCommits.active {
-		err := csvWriter.Write([]string{string(commitID), "false"})
+	for commitID, metaRangeID := range gcCommits.active {
+		err := csvWriter.Write([]string{string(commitID), "false", string(metaRangeID)})
 		if err != nil {
 			return "", err
 		}
