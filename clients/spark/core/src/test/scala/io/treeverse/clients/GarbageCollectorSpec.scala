@@ -41,7 +41,7 @@ class ARangeGetter(
     }
   }
 
-  def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
+  def getRangeIDs(commitID: String, repo: String, metaRangeID: String): Iterator[String] = {
     verifyRepo(repo)
     commitRanges(commitID).iterator
   }
