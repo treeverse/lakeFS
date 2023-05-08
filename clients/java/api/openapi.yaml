@@ -3629,6 +3629,67 @@ paths:
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/import:
+    delete:
+      operationId: importCancel
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportStatus'
+        required: true
+      responses:
+        "204":
+          description: import canceled successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: cancel ongoing import
+      tags:
+      - import
+      x-contentType: application/json
+      x-accepts: application/json
     get:
       operationId: importStatus
       parameters:
@@ -3683,7 +3744,7 @@ paths:
       x-contentType: application/json
       x-accepts: application/json
     post:
-      operationId: import
+      operationId: importStart
       parameters:
       - explode: false
         in: path

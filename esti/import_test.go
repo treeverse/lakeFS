@@ -143,8 +143,6 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 	hasMore := true
 	after := api.PaginationAfter("")
 	count := 0
-	// TODO: Remove
-	s := ""
 	for hasMore {
 		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &api.ListObjectsParams{After: &after})
 		require.NoError(t, err, "list objects failed")
@@ -154,7 +152,6 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 		after = api.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
 		prev := api.ObjectStats{}
 		for _, obj := range listResp.JSON200.Results {
-			s += obj.Path
 			count++
 			require.True(t, strings.HasPrefix(obj.Path, prefix), "obj with wrong prefix imported", obj.Path, prefix)
 			require.True(t, strings.Compare(prev.Path, obj.Path) < 0, "Wrong listing order", prev.Path, obj.Path)
@@ -307,7 +304,12 @@ func TestImportNew(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
-		importID, importBranch := testImportNew(t, ctx, repoName, importPath, branch)
+		paths := []api.ImportPath{{
+			Destination: importTargetPrefix,
+			Path:        importPath,
+			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+		}}
+		importID, importBranch := testImportNew(t, ctx, repoName, branch, paths)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
 
 		// Verify we cannot cancel a completed import
@@ -332,7 +334,34 @@ func TestImportNew(t *testing.T) {
 		}
 		// import without the directory separator as suffix to include the parent directory
 		importPathParent := strings.TrimSuffix(importPath, "/")
-		_, importBranch := testImportNew(t, ctx, repoName, importPathParent, branch)
+		paths := []api.ImportPath{{
+			Destination: importTargetPrefix,
+			Path:        importPathParent,
+			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+		}}
+		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
+	})
+	t.Run("several-paths", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
+		var paths []api.ImportPath
+		for i := 1; i < 8; i++ {
+			prefix := fmt.Sprintf("prefix-%d", i)
+			paths = append(paths, api.ImportPath{
+				Destination: fmt.Sprintf("%s/%s/", importTargetPrefix, prefix),
+				Path:        filepath.Join(importPath, prefix),
+				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+			})
+		}
+		//for i := 0; i < 7; i++ {
+		//	dest := importFilesToCheck[i]
+		//	paths = append(paths, api.ImportPath{
+		//		Destination: fmt.Sprintf("%s/%s/", importTargetPrefix, dest),
+		//		Path:        filepath.Join(importPath, dest),
+		//		Type:        catalog.ImportPathTypes[catalog.ImportPathTypeObject],
+		//	})
+		//}
+		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
 	})
 }
@@ -352,10 +381,15 @@ func TestImportCancel(t *testing.T) {
 		require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
 
 		importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, api.ImportStartJSONRequestBody{
-			CommitMessage: "created by import",
-			Metadata:      &api.ImportCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
-			Prepend:       importTargetPrefix,
-			SourceUri:     importPath,
+			Commit: api.CommitCreation{
+				Message:  "created by import",
+				Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+			},
+			Paths: []api.ImportPath{{
+				Destination: importTargetPrefix,
+				Path:        importPath,
+				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+			}},
 		})
 		require.NoError(t, err)
 		require.NotNil(t, importResp.JSON201, "failed to start import", err)
@@ -389,7 +423,7 @@ func TestImportCancel(t *testing.T) {
 	})
 }
 
-func testImportNew(t testing.TB, ctx context.Context, repoName, importPath, importBranch string) (string, string) {
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportPath) (string, string) {
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
 		Name:   importBranch,
 		Source: "main",
@@ -398,10 +432,11 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importPath, impo
 	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
 
 	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, api.ImportStartJSONRequestBody{
-		CommitMessage: "created by import",
-		Metadata:      &api.ImportCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
-		Prepend:       importTargetPrefix,
-		SourceUri:     importPath,
+		Commit: api.CommitCreation{
+			Message:  "created by import",
+			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		},
+		Paths: paths,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, importResp.JSON201, "failed to start import", err)

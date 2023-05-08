@@ -8,6 +8,7 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"io"
 	"net/url"
 	"os"
@@ -164,7 +165,39 @@ const (
 	workersMaxDrainDuration  = 5 * time.Second
 )
 
-var ErrUnknownDiffType = errors.New("unknown graveler difference type")
+type ImportPathType int
+
+const (
+	ImportPathTypePrefix = iota
+	ImportPathTypeObject
+)
+
+var ImportPathTypes = []string{"prefix", "object"}
+
+type ImportPath struct {
+	Path        string
+	Destination string
+	Type        ImportPathType
+}
+
+func GetImportPathType(t string) (ImportPathType, error) {
+	idx := slices.Index(ImportPathTypes, t)
+	if idx < 0 {
+		return -1, fmt.Errorf("invalid import type: %w", graveler.ErrInvalidValue)
+	}
+	return ImportPathType(idx), nil
+}
+
+type ImportCommit struct {
+	CommitMessage string
+	Committer     string
+	Metadata      Metadata
+}
+
+type ImportRequest struct {
+	Paths  []ImportPath
+	Commit ImportCommit
+}
 
 type ctxCloser struct {
 	close context.CancelFunc
@@ -1794,53 +1827,31 @@ func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.R
 	return err
 }
 
-func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID string, importStatus graveler.ImportStatus, params ImportRequest) {
-	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
-	logger := c.log.WithField("import_id", importStatus.ID)
-	defer cancel()
-	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI, SkipOutOfOrder: true})
-	if err != nil {
-		logger.WithError(err).Error("creating object-store walker")
-		return
-	}
-	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, "", "")
-	if err != nil {
-		logger.WithError(err).Error("creating walk iterator")
-		return
-	}
-	defer it.Close()
-
-	statusChan := make(chan graveler.ImportStatus, 1)
-	// Update import status
-	go func() {
-		err := c.importStatusAsync(ctx, cancel, logger, graveler.RepoPartition(repository), importStatus.ID.String(), statusChan)
-		if err != nil {
-			logger.WithError(err).Error("failed to update import status")
-		}
-	}()
+func (c *Catalog) importPath(ctx context.Context,
+	repository *graveler.RepositoryRecord,
+	importBranch string,
+	commitParams ImportCommit,
+	it *walkEntryIterator,
+	statusChan chan<- graveler.ImportStatus,
+	importStatus *graveler.ImportStatus) ([]block.ObjectStoreEntry, error) {
+	var skipped []block.ObjectStoreEntry
 	etvIt := NewEntryToValueIterator(it)
-	var (
-		ranges  []*graveler.RangeInfo
-		skipped []block.ObjectStoreEntry
-	)
+	var ranges []*graveler.RangeInfo
 	for {
 		rangeInfo, err := c.Store.WriteRange(ctx, repository, etvIt)
 		if err != nil {
-			importStatus.Error = fmt.Errorf("write range: %w", err)
-			statusChan <- importStatus
-			return
+			return nil, fmt.Errorf("write range: %w", err)
 		}
 		ranges = append(ranges, rangeInfo)
 		skipped = append(skipped, it.GetSkippedEntries()...)
 
 		// Update import status
 		importStatus.Progress += int64(rangeInfo.Count)
-		statusChan <- importStatus
+		statusChan <- *importStatus
 
 		// Check if operation was canceled
 		if ctx.Err() != nil {
-			return
+			return nil, nil
 		}
 		if !it.Marker().HasMore {
 			break
@@ -1850,40 +1861,86 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID st
 	// Create metarange
 	metarange, err := c.Store.WriteMetaRange(ctx, repository, ranges)
 	if err != nil {
-		importStatus.Error = fmt.Errorf("create metarange: %w", err)
-		statusChan <- importStatus
-		return
+		return nil, fmt.Errorf("create metarange: %w", err)
 	}
 
+	// Commit the changes
+	metarangeStr := metarange.ID.String()
+	commit, err := c.Commit(ctx, repository.RepositoryID.String(), importBranch, commitParams.CommitMessage, commitParams.Committer, commitParams.Metadata, nil, &metarangeStr)
+	if err != nil {
+		return nil, fmt.Errorf("commit changes: %w", err)
+	}
+	// Update import status
+	importStatus.MetaRangeID = &metarange.ID
+	importStatus.Commit = commitLogToRecord(commit)
+	statusChan <- *importStatus
+	return skipped, nil
+}
+
+func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID string, importStatus graveler.ImportStatus, params ImportRequest) {
+	var skippedRecords []EntryRecord
+	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
+	logger := c.log.WithField("import_id", importStatus.ID)
+	defer cancel()
+
+	// Update import status
+	statusChan := make(chan graveler.ImportStatus, 1)
+	go func() {
+		err := c.importStatusAsync(ctx, cancel, logger, graveler.RepoPartition(repository), importStatus.ID.String(), statusChan)
+		if err != nil {
+			logger.WithError(err).Error("failed to update import status")
+		}
+	}()
+
 	importBranch := "_" + branchID + "_imported"
-	err = c.ensureBranchExists(ctx, repository, importBranch, branchID)
+	err := c.ensureBranchExists(ctx, repository, importBranch, branchID)
 	if err != nil {
 		importStatus.Error = fmt.Errorf("ensure import branch: %w", err)
 		statusChan <- importStatus
 		return
 	}
-
-	// Commit the changes
-	metarangeStr := metarange.ID.String()
-	commit, err := c.Commit(ctx, repository.RepositoryID.String(), importBranch, params.CommitMessage, params.Committer, Metadata{}, nil, &metarangeStr)
-	if err != nil {
-		importStatus.Error = fmt.Errorf("commit changes: %w", err)
-		statusChan <- importStatus
-		return
-	}
 	// Update import status
-	importStatus.MetaRangeID = &metarange.ID
 	importStatus.ImportBranch = &importBranch
-	importStatus.Commit = commitLogToRecord(commit)
-	statusChan <- importStatus
+
+	for _, source := range params.Paths {
+		// TODO (niro): Need to handle this at some point (use adapter GetWalker)
+		walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: source.Path, SkipOutOfOrder: true})
+		if err != nil {
+			logger.WithError(err).Error("creating object-store walker")
+			return
+		}
+		it, err := NewWalkEntryIterator(ctx, walker, source.Destination, "", "")
+		if err != nil {
+			logger.WithError(err).Error("creating walk iterator")
+			return
+		}
+		switch {
+		case source.Type == ImportPathTypeObject:
+			it.Next()
+		case source.Type == ImportPathTypePrefix:
+			skipped, err := c.importPath(ctx, repository, importBranch, params.Commit, it, statusChan, &importStatus)
+			if err != nil {
+				importStatus.Error = err
+				statusChan <- importStatus
+			}
+			for _, obj := range skipped {
+				entryRecord := objectStoreEntryToEntryRecord(obj, source.Destination)
+				skippedRecords = append(skippedRecords, entryRecord)
+			}
+		case ctx.Err() != nil: // Exit fast
+			return
+		default:
+			panic("Ahhh")
+		}
+		it.Close()
+	}
 
 	// Handle skipped
-	if len(skipped) > 0 {
-		c.log.Warning("Skipped count:", len(skipped))
+	if len(skippedRecords) > 0 {
+		c.log.Warning("Skipped count:", len(skippedRecords))
 		stagingToken := graveler.GenerateStagingToken("import", "ingest_range").String()
 
-		for _, obj := range skipped {
-			entryRecord := objectStoreEntryToEntryRecord(obj, params.Prepend)
+		for _, entryRecord := range skippedRecords {
 			entry, err := EntryToValue(entryRecord.Entry)
 			if err != nil {
 				importStatus.Error = fmt.Errorf("parse entry: %w", err)
@@ -1906,6 +1963,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID st
 			statusChan <- importStatus
 			return
 		}
+
 		// Commit the changes
 		_, err = c.Commit(ctx, repository.RepositoryID.String(), importBranch, "Import commit for staged objects", "", Metadata{}, nil, nil)
 		if err != nil {

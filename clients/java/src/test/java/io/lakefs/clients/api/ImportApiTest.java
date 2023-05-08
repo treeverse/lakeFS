@@ -41,23 +41,6 @@ public class ImportApiTest {
 
     
     /**
-     * import data from object store
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void callImportTest() throws ApiException {
-        String repository = null;
-        String branch = null;
-        ImportCreation importCreation = null;
-                ImportCreationResponse response = api.callImport(repository, branch, importCreation);
-        // TODO: test validations
-    }
-    
-    /**
      * create a lakeFS metarange file from the given ranges
      *
      * 
@@ -70,6 +53,40 @@ public class ImportApiTest {
         String repository = null;
         MetaRangeCreation metaRangeCreation = null;
                 MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
+        // TODO: test validations
+    }
+    
+    /**
+     * cancel ongoing import
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importCancelTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        ImportStatus importStatus = null;
+                api.importCancel(repository, branch, importStatus);
+        // TODO: test validations
+    }
+    
+    /**
+     * import data from object store
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importStartTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        ImportCreation importCreation = null;
+                ImportCreationResponse response = api.importStart(repository, branch, importCreation);
         // TODO: test validations
     }
     

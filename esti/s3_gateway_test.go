@@ -33,7 +33,7 @@ var (
 const (
 	numUploads           = 100
 	randomDataPathLength = 1020
-	prefix               = "main/data/"
+	gatewayTestPrefix    = "main/data/"
 )
 
 func newClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
@@ -112,7 +112,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 					Content: testutil.RandomString(r, randomDataContentLength),
 					// lakeFS supports _any_ path, even if its
 					// byte sequence is not legal UTF-8 string.
-					Path: prefix + testutil.RandomString(r, randomDataPathLength-len(prefix)),
+					Path: gatewayTestPrefix + testutil.RandomString(r, randomDataPathLength-len(gatewayTestPrefix)),
 				}
 			}
 			close(objects)
@@ -251,8 +251,8 @@ func TestS3CopyObject(t *testing.T) {
 	// content
 	r := rand.New(rand.NewSource(17))
 	objContent := testutil.RandomString(r, randomDataContentLength)
-	srcPath := prefix + "source-file"
-	destPath := prefix + "dest-file"
+	srcPath := gatewayTestPrefix + "source-file"
+	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
 	minioClient := newClient(t, sigV2)

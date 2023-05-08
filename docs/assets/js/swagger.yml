@@ -1274,27 +1274,38 @@ components:
       required:
         - pattern
 
+    ImportPath:
+      type: object
+      required:
+        - path
+        - destination
+        - type
+      properties:
+        path:
+          type: string
+          description: A source location to ingested object or a path to a single object. Must match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+        destination:
+          type: string
+          description: Destination for the imported objects on the branch 
+          example: collections/
+        type:
+          type: string
+          enum: [ prefix, object ]
+          description: Path type, can either be 'prefix' or 'object'
+
     ImportCreation:
       type: object
       required:
-        - source_uri
-        - prepend
-        - commit_message
+        - paths
+        - commit
       properties:
-        source_uri:
-          type: string
-          description: The source location of the ingested files. Must match the lakeFS installation blockstore type.
-          example: s3://my-bucket/production/collections/
-        prepend:
-          type: string
-          description: A prefix to prepend to ingested objects.
-          example: collections/
-        commit_message:
-          type: string
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
+        paths:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportPath"
+        commit:
+          $ref: "#/components/schemas/CommitCreation"
           
     ImportStatus:
       type: object
@@ -3527,6 +3538,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 

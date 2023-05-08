@@ -2114,13 +2114,13 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.ImportFromStorage,
-					Resource: permissions.StorageNamespace(body.SourceUri),
+					Resource: permissions.StorageNamespace("*"),
 				},
 			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, body.Prepend),
+					Resource: permissions.BranchArn(repository, branch),
 				},
 			},
 			{
@@ -2141,23 +2141,37 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "import", r, repository, branch, body.SourceUri)
+	c.LogAction(ctx, "import", r, repository, branch, "")
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
 	var metadata map[string]string
-	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
+	if body.Commit.Metadata != nil {
+		metadata = body.Commit.Metadata.AdditionalProperties
 	}
+	paths := make([]catalog.ImportPath, 0, len(body.Paths))
+	for _, p := range body.Paths {
+		pathType, err := catalog.GetImportPathType(p.Type)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		paths = append(paths, catalog.ImportPath{
+			Destination: p.Destination,
+			Path:        p.Path,
+			Type:        pathType,
+		})
+	}
+
 	committer := user.Username
 	importID, err := c.Catalog.Import(r.Context(), repository, branch, catalog.ImportRequest{
-		SourceURI:     body.SourceUri,
-		Prepend:       body.Prepend,
-		CommitMessage: body.CommitMessage,
-		Committer:     committer,
-		Metadata:      metadata,
+		Paths: paths,
+		Commit: catalog.ImportCommit{
+			CommitMessage: body.Commit.Message,
+			Committer:     committer,
+			Metadata:      metadata,
+		},
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2251,12 +2265,6 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
 					Resource: permissions.ObjectArn(repository, body.Prepend),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.CreateMetaRangeAction,
-					Resource: permissions.RepoArn(repository),
 				},
 			},
 		},
