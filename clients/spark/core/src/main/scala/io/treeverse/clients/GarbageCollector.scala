@@ -123,23 +123,17 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     val hasMetaRangeIDs = commits.schema.fields.length == 3
     commits.flatMap({
       case (row) => {
-        var metaRangeID: String = null
         val commitID = row.getString(0)
         val expired = row.getBoolean(1)
-        if (hasMetaRangeIDs) {
-          metaRangeID = row.getString(2)
-        }
-        var metaRangeURL: String = null
-        if (StringUtils.isNotBlank(metaRangeID)) {
-          metaRangeURL = storageNS + "_lakefs/" + metaRangeID
-          rangeGetter
-            .getRangeIDs(metaRangeURL)
-            .map((_, expired))
-        } else {
-          rangeGetter
-            .getRangeIDs(commitID, repo)
-            .map((_, expired))
-        }
+        val metaRangeID = if (hasMetaRangeIDs) row.getString(2) else null
+        val rangeIDs =
+          if (hasMetaRangeIDs && StringUtils.isNotBlank(metaRangeID))
+            rangeGetter
+              .getRangeIDs(storageNS + "_lakefs/" + metaRangeID)
+          else
+            rangeGetter
+              .getRangeIDs(commitID, repo)
+        rangeIDs.map((_, expired))
       }
     })
   }
