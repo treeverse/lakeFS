@@ -2784,10 +2784,18 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	presignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		Identifier:     gcRunMetadata.CommitsCSVLocation,
+		IdentifierType: block.IdentifierTypeFull,
+	}, block.PreSignModeRead)
+	if err != nil {
+		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
+	}
 	writeResponse(w, r, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRunMetadata.CommitsCSVLocation,
-		GcAddressesLocation: gcRunMetadata.AddressLocation,
-		RunId:               gcRunMetadata.RunID,
+		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
+		GcAddressesLocation:   gcRunMetadata.AddressLocation,
+		RunId:                 gcRunMetadata.RunID,
+		GcCommitsPresignedUrl: &presignedURL,
 	})
 }
 

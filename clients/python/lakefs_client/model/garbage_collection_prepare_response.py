@@ -85,6 +85,7 @@ class GarbageCollectionPrepareResponse(ModelNormal):
             'run_id': (str,),  # noqa: E501
             'gc_commits_location': (str,),  # noqa: E501
             'gc_addresses_location': (str,),  # noqa: E501
+            'gc_commits_presigned_url': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class GarbageCollectionPrepareResponse(ModelNormal):
         'run_id': 'run_id',  # noqa: E501
         'gc_commits_location': 'gc_commits_location',  # noqa: E501
         'gc_addresses_location': 'gc_addresses_location',  # noqa: E501
+        'gc_commits_presigned_url': 'gc_commits_presigned_url',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class GarbageCollectionPrepareResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            gc_commits_presigned_url (str): a presigned url to download the commits csv. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -233,6 +236,7 @@ class GarbageCollectionPrepareResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            gc_commits_presigned_url (str): a presigned url to download the commits csv. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

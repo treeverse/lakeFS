@@ -6942,6 +6942,7 @@ components:
         run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
         gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
         gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
+        gc_commits_presigned_url: gc_commits_presigned_url
       properties:
         run_id:
           description: a unique identifier generated for this GC job
@@ -6956,6 +6957,9 @@ components:
           description: location to use for expired addresses parquet table (partitioned
             by run_id)
           example: s3://my-storage-namespace/_lakefs/retention/addresses
+          type: string
+        gc_commits_presigned_url:
+          description: a presigned url to download the commits csv
           type: string
       required:
       - gc_addresses_location

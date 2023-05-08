@@ -64,4 +64,12 @@ public class GarbageCollectionPrepareResponseTest {
         // TODO: test gcAddressesLocation
     }
 
+    /**
+     * Test the property 'gcCommitsPresignedUrl'
+     */
+    @Test
+    public void gcCommitsPresignedUrlTest() {
+        // TODO: test gcCommitsPresignedUrl
+    }
+
 }
