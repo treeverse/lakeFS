@@ -44,7 +44,8 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
     if (StringUtils.isBlank(location)) {
       val apiClient = ApiClient.get(apiConf)
       val commit = apiClient.getCommit(repo, commitID)
-      val maxCommitEpochSeconds = conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
+      val maxCommitEpochSeconds =
+        conf.getLong(LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY, -1)
       if (maxCommitEpochSeconds > 0 && commit.getCreationDate > maxCommitEpochSeconds) {
         return Iterator.empty
       }
@@ -118,14 +119,15 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       storageNS: String
   ): Dataset[(String, Boolean)] = {
     import spark.implicits._
-    commitIDs.flatMap({ case (commitID, expire, metaRangeID) => {
-      var metaRangeURL : String = null
-      if (StringUtils.isNotBlank(metaRangeID)) {
-        metaRangeURL = storageNS + "_lakefs/" + metaRangeID
-      }
-      rangeGetter
-        .getRangeIDs(commitID, repo, metaRangeURL)
-        .map((_, expire))
+    commitIDs.flatMap({
+      case (commitID, expire, metaRangeID) => {
+        var metaRangeURL: String = null
+        if (StringUtils.isNotBlank(metaRangeID)) {
+          metaRangeURL = storageNS + "_lakefs/" + metaRangeID
+        }
+        rangeGetter
+          .getRangeIDs(commitID, repo, metaRangeURL)
+          .map((_, expire))
       }
     })
   }
@@ -226,12 +228,6 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   ): Dataset[String] = {
     import spark.implicits._
     val df = getCommitsDF(commitDFLocation)
-
-    if (df.schema.fieldNames.contains("metarange_id")) {
-
-    } else {
-
-    }
     val commitsDS = df
       .as[(String, Boolean, String)]
       .repartition(numCommitPartitions)
@@ -308,7 +304,7 @@ object GarbageCollector {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) = {
     val hc = spark.sparkContext.hadoopConfiguration
 
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
