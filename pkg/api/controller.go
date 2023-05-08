@@ -2786,7 +2786,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		IdentifierType: block.IdentifierTypeFull,
 	}, block.PreSignModeRead)
 	if err != nil {
-		c.Logger.Warn("Failed to presign url for GC commits")
+		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
 	}
 	writeResponse(w, r, http.StatusCreated, GarbageCollectionPrepareResponse{
 		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
