@@ -8,7 +8,6 @@ import (
 	_ "crypto/sha256"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"io"
 	"net/url"
 	"os"
@@ -42,6 +41,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -1846,7 +1846,8 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	importStatus.ImportBranch = &importBranch
 
 	var wg multierror.Group
-	ingestChan := make(chan *walkEntryIterator, 10)
+	const ingestChanSize = 10
+	ingestChan := make(chan *walkEntryIterator, ingestChanSize)
 	wg.Go(func() error {
 		for i := range ingestChan {
 			wg.Go(func() error {
@@ -1859,7 +1860,6 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 
 	for _, source := range params.Paths {
 		// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-		//c.BlockAdapter.GetWalker()
 		walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: source.Path})
 		if err != nil {
 			importStatus.Error = fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)

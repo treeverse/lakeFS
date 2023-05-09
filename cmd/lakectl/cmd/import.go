@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"syscall"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -71,7 +72,7 @@ var importCmd = &cobra.Command{
 		importID := importResp.JSON201.Id
 		// Handle interrupts
 		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, os.Kill)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
 				Fmt("\nCanceling import (reason: %s)\n", sig.String())

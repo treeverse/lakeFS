@@ -113,7 +113,7 @@ class ImportPath(ModelNormal):
         """ImportPath - a model defined in OpenAPI
 
         Args:
-            path (str): A source location to ingested object or a path to a single object. Must match the lakeFS installation blockstore type.
+            path (str): A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
             destination (str): Destination for the imported objects on the branch
             type (str): Path type, can either be 'prefix' or 'object'
 
@@ -202,7 +202,7 @@ class ImportPath(ModelNormal):
         """ImportPath - a model defined in OpenAPI
 
         Args:
-            path (str): A source location to ingested object or a path to a single object. Must match the lakeFS installation blockstore type.
+            path (str): A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
             destination (str): Destination for the imported objects on the branch
             type (str): Path type, can either be 'prefix' or 'object'
 

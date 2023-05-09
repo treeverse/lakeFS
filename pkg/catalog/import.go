@@ -4,27 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/cockroachdb/pebble"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"time"
 )
 
 const (
 	ImportCanceled = "Canceled"
 	statusChanSize = 100
 )
-
-type ImportManager interface {
-	Set(record EntryRecord) error
-	Ingest(it *walkEntryIterator) error
-	Status() graveler.ImportStatus
-	NewItr() *importIterator
-	Close()
-}
 
 type Import struct {
 	db            *pebble.DB

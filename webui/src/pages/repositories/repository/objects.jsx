@@ -174,7 +174,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 <Modal.Footer>
                     <Button variant="secondary" onClick={ async () => {
                         if (importPhase === ImportPhase.InProgress && importID.length > 0) {
-                            const resp = await imports.delete(repoId, importBranch, importID);
+                            await imports.delete(repoId, importBranch, importID);
                         }
                         hide();
                     }}>

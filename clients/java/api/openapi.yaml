@@ -7224,8 +7224,8 @@ components:
         type: prefix
       properties:
         path:
-          description: A source location to ingested object or a path to a single
-            object. Must match the lakeFS installation blockstore type.
+          description: A source location to ingested path or to a single object. Must
+            match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
           type: string
         destination:
