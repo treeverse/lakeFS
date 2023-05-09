@@ -10,7 +10,6 @@ import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
 import io.treeverse.clients.StorageUtils.AzureBlob._
 import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
-import org.apache.hadoop.conf.Configuration
 
 import java.io.ByteArrayInputStream
 import java.net.URI
@@ -21,18 +20,19 @@ trait StorageClient {
 
 object StorageClients {
   private def getRunIDMarkerLocation(runID: String, storagePrefix: String): String = {
-    var prefix: String = storagePrefix.stripPrefix("/").stripSuffix("/")
+    var prefix: String = storagePrefix.stripSuffix("/")
     prefix = if (prefix.nonEmpty) prefix.concat("/_lakefs") else "_lakefs"
     s"$prefix/retention/gc/run_ids/$runID"
   }
 
-  class S3(hc: Configuration) extends StorageClient {
+  class S3(configMapper: ConfigMapper) extends StorageClient with Serializable {
     def getS3Client(
         bucket: String,
         region: String,
         numRetries: Int
     ): AmazonS3 =
-      io.treeverse.clients.conditional.S3ClientBuilder.build(hc, bucket, region, numRetries)
+      io.treeverse.clients.conditional.S3ClientBuilder
+        .build(configMapper.configuration, bucket, region, numRetries)
 
     override def logRunID(runID: String, storageNamespace: String, region: String): Unit = {
       val uri = new URI(storageNamespace)
@@ -49,7 +49,7 @@ object StorageClients {
     }
   }
 
-  class Azure(hc: Configuration) extends StorageClient {
+  class Azure(configMapper: ConfigMapper) extends StorageClient with Serializable {
     def getBlobContainerClient(
         storageAccountUrl: String,
         storageAccountName: String,
@@ -76,8 +76,12 @@ object StorageClients {
       val containerName = StorageUtils.AzureBlob.uriToContainerName(uri)
       val blobClient =
         getBlobContainerClient(storageAccountUrl, storageAccountName, containerName)
-      val pathArray = uri.getPath.split("/")
-      val key = pathArray.slice(2, pathArray.length).reduce((a1, a2) => a1 + "/" + a2)
+      var pathArray = uri.getPath.split("/")
+      // pathArray: ["", "<container name>"(, "storage", ..., "path")]
+      pathArray = if (pathArray.length > 2) pathArray.slice(2, pathArray.length) else Array("")
+      // pathArray: ["storage", ..., "path"] || [""]
+      val key =
+        if (pathArray.length > 1) pathArray.reduce((a1, a2) => a1 + "/" + a2) else pathArray(0)
       blobClient
         .getBlobClient(getRunIDMarkerLocation(runID, key))
         .upload(runIDMarkerInputStream, 0)
@@ -87,6 +91,7 @@ object StorageClients {
         storageAccountUrl: String,
         storageAccountName: String
     ): BlobServiceClient = {
+      val hc = configMapper.configuration
       val storageAccountKey = hc.get(String.format(StorageAccountKeyProperty, storageAccountName))
       val blobServiceClientBuilder: BlobServiceClientBuilder =
         new BlobServiceClientBuilder()
@@ -120,12 +125,12 @@ object StorageClients {
     }
   }
 
-  def apply(storageType: String, hc: Configuration): StorageClient = {
+  def apply(storageType: String, configMapper: ConfigMapper): StorageClient = {
     storageType match {
       case StorageTypeS3 =>
-        new S3(hc)
+        new S3(configMapper)
       case StorageTypeAzure =>
-        new Azure(hc)
+        new Azure(configMapper)
       case _ => throw new IllegalArgumentException("Invalid argument.")
     }
   }

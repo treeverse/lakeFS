@@ -399,17 +399,17 @@ object GarbageCollector {
         }
 
         val region = getRegion(args)
-        val storageClient: StorageClient = StorageClients(storageType, hc)
+        val storageClient: StorageClient = StorageClients(storageType, configMapper)
 
-        val removed = remove(configMapper,
-                             storageNSForSdkClient,
-                             gcAddressesLocation,
-                             expiredAddresses,
-                             markID,
-                             region,
-                             storageClient,
-                             schema
-                            )
+        val removed = remove(
+          storageNSForSdkClient,
+          gcAddressesLocation,
+          expiredAddresses,
+          markID,
+          region,
+          storageClient,
+          schema
+        )
         storageClient.logRunID(runID, storageNSForSdkClient, region)
         removed
       } else {
@@ -584,7 +584,6 @@ object GarbageCollector {
   }
 
   def bulkRemove(
-      configMapper: ConfigMapper,
       readKeysDF: DataFrame,
       storageNamespace: String,
       region: String,
@@ -615,7 +614,6 @@ object GarbageCollector {
   }
 
   def remove(
-      configMapper: ConfigMapper,
       storageNamespace: String,
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
@@ -627,18 +625,12 @@ object GarbageCollector {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageClient)
+    bulkRemove(df.orderBy("address"), storageNamespace, region, storageClient)
       .toDF(schema.fieldNames: _*)
   }
 
   private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String): String = {
     s"$gcAddressesLocation/$markId.meta"
-  }
-
-  private def getRunIDMarkerLocation(runID: String, storagePrefix: String): String = {
-    var prefix: String = storagePrefix.stripPrefix("/").stripSuffix("/")
-    prefix = if (prefix.nonEmpty) prefix.concat("/_lakefs") else "_lakefs"
-    s"$prefix/retention/gc/run_ids/$runID"
   }
 
   private def getMarkMetadata(markId: String, gcAddressesLocation: String): DataFrame = {
