@@ -122,6 +122,11 @@ WORKDIR /home/lakefs
 
 RUN mkdir -p /home/lakefs/.lakefs/plugins/diff && ln -s /app/delta_diff /home/lakefs/.lakefs/plugins/diff/delta
 
+ENTRYPOINT ["/app/lakefs"]
+CMD ["run"]
+
+FROM --platform=$BUILDPLATFORM lakefs-plugins AS lakefs-with-duckdb
+
 # Add DuckDB
 USER root
 WORKDIR /app
@@ -130,6 +135,3 @@ COPY --from=build-duckdb /duckdb/build/release/duckdb  ./
 USER lakefs
 # Create ~/.duckdbrc file to customise the prompt 🦆
 RUN echo ".prompt '⚫◗ '" > $HOME/.duckdbrc
-
-ENTRYPOINT ["/app/lakefs"]
-CMD ["run"]
