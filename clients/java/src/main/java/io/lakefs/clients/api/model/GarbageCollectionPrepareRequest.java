@@ -33,10 +33,6 @@ public class GarbageCollectionPrepareRequest {
   @SerializedName(SERIALIZED_NAME_PREVIOUS_RUN_ID)
   private String previousRunId;
 
-  public static final String SERIALIZED_NAME_INCLUDE_METARANGE_IDS = "include_metarange_ids";
-  @SerializedName(SERIALIZED_NAME_INCLUDE_METARANGE_IDS)
-  private Boolean includeMetarangeIds;
-
 
   public GarbageCollectionPrepareRequest previousRunId(String previousRunId) {
     
@@ -61,29 +57,6 @@ public class GarbageCollectionPrepareRequest {
   }
 
 
-  public GarbageCollectionPrepareRequest includeMetarangeIds(Boolean includeMetarangeIds) {
-    
-    this.includeMetarangeIds = includeMetarangeIds;
-    return this;
-  }
-
-   /**
-   * include the metarange ID as a column in the returned commit set
-   * @return includeMetarangeIds
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "include the metarange ID as a column in the returned commit set")
-
-  public Boolean getIncludeMetarangeIds() {
-    return includeMetarangeIds;
-  }
-
-
-  public void setIncludeMetarangeIds(Boolean includeMetarangeIds) {
-    this.includeMetarangeIds = includeMetarangeIds;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -93,13 +66,12 @@ public class GarbageCollectionPrepareRequest {
       return false;
     }
     GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = (GarbageCollectionPrepareRequest) o;
-    return Objects.equals(this.previousRunId, garbageCollectionPrepareRequest.previousRunId) &&
-        Objects.equals(this.includeMetarangeIds, garbageCollectionPrepareRequest.includeMetarangeIds);
+    return Objects.equals(this.previousRunId, garbageCollectionPrepareRequest.previousRunId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(previousRunId, includeMetarangeIds);
+    return Objects.hash(previousRunId);
   }
 
   @Override
@@ -107,7 +79,6 @@ public class GarbageCollectionPrepareRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class GarbageCollectionPrepareRequest {\n");
     sb.append("    previousRunId: ").append(toIndentedString(previousRunId)).append("\n");
-    sb.append("    includeMetarangeIds: ").append(toIndentedString(includeMetarangeIds)).append("\n");
     sb.append("}");
     return sb.toString();
   }

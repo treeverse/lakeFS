@@ -2780,7 +2780,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
-	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, StringValue(body.PreviousRunId), swag.BoolValue(body.IncludeMetarangeIds))
+	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, StringValue(body.PreviousRunId))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

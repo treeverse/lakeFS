@@ -48,12 +48,4 @@ public class GarbageCollectionPrepareRequestTest {
         // TODO: test previousRunId
     }
 
-    /**
-     * Test the property 'includeMetarangeIds'
-     */
-    @Test
-    public void includeMetarangeIdsTest() {
-        // TODO: test includeMetarangeIds
-    }
-
 }

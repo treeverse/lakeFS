@@ -44,7 +44,7 @@ func (g *FakeGraveler) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRe
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SaveGarbageCollectionCommits(_ context.Context, _ *graveler.RepositoryRecord, _ string, _ bool) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
+func (g *FakeGraveler) SaveGarbageCollectionCommits(_ context.Context, _ *graveler.RepositoryRecord, _ string) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
 	panic("implement me")
 }
 

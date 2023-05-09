@@ -289,7 +289,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     garbage_collection_prepare_request = GarbageCollectionPrepareRequest(
         previous_run_id="64eaa103-d726-4a33-bcb8-7c0b4abfe09e",
-        include_metarange_ids=True,
     ) # GarbageCollectionPrepareRequest |  (optional)
 
     # example passing only required values which don't have defaults set
