@@ -293,8 +293,15 @@ func TestExpiredCommits(t *testing.T) {
 
 			var commitsRecords []*graveler.CommitRecord
 			for commitID, commit := range tst.commits {
-				commitsRecords = append(commitsRecords, &graveler.CommitRecord{CommitID: graveler.CommitID(commitID),
-					Commit: &graveler.Commit{Parents: commit.parents, CreationDate: now.AddDate(0, 0, -commit.daysPassed), Version: graveler.CurrentCommitVersion}})
+				commitsRecords = append(commitsRecords, &graveler.CommitRecord{
+					CommitID: graveler.CommitID(commitID),
+					Commit: &graveler.Commit{
+						Parents:      commit.parents,
+						CreationDate: now.AddDate(0, 0, -commit.daysPassed),
+						Version:      graveler.CurrentCommitVersion,
+						MetaRangeID:  graveler.MetaRangeID("mr-" + commitID),
+					},
+				})
 			}
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
@@ -312,23 +319,44 @@ func TestExpiredCommits(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}
+			validateMetaRangeIDs(t, gcCommits.active)
+			validateMetaRangeIDs(t, gcCommits.expired)
+			activeCommitIDs := testMapToCommitIDs(gcCommits.active)
+			expiredCommitIDs := testMapToCommitIDs(gcCommits.expired)
+
 			sort.Strings(tst.expectedActiveIDs)
-			sort.Slice(gcCommits.active, func(i, j int) bool {
-				return gcCommits.active[i].Ref() < gcCommits.active[j].Ref()
+			sort.Slice(activeCommitIDs, func(i, j int) bool {
+				return activeCommitIDs[i].Ref() < activeCommitIDs[j].Ref()
 			})
-			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(gcCommits.active)); diff != nil {
+			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(activeCommitIDs)); diff != nil {
 				t.Errorf("active commits ids diff=%s", diff)
 			}
 
 			sort.Strings(tst.expectedExpiredIDs)
-			sort.Slice(gcCommits.expired, func(i, j int) bool {
-				return gcCommits.expired[i].Ref() < gcCommits.expired[j].Ref()
+			sort.Slice(expiredCommitIDs, func(i, j int) bool {
+				return expiredCommitIDs[i].Ref() < expiredCommitIDs[j].Ref()
 			})
-			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(gcCommits.expired)); diff != nil {
+			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(expiredCommitIDs)); diff != nil {
 				t.Errorf("expired commits ids diff=%s", diff)
 			}
 		})
 	}
+}
+
+func validateMetaRangeIDs(t *testing.T, commits map[graveler.CommitID]graveler.MetaRangeID) {
+	for commitID, metaRangeID := range commits {
+		if string(metaRangeID) != "mr-"+string(commitID) {
+			t.Errorf("unexpected metarange ID for commit %s. expected=%s, got=%s.", commitID, "mr-"+commitID, metaRangeID)
+		}
+	}
+}
+
+func testMapToCommitIDs(commits map[graveler.CommitID]graveler.MetaRangeID) []graveler.CommitID {
+	res := make([]graveler.CommitID, 0, len(commits))
+	for commitID := range commits {
+		res = append(res, commitID)
+	}
+	return res
 }
 
 func testToStringArray(commitIDs []graveler.CommitID) []string {
