@@ -5,7 +5,7 @@ parent: Reference
 description: Access control lists (ACLs) are one of the resource-based options that you can use to manage access to your repositories and objects. There are limits to managing permissions using ACLs.
 nav_order: 100
 has_children: false
-redirect_from: access-control-list.html
+redirect_from: /reference/access-control-list.html
 ---
 
 # Access Control Lists (ACLs)
@@ -69,6 +69,6 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
 
 The upgrade will detach every directly attached policy from users 
 
-Note that moving to `ACL` from `RBAC` may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
+Note that moving to ACL from RBAC may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).

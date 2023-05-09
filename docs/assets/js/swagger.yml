@@ -1211,6 +1211,9 @@ components:
           type: string
           description: location to use for expired addresses parquet table (partitioned by run_id)
           example: s3://my-storage-namespace/_lakefs/retention/addresses
+        gc_commits_presigned_url:
+          type: string
+          description: a presigned url to download the commits csv
       required:
         - run_id
         - gc_commits_location

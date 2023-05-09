@@ -150,9 +150,9 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     if (error) return <Error error={error}/>
     if (loading) return <Loading/>
 
-    let onRevert = async (entry) => {
+    let onReset = async (entry) => {
         branches
-            .revert(repo.id, reference.id, {type: entry.path_type, path: entry.path})
+            .reset(repo.id, reference.id, {type: entry.path_type, path: entry.path})
             .then(refresh)
             .catch(error => {
                 setActionError(error)
@@ -204,7 +204,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                     <RefreshButton onClick={refresh}/>
 
                     <RevertButton enabled={results.length > 0} onRevert={() => {
-                        branches.revert(repo.id, reference.id, {type: 'reset'})
+                        branches.reset(repo.id, reference.id, {type: 'reset'})
                             .then(refresh)
                             .catch(error => setActionError(error))
                     }}/>
@@ -227,7 +227,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                   repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                   getMore={getMoreUncommittedChanges}
                                   loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
-                                  onNavigate={onNavigate} onRevert={onRevert} changesTreeMessage={changesTreeMessage}/>
+                                  onNavigate={onNavigate} onRevert={onReset} changesTreeMessage={changesTreeMessage}/>
         </>
     )
 }

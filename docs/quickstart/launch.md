@@ -22,8 +22,8 @@ docker run --name lakefs \
            --env "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=EXAMPLE-SECRET" \
            --env "LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000" \
            treeverse/lakefs:latest -c \
-           "lakefs setup --local-settings --user-name admin --access-key-id \"AKIA-EXAMPLE-KEY\" --secret-access-key \"EXAMPLE-SECRET\"; \ 
-            lakefs run --local-settings"
+           'lakefs setup --local-settings --user-name admin --access-key-id "$LAKECTL_CREDENTIALS_ACCESS_KEY_ID" --secret-access-key "$LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"; \ 
+            lakefs run --local-settings'
 ```
 
 After a few moments you should see the lakeFS container ready to use: 
@@ -40,15 +40,14 @@ After a few moments you should see the lakeFS container ready to use:
 
 You're now ready to dive into lakeFS! 
 
-1. Login to lakeFS's web interface at [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
+1. Login to lakeFS's web interface at [http://127.0.0.1:8000/](http://127.0.0.1:8000/) using these credentials:
 
-2. You notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
+    * **Access Key ID**: `AKIA-EXAMPLE-KEY`
+    * **Secret Access Key**: `EXAMPLE-SECRET`
+
+2. You'll notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
 
     <img width="75%" src="/assets/img/quickstart/empty-repo-list.png" alt="Empty lakeFS Repository list" class="quickstart"/>
-
-3. Specify `quickstart` as the repository name, leave the other settings unchanged, and click **Create Repository**
-
-    <img width="50%" src="/assets/img/quickstart/create-quickstart-repo.png" alt="Creating the quickstart sample repo in lakeFS" class="quickstart"/>
 
 You will see the sample repository created and the quickstart guide within it. You can follow along there, or here - it's the same :) 
 

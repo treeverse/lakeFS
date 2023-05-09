@@ -94,4 +94,4 @@ Tags are a way to give a meaningful name to a specific commit. [Read More](../un
 
 ### Fluffy
 
-lakeFS Enterprise Single-Sign-On service, it's delegated with lakeFS' authentication requests and replies back to lakeFS with the authentication response.
+lakeFS Enterprise Single-Sign-On service, it's delegated with lakeFS authentication requests and replies back to lakeFS with the authentication response.

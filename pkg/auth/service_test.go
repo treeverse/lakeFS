@@ -615,9 +615,9 @@ func TestACL(t *testing.T) {
 					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
+					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
 				acl.ACLSuper: []permissions.Permission{
-					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 					{Action: permissions.AttachStorageNamespace, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportFromStorage, Resource: permissions.StorageNamespace("storage://bucket/path")},
 				},

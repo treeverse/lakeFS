@@ -9,7 +9,7 @@ redirect_from:
   - /use_cases/iso_env.html
 ---
 
-# ETL Testing with Isolated Dev/Test Environment
+# ETL Testing with Isolated Dev/Test Environments
 
 ## Why do I need multiple environments?
 
@@ -17,7 +17,7 @@ When working with a data lake, it's useful to have replicas of your production e
 
 Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production.
 
-The issue with this approach is that it's time-consuming and costly to maintain these separate dev/test environments to enable thoruogh effective ETL testing. And for larger teams it forces multiple people to share these environments, requiring significant co-ordination.
+The issue with this approach is that it's time-consuming and costly to maintain these separate dev/test environments to enable thorough effective ETL testing. And for larger teams it forces multiple people to share these environments, requiring significant coordination.
 
 ## How do I create dev/test environments with lakeFS?
 
@@ -39,12 +39,12 @@ This is different from creating a long-living test environment used as a staging
 
 ![dev/test branches as environments]({{ site.baseurl }}/assets/img/iso_env_dev_test_branching.png)
 
-# Creating Dev/Test Environments with lakeFS for ETL testing
+# Creating Dev/Test Environments with lakeFS for ETL Testing
 
 lakeFS supports UI, CLI (`lakectl` commandline utility) and several client API [integrations](../integrations) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
-## Using lakeFS Playground UI
-In this tutorial, we will use [lakeFS playground](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. Playground allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
+## Using lakeFS Playground experience
+In this tutorial, we will use [a lakeFS playground environment](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
 First, let us spin up a [playground](https://demo.lakefs.io/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
@@ -66,16 +66,16 @@ You can create a new branch (say, `test-env`) by going to the _Branches_ tab and
 
 Now you can add, modify or delete objects under the `test-env` branch without affecting the data in the main branch.
 
-## Using lakeFS Python Client API and Jupyter notebook
+## Using lakeFS Python Client API and Jupyter Notebook
 
-This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a jupyter notebook, and python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark.html). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a Jupyter notebook, and Python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark.html). You can run this tutorial on your local machine.
 
-Follow the tutorial video below to get started with the playground and jupyter notebook, or follow the instructions on this page.
+Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
 
 ### Prerequisites
 
-To instantly spin up a lakeFS environment and to work with sample data, use [lakeFS playground](https://demo.lakefs.io/). To use lakeFS with your own production data or to run it in your own machine, check out [Quickstart](../quickstart/index.md) guide.
+To instantly spin up a lakeFS environment and to work with sample data, use [the lakeFS playground environment](https://demo.lakefs.io/). To use lakeFS with your own production data or to run it in your own machine, check out the [Quickstart](../quickstart/index.md) guide.
 
 Before getting started, you will need [docker](https://docs.docker.com/engine/install/) installed on your machine.
 
@@ -97,11 +97,11 @@ git clone https://github.com/treeverse/lakeFS-samples.git && cd 03-apache-spark-
 ```
 * Open JupyterLab UI http://127.0.0.1:8888/ in your web browser.
 
-Once you have successfully completed setup then open "Spark Demo" notebook from JupyterLab UI and follow the instructions in the notebook.
+Once you have successfully completed setup, open the "Spark Demo" notebook from JupyterLab UI and follow the instructions in the notebook.
 
-### Configuring lakeFS python client
+### Configuring lakeFS Python Client
 
-Setup lakeFS access credentials for the lakeFS instance running. If you are using lakeFS playground, use the access key, secret key and endpoint details you received in your email. If you are running lakeFS using everything bagel docker, these details are found in docker-compose.yaml file under `lakefs_setup` section.
+Setup lakeFS access credentials for the lakeFS instance running. If you are using lakeFS playground environment, use the access key, secret key and endpoint details you received in your email. If you are running lakeFS using everything bagel docker, these details are found in the docker-compose.yaml file under `lakefs_setup` section.
 
 ```bash
 lakefsAccessKey = '<lakeFS Access Key>'
@@ -109,7 +109,7 @@ lakefsSecretKey = '<lakeFS Secret Key>'
 lakefsEndPoint = '<lakeFS Endpoint URL>' # e.g. 'https://expert-robin.lakefs-demo.io/'
 ```
 
-Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. If you are using the lakeFS playground, you can find the storage namespace under the repository name.
+Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. If you are using the lakeFS playground environment, you can find the storage namespace under the repository name.
 
 ```bash
 storageNamespace = 's3://<S3 Bucket Name>/' # e.g. "s3://treeverse-demo-lakefs-storage-production/user_expert-robin/my-repo"
@@ -135,7 +135,7 @@ lakeFS can be configured to work with Spark in two ways:
 * Access lakeFS using the [S3-compatible API](../integrations/spark.md#use-the-s3-compatible-api)
 * Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#use-the-lakefs-hadoop-filesystem)
 
-### Upload the sample data to main branch
+### Upload the Sample Data to Main Branch
 
 To upload an object to the `my-repo`, use the following command.
 
@@ -165,7 +165,7 @@ df = spark.read.csv(dataPath)
 df.show()
 ```
 
-### Create a test branch
+### Create a Test Branch
 
 Let us start by creating a new branch `test-env` on the example repo `my-repo`.
 
@@ -186,14 +186,14 @@ df.write.mode('append').parquet('s3a://my-repo/test-env/')
 What happens if we re-read in the data on both branches and perform a count on the resulting DataFrames?
 There will be twice as many rows in `test-env` branch. That is, we accidentally duplicated our data! Oh no!
 
-Data duplication introduce errors into our data analytics, BI and machine learning efforts, hence we would like to avoid duplicating our data.
+Data duplication introduce errors into our data analytics, BI and machine learning efforts; hence we would like to avoid duplicating our data.
 
-On the `main` branch however, there is still just the original data - untouched by our spark code. This shows the utility of branch-based isolated environments with lakeFS.
+On the `main` branch however, there is still just the original data - untouched by our Spark code. This shows the utility of branch-based isolated environments with lakeFS.
 
 You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities.
 
 ## Case Study: Enigma
-Learn how Enigma increased Data Engineers efficiency using lakeFS’ branching to [achieve islated development and staging environments](https://enigma.com/blog/post/improving-our-research-velocity-with-lakefs).
+Learn how Enigma increased Data Engineers' efficiency using lakeFS branching to [achieve islated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/).
 
 ## Further Reading
-For further details on the best practices of ETL testing on data lakes with lakeFS go to the [lakeFS Blog](https://lakefs.io/blog/etl-testing/)
+For further details on the best practices of ETL testing on data lakes with lakeFS visit the [lakeFS Blog](https://lakefs.io/blog/etl-testing/)

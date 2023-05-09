@@ -43,7 +43,7 @@ Say a situation occurs where one of the syncs had bad data and is causing downst
 
 ![Copy Commit ID]({{ site.baseurl }}/assets/img/rollback-copy-id.png)
 
-Step 1: Copy the `commit_id` associated with the commit we want to revert. As the screenshot above shows, you can use the `Copy ID to Clipboard` button to do this.
+Step 1: Copy the `commit_id` associated with the commit we want to revert. As the screenshot above shows, you can use the _Copy ID to Clipboard_ button to do this.
 
 Step 2: Run the revert command using [lakectl](../reference/cli.md), the lakeFS CLI. In this example, the command will be as follows:
 

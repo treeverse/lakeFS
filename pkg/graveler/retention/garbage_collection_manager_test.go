@@ -20,11 +20,9 @@ import (
 func TestGarbageCollectionManager_GetUncommittedLocation(t *testing.T) {
 	blockAdapter := mem.New()
 	refMgr := &testutil.RefsFake{}
-	prefix := "test_prefix"
-	runID := "my_test_runID"
-	namespace := "test-namespace"
-	repo := "my-repo"
-	ns := graveler.StorageNamespace(fmt.Sprintf("%s://%s/%s", block.BlockstoreTypeMem, namespace, repo))
+	const prefix = "test_prefix"
+	const runID = "my_test_runID"
+	ns := graveler.StorageNamespace("mem://test-namespace/my-repo")
 	path := fmt.Sprintf("%s/%s/retention/gc/uncommitted/%s/uncommitted/", ns, prefix, runID)
 	gc := retention.NewGarbageCollectionManager(blockAdapter, refMgr, prefix)
 	location, err := gc.GetUncommittedLocation(runID, ns)
@@ -47,11 +45,10 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 	ctx := context.Background()
 	blockAdapter := mem.New()
 	refMgr := &testutil.RefsFake{}
-	prefix := "test_prefix"
-	runID := "my_test_runID"
-	namespace := "test-namespace"
-	repoID := graveler.RepositoryID("my-repo")
-	ns := graveler.StorageNamespace(fmt.Sprintf("%s://%s/%s", block.BlockstoreTypeMem, namespace, repoID))
+	const prefix = "test_prefix"
+	const runID = "my_test_runID"
+	const repoID = "my-repo"
+	ns := graveler.StorageNamespace("mem://test-namespace/" + repoID)
 	repositoryRec := graveler.RepositoryRecord{
 		RepositoryID: repoID,
 		Repository: &graveler.Repository{

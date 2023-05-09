@@ -13,19 +13,30 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var now = time.Now()
-var uncommittedBranchRecords = []*graveler.ValueRecord{
-	{Key: graveler.Key("file1"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
-	{Key: graveler.Key("file2"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
-	{Key: graveler.Key("file3"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file3", LastModified: timestamppb.New(now), Size: 3, ETag: "03"})},
-	{Key: graveler.Key("h/file1"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "h/file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
-	{Key: graveler.Key("h/file2"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "h/file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
-}
+var (
+	now                      = time.Now()
+	uncommittedBranchRecords = []*graveler.ValueRecord{
+		{Key: graveler.Key("file1"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
+		{Key: graveler.Key("file2"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
+		{Key: graveler.Key("file3"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "file3", LastModified: timestamppb.New(now), Size: 3, ETag: "03"})},
+		{Key: graveler.Key("h/file1"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "h/file1", LastModified: timestamppb.New(now), Size: 1, ETag: "01"})},
+		{Key: graveler.Key("h/file2"), Value: catalog.MustEntryToValue(&catalog.Entry{Address: "h/file2", LastModified: timestamppb.New(now), Size: 2, ETag: "02"})},
+	}
+)
 
 func TestUncommittedIterator(t *testing.T) {
 	ctx := context.Background()
 	gravelerMock := &catalog.FakeGraveler{
 		ListIteratorFactory: catalog.NewFakeValueIteratorFactory(uncommittedBranchRecords),
+	}
+	const repoID = "uncommitted-iterator"
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: repoID,
+		Repository: &graveler.Repository{
+			StorageNamespace: "mem://" + repoID,
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
 	}
 	tests := []struct {
 		name     string
@@ -113,6 +124,16 @@ func TestUncommittedIterator_SeekGE(t *testing.T) {
 	gravelerMock := &catalog.FakeGraveler{
 		ListIteratorFactory: catalog.NewFakeValueIteratorFactory(uncommittedBranchRecords),
 	}
+	const repoID = "uncommitted-iter-seek-ge"
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: repoID,
+		Repository: &graveler.Repository{
+			StorageNamespace: "mem://" + repoID,
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
+	}
+
 	tests := []struct {
 		name          string
 		branches      []*graveler.BranchRecord
