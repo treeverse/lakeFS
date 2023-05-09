@@ -5562,6 +5562,7 @@ components:
       type: object
     RepositoryCreation:
       example:
+        sample_data: true
         name: name
         default_branch: main
         storage_namespace: s3://example-bucket/
@@ -5577,6 +5578,10 @@ components:
         default_branch:
           example: main
           type: string
+        sample_data:
+          default: false
+          example: true
+          type: boolean
       required:
       - name
       - storage_namespace

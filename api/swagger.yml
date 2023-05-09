@@ -261,6 +261,10 @@ components:
         default_branch:
           type: string
           example: "main"
+        sample_data:
+          type: boolean
+          example: "true"
+          default: false
 
     PathList:
       type: object

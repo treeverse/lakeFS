@@ -36,16 +36,16 @@ Now we'll make a change to the data. lakeFS has several native clients, as well 
 
 ### Setting up DuckDB
 
-Run the following in a terminal window to launch the DuckDB CLI:
+Run the following in a new terminal window to launch the DuckDB CLI:
 
 ```bash
-docker exec -it duckdb duckdb
+docker exec --interactive --tty lakefs duckdb
 ```
 
 The first thing to do is configure the S3 connection so that DuckDB can access lakeFS, as well as tell DuckDB to report back how many rows are changed by the query we'll soon be executing. Run this from the DuckDB prompt: 
 
 ```sql
-SET s3_endpoint='lakefs:8000';
+SET s3_endpoint='localhost:8000';
 SET s3_access_key_id='AKIA-EXAMPLE-KEY';
 SET s3_secret_access_key='EXAMPLE-SECRET';
 SET s3_url_style='path';
