@@ -58,7 +58,7 @@ FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS build-duckdb
 
 RUN apk add --no-cache git
 WORKDIR /
-RUN git clone https://github.com/duckdb/duckdb.git
+RUN git clone --depth 1 https://github.com/duckdb/duckdb.git
 
 WORKDIR /duckdb
 RUN git checkout ${DUCKDB_RELEASE_TAG}
