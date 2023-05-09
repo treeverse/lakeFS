@@ -40,6 +40,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -1568,6 +1569,27 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
+	}
+
+	if swag.BoolValue(body.SampleData) {
+		// add sample data, hooks, etc.
+		user, err := auth.GetUser(ctx)
+		if err != nil {
+			writeError(w, r, http.StatusUnauthorized, "missing user")
+			return
+		}
+
+		err = samplerepo.PopulateSampleRepo(ctx, newRepo, c.Catalog, c.PathProvider, c.BlockAdapter, user)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
+			return
+		}
+
+		err = samplerepo.SampleRepoAddBranchProtection(ctx, newRepo, c.Catalog)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error adding branch protection to sample repository: %w", err))
+			return
+		}
 	}
 
 	response := Repository{
