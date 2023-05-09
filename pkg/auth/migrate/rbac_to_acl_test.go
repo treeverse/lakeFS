@@ -78,8 +78,8 @@ func TestComputePermission(t *testing.T) {
 			Actions:    []string{permissions.WriteObjectAction},
 			Permission: acl.ACLWrite,
 		}, {
-			Name:       "write-one-read-one",
-			Actions:    []string{permissions.CreateCommitAction, permissions.ReadObjectAction},
+			Name:       "write-one-read-one-create-one",
+			Actions:    []string{permissions.CreateCommitAction, permissions.ReadObjectAction, permissions.CreateMetaRangeAction},
 			Permission: acl.ACLWrite,
 		}, {
 			Name:       "super-all",
@@ -87,11 +87,11 @@ func TestComputePermission(t *testing.T) {
 			Permission: acl.ACLSuper,
 		}, {
 			Name:       "super-one",
-			Actions:    []string{permissions.CreateMetaRangeAction},
+			Actions:    []string{permissions.AttachStorageNamespace},
 			Permission: acl.ACLSuper,
 		}, {
 			Name:       "super-one-write-one-read-two",
-			Actions:    []string{permissions.CreateTagAction, permissions.CreateMetaRangeAction, permissions.ReadStorageConfiguration, permissions.ReadRepositoryAction},
+			Actions:    []string{permissions.CreateTagAction, permissions.AttachStorageNamespace, permissions.ReadStorageConfiguration, permissions.ReadRepositoryAction},
 			Permission: acl.ACLSuper,
 		}, {
 			Name:       "admin-all",
