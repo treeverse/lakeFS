@@ -281,6 +281,7 @@ Class | Method | HTTP request | Description
  - [ImportCreation](docs/ImportCreation.md)
  - [ImportCreationResponse](docs/ImportCreationResponse.md)
  - [ImportPagination](docs/ImportPagination.md)
+ - [ImportPath](docs/ImportPath.md)
  - [ImportStatus](docs/ImportStatus.md)
  - [ImportStatusResp](docs/ImportStatusResp.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)

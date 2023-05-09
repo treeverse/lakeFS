@@ -7215,33 +7215,56 @@ components:
       required:
       - pattern
       type: object
-    ImportCreation:
+    ImportPath:
       example:
-        metadata:
-          key: metadata
-        prepend: collections/
-        commit_message: commit_message
-        source_uri: s3://my-bucket/production/collections/
+        path: s3://my-bucket/production/collections/
+        destination: collections/
+        type: prefix
       properties:
-        source_uri:
-          description: The source location of the ingested files. Must match the lakeFS
-            installation blockstore type.
+        path:
+          description: A source location to ingested object or a path to a single
+            object. Must match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
           type: string
-        prepend:
-          description: A prefix to prepend to ingested objects.
+        destination:
+          description: Destination for the imported objects on the branch
           example: collections/
           type: string
-        commit_message:
+        type:
+          description: Path type, can either be 'prefix' or 'object'
+          enum:
+          - prefix
+          - object
           type: string
-        metadata:
-          additionalProperties:
-            type: string
-          type: object
       required:
-      - commit_message
-      - prepend
-      - source_uri
+      - destination
+      - path
+      - type
+      type: object
+    ImportCreation:
+      example:
+        paths:
+        - path: s3://my-bucket/production/collections/
+          destination: collections/
+          type: prefix
+        - path: s3://my-bucket/production/collections/
+          destination: collections/
+          type: prefix
+        commit:
+          date: 0
+          metadata:
+            key: metadata
+          message: message
+      properties:
+        paths:
+          items:
+            $ref: '#/components/schemas/ImportPath'
+          type: array
+        commit:
+          $ref: '#/components/schemas/CommitCreation'
+      required:
+      - commit
+      - paths
       type: object
     ImportStatus:
       example:
@@ -7367,6 +7390,7 @@ components:
           type: string
         import_progress:
           description: Number of objects processed so far
+          format: int64
           type: integer
         import_branch:
           type: string
@@ -7379,6 +7403,7 @@ components:
       required:
       - completed
       - import_progress
+      - import_total
       - update_time
       type: object
     ImportCreationResponse:

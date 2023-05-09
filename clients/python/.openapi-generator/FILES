@@ -46,6 +46,7 @@ docs/ImportApi.md
 docs/ImportCreation.md
 docs/ImportCreationResponse.md
 docs/ImportPagination.md
+docs/ImportPath.md
 docs/ImportStatus.md
 docs/ImportStatusResp.md
 docs/IngestRangeCreationResponse.md
@@ -173,6 +174,7 @@ lakefs_client/model/hook_run_list.py
 lakefs_client/model/import_creation.py
 lakefs_client/model/import_creation_response.py
 lakefs_client/model/import_pagination.py
+lakefs_client/model/import_path.py
 lakefs_client/model/import_status.py
 lakefs_client/model/import_status_resp.py
 lakefs_client/model/ingest_range_creation_response.py
@@ -281,6 +283,7 @@ test/test_import_api.py
 test/test_import_creation.py
 test/test_import_creation_response.py
 test/test_import_pagination.py
+test/test_import_path.py
 test/test_import_status.py
 test/test_import_status_resp.py
 test/test_ingest_range_creation_response.py

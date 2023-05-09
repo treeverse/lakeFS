@@ -42,7 +42,8 @@ type WalkerFactory interface {
 	GetWalker(ctx context.Context, opts store.WalkerOptions) (*store.WalkerWrapper, error)
 }
 
-func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prepend, after, continuationToken string) (*walkEntryIterator, error) {
+func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, sourceType ImportPathType, destination, after, continuationToken string) (*walkEntryIterator, error) {
+	prepend := destination
 	if prepend != "" && !strings.HasSuffix(prepend, "/") {
 		prepend += "/"
 	}
@@ -65,9 +66,13 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, prep
 			if it.closed.Load() {
 				return ErrItClosed
 			}
-
+			p := prepend + e.RelativeKey
+			if sourceType == ImportPathTypeObject {
+				p = destination
+			}
+			record := objectStoreEntryToEntryRecord(e, p)
 			it.entries <- EntryWithMarker{
-				EntryRecord: objectStoreEntryToEntryRecord(e, prepend),
+				EntryRecord: record,
 				Mark: Mark{
 					Mark: it.walker.Marker(),
 				},
@@ -143,9 +148,9 @@ func (it *walkEntryIterator) GetSkippedEntries() []block.ObjectStoreEntry {
 	return it.walker.GetSkippedEntries()
 }
 
-func objectStoreEntryToEntryRecord(e block.ObjectStoreEntry, prepend string) EntryRecord {
+func objectStoreEntryToEntryRecord(e block.ObjectStoreEntry, path string) EntryRecord {
 	return EntryRecord{
-		Path: Path(prepend + e.RelativeKey),
+		Path: Path(path),
 		Entry: &Entry{
 			Address:      e.Address,
 			LastModified: timestamppb.New(e.Mtime),

@@ -315,12 +315,20 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     import_creation = ImportCreation(
-        source_uri="s3://my-bucket/production/collections/",
-        prepend="collections/",
-        commit_message="commit_message_example",
-        metadata={
-            "key": "key_example",
-        },
+        paths=[
+            ImportPath(
+                path="s3://my-bucket/production/collections/",
+                destination="collections/",
+                type="prefix",
+            ),
+        ],
+        commit=CommitCreation(
+            message="message_example",
+            metadata={
+                "key": "key_example",
+            },
+            date=1,
+        ),
     ) # ImportCreation | 
 
     # example passing only required values which don't have defaults set

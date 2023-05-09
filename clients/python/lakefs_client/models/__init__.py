@@ -46,6 +46,7 @@ from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.import_creation import ImportCreation
 from lakefs_client.model.import_creation_response import ImportCreationResponse
 from lakefs_client.model.import_pagination import ImportPagination
+from lakefs_client.model.import_path import ImportPath
 from lakefs_client.model.import_status import ImportStatus
 from lakefs_client.model.import_status_resp import ImportStatusResp
 from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse

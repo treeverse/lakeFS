@@ -230,6 +230,7 @@ type ImportStatus struct {
 	Completed    bool
 	UpdatedAt    time.Time
 	Progress     int64
+	Total        int64
 	ImportBranch *string
 	MetaRangeID  *MetaRangeID
 	Commit       *CommitRecord

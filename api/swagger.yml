@@ -1389,6 +1389,7 @@ components:
         import_progress:
           description: Number of objects processed so far
           type: integer
+          format: int64
         import_branch:
           type: string
         metarange_id:
@@ -1399,6 +1400,7 @@ components:
           $ref: "#/components/schemas/Error"
       required: 
         - import_progress
+        - import_total
         - update_time
         - completed
     

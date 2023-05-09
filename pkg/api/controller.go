@@ -2185,7 +2185,7 @@ func importStatusToResponse(status *graveler.ImportStatus) ImportStatusResp {
 	resp := ImportStatusResp{
 		Completed:      status.Completed,
 		ImportBranch:   status.ImportBranch,
-		ImportProgress: int(status.Progress),
+		ImportProgress: status.Progress,
 		UpdateTime:     status.UpdatedAt,
 	}
 

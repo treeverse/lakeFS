@@ -342,27 +342,49 @@ func TestImportNew(t *testing.T) {
 		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
 	})
+
 	t.Run("several-paths", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
 		var paths []api.ImportPath
 		for i := 1; i < 8; i++ {
 			prefix := fmt.Sprintf("prefix-%d", i)
 			paths = append(paths, api.ImportPath{
-				Destination: fmt.Sprintf("%s/%s/", importTargetPrefix, prefix),
-				Path:        filepath.Join(importPath, prefix),
+				Destination: importTargetPrefix,
+				Path:        importPath + prefix,
 				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
 			})
 		}
-		//for i := 0; i < 7; i++ {
-		//	dest := importFilesToCheck[i]
-		//	paths = append(paths, api.ImportPath{
-		//		Destination: fmt.Sprintf("%s/%s/", importTargetPrefix, dest),
-		//		Path:        filepath.Join(importPath, dest),
-		//		Type:        catalog.ImportPathTypes[catalog.ImportPathTypeObject],
-		//	})
-		//}
+		paths = append(paths, api.ImportPath{
+			Destination: importTargetPrefix,
+			Path:        importPath + "nested",
+			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+		})
+
 		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+	})
+
+	t.Run("prefixes-and-objects", func(t *testing.T) {
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
+		var paths []api.ImportPath
+		for i := 1; i < 8; i++ {
+			prefix := fmt.Sprintf("prefix-%d", i)
+			paths = append(paths, api.ImportPath{
+				Destination: importTargetPrefix,
+				Path:        importPath + prefix,
+				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+			})
+		}
+		for i := 0; i < 7; i++ {
+			dest := importFilesToCheck[i]
+			paths = append(paths, api.ImportPath{
+				Destination: importTargetPrefix + dest,
+				Path:        importPath + dest,
+				Type:        catalog.ImportPathTypes[catalog.ImportPathTypeObject],
+			})
+		}
+		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
 	})
 }
 

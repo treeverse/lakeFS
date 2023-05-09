@@ -11,6 +11,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
 const importSummaryTemplate = `Import of {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
@@ -50,18 +51,24 @@ var importCmd = &cobra.Command{
 
 		// setup progress bar - based on `progressbar.Default` defaults + control visibility
 		bar := newImportProgressBar(!noProgress)
-
-		importResp, err := client.ImportWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportJSONRequestBody{
-			SourceUri:     from,
-			Prepend:       api.StringValue(toURI.Path),
-			CommitMessage: message,
-			Metadata: &api.ImportCreation_Metadata{
-				AdditionalProperties: metadata,
+		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportStartJSONRequestBody{
+			Commit: api.CommitCreation{
+				Message: message,
+				Metadata: &api.CommitCreation_Metadata{
+					AdditionalProperties: metadata,
+				},
+			},
+			Paths: []api.ImportPath{
+				{
+					Destination: api.StringValue(toURI.Path),
+					Path:        from,
+					Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+				},
 			},
 		})
 		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusCreated)
 
-		const StatusPollInterval = 30 * time.Second
+		const StatusPollInterval = 10 * time.Second
 		statusResp, err := client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportStatusJSONRequestBody{ImportID: importResp.JSON201.Id})
 		for {
 			DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
@@ -69,7 +76,7 @@ var importCmd = &cobra.Command{
 			if status.Error != nil {
 				DieFmt("Import failed: %s", status.Error.Message)
 			}
-			_ = bar.Set(status.ImportProgress)
+			_ = bar.Set64(status.ImportProgress)
 			if status.Completed {
 				break
 			}
@@ -80,7 +87,7 @@ var importCmd = &cobra.Command{
 
 		importedBranch := api.StringValue(statusResp.JSON200.ImportBranch)
 		Write(importSummaryTemplate, struct {
-			Objects     int
+			Objects     int64
 			MetaRangeID string
 			Branch      string
 			Commit      *api.Commit
