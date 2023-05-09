@@ -22,7 +22,7 @@ docker run --name lakefs \
            --env "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=EXAMPLE-SECRET" \
            --env "LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000" \
            treeverse/lakefs:latest -c \
-           'lakefs setup --local-settings --user-name admin --access-key-id "$LAKECTL_CREDENTIALS_ACCESS_KEY_ID" --secret-access-key "$LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"; \ 
+           'lakefs setup --local-settings --user-name admin --access-key-id "$LAKECTL_CREDENTIALS_ACCESS_KEY_ID" --secret-access-key "$LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"; \
             lakefs run --local-settings'
 ```
 
