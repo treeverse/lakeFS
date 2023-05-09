@@ -115,7 +115,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   def getRangeIDsForCommits(
       commits: Dataset[Row],
       repo: String,
-      storageNS: String
+      storageNSForHadoopFS: String
   ): Dataset[(String, Boolean)] = {
     import spark.implicits._
     val hasMetaRangeIDs = commits.schema.fields.length == 3
@@ -127,7 +127,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
         val rangeIDs =
           if (hasMetaRangeIDs && StringUtils.isNotBlank(metaRangeID))
             rangeGetter
-              .getRangeIDs(storageNS + "_lakefs/" + metaRangeID)
+              .getRangeIDs(storageNSForHadoopFS + "_lakefs/" + metaRangeID)
           else
             rangeGetter
               .getRangeIDs(commitID, repo)
@@ -223,6 +223,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   def getExpiredAddresses(
       repo: String,
       storageNS: String,
+      storageNSForHadoopFS: String,
       commitDFLocation: String,
       numCommitPartitions: Int,
       numRangePartitions: Int,
@@ -233,7 +234,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
     val commitsDS = getCommitsDF(commitDFLocation)
       .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
-    val rangeIDs = getRangeIDsForCommits(commitsDS, repo, storageNS)
+    val rangeIDs = getRangeIDsForCommits(commitsDS, repo, storageNSForHadoopFS)
 
     try {
       getAddressesToDelete(
@@ -505,15 +506,17 @@ object GarbageCollector {
     val sampleFraction = hc.getDouble(LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION, 1.0)
 
     val expiredAddresses = gc
-      .getExpiredAddresses(repo,
-                           storageNS,
-                           gcCommitsLocation,
-                           numCommitPartitions,
-                           numRangePartitions,
-                           numAddressPartitions,
-                           approxNumRangesToSpreadPerPartition,
-                           sampleFraction
-                          )
+      .getExpiredAddresses(
+        repo,
+        storageNS,
+        storageNSForHadoopFS,
+        gcCommitsLocation,
+        numCommitPartitions,
+        numRangePartitions,
+        numAddressPartitions,
+        approxNumRangesToSpreadPerPartition,
+        sampleFraction
+      )
       .toDF("address")
       .withColumn(MARK_ID_KEY, lit(markID))
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
