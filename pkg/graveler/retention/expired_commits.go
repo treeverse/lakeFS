@@ -10,19 +10,21 @@ import (
 )
 
 type GarbageCollectionCommits struct {
-	expired []graveler.CommitID
-	active  []graveler.CommitID
+	expired map[graveler.CommitID]graveler.MetaRangeID
+	active  map[graveler.CommitID]graveler.MetaRangeID
 }
 
 type CommitNode struct {
 	CreationDate time.Time
 	MainParent   graveler.CommitID
+	MetaRangeID  graveler.MetaRangeID
 }
 
-func NewCommitNode(creationDate time.Time, mainParent graveler.CommitID) CommitNode {
+func NewCommitNode(creationDate time.Time, mainParent graveler.CommitID, metaRangeID graveler.MetaRangeID) CommitNode {
 	return CommitNode{
 		CreationDate: creationDate,
 		MainParent:   mainParent,
+		MetaRangeID:  metaRangeID,
 	}
 }
 
@@ -59,7 +61,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				mainParent = commitRecord.Commit.Parents[len(commitRecord.Commit.Parents)-1]
 			}
 		}
-		commitsMap[commitRecord.CommitID] = NewCommitNode(commitRecord.Commit.CreationDate, mainParent)
+		commitsMap[commitRecord.CommitID] = NewCommitNode(commitRecord.Commit.CreationDate, mainParent, commitRecord.MetaRangeID)
 	}
 
 	now := time.Now()
@@ -72,7 +74,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, startingPoint.CommitID)
 		}
 		if startingPoint.BranchID == "" {
-			// If the current commit is NOT a branch HEAD (a dangling commit) - add a hypothetical HEAD as its parent
+			// If the current commit is NOT a branch HEAD (a dangling commit) - add a hypothetical HEAD as its child
 			commitNode = CommitNode{
 				CreationDate: commitNode.CreationDate,
 				MainParent:   startingPoint.CommitID,
@@ -134,13 +136,13 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
-	return &GarbageCollectionCommits{active: commitSetToSlice(activeMap), expired: commitSetToSlice(expiredMap)}, nil
+	return &GarbageCollectionCommits{active: makeCommitMap(commitsMap, activeMap), expired: makeCommitMap(commitsMap, expiredMap)}, nil
 }
 
-func commitSetToSlice(commitMap map[graveler.CommitID]struct{}) []graveler.CommitID {
-	res := make([]graveler.CommitID, 0, len(commitMap))
-	for commitID := range commitMap {
-		res = append(res, commitID)
+func makeCommitMap(commitNodes map[graveler.CommitID]CommitNode, commitSet map[graveler.CommitID]struct{}) map[graveler.CommitID]graveler.MetaRangeID {
+	res := make(map[graveler.CommitID]graveler.MetaRangeID)
+	for commitID := range commitSet {
+		res[commitID] = commitNodes[commitID].MetaRangeID
 	}
 	return res
 }
