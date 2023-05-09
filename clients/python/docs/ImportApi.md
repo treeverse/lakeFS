@@ -134,7 +134,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **import_cancel**
-> import_cancel(repository, branch, import_status)
+> import_cancel(repository, branch, id)
 
 cancel ongoing import
 
@@ -150,7 +150,6 @@ cancel ongoing import
 import time
 import lakefs_client
 from lakefs_client.api import import_api
-from lakefs_client.model.import_status import ImportStatus
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -199,14 +198,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = import_api.ImportApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    import_status = ImportStatus(
-        import_id="import_id_example",
-    ) # ImportStatus | 
+    id = "id_example" # str | Unique identifier of the import process
 
     # example passing only required values which don't have defaults set
     try:
         # cancel ongoing import
-        api_instance.import_cancel(repository, branch, import_status)
+        api_instance.import_cancel(repository, branch, id)
     except lakefs_client.ApiException as e:
         print("Exception when calling ImportApi->import_cancel: %s\n" % e)
 ```
@@ -218,7 +215,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **import_status** | [**ImportStatus**](ImportStatus.md)|  |
+ **id** | **str**| Unique identifier of the import process |
 
 ### Return type
 
@@ -230,7 +227,7 @@ void (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 
@@ -376,7 +373,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **import_status**
-> ImportStatusResp import_status(repository, branch, import_status)
+> ImportStatusResp import_status(repository, branch, id)
 
 get import status
 
@@ -393,7 +390,6 @@ import time
 import lakefs_client
 from lakefs_client.api import import_api
 from lakefs_client.model.import_status_resp import ImportStatusResp
-from lakefs_client.model.import_status import ImportStatus
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -442,14 +438,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = import_api.ImportApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    import_status = ImportStatus(
-        import_id="import_id_example",
-    ) # ImportStatus | 
+    id = "id_example" # str | Unique identifier of the import process
 
     # example passing only required values which don't have defaults set
     try:
         # get import status
-        api_response = api_instance.import_status(repository, branch, import_status)
+        api_response = api_instance.import_status(repository, branch, id)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ImportApi->import_status: %s\n" % e)
@@ -462,7 +456,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **import_status** | [**ImportStatus**](ImportStatus.md)|  |
+ **id** | **str**| Unique identifier of the import process |
 
 ### Return type
 
@@ -474,7 +468,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 

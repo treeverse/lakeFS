@@ -3646,12 +3646,14 @@ paths:
         schema:
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ImportStatus'
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
         required: true
+        schema:
+          type: string
+        style: form
       responses:
         "204":
           description: import canceled successfully
@@ -3688,7 +3690,6 @@ paths:
       summary: cancel ongoing import
       tags:
       - import
-      x-contentType: application/json
       x-accepts: application/json
     get:
       operationId: importStatus
@@ -3707,12 +3708,14 @@ paths:
         schema:
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ImportStatus'
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
         required: true
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -3741,7 +3744,6 @@ paths:
       summary: get import status
       tags:
       - import
-      x-contentType: application/json
       x-accepts: application/json
     post:
       operationId: importStart
@@ -7265,16 +7267,6 @@ components:
       required:
       - commit
       - paths
-      type: object
-    ImportStatus:
-      example:
-        importID: importID
-      properties:
-        importID:
-          description: Unique identifier for the import process
-          type: string
-      required:
-      - importID
       type: object
     StageRangeCreation:
       example:

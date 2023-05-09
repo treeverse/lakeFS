@@ -313,14 +313,14 @@ func TestImportNew(t *testing.T) {
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
 
 		// Verify we cannot cancel a completed import
-		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, api.ImportCancelJSONRequestBody{
-			ImportID: importID,
+		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+			Id: importID,
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusConflict, cancelResp.StatusCode())
 
-		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, api.ImportStatusJSONRequestBody{
-			ImportID: importID,
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
+			Id: importID,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
@@ -418,8 +418,8 @@ func TestImportCancel(t *testing.T) {
 
 		// Wait 1 second and cancel request
 		time.Sleep(1 * time.Second)
-		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, api.ImportCancelJSONRequestBody{
-			ImportID: importResp.JSON201.Id,
+		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+			Id: importResp.JSON201.Id,
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
@@ -427,8 +427,8 @@ func TestImportCancel(t *testing.T) {
 		// Check status is canceled
 		var updateTime *time.Time
 		for {
-			statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, api.ImportStatusJSONRequestBody{
-				ImportID: importResp.JSON201.Id,
+			statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
+				Id: importResp.JSON201.Id,
 			})
 			require.NoError(t, err)
 			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
@@ -470,8 +470,8 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 	)
 	for !completed {
 		time.Sleep(10 * time.Second)
-		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, api.ImportStatusJSONRequestBody{
-			ImportID: importResp.JSON201.Id,
+		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
+			Id: importResp.JSON201.Id,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)

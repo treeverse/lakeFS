@@ -30,7 +30,6 @@ import java.io.IOException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ImportCreation;
 import io.lakefs.clients.api.model.ImportCreationResponse;
-import io.lakefs.clients.api.model.ImportStatus;
 import io.lakefs.clients.api.model.ImportStatusResp;
 import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
@@ -207,7 +206,7 @@ public class ImportApi {
      * Build call for importCancel
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -222,8 +221,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call importCancelCall(String repository, String branch, ImportStatus importStatus, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = importStatus;
+    public okhttp3.Call importCancelCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/import"
@@ -236,6 +235,10 @@ public class ImportApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (id != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("id", id));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -245,7 +248,7 @@ public class ImportApi {
         }
 
         final String[] localVarContentTypes = {
-            "application/json"
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
@@ -255,7 +258,7 @@ public class ImportApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call importCancelValidateBeforeCall(String repository, String branch, ImportStatus importStatus, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call importCancelValidateBeforeCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -267,13 +270,13 @@ public class ImportApi {
             throw new ApiException("Missing the required parameter 'branch' when calling importCancel(Async)");
         }
         
-        // verify the required parameter 'importStatus' is set
-        if (importStatus == null) {
-            throw new ApiException("Missing the required parameter 'importStatus' when calling importCancel(Async)");
+        // verify the required parameter 'id' is set
+        if (id == null) {
+            throw new ApiException("Missing the required parameter 'id' when calling importCancel(Async)");
         }
         
 
-        okhttp3.Call localVarCall = importCancelCall(repository, branch, importStatus, _callback);
+        okhttp3.Call localVarCall = importCancelCall(repository, branch, id, _callback);
         return localVarCall;
 
     }
@@ -283,7 +286,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -296,8 +299,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void importCancel(String repository, String branch, ImportStatus importStatus) throws ApiException {
-        importCancelWithHttpInfo(repository, branch, importStatus);
+    public void importCancel(String repository, String branch, String id) throws ApiException {
+        importCancelWithHttpInfo(repository, branch, id);
     }
 
     /**
@@ -305,7 +308,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -319,8 +322,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> importCancelWithHttpInfo(String repository, String branch, ImportStatus importStatus) throws ApiException {
-        okhttp3.Call localVarCall = importCancelValidateBeforeCall(repository, branch, importStatus, null);
+    public ApiResponse<Void> importCancelWithHttpInfo(String repository, String branch, String id) throws ApiException {
+        okhttp3.Call localVarCall = importCancelValidateBeforeCall(repository, branch, id, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -329,7 +332,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -344,9 +347,9 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call importCancelAsync(String repository, String branch, ImportStatus importStatus, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call importCancelAsync(String repository, String branch, String id, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = importCancelValidateBeforeCall(repository, branch, importStatus, _callback);
+        okhttp3.Call localVarCall = importCancelValidateBeforeCall(repository, branch, id, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
@@ -501,7 +504,7 @@ public class ImportApi {
      * Build call for importStatus
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -514,8 +517,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call importStatusCall(String repository, String branch, ImportStatus importStatus, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = importStatus;
+    public okhttp3.Call importStatusCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/branches/{branch}/import"
@@ -528,6 +531,10 @@ public class ImportApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (id != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("id", id));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -537,7 +544,7 @@ public class ImportApi {
         }
 
         final String[] localVarContentTypes = {
-            "application/json"
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
@@ -547,7 +554,7 @@ public class ImportApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call importStatusValidateBeforeCall(String repository, String branch, ImportStatus importStatus, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call importStatusValidateBeforeCall(String repository, String branch, String id, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -559,13 +566,13 @@ public class ImportApi {
             throw new ApiException("Missing the required parameter 'branch' when calling importStatus(Async)");
         }
         
-        // verify the required parameter 'importStatus' is set
-        if (importStatus == null) {
-            throw new ApiException("Missing the required parameter 'importStatus' when calling importStatus(Async)");
+        // verify the required parameter 'id' is set
+        if (id == null) {
+            throw new ApiException("Missing the required parameter 'id' when calling importStatus(Async)");
         }
         
 
-        okhttp3.Call localVarCall = importStatusCall(repository, branch, importStatus, _callback);
+        okhttp3.Call localVarCall = importStatusCall(repository, branch, id, _callback);
         return localVarCall;
 
     }
@@ -575,7 +582,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @return ImportStatusResp
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -587,8 +594,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ImportStatusResp importStatus(String repository, String branch, ImportStatus importStatus) throws ApiException {
-        ApiResponse<ImportStatusResp> localVarResp = importStatusWithHttpInfo(repository, branch, importStatus);
+    public ImportStatusResp importStatus(String repository, String branch, String id) throws ApiException {
+        ApiResponse<ImportStatusResp> localVarResp = importStatusWithHttpInfo(repository, branch, id);
         return localVarResp.getData();
     }
 
@@ -597,7 +604,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @return ApiResponse&lt;ImportStatusResp&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -609,8 +616,8 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ImportStatusResp> importStatusWithHttpInfo(String repository, String branch, ImportStatus importStatus) throws ApiException {
-        okhttp3.Call localVarCall = importStatusValidateBeforeCall(repository, branch, importStatus, null);
+    public ApiResponse<ImportStatusResp> importStatusWithHttpInfo(String repository, String branch, String id) throws ApiException {
+        okhttp3.Call localVarCall = importStatusValidateBeforeCall(repository, branch, id, null);
         Type localVarReturnType = new TypeToken<ImportStatusResp>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -620,7 +627,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param importStatus  (required)
+     * @param id Unique identifier of the import process (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -633,9 +640,9 @@ public class ImportApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call importStatusAsync(String repository, String branch, ImportStatus importStatus, final ApiCallback<ImportStatusResp> _callback) throws ApiException {
+    public okhttp3.Call importStatusAsync(String repository, String branch, String id, final ApiCallback<ImportStatusResp> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = importStatusValidateBeforeCall(repository, branch, importStatus, _callback);
+        okhttp3.Call localVarCall = importStatusValidateBeforeCall(repository, branch, id, _callback);
         Type localVarReturnType = new TypeToken<ImportStatusResp>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

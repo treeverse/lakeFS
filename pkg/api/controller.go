@@ -2212,7 +2212,7 @@ func importStatusToResponse(status *graveler.ImportStatus) ImportStatusResp {
 	return resp
 }
 
-func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, body ImportStatusJSONRequestBody, repository, branch string) {
+func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportStatusParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
@@ -2223,7 +2223,7 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, body I
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_import_status", r, repository, branch, "")
-	status, err := c.Catalog.GetImportStatus(ctx, repository, body.ImportID)
+	status, err := c.Catalog.GetImportStatus(ctx, repository, params.Id)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2232,7 +2232,7 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, body I
 	writeResponse(w, r, http.StatusOK, resp)
 }
 
-func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, body ImportCancelJSONRequestBody, repository, branch string) {
+func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportCancelParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ImportFromStorage,
@@ -2243,7 +2243,7 @@ func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, body I
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "cancel_import", r, repository, branch, "")
-	err := c.Catalog.CancelImport(ctx, repository, body.ImportID)
+	err := c.Catalog.CancelImport(ctx, repository, params.Id)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

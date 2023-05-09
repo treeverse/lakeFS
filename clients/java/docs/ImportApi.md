@@ -108,7 +108,7 @@ Name | Type | Description  | Notes
 
 <a name="importCancel"></a>
 # **importCancel**
-> importCancel(repository, branch, importStatus)
+> importCancel(repository, branch, id)
 
 cancel ongoing import
 
@@ -157,9 +157,9 @@ public class Example {
     ImportApi apiInstance = new ImportApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    ImportStatus importStatus = new ImportStatus(); // ImportStatus | 
+    String id = "id_example"; // String | Unique identifier of the import process
     try {
-      apiInstance.importCancel(repository, branch, importStatus);
+      apiInstance.importCancel(repository, branch, id);
     } catch (ApiException e) {
       System.err.println("Exception when calling ImportApi#importCancel");
       System.err.println("Status code: " + e.getCode());
@@ -177,7 +177,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **importStatus** | [**ImportStatus**](ImportStatus.md)|  |
+ **id** | **String**| Unique identifier of the import process |
 
 ### Return type
 
@@ -189,7 +189,7 @@ null (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details
@@ -300,7 +300,7 @@ Name | Type | Description  | Notes
 
 <a name="importStatus"></a>
 # **importStatus**
-> ImportStatusResp importStatus(repository, branch, importStatus)
+> ImportStatusResp importStatus(repository, branch, id)
 
 get import status
 
@@ -349,9 +349,9 @@ public class Example {
     ImportApi apiInstance = new ImportApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
-    ImportStatus importStatus = new ImportStatus(); // ImportStatus | 
+    String id = "id_example"; // String | Unique identifier of the import process
     try {
-      ImportStatusResp result = apiInstance.importStatus(repository, branch, importStatus);
+      ImportStatusResp result = apiInstance.importStatus(repository, branch, id);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ImportApi#importStatus");
@@ -370,7 +370,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **importStatus** | [**ImportStatus**](ImportStatus.md)|  |
+ **id** | **String**| Unique identifier of the import process |
 
 ### Return type
 
@@ -382,7 +382,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details

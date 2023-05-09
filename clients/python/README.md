@@ -263,7 +263,6 @@ Class | Method | HTTP request | Description
  - [ImportCreationResponse](docs/ImportCreationResponse.md)
  - [ImportPagination](docs/ImportPagination.md)
  - [ImportPath](docs/ImportPath.md)
- - [ImportStatus](docs/ImportStatus.md)
  - [ImportStatusResp](docs/ImportStatusResp.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
  - [InlineObject1](docs/InlineObject1.md)

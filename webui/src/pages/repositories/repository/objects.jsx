@@ -21,7 +21,7 @@ import Alert from "react-bootstrap/Alert";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects, refs, staging, retention, repositories, NotFoundError} from "../../../lib/api";
+import {config, objects, refs, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -67,6 +67,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
     const [metadataFields, setMetadataFields] = useState([])
+    const [importID, setImportID] = useState("")
 
     const sourceRef = useRef(null);
     const destRef = useRef(null);
@@ -83,6 +84,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         setIsImportEnabled(false);
         setNumberOfImportedObjects(0);
         setMetadataFields([]);
+        setImportID("");
     }
 
     const hide = () => {
@@ -105,9 +107,10 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
 
     const doImport = async () => {
         setImportPhase(ImportPhase.InProgress);
-        const updateStateFromImport = ({importPhase, numObj}) => {
+        const updateStateFromImport = ({importPhase, numObj, importID}) => {
             setImportPhase(importPhase);
             setNumberOfImportedObjects(numObj);
+            setImportID(importID)
         }
         try {
             const metadata = {};
@@ -169,7 +172,12 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     }
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
+                    <Button variant="secondary" onClick={ async () => {
+                        if (importPhase === ImportPhase.InProgress && importID.length > 0) {
+                            const resp = await imports.delete(repoId, importBranch, importID);
+                        }
+                        hide();
+                    }}>
                         Cancel
                     </Button>
 

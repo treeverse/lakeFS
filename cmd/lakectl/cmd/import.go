@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"time"
 
@@ -67,9 +68,20 @@ var importCmd = &cobra.Command{
 			},
 		})
 		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusCreated)
+		importID := importResp.JSON201.Id
+		// Handle interrupts
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, os.Kill)
+		go func() {
+			for sig := range c {
+				Fmt("\nCanceling import (reason: %s)\n", sig.String())
+				_, _ = client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
+				Die("Import Canceled", 1)
+			}
+		}()
 
 		const StatusPollInterval = 10 * time.Second
-		statusResp, err := client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportStatusJSONRequestBody{ImportID: importResp.JSON201.Id})
+		statusResp, err := client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
 		for {
 			DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
 			status := statusResp.JSON200
@@ -81,7 +93,7 @@ var importCmd = &cobra.Command{
 				break
 			}
 			time.Sleep(StatusPollInterval)
-			statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportStatusJSONRequestBody{ImportID: importResp.JSON201.Id})
+			statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
 		}
 		_ = bar.Clear()
 

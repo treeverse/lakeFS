@@ -1306,15 +1306,6 @@ components:
             $ref: "#/components/schemas/ImportPath"
         commit:
           $ref: "#/components/schemas/CommitCreation"
-          
-    ImportStatus:
-      type: object
-      required:
-        - importID
-      properties:
-        importID:
-          type: string
-          description: Unique identifier for the import process
 
     StageRangeCreation:
       type: object
@@ -3475,12 +3466,13 @@ paths:
         - import
       operationId: importStatus
       summary: get import status
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ImportStatus"
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the import process
+          schema:
+            type: string
+          required: true
       responses:
         200:
           description: import status
@@ -3525,12 +3517,13 @@ paths:
         - import
       operationId: importCancel
       summary: cancel ongoing import
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ImportStatus"
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the import process
+          schema:
+            type: string
+          required: true
       responses:
         204:
           description: import canceled successfully

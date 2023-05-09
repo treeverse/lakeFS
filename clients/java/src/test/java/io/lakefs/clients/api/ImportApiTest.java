@@ -17,7 +17,6 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ImportCreation;
 import io.lakefs.clients.api.model.ImportCreationResponse;
-import io.lakefs.clients.api.model.ImportStatus;
 import io.lakefs.clients.api.model.ImportStatusResp;
 import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
@@ -68,8 +67,8 @@ public class ImportApiTest {
     public void importCancelTest() throws ApiException {
         String repository = null;
         String branch = null;
-        ImportStatus importStatus = null;
-                api.importCancel(repository, branch, importStatus);
+        String id = null;
+                api.importCancel(repository, branch, id);
         // TODO: test validations
     }
     
@@ -102,8 +101,8 @@ public class ImportApiTest {
     public void importStatusTest() throws ApiException {
         String repository = null;
         String branch = null;
-        ImportStatus importStatus = null;
-                ImportStatusResp response = api.importStatus(repository, branch, importStatus);
+        String id = null;
+                ImportStatusResp response = api.importStatus(repository, branch, id);
         // TODO: test validations
     }
     

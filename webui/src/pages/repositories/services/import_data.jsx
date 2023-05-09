@@ -1,4 +1,4 @@
-import {branches, commits, metaRanges, NotFoundError, ranges} from "../../../lib/api";
+import {imports} from "../../../lib/api";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {LinearProgress} from "@mui/material";
@@ -20,61 +20,34 @@ const ImportPhase = {
 }
 
 const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId, metadata = {}) => {
-    let paginationResp = {};
-    let after = "";
-    let importBranchResp;
-    let sum = 0;
-    let stagingToken = "";
-    const rangeArr = [];
+    let done = false
     const importStatusUpdate = {
         importPhase: ImportPhase.InProgress,
-        numObj: sum,
+        numObj: 0,
+        importID: "",
     }
     updateImportState(importStatusUpdate);
+    const response = await imports.create(repoId, refId, sourceRef, prependPath, commitMsg, metadata);
+    importStatusUpdate.importID = response.id;
+    updateImportState(importStatusUpdate);
+    const delay = ms => new Promise(
+        resolve => setTimeout(resolve, ms)
+    );
     do {
-        const response = await ranges.createRange(repoId, sourceRef, after, prependPath, paginationResp.continuation_token);
-        rangeArr.push(response.range);
-        paginationResp = response.pagination;
-        stagingToken = paginationResp.staging_token
-        after = paginationResp.last_key;
-        sum += response.range.count;
-        importStatusUpdate.numObj = sum
+        const statusResp = await imports.get(repoId, refId, response.id);
+        importStatusUpdate.numObj = statusResp.import_progress;
         updateImportState(importStatusUpdate);
-    } while (paginationResp.has_more);
-    const metarange = await metaRanges.createMetaRange(repoId, rangeArr);
-
-    try {
-        importBranchResp = await branches.get(repoId, branch);
-    } catch (error) {
-        if (error instanceof NotFoundError) {
-            importBranchResp = await createBranch(repoId, refId, branch);
-        } else {
-            throw error;
+        done = statusResp.completed
+        if (statusResp.error) {
+            importStatusUpdate.importPhase = ImportPhase.Failed;
+            updateImportState(importStatusUpdate);
+            throw new Error(statusResp.error.message)
         }
-    }
-    await commits.commit(repoId, importBranchResp.id, commitMsg, metadata, metarange.id);
+        await delay(1000);
+    } while (!done);
     
-    if (stagingToken.length > 0) {
-        await branches.updateToken(repoId, importBranchResp.id, stagingToken);
-        await commits.commit(repoId, importBranchResp.id, "Import commit for out of order skipped objects", metadata);
-    }
     importStatusUpdate.importPhase = ImportPhase.Completed;
     updateImportState(importStatusUpdate);
-}
-
-const createBranch = async (repoId, refId, branch) => {
-    // Find root commit for repository
-    let hasMore = true;
-    let nextOffset = "";
-    let baseCommit = refId;
-    do {
-        let response = await commits.log(repoId, refId, nextOffset, 1000);
-        hasMore = response.pagination.has_more;
-        nextOffset = response.pagination.next_offset;
-        baseCommit = response.results.at(-1);
-    } while (hasMore)
-    await branches.create(repoId, branch, baseCommit.id);
-    return await branches.get(repoId, branch);
 }
 
 const ImportProgress = ({numObjects}) => {
