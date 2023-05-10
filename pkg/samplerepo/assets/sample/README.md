@@ -42,9 +42,9 @@ docker run --name lakefs \
            --env "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIA-EXAMPLE-KEY" \
            --env "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=EXAMPLE-SECRET" \
            --env "LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000" \
-           treeverse/lakefs:latest -c \
-           "lakefs setup --local-settings --user-name admin --access-key-id \"AKIA-EXAMPLE-KEY\" --secret-access-key \"EXAMPLE-SECRET\"; \ 
-            lakefs run --local-settings"
+           treeverse/lakefs:0.100.0-duckdb -c \
+           'lakefs setup --local-settings --user-name admin --access-key-id "$LAKECTL_CREDENTIALS_ACCESS_KEY_ID" --secret-access-key "$LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"; \
+            lakefs run --local-settings'
 ```
 
 </details>
@@ -206,7 +206,7 @@ In addition, customise the following for your environment and then run it too.
 _If you are using the lakeFS quickstart then you don't need to change anything and can run the SQL unchanged._
 
 ```sql
-SET s3_endpoint='lakefs:8000';
+SET s3_endpoint='localhost:8000';
 SET s3_access_key_id='AKIA-EXAMPLE-KEY';
 SET s3_secret_access_key='EXAMPLE-SECRET';
 ```
