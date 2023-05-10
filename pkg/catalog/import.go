@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/cockroachdb/pebble"
@@ -19,6 +20,8 @@ const (
 	statusChanSize = 100
 )
 
+var ErrImportClosed = errors.New("import closed")
+
 type Import struct {
 	db            *pebble.DB
 	dbPath        string
@@ -28,6 +31,8 @@ type Import struct {
 	logger        logging.Logger
 	repoPartition string
 	progress      int64
+	wg            sync.WaitGroup
+	closed        bool
 }
 
 func NewImport(ctx context.Context, cancel context.CancelFunc, kvStore kv.Store, repository *graveler.RepositoryRecord, importID string) (*Import, error) {
@@ -70,6 +75,9 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, kvStore kv.Store,
 }
 
 func (i *Import) Set(record EntryRecord) error {
+	if i.closed {
+		return ErrImportClosed
+	}
 	key := []byte(record.Path)
 	value, err := EntryToValue(record.Entry)
 	if err != nil {
@@ -86,6 +94,9 @@ func (i *Import) Set(record EntryRecord) error {
 }
 
 func (i *Import) Ingest(it *walkEntryIterator) error {
+	if i.closed {
+		return ErrImportClosed
+	}
 	for it.Next() {
 		if err := i.Set(*it.Value()); err != nil {
 			return err
@@ -99,25 +110,30 @@ func (i *Import) Status() graveler.ImportStatus {
 	return i.status
 }
 
-func (i *Import) NewItr() *importIterator {
-	return newImportIterator(i.db.NewIter(nil))
+func (i *Import) NewItr() (*importIterator, error) {
+	if i.closed {
+		return nil, ErrImportClosed
+	}
+	return newImportIterator(i.db.NewIter(nil)), nil
 }
 
 func (i *Import) Close() {
+	i.closed = true
+	i.wg.Wait()
 	close(i.StatusChan)
 	_ = os.RemoveAll(i.dbPath)
 }
 
 func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFunc) error {
+	i.wg.Add(1)
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
 	newStatus := i.status
 	timer := time.NewTimer(statusUpdateInterval)
 	done := false
+
 	for {
 		select {
-		case <-ctx.Done():
-			done = true
 		case s, ok := <-i.StatusChan:
 			if ok {
 				newStatus = s
@@ -144,11 +160,14 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 			}
 			i.status = newStatus
 
-			// Check if context was canceled, we want to do that only after we update the import state
+			// Check if import closed, we want to do that only after we update the import state
 			if done {
 				return nil
 			}
 			timer.Reset(statusUpdateInterval)
+		}
+		if i.closed {
+			done = true
 		}
 	}
 }

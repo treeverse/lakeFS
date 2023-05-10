@@ -1888,7 +1888,13 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		return
 	}
 
-	importItr := importManager.NewItr()
+	importItr, err := importManager.NewItr()
+	if err != nil {
+		importStatus.Error = fmt.Errorf("error on import iterator: %w", err)
+		importManager.StatusChan <- importStatus
+		return
+	}
+
 	var ranges []*graveler.RangeInfo
 	for importItr.hasMore {
 		rangeInfo, err := c.Store.WriteRange(ctx, repository, importItr)
