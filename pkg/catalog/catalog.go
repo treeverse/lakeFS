@@ -1869,17 +1869,19 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 			return
 		}
 
-		it, err := NewWalkEntryIterator(ctx, walker, source.Type, source.Destination, "", "")
+		itP, err := NewWalkEntryIterator(ctx, walker, source.Type, source.Destination, "", "")
 		if err != nil {
 			importStatus.Error = fmt.Errorf("creating walk iterator on path %s: %w", source.Path, err)
 			importManager.StatusChan <- importStatus
 			return
 		}
+
 		logger.WithFields(logging.Fields{
 			"source": source.Path,
-			"itr":    *it,
+			"itr":    *itP,
 		}).Debug("Ingest source")
-		ingestChan <- *it
+		it := *itP
+		ingestChan <- it
 
 		// Check if operation was canceled
 		if ctx.Err() != nil {

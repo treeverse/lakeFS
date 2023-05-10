@@ -97,18 +97,14 @@ func (i *Import) Ingest(it walkEntryIterator) error {
 	if i.closed {
 		return ErrImportClosed
 	}
-	i.logger.WithFields(logging.Fields{
-		"itr": it,
-	}).Debug("Ingest start")
+	i.logger.WithField("itr", it).Debug("Ingest start")
 	for it.Next() {
 		if err := i.Set(*it.Value()); err != nil {
 			return err
 		}
 		i.progress += 1
 	}
-	i.logger.WithFields(logging.Fields{
-		"itr": it,
-	}).Debug("Ingest finished")
+	i.logger.WithField("itr", it).Debug("Ingest finished")
 	return nil
 }
 
