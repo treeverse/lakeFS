@@ -19,4 +19,5 @@ var (
 	ErrInvalidToken            = errors.New("invalid token")
 	ErrInvalidRequest          = errors.New("invalid request")
 	ErrUserNotFound            = errors.New("user not found")
+	ErrInvalidResponse         = errors.New("invalid response")
 )
