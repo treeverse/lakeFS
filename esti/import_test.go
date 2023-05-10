@@ -96,7 +96,7 @@ func TestImport(t *testing.T) {
 
 func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
-	importDir := filepath.Join(t.TempDir(), "import-test-data")
+	importDir := filepath.Join(t.TempDir(), "import-test-data") + "/"
 	if err := os.Mkdir(importDir, dirPerm); err != nil {
 		t.Fatal(err)
 	}
@@ -330,7 +330,7 @@ func TestImportNew(t *testing.T) {
 	t.Run("parent", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
 		if blockstoreType == block.BlockstoreTypeLocal {
-			t.Skip("local always assumes import path is dir")
+			t.Skip("local cannot import by prefix, only directory or object")
 		}
 		// import without the directory separator as suffix to include the parent directory
 		importPathParent := strings.TrimSuffix(importPath, "/")
@@ -347,16 +347,16 @@ func TestImportNew(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
 		var paths []api.ImportPath
 		for i := 1; i < 8; i++ {
-			prefix := fmt.Sprintf("prefix-%d", i)
+			prefix := fmt.Sprintf("prefix-%d/", i)
 			paths = append(paths, api.ImportPath{
-				Destination: importTargetPrefix,
+				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
 				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
 			})
 		}
 		paths = append(paths, api.ImportPath{
-			Destination: importTargetPrefix,
-			Path:        importPath + "nested",
+			Destination: importTargetPrefix + "nested",
+			Path:        importPath + "nested/",
 			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
 		})
 
@@ -368,9 +368,9 @@ func TestImportNew(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
 		var paths []api.ImportPath
 		for i := 1; i < 8; i++ {
-			prefix := fmt.Sprintf("prefix-%d", i)
+			prefix := fmt.Sprintf("prefix-%d/", i)
 			paths = append(paths, api.ImportPath{
-				Destination: importTargetPrefix,
+				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
 				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
 			})
