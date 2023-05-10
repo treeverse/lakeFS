@@ -218,6 +218,10 @@ components:
         user_id:
           type: integer
           format: int64
+          deprecated: true
+        user_name:
+          type: string
+          description: A unique identifier for the user. In password-based authentication should be the email.
 
     Group:
       type: object

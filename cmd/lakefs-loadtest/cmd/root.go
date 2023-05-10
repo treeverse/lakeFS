@@ -19,9 +19,7 @@ const (
 	DefaultServerEndpointURL = "http://localhost:8000"
 )
 
-var (
-	cfgFile string
-)
+var cfgFile string
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
