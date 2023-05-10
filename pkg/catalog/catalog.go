@@ -1851,8 +1851,8 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	ingestChan := make(chan walkEntryIterator, ingestChanSize)
 	wg.Go(func() error {
 		for i := range ingestChan {
+			it := i // Pinning
 			wg.Go(func() error {
-				it := i // Pinning
 				defer it.Close()
 				return importManager.Ingest(it)
 			})
