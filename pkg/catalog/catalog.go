@@ -1848,7 +1848,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 
 	var wg multierror.Group
 	const ingestChanSize = 10
-	ingestChan := make(chan walkEntryIterator, ingestChanSize)
+	ingestChan := make(chan *walkEntryIterator, ingestChanSize)
 	wg.Go(func() error {
 		for i := range ingestChan {
 			it := i // Pinning
@@ -1869,18 +1869,13 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 			return
 		}
 
-		itP, err := NewWalkEntryIterator(ctx, walker, source.Type, source.Destination, "", "")
+		it, err := NewWalkEntryIterator(ctx, walker, source.Type, source.Destination, "", "")
 		if err != nil {
 			importStatus.Error = fmt.Errorf("creating walk iterator on path %s: %w", source.Path, err)
 			importManager.StatusChan <- importStatus
 			return
 		}
-
-		logger.WithFields(logging.Fields{
-			"source": source.Path,
-			"itr":    *itP,
-		}).Debug("Ingest source")
-		it := *itP
+		logger.WithFields(logging.Fields{"source": source.Path, "itr": it}).Debug("Ingest source")
 		ingestChan <- it
 
 		// Check if operation was canceled
@@ -1888,6 +1883,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 			return
 		}
 	}
+
 	close(ingestChan)
 	err = wg.Wait().ErrorOrNil()
 	if err != nil {

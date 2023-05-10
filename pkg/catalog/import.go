@@ -93,7 +93,7 @@ func (i *Import) Set(record EntryRecord) error {
 	})
 }
 
-func (i *Import) Ingest(it walkEntryIterator) error {
+func (i *Import) Ingest(it *walkEntryIterator) error {
 	if i.closed {
 		return ErrImportClosed
 	}
