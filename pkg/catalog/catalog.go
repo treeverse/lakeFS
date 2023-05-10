@@ -1848,12 +1848,13 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 
 	var wg multierror.Group
 	const ingestChanSize = 10
-	ingestChan := make(chan *walkEntryIterator, ingestChanSize)
+	ingestChan := make(chan walkEntryIterator, ingestChanSize)
 	wg.Go(func() error {
 		for i := range ingestChan {
 			wg.Go(func() error {
-				defer i.Close()
-				return importManager.Ingest(i)
+				it := i // Pinning
+				defer it.Close()
+				return importManager.Ingest(it)
 			})
 		}
 		return nil
@@ -1874,8 +1875,11 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 			importManager.StatusChan <- importStatus
 			return
 		}
-		logger.Debug("Ingest source", source.Path, it)
-		ingestChan <- it
+		logger.WithFields(logging.Fields{
+			"source": source.Path,
+			"itr":    *it,
+		}).Debug("Ingest source")
+		ingestChan <- *it
 
 		// Check if operation was canceled
 		if ctx.Err() != nil {
