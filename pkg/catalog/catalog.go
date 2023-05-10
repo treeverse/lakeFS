@@ -1828,13 +1828,14 @@ func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.R
 func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest) {
 	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	defer cancel()
-
-	importManager, err := NewImport(ctx, cancel, c.KVStore, repository, importID)
+	logger := c.log.WithField("import_id", importID)
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
 	if err != nil {
-		c.log.WithError(err).Error("creating import manager")
+		logger.WithError(err).Error("creating import manager")
 		return
 	}
 	defer importManager.Close()
+
 	importStatus := importManager.Status()
 	importBranch := "_" + branchID + "_imported"
 	err = c.ensureBranchExists(ctx, repository, importBranch, branchID)
@@ -1847,7 +1848,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 
 	var wg multierror.Group
 	const ingestChanSize = 10
-	ingestChan := make(chan walkEntryIterator, ingestChanSize)
+	ingestChan := make(chan *walkEntryIterator, ingestChanSize)
 	wg.Go(func() error {
 		for i := range ingestChan {
 			wg.Go(func() error {
@@ -1873,7 +1874,8 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 			importManager.StatusChan <- importStatus
 			return
 		}
-		ingestChan <- *it
+		logger.Debug("Ingest source", source.Path, it)
+		ingestChan <- it
 
 		// Check if operation was canceled
 		if ctx.Err() != nil {
@@ -1928,6 +1930,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		importManager.StatusChan <- importStatus
 		return
 	}
+
 	// Update import status
 	importStatus.MetaRangeID = &metarange.ID
 	importStatus.Commit = commitLogToRecord(commit)

@@ -35,7 +35,7 @@ type Import struct {
 	closed        bool
 }
 
-func NewImport(ctx context.Context, cancel context.CancelFunc, kvStore kv.Store, repository *graveler.RepositoryRecord, importID string) (*Import, error) {
+func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, importID string) (*Import, error) {
 	status := graveler.ImportStatus{
 		ID:        graveler.ImportID(importID),
 		UpdatedAt: time.Now(),
@@ -61,7 +61,7 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, kvStore kv.Store,
 		kvStore:       kvStore,
 		status:        status,
 		StatusChan:    make(chan graveler.ImportStatus, statusChanSize),
-		logger:        logging.Default().WithField("import_id", importID),
+		logger:        logger,
 		repoPartition: repoPartition,
 	}
 
@@ -93,16 +93,18 @@ func (i *Import) Set(record EntryRecord) error {
 	})
 }
 
-func (i *Import) Ingest(it walkEntryIterator) error {
+func (i *Import) Ingest(it *walkEntryIterator) error {
 	if i.closed {
 		return ErrImportClosed
 	}
+	i.logger.Debug("Ingest start", it)
 	for it.Next() {
 		if err := i.Set(*it.Value()); err != nil {
 			return err
 		}
 		i.progress += 1
 	}
+	i.logger.Debug("Ingest finish", it)
 	return nil
 }
 
