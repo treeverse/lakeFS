@@ -1847,7 +1847,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 
 	var wg multierror.Group
 	const ingestChanSize = 10
-	ingestChan := make(chan *walkEntryIterator, ingestChanSize)
+	ingestChan := make(chan walkEntryIterator, ingestChanSize)
 	wg.Go(func() error {
 		for i := range ingestChan {
 			wg.Go(func() error {
@@ -1873,7 +1873,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 			importManager.StatusChan <- importStatus
 			return
 		}
-		ingestChan <- it
+		ingestChan <- *it
 
 		// Check if operation was canceled
 		if ctx.Err() != nil {
