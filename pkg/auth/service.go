@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
@@ -1680,7 +1679,6 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 		}
 		username := aws.StringValue(credentials.UserName)
 		if username == "" {
-			// TODO(Guys): return username instead of this call
 			user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 			if err != nil {
 				return nil, err
