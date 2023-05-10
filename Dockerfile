@@ -2,7 +2,6 @@
 FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine3.16 AS build
 
 ARG VERSION=dev
-ARG DUCKDB_RELEASE_TAG=v0.7.1
 
 WORKDIR /build
 
@@ -55,14 +54,13 @@ RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 
 # Build DuckDB
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS build-duckdb
+ARG DUCKDB_RELEASE_TAG=v0.7.1
 
 RUN apk add --no-cache git
 WORKDIR /
-RUN git clone --depth 1 https://github.com/duckdb/duckdb.git
+RUN git clone --depth 1 --branch ${DUCKDB_RELEASE_TAG} https://github.com/duckdb/duckdb.git
 
 WORKDIR /duckdb
-RUN git checkout ${DUCKDB_RELEASE_TAG}
-
 RUN apk add --no-cache build-base cmake openssl-dev ninja
 RUN GEN=ninja BUILD_HTTPFS=1 make 
 
