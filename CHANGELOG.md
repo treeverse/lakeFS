@@ -5,7 +5,6 @@
 ## v0.100.0
 
 :new: What's new:
-- [GC] enable incremental run id (#5718)
 - Support `--first-parent` option for commit log (#5733)
 - Homebrew support as part of lakefs release (#5738)
 - [actions] Add conditional execution to hooks (#5707)
@@ -14,16 +13,13 @@
 - :gift: Add Sample Repository with Quickstart option for new repositories (#5787)
 
 :bug: Bugs fixed:
-- [GC] Retry AWS failures in deleteObjects (#5692)
 - [API] LinkPhysicalAddress twice should fail with status code 400 (#5727)
 - [UI] Add back the copy URI button + add cache-control header to GET objects (#5731)
 - [export] Fix lakeFS export docker image to use python 3.11 (#5755)
 - [S3gw] Fix s3 multipart upload abort (#5725)
-- [GC] Always read deleted addresses for bulk remove in uncommitted GC (#5776)
 - [setup] Fix warning on ACL write group for ACL during setupFS (#5792)
 - [UI] Fix repository name while validating storage namespace (#5802)
 - [UI/setup] Require admin username in initial setup (#5818)
-- [GC] Fix uncommitted gc to handle no uncommitted location (#5817)
 - [lakectl] Validate fs upload path is not empty (#5819)
 - [lakectl] refs-dump output should be valid JSON (#5831)
 - [auth] Add metarange creation permissions to Developers and to Writers (#5833)
