@@ -24,7 +24,6 @@ import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
-import {hasOwnProperty} from "react-syntax-highlighter";
 
 
 const permissions = {
@@ -83,9 +82,11 @@ const GroupsContainer = () => {
 
     const router = useRouter();
     const after = (router.query.after) ? router.query.after : "";
+    const lc = useLoginConfigContext();
+    const simplified = lc.RBAC === 'simplified';
     const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
         const groups = await auth.listGroups(after);
-        const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: await getACLMaybe(group.id)})));
+        const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: simplified && await getACLMaybe(group.id)})));
         return {...groups, results: enrichedResults};
     }, [after, refresh]);
 
@@ -95,9 +96,7 @@ const GroupsContainer = () => {
 
     if (error) return <Error error={error}/>;
     if (loading) return <Loading/>;
-    const lc = useLoginConfigContext();
-    const simplified = lc.RBAC !== undefined && lc.RBAC === 'simplified';
-    const headers = simplified ?   ['', 'Group ID', 'Permission', 'Created At'] : ['', 'Group ID', 'Created At'];
+    const headers = simplified ? ['', 'Group ID', 'Permission', 'Created At'] : ['', 'Group ID', 'Created At'];
 
     return (
         <>
