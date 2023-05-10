@@ -42,7 +42,7 @@ object StorageClients {
       val meta = new ObjectMetadata()
       meta.setContentLength(0)
       s3Client.putObject(bucket,
-                         getRunIDMarkerLocation(runID, uri.getPath),
+                         getRunIDMarkerLocation(runID, uri.getPath.stripPrefix("/")),
                          runIDMarkerInputStream,
                          meta
                         )
