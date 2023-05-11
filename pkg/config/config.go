@@ -45,8 +45,8 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// TODO(isan) consolidate with OIDC
 // CookieAuthVerification is related to auth based on a cookie set by an external service
+// TODO(isan) consolidate with OIDC
 type CookieAuthVerification struct {
 	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
 	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
@@ -181,19 +181,19 @@ type Config struct {
 
 	Auth struct {
 		Cache struct {
-			Enabled bool
-			Size    int
-			TTL     time.Duration
-			Jitter  time.Duration
-		}
+			Enabled bool          `mapstructure:"enabled"`
+			Size    int           `mapstructure:"size"`
+			TTL     time.Duration `mapstructure:"ttl"`
+			Jitter  time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"cache"`
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
-		}
+		} `mapstructure:"encrypt"`
 		API struct {
-			Endpoint        string
-			Token           string
-			SupportsInvites bool `mapstructure:"supports_invites"`
-		}
+			Endpoint        string `mapstructure:"endpoint"`
+			Token           string `mapstructure:"token"`
+			SupportsInvites bool   `mapstructure:"supports_invites"`
+		} `mapstructure:"api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
 			Enabled bool `mapstructure:"enabled"`
@@ -219,7 +219,7 @@ type Config struct {
 			LoginCookieNames   []string `mapstructure:"login_cookie_names"`
 			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
-	}
+	} `mapstructure:"auth"`
 	Blockstore struct {
 		Type                   string  `mapstructure:"type" validate:"required"`
 		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
@@ -228,7 +228,7 @@ type Config struct {
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
 			ImportHidden            bool     `mapstructure:"import_hidden"`
 			AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
-		}
+		} `mapstructure:"local"`
 		S3 *struct {
 			S3AuthInfo                    `mapstructure:",squash"`
 			Region                        string        `mapstructure:"region"`
@@ -265,7 +265,7 @@ type Config struct {
 			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
 		} `mapstructure:"gs"`
-	}
+	} `mapstructure:"blockstore"`
 	Committed struct {
 		LocalCache struct {
 			SizeBytes             int64   `mapstructure:"size_bytes"`
@@ -284,8 +284,8 @@ type Config struct {
 			Memory struct {
 				CacheSizeBytes int64 `mapstructure:"cache_size_bytes"`
 			} `mapstructure:"memory"`
-		}
-	}
+		} `mapstructure:"sstable"`
+	} `mapstructure:"committed"`
 	Graveler struct {
 		RepositoryCache struct {
 			Size   int           `mapstructure:"size"`
@@ -620,12 +620,13 @@ func (c *Config) CommittedParams() committed.Params {
 	}
 }
 
-func (c *Config) IsAuthUISimplified() bool {
-	return c.Auth.UIConfig.RBAC == "simplified"
-}
+const (
+	AuthRBACSimplified = "simplified"
+	AuthRBACExternal   = "external"
+)
 
-func (c *Config) IsAuthTypeAPI() bool {
-	return c.Auth.API.Endpoint != ""
+func (c *Config) IsAuthUISimplified() bool {
+	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
 func (c *Config) UISnippets() []apiparams.CodeSnippet {

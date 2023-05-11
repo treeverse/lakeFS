@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	"github.com/treeverse/lakefs/pkg/config"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
@@ -37,7 +40,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if cfg.IsAuthTypeAPI() {
+		if cfg.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 			// nothing to do - users are managed elsewhere
 			return
 		}
@@ -70,7 +73,7 @@ var setupCmd = &cobra.Command{
 		defer kvStore.Close()
 		logger := logging.Default()
 		authLogger := logger.WithField("service", "auth_service")
-		authService = auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, cfg.Auth.Cache, authLogger)
+		authService = auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)

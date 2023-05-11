@@ -385,6 +385,6 @@ Policy                                                  | Admins | SuperUsers | 
 
 ## Pluggable Authentication and Authorization
 
-Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used. If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.RBAC` should be set to `external`.
+Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used. If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.rbac` should be set to `external`.
 
-If you are using self-managed lakeFS and do not have a [remote authentication server](remote-authenticator.html) then you should set `auth.ui_config.RBAC` to `simplified` and refer to the [access control list](access-control-lists.html) documentation instead.
+If you are using self-managed lakeFS and do not have a [remote authentication server](remote-authenticator.html) then you should set `auth.ui_config.rbac` to `simplified` and refer to the [access control list](access-control-lists.html) documentation instead.

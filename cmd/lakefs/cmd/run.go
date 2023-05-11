@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
@@ -23,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -40,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -57,15 +57,13 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to "external" without setting an external auth service`)
+var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
 
 func checkAuthModeSupport(cfg *config.Config) error {
-	switch {
-	case !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI():
+	if !cfg.IsAuthUISimplified() && cfg.Auth.API.Endpoint == "" {
 		return errSimplifiedOrExternalAuth
-	default:
-		return nil
 	}
+	return nil
 }
 
 var runCmd = &cobra.Command{
@@ -124,7 +122,7 @@ var runCmd = &cobra.Command{
 		if err := checkAuthModeSupport(cfg); err != nil {
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
-		if cfg.IsAuthTypeAPI() {
+		if cfg.Auth.API.Endpoint != "" {
 			var apiEmailer *email.Emailer
 			if !cfg.Auth.API.SupportsInvites {
 				// invites not supported by API - delegate it to emailer
@@ -134,7 +132,7 @@ var runCmd = &cobra.Command{
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-				cfg.Auth.Cache, nil, apiEmailer)
+				authparams.ServiceCache(cfg.Auth.Cache), nil, apiEmailer)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
@@ -143,7 +141,7 @@ var runCmd = &cobra.Command{
 				kvStore,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				emailer,
-				cfg.Auth.Cache,
+				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
 		}
