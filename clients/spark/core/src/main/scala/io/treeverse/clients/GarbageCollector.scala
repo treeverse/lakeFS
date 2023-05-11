@@ -3,23 +3,23 @@ package io.treeverse.clients
 import com.amazonaws.services.s3.AmazonS3
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
+import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import org.apache.spark.HashPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.HashPartitioner
+import org.apache.spark.storage.StorageLevel
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
+import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
-import java.net.URI
 import java.util.UUID
-import org.apache.commons.lang3.StringUtils
 
 trait RangeGetter extends Serializable {
 
@@ -415,16 +415,19 @@ object GarbageCollector {
         }
 
         val region = getRegion(args)
+        val storageClient: StorageClient = StorageClients(storageType, configMapper)
 
-        remove(configMapper,
-               storageNSForSdkClient,
-               gcAddressesLocation,
-               expiredAddresses,
-               markID,
-               region,
-               storageType,
-               schema
-              )
+        val removed = remove(
+          storageNSForSdkClient,
+          gcAddressesLocation,
+          expiredAddresses,
+          markID,
+          region,
+          storageClient,
+          schema
+        )
+        storageClient.logRunID(runID, storageNSForSdkClient, region)
+        removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
@@ -438,15 +441,7 @@ object GarbageCollector {
     }
 
     val commitsDF = gc.getCommitsDF(gcCommitsLocation)
-    writeReports(storageNSForHadoopFS,
-                 gcRules,
-                 runID,
-                 markID,
-                 commitsDF,
-                 expiredAddresses,
-                 removed,
-                 configMapper
-                )
+    writeReports(storageNSForHadoopFS, gcRules, runID, markID, commitsDF, removed, configMapper)
     spark.close()
   }
 
@@ -574,7 +569,6 @@ object GarbageCollector {
       runID: String,
       markID: String,
       commitsDF: DataFrame,
-      expiredAddresses: DataFrame,
       removed: DataFrame,
       configMapper: ConfigMapper
   ) = {
@@ -608,52 +602,52 @@ object GarbageCollector {
   }
 
   def bulkRemove(
-      configMapper: ConfigMapper,
       readKeysDF: DataFrame,
       storageNamespace: String,
       region: String,
-      storageType: String
+      storageClient: StorageClient
   ): Dataset[String] = {
     import spark.implicits._
     val bulkRemover =
-      BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+      BulkRemoverFactory(storageClient, storageNamespace, region)
     val bulkSize = bulkRemover.getMaxBulkSize()
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
 
-    bulkedKeyStrings
+    val ds = bulkedKeyStrings
       .mapPartitions(iter => {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
         // bulkRemover created above because it was created on the driver and it is not a serializable object. Therefore,
         // we create new bulkRemovers.
         val bulkRemover =
-          BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+          BulkRemoverFactory(storageClient, storageNamespace, region)
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
       })
+
+    ds
   }
 
   def remove(
-      configMapper: ConfigMapper,
       storageNamespace: String,
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
       markID: String,
       region: String,
-      storageType: String,
+      storageClient: StorageClient,
       schema: StructType
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df.orderBy("address"), storageNamespace, region, storageType)
+    bulkRemove(df.orderBy("address"), storageNamespace, region, storageClient)
       .toDF(schema.fieldNames: _*)
   }
 
-  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {
+  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String): String = {
     s"$gcAddressesLocation/$markId.meta"
   }
 
