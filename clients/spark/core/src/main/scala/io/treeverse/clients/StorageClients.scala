@@ -80,6 +80,9 @@ object StorageClients {
         .withMaxKeys(iteration)
       val objectListing = s3Client().listObjects(listObjectsRequest)
       val objectSummaries = objectListing.getObjectSummaries
+      if (objectSummaries.size() == 0) {
+        throw RunIDException("No previous run ID")
+      }
       if (objectSummaries.size() > iteration) {
         ""
       } else {
@@ -124,7 +127,7 @@ object StorageClients {
 
     private def blobContainerClient(): BlobContainerClient = {
       if (_blobContainerClient == null) {
-        _blobContainerClient = _blobServiceClient.getBlobContainerClient(_containerName)
+        _blobContainerClient = blobServiceClient().getBlobContainerClient(_containerName)
       }
       _blobContainerClient
     }
@@ -189,6 +192,9 @@ object StorageClients {
         pagedResp = it.next()
         counter += pagedResp.getValue.size()
       }
+      if(counter == 0) {
+        throw RunIDException("No previous run ID")
+      }
       if (counter < iteration) {
         return ""
       }
@@ -222,4 +228,5 @@ object StorageClients {
     }
   }
 
+  case class RunIDException(private val message: String = "") extends Exception(message)
 }
