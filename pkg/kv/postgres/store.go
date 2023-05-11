@@ -8,10 +8,10 @@ import (
 	"strconv"
 
 	"github.com/IBM/pgxpoolprometheus"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -61,7 +61,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, err
 	}
 
-	pool, err := pgxpool.ConnectConfig(ctx, config)
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrConnectFailed, err)
 	}
@@ -272,8 +272,10 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		return kv.ErrMissingValue
 	}
 
-	var res pgconn.CommandTag
-	var err error
+	var (
+		res pgconn.CommandTag
+		err error
+	)
 	switch valuePredicate {
 	case nil: // use insert to make sure there was no previous value before
 		res, err = s.Pool.Exec(ctx, `INSERT INTO `+s.Params.SanitizedTableName+`(partition_key,key,value) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, partitionKey, key, value)
