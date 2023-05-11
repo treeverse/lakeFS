@@ -239,9 +239,10 @@ object UncommittedGarbageCollector {
       .toLocalIterator()
 
     while (it.hasNext) {
-      val storageClient: StorageClient = StorageClients(storageType, configMapper)
+      val storageClient: StorageClient =
+        StorageClients(storageType, configMapper, storageNamespace, region)
       val bulkRemover =
-        BulkRemoverFactory(storageClient, storageNamespace, region)
+        BulkRemoverFactory(storageClient, storageNamespace)
       val chunkSize = bulkRemover.getMaxBulkSize()
       val chunk = it.take(chunkSize).toSeq
       bulkRemover.deleteObjects(chunk, storageNamespace)
