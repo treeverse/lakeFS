@@ -118,7 +118,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.7.3/lakefs-spark-client-312-hadoop3-assembly-0.7.3.jar \
   example-repo us-east-1
   ```
   </div>
@@ -131,7 +131,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/0.6.5/lakefs-spark-client-301-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/0.7.3/lakefs-spark-client-301-assembly-0.7.3.jar \
   example-repo us-east-1
   ```
   </div>
@@ -144,7 +144,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/0.6.5/lakefs-spark-client-247-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-247/0.7.3/lakefs-spark-client-247-assembly-0.7.3.jar \
   example-repo us-east-1
   ```
   </div>
@@ -160,7 +160,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.7.3/lakefs-spark-client-312-hadoop3-assembly-0.7.3.jar \
   example-repo
   ```
 
@@ -177,7 +177,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.fs.azure.account.oauth2.client.id.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<application-id> \
   -c spark.hadoop.fs.azure.account.oauth2.client.secret.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<service-credential-key> \
   -c spark.hadoop.fs.azure.account.oauth2.client.endpoint.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=https://login.microsoftonline.com/<directory-id>/oauth2/token \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.7.3/lakefs-spark-client-312-hadoop3-assembly-0.7.3.jar \
   example-repo
   ```
 
@@ -205,7 +205,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem \
   -c spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS \
   -c spark.hadoop.lakefs.gc.do_sweep=false  \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.6.5/lakefs-spark-client-312-hadoop3-assembly-0.6.5.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.7.3/lakefs-spark-client-312-hadoop3-assembly-0.7.3.jar \
   example-repo
 ```
 
@@ -274,7 +274,7 @@ Running in sweep only mode, GC will hard-delete the expired objects marked by a 
    An object which is later deleted from `main` will always be present in the stale branch, preventing it from being hard-deleted.
 
 1. lakeFS will never delete objects outside your repository's storage namespace.
-   In particular, objects that were imported using `lakectl ingest` or `UI Import Wizard` will not be affected by GC jobs.
+   In particular, objects that were imported using `lakectl ingest` or the UI import wizard will not be affected by GC jobs.
 
 1. In cases where deleted objects are brought back to life while a GC job is running, said objects may or may not be
    deleted. Such actions include:

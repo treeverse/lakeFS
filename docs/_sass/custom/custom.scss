@@ -159,7 +159,6 @@ body {
 	    top: -3px;
 	    padding: 15px 25px 15px 25px;
 		li {
-			text-decoration: underline;
 			&::before {
 				display: none;
 			}
@@ -1049,6 +1048,8 @@ img.quickstart {
 	border-style: ridge;
 }
 
-a:not([class]) {
-	text-decoration-color: inherit;
+.note {
+	a:not([class]) {
+		text-decoration-color: inherit;
+	}
 }

@@ -44,6 +44,7 @@ var statementByName = map[string]model.Statement{
 			permissions.DeleteBranchAction,
 			permissions.DeleteTagAction,
 			permissions.CreateCommitAction,
+			permissions.CreateMetaRangeAction,
 		},
 		Effect: model.StatementEffectAllow,
 	},

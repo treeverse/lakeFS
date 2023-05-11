@@ -13,7 +13,7 @@ redirect_from: []
 
 {% include toc.html %}
 
-Like other version control systems, lakeFS allows you to configure `Actions` to trigger when predefined events occur.
+Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when predefined events occur.
 
 ## Example use cases
 
@@ -88,7 +88,7 @@ Schema of the Action file:
 | on                 | List of events that will trigger the hooks                | List       | true     |                                                                         |
 | on<event>.branches | Glob pattern list of branches that triggers the hooks     | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
 | hooks              | List of hooks to be executed                              | List       | true     |                                                                         |
-| hook.id            | ID of the hook, must be unique within the `Action`        | String     | true     |                                                                         |
+| hook.id            | ID of the hook, must be unique within the action.         | String     | true     |                                                                         |
 | hook.type          | Type of the hook ([types](#hook-types))                   | String     | true     |                                                                         |
 | hook.description   | Optional description for the hook                         | String     | false    |                                                                         |
 | hook.if            | Expression that will be evaluated before execute the hook | String     | false    | No value is the same as evaluate `success()`                            |

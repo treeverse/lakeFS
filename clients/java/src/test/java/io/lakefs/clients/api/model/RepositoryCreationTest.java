@@ -64,4 +64,12 @@ public class RepositoryCreationTest {
         // TODO: test defaultBranch
     }
 
+    /**
+     * Test the property 'sampleData'
+     */
+    @Test
+    public void sampleDataTest() {
+        // TODO: test sampleData
+    }
+
 }

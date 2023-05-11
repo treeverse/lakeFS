@@ -40,6 +40,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -1514,7 +1515,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
-	if params.Bare != nil && *params.Bare {
+	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
 		repo, err := c.Catalog.CreateBareRepository(ctx,
@@ -1536,9 +1537,11 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
 	if err != nil {
-		reason := "unknown"
-		var retErr error
-		var urlErr *url.Error
+		var (
+			reason string
+			retErr error
+			urlErr *url.Error
+		)
 		switch {
 		case errors.As(err, &urlErr) && urlErr.Op == "parse":
 			retErr = err
@@ -1551,6 +1554,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			reason = "already_in_use"
 		default:
 			retErr = ErrFailedToAccessStorage
+			reason = "unknown"
 		}
 		c.Logger.
 			WithError(err).
@@ -1565,6 +1569,27 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
+	}
+
+	if swag.BoolValue(body.SampleData) {
+		// add sample data, hooks, etc.
+		user, err := auth.GetUser(ctx)
+		if err != nil {
+			writeError(w, r, http.StatusUnauthorized, "missing user")
+			return
+		}
+
+		err = samplerepo.PopulateSampleRepo(ctx, newRepo, c.Catalog, c.PathProvider, c.BlockAdapter, user)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
+			return
+		}
+
+		err = samplerepo.SampleRepoAddBranchProtection(ctx, newRepo, c.Catalog)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error adding branch protection to sample repository: %w", err))
+			return
+		}
 	}
 
 	response := Repository{
@@ -2781,10 +2806,18 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	presignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		Identifier:     gcRunMetadata.CommitsCSVLocation,
+		IdentifierType: block.IdentifierTypeFull,
+	}, block.PreSignModeRead)
+	if err != nil {
+		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
+	}
 	writeResponse(w, r, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRunMetadata.CommitsCSVLocation,
-		GcAddressesLocation: gcRunMetadata.AddressLocation,
-		RunId:               gcRunMetadata.RunID,
+		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
+		GcAddressesLocation:   gcRunMetadata.AddressLocation,
+		RunId:                 gcRunMetadata.RunID,
+		GcCommitsPresignedUrl: &presignedURL,
 	})
 }
 

@@ -80,7 +80,7 @@ Git conquered the world of code because it had best supported engineering best p
 * Reproduce and troubleshoot issues with a given version of the code
 * Continuously integrate and deploy new code (CI/CD)
 
-lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive Git-like inetrface to easily manage their data like they manage code. Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
+lakeFS provides these exact benefits, that are data practitioners are missing today, and enables them a clear intuitive Git-like interface to easily manage their data like they manage code. Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
 
 * **branch:** a consistent copy of a repository, isolated from other branches and their changes. Initial creation of a branch is a metadata operation that does not duplicate objects.
 * **commit:** an immutable checkpoint containing a complete snapshot of a repository.
@@ -116,11 +116,11 @@ lakeFS makes creating isolated dev/test environments for ETL testing instantaneo
 
 👉🏻 [Read more](/use_cases/etl_testing.html)
 
-### Reproducability: What Did My Data Look Like at a Point In Time?
+### Reproducibility: What Did My Data Look Like at a Point In Time?
 
 Being able to look at data as it was at a given point is particularly useful in at least two scenarios: 
 
-1. Reproducability of ML experiments
+1. Reproducibility of ML experiments
 
     ML experimentation is usually an iterative process, and being able to reproduce a specific iteration is important. 
     

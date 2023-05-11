@@ -206,18 +206,18 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	err = csvWriter.Write([]string{"commit_id", "expired"}) // write headers
-	if err != nil {
+	headers := []string{"commit_id", "expired", "metarange_id"}
+	if err = csvWriter.Write(headers); err != nil {
 		return "", err
 	}
-	for _, commitID := range gcCommits.expired {
-		err := csvWriter.Write([]string{string(commitID), "true"})
+	for commitID, metarangeID := range gcCommits.expired {
+		err := csvWriter.Write([]string{string(commitID), "true", string(metarangeID)})
 		if err != nil {
 			return "", err
 		}
 	}
-	for _, commitID := range gcCommits.active {
-		err := csvWriter.Write([]string{string(commitID), "false"})
+	for commitID, metarangeID := range gcCommits.active {
+		err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID)})
 		if err != nil {
 			return "", err
 		}

@@ -12,7 +12,7 @@ _In the previous step we branched our data from `main` into a new `denmark-lakes
 
 # Committing Changes in lakeFS 🤝🏻
 
-Having make the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with lakeFS' API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl` which is what we'll use here. Run the following from a terminal window:
+Having make the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with the lakeFS API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl` which is what we'll use here. Run the following from a terminal window:
 
 ```bash
 docker exec lakefs \

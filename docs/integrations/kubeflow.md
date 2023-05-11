@@ -19,7 +19,7 @@ A Kubeflow pipeline is a portable and scalable definition of an ML workflow comp
 
 To integrate lakeFS into your Kubeflow pipeline, you need to create Kubeflow components that perform lakeFS operations.
 Currently, there are two methods to create lakeFS ContainerOps:
-1. Implement a function-based ContainerOp that uses lakeFS's Python API to invoke lakeFS operations.
+1. Implement a function-based ContainerOp that uses the lakeFS Python API to invoke lakeFS operations.
 1. Implement a ContainerOp that uses the `lakectl` CLI docker image to invoke lakeFS operations.
 
 ### Function-based ContainerOps

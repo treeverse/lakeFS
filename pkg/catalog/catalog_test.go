@@ -525,18 +525,6 @@ func TestCatalog_ListEntries(t *testing.T) {
 	}
 }
 
-var (
-	repoID     = graveler.RepositoryID("repo1")
-	repository = &graveler.RepositoryRecord{
-		RepositoryID: repoID,
-		Repository: &graveler.Repository{
-			StorageNamespace: "mock-sn",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		},
-	}
-)
-
 func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
@@ -573,7 +561,8 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			const repositoryID = "repo1"
+			g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
 				Store:                    g.Sut,
@@ -581,7 +570,6 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 				GCMaxUncommittedFileSize: 500 * 1024,
 				KVStore:                  g.KVStore,
 			}
-			repositoryID := repoID.String()
 
 			var (
 				mark       *catalog.GCUncommittedMark
@@ -606,7 +594,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 					// read parquet information if data was stored to location
 					objLocation, err := url.JoinPath(result.Location, result.Filename)
 					require.NoError(t, err)
-					addresses := readPhysicalAddressesFromParquetObject(t, ctx, c, objLocation)
+					addresses := readPhysicalAddressesFromParquetObject(t, repositoryID, ctx, c, objLocation)
 					allRecords = append(allRecords, addresses...)
 				}
 
@@ -626,7 +614,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
+func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
 	t.Helper()
 
 	test := gUtils.InitGravelerTest(t)
@@ -647,7 +635,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 			// create full and relative addresses
 			if j%2 == 0 {
 				addressType = catalog.Entry_FULL
-				address = fmt.Sprintf("%s/%s_record%04d", repository.StorageNamespace, branchID, j)
+				address = fmt.Sprintf("%s/%s_record%04d", "mem://"+repositoryID, branchID, j)
 			} else {
 				addressType = catalog.Entry_RELATIVE
 				address = fmt.Sprintf("%s_record%04d", branchID, j)
@@ -703,7 +691,15 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	}
 
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: graveler.RepositoryID(repositoryID),
+		Repository: &graveler.Repository{
+			StorageNamespace: graveler.StorageNamespace("mem://" + repositoryID),
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
+	}
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).Times(expectedCalls).Return(repository, nil)
 
 	// expect tracked addresses does not list branches, so remove one and keep at least the first
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
@@ -727,11 +723,11 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 	return test, expectedRecords
 }
 
-func readPhysicalAddressesFromParquetObject(t *testing.T, ctx context.Context, c *catalog.Catalog, obj string) []string {
+func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, ctx context.Context, c *catalog.Catalog, obj string) []string {
 	objReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
 		Identifier:       obj,
 		IdentifierType:   block.IdentifierTypeFull,
-		StorageNamespace: repository.StorageNamespace.String(),
+		StorageNamespace: "mem://" + repositoryID,
 	}, 0)
 	require.NoError(t, err)
 	defer func() { _ = objReader.Close() }()

@@ -13,7 +13,7 @@ import {OverlayTrigger} from "react-bootstrap";
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
-export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null, inProgress = false, sm = 6 }) => {
+export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null, inProgress = false, sm = 6, samlpleRepoChecked = false }) => {
     const fieldNameOffset = 3;
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
@@ -27,6 +27,13 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
     const repoNameField = useRef(null);
+    const sampleDataCheckbox = useRef(null);
+
+    useEffect(() => {
+        if (sampleDataCheckbox.current) {
+            sampleDataCheckbox.current.checked = samlpleRepoChecked;
+        }
+    }, [samlpleRepoChecked, sampleDataCheckbox.current]);
 
     const onRepoNameChange = () => {
         const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
@@ -39,9 +46,9 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
     };
 
     const checkStorageNamespaceValidity = () => {
-        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value)
+        const isStorageNamespaceValid = storageNamespaceValidityRegex.test(storageNamespaceField.current.value);
         setStorageNamespaceValid(isStorageNamespaceValid);
-        setFormValid(isStorageNamespaceValid && defaultBranchValid && repoValid);
+        setFormValid(isStorageNamespaceValid && defaultBranchValid && repoValidityRegex.test(repoNameField.current.value));
     };
 
     const checkDefaultBranchValidity = () => {
@@ -70,7 +77,8 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
             onSubmit({
                 name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
-                default_branch: defaultBranchField.current.value
+                default_branch: defaultBranchField.current.value,
+                sample_data: sampleDataCheckbox.current.checked,
             });
         }}>
         {config?.warnings && <Warnings warnings={config.warnings}/>}
@@ -115,6 +123,11 @@ export const RepositoryCreateForm = ({ config, onSubmit, onCancel, error = null,
                         Invalid Branch.
                     </Form.Text>
                     }
+                </Col>
+            </Form.Group>
+            <Form.Group as={Row} controlId="sampleData" className="mb-3">
+                <Col sm={{ span: sm, offset: 3 }}>
+                    <Form.Check ref={sampleDataCheckbox} type="checkbox" label="Add sample data, hooks, and configuration" />
                 </Col>
             </Form.Group>
 

@@ -85,3 +85,4 @@ brews:
   tap:
     owner: treeverse
     name: homebrew-lakefs
+    token: "{{ .Env.TAP_GITHUB_TOKEN }}"
