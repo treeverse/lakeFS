@@ -192,7 +192,7 @@ object StorageClients {
         pagedResp = it.next()
         counter += pagedResp.getValue.size()
       }
-      if(counter == 0) {
+      if (counter == 0) {
         throw RunIDException("No previous run ID")
       }
       if (counter < iteration) {
