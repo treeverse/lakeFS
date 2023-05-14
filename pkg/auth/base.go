@@ -43,7 +43,7 @@ var statementByName = map[string]model.Statement{
 	},
 	"FSReadConfig": {
 		Action: []string{
-			"fs:ReadConfig",
+			permissions.ReadConfig,
 		},
 		Effect: model.StatementEffectAllow,
 	},
@@ -60,7 +60,7 @@ var statementByName = map[string]model.Statement{
 			"ci:Read*",
 			"retention:Get*",
 			"branches:Get*",
-			"fs:ReadConfig",
+			permissions.ReadConfig,
 		},
 
 		Effect: model.StatementEffectAllow,
