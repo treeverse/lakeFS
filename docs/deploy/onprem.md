@@ -177,7 +177,7 @@ To install lakeFS with Helm:
 
 ## Secure connection
 
-It is recommended that TLS/SSL termination is done by your infrastrure's load balancer or cluster manager.
+It is recommended that TLS/SSL termination by your infrastructure's load balancer or cluster manager.
 
 To configure your local lakeFS to listen and serve with HTTPS, update `config.yaml` with the additional `tls` section:
 
