@@ -204,19 +204,17 @@ The following Policies are created during initial setup:
     "statement": [
         {
             "action": [
-                "fs:ListRepositories",
-                "fs:ReadRepository",
-                "fs:ReadCommit",
-                "fs:ListBranches",
-                "fs:ListObjects",
-                "fs:ReadObject",
+                "fs:Read*",
+                "fs:List*",
                 "fs:WriteObject",
                 "fs:DeleteObject",
                 "fs:RevertBranch",
-                "fs:ReadBranch",
                 "fs:CreateBranch",
+                "fs:CreateTag",
                 "fs:DeleteBranch",
-                "fs:CreateCommit"
+                "fs:DeleteTag",
+                "fs:CreateCommit",
+                "fs:CreateMetaRange"
             ],
             "effect": "allow",
             "resource": "*"
