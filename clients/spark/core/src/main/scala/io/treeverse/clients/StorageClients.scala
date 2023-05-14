@@ -12,8 +12,7 @@ import io.treeverse.clients.StorageUtils.{S3, StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
 
-trait StorageClient {
-}
+trait StorageClient {}
 
 object StorageClients {
   class S3() extends StorageClient with Serializable {

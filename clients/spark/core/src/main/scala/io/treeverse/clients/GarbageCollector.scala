@@ -399,7 +399,7 @@ object GarbageCollector {
                       markID,
                       storageNSForSdkClient,
                       storageNSForHadoopFS,
-          configMapper
+                      configMapper
                      )
       gcAddressesLocation = markInfo._1
       gcCommitsLocation = markInfo._2
@@ -556,7 +556,7 @@ object GarbageCollector {
     val runIDsPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/")
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
     val run_ids = runIDsFS.listFiles(runIDsPath, false)
-    if(run_ids.hasNext) {
+    if (run_ids.hasNext) {
       previousRunID = run_ids.next().getPath.getName
       println(s"----------------------- Using previous RUN ID: $previousRunID")
     } else {
