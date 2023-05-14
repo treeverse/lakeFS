@@ -629,6 +629,10 @@ func (c *Config) IsAuthUISimplified() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
+func (c *Config) IsAuthTypeAPI() bool {
+	return c.Auth.API.Endpoint != ""
+}
+
 func (c *Config) UISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
 	for _, item := range c.UI.Snippets {

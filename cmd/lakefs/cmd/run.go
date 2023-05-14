@@ -60,7 +60,7 @@ type Shutter interface {
 var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
 
 func checkAuthModeSupport(cfg *config.Config) error {
-	if !cfg.IsAuthUISimplified() && cfg.Auth.API.Endpoint == "" {
+	if !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI() {
 		return errSimplifiedOrExternalAuth
 	}
 	return nil
@@ -122,7 +122,7 @@ var runCmd = &cobra.Command{
 		if err := checkAuthModeSupport(cfg); err != nil {
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
-		if cfg.Auth.API.Endpoint != "" {
+		if cfg.IsAuthTypeAPI() {
 			var apiEmailer *email.Emailer
 			if !cfg.Auth.API.SupportsInvites {
 				// invites not supported by API - delegate it to emailer
