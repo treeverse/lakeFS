@@ -25,7 +25,7 @@ object StorageClients {
   class Azure(config: ConfigMapper, storageNamespace: String) extends StorageClient with Serializable {
     private val storageNSURI: URI = new URI(storageNamespace)
     private val storageAccountUrl: String = StorageUtils.AzureBlob.uriToStorageAccountUrl(storageNSURI)
-    private val storageAccountName: String = StorageUtils.AzureBlob.uriToContainerName(storageNSURI)
+    private val storageAccountName: String = StorageUtils.AzureBlob.uriToStorageAccountName(storageNSURI)
     @transient private lazy val blobServiceClient: BlobServiceClient = getBlobServiceClient(storageAccountUrl, storageAccountName, config)
     @transient lazy val blobBatchClient: BlobBatchClient = new BlobBatchClientBuilder(blobServiceClient).buildClient
 
