@@ -1426,7 +1426,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadStorageConfiguration,
+			Action:   permissions.ReadConfig,
 			Resource: permissions.All,
 		},
 	}) {
