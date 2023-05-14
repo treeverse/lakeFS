@@ -15,25 +15,34 @@ import java.net.URI
 trait StorageClient {}
 
 object StorageClients {
-  class S3(storageNamespace: String, region: String, retries: Int, config: ConfigMapper) extends StorageClient with Serializable {
+  class S3(storageNamespace: String, region: String, retries: Int, config: ConfigMapper)
+      extends StorageClient
+      with Serializable {
     private val storageNSURI: URI = new URI(storageNamespace)
     private val bucket: String = storageNSURI.getHost
     @transient lazy val s3Client: AmazonS3 = io.treeverse.clients.conditional.S3ClientBuilder
       .build(config.configuration, bucket, region, retries)
   }
 
-  class Azure(config: ConfigMapper, storageNamespace: String) extends StorageClient with Serializable {
+  class Azure(config: ConfigMapper, storageNamespace: String)
+      extends StorageClient
+      with Serializable {
     private val storageNSURI: URI = new URI(storageNamespace)
-    private val storageAccountUrl: String = StorageUtils.AzureBlob.uriToStorageAccountUrl(storageNSURI)
-    private val storageAccountName: String = StorageUtils.AzureBlob.uriToContainerName(storageNSURI)
-    @transient private lazy val blobServiceClient: BlobServiceClient = getBlobServiceClient(storageAccountUrl, storageAccountName, config)
-    @transient lazy val blobBatchClient: BlobBatchClient = new BlobBatchClientBuilder(blobServiceClient).buildClient
+    private val storageAccountUrl: String =
+      StorageUtils.AzureBlob.uriToStorageAccountUrl(storageNSURI)
+    private val storageAccountName: String =
+      StorageUtils.AzureBlob.uriToStorageAccountName(storageNSURI)
+    @transient private lazy val blobServiceClient: BlobServiceClient =
+      getBlobServiceClient(storageAccountUrl, storageAccountName, config)
+    @transient lazy val blobBatchClient: BlobBatchClient = new BlobBatchClientBuilder(
+      blobServiceClient
+    ).buildClient
 
     private def getBlobServiceClient(
-                                      storageAccountUrl: String,
-                                      storageAccountName: String,
-                                      configMapper: ConfigMapper
-                                    ): BlobServiceClient = {
+        storageAccountUrl: String,
+        storageAccountName: String,
+        configMapper: ConfigMapper
+    ): BlobServiceClient = {
       val hc = configMapper.configuration
       val storageAccountKey = hc.get(String.format(StorageAccountKeyProperty, storageAccountName))
       val blobServiceClientBuilder: BlobServiceClientBuilder =
@@ -69,11 +78,11 @@ object StorageClients {
   }
 
   def apply(
-             storageType: String,
-             configMapper: ConfigMapper,
-             storageNamespace: String,
-             region: String
-           ): StorageClient = {
+      storageType: String,
+      configMapper: ConfigMapper,
+      storageNamespace: String,
+      region: String
+  ): StorageClient = {
     storageType match {
       case StorageTypeS3 =>
         new S3(storageNamespace, region, S3.S3NumRetries, configMapper)
