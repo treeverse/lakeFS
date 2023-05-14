@@ -562,20 +562,18 @@ object GarbageCollector {
     val runIDsPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/")
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
     val runIDs = runIDsFS.listFiles(runIDsPath, false)
-    var remainingIterations = iterations
     if (!runIDs.hasNext) {
       runIDsFS.close()
       throw RunIDException("No previous run ID")
     }
     var runIDObject: LocatedFileStatus = null
-    while (runIDs.hasNext && remainingIterations > 0) {
-      remainingIterations -= 1
+    for(_ <- 0 until iterations) {
+      if(!runIDs.hasNext) {
+        throw RunIDException("Required Run ID iteration doesn't exist")
+      }
       runIDObject = runIDs.next()
     }
     runIDsFS.close()
-    if (remainingIterations > 0) {
-      throw RunIDException("Required Run ID iteration doesn't exist")
-    }
     previousRunID = runIDObject.getPath.getName
     println(s"----------------------- Using previous RUN ID: $previousRunID")
     previousRunID
