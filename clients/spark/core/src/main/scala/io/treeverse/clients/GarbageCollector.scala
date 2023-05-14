@@ -399,7 +399,7 @@ object GarbageCollector {
                       markID,
                       storageNSForSdkClient,
                       storageNSForHadoopFS,
-                      storageClient
+          configMapper
                      )
       gcAddressesLocation = markInfo._1
       gcCommitsLocation = markInfo._2
@@ -426,7 +426,7 @@ object GarbageCollector {
           storageClient,
           schema
         )
-        storageClient.logRunID(runID)
+        logRunID(storageNSForHadoopFS, runID, configMapper)
         removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
@@ -455,11 +455,11 @@ object GarbageCollector {
       markID: String,
       storageNS: String,
       storageNSForHadoopFS: String,
-      storageClient: StorageClient
+      configMapper: ConfigMapper
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
     val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
-    val previousRunID = handleIncrementalRun(incrementalRun, storageClient)
+    val previousRunID = getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper)
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -544,16 +544,39 @@ object GarbageCollector {
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
   }
 
-  private def handleIncrementalRun(
+  private def getPreviousRunID(
       incrementalRun: Boolean,
-      storageClient: StorageClient
+      storageNS: String,
+      configMapper: ConfigMapper
   ): String = {
     if (!incrementalRun) {
       return ""
     }
-    val previousRunID = storageClient.getRunID(1)
-    print(s"----------------------- Using previous RUN ID: $previousRunID")
+    var previousRunID = ""
+    val runIDsPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/")
+    val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
+    val run_ids = runIDsFS.listFiles(runIDsPath, false)
+    if(run_ids.hasNext) {
+      previousRunID = run_ids.next().getPath.getName
+      println(s"----------------------- Using previous RUN ID: $previousRunID")
+    } else {
+      runIDsFS.close()
+      throw RunIDException("No previous run ID")
+    }
+    runIDsFS.close()
     previousRunID
+  }
+
+  private def logRunID(storageNS: String, runID: String, configMapper: ConfigMapper): Unit = {
+    val runIDPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/$runID")
+    val runIDFS = runIDPath.getFileSystem(configMapper.configuration)
+
+    val runIDStream = runIDFS.create(runIDPath, false)
+    try {
+      runIDStream.write(new Array[Byte](0))
+    } finally {
+      runIDStream.close()
+    }
   }
 
   def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
@@ -742,4 +765,6 @@ object GarbageCollector {
   }
 
   def writeJsonSummaryForTesting = writeJsonSummary _
+
+  case class RunIDException(private val message: String = "") extends Exception(message)
 }
