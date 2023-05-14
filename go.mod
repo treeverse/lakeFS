@@ -52,7 +52,7 @@ require (
 	github.com/xitongsys/parquet-go v1.6.0
 	github.com/xitongsys/parquet-go-source v0.0.0-20201108113611-f372b7d813be
 	golang.org/x/crypto v0.9.0
-	golang.org/x/oauth2 v0.7.0
+	golang.org/x/oauth2 v0.8.0
 	golang.org/x/term v0.8.0
 	google.golang.org/api v0.106.0
 	google.golang.org/protobuf v1.30.0
@@ -79,7 +79,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.18.0
-	github.com/google/go-github/v50 v50.2.0
+	github.com/google/go-github/v52 v52.0.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/go-hclog v1.2.0
@@ -100,7 +100,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v2 v2.3.0 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20230426101702-58e86b294756 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/breml/errchkjson v0.3.1 // indirect
 	github.com/butuzov/ireturn v0.1.1 // indirect
 	github.com/chavacava/garif v0.0.0-20230227094218-b8c73b2037b8 // indirect
-	github.com/cloudflare/circl v1.1.0 // indirect
+	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
