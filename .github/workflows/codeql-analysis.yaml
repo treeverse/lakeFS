@@ -21,7 +21,8 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - uses: actions/setup-node@v3
+    - name: Set up NodeJS
+      uses: actions/setup-node@v3
       with:
         node-version: '16.17.1'
 
@@ -38,7 +39,7 @@ jobs:
     - name: Generate code
       env:
         NODE_OPTIONS: "--max-old-space-size=4096"
-        run: make gen
+      run: make gen
 
     - name: Initialize CodeQL Go
       uses: github/codeql-action/init@v2
