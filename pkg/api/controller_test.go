@@ -1206,6 +1206,9 @@ func TestController_ListTagsHandler(t *testing.T) {
 			})
 			testutil.Must(t, err)
 			payload := resp.JSON200
+			if payload == nil {
+				t.Fatal("ListTags missing response, got", resp.Status())
+			}
 			results = append(results, payload.Results...)
 			if !payload.Pagination.HasMore {
 				break

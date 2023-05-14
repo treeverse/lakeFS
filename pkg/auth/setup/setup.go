@@ -115,9 +115,7 @@ func attachPolicies(ctx context.Context, authService auth.Service, groupID strin
 }
 
 func SetupRBACBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
-	var err error
-
-	err = createGroups(ctx, authService, []*model.Group{
+	err := createGroups(ctx, authService, []*model.Group{
 		{CreatedAt: ts, DisplayName: AdminsGroup},
 		{CreatedAt: ts, DisplayName: SuperUsersGroup},
 		{CreatedAt: ts, DisplayName: DevelopersGroup},
@@ -187,7 +185,7 @@ func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.T
 func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
-	// Setup the basic groups and policies
+	// Set up the basic groups and policies
 	err := SetupBaseGroups(ctx, authService, cfg, now)
 	if err != nil {
 		return nil, err
