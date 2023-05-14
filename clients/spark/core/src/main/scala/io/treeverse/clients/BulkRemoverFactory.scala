@@ -76,7 +76,7 @@ object BulkRemoverFactory {
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
-      val s3Client = client.s3Client()
+      val s3Client = client.s3Client
       try {
         val res = s3Client.deleteObjects(delObjReq)
         res.getDeletedObjects.asScala.map(_.getKey())
@@ -110,7 +110,7 @@ object BulkRemoverFactory {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
       println(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.asJava
-      val blobBatchClient = client.blobBatchClient()
+      val blobBatchClient = client.blobBatchClient
 
       val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URI]() {
         def apply(response: Response[Void]): URI = {
