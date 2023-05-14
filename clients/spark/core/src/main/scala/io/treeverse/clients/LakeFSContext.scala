@@ -87,6 +87,7 @@ object LakeFSContext {
   val MARK_ID_KEY = "mark_id"
   val RUN_ID_KEY = "run_id"
   val COMMITS_LOCATION_KEY = "commits_location"
+  val RUN_ID_MARKERS_LOCATION_FORMAT = "%s/_lakefs/retention/gc/run_ids/%s"
   val DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = 24
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
