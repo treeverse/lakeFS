@@ -71,7 +71,7 @@ This reference uses `.` to denote the nesting of values.
     + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
     + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
-* `tls.enabled` `(bool :false)` - Enable TLS listening. The `listen_address` will be used to serve HTTPS requests.
+* `tls.enabled` `(bool :false)` - Enable TLS listening. The `listen_address` will be used to serve HTTPS requests. (mainly for local development)
 * `tls.cert_file` `(string : )` - Server certificate file path used while serve HTTPS (.cert or .crt file - signed certificates).
 * `tls.key_file` `(string : )` - Server secret key file path used whie serve HTTPS (.key file - private key).
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
