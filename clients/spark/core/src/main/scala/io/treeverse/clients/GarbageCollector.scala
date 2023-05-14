@@ -555,9 +555,9 @@ object GarbageCollector {
     var previousRunID = ""
     val runIDsPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/")
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
-    val run_ids = runIDsFS.listFiles(runIDsPath, false)
-    if (run_ids.hasNext) {
-      previousRunID = run_ids.next().getPath.getName
+    val runIDs = runIDsFS.listFiles(runIDsPath, false)
+    if (runIDs.hasNext) {
+      previousRunID = runIDs.next().getPath.getName
       println(s"----------------------- Using previous RUN ID: $previousRunID")
     } else {
       runIDsFS.close()
