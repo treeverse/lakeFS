@@ -47,7 +47,7 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
 Connect to your host using SSH:
 
 1. Create a `config.yaml` on your VM, with the following parameters:
-  
+ 
    ```yaml
    ---
    database:
@@ -73,16 +73,6 @@ Connect to your host using SSH:
 
    ⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
    {: .note }
-
-1. In the case the TLS/SSL termination is not done by your infrastrure's load balancer or cluster manager.
-   lakeFS can be configure to listen and serve HTTPS by adding the following to the configuration:
-
-   ```yaml
-   tls:
-     enabled: true
-     cert_file: server.crt   # provide path to your certificate file
-     key_file: server.key    # provide paht to your server private key
-   ```
 
 1. [Download the binary](../index.md#downloads) to the server.
 
@@ -184,6 +174,20 @@ To install lakeFS with Helm:
 
 </div>
 </div>
+
+## Secure connection
+
+It is recommended that TLS/SSL termination is done by your infrastrure's load balancer or cluster manager.
+
+To configure your local lakeFS to listen and serve with HTTPS, update `config.yaml` with the additional `tls` section:
+
+```yaml
+tls:
+  enabled: true
+  cert_file: server.crt   # provide path to your certificate file
+  key_file: server.key    # provide path to your server private key
+```
+
 
 ## Local Blockstore
 
