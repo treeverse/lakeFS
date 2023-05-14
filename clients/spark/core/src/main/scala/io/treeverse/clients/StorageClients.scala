@@ -4,7 +4,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.azure.core.http.HttpClient
 import com.azure.identity.{ClientSecretCredential, ClientSecretCredentialBuilder}
 import com.azure.storage.blob.batch.{BlobBatchClient, BlobBatchClientBuilder}
-import com.azure.storage.blob.{BlobContainerClient, BlobServiceClient, BlobServiceClientBuilder}
+import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
 import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
 import io.treeverse.clients.StorageUtils.AzureBlob._
