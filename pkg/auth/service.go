@@ -1264,7 +1264,7 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
-	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID})
+	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID, Amount: paginationAmount(1)})
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
@@ -1289,11 +1289,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
+	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email), Amount: paginationAmount(1)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
+	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID), Amount: paginationAmount(1)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {
