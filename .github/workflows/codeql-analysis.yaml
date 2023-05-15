@@ -21,7 +21,8 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - uses: actions/setup-node@v3
+    - name: Set up NodeJS
+      uses: actions/setup-node@v3
       with:
         node-version: '16.17.1'
 
@@ -30,13 +31,18 @@ jobs:
       with:
         go-version: 1.19.2
 
-    - name: Initialize CodeQL Go
+    - name: Generate code
+      env:
+        NODE_OPTIONS: "--max-old-space-size=4096"
+      run: |
+        mkdir ./webui/dist
+        touch ./webui/dist/index.html         
+        make gen-api
+
+    - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
         languages: 'go, javascript'
-        config-file: ./.github/codeql/codeql-config.yaml
-
-    - run: make gen-api
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
