@@ -34,7 +34,10 @@ jobs:
     - name: Generate code
       env:
         NODE_OPTIONS: "--max-old-space-size=4096"
-      run: make gen-ui gen-api
+      run: |
+        mkdir ./webui/dist
+        touch ./webui/dist/index.html         
+        make gen-api
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
