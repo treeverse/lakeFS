@@ -42,7 +42,6 @@ func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
 	middlewareAuthenticator auth.Authenticator,
-	controllerAuthenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -82,7 +81,7 @@ func Serve(
 	controller := NewController(
 		cfg,
 		catalog,
-		controllerAuthenticator,
+		middlewareAuthenticator,
 		authService,
 		blockAdapter,
 		metadataManager,
