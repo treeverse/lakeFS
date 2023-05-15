@@ -172,21 +172,14 @@ func ImportStatusFromProto(pb *ImportStatusData) *ImportStatus {
 	if pb.Error != "" {
 		statusErr = fmt.Errorf("%w: %s", ErrImport, pb.Error)
 	}
-	var metarangeID *MetaRangeID
-	if pb.MetarangeId != "" {
-		metarangeID = (*MetaRangeID)(&pb.MetarangeId)
-	}
-	var importBranch *string
-	if pb.ImportBranch != "" {
-		importBranch = &pb.ImportBranch
-	}
+
 	return &ImportStatus{
 		ID:           ImportID(pb.Id),
 		Completed:    pb.Completed,
 		UpdatedAt:    pb.UpdatedAt.AsTime(),
 		Progress:     pb.Progress,
-		ImportBranch: importBranch,
-		MetaRangeID:  metarangeID,
+		ImportBranch: pb.ImportBranch,
+		MetaRangeID:  MetaRangeID(pb.MetarangeId),
 		Commit:       commit,
 		Error:        statusErr,
 	}
@@ -201,21 +194,14 @@ func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
 	if status.Error != nil {
 		statusErr = status.Error.Error()
 	}
-	var metarangeID string
-	if status.MetaRangeID != nil {
-		metarangeID = status.MetaRangeID.String()
-	}
-	var importBranch string
-	if status.ImportBranch != nil {
-		importBranch = *status.ImportBranch
-	}
+
 	return &ImportStatusData{
 		Id:           status.ID.String(),
 		Completed:    status.Completed,
 		UpdatedAt:    timestamppb.New(status.UpdatedAt),
 		Progress:     status.Progress,
-		ImportBranch: importBranch,
-		MetarangeId:  metarangeID,
+		ImportBranch: status.ImportBranch,
+		MetarangeId:  status.MetaRangeID.String(),
 		Commit:       commit,
 		Error:        statusErr,
 	}

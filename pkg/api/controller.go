@@ -2108,15 +2108,9 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 }
 
 func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ImportStartJSONRequestBody, repository, branch string) {
-	if !c.authorize(w, r, permissions.Node{
+	perm := permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ImportFromStorage,
-					Resource: permissions.StorageNamespace("*"),
-				},
-			},
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.WriteObjectAction,
@@ -2136,7 +2130,21 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 				},
 			},
 		},
-	}) {
+	}
+	// Add import permissions per source
+	// Add object permissions per destination
+	for _, source := range body.Paths {
+		perm.Nodes = append(perm.Nodes,
+			permissions.Node{Permission: permissions.Permission{
+				Action:   permissions.ImportFromStorage,
+				Resource: permissions.StorageNamespace(source.Path),
+			}},
+			permissions.Node{Permission: permissions.Permission{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.StorageNamespace(source.Destination),
+			}})
+	}
+	if !c.authorize(w, r, perm) {
 		return
 	}
 
@@ -2176,25 +2184,27 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusCreated, ImportCreationResponse{
+	writeResponse(w, r, http.StatusAccepted, ImportCreationResponse{
 		Id: importID,
 	})
 }
 
 func importStatusToResponse(status *graveler.ImportStatus) ImportStatusResp {
 	resp := ImportStatusResp{
-		Completed:      status.Completed,
-		ImportBranch:   status.ImportBranch,
-		ImportProgress: status.Progress,
-		UpdateTime:     status.UpdatedAt,
+		Completed:       status.Completed,
+		IngestedObjects: &status.Progress,
+		UpdateTime:      status.UpdatedAt,
 	}
 
 	if status.Error != nil {
 		resp.Error = &Error{Message: status.Error.Error()}
 	}
-	if status.MetaRangeID != nil {
+	if status.MetaRangeID != "" {
 		metarange := status.MetaRangeID.String()
 		resp.MetarangeId = &metarange
+	}
+	if status.ImportBranch != "" {
+		resp.ImportBranch = &status.ImportBranch
 	}
 	commitLog := catalog.CommitRecordToLog(status.Commit)
 	if commitLog != nil {

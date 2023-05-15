@@ -32,9 +32,9 @@ from lakefs_client.exceptions import ApiAttributeError
 
 def lazy_import():
     from lakefs_client.model.commit_creation import CommitCreation
-    from lakefs_client.model.import_path import ImportPath
+    from lakefs_client.model.import_location import ImportLocation
     globals()['CommitCreation'] = CommitCreation
-    globals()['ImportPath'] = ImportPath
+    globals()['ImportLocation'] = ImportLocation
 
 
 class ImportCreation(ModelNormal):
@@ -90,7 +90,7 @@ class ImportCreation(ModelNormal):
         """
         lazy_import()
         return {
-            'paths': ([ImportPath],),  # noqa: E501
+            'paths': ([ImportLocation],),  # noqa: E501
             'commit': (CommitCreation,),  # noqa: E501
         }
 
@@ -115,7 +115,7 @@ class ImportCreation(ModelNormal):
         """ImportCreation - a model defined in OpenAPI
 
         Args:
-            paths ([ImportPath]):
+            paths ([ImportLocation]):
             commit (CommitCreation):
 
         Keyword Args:
@@ -202,7 +202,7 @@ class ImportCreation(ModelNormal):
         """ImportCreation - a model defined in OpenAPI
 
         Args:
-            paths ([ImportPath]):
+            paths ([ImportLocation]):
             commit (CommitCreation):
 
         Keyword Args:

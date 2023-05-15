@@ -3769,7 +3769,7 @@ paths:
               $ref: '#/components/schemas/ImportCreation'
         required: true
       responses:
-        "201":
+        "202":
           content:
             application/json:
               schema:
@@ -7217,12 +7217,14 @@ components:
       required:
       - pattern
       type: object
-    ImportPath:
-      example:
-        path: s3://my-bucket/production/collections/
-        destination: collections/
-        type: prefix
+    ImportLocation:
       properties:
+        type:
+          description: Path type, can either be 'common_prefix' or 'object'
+          enum:
+          - common_prefix
+          - object
+          type: string
         path:
           description: A source location to ingested path or to a single object. Must
             match the lakeFS installation blockstore type.
@@ -7231,12 +7233,6 @@ components:
         destination:
           description: Destination for the imported objects on the branch
           example: collections/
-          type: string
-        type:
-          description: Path type, can either be 'prefix' or 'object'
-          enum:
-          - prefix
-          - object
           type: string
       required:
       - destination
@@ -7248,19 +7244,14 @@ components:
         paths:
         - path: s3://my-bucket/production/collections/
           destination: collections/
-          type: prefix
-        - path: s3://my-bucket/production/collections/
-          destination: collections/
-          type: prefix
-        commit:
-          date: 0
-          metadata:
-            key: metadata
-          message: message
+          type: common_prefix
+        - path: s3://my-bucket/production/collections/file1
+          destination: collections/file1
+          type: object
       properties:
         paths:
           items:
-            $ref: '#/components/schemas/ImportPath'
+            $ref: '#/components/schemas/ImportLocation'
           type: array
         commit:
           $ref: '#/components/schemas/CommitCreation'
@@ -7359,7 +7350,7 @@ components:
         update_time: 2000-01-23T04:56:07.000+00:00
         import_branch: import_branch
         metarange_id: metarange_id
-        import_progress: 0
+        ingested_objects: 0
         commit:
           metadata:
             key: metadata
@@ -7380,7 +7371,7 @@ components:
         update_time:
           format: date-time
           type: string
-        import_progress:
+        ingested_objects:
           description: Number of objects processed so far
           format: int64
           type: integer
@@ -7394,8 +7385,6 @@ components:
           $ref: '#/components/schemas/Error'
       required:
       - completed
-      - import_progress
-      - import_total
       - update_time
       type: object
     ImportCreationResponse:

@@ -19,35 +19,9 @@ const ImportPhase = {
     Merged: 6,
 }
 
-const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId, metadata = {}) => {
-    let done = false
-    const importStatusUpdate = {
-        importPhase: ImportPhase.InProgress,
-        numObj: 0,
-        importID: "",
-    }
-    updateImportState(importStatusUpdate);
+const startImport = async (setImportID, prependPath, commitMsg, sourceRef, branch, repoId, refId, metadata = {}) => {
     const response = await imports.create(repoId, refId, sourceRef, prependPath, commitMsg, metadata);
-    importStatusUpdate.importID = response.id;
-    updateImportState(importStatusUpdate);
-    const delay = ms => new Promise(
-        resolve => setTimeout(resolve, ms)
-    );
-    do {
-        const statusResp = await imports.get(repoId, refId, response.id);
-        importStatusUpdate.numObj = statusResp.import_progress;
-        updateImportState(importStatusUpdate);
-        done = statusResp.completed
-        if (statusResp.error) {
-            importStatusUpdate.importPhase = ImportPhase.Failed;
-            updateImportState(importStatusUpdate);
-            throw new Error(statusResp.error.message)
-        }
-        await delay(1000);
-    } while (!done);
-    
-    importStatusUpdate.importPhase = ImportPhase.Completed;
-    updateImportState(importStatusUpdate);
+    setImportID(response.id);
 }
 
 const ImportProgress = ({numObjects}) => {
@@ -218,5 +192,5 @@ const ImportForm = ({
 }
 
 export {
-    runImport, ImportProgress, ImportDone, ExecuteImportButton, ImportForm, ImportPhase,
+    startImport, ImportProgress, ImportDone, ExecuteImportButton, ImportForm, ImportPhase,
 }

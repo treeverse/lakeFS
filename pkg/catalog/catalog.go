@@ -41,7 +41,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -158,19 +157,17 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
-	sharedWorkers            = 15
+	sharedWorkers            = 30
 	pendingTasksPerWorker    = 3
 	workersMaxDrainDuration  = 5 * time.Second
 )
 
-type ImportPathType int
+type ImportPathType string
 
 const (
-	ImportPathTypePrefix = iota
-	ImportPathTypeObject
+	ImportPathTypePrefix = "common_prefix"
+	ImportPathTypeObject = "object"
 )
-
-var ImportPathTypes = []string{"prefix", "object"}
 
 type ImportPath struct {
 	Path        string
@@ -179,11 +176,13 @@ type ImportPath struct {
 }
 
 func GetImportPathType(t string) (ImportPathType, error) {
-	idx := slices.Index(ImportPathTypes, t)
-	if idx < 0 {
-		return -1, fmt.Errorf("invalid import type: %w", graveler.ErrInvalidValue)
+	switch t {
+	case ImportPathTypePrefix,
+		ImportPathTypeObject:
+		return ImportPathType(t), nil
+	default:
+		return "", fmt.Errorf("invalid import type: %w", graveler.ErrInvalidValue)
 	}
-	return ImportPathType(idx), nil
 }
 
 type ImportCommit struct {
@@ -1844,39 +1843,30 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		importManager.StatusChan <- importStatus
 		return
 	}
-	importStatus.ImportBranch = &importBranch
+	importStatus.ImportBranch = importBranch
 
-	var wg multierror.Group
-	const ingestChanSize = 10
-	ingestChan := make(chan *walkEntryIterator, ingestChanSize)
-	wg.Go(func() error {
-		for i := range ingestChan {
-			it := i // Pinning
-			wg.Go(func() error {
-				defer it.Close()
-				return importManager.Ingest(it)
-			})
-		}
-		return nil
-	})
-
+	wg, wgCtx := c.workPool.GroupContext(ctx)
 	for _, source := range params.Paths {
 		// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-		walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: source.Path})
+		walker, err := c.walkerFactory.GetWalker(wgCtx, store.WalkerOptions{StorageURI: source.Path})
 		if err != nil {
 			importStatus.Error = fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
 			importManager.StatusChan <- importStatus
 			return
 		}
 
-		it, err := NewWalkEntryIterator(ctx, walker, source.Type, source.Destination, "", "")
+		it, err := NewWalkEntryIterator(wgCtx, walker, source.Type, source.Destination, "", "")
 		if err != nil {
 			importStatus.Error = fmt.Errorf("creating walk iterator on path %s: %w", source.Path, err)
 			importManager.StatusChan <- importStatus
 			return
 		}
 		logger.WithFields(logging.Fields{"source": source.Path, "itr": it}).Debug("Ingest source")
-		ingestChan <- it
+
+		wg.Submit(func() error {
+			defer it.Close()
+			return importManager.Ingest(it)
+		})
 
 		// Check if operation was canceled
 		if ctx.Err() != nil {
@@ -1884,8 +1874,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		}
 	}
 
-	close(ingestChan)
-	err = wg.Wait().ErrorOrNil()
+	err = wg.Wait()
 	if err != nil {
 		importStatus.Error = fmt.Errorf("error on ingest: %w", err)
 		importManager.StatusChan <- importStatus
@@ -1898,6 +1887,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		importManager.StatusChan <- importStatus
 		return
 	}
+	defer importItr.Close()
 
 	var ranges []*graveler.RangeInfo
 	for importItr.hasMore {
@@ -1934,7 +1924,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	}
 
 	// Update import status
-	importStatus.MetaRangeID = &metarange.ID
+	importStatus.MetaRangeID = metarange.ID
 	importStatus.Commit = commitLogToRecord(commit)
 	importStatus.Completed = true
 	importManager.StatusChan <- importStatus
@@ -1969,10 +1959,16 @@ func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID strin
 	if err != nil {
 		return err
 	}
-	if importStatus.Completed {
+	if importStatus.Completed || importStatus.Error == ImportCanceled {
+		c.log.WithFields(logging.Fields{
+			"import_id": importID,
+			"completed": importStatus.Completed,
+			"error":     importStatus.Error,
+		}).Warning("Not canceling import")
 		return graveler.ErrConflictFound
 	}
 	importStatus.Error = ImportCanceled
+	importStatus.UpdatedAt = timestamppb.Now()
 	return kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(importID), importStatus)
 }
 

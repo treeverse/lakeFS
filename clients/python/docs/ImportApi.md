@@ -313,10 +313,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     import_creation = ImportCreation(
         paths=[
-            ImportPath(
+            ImportLocation(
+                type="common_prefix",
                 path="s3://my-bucket/production/collections/",
                 destination="collections/",
-                type="prefix",
             ),
         ],
         commit=CommitCreation(
@@ -364,7 +364,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | Import started |  -  |
+**202** | Import started |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |

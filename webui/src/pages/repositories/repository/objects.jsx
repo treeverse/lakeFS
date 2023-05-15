@@ -32,7 +32,7 @@ import {
     ImportForm,
     ImportPhase,
     ImportProgress,
-    runImport
+    startImport
 } from "../services/import_data";
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
@@ -61,6 +61,26 @@ const ImportButton = ({variant = "success", onClick, config }) => {
     )
 }
 
+export const useInterval = (callback, delay) => {
+
+    const savedCallback = useRef();
+
+    useEffect(() => {
+        savedCallback.current = callback;
+    }, [callback]);
+
+
+    useEffect(() => {
+        function tick() {
+            savedCallback.current();
+        }
+        if (delay !== null) {
+            const id = setInterval(tick, delay);
+            return () => clearInterval(id);
+        }
+    }, [delay]);
+}
+
 const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false}) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
@@ -72,6 +92,29 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     const sourceRef = useRef(null);
     const destRef = useRef(null);
     const commitMsgRef = useRef(null);
+
+    useInterval(() => {
+        if (importID !== "" && importPhase === ImportPhase.InProgress) {
+            const getState = async () => {
+                const importState = await imports.get(repoId, referenceId, importID);
+                setNumberOfImportedObjects(importState.ingested_objects);
+                if (importState.error) {
+                    throw importState.error;
+                }
+                if (importState.completed) {
+                    setImportPhase(ImportPhase.Completed);
+                    onDone();
+                }
+            };
+            getState().catch(function(error){
+                console.log(error)
+                setImportPhase(ImportPhase.Failed);
+                setImportError(error);
+                setIsImportEnabled(false);
+            });
+        }
+    }, 1000);
+    
     let currBranch = referenceId;
     currBranch = currBranch.match(/^_(.*)_imported$/)?.[1] || currBranch; // trim "_imported" suffix if used as import source
     let importBranch = `_${currBranch}_imported`;
@@ -107,16 +150,12 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
 
     const doImport = async () => {
         setImportPhase(ImportPhase.InProgress);
-        const updateStateFromImport = ({importPhase, numObj, importID}) => {
-            setImportPhase(importPhase);
-            setNumberOfImportedObjects(numObj);
-            setImportID(importID)
-        }
         try {
             const metadata = {};
             metadataFields.forEach(pair => metadata[pair.key] = pair.value)
-            await runImport(
-                updateStateFromImport,
+            setImportPhase(ImportPhase.InProgress)
+            await startImport(
+                setImportID,
                 destRef.current.value,
                 commitMsgRef.current.value,
                 sourceRef.current.value,
@@ -125,7 +164,6 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 referenceId,
                 metadata
             );
-            onDone();
         } catch (error) {
             setImportPhase(ImportPhase.Failed);
             setImportError(error);

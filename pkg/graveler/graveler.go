@@ -231,8 +231,8 @@ type ImportStatus struct {
 	UpdatedAt    time.Time
 	Progress     int64
 	Total        int64
-	ImportBranch *string
-	MetaRangeID  *MetaRangeID
+	ImportBranch string
+	MetaRangeID  MetaRangeID
 	Commit       *CommitRecord
 	Error        error
 }

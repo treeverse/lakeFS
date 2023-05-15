@@ -92,7 +92,7 @@ class ImportStatusResp(ModelNormal):
         return {
             'completed': (bool,),  # noqa: E501
             'update_time': (datetime,),  # noqa: E501
-            'import_progress': (int,),  # noqa: E501
+            'ingested_objects': (int,),  # noqa: E501
             'import_branch': (str,),  # noqa: E501
             'metarange_id': (str,),  # noqa: E501
             'commit': (Commit,),  # noqa: E501
@@ -107,7 +107,7 @@ class ImportStatusResp(ModelNormal):
     attribute_map = {
         'completed': 'completed',  # noqa: E501
         'update_time': 'update_time',  # noqa: E501
-        'import_progress': 'import_progress',  # noqa: E501
+        'ingested_objects': 'ingested_objects',  # noqa: E501
         'import_branch': 'import_branch',  # noqa: E501
         'metarange_id': 'metarange_id',  # noqa: E501
         'commit': 'commit',  # noqa: E501
@@ -121,13 +121,12 @@ class ImportStatusResp(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, completed, update_time, import_progress, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, completed, update_time, *args, **kwargs):  # noqa: E501
         """ImportStatusResp - a model defined in OpenAPI
 
         Args:
             completed (bool):
             update_time (datetime):
-            import_progress (int): Number of objects processed so far
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -160,6 +159,7 @@ class ImportStatusResp(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            ingested_objects (int): Number of objects processed so far. [optional]  # noqa: E501
             import_branch (str): [optional]  # noqa: E501
             metarange_id (str): [optional]  # noqa: E501
             commit (Commit): [optional]  # noqa: E501
@@ -193,7 +193,6 @@ class ImportStatusResp(ModelNormal):
 
         self.completed = completed
         self.update_time = update_time
-        self.import_progress = import_progress
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -214,13 +213,12 @@ class ImportStatusResp(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, completed, update_time, import_progress, *args, **kwargs):  # noqa: E501
+    def __init__(self, completed, update_time, *args, **kwargs):  # noqa: E501
         """ImportStatusResp - a model defined in OpenAPI
 
         Args:
             completed (bool):
             update_time (datetime):
-            import_progress (int): Number of objects processed so far
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -253,6 +251,7 @@ class ImportStatusResp(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            ingested_objects (int): Number of objects processed so far. [optional]  # noqa: E501
             import_branch (str): [optional]  # noqa: E501
             metarange_id (str): [optional]  # noqa: E501
             commit (Commit): [optional]  # noqa: E501
@@ -284,7 +283,6 @@ class ImportStatusResp(ModelNormal):
 
         self.completed = completed
         self.update_time = update_time
-        self.import_progress = import_progress
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

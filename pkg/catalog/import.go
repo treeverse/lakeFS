@@ -3,12 +3,11 @@ package catalog
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -31,7 +30,7 @@ type Import struct {
 	logger        logging.Logger
 	repoPartition string
 	progress      int64
-	wg            sync.WaitGroup
+	wg            multierror.Group
 	closed        bool
 }
 
@@ -46,18 +45,18 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 	if err != nil {
 		return nil, err
 	}
-	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("import_%s", importID))
+	dbPath, err := os.MkdirTemp("", "import_"+importID)
 	if err != nil {
 		return nil, err
 	}
-	importDB, err := pebble.Open(tmpDir, nil)
+	importDB, err := pebble.Open(dbPath, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	i := Import{
 		db:            importDB,
-		dbPath:        tmpDir,
+		dbPath:        dbPath,
 		kvStore:       kvStore,
 		status:        status,
 		StatusChan:    make(chan graveler.ImportStatus, statusChanSize),
@@ -65,12 +64,13 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 		repoPartition: repoPartition,
 	}
 
-	go func() {
+	i.wg.Go(func() error {
 		err := i.importStatusAsync(ctx, cancel)
 		if err != nil {
 			i.logger.WithError(err).Error("failed to update import status")
 		}
-	}()
+		return err
+	})
 	return &i, nil
 }
 
@@ -122,12 +122,11 @@ func (i *Import) NewItr() (*importIterator, error) {
 func (i *Import) Close() {
 	i.closed = true
 	close(i.StatusChan)
-	i.wg.Wait()
+	_ = i.wg.Wait().ErrorOrNil()
 	_ = os.RemoveAll(i.dbPath)
 }
 
 func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFunc) error {
-	i.wg.Add(1)
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
 	newStatus := i.status

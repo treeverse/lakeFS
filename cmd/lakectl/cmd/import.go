@@ -13,7 +13,6 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
 const importSummaryTemplate = `Import of {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
@@ -60,41 +59,60 @@ var importCmd = &cobra.Command{
 					AdditionalProperties: metadata,
 				},
 			},
-			Paths: []api.ImportPath{
+			Paths: []api.ImportLocation{
 				{
 					Destination: api.StringValue(toURI.Path),
 					Path:        from,
-					Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+					Type:        "common_prefix",
 				},
 			},
 		})
 		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusCreated)
-		importID := importResp.JSON201.Id
+		if importResp.JSON202 == nil {
+			DieFmt("Response is nil")
+		}
+		importID := importResp.JSON202.Id
 		// Handle interrupts
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		go func() {
-			for sig := range c {
-				Fmt("\nCanceling import (reason: %s)\n", sig.String())
-				_, _ = client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
-				Die("Import Canceled", 1)
-			}
-		}()
+		sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+		defer stop()
 
-		const StatusPollInterval = 10 * time.Second
-		statusResp, err := client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
+		const (
+			statusPollInterval = 5 * time.Second
+			maxUpdateFailures  = 5
+		)
+		var (
+			statusResp     *api.ImportStatusResponse
+			updateFailures int
+			updatedAt      time.Time
+		)
+		timer := time.NewTimer(statusPollInterval)
 		for {
-			DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
-			status := statusResp.JSON200
-			if status.Error != nil {
-				DieFmt("Import failed: %s", status.Error.Message)
+			select {
+			case <-sigCtx.Done():
+				Fmt("\nCanceling import\n")
+				_, _ = client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
+				stop()
+				Die("Import Canceled", 1)
+			case <-timer.C:
+				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
+				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
+				status := statusResp.JSON200
+				if status.Error != nil {
+					DieFmt("Import failed: %s", status.Error.Message)
+				}
+				_ = bar.Set64(*status.IngestedObjects)
+				if updatedAt == status.UpdateTime {
+					updateFailures += 1
+				}
+				if updateFailures >= maxUpdateFailures {
+					DieFmt("Import status did not update for %s - abandon", maxUpdateFailures*statusPollInterval)
+				}
+				updatedAt = status.UpdateTime
 			}
-			_ = bar.Set64(status.ImportProgress)
-			if status.Completed {
+
+			if statusResp.JSON200.Completed {
 				break
 			}
-			time.Sleep(StatusPollInterval)
-			statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
 		}
 		_ = bar.Clear()
 
@@ -105,7 +123,7 @@ var importCmd = &cobra.Command{
 			Branch      string
 			Commit      *api.Commit
 		}{
-			Objects:     statusResp.JSON200.ImportProgress,
+			Objects:     *statusResp.JSON200.IngestedObjects,
 			MetaRangeID: api.StringValue(statusResp.JSON200.MetarangeId),
 			Branch:      importedBranch,
 			Commit:      statusResp.JSON200.Commit,

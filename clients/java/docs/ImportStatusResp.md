@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **completed** | **Boolean** |  | 
 **updateTime** | **OffsetDateTime** |  | 
-**importProgress** | **Long** | Number of objects processed so far | 
+**ingestedObjects** | **Long** | Number of objects processed so far |  [optional]
 **importBranch** | **String** |  |  [optional]
 **metarangeId** | **String** |  |  [optional]
 **commit** | [**Commit**](Commit.md) |  |  [optional]

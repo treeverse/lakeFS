@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**paths** | [**[ImportPath]**](ImportPath.md) |  | 
+**paths** | [**[ImportLocation]**](ImportLocation.md) |  | 
 **commit** | [**CommitCreation**](CommitCreation.md) |  | 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

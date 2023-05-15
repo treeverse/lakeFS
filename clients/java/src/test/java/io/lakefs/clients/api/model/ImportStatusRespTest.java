@@ -60,11 +60,11 @@ public class ImportStatusRespTest {
     }
 
     /**
-     * Test the property 'importProgress'
+     * Test the property 'ingestedObjects'
      */
     @Test
-    public void importProgressTest() {
-        // TODO: test importProgress
+    public void ingestedObjectsTest() {
+        // TODO: test ingestedObjects
     }
 
     /**

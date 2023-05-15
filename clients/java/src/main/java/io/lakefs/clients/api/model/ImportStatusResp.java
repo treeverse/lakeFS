@@ -40,9 +40,9 @@ public class ImportStatusResp {
   @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
   private OffsetDateTime updateTime;
 
-  public static final String SERIALIZED_NAME_IMPORT_PROGRESS = "import_progress";
-  @SerializedName(SERIALIZED_NAME_IMPORT_PROGRESS)
-  private Long importProgress;
+  public static final String SERIALIZED_NAME_INGESTED_OBJECTS = "ingested_objects";
+  @SerializedName(SERIALIZED_NAME_INGESTED_OBJECTS)
+  private Long ingestedObjects;
 
   public static final String SERIALIZED_NAME_IMPORT_BRANCH = "import_branch";
   @SerializedName(SERIALIZED_NAME_IMPORT_BRANCH)
@@ -107,26 +107,26 @@ public class ImportStatusResp {
   }
 
 
-  public ImportStatusResp importProgress(Long importProgress) {
+  public ImportStatusResp ingestedObjects(Long ingestedObjects) {
     
-    this.importProgress = importProgress;
+    this.ingestedObjects = ingestedObjects;
     return this;
   }
 
    /**
    * Number of objects processed so far
-   * @return importProgress
+   * @return ingestedObjects
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Number of objects processed so far")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Number of objects processed so far")
 
-  public Long getImportProgress() {
-    return importProgress;
+  public Long getIngestedObjects() {
+    return ingestedObjects;
   }
 
 
-  public void setImportProgress(Long importProgress) {
-    this.importProgress = importProgress;
+  public void setIngestedObjects(Long ingestedObjects) {
+    this.ingestedObjects = ingestedObjects;
   }
 
 
@@ -233,7 +233,7 @@ public class ImportStatusResp {
     ImportStatusResp importStatusResp = (ImportStatusResp) o;
     return Objects.equals(this.completed, importStatusResp.completed) &&
         Objects.equals(this.updateTime, importStatusResp.updateTime) &&
-        Objects.equals(this.importProgress, importStatusResp.importProgress) &&
+        Objects.equals(this.ingestedObjects, importStatusResp.ingestedObjects) &&
         Objects.equals(this.importBranch, importStatusResp.importBranch) &&
         Objects.equals(this.metarangeId, importStatusResp.metarangeId) &&
         Objects.equals(this.commit, importStatusResp.commit) &&
@@ -242,7 +242,7 @@ public class ImportStatusResp {
 
   @Override
   public int hashCode() {
-    return Objects.hash(completed, updateTime, importProgress, importBranch, metarangeId, commit, error);
+    return Objects.hash(completed, updateTime, ingestedObjects, importBranch, metarangeId, commit, error);
   }
 
   @Override
@@ -251,7 +251,7 @@ public class ImportStatusResp {
     sb.append("class ImportStatusResp {\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
-    sb.append("    importProgress: ").append(toIndentedString(importProgress)).append("\n");
+    sb.append("    ingestedObjects: ").append(toIndentedString(ingestedObjects)).append("\n");
     sb.append("    importBranch: ").append(toIndentedString(importBranch)).append("\n");
     sb.append("    metarangeId: ").append(toIndentedString(metarangeId)).append("\n");
     sb.append("    commit: ").append(toIndentedString(commit)).append("\n");

@@ -21,7 +21,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.api.model.CommitCreation;
-import io.lakefs.clients.api.model.ImportPath;
+import io.lakefs.clients.api.model.ImportLocation;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -35,20 +35,20 @@ import java.util.List;
 public class ImportCreation {
   public static final String SERIALIZED_NAME_PATHS = "paths";
   @SerializedName(SERIALIZED_NAME_PATHS)
-  private List<ImportPath> paths = new ArrayList<ImportPath>();
+  private List<ImportLocation> paths = new ArrayList<ImportLocation>();
 
   public static final String SERIALIZED_NAME_COMMIT = "commit";
   @SerializedName(SERIALIZED_NAME_COMMIT)
   private CommitCreation commit;
 
 
-  public ImportCreation paths(List<ImportPath> paths) {
+  public ImportCreation paths(List<ImportLocation> paths) {
     
     this.paths = paths;
     return this;
   }
 
-  public ImportCreation addPathsItem(ImportPath pathsItem) {
+  public ImportCreation addPathsItem(ImportLocation pathsItem) {
     this.paths.add(pathsItem);
     return this;
   }
@@ -60,12 +60,12 @@ public class ImportCreation {
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
-  public List<ImportPath> getPaths() {
+  public List<ImportLocation> getPaths() {
     return paths;
   }
 
 
-  public void setPaths(List<ImportPath> paths) {
+  public void setPaths(List<ImportLocation> paths) {
     this.paths = paths;
   }
 

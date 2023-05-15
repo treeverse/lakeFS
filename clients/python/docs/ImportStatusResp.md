@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **completed** | **bool** |  | 
 **update_time** | **datetime** |  | 
-**import_progress** | **int** | Number of objects processed so far | 
+**ingested_objects** | **int** | Number of objects processed so far | [optional] 
 **import_branch** | **str** |  | [optional] 
 **metarange_id** | **str** |  | [optional] 
 **commit** | [**Commit**](Commit.md) |  | [optional] 

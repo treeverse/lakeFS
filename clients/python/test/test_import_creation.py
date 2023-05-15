@@ -14,9 +14,9 @@ import unittest
 
 import lakefs_client
 from lakefs_client.model.commit_creation import CommitCreation
-from lakefs_client.model.import_path import ImportPath
+from lakefs_client.model.import_location import ImportLocation
 globals()['CommitCreation'] = CommitCreation
-globals()['ImportPath'] = ImportPath
+globals()['ImportLocation'] = ImportLocation
 from lakefs_client.model.import_creation import ImportCreation
 
 

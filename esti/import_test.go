@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -49,7 +50,7 @@ var importFilesToCheck = []string{
 	"prefix-7/file000001",
 }
 
-func setupByBlockstoreType(t testing.TB) (string, string, int) {
+func setupImportByBlockstoreType(t testing.TB) (string, string, int) {
 	t.Helper()
 	importPath := ""
 	expectedContentLength := defaultExpectedContentLength
@@ -74,7 +75,7 @@ func setupByBlockstoreType(t testing.TB) (string, string, int) {
 func TestImport(t *testing.T) {
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
-	blockstoreType, importPath, expectedContentLength := setupByBlockstoreType(t)
+	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
 
 	t.Run("default", func(t *testing.T) {
 		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "default")
@@ -96,7 +97,7 @@ func TestImport(t *testing.T) {
 
 func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
-	importDir := filepath.Join(t.TempDir(), "import-test-data") + "/"
+	importDir := path.Join(t.TempDir(), "import-test-data")
 	if err := os.Mkdir(importDir, dirPerm); err != nil {
 		t.Fatal(err)
 	}
@@ -297,17 +298,17 @@ func TestAzureDataLakeV2(t *testing.T) {
 }
 
 func TestImportNew(t *testing.T) {
-	blockstoreType, importPath, expectedContentLength := setupByBlockstoreType(t)
+	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
 
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
 
 	t.Run("default", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
-		paths := []api.ImportPath{{
+		paths := []api.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPath,
-			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+			Type:        catalog.ImportPathTypePrefix,
 		}}
 		importID, importBranch := testImportNew(t, ctx, repoName, branch, paths)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
@@ -334,10 +335,10 @@ func TestImportNew(t *testing.T) {
 		}
 		// import without the directory separator as suffix to include the parent directory
 		importPathParent := strings.TrimSuffix(importPath, "/")
-		paths := []api.ImportPath{{
+		paths := []api.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPathParent,
-			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+			Type:        catalog.ImportPathTypePrefix,
 		}}
 		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
@@ -345,19 +346,19 @@ func TestImportNew(t *testing.T) {
 
 	t.Run("several-paths", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
-		var paths []api.ImportPath
+		var paths []api.ImportLocation
 		for i := 1; i < 8; i++ {
 			prefix := fmt.Sprintf("prefix-%d/", i)
-			paths = append(paths, api.ImportPath{
+			paths = append(paths, api.ImportLocation{
 				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
-				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+				Type:        catalog.ImportPathTypePrefix,
 			})
 		}
-		paths = append(paths, api.ImportPath{
+		paths = append(paths, api.ImportLocation{
 			Destination: importTargetPrefix + "nested",
 			Path:        importPath + "nested/",
-			Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+			Type:        catalog.ImportPathTypePrefix,
 		})
 
 		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
@@ -366,21 +367,21 @@ func TestImportNew(t *testing.T) {
 
 	t.Run("prefixes-and-objects", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
-		var paths []api.ImportPath
+		var paths []api.ImportLocation
 		for i := 1; i < 8; i++ {
 			prefix := fmt.Sprintf("prefix-%d/", i)
-			paths = append(paths, api.ImportPath{
+			paths = append(paths, api.ImportLocation{
 				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
-				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+				Type:        catalog.ImportPathTypePrefix,
 			})
 		}
 		for i := 0; i < 7; i++ {
 			dest := importFilesToCheck[i]
-			paths = append(paths, api.ImportPath{
+			paths = append(paths, api.ImportLocation{
 				Destination: importTargetPrefix + dest,
 				Path:        importPath + dest,
-				Type:        catalog.ImportPathTypes[catalog.ImportPathTypeObject],
+				Type:        catalog.ImportPathTypeObject,
 			})
 		}
 		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
@@ -391,7 +392,7 @@ func TestImportNew(t *testing.T) {
 func TestImportCancel(t *testing.T) {
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
-	_, importPath, _ := setupByBlockstoreType(t)
+	_, importPath, _ := setupImportByBlockstoreType(t)
 
 	t.Run("canceled", func(t *testing.T) {
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
@@ -407,19 +408,19 @@ func TestImportCancel(t *testing.T) {
 				Message:  "created by import",
 				Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
 			},
-			Paths: []api.ImportPath{{
+			Paths: []api.ImportLocation{{
 				Destination: importTargetPrefix,
 				Path:        importPath,
-				Type:        catalog.ImportPathTypes[catalog.ImportPathTypePrefix],
+				Type:        catalog.ImportPathTypePrefix,
 			}},
 		})
 		require.NoError(t, err)
-		require.NotNil(t, importResp.JSON201, "failed to start import", err)
+		require.NotNil(t, importResp.JSON202, "failed to start import", err)
 
 		// Wait 1 second and cancel request
 		time.Sleep(1 * time.Second)
 		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
-			Id: importResp.JSON201.Id,
+			Id: importResp.JSON202.Id,
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
@@ -428,7 +429,7 @@ func TestImportCancel(t *testing.T) {
 		var updateTime *time.Time
 		for {
 			statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
-				Id: importResp.JSON201.Id,
+				Id: importResp.JSON202.Id,
 			})
 			require.NoError(t, err)
 			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
@@ -445,7 +446,7 @@ func TestImportCancel(t *testing.T) {
 	})
 }
 
-func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportPath) (string, string) {
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation) (string, string) {
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
 		Name:   importBranch,
 		Source: "main",
@@ -460,29 +461,35 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		},
 		Paths: paths,
 	})
-	require.NoError(t, err)
-	require.NotNil(t, importResp.JSON201, "failed to start import", err)
+	require.NotNil(t, importResp.JSON202, "failed to start import", err)
+	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
 
-	completed := false
 	var (
 		statusResp *api.ImportStatusResponse
 		updateTime time.Time
 	)
-	for !completed {
-		time.Sleep(10 * time.Second)
-		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
-			Id: importResp.JSON201.Id,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
-		status := statusResp.JSON200
-		require.Nil(t, status.Error)
-		require.NotEqual(t, updateTime, status.UpdateTime)
-		updateTime = status.UpdateTime
-		completed = status.Completed
-		t.Log("Import progress:", status.ImportProgress)
+	importID := importResp.JSON202.Id
+	timer := time.NewTimer(10 * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context canceled")
+		case <-timer.C:
+			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
+				Id: importID,
+			})
+			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+			status := statusResp.JSON200
+			require.Nil(t, status.Error)
+			require.NotEqual(t, updateTime, status.UpdateTime)
+			updateTime = status.UpdateTime
+			t.Log("Import progress:", *status.IngestedObjects, importID)
+		}
+		if statusResp.JSON200.Completed {
+			break
+		}
 	}
-	return importResp.JSON201.Id, *statusResp.JSON200.ImportBranch
+	return importID, *statusResp.JSON200.ImportBranch
 }
 
 // #####################################################################################################################

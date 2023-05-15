@@ -1274,13 +1274,17 @@ components:
       required:
         - pattern
 
-    ImportPath:
+    ImportLocation:
       type: object
       required:
+        - type
         - path
         - destination
-        - type
       properties:
+        type:
+          type: string
+          enum: [ common_prefix, object ]
+          description: Path type, can either be 'common_prefix' or 'object'
         path:
           type: string
           description: A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
@@ -1289,10 +1293,6 @@ components:
           type: string
           description: Destination for the imported objects on the branch 
           example: collections/
-        type:
-          type: string
-          enum: [ prefix, object ]
-          description: Path type, can either be 'prefix' or 'object'
 
     ImportCreation:
       type: object
@@ -1303,9 +1303,17 @@ components:
         paths:
           type: array
           items:
-            $ref: "#/components/schemas/ImportPath"
+            $ref: "#/components/schemas/ImportLocation"
         commit:
           $ref: "#/components/schemas/CommitCreation"
+      example:
+        paths:
+          - path: s3://my-bucket/production/collections/
+            destination: collections/
+            type: common_prefix
+          - path: s3://my-bucket/production/collections/file1
+            destination: collections/file1
+            type: object
 
     StageRangeCreation:
       type: object
@@ -1377,7 +1385,7 @@ components:
         update_time:
           type: string
           format: date-time
-        import_progress:
+        ingested_objects:
           description: Number of objects processed so far
           type: integer
           format: int64
@@ -1389,9 +1397,7 @@ components:
           $ref: "#/components/schemas/Commit"
         error:
           $ref: "#/components/schemas/Error"
-      required: 
-        - import_progress
-        - import_total
+      required:
         - update_time
         - completed
     
@@ -3498,7 +3504,7 @@ paths:
             schema:
               $ref: "#/components/schemas/ImportCreation"
       responses:
-        201:
+        202:
           description: Import started
           content:
             application/json:

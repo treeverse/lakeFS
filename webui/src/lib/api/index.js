@@ -1116,7 +1116,7 @@ class Import {
                 {
                     "path": source,
                     "destination": prepend,
-                    "type": "prefix",
+                    "type": "common_prefix",
             }],
             "commit": {
                 "message": commitMessage,
@@ -1127,7 +1127,7 @@ class Import {
             method: 'POST',
             body: JSON.stringify(body),
         });
-        if (response.status !== 201) {
+        if (response.status !== 202) {
             throw new Error(await extractError(response));
         }
         return response.json();

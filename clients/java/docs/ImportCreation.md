@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**paths** | [**List&lt;ImportPath&gt;**](ImportPath.md) |  | 
+**paths** | [**List&lt;ImportLocation&gt;**](ImportLocation.md) |  | 
 **commit** | [**CommitCreation**](CommitCreation.md) |  | 
 
 
