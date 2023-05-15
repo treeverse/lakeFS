@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -52,7 +52,7 @@ func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
 	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable", port)
 	err = dockerPool.Retry(func() error {
 		var err error
-		pgPool, err = pgxpool.Connect(ctx, uri)
+		pgPool, err = pgxpool.New(ctx, uri)
 		if err != nil {
 			return err
 		}

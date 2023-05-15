@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/jackc/pgx/v4/pgxpool"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -126,7 +126,7 @@ func formatPostgresResourceURI(resource *dockertest.Resource) string {
 
 func verifyDBConnectionString(uri string) error {
 	ctx := context.Background()
-	pool, err := pgxpool.Connect(ctx, uri)
+	pool, err := pgxpool.New(ctx, uri)
 	if err != nil {
 		return err
 	}

@@ -126,9 +126,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
 	viper.Set("database.type", mem.DriverName)
-	// Fake external mode using the internal service (this only works in
-	// tests).
-	viper.Set("auth.ui_config.rbac", "external")
+	// Use 'internal' mode in order to have access to policies
+	viper.Set("auth.ui_config.rbac", "internal")
 
 	collector := &memCollector{}
 

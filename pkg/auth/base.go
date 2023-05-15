@@ -27,18 +27,11 @@ var statementByName = map[string]model.Statement{
 	},
 	"FSReadWrite": {
 		Action: []string{
-			permissions.ListRepositoriesAction,
-			permissions.ReadRepositoryAction,
-			permissions.ReadCommitAction,
-			permissions.ListBranchesAction,
-			permissions.ListTagsAction,
-			permissions.ListObjectsAction,
-			permissions.ReadObjectAction,
+			"fs:Read*",
+			"fs:List*",
 			permissions.WriteObjectAction,
 			permissions.DeleteObjectAction,
 			permissions.RevertBranchAction,
-			permissions.ReadBranchAction,
-			permissions.ReadTagAction,
 			permissions.CreateBranchAction,
 			permissions.CreateTagAction,
 			permissions.DeleteBranchAction,
@@ -50,7 +43,7 @@ var statementByName = map[string]model.Statement{
 	},
 	"FSReadConfig": {
 		Action: []string{
-			"fs:ReadConfig",
+			permissions.ReadConfig,
 		},
 		Effect: model.StatementEffectAllow,
 	},
@@ -67,7 +60,7 @@ var statementByName = map[string]model.Statement{
 			"ci:Read*",
 			"retention:Get*",
 			"branches:Get*",
-			"fs:ReadConfig",
+			permissions.ReadConfig,
 		},
 
 		Effect: model.StatementEffectAllow,
