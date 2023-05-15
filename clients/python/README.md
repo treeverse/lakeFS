@@ -192,6 +192,7 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stage_object**](docs/ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
+*ObjectsApi* | [**upload_object_preflight**](docs/ObjectsApi.md#upload_object_preflight) | **OPTIONS** /repositories/{repository}/branches/{branch}/objects | 
 *OtfDiffApi* | [**get_otf_diffs**](docs/OtfDiffApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *OtfDiffApi* | [**otf_diff**](docs/OtfDiffApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *RefsApi* | [**diff_refs**](docs/RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
@@ -201,6 +202,7 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**merge_into_branch**](docs/RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 *RefsApi* | [**restore_refs**](docs/RefsApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 *RepositoriesApi* | [**create_branch_protection_rule**](docs/RepositoriesApi.md#create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection | 
+*RepositoriesApi* | [**create_branch_protection_rule_preflight**](docs/RepositoriesApi.md#create_branch_protection_rule_preflight) | **OPTIONS** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**create_repository**](docs/RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**delete_branch_protection_rule**](docs/RepositoriesApi.md#delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**delete_repository**](docs/RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
@@ -212,6 +214,7 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 *RetentionApi* | [**prepare_garbage_collection_uncommitted**](docs/RetentionApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *RetentionApi* | [**set_garbage_collection_rules**](docs/RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
+*RetentionApi* | [**set_garbage_collection_rules_preflight**](docs/RetentionApi.md#set_garbage_collection_rules_preflight) | **OPTIONS** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**get_physical_address**](docs/StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**link_physical_address**](docs/StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 *StagingApi* | [**update_branch_token**](docs/StagingApi.md#update_branch_token) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token

@@ -8,7 +8,7 @@ import {
     Loading, Na, RefreshButton,
     TooltipButton
 } from "../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {actions} from "../../../../lib/api";
 import {
@@ -213,11 +213,9 @@ const ActionsContainer = () => {
 
 const RepositoryActionsPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'actions'}>
-                <ActionsContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'actions'}>
+            <ActionsContainer/>
+        </RepositoryPageLayout>
     );
 };
 

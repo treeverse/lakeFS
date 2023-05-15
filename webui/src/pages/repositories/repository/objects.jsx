@@ -1,7 +1,7 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import dayjs from 'dayjs';
-import {UploadIcon} from "@primer/octicons-react";
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import dayjs from "dayjs";
+import { UploadIcon } from "@primer/octicons-react";
+import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
@@ -18,7 +18,7 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
-import {BsCloudArrowUp} from "react-icons/bs";
+import { BsCloudArrowUp } from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
 import {config, objects, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
@@ -34,32 +34,38 @@ import {
     ImportProgress,
     startImport
 } from "../services/import_data";
-import {Box} from "@mui/material";
-import {RepoError} from "./error";
+import { Box } from "@mui/material";
+import { RepoError } from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import {OverlayTrigger} from "react-bootstrap";
+import { OverlayTrigger } from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
+import { useSearchParams } from "react-router-dom";
+import { useStorageConfig } from "../../../lib/hooks/storageConfig";
 
-
-const README_FILE_NAME = 'README.md';
+const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 
-const ImportButton = ({variant = "success", onClick, config }) => {
-    const tip = config.import_support ? "Import data from a remote source" :
-        config.blockstore_type === "local" ?
-                "Import is not enabled for local blockstore" :
-                "Unsupported for " + config.blockstore_type +" blockstore";
+const ImportButton = ({ variant = "success", onClick, config }) => {
+  const tip = config.import_support
+    ? "Import data from a remote source"
+    : config.blockstore_type === "local"
+    ? "Import is not enabled for local blockstore"
+    : "Unsupported for " + config.blockstore_type + " blockstore";
 
-    return (
-        <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>} >
-            <span>
-                <Button variant={variant} disabled={!config.import_support} onClick={onClick} >
-                    <BsCloudArrowUp/> Import
-                </Button>
-            </span>
-        </OverlayTrigger>
-    )
-}
+  return (
+    <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>}>
+      <span>
+        <Button
+          variant={variant}
+          disabled={!config.import_support}
+          onClick={onClick}
+        >
+          <BsCloudArrowUp /> Import
+        </Button>
+      </span>
+    </OverlayTrigger>
+  );
+};
 
 export const useInterval = (callback, delay) => {
     const savedCallback = useRef();
@@ -127,11 +133,15 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         setImportID("");
     }
 
-    const hide = () => {
-        if (ImportPhase.InProgress === importPhase || ImportPhase.Merging === importPhase) return;
-        resetState()
-        onHide()
-    };
+  const hide = () => {
+    if (
+      ImportPhase.InProgress === importPhase ||
+      ImportPhase.Merging === importPhase
+    )
+      return;
+    resetState();
+    onHide();
+  };
 
     const doImport = async () => {
         setImportPhase(ImportPhase.InProgress);
@@ -205,92 +215,126 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                         importFunc={doImport}
                         doneFunc={hide}
                         isEnabled={isImportEnabled}/>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+};
 
-                </Modal.Footer>
-            </Modal>
-        </>
-    );
-}
+const UploadButton = ({
+  config,
+  repo,
+  reference,
+  path,
+  onDone,
+  onClick,
+  onHide,
+  show = false,
+}) => {
+  const initialState = {
+    inProgress: false,
+    error: null,
+    done: false,
+  };
+  const [uploadState, setUploadState] = useState(initialState);
 
-const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false}) => {
-    const initialState = {
-        inProgress: false,
-        error: null,
-        done: false
+  const textRef = useRef(null);
+  const fileRef = useRef(null);
+
+  if (!reference || reference.type !== RefTypeBranch) return <></>;
+
+  const hide = () => {
+    if (uploadState.inProgress) return;
+    setUploadState(initialState);
+    onHide();
+  };
+
+  const upload = async () => {
+    setUploadState({
+      ...initialState,
+      inProgress: true,
+    });
+    try {
+      if (config.pre_sign_support_ui) {
+        const getResp = await staging.get(
+          repo.id,
+          reference.id,
+          textRef.current.value,
+          config.pre_sign_support_ui
+        );
+
+        const putResp = await fetch(getResp.presigned_url, {
+          method: "PUT",
+          mode: "cors",
+          body: fileRef.current.files[0],
+        });
+
+        const etag = putResp.headers.get("ETag").replace(/["]/g, "");
+        await staging.link(
+          repo.id,
+          reference.id,
+          textRef.current.value,
+          getResp,
+          etag,
+          fileRef.current.files[0].size
+        );
+      } else {
+        await objects.upload(
+          repo.id,
+          reference.id,
+          textRef.current.value,
+          fileRef.current.files[0]
+        );
+      }
+      setUploadState({ ...initialState });
+      onDone();
+    } catch (error) {
+      setUploadState({ ...initialState, error });
+      throw error;
     }
-    const [uploadState, setUploadState] = useState(initialState)
+    onHide();
+  };
 
-    const textRef = useRef(null);
-    const fileRef = useRef(null);
+  const basePath = `${repo.id}/${reference.id}/\u00A0`;
 
-    if (!reference || reference.type !== RefTypeBranch) return <></>
+  const pathStyle = { minWidth: "25%" };
 
-    const hide = () => {
-        if (uploadState.inProgress) return;
-        setUploadState(initialState)
-        onHide()
-    };
-
-    const upload = async () => {
-        setUploadState({
-            ...initialState,
-            inProgress: true
-        })
-        try {
-            if (config.pre_sign_support_ui) {
-                const getResp = await staging.get(repo.id, reference.id, textRef.current.value, config.pre_sign_support_ui);
-
-                const putResp = await fetch(getResp.presigned_url, {
-                    method: 'PUT',
-                    mode: 'cors',
-                    body: fileRef.current.files[0]
-                });
-
-                const etag = putResp.headers.get('ETag').replace(/["]/g, '')
-                await staging.link(repo.id, reference.id, textRef.current.value, getResp, etag, fileRef.current.files[0].size);
-            } else {
-                await objects.upload(repo.id, reference.id, textRef.current.value, fileRef.current.files[0])
-            }
-            setUploadState({...initialState})
-            onDone()
-        } catch (error) {
-            setUploadState({...initialState, error})
-            throw error
-        }
-        onHide();
-    }
-
-    const basePath = `${repo.id}/${reference.id}/\u00A0`;
-
-    const pathStyle = {'minWidth': '25%'};
-
-    return (
-        <>
-            <Modal show={show} onHide={hide}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Upload Object</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={(e) => {
-                        if (uploadState.inProgress) return;
-                        upload();
-                        e.preventDefault();
-                    }}>
-                        {config?.warnings &&
-                            <Form.Group controlId="warnings" className="mb-3">
-                                <Warnings warnings={config.warnings}/>
-                            </Form.Group>}
-                        <Form.Group controlId="path" className="mb-3">
-                            <Row className="g-0">
-                                <Col className="col-auto d-flex align-items-center justify-content-start">
-                                    {basePath}
-                                </Col>
-                                <Col style={pathStyle}>
-                                    <Form.Control type="text" placeholder="Object name" autoFocus name="text"
-                                                  ref={textRef} defaultValue={path}/>
-                                </Col>
-                            </Row>
-                        </Form.Group>
+  return (
+    <>
+      <Modal show={show} onHide={hide}>
+        <Modal.Header closeButton>
+          <Modal.Title>Upload Object</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form
+            onSubmit={(e) => {
+              if (uploadState.inProgress) return;
+              upload();
+              e.preventDefault();
+            }}
+          >
+            {config?.warnings && (
+              <Form.Group controlId="warnings" className="mb-3">
+                <Warnings warnings={config.warnings} />
+              </Form.Group>
+            )}
+            <Form.Group controlId="path" className="mb-3">
+              <Row className="g-0">
+                <Col className="col-auto d-flex align-items-center justify-content-start">
+                  {basePath}
+                </Col>
+                <Col style={pathStyle}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Object name"
+                    autoFocus
+                    name="text"
+                    ref={textRef}
+                    defaultValue={path}
+                  />
+                </Col>
+              </Row>
+            </Form.Group>
 
                         <Form.Group controlId="content" className="mb-3">
                             <Form.Control
@@ -321,36 +365,43 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                 </Modal.Footer>
             </Modal>
 
-            <Button
-                variant={(!config.import_support) ? "success" : "light"}
-                onClick={onClick}>
-                <UploadIcon/> Upload Object
-            </Button>
-        </>
-    );
-}
+      <Button
+        variant={!config.import_support ? "success" : "light"}
+        onClick={onClick}
+      >
+        <UploadIcon /> Upload Object
+      </Button>
+    </>
+  );
+};
 
 const TreeContainer = ({
-                           config,
-                           repo,
-                           reference,
-                           path,
-                           after,
-                           onPaginate,
-                           onRefresh,
-                           onUpload,
-                           onImport,
-                           refreshToken
-                       }) => {
-    const {results, error, loading, nextPage} = useAPIWithPagination(() => {
-        return objects.list(repo.id, reference.id, path, after, config.pre_sign_support_ui)
-    }, [repo.id, reference.id, path, after, refreshToken]);
-    const initialState = {
-        inProgress: false,
-        error: null,
-        done: false
-    }
-    const [deleteState, setDeleteState] = useState(initialState)
+  config,
+  repo,
+  reference,
+  path,
+  after,
+  onPaginate,
+  onRefresh,
+  onUpload,
+  onImport,
+  refreshToken,
+}) => {
+  const { results, error, loading, nextPage } = useAPIWithPagination(() => {
+    return objects.list(
+      repo.id,
+      reference.id,
+      path,
+      after,
+      config.pre_sign_support_ui
+    );
+  }, [repo.id, reference.id, path, after, refreshToken]);
+  const initialState = {
+    inProgress: false,
+    error: null,
+    done: false,
+  };
+  const [deleteState, setDeleteState] = useState(initialState);
 
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
@@ -383,24 +434,33 @@ const TreeContainer = ({
     );
 }
 
-const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
-    let readmePath = '';
+const ReadmeContainer = ({
+  config,
+  repo,
+  reference,
+  path = "",
+  refreshDep = "",
+}) => {
+  let readmePath = "";
 
-    if (path) {
-        readmePath = path.endsWith('/') ? `${path}${README_FILE_NAME}` : `${path}/${README_FILE_NAME}`;
-    } else {
-        readmePath = README_FILE_NAME;
-    }
-    const {response, error, loading} = useAPI(
-        () => objects.head(repo.id, reference.id, readmePath),
-        [path, refreshDep]);
+  if (path) {
+    readmePath = path.endsWith("/")
+      ? `${path}${README_FILE_NAME}`
+      : `${path}/${README_FILE_NAME}`;
+  } else {
+    readmePath = README_FILE_NAME;
+  }
+  const { response, error, loading } = useAPI(
+    () => objects.head(repo.id, reference.id, readmePath),
+    [path, refreshDep]
+  );
 
-    if (loading || error) {
-        return <></>; // no file found.
-    }
+  if (loading || error) {
+    return <></>; // no file found.
+  }
 
-    const fileExtension = getFileExtension(readmePath);
-    const contentType = getContentType(response?.headers);
+  const fileExtension = getFileExtension(readmePath);
+  const contentType = getContentType(response?.headers);
 
     return (
         <FileContents 
@@ -418,181 +478,211 @@ const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
 }
 
 const NoGCRulesWarning = ({ repoId }) => {
-    const storageKey = `show_gc_warning_${repoId}`;
-    const [show, setShow] = useState(window.localStorage.getItem(storageKey) !== "false")
-    const closeAndRemember = useCallback(() => {
-        window.localStorage.setItem(storageKey, "false")
-        setShow(false)
-    }, [repoId])
+  const storageKey = `show_gc_warning_${repoId}`;
+  const [show, setShow] = useState(
+    window.localStorage.getItem(storageKey) !== "false"
+  );
+  const closeAndRemember = useCallback(() => {
+    window.localStorage.setItem(storageKey, "false");
+    setShow(false);
+  }, [repoId]);
 
-    const {response} = useAPI(async() => {
-        const repo = await repositories.get(repoId)
-        if (!repo.storage_namespace.startsWith('s3:') &&
-            !repo.storage_namespace.startsWith('http')) {
-            return false;
-        }
-        const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), 'days');
-        if (createdAgo > REPOSITORY_AGE_BEFORE_GC) {
-            try {
-                await retention.getGCPolicy(repoId);
-            } catch (e) {
-                if (e instanceof NotFoundError) {
-                    return true
-                }
-            }
-        }
-        return false;
-    }, [repoId]);
-
-    if (show && response) {
-        return (
-            <Alert
-                variant="warning"
-                onClose={closeAndRemember}
-                dismissible>
-                <strong>Warning</strong>: No garbage collection rules configured for this repository.
-                {' '}
-                <a href="https://docs.lakefs.io/howto/garbage-collection.html" target="_blank" rel="noreferrer">Learn More</a>.
-
-            </Alert>
-        )
+  const { response } = useAPI(async () => {
+    const repo = await repositories.get(repoId);
+    if (
+      !repo.storage_namespace.startsWith("s3:") &&
+      !repo.storage_namespace.startsWith("http")
+    ) {
+      return false;
     }
-    return <></>;
-}
+    const createdAgo = dayjs().diff(dayjs.unix(repo.creation_date), "days");
+    if (createdAgo > REPOSITORY_AGE_BEFORE_GC) {
+      try {
+        await retention.getGCPolicy(repoId);
+      } catch (e) {
+        if (e instanceof NotFoundError) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [repoId]);
 
-const ObjectsBrowser = ({config, configError}) => {
-    const router = useRouter();
-    const {path, after} = router.query;
-    const {repo, reference, loading, error} = useRefs();
-    const [showUpload, setShowUpload] = useState(false);
-    const [showImport, setShowImport] = useState(false);
-    const [refreshToken, setRefreshToken] = useState(false);
-    const refresh = () => setRefreshToken(!refreshToken);
-    const parts = path && path.split("/") || [];
-    const searchSuffix = parts.pop();
-    let searchPrefix = parts.join("/");
-    searchPrefix = searchPrefix && searchPrefix + "/"
-
-    if (loading || !config) return <Loading/>;
-    if (error || configError) return <RepoError error={error || configError}/>;
-
+  if (show && response) {
     return (
-        <>
-            <ActionsBar>
-                <ActionGroup orientation="left">
-                    <RefDropdown
-                        emptyText={'Select Branch'}
-                        repo={repo}
-                        selected={reference}
-                        withCommits={true}
-                        withWorkspace={true}
-                        selectRef={ref => router.push({
-                            pathname: `/repositories/:repoId/objects`,
-                            params: {repoId: repo.id, path: path === undefined ? '' : path},
-                            query: {ref: ref.id, path: path === undefined ? '' : path}
-                        })}
-                    />
-                </ActionGroup>
-
-                <ActionGroup orientation="right">
-                    <PrefixSearchWidget
-                        text="Search by Prefix"
-                        key={path}
-                        defaultValue={searchSuffix}
-                        onFilter={prefix => {
-                            const query = {path: ""};
-                            if (searchPrefix !== undefined) query.path = searchPrefix;
-                            if (prefix) query.path += prefix;
-                            if (reference) query.ref = reference.id;
-                            const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}};
-                            router.push(url);
-                        }}/>
-                    <RefreshButton onClick={refresh}/>
-                    <UploadButton
-                        config={config}
-                        path={path}
-                        repo={repo}
-                        reference={reference}
-                        onDone={refresh}
-                        onClick={() => {
-                            setShowUpload(true);
-                        }}
-                        onHide={() => {
-                            setShowUpload(false);
-                        }}
-                        show={showUpload}
-                    />
-                    <ImportButton
-                        onClick={() => setShowImport(true)}
-                        config={config}
-                    />
-                    <ImportModal
-                        config={config}
-                        path={path}
-                        repoId={repo.id}
-                        referenceId={reference.id}
-                        referenceType={reference.type}
-                        onDone={refresh}
-                        onHide={() => {
-                            setShowImport(false);
-                        }}
-                        show={showImport}
-                    />
-                </ActionGroup>
-            </ActionsBar>
-
-            <NoGCRulesWarning repoId={repo.id}/>
-
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '10px', mb: '30px'}}>
-                <TreeContainer
-                    config={config}
-                    reference={reference}
-                    repo={repo}
-                    path={(path) ? path : ""}
-                    after={(after) ? after : ""}
-                    onPaginate={after => {
-                        const query = {after}
-                        if (path) query.path = path
-                        if (reference) query.ref = reference.id
-                        const url = {pathname: `/repositories/:repoId/objects`, query, params: {repoId: repo.id}}
-                        router.push(url)
-                    }}
-                    refreshToken={refreshToken}
-                    onUpload={() => {
-                        setShowUpload(true);
-                    }}
-                    onImport={() => {
-                        setShowImport(true);
-                    }}
-                    onRefresh={refresh}/>
-
-                <ReadmeContainer config={config} reference={reference} repo={repo} path={path} refreshDep={refreshToken}/>
-            </Box>
-        </>
+      <Alert variant="warning" onClose={closeAndRemember} dismissible>
+        <strong>Warning</strong>: No garbage collection rules configured for
+        this repository.{" "}
+        <a
+          href="https://docs.lakefs.io/howto/garbage-collection.html"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Learn More
+        </a>
+        .
+      </Alert>
     );
+  }
+  return <></>;
+};
+
+const ObjectsBrowser = ({ config, configError }) => {
+  const router = useRouter();
+  const { path, after, importDialog } = router.query;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { repo, reference, loading, error } = useRefs();
+  const [showUpload, setShowUpload] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(false);
+
+  const refresh = () => setRefreshToken(!refreshToken);
+  const parts = (path && path.split("/")) || [];
+  const searchSuffix = parts.pop();
+  let searchPrefix = parts.join("/");
+  searchPrefix = searchPrefix && searchPrefix + "/";
+
+  useEffect(() => {
+    if (importDialog) {
+      setShowImport(true);
+      searchParams.delete("importDialog");
+      setSearchParams(searchParams);
+    }
+  }, [router.route, importDialog, searchParams, setSearchParams]);
+
+  if (loading || !config) return <Loading />;
+  if (error || configError) return <RepoError error={error || configError} />;
+
+  return (
+    <>
+      <ActionsBar>
+        <ActionGroup orientation="left">
+          <RefDropdown
+            emptyText={"Select Branch"}
+            repo={repo}
+            selected={reference}
+            withCommits={true}
+            withWorkspace={true}
+            selectRef={(ref) =>
+              router.push({
+                pathname: `/repositories/:repoId/objects`,
+                params: {
+                  repoId: repo.id,
+                  path: path === undefined ? "" : path,
+                },
+                query: { ref: ref.id, path: path === undefined ? "" : path },
+              })
+            }
+          />
+        </ActionGroup>
+
+        <ActionGroup orientation="right">
+          <PrefixSearchWidget
+            text="Search by Prefix"
+            key={path}
+            defaultValue={searchSuffix}
+            onFilter={(prefix) => {
+              const query = { path: "" };
+              if (searchPrefix !== undefined) query.path = searchPrefix;
+              if (prefix) query.path += prefix;
+              if (reference) query.ref = reference.id;
+              const url = {
+                pathname: `/repositories/:repoId/objects`,
+                query,
+                params: { repoId: repo.id },
+              };
+              router.push(url);
+            }}
+          />
+          <RefreshButton onClick={refresh} />
+          <UploadButton
+            config={config}
+            path={path}
+            repo={repo}
+            reference={reference}
+            onDone={refresh}
+            onClick={() => {
+              setShowUpload(true);
+            }}
+            onHide={() => {
+              setShowUpload(false);
+            }}
+            show={showUpload}
+          />
+          <ImportButton onClick={() => setShowImport(true)} config={config} />
+          <ImportModal
+            config={config}
+            path={path}
+            repoId={repo.id}
+            referenceId={reference.id}
+            referenceType={reference.type}
+            onDone={refresh}
+            onHide={() => {
+              setShowImport(false);
+            }}
+            show={showImport}
+          />
+        </ActionGroup>
+      </ActionsBar>
+
+      <NoGCRulesWarning repoId={repo.id} />
+
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          mb: "30px",
+        }}
+      >
+        <TreeContainer
+          config={config}
+          reference={reference}
+          repo={repo}
+          path={path ? path : ""}
+          after={after ? after : ""}
+          onPaginate={(after) => {
+            const query = { after };
+            if (path) query.path = path;
+            if (reference) query.ref = reference.id;
+            const url = {
+              pathname: `/repositories/:repoId/objects`,
+              query,
+              params: { repoId: repo.id },
+            };
+            router.push(url);
+          }}
+          refreshToken={refreshToken}
+          onUpload={() => {
+            setShowUpload(true);
+          }}
+          onImport={() => {
+            setShowImport(true);
+          }}
+          onRefresh={refresh}
+        />
+
+        <ReadmeContainer
+          config={config}
+          reference={reference}
+          repo={repo}
+          path={path}
+          refreshDep={refreshToken}
+        />
+      </Box>
+    </>
+  );
 };
 
 const RepositoryObjectsPage = () => {
-    const [configRes, setConfigRes] = useState(null);
-    const {response, error: err, loading} = useAPI(() => {
-        return config.getStorageConfig();
-    });
+  const config = useStorageConfig();
 
-    useEffect(() => {
-        if (response) {
-            setConfigRes(response);
-        }
-    }, [response, setConfigRes]);
-
-
-    return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'objects'}>
-                {loading && <Loading/>}
-                <ObjectsBrowser config={configRes} configError={err}/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
-    );
+  return (
+    <RepositoryPageLayout activePage={"objects"}>
+      {config.loading && <Loading />}
+      <ObjectsBrowser config={config} configError={config.error} />
+    </RepositoryPageLayout>
+  );
 };
 
 export default RepositoryObjectsPage;

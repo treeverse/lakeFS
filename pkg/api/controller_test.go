@@ -942,6 +942,73 @@ func TestController_CommitHandler(t *testing.T) {
 			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
+
+	t.Run("create branch protection rule - admin user", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repository", err)
+
+		respPreflight, err := clt.CreateBranchProtectionRulePreflightWithResponse(ctx, repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if respPreflight == nil {
+			t.Fatal("CreateBranchProtectionRulePreflightWithResponse got no response")
+		}
+		if respPreflight.StatusCode() != http.StatusNoContent {
+			t.Fatalf("CreateBranchProtectionRulePreflightWithResponse expected 204, got %s", respPreflight.Status())
+		}
+
+		// result of an actual call to the endpoint should have the same result
+		resp, err := clt.CreateBranchProtectionRuleWithResponse(ctx, repo, api.CreateBranchProtectionRuleJSONRequestBody{
+			Pattern: "main",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("CreateBranchProtectionRuleWithResponse got no response")
+		}
+		if resp.Status() != respPreflight.Status() {
+			t.Fatalf("CreateBranchProtectionRuleWithResponse and preflight shouls return the same unauthorized status expected %s, got %s", respPreflight.Status(), resp.Status())
+		}
+
+	})
+
+	t.Run("create branch protection rule - user unauthorized", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repository", err)
+
+		// create simple user and client
+		creds := createUserWithDefaultGroup(t, clt)
+		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
+		respPreflight, err := regClt.CreateBranchProtectionRulePreflightWithResponse(ctx, repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if respPreflight == nil {
+			t.Fatal("CreateBranchProtectionRulePreflightWithResponse got no response")
+		}
+		if respPreflight.JSON401 == nil {
+			t.Fatalf("CreateBranchProtectionRulePreflightWithResponse expected 401, got %s", respPreflight.Status())
+		}
+
+		// result of an actual call to the endpoint should have the same result
+		resp, err := regClt.CreateBranchProtectionRuleWithResponse(ctx, repo, api.CreateBranchProtectionRuleJSONRequestBody{
+			Pattern: "main",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("CreateBranchProtectionRuleWithResponse got no response")
+		}
+		if resp.Status() != respPreflight.Status() {
+			t.Fatalf("CreateBranchProtectionRuleWithResponse and preflight shouls return the same unauthorized status expected %s, got %s", respPreflight.Status(), resp.Status())
+		}
+
+	})
 }
 
 func TestController_CreateRepository(t *testing.T) {
@@ -1007,6 +1074,33 @@ func TestController_CreateRepository(t *testing.T) {
 		}
 		if resp.JSON409 == nil {
 			t.Fatal("expected status code 409 creating duplicate repo, got ", resp.StatusCode())
+		}
+	})
+
+	t.Run("create repo user unauthorized", func(t *testing.T) {
+		repo := testUniqueRepoName()
+
+		// create a user
+		creds := createUserWithDefaultGroup(t, clt)
+		// create a client with the user
+		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
+		resp, err := regClt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("main"),
+			Name:             repo,
+			StorageNamespace: onBlock(deps, "foo-bucket-1"),
+		})
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("CreateRepository missing response")
+		}
+		if resp.JSON401 == nil {
+			t.Fatal("expected status code 401 for user forbidden, got ", resp.StatusCode())
+		}
+		if resp.JSON401.Message != auth.ErrInsufficientPermissions.Error() {
+			t.Fatalf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
 
@@ -4507,5 +4601,77 @@ func TestController_LocalAdapter_StageObject(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON403)
+	})
+}
+
+func TestController_GarbageCollectionRules(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("create GC rule - admin user", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repository", err)
+
+		respPreflight, err := clt.SetGarbageCollectionRulesPreflightWithResponse(ctx, repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if respPreflight == nil {
+			t.Fatal("SetGarbageCollectionRulesPreflightWithResponse got no response")
+		}
+		if respPreflight.StatusCode() != http.StatusNoContent {
+			t.Fatalf("SetGarbageCollectionRulesPreflightWithResponse expected 204, got %s", respPreflight.Status())
+		}
+
+		// result of an actual call to the endpoint should have the same result
+		resp, err := clt.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{
+			Branches: []api.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("CreateBranchProtectionRuleWithResponse got no response")
+		}
+		if resp.Status() != respPreflight.Status() {
+			t.Fatalf("CreateBranchProtectionRuleWithResponse and preflight shouls return the same unauthorized status expected %s, got %s", respPreflight.Status(), resp.Status())
+		}
+
+	})
+
+	t.Run("create GC rule - user unauthorized", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create repository", err)
+
+		// create simple user and client
+		creds := createUserWithDefaultGroup(t, clt)
+		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
+		respPreflight, err := regClt.SetGarbageCollectionRulesPreflightWithResponse(ctx, repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if respPreflight == nil {
+			t.Fatal("CreateBranchProtectionRulePreflightWithResponse got no response")
+		}
+		if respPreflight.JSON401 == nil {
+			t.Fatalf("CreateBranchProtectionRulePreflightWithResponse expected 401, got %s", respPreflight.Status())
+		}
+
+		// result of an actual call to the endpoint should have the same result
+		resp, err := regClt.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{
+			Branches: []api.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("CreateBranchProtectionRuleWithResponse got no response")
+		}
+		if resp.Status() != respPreflight.Status() {
+			t.Fatalf("CreateBranchProtectionRuleWithResponse and preflight shouls return the same unauthorized status expected %s, got %s", respPreflight.Status(), resp.Status())
+		}
+
 	})
 }

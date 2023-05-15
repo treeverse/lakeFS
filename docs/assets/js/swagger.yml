@@ -3674,6 +3674,22 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+    options:
+      tags:
+        - objects
+      operationId: uploadObjectPreflight
+      responses:
+        204:
+          description: user has permissions to upload an object
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
     post:
       tags:
         - objects
@@ -4232,6 +4248,21 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+    
+    options:
+      tags:
+        - retention
+      operationId: setGarbageCollectionRulesPreflight
+      responses:
+        204:
+          description: user has permissions to set garbage collection rules
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    
     post:
       tags:
         - retention
@@ -4356,6 +4387,20 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+    options:
+      tags:
+        - repositories
+      operationId: createBranchProtectionRulePreflight
+      responses:
+        204:
+          description: user has permissions to create a branch protection rule
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
     post:
       tags:
         - repositories

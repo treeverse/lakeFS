@@ -10,7 +10,7 @@ import Button from "react-bootstrap/Button";
 
 import {branches, commits, refs} from "../../../lib/api";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
+import {useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
@@ -258,11 +258,9 @@ const ChangesContainer = () => {
 
 const RepositoryChangesPage = () => {
     return (
-        <RefContextProvider>
             <RepositoryPageLayout activePage={'changes'}>
                 <ChangesContainer/>
             </RepositoryPageLayout>
-        </RefContextProvider>
     )
 }
 

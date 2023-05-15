@@ -4035,6 +4035,61 @@ paths:
       tags:
       - objects
       x-accepts: application/json
+    options:
+      operationId: uploadObjectPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: user has permissions to upload an object
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - objects
+      x-accepts: application/json
     post:
       operationId: uploadObject
       parameters:
@@ -5043,6 +5098,40 @@ paths:
       tags:
       - retention
       x-accepts: application/json
+    options:
+      operationId: setGarbageCollectionRulesPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: user has permissions to set garbage collection rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - retention
+      x-accepts: application/json
     post:
       operationId: set garbage collection rules
       parameters:
@@ -5268,6 +5357,40 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    options:
+      operationId: createBranchProtectionRulePreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: user has permissions to create a branch protection rule
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
       tags:
       - repositories
       x-accepts: application/json

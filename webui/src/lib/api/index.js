@@ -636,6 +636,18 @@ class Objects {
         return await response.json();
     }
 
+    async uploadPreflight(repoId, branchId, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/?` + query, {
+            method: 'OPTIONS',
+        });
+
+        if (response.status !== 204) {
+            return false;
+        }
+        return true;
+    }
+
     async upload(repoId, branchId, path, fileObject) {
         const data = new FormData();
         data.append('content', fileObject);
@@ -853,6 +865,13 @@ class Retention {
         return response.json();
     }
 
+    async setGCPolicyPreflight(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
+            method: "OPTIONS",
+        });
+        return response.status === 204;
+    }
+
     async setGCPolicy(repoID, policy) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
             method: 'POST',
@@ -976,6 +995,16 @@ class BranchProtectionRules {
             throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
         }
         return response.json();
+    }
+
+    async createRulePreflight(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
+            method: "OPTIONS",
+        });
+        if (response.status !== 204) {
+            return false;
+        }
+        return true;
     }
 
     async createRule(repoID, pattern) {

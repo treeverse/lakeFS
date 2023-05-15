@@ -225,4 +225,21 @@ public class ObjectsApiTest {
         // TODO: test validations
     }
     
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void uploadObjectPreflightTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+                api.uploadObjectPreflight(repository, branch, path);
+        // TODO: test validations
+    }
+    
 }
