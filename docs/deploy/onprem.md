@@ -47,7 +47,7 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
 Connect to your host using SSH:
 
 1. Create a `config.yaml` on your VM, with the following parameters:
-  
+ 
    ```yaml
    ---
    database:
@@ -75,8 +75,9 @@ Connect to your host using SSH:
    {: .note }
 
 1. [Download the binary](../index.md#downloads) to the server.
+
 1. Run the `lakefs` binary:
-  
+
    ```sh
    lakefs --config config.yaml run
    ```
@@ -120,7 +121,7 @@ You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/tre
 To install lakeFS with Helm:
 
 1. Copy the Helm values file relevant for S3-Compatible storage (MinIO in this example):
-   
+
    ```yaml
    secrets:
        # replace this with the connection string of the database you created in a previous step:
@@ -164,15 +165,29 @@ To install lakeFS with Helm:
 
    To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
    By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
-   
+
    💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](../understand/architecture.md#s3-gateway) or 
    a simple PUT request using the [OpenAPI Server](../understand/architecture.md#openapi-server).
    Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
    {: .note }
-   
+
 </div>
 </div>
+
+## Secure connection
+
+Using a load balancer or cluster manager for TLS/SSL termination is recommended. It helps speed the decryption process and reduces the processing burden from lakeFS.
+
+In case lakeFS needs to listen and serve with HTTPS, for example for development purposes, update its config yaml with the following section:
+
+```yaml
+tls:
+  enabled: true
+  cert_file: server.crt   # provide path to your certificate file
+  key_file: server.key    # provide path to your server private key
+```
+
 
 ## Local Blockstore
 
@@ -212,6 +227,5 @@ blockstore:
 - lakeFS doesn't control the way a shared location is managed across machines
 - Import works only for folders
 - Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
-
 
 {% include_relative includes/setup.md %}
