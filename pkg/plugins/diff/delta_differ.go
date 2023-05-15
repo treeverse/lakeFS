@@ -37,8 +37,8 @@ func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error)
 			},
 		},
 		GatewayConfig: &GatewayConfig{
-			Key:      s3Creds.Key,
-			Secret:   s3Creds.Secret,
+			Key:      string(s3Creds.Key),
+			Secret:   string(s3Creds.Secret),
 			Endpoint: s3Creds.Endpoint,
 		},
 	})

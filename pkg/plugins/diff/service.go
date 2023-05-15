@@ -79,8 +79,8 @@ type TablePaths struct {
 }
 
 type S3Creds struct {
-	Key      string
-	Secret   string
+	Key      config.SecureString
+	Secret   config.SecureString
 	Endpoint string
 }
 
