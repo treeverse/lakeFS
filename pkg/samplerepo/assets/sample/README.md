@@ -28,24 +28,18 @@ If you're running lakeFS with Docker then all the tools you need (`lakectl`, `du
 
 ```bash
 docker run --name lakefs \
-           --publish 8000:8000 \
-           treeverse/lakefs:latest \
-           run --local-settings
+           --rm --publish 8000:8000 \
+           treeverse/lakefs:0.100.0-duckdb \
+             run --local-settings
 ```
 
-You can optionally pre-create the user with the alternative command to above: 
+Configure `lakectl` by running the following in a new terminal window: 
 
 ```bash
-docker run --name lakefs \
-           --rm --publish 8000:8000 \
-           --entrypoint "/bin/sh" \
-           --env "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIA-EXAMPLE-KEY" \
-           --env "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=EXAMPLE-SECRET" \
-           --env "LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000" \
-           treeverse/lakefs:0.100.0-duckdb -c \
-           'lakefs setup --local-settings --user-name admin --access-key-id "$LAKECTL_CREDENTIALS_ACCESS_KEY_ID" --secret-access-key "$LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"; \
-            lakefs run --local-settings'
+docker exec -it lakefs lakectl config
 ```
+
+Follow the prompts to enter your credentials that you created when you first setup lakeFS. Leave the **Server endpoint URL** as `http://127.0.0.1:8000`. 
 
 </details>
 
@@ -203,12 +197,10 @@ SET s3_use_ssl=false;
 
 In addition, customise the following for your environment and then run it too. 
 
-_If you are using the lakeFS quickstart then you don't need to change anything and can run the SQL unchanged._
-
 ```sql
+SET s3_access_key_id='YOUR-ACCESS-KEY-ID';
+SET s3_secret_access_key='YOUR-SECRET-ACCESS-KEY';
 SET s3_endpoint='localhost:8000';
-SET s3_access_key_id='AKIA-EXAMPLE-KEY';
-SET s3_secret_access_key='EXAMPLE-SECRET';
 ```
 
 _Now we'll load the lakes data into a DuckDB table so that we can manipulate it._
