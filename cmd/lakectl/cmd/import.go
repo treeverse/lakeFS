@@ -67,7 +67,7 @@ var importCmd = &cobra.Command{
 				},
 			},
 		})
-		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusCreated)
+		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
 		if importResp.JSON202 == nil {
 			DieFmt("Response is nil")
 		}
