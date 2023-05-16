@@ -119,13 +119,13 @@ func TestExpiredCommits(t *testing.T) {
 				"b": newTestCommit(10, "a"),
 				"c": newTestCommit(10, "a"),
 				"d": newTestCommit(5, "c"),
-				"e": newTestCommit(5, "b"),
+				"e": newTestCommit(7, "b"),
 				"f": newTestCommit(1, "e"),
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			previouslyExpired:  []string{"a"},
-			expectedActiveIDs:  []string{"b", "d", "e", "f"},
-			expectedExpiredIDs: []string{"c"},
+			expectedActiveIDs:  []string{"d", "e", "f"},
+			expectedExpiredIDs: []string{"c", "b"},
 		},
 		"many_previously_expired": {
 			commits: map[string]testCommit{
@@ -205,15 +205,15 @@ func TestExpiredCommits(t *testing.T) {
 				"b": newTestCommit(10, "a"),
 				"c": newTestCommit(10, "a"),
 				"d": newTestCommit(5, "c"),
-				"e": newTestCommit(5, "b"),
+				"e": newTestCommit(8, "b"),
 				"f": newTestCommit(1, "e"),
 				"g": newTestCommit(10, "a"), // dangling
 				"h": newTestCommit(6, "g"),  // dangling
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			previouslyExpired:  []string{"a"},
-			expectedActiveIDs:  []string{"b", "d", "e", "f"},
-			expectedExpiredIDs: []string{"c", "g", "h"},
+			expectedActiveIDs:  []string{"e", "d", "f"},
+			expectedExpiredIDs: []string{"c", "g", "h", "b"},
 		},
 		"dangling_from_before_expired": {
 			commits: map[string]testCommit{
@@ -223,15 +223,15 @@ func TestExpiredCommits(t *testing.T) {
 				"b":           newTestCommit(10, "e1"),
 				"c":           newTestCommit(10, "e1"),
 				"d":           newTestCommit(5, "c"),
-				"e":           newTestCommit(5, "b"),
+				"e":           newTestCommit(8, "b"),
 				"f":           newTestCommit(1, "e"),
 				"g":           newTestCommit(10, "root"), // dangling
 				"h":           newTestCommit(6, "g"),     // dangling
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			previouslyExpired:  []string{"e1"},
-			expectedActiveIDs:  []string{"b", "d", "e", "f"},
-			expectedExpiredIDs: []string{"c", "g", "root", "h"},
+			expectedActiveIDs:  []string{"d", "e", "f"},
+			expectedExpiredIDs: []string{"c", "b", "g", "root", "h"},
 		},
 		"retained_by_non_leaf_head": {
 			// commit x is retained because of the rule of head2, and not the rule of head1.
@@ -264,7 +264,7 @@ func TestExpiredCommits(t *testing.T) {
 			headsRetentionDays: map[string]int32{"HEAD1": 3, "HEAD2": 3},
 			previouslyExpired:  []string{"A", "B", "C", "E"},
 			expectedActiveIDs:  []string{"B", "D", "E", "F", "HEAD1", "HEAD2"},
-			expectedExpiredIDs: []string{},
+			expectedExpiredIDs: []string{"A", "C"},
 		},
 		/*
 			<ep1- 8 days>
