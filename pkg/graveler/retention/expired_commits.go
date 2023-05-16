@@ -39,9 +39,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	processed := make(map[graveler.CommitID]time.Time)
 	// Mapping between previously expired commits to their direct children.
-	previouslyExpiredMap := make(map[graveler.CommitID]map[graveler.CommitID]struct{})
+	prevExpiredCommitsToChildrenMap := make(map[graveler.CommitID]map[graveler.CommitID]struct{})
 	for _, commitID := range previouslyExpired {
-		previouslyExpiredMap[commitID] = make(map[graveler.CommitID]struct{})
+		prevExpiredCommitsToChildrenMap[commitID] = make(map[graveler.CommitID]struct{})
 	}
 	activeMap := make(map[graveler.CommitID]struct{})
 	expiredMap := make(map[graveler.CommitID]struct{})
@@ -115,15 +115,15 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// the threshold. In either way, the PARENT is active.
 				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
-				delete(previouslyExpiredMap, nextCommitID)
+				delete(prevExpiredCommitsToChildrenMap, nextCommitID)
 			} else if _, ok = activeMap[nextCommitID]; !ok {
 				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
 				// both expired in this run and the previous (in this path)
-				if nextCommitChildren, ok := previouslyExpiredMap[nextCommitID]; ok {
+				if nextCommitChildren, ok := prevExpiredCommitsToChildrenMap[nextCommitID]; ok {
 					// Get the previously expired commit's list of known children and add the current commit to it.
 					if _, ok := nextCommitChildren[currentCommitID]; !ok {
 						nextCommitChildren[currentCommitID] = struct{}{}
-						previouslyExpiredMap[nextCommitID] = nextCommitChildren
+						prevExpiredCommitsToChildrenMap[nextCommitID] = nextCommitChildren
 					}
 					break
 				}
@@ -145,7 +145,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
-	for _, se := range getStillExpiredCommits(previouslyExpiredMap, activeMap) {
+	for _, se := range getStillExpiredCommits(prevExpiredCommitsToChildrenMap, activeMap) {
 		expiredMap[se] = struct{}{}
 	}
 	return &GarbageCollectionCommits{active: makeCommitMap(commitsMap, activeMap), expired: makeCommitMap(commitsMap, expiredMap)}, nil
