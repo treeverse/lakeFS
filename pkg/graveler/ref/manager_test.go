@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -26,6 +24,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // TestManager_GetRepositoryCache test get repository information while using cache. Match the number of times we
