@@ -14,7 +14,15 @@ lakeFS uses branches in a similar way to Git. It's a great way to isolate change
 
 Having seen the lakes data in the previous step we're now going to create a new dataset to hold data only for lakes in Denmark. Why? Well, because :)
 
-The first thing we'll do is create a branch for us to do this development against. We'll use the `lakectl` tool to create the branch. In a new terminal window run the following:
+The first thing we'll do is create a branch for us to do this development against. We'll use the `lakectl` tool to create the branch, which we first need to configure with our credentials.  In a new terminal window run the following:
+
+```bash
+docker exec -it lakefs lakectl config
+```
+
+Follow the prompts to enter the credentials that you got in the first step. Leave the **Server endpoint URL** as `http://127.0.0.1:8000`. 
+
+Now that lakectl is configured, we can use it to create the branch. Run the following:
 
 ```bash
 docker exec lakefs \
@@ -45,13 +53,18 @@ docker exec --interactive --tty lakefs duckdb
 The first thing to do is configure the S3 connection so that DuckDB can access lakeFS, as well as tell DuckDB to report back how many rows are changed by the query we'll soon be executing. Run this from the DuckDB prompt: 
 
 ```sql
-SET s3_endpoint='localhost:8000';
-SET s3_access_key_id='AKIA-EXAMPLE-KEY';
-SET s3_secret_access_key='EXAMPLE-SECRET';
 SET s3_url_style='path';
 SET s3_region='us-east-1';
 SET s3_use_ssl=false;
+SET s3_endpoint='localhost:8000';
 .changes on
+```
+
+In addition, replace your credentials in the following and then run it too. 
+
+```sql
+SET s3_access_key_id='YOUR-ACCESS-KEY-ID';
+SET s3_secret_access_key='YOUR-SECRET-ACCESS-KEY';
 ```
 
 Now we'll load the lakes data into a DuckDB table so that we can manipulate it:
