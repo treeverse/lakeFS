@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"path"
 	"strings"
 	"time"
@@ -17,20 +18,22 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
-// MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
-// It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
-// Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
-//
-//	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
-//
-// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
-const MaxBatchDelay = time.Millisecond * 3
-
-// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
-const commitIDStringLength = 64
-
-// LinkAddressTime the time address is valid from get to link
-const LinkAddressTime = 6 * time.Hour
+const (
+	// MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
+	// It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
+	// Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
+	//
+	//	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
+	//
+	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
+	MaxBatchDelay = time.Millisecond * 3
+	// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
+	commitIDStringLength = 64
+	// LinkAddressTime the time address is valid from get to link
+	LinkAddressTime = 6 * time.Hour
+	// ImportExpiryTime Expiry time to remove imports from ref-store
+	ImportExpiryTime = 24 * time.Hour
+)
 
 type CacheConfig struct {
 	Size   int
@@ -628,4 +631,34 @@ func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *gr
 		}
 	}
 	return itr.Err()
+}
+
+func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	expiry := time.Now().Add(-ImportExpiryTime)
+	repoPartition := graveler.RepoPartition(repository)
+	key := []byte(graveler.ImportsPath(""))
+	options := kv.IteratorOptionsFrom([]byte(""))
+	itr, err := kv.NewPrimaryIterator(ctx, m.kvStoreLimited, (&graveler.ImportStatusData{}).ProtoReflect().Type(), repoPartition, key, options)
+	if err != nil {
+		return err
+	}
+	defer itr.Close()
+
+	for itr.Next() {
+		entry := itr.Entry()
+		status, ok := entry.Value.(*graveler.ImportStatusData)
+		if !ok {
+			return graveler.ErrReadingFromStore
+		}
+		if status.UpdatedAt.AsTime().Before(expiry) {
+			if !status.Completed && status.Error == "" {
+				logging.Default().WithFields(logging.Fields{"import_id": status.Id}).Warning("removing stale import")
+			}
+			err = m.kvStoreLimited.Delete(ctx, []byte(repoPartition), entry.Key)
+			if err != nil {
+				logging.Default().WithFields(logging.Fields{"import_id": status.Id}).WithError(err).Error("removing import entry")
+			}
+		}
+	}
+	return nil
 }

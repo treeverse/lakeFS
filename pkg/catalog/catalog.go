@@ -2309,6 +2309,21 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 	}
 }
 
+func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Failed list repositories during delete expired imports")
+		return
+	}
+
+	for _, repo := range repos {
+		err := c.Store.DeleteExpiredImports(ctx, repo)
+		if err != nil {
+			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired imports failed")
+		}
+	}
+}
+
 func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
 	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
