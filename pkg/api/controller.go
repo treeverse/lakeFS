@@ -2245,8 +2245,8 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, reposi
 func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportCancelParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ImportFromStorage,
-			Resource: permissions.StorageNamespace("*"),
+			Action:   permissions.RevertBranchAction,
+			Resource: permissions.BranchArn(repository, branch),
 		},
 	}) {
 		return

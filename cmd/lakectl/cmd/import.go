@@ -69,7 +69,7 @@ var importCmd = &cobra.Command{
 		})
 		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
 		if importResp.JSON202 == nil {
-			DieFmt("Response is nil")
+			Die("Bad response from server", 1)
 		}
 		importID := importResp.JSON202.Id
 		// Handle interrupts
@@ -90,13 +90,16 @@ var importCmd = &cobra.Command{
 			select {
 			case <-sigCtx.Done():
 				Fmt("\nCanceling import\n")
-				_, _ = client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
-				stop()
+				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 				Die("Import Canceled", 1)
 			case <-timer.C:
 				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
 				status := statusResp.JSON200
+				if status == nil {
+					Die("Bad response from server", 1)
+				}
 				if status.Error != nil {
 					DieFmt("Import failed: %s", status.Error.Message)
 				}
