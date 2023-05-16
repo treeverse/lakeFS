@@ -119,6 +119,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
 				// both expired in this run and the previous (in this path)
 				if _, ok = previouslyExpiredMap[nextCommitID]; ok {
+					// Get the previously expired commit's list of known children and add the current commit to it.
 					var nextCommitChildren = previouslyExpiredMap[nextCommitID]
 					if _, ok := nextCommitChildren[currentCommitID]; !ok {
 						nextCommitChildren[currentCommitID] = struct{}{}
@@ -131,6 +132,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				expiredMap[nextCommitID] = struct{}{}
 			}
 			// Continue down the rabbit hole.
+			currentCommitID = nextCommitID
 			commitNode, ok = commitsMap[nextCommitID]
 			if !ok {
 				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, nextCommitID)
@@ -143,7 +145,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
-	for _, se := range getStillExpiredCommits(previouslyExpiredMap, expiredMap) {
+	for _, se := range getStillExpiredCommits(previouslyExpiredMap, activeMap) {
 		expiredMap[se] = struct{}{}
 	}
 	return &GarbageCollectionCommits{active: makeCommitMap(commitsMap, activeMap), expired: makeCommitMap(commitsMap, expiredMap)}, nil
@@ -158,17 +160,17 @@ func makeCommitMap(commitNodes map[graveler.CommitID]CommitNode, commitSet map[g
 }
 
 func getStillExpiredCommits(previouslyExpired map[graveler.CommitID]map[graveler.CommitID]struct{},
-	currentlyExpired map[graveler.CommitID]struct{}) []graveler.CommitID {
+	currentlyActive map[graveler.CommitID]struct{}) []graveler.CommitID {
 	var stillExpiredCommitIDs []graveler.CommitID
 	for peci, children := range previouslyExpired {
-		expired := true
+		stillExpired := false
 		for child := range children {
-			if _, ok := currentlyExpired[child]; !ok {
-				expired = false
+			if _, ok := currentlyActive[child]; ok {
+				stillExpired = true
 				break
 			}
 		}
-		if expired {
+		if stillExpired {
 			stillExpiredCommitIDs = append(stillExpiredCommitIDs, peci)
 		}
 	}

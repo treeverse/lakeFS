@@ -143,7 +143,7 @@ func TestExpiredCommits(t *testing.T) {
 			headsRetentionDays: map[string]int32{"c": 6, "b": 6},
 			previouslyExpired:  []string{"e1", "e2", "e3", "e4", "e5", "e6", "e7"},
 			expectedActiveIDs:  []string{"a", "b", "c"},
-			expectedExpiredIDs: []string{},
+			expectedExpiredIDs: []string{"e1"}, // since it's still reachable from an active commit ('a')
 		},
 		"merge_in_history": {
 			// graph taken from git core tests
@@ -265,6 +265,24 @@ func TestExpiredCommits(t *testing.T) {
 			previouslyExpired:  []string{"A", "B", "C", "E"},
 			expectedActiveIDs:  []string{"B", "D", "E", "F", "HEAD1", "HEAD2"},
 			expectedExpiredIDs: []string{},
+		},
+		"reachable_previously_expired": {
+			commits: map[string]testCommit{
+				"ep1": newTestCommit(8),
+				"ep2": newTestCommit(8),
+				"e5":  newTestCommit(6, "ep2"),
+				"e4":  newTestCommit(7, "ep1", "ep2"),
+				"e3":  newTestCommit(6, "e5"),  // expired yet active
+				"e2":  newTestCommit(6, "ep2"), // expired yet active
+				"e1":  newTestCommit(6, "e4"),  // expired yet active
+				"h3":  newTestCommit(1, "e3"),
+				"h2":  newTestCommit(1, "e2"),
+				"h1":  newTestCommit(1, "e1"),
+			},
+			headsRetentionDays: map[string]int32{"h1": 5, "h2": 5, "h3": 5},
+			previouslyExpired:  []string{"ep1", "ep2"},
+			expectedActiveIDs:  []string{"h1", "h2", "h3", "e1", "e2", "e3"},
+			expectedExpiredIDs: []string{"e4", "ep2", "e5"}, // 'ep2' is reachable from active commit 'e2', thus it will remain in the expired list for the next round as well even though it was expired previously
 		},
 	}
 	for name, tst := range tests {
