@@ -1232,6 +1232,10 @@ func userIDToInt(userID string) (int64, error) {
 
 func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
+		// fetch single user and make there are no more than one
+		if params.Amount == nil {
+			params.Amount = paginationAmount(1)
+		}
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
 			return nil, err
@@ -1239,12 +1243,15 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, para
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
 		}
+		if resp.JSON200 == nil {
+			return nil, ErrInvalidResponse
+		}
 		results := resp.JSON200.Results
 		if len(results) == 0 {
 			return nil, ErrNotFound
 		}
-		if len(results) > 1 {
-			// make sure we work with just one user based on email
+		if len(results) > 1 || resp.JSON200.Pagination.HasMore {
+			// make sure we work with just one user based on 'params'
 			return nil, ErrNonUnique
 		}
 		u := results[0]
@@ -1264,7 +1271,7 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
 	}
-	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID, Amount: paginationAmount(1)})
+	return a.getFirstUser(ctx, userKey{id: userID}, &ListUsersParams{Id: &intID})
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
@@ -1289,11 +1296,11 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email), Amount: paginationAmount(1)})
+	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
-	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID), Amount: paginationAmount(1)})
+	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
 func toPagination(paginator Pagination) *model.Paginator {
