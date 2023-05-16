@@ -483,8 +483,10 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 			require.NotEqual(t, updateTime, status.UpdateTime)
 			updateTime = status.UpdateTime
 			t.Log("Import progress:", *status.IngestedObjects, importID)
+			timer.Reset(10 * time.Second)
 		}
 		if statusResp.JSON200.Completed {
+			t.Log("Import completed:", importID)
 			break
 		}
 	}
