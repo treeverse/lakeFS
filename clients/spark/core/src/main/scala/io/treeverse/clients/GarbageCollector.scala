@@ -556,7 +556,7 @@ object GarbageCollector {
       return ""
     }
     if (iterations < 1) {
-      throw RunIDException("Run ID iteration number cannot be smaller than 1")
+      throw RunIDException(s"Run ID iteration number ($iterations) cannot be smaller than 1")
     }
     var previousRunID = ""
     val runIDsPath = new Path(
@@ -564,21 +564,27 @@ object GarbageCollector {
     )
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
     val runIDs = runIDsFS.listFiles(runIDsPath, false)
-    if (!runIDs.hasNext) {
+    try {
+      previousRunID = getNthRunID(runIDs, iterations)
+    } finally {
       runIDsFS.close()
+    }
+    println(s"----------------------- Using previous RUN ID: $previousRunID")
+    previousRunID
+  }
+
+  private def getNthRunID(iter: RemoteIterator[LocatedFileStatus], n: Int): String = {
+    if (!iter.hasNext) {
       throw RunIDException("No previous run ID")
     }
     var runIDObject: LocatedFileStatus = null
-    for (_ <- 0 until iterations) {
-      if (!runIDs.hasNext) {
+    for (_ <- 0 until n) {
+      if (!iter.hasNext) {
         throw RunIDException("Required Run ID iteration doesn't exist")
       }
-      runIDObject = runIDs.next()
+      runIDObject = iter.next()
     }
-    runIDsFS.close()
-    previousRunID = runIDObject.getPath.getName
-    println(s"----------------------- Using previous RUN ID: $previousRunID")
-    previousRunID
+    runIDObject.getPath.getName
   }
 
   private def logRunID(storageNS: String, runID: String, configMapper: ConfigMapper): Unit = {
