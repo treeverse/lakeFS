@@ -299,10 +299,9 @@ func TestAzureDataLakeV2(t *testing.T) {
 func TestImportNew(t *testing.T) {
 	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
 
-	ctx, _, repoName := setupTest(t)
-	defer tearDownTest(repoName)
-
 	t.Run("default", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
 		paths := []api.ImportLocation{{
 			Destination: importTargetPrefix,
@@ -328,6 +327,8 @@ func TestImportNew(t *testing.T) {
 	})
 
 	t.Run("parent", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
 		if blockstoreType == block.BlockstoreTypeLocal {
 			t.Skip("local cannot import by prefix, only directory or object")
@@ -344,6 +345,8 @@ func TestImportNew(t *testing.T) {
 	})
 
 	t.Run("several-paths", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
 		var paths []api.ImportLocation
 		for i := 1; i < 8; i++ {
@@ -365,6 +368,8 @@ func TestImportNew(t *testing.T) {
 	})
 
 	t.Run("prefixes-and-objects", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
 		var paths []api.ImportLocation
 		for i := 1; i < 8; i++ {
@@ -389,60 +394,57 @@ func TestImportNew(t *testing.T) {
 }
 
 func TestImportCancel(t *testing.T) {
+	_, importPath, _ := setupImportByBlockstoreType(t)
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
-	_, importPath, _ := setupImportByBlockstoreType(t)
+	branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", branch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
 
-	t.Run("canceled", func(t *testing.T) {
-		branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
-		createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
-			Name:   branch,
-			Source: "main",
-		})
-		require.NoError(t, err, "failed to create branch", branch)
-		require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, api.ImportStartJSONRequestBody{
+		Commit: api.CommitCreation{
+			Message:  "created by import",
+			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		},
+		Paths: []api.ImportLocation{{
+			Destination: importTargetPrefix,
+			Path:        importPath,
+			Type:        catalog.ImportPathTypePrefix,
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, importResp.JSON202, "failed to start import", err)
 
-		importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, api.ImportStartJSONRequestBody{
-			Commit: api.CommitCreation{
-				Message:  "created by import",
-				Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
-			},
-			Paths: []api.ImportLocation{{
-				Destination: importTargetPrefix,
-				Path:        importPath,
-				Type:        catalog.ImportPathTypePrefix,
-			}},
-		})
-		require.NoError(t, err)
-		require.NotNil(t, importResp.JSON202, "failed to start import", err)
+	// Wait 1 second and cancel request
+	time.Sleep(1 * time.Second)
+	cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+		Id: importResp.JSON202.Id,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
 
-		// Wait 1 second and cancel request
-		time.Sleep(1 * time.Second)
-		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+	// Check status is canceled
+	var updateTime *time.Time
+	for {
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
 			Id: importResp.JSON202.Id,
 		})
 		require.NoError(t, err)
-		require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		require.Contains(t, statusResp.JSON200.Error.Message, catalog.ImportCanceled)
 
-		// Check status is canceled
-		var updateTime *time.Time
-		for {
-			statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
-				Id: importResp.JSON202.Id,
-			})
-			require.NoError(t, err)
-			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
-			require.Contains(t, statusResp.JSON200.Error.Message, catalog.ImportCanceled)
-
-			if updateTime == nil {
-				updateTime = &statusResp.JSON200.UpdateTime
-			} else {
-				require.Equal(t, *updateTime, statusResp.JSON200.UpdateTime)
-				break
-			}
-			time.Sleep(5 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
+		if updateTime == nil {
+			updateTime = &statusResp.JSON200.UpdateTime
+		} else {
+			require.Equal(t, *updateTime, statusResp.JSON200.UpdateTime)
+			break
 		}
-	})
+		time.Sleep(5 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
+	}
 }
 
 func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation) (string, string) {
