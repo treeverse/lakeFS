@@ -147,7 +147,7 @@ type Config struct {
 		} `mapstructure:"local"`
 
 		Postgres *struct {
-			ConnectionString      string        `mapstructure:"connection_string"`
+			ConnectionString      SecureString  `mapstructure:"connection_string"`
 			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
@@ -173,10 +173,10 @@ type Config struct {
 			// in case there are no credentials configured in the system
 			// This is a client requirement as described in section 4 in
 			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-			AwsRegion          string `mapstructure:"aws_region"`
-			AwsProfile         string `mapstructure:"aws_profile"`
-			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
-			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsProfile         string       `mapstructure:"aws_profile"`
+			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
+			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
 
 			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
 			// Won't run when is equal or less than 0.
@@ -195,9 +195,9 @@ type Config struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		} `mapstructure:"encrypt"`
 		API struct {
-			Endpoint        string `mapstructure:"endpoint"`
-			Token           string `mapstructure:"token"`
-			SupportsInvites bool   `mapstructure:"supports_invites"`
+			Endpoint        string       `mapstructure:"endpoint"`
+			Token           SecureString `mapstructure:"token"`
+			SupportsInvites bool         `mapstructure:"supports_invites"`
 		} `mapstructure:"api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
@@ -453,7 +453,7 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 
 	if c.Database.Postgres != nil {
 		p.Postgres = &kvparams.Postgres{
-			ConnectionString:      c.Database.Postgres.ConnectionString,
+			ConnectionString:      c.Database.Postgres.ConnectionString.SecureValue(),
 			MaxIdleConnections:    c.Database.Postgres.MaxIdleConnections,
 			MaxOpenConnections:    c.Database.Postgres.MaxOpenConnections,
 			ConnectionMaxLifetime: c.Database.Postgres.ConnectionMaxLifetime,
@@ -467,8 +467,8 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 			Endpoint:            c.Database.DynamoDB.Endpoint,
 			AwsRegion:           c.Database.DynamoDB.AwsRegion,
 			AwsProfile:          c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID,
-			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey,
+			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
 		}
 	}
