@@ -344,7 +344,7 @@ func TestImportNew(t *testing.T) {
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
 	})
 
-	t.Run("several-paths", func(t *testing.T) {
+	t.Run("several_paths", func(t *testing.T) {
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
@@ -367,7 +367,7 @@ func TestImportNew(t *testing.T) {
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
 	})
 
-	t.Run("prefixes-and-objects", func(t *testing.T) {
+	t.Run("prefixes_and_objects", func(t *testing.T) {
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
@@ -380,13 +380,14 @@ func TestImportNew(t *testing.T) {
 				Type:        catalog.ImportPathTypePrefix,
 			})
 		}
-		for i := 0; i < 7; i++ {
-			dest := importFilesToCheck[i]
-			paths = append(paths, api.ImportLocation{
-				Destination: importTargetPrefix + dest,
-				Path:        importPath + dest,
-				Type:        catalog.ImportPathTypeObject,
-			})
+		for _, p := range importFilesToCheck {
+			if strings.HasPrefix(p, "nested") {
+				paths = append(paths, api.ImportLocation{
+					Destination: importTargetPrefix + p,
+					Path:        importPath + p,
+					Type:        catalog.ImportPathTypeObject,
+				})
+			}
 		}
 		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)

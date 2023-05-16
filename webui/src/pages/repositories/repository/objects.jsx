@@ -62,13 +62,11 @@ const ImportButton = ({variant = "success", onClick, config }) => {
 }
 
 export const useInterval = (callback, delay) => {
-
     const savedCallback = useRef();
 
     useEffect(() => {
         savedCallback.current = callback;
     }, [callback]);
-
 
     useEffect(() => {
         function tick() {
@@ -96,24 +94,25 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     useInterval(() => {
         if (importID !== "" && importPhase === ImportPhase.InProgress) {
             const getState = async () => {
-                const importState = await imports.get(repoId, referenceId, importID);
-                setNumberOfImportedObjects(importState.ingested_objects);
-                if (importState.error) {
-                    throw importState.error;
-                }
-                if (importState.completed) {
-                    setImportPhase(ImportPhase.Completed);
-                    onDone();
+                try {
+                    const importState = await imports.get(repoId, referenceId, importID);
+                    setNumberOfImportedObjects(importState.ingested_objects);
+                    if (importState.error) {
+                        throw importState.error;
+                    }
+                    if (importState.completed) {
+                        setImportPhase(ImportPhase.Completed);
+                        onDone();
+                    }
+                } catch (error) {
+                    setImportPhase(ImportPhase.Failed);
+                    setImportError(error);
+                    setIsImportEnabled(false);
                 }
             };
-            getState().catch(function(error){
-                console.log(error)
-                setImportPhase(ImportPhase.Failed);
-                setImportError(error);
-                setIsImportEnabled(false);
-            });
+            getState()
         }
-    }, 1000);
+    }, 3000);
     
     let currBranch = referenceId;
     currBranch = currBranch.match(/^_(.*)_imported$/)?.[1] || currBranch; // trim "_imported" suffix if used as import source

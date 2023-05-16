@@ -185,12 +185,6 @@ func WithIfAbsent(v bool) SetOptionsFunc {
 	}
 }
 
-func WithMaxTries(n int) SetOptionsFunc {
-	return func(opts *SetOptions) {
-		opts.MaxTries = n
-	}
-}
-
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
@@ -230,7 +224,6 @@ type ImportStatus struct {
 	Completed    bool
 	UpdatedAt    time.Time
 	Progress     int64
-	Total        int64
 	ImportBranch string
 	MetaRangeID  MetaRangeID
 	Commit       *CommitRecord

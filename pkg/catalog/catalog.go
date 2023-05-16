@@ -1824,68 +1824,53 @@ func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.R
 	return err
 }
 
-func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest) {
+func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	defer cancel()
-	logger := c.log.WithField("import_id", importID)
-	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
+	importBranch := "_" + branchID + "_imported"
+	err := c.ensureBranchExists(ctx, repository, importBranch, branchID)
 	if err != nil {
-		logger.WithError(err).Error("creating import manager")
-		return
+		return fmt.Errorf("ensure import branch: %w", err)
+	}
+
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID, importBranch)
+	if err != nil {
+		return fmt.Errorf("creating import manager: %w", err)
 	}
 	defer importManager.Close()
 
-	importStatus := importManager.Status()
-	importBranch := "_" + branchID + "_imported"
-	err = c.ensureBranchExists(ctx, repository, importBranch, branchID)
-	if err != nil {
-		importStatus.Error = fmt.Errorf("ensure import branch: %w", err)
-		importManager.StatusChan <- importStatus
-		return
-	}
-	importStatus.ImportBranch = importBranch
-
 	wg, wgCtx := c.workPool.GroupContext(ctx)
 	for _, source := range params.Paths {
-		// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-		walker, err := c.walkerFactory.GetWalker(wgCtx, store.WalkerOptions{StorageURI: source.Path})
-		if err != nil {
-			importStatus.Error = fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
-			importManager.StatusChan <- importStatus
-			return
-		}
-
-		it, err := NewWalkEntryIterator(wgCtx, walker, source.Type, source.Destination, "", "")
-		if err != nil {
-			importStatus.Error = fmt.Errorf("creating walk iterator on path %s: %w", source.Path, err)
-			importManager.StatusChan <- importStatus
-			return
-		}
-		logger.WithFields(logging.Fields{"source": source.Path, "itr": it}).Debug("Ingest source")
-
+		src := source // Pinning
 		wg.Submit(func() error {
+			// TODO (niro): Need to handle this at some point (use adapter GetWalker)
+			walker, err := c.walkerFactory.GetWalker(wgCtx, store.WalkerOptions{StorageURI: src.Path})
+			if err != nil {
+				return fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
+			}
+
+			it, err := NewWalkEntryIterator(wgCtx, walker, src.Type, src.Destination, "", "")
+			if err != nil {
+				return fmt.Errorf("creating walk iterator on path %s: %w", src.Path, err)
+			}
+			logger.WithFields(logging.Fields{"source": src.Path, "itr": it}).Debug("Ingest source")
 			defer it.Close()
 			return importManager.Ingest(it)
 		})
-
-		// Check if operation was canceled
-		if ctx.Err() != nil {
-			return
-		}
 	}
 
 	err = wg.Wait()
 	if err != nil {
-		importStatus.Error = fmt.Errorf("error on ingest: %w", err)
-		importManager.StatusChan <- importStatus
-		return
+		importError := fmt.Errorf("error on ingest: %w", err)
+		importManager.SetError(importError)
+		return importError
 	}
 
 	importItr, err := importManager.NewItr()
 	if err != nil {
-		importStatus.Error = fmt.Errorf("error on import iterator: %w", err)
-		importManager.StatusChan <- importStatus
-		return
+		importError := fmt.Errorf("error on import iterator: %w", err)
+		importManager.SetError(importError)
+		return importError
 	}
 	defer importItr.Close()
 
@@ -1893,24 +1878,24 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	for importItr.hasMore {
 		rangeInfo, err := c.Store.WriteRange(ctx, repository, importItr)
 		if err != nil {
-			importStatus.Error = fmt.Errorf("write range: %w", err)
-			importManager.StatusChan <- importStatus
-			return
+			importError := fmt.Errorf("write range: %w", err)
+			importManager.SetError(importError)
+			return importError
 		}
 
 		ranges = append(ranges, rangeInfo)
 		// Check if operation was canceled
 		if ctx.Err() != nil {
-			return
+			return nil
 		}
 	}
 
 	// Create metarange
 	metarange, err := c.Store.WriteMetaRange(ctx, repository, ranges)
 	if err != nil {
-		importStatus.Error = fmt.Errorf("create metarange: %w", err)
-		importManager.StatusChan <- importStatus
-		return
+		importError := fmt.Errorf("create metarange: %w", err)
+		importManager.SetError(importError)
+		return importError
 	}
 
 	// Commit the changes
@@ -1918,16 +1903,18 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	cParams := params.Commit
 	commit, err := c.Commit(ctx, repository.RepositoryID.String(), importBranch, cParams.CommitMessage, cParams.Committer, cParams.Metadata, nil, &metarangeStr)
 	if err != nil {
-		importStatus.Error = fmt.Errorf("commit changes: %w", err)
-		importManager.StatusChan <- importStatus
-		return
+		importError := fmt.Errorf("commit changes: %w", err)
+		importManager.SetError(importError)
+		return importError
 	}
 
 	// Update import status
-	importStatus.MetaRangeID = metarange.ID
-	importStatus.Commit = commitLogToRecord(commit)
-	importStatus.Completed = true
-	importManager.StatusChan <- importStatus
+	status := importManager.Status()
+	status.MetaRangeID = metarange.ID
+	status.Commit = commitLogToRecord(commit)
+	status.Completed = true
+	importManager.SetStatus(status)
+	return nil
 }
 
 func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error) {
@@ -1944,7 +1931,11 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 	id := xid.New().String()
 	// Run import
 	go func() {
-		c.importAsync(repository, branchID, id, params)
+		logger := c.log.WithField("import_id", id)
+		err = c.importAsync(repository, branchID, id, params, logger)
+		if err != nil {
+			logger.WithError(err).Error("import failure")
+		}
 	}()
 	return id, nil
 }
@@ -1959,12 +1950,12 @@ func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID strin
 	if err != nil {
 		return err
 	}
-	if importStatus.Completed || importStatus.Error == ImportCanceled {
+	if importStatus.Completed {
 		c.log.WithFields(logging.Fields{
 			"import_id": importID,
 			"completed": importStatus.Completed,
 			"error":     importStatus.Error,
-		}).Warning("Not canceling import")
+		}).Warning("Not canceling import - already completed")
 		return graveler.ErrConflictFound
 	}
 	importStatus.Error = ImportCanceled

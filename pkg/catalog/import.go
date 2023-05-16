@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/cockroachdb/pebble"
@@ -14,10 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	ImportCanceled = "Canceled"
-	statusChanSize = 100
-)
+const ImportCanceled = "Canceled"
 
 var ErrImportClosed = errors.New("import closed")
 
@@ -25,19 +23,19 @@ type Import struct {
 	db            *pebble.DB
 	dbPath        string
 	kvStore       kv.Store
-	status        graveler.ImportStatus
-	StatusChan    chan graveler.ImportStatus
 	logger        logging.Logger
 	repoPartition string
-	progress      int64
 	wg            multierror.Group
+	status        graveler.ImportStatus
 	closed        bool
+	mu            sync.Mutex
 }
 
-func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, importID string) (*Import, error) {
+func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, importID, importBranch string) (*Import, error) {
 	status := graveler.ImportStatus{
-		ID:        graveler.ImportID(importID),
-		UpdatedAt: time.Now(),
+		ID:           graveler.ImportID(importID),
+		UpdatedAt:    time.Now(),
+		ImportBranch: importBranch,
 	}
 	repoPartition := graveler.RepoPartition(repository)
 	// Must be set first
@@ -59,9 +57,9 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 		dbPath:        dbPath,
 		kvStore:       kvStore,
 		status:        status,
-		StatusChan:    make(chan graveler.ImportStatus, statusChanSize),
 		logger:        logger,
 		repoPartition: repoPartition,
+		mu:            sync.Mutex{},
 	}
 
 	i.wg.Go(func() error {
@@ -74,7 +72,7 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 	return &i, nil
 }
 
-func (i *Import) Set(record EntryRecord) error {
+func (i *Import) set(record EntryRecord) error {
 	if i.closed {
 		return ErrImportClosed
 	}
@@ -99,17 +97,41 @@ func (i *Import) Ingest(it *walkEntryIterator) error {
 	}
 	i.logger.WithField("itr", it).Debug("Ingest start")
 	for it.Next() {
-		if err := i.Set(*it.Value()); err != nil {
+		if err := i.set(*it.Value()); err != nil {
 			return err
 		}
-		i.progress += 1
+		i.mu.Lock()
+		i.status.Progress += 1
+		i.mu.Unlock()
 	}
 	i.logger.WithField("itr", it).Debug("Ingest finished")
 	return nil
 }
 
 func (i *Import) Status() graveler.ImportStatus {
-	return i.status
+	i.mu.Lock()
+	status := i.status
+	i.mu.Unlock()
+	return status
+}
+
+func (i *Import) setStatus(updater func()) {
+	i.mu.Lock()
+	updater()
+	i.status.UpdatedAt = time.Now()
+	i.mu.Unlock()
+}
+
+func (i *Import) SetStatus(status graveler.ImportStatus) {
+	i.setStatus(func() {
+		i.status = status
+	})
+}
+
+func (i *Import) SetError(err error) {
+	i.setStatus(func() {
+		i.status.Error = err
+	})
 }
 
 func (i *Import) NewItr() (*importIterator, error) {
@@ -120,8 +142,9 @@ func (i *Import) NewItr() (*importIterator, error) {
 }
 
 func (i *Import) Close() {
+	i.mu.Lock()
 	i.closed = true
-	close(i.StatusChan)
+	i.mu.Unlock()
 	_ = i.wg.Wait().ErrorOrNil()
 	_ = os.RemoveAll(i.dbPath)
 }
@@ -129,48 +152,37 @@ func (i *Import) Close() {
 func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFunc) error {
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
-	newStatus := i.status
 	timer := time.NewTimer(statusUpdateInterval)
-	done := false
 
-	for {
-		select {
-		case s, ok := <-i.StatusChan:
-			if ok {
-				newStatus = s
-			}
-		case <-timer.C:
-			pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
-			if err != nil {
-				cancel()
-				return err
-			}
-			if statusData.Error != "" || statusData.Completed {
-				cancel()
-				return nil
-			}
-			newStatus.UpdatedAt = time.Now()
-			newStatus.Progress = i.progress
-			// TODO: Remove key after 24 hrs
-			err = kv.SetMsgIf(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), graveler.ProtoFromImportStatus(&newStatus), pred)
-			if errors.Is(err, kv.ErrPredicateFailed) {
-				i.logger.Warning("Import status update failed")
-			} else if err != nil {
-				cancel()
-				return err
-			}
-			i.status = newStatus
-
-			// Check if import closed, we want to do that only after we update the import state
-			if done {
-				return nil
-			}
-			timer.Reset(statusUpdateInterval)
+	for range timer.C {
+		pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
+		if err != nil {
+			cancel()
+			return err
 		}
+		if statusData.Error != "" || statusData.Completed {
+			cancel()
+			return nil
+		}
+		currStatus := i.Status()
+		currStatus.UpdatedAt = time.Now()
+		err = kv.SetMsgIf(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), graveler.ProtoFromImportStatus(&currStatus), pred)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			i.logger.Warning("Import status update failed")
+		} else if err != nil {
+			cancel()
+			return err
+		}
+
+		// Check if import closed, we want to do that only after we update the import state
+		i.mu.Lock()
 		if i.closed {
-			done = true
+			return nil
 		}
+		i.mu.Unlock()
+		timer.Reset(statusUpdateInterval)
 	}
+	return nil
 }
 
 type importIterator struct {
