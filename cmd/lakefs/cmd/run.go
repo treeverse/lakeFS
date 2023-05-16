@@ -315,7 +315,13 @@ var runCmd = &cobra.Command{
 		actionsService.SetEndpoint(server)
 
 		go func() {
-			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			var err error
+			if cfg.TLS.Enabled {
+				err = server.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+			} else {
+				err = server.ListenAndServe()
+			}
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				_, _ = fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", cfg.ListenAddress, err)
 				os.Exit(1)
 			}
