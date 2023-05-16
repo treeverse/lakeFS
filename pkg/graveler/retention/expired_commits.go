@@ -38,6 +38,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	processed := make(map[graveler.CommitID]time.Time)
+	// Mapping between previously expired commits to their direct children.
 	previouslyExpiredMap := make(map[graveler.CommitID]map[graveler.CommitID]struct{})
 	for _, commitID := range previouslyExpired {
 		previouslyExpiredMap[commitID] = make(map[graveler.CommitID]struct{})
@@ -118,9 +119,8 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			} else if _, ok = activeMap[nextCommitID]; !ok {
 				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
 				// both expired in this run and the previous (in this path)
-				if _, ok = previouslyExpiredMap[nextCommitID]; ok {
+				if nextCommitChildren, ok := previouslyExpiredMap[nextCommitID]; ok {
 					// Get the previously expired commit's list of known children and add the current commit to it.
-					var nextCommitChildren = previouslyExpiredMap[nextCommitID]
 					if _, ok := nextCommitChildren[currentCommitID]; !ok {
 						nextCommitChildren[currentCommitID] = struct{}{}
 						previouslyExpiredMap[nextCommitID] = nextCommitChildren
