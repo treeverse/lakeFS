@@ -587,17 +587,17 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 		return
 	}
 
-	var acl model.ACL
+	var groupACL model.ACL
 	switch len(policies) {
 	case 0: // Blank ACL is valid and allows nothing
 		break
 	case 1:
-		acl = policies[0].ACL
-		if len(acl.Permission) == 0 {
+		groupACL = policies[0].ACL
+		if len(groupACL.Permission) == 0 {
 			c.Logger.
 				WithContext(ctx).
 				WithField("policy", fmt.Sprintf("%+v", policies[0])).
-				WithField("acl", fmt.Sprintf("%+v", acl)).
+				WithField("acl", fmt.Sprintf("%+v", groupACL)).
 				WithField("group", groupID).
 				Warn("Policy attached to group has no ACL")
 			response := NotFoundOrNoACL{
@@ -622,7 +622,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	response := ACL{
-		Permission: string(acl.Permission),
+		Permission: string(groupACL.Permission),
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -1426,7 +1426,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadStorageConfiguration,
+			Action:   permissions.ReadConfig,
 			Resource: permissions.All,
 		},
 	}) {
@@ -3829,7 +3829,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 	state := string(savedState)
 	// no need to create an admin user if users are managed externally
-	if c.Config.IsAuthTypeAPI() {
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		state = string(auth.SetupStateInitialized)
 	} else if savedState == auth.SetupStateNotInitialized {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
@@ -3872,7 +3872,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	if c.Config.IsAuthTypeAPI() {
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, CredentialsWithSecret{})
 		return
@@ -3926,7 +3926,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	// this is the "natural" next step in the setup process
 	nextStep := auth.SetupStateCommPrefsDone
 	// if users are managed externally, we can skip the admin user creation step
-	if c.Config.IsAuthTypeAPI() {
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		nextStep = auth.SetupStateInitialized
 	}
 	response := NextStep{
@@ -4236,8 +4236,8 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 			},
 		},
 		S3Creds: tablediff.S3Creds{
-			Key:      baseCredential.AccessKeyID,
-			Secret:   baseCredential.SecretAccessKey,
+			Key:      config.SecureString(baseCredential.AccessKeyID),
+			Secret:   config.SecureString(baseCredential.SecretAccessKey),
 			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
 		},
 		Repo: repository,

@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
@@ -23,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -40,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -57,15 +57,13 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to "external" without setting an external auth service`)
+var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
 
 func checkAuthModeSupport(cfg *config.Config) error {
-	switch {
-	case !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI():
+	if !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI() {
 		return errSimplifiedOrExternalAuth
-	default:
-		return nil
 	}
+	return nil
 }
 
 var runCmd = &cobra.Command{
@@ -134,7 +132,7 @@ var runCmd = &cobra.Command{
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-				cfg.Auth.Cache, nil, apiEmailer)
+				authparams.ServiceCache(cfg.Auth.Cache), nil, apiEmailer)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
@@ -143,7 +141,7 @@ var runCmd = &cobra.Command{
 				kvStore,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				emailer,
-				cfg.Auth.Cache,
+				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
 		}
@@ -317,7 +315,13 @@ var runCmd = &cobra.Command{
 		actionsService.SetEndpoint(server)
 
 		go func() {
-			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			var err error
+			if cfg.TLS.Enabled {
+				err = server.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+			} else {
+				err = server.ListenAndServe()
+			}
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				_, _ = fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", cfg.ListenAddress, err)
 				os.Exit(1)
 			}
