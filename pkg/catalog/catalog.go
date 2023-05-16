@@ -1969,13 +1969,13 @@ func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID strin
 	}
 	importStatus.Error = ImportCanceled
 	importStatus.UpdatedAt = timestamppb.Now()
-	return kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(importID), importStatus)
+	return kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.ImportsPath(importID)), importStatus)
 }
 
 func (c *Catalog) getImportStatus(ctx context.Context, repository *graveler.RepositoryRecord, importID string) (*graveler.ImportStatusData, error) {
 	repoPartition := graveler.RepoPartition(repository)
 	data := &graveler.ImportStatusData{}
-	_, err := kv.GetMsg(ctx, c.KVStore, repoPartition, []byte(importID), data)
+	_, err := kv.GetMsg(ctx, c.KVStore, repoPartition, []byte(graveler.ImportsPath(importID)), data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			return nil, graveler.ErrNotFound

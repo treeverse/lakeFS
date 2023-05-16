@@ -41,7 +41,7 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 	}
 	repoPartition := graveler.RepoPartition(repository)
 	// Must be set first
-	err := kv.SetMsg(ctx, kvStore, repoPartition, []byte(importID), graveler.ProtoFromImportStatus(&status))
+	err := kv.SetMsg(ctx, kvStore, repoPartition, []byte(graveler.ImportsPath(importID)), graveler.ProtoFromImportStatus(&status))
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 				newStatus = s
 			}
 		case <-timer.C:
-			pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(i.status.ID), &statusData)
+			pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
 			if err != nil {
 				cancel()
 				return err
@@ -152,7 +152,7 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 			newStatus.UpdatedAt = time.Now()
 			newStatus.Progress = i.progress
 			// TODO: Remove key after 24 hrs
-			err = kv.SetMsgIf(ctx, i.kvStore, i.repoPartition, []byte(i.status.ID), graveler.ProtoFromImportStatus(&newStatus), pred)
+			err = kv.SetMsgIf(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), graveler.ProtoFromImportStatus(&newStatus), pred)
 			if errors.Is(err, kv.ErrPredicateFailed) {
 				i.logger.Warning("Import status update failed")
 			} else if err != nil {
