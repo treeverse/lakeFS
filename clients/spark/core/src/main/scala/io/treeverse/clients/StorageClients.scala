@@ -1,95 +1,47 @@
 package io.treeverse.clients
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.ObjectMetadata
 import com.azure.core.http.HttpClient
 import com.azure.identity.{ClientSecretCredential, ClientSecretCredentialBuilder}
 import com.azure.storage.blob.batch.{BlobBatchClient, BlobBatchClientBuilder}
-import com.azure.storage.blob.{BlobContainerClient, BlobServiceClient, BlobServiceClientBuilder}
+import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
 import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
 import io.treeverse.clients.StorageUtils.AzureBlob._
-import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
+import io.treeverse.clients.StorageUtils.{S3, StorageTypeAzure, StorageTypeS3}
 
-import java.io.ByteArrayInputStream
 import java.net.URI
 
-trait StorageClient {
-  def logRunID(runID: String, storageNamespace: String, region: String): Unit
-}
+trait StorageClient {}
 
 object StorageClients {
-  private def getRunIDMarkerLocation(runID: String, storagePrefix: String): String = {
-    var prefix: String = storagePrefix.stripSuffix("/")
-    prefix = if (prefix.nonEmpty) prefix.concat("/_lakefs") else "_lakefs"
-    s"$prefix/retention/gc/run_ids/$runID"
+  class S3(storageNamespace: String, region: String, retries: Int, config: ConfigMapper)
+      extends StorageClient
+      with Serializable {
+    private val storageNSURI: URI = new URI(storageNamespace)
+    private val bucket: String = storageNSURI.getHost
+    @transient lazy val s3Client: AmazonS3 = io.treeverse.clients.conditional.S3ClientBuilder
+      .build(config.configuration, bucket, region, retries)
   }
 
-  class S3(configMapper: ConfigMapper) extends StorageClient with Serializable {
-    def getS3Client(
-        bucket: String,
-        region: String,
-        numRetries: Int
-    ): AmazonS3 =
-      io.treeverse.clients.conditional.S3ClientBuilder
-        .build(configMapper.configuration, bucket, region, numRetries)
-
-    override def logRunID(runID: String, storageNamespace: String, region: String): Unit = {
-      val uri = new URI(storageNamespace)
-      val runIDMarkerInputStream = new ByteArrayInputStream(new Array[Byte](0))
-      val bucket = uri.getHost
-      val s3Client = getS3Client(bucket, region, StorageUtils.S3.S3NumRetries)
-      val meta = new ObjectMetadata()
-      meta.setContentLength(0)
-      s3Client.putObject(bucket,
-                         getRunIDMarkerLocation(runID, uri.getPath.stripPrefix("/")),
-                         runIDMarkerInputStream,
-                         meta
-                        )
-    }
-  }
-
-  class Azure(configMapper: ConfigMapper) extends StorageClient with Serializable {
-    def getBlobContainerClient(
-        storageAccountUrl: String,
-        storageAccountName: String,
-        containerName: String
-    ): BlobContainerClient = {
-      val blobServiceClient: BlobServiceClient =
-        getBlobServiceClient(storageAccountUrl, storageAccountName)
-      blobServiceClient.getBlobContainerClient(containerName)
-    }
-    def getBlobBatchClient(
-        storageAccountUrl: String,
-        storageAccountName: String
-    ): BlobBatchClient = {
-      val blobServiceClient: BlobServiceClient =
-        getBlobServiceClient(storageAccountUrl, storageAccountName)
-      new BlobBatchClientBuilder(blobServiceClient).buildClient
-    }
-
-    override def logRunID(runID: String, storageNamespace: String, region: String): Unit = {
-      val uri = new URI(storageNamespace)
-      val runIDMarkerInputStream = new ByteArrayInputStream(new Array[Byte](0))
-      val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
-      val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
-      val containerName = StorageUtils.AzureBlob.uriToContainerName(uri)
-      val blobClient =
-        getBlobContainerClient(storageAccountUrl, storageAccountName, containerName)
-      var pathArray = uri.getPath.split("/")
-      // pathArray: ["", "<container name>"(, "storage", ..., "path")]
-      pathArray = if (pathArray.length > 2) pathArray.slice(2, pathArray.length) else Array("")
-      // pathArray: ["storage", ..., "path"] || [""]
-      val key =
-        if (pathArray.length > 1) pathArray.reduce((a1, a2) => a1 + "/" + a2) else pathArray(0)
-      blobClient
-        .getBlobClient(getRunIDMarkerLocation(runID, key))
-        .upload(runIDMarkerInputStream, 0)
-    }
+  class Azure(config: ConfigMapper, storageNamespace: String)
+      extends StorageClient
+      with Serializable {
+    private val storageNSURI: URI = new URI(storageNamespace)
+    private val storageAccountUrl: String =
+      StorageUtils.AzureBlob.uriToStorageAccountUrl(storageNSURI)
+    private val storageAccountName: String =
+      StorageUtils.AzureBlob.uriToStorageAccountName(storageNSURI)
+    @transient private lazy val blobServiceClient: BlobServiceClient =
+      getBlobServiceClient(storageAccountUrl, storageAccountName, config)
+    @transient lazy val blobBatchClient: BlobBatchClient = new BlobBatchClientBuilder(
+      blobServiceClient
+    ).buildClient
 
     private def getBlobServiceClient(
         storageAccountUrl: String,
-        storageAccountName: String
+        storageAccountName: String,
+        configMapper: ConfigMapper
     ): BlobServiceClient = {
       val hc = configMapper.configuration
       val storageAccountKey = hc.get(String.format(StorageAccountKeyProperty, storageAccountName))
@@ -125,14 +77,18 @@ object StorageClients {
     }
   }
 
-  def apply(storageType: String, configMapper: ConfigMapper): StorageClient = {
+  def apply(
+      storageType: String,
+      configMapper: ConfigMapper,
+      storageNamespace: String,
+      region: String
+  ): StorageClient = {
     storageType match {
       case StorageTypeS3 =>
-        new S3(configMapper)
+        new S3(storageNamespace, region, S3.S3NumRetries, configMapper)
       case StorageTypeAzure =>
-        new Azure(configMapper)
+        new Azure(configMapper, storageNamespace)
       case _ => throw new IllegalArgumentException("Invalid argument.")
     }
   }
-
 }
