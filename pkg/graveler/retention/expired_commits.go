@@ -120,7 +120,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
 				// both expired in this run and the previous (in this path)
 				if nextCommitChildren, ok := prevExpiredCommitsToChildrenMap[nextCommitID]; ok {
-					// Get the previously expired commit's list of known children and add the current commit to it.
+					// Add current commit to previously expired commit's list of known children if it's not there.
 					if _, ok := nextCommitChildren[currentCommitID]; !ok {
 						nextCommitChildren[currentCommitID] = struct{}{}
 						prevExpiredCommitsToChildrenMap[nextCommitID] = nextCommitChildren
