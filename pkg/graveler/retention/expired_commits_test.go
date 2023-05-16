@@ -266,6 +266,15 @@ func TestExpiredCommits(t *testing.T) {
 			expectedActiveIDs:  []string{"B", "D", "E", "F", "HEAD1", "HEAD2"},
 			expectedExpiredIDs: []string{},
 		},
+		/*
+			<ep1- 8 days>
+				\
+				  <e4- 7 days> -- <e1- 7 days> -- <h1- 1 day>        (5-day-retention)
+				/
+			<ep2- 8 days> -- <e2- 7 days> -- <h2- 1 day>             (5-day-retention)
+				\
+				  <e5- 6 days> -- <e3- 6 days> -- <h3- 1 day>        (5-day-retention)
+		*/
 		"reachable_previously_expired": {
 			commits: map[string]testCommit{
 				"ep1": newTestCommit(8),
@@ -274,7 +283,7 @@ func TestExpiredCommits(t *testing.T) {
 				"e4":  newTestCommit(7, "ep1", "ep2"),
 				"e3":  newTestCommit(6, "e5"),  // expired yet active
 				"e2":  newTestCommit(6, "ep2"), // expired yet active
-				"e1":  newTestCommit(6, "e4"),  // expired yet active
+				"e1":  newTestCommit(7, "e4"),  // expired yet active
 				"h3":  newTestCommit(1, "e3"),
 				"h2":  newTestCommit(1, "e2"),
 				"h1":  newTestCommit(1, "e1"),
