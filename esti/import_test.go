@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -97,7 +96,7 @@ func TestImport(t *testing.T) {
 
 func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
-	importDir := path.Join(t.TempDir(), "import-test-data")
+	importDir := filepath.Join(t.TempDir(), "import-test-data") + "/"
 	if err := os.Mkdir(importDir, dirPerm); err != nil {
 		t.Fatal(err)
 	}
