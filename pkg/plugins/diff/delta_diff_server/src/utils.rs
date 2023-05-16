@@ -58,7 +58,18 @@ pub(crate) fn construct_table_op(commit_info: &CommitInfo, version: DeltaDataTyp
     };
 
     let op_type = match OP_TYPES.get(op_name) {
-        None => return Err(TableOperationsError::UnknownOperation(op_name.to_string())),
+        None => {
+             match op_name.split_whitespace().next() {
+                 None => return Err(TableOperationsError::UnknownOperation(op_name.to_string())),
+                 Some(op) => {
+                     if let Some(t) = Some(OP_TYPES.get(op)) {
+                         *t
+                     } else {
+                         return Err(TableOperationsError::UnknownOperation(op_name.to_string()))
+                     }
+                 }
+             }
+        },
         Some(t) => *t
     };
 

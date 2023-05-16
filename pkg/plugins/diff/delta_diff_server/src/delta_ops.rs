@@ -53,7 +53,10 @@ lazy_static! {
         hm.insert("INSERT", OperationType::Update as i32);
         hm.insert("DELETE", OperationType::Delete as i32);
         hm.insert("CREATE TABLE AS SELECT", OperationType::Create as i32);
+        hm.insert("CREATE", OperationType::Create as i32);
         hm.insert("REPLACE TABLE AS SELECT", OperationType::Update as i32);
+        hm.insert("REPLACE", OperationType::Update as i32);
+        hm.insert("ALTER", OperationType::Update as i32);
         hm.insert("COPY INTO", OperationType::Update as i32);
         hm.insert("STREAMING UPDATE", OperationType::Update as i32);
         hm.insert("TRUNCATE", OperationType::Delete as i32);
