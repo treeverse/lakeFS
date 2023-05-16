@@ -384,6 +384,9 @@ object GarbageCollector {
     var runID = ""
     var expiredAddresses: DataFrame = null
     val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+    val region = getRegion(args)
+    val storageClient: StorageClient =
+      StorageClients(storageType, configMapper, storageNSForSdkClient, region)
 
     if (shouldMark) {
       val markInfo =
@@ -395,7 +398,8 @@ object GarbageCollector {
                       apiURL,
                       markID,
                       storageNSForSdkClient,
-                      storageNSForHadoopFS
+                      storageNSForHadoopFS,
+                      configMapper
                      )
       gcAddressesLocation = markInfo._1
       gcCommitsLocation = markInfo._2
@@ -414,19 +418,15 @@ object GarbageCollector {
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
         }
 
-        val region = getRegion(args)
-        val storageClient: StorageClient = StorageClients(storageType, configMapper)
-
         val removed = remove(
           storageNSForSdkClient,
           gcAddressesLocation,
           expiredAddresses,
           markID,
-          region,
           storageClient,
           schema
         )
-        storageClient.logRunID(runID, storageNSForSdkClient, region)
+        logRunID(storageNSForHadoopFS, runID, configMapper)
         removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
@@ -454,11 +454,12 @@ object GarbageCollector {
       apiURL: String,
       markID: String,
       storageNS: String,
-      storageNSForHadoopFS: String
+      storageNSForHadoopFS: String,
+      configMapper: ConfigMapper
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
-    val previousRunID = hc.get(LAKEFS_CONF_GC_PREV_RUN_ID, "")
-
+    val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
+    val previousRunID = getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper)
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -543,6 +544,41 @@ object GarbageCollector {
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
   }
 
+  private def getPreviousRunID(
+      incrementalRun: Boolean,
+      storageNS: String,
+      configMapper: ConfigMapper
+  ): String = {
+    if (!incrementalRun) {
+      return ""
+    }
+    var previousRunID = ""
+    val runIDsPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/")
+    val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
+    val runIDs = runIDsFS.listFiles(runIDsPath, false)
+    if (runIDs.hasNext) {
+      previousRunID = runIDs.next().getPath.getName
+      println(s"----------------------- Using previous RUN ID: $previousRunID")
+    } else {
+      runIDsFS.close()
+      throw RunIDException("No previous run ID")
+    }
+    runIDsFS.close()
+    previousRunID
+  }
+
+  private def logRunID(storageNS: String, runID: String, configMapper: ConfigMapper): Unit = {
+    val runIDPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/$runID")
+    val runIDFS = runIDPath.getFileSystem(configMapper.configuration)
+
+    val runIDStream = runIDFS.create(runIDPath, false)
+    try {
+      runIDStream.write(new Array[Byte](0))
+    } finally {
+      runIDStream.close()
+    }
+  }
+
   def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
     // a translated storage namespace that triggers processing by Hadoop FileSystems.
@@ -604,12 +640,11 @@ object GarbageCollector {
   def bulkRemove(
       readKeysDF: DataFrame,
       storageNamespace: String,
-      region: String,
       storageClient: StorageClient
   ): Dataset[String] = {
     import spark.implicits._
     val bulkRemover =
-      BulkRemoverFactory(storageClient, storageNamespace, region)
+      BulkRemoverFactory(storageClient, storageNamespace)
     val bulkSize = bulkRemover.getMaxBulkSize()
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
@@ -622,7 +657,7 @@ object GarbageCollector {
         // bulkRemover created above because it was created on the driver and it is not a serializable object. Therefore,
         // we create new bulkRemovers.
         val bulkRemover =
-          BulkRemoverFactory(storageClient, storageNamespace, region)
+          BulkRemoverFactory(storageClient, storageNamespace)
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
@@ -636,14 +671,13 @@ object GarbageCollector {
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
       markID: String,
-      region: String,
       storageClient: StorageClient,
       schema: StructType
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(df.orderBy("address"), storageNamespace, region, storageClient)
+    bulkRemove(df.orderBy("address"), storageNamespace, storageClient)
       .toDF(schema.fieldNames: _*)
   }
 
@@ -731,4 +765,6 @@ object GarbageCollector {
   }
 
   def writeJsonSummaryForTesting = writeJsonSummary _
+
+  case class RunIDException(private val message: String = "") extends Exception(message)
 }
