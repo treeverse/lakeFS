@@ -132,7 +132,10 @@ var runCmd = &cobra.Command{
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-				authparams.ServiceCache(cfg.Auth.Cache), nil, apiEmailer)
+				authparams.ServiceCache(cfg.Auth.Cache),
+				apiEmailer,
+				logger.WithField("service", "auth_api"),
+			)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
