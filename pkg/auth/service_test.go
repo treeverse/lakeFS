@@ -730,7 +730,8 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 				Results:    returnedUsers,
 			}
 
-			paginationAmount := auth.PaginationAmount(1)
+			const amount = 2
+			paginationAmount := auth.PaginationAmount(amount)
 			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
 				gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID, Amount: &paginationAmount}),
 			).Return(&auth.ListUsersResponse{
@@ -1080,7 +1081,8 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 				Pagination: auth.Pagination{},
 				Results:    returnedUsers,
 			}
-			paginationAmount := auth.PaginationAmount(1)
+			const amount = 2
+			paginationAmount := auth.PaginationAmount(amount)
 			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
 				gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email), Amount: &paginationAmount}),
 			).Return(&auth.ListUsersResponse{

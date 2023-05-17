@@ -1232,9 +1232,10 @@ func userIDToInt(userID string) (int64, error) {
 
 func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
-		// fetch single user and make there are no more than one
+		// fetch at least two users to make sure we don't have duplicates
 		if params.Amount == nil {
-			params.Amount = paginationAmount(1)
+			const amount = 2
+			params.Amount = paginationAmount(amount)
 		}
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
@@ -1250,7 +1251,7 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, para
 		if len(results) == 0 {
 			return nil, ErrNotFound
 		}
-		if len(results) > 1 || resp.JSON200.Pagination.HasMore {
+		if len(results) > 1 {
 			// make sure we work with just one user based on 'params'
 			return nil, ErrNonUnique
 		}
