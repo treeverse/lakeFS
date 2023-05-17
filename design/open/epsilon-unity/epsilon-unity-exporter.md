@@ -135,9 +135,12 @@ ref to an output.  All paths will be explicitly supplied.
 
 #### Time estimate
 
-3 person-weeks, possibly less.
+3 person-weeks.
 
 ### Phase 1: Scan for tables, lakeFS.Cloud hook implementation
+
+:warning: **Note:** Everything about this phase may very well change due to
+results from phase 0.
 
 #### Goal
 
@@ -155,9 +158,12 @@ monitoring export and maintenance under continuous load.
 
 #### Time estimate
 
-2 person-weeks, possibly less.
+2 person-weeks.
 
 ### Phase 2: lakeFS admin GUI
+
+:warning: **Note:** Everything about this phase may very well change due to
+results from phase 0.
 
 #### Goal
 
