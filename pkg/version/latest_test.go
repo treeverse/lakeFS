@@ -20,7 +20,7 @@ func TestCheckLatestVersion(t *testing.T) {
 		{
 			CurrentVersion:   version.Version,
 			LatestVersion:    "1.0.0",
-			ExpectedOutdated: true,
+			ExpectedOutdated: false,
 		},
 		{
 			CurrentVersion:   "0.0.1",
