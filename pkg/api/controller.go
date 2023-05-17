@@ -2502,6 +2502,9 @@ func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	ctx := r.Context()
+	c.LogAction(ctx, "put_object_preflight", r, repository, branch, "")
+
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
@@ -2930,6 +2933,9 @@ func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r
 		return
 	}
 
+	ctx := r.Context()
+	c.LogAction(ctx, "set_gc_collection_rules_preflight", r, repository, "", "")
+
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
@@ -3053,6 +3059,10 @@ func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, 
 	}) {
 		return
 	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "create_branch_protection_rule_preflight", r, repository, "", "")
+
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 

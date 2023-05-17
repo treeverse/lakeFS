@@ -14,7 +14,7 @@ const generateRandomFileName = (): string => {
 
 export const isSampleRepo = async (
   repo: string,
-  defaultBranch = "main"
+  defaultBranch: string,
 ): Promise<boolean> => {
   const objectList = await objects.list(repo, defaultBranch, "");
   return objectList.results.some(
@@ -26,23 +26,24 @@ export const isSampleRepo = async (
 
 export const canUseRepoOnboarding = async (
   repoId: string,
-  defaultBranch = "main"
+  defaultBranch: string,
 ): Promise<boolean> => {
-  const promises = [];
-  promises.push(retention.setGCPolicyPreflight(repoId));
-  promises.push(branchProtectionRules.createRulePreflight(repoId));
-  promises.push(
+  const promises = [
+    retention.setGCPolicyPreflight(repoId),
+    branchProtectionRules.createRulePreflight(repoId),
     objects.list(
       repoId,
       defaultBranch,
       `${HOOKS_PATH}${generateRandomFileName()}`
-    )
-  );
-  const results = await Promise.allSettled(promises);
-  if (results.some((result) => result.status === "rejected" || !result.value)) {
+    ),
+  ];
+  
+  try {
+    await Promise.all(promises);
+    return true;
+  } catch (e) {
     return false;
   }
-  return true;
 };
 
 export const getRepoOnboardingSteps = (

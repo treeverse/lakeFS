@@ -642,10 +642,15 @@ class Objects {
             method: 'OPTIONS',
         });
 
-        if (response.status !== 204) {
+        if (response.status === 204) {
+            return true;
+        }
+        if (response.status === 401) {
             return false;
         }
-        return true;
+        
+        // This is not one of the expected responses
+        throw new Error(await extractError(response));
     }
 
     async upload(repoId, branchId, path, fileObject) {

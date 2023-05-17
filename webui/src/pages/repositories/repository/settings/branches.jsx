@@ -47,8 +47,8 @@ const SettingsContainer = () => {
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
-                                {rules && rules.length > 0 ? rules.map((r, idx) => {
-                                    return <ListGroup.Item key={idx}>
+                                {rules && rules.length > 0 ? rules.map((r) => {
+                                    return <ListGroup.Item key={r.pattern}>
                                         <div className="d-flex">
                                             <code>{r.pattern}</code>
                                             <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => {

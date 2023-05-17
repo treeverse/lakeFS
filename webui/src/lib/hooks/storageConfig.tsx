@@ -33,6 +33,9 @@ const storageConfigInitialState: StorageConfigContextType = {
 };
 
 export const fetchStorageConfig = async () => {
+  // we assume that we're actually getting a StorageConfigContextType
+  // but there's no real guarantee
+  // we'll need to valudate and fix this when the API client is typed
   const storageConfig = await config.getStorageConfig();
   return storageConfig;
 };
