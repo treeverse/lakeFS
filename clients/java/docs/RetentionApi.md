@@ -557,7 +557,7 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | user has permissions to set garbage collection rules |  -  |
+**204** | User has permissions to set garbage collection rules on this repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |

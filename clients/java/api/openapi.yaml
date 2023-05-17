@@ -4062,7 +4062,9 @@ paths:
         style: form
       responses:
         "204":
-          description: user has permissions to upload an object
+          description: User has permissions to upload this object. This does not guarantee
+            that the upload will be successful or even possible. It indicates only
+            the permission at the time of calling this endpoint
         "401":
           content:
             application/json:
@@ -5110,7 +5112,8 @@ paths:
         style: simple
       responses:
         "204":
-          description: user has permissions to set garbage collection rules
+          description: User has permissions to set garbage collection rules on this
+            repository
         "401":
           content:
             application/json:
@@ -5372,7 +5375,8 @@ paths:
         style: simple
       responses:
         "204":
-          description: user has permissions to create a branch protection rule
+          description: User has permissions to create a branch protection rule in
+            this repository
         "401":
           content:
             application/json:

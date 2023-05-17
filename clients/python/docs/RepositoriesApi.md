@@ -220,7 +220,7 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | user has permissions to create a branch protection rule |  -  |
+**204** | User has permissions to create a branch protection rule in this repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
