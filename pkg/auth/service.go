@@ -1234,7 +1234,8 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, para
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		// fetch at least two users to make sure we don't have duplicates
 		if params.Amount == nil {
-			params.Amount = paginationAmount(2)
+			const amount = 2
+			params.Amount = paginationAmount(amount)
 		}
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
