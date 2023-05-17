@@ -640,7 +640,7 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 	options := kv.IteratorOptionsFrom([]byte(""))
 	itr, err := kv.NewPrimaryIterator(ctx, m.kvStoreLimited, (&graveler.ImportStatusData{}).ProtoReflect().Type(), repoPartition, key, options)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get imports iterator from store: %w", err)
 	}
 	defer itr.Close()
 
@@ -648,7 +648,7 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 		entry := itr.Entry()
 		status, ok := entry.Value.(*graveler.ImportStatusData)
 		if !ok {
-			return graveler.ErrReadingFromStore
+			return fmt.Errorf("invalid protobuf type %s: %w", entry.Value.ProtoReflect().Type().Descriptor().FullName(), graveler.ErrReadingFromStore)
 		}
 		if status.UpdatedAt.AsTime().Before(expiry) {
 			if !status.Completed && status.Error == "" {
