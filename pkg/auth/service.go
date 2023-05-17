@@ -1981,7 +1981,7 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 	return token.SignedString(secret)
 }
 
-func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -1992,5 +1992,6 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStor
 		apiClient:   client,
 		secretStore: secretStore,
 		cache:       cache,
+		logger:      logger,
 	}, nil
 }
