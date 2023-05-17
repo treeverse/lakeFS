@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"path"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
