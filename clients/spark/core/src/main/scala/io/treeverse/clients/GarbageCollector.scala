@@ -459,7 +459,9 @@ object GarbageCollector {
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
     val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
-    val previousRunID = getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper)
+    val incrementalRunIterations = hc.getInt(LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN, 1)
+    val previousRunID =
+      getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper, incrementalRunIterations)
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -547,28 +549,48 @@ object GarbageCollector {
   private def getPreviousRunID(
       incrementalRun: Boolean,
       storageNS: String,
-      configMapper: ConfigMapper
+      configMapper: ConfigMapper,
+      iterations: Int
   ): String = {
     if (!incrementalRun) {
       return ""
     }
+    if (iterations < 1) {
+      throw RunIDException(s"Run ID iteration number ($iterations) cannot be smaller than 1")
+    }
     var previousRunID = ""
-    val runIDsPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/")
+    val runIDsPath = new Path(
+      String.format(RUN_ID_MARKERS_LOCATION_FORMAT, storageNS.stripSuffix("/"), "")
+    )
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
     val runIDs = runIDsFS.listFiles(runIDsPath, false)
-    if (runIDs.hasNext) {
-      previousRunID = runIDs.next().getPath.getName
-      println(s"----------------------- Using previous RUN ID: $previousRunID")
-    } else {
+    try {
+      previousRunID = getNthRunID(runIDs, iterations)
+    } finally {
       runIDsFS.close()
-      throw RunIDException("No previous run ID")
     }
-    runIDsFS.close()
+    println(s"----------------------- Using previous RUN ID: $previousRunID")
     previousRunID
   }
 
+  private def getNthRunID(iter: RemoteIterator[LocatedFileStatus], n: Int): String = {
+    if (!iter.hasNext) {
+      throw RunIDException("No previous run ID")
+    }
+    var runIDObject: LocatedFileStatus = null
+    for (_ <- 0 until n) {
+      if (!iter.hasNext) {
+        throw RunIDException("Required Run ID iteration doesn't exist")
+      }
+      runIDObject = iter.next()
+    }
+    runIDObject.getPath.getName
+  }
+
   private def logRunID(storageNS: String, runID: String, configMapper: ConfigMapper): Unit = {
-    val runIDPath = new Path(s"${storageNS.stripSuffix("/")}/_lakefs/retention/gc/run_ids/$runID")
+    val runIDPath = new Path(
+      String.format(RUN_ID_MARKERS_LOCATION_FORMAT, storageNS.stripSuffix("/"), runID)
+    )
     val runIDFS = runIDPath.getFileSystem(configMapper.configuration)
 
     val runIDStream = runIDFS.create(runIDPath, false)
@@ -615,7 +637,7 @@ object GarbageCollector {
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
 
     val removedCount = removed.count()
-    println(s"Total objects to delete (some may already have been deleted): ${removedCount}")
+    println(s"Total objects to delete (some may already have been deleted): $removedCount")
     writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
     removed
       .withColumn(MARK_ID_KEY, lit(markID))
