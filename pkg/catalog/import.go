@@ -153,6 +153,7 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
 	timer := time.NewTimer(statusUpdateInterval)
+	done := false
 
 	for range timer.C {
 		pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
@@ -174,12 +175,16 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 			return err
 		}
 
-		// Check if import closed, we want to do that only after we update the import state
-		i.mu.Lock()
-		if i.closed {
+		// Ensure one last status update after import closed
+		if done {
 			return nil
 		}
+		i.mu.Lock()
+		if i.closed {
+			done = true
+		}
 		i.mu.Unlock()
+
 		timer.Reset(statusUpdateInterval)
 	}
 	return nil

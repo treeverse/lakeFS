@@ -18,6 +18,7 @@ const (
 	CreateRepositoryAction = "fs:CreateRepository"
 	AttachStorageNamespace = "fs:AttachStorageNamespace"
 	ImportFromStorage      = "fs:ImportFromStorage"
+	CancelImport           = "fs:CancelImport"
 	DeleteRepositoryAction = "fs:DeleteRepository"
 	ListRepositoriesAction = "fs:ListRepositories"
 	ReadObjectAction       = "fs:ReadObject"

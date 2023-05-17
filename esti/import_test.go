@@ -490,10 +490,9 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		}
 		if statusResp.JSON200.Completed {
 			t.Log("Import completed:", importID)
-			break
+			return importID, *statusResp.JSON200.ImportBranch
 		}
 	}
-	return importID, *statusResp.JSON200.ImportBranch
 }
 
 // #####################################################################################################################
