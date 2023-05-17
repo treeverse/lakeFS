@@ -156,10 +156,11 @@ func (i *Import) Close() {
 func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFunc) error {
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
-	timer := time.NewTimer(statusUpdateInterval)
+	ticker := time.NewTicker(statusUpdateInterval)
+	defer ticker.Stop()
 	done := false
 
-	for range timer.C {
+	for range ticker.C {
 		pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
 		if err != nil {
 			cancel()
@@ -186,8 +187,6 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 		if i.Closed() {
 			done = true
 		}
-
-		timer.Reset(statusUpdateInterval)
 	}
 	return nil
 }

@@ -471,12 +471,13 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		updateTime time.Time
 	)
 	importID := importResp.JSON202.Id
-	timer := time.NewTimer(5 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			t.Fatalf("context canceled")
-		case <-timer.C:
+		case <-ticker.C:
 			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
 				Id: importID,
 			})
@@ -486,7 +487,6 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 			require.NotEqual(t, updateTime, status.UpdateTime)
 			updateTime = status.UpdateTime
 			t.Log("Import progress:", *status.IngestedObjects, importID)
-			timer.Reset(10 * time.Second)
 		}
 		if statusResp.JSON200.Completed {
 			t.Log("Import completed:", importID)
