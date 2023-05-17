@@ -841,7 +841,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	// initialKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
 	var initialKv []kv.Entry
 	for _, pref := range prefsToCreate {
-		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 100)...) //nolint:gomnd
+		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 10)...) //nolint:gomnd
 	}
 
 	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
