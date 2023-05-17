@@ -20,7 +20,7 @@ Available Commands:
   fs              View and manipulate objects
   gc              Manage the garbage collection policy
   help            Help about any command
-  import          Import data from external source to an imported branch (with optional merge)
+  import          Import data from external source to a destination branch
   log             Show log of commits
   merge           Merge & commit changes from source branch into destination branch
   metastore       Manage metastore commands

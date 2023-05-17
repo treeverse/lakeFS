@@ -220,14 +220,13 @@ type RangeID string
 type ImportID string
 
 type ImportStatus struct {
-	ID           ImportID
-	Completed    bool
-	UpdatedAt    time.Time
-	Progress     int64
-	ImportBranch string
-	MetaRangeID  MetaRangeID
-	Commit       *CommitRecord
-	Error        error
+	ID          ImportID
+	Completed   bool
+	UpdatedAt   time.Time
+	Progress    int64
+	MetaRangeID MetaRangeID
+	Commit      *CommitRecord
+	Error       error
 }
 
 // StagingToken represents a namespace for writes to apply as uncommitted
@@ -540,6 +539,7 @@ type VersionController interface {
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
+	MergeFromMetaRange(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error)
@@ -867,6 +867,8 @@ type CommittedManager interface {
 	// returns the ID of the new metarange. This is similar to a git merge operation.
 	// The resulting tree is expected to be immediately addressable.
 	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy) (MetaRangeID, error)
+
+	MergeFromMetaRange(ctx context.Context, ns StorageNamespace, destination, base, source MetaRangeID, strategy MergeStrategy) (MetaRangeID, error)
 
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -2433,7 +2435,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			return nil, err
 		}
 		g.log(ctx).WithFields(logging.Fields{
-			"repository":             source,
+			"repository":             repository.RepositoryID,
 			"source":                 source,
 			"destination":            destination,
 			"source_meta_range":      fromCommit.MetaRangeID,
@@ -2481,6 +2483,124 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			StorageNamespace: storageNamespace,
 			BranchID:         destination,
 			SourceRef:        fromCommit.CommitID.Ref(),
+			Commit:           commit,
+		})
+		if err != nil {
+			return nil, &HookAbortError{
+				EventType: EventTypePreMerge,
+				RunID:     preRunID,
+				Err:       err,
+			}
+		}
+		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
+		if err != nil {
+			return nil, fmt.Errorf("add commit: %w", err)
+		}
+
+		tokensToDrop = branch.SealedTokens
+		branch.SealedTokens = []StagingToken{}
+		branch.CommitID = commitID
+		return branch, nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("update branch %s: %w", destination, err)
+	}
+
+	g.dropTokens(ctx, tokensToDrop...)
+	postRunID := g.hooks.NewRunID()
+	err = g.hooks.PostMergeHook(ctx, HookRecord{
+		EventType:        EventTypePostMerge,
+		RunID:            postRunID,
+		RepositoryID:     repository.RepositoryID,
+		StorageNamespace: storageNamespace,
+		BranchID:         destination,
+
+		SourceRef: commitID.Ref(),
+		Commit:    commit,
+		CommitID:  commitID,
+		PreRunID:  preRunID,
+	})
+	if err != nil {
+		g.log(ctx).
+			WithError(err).
+			WithField("run_id", postRunID).
+			WithField("pre_run_id", preRunID).
+			Error("Post-merge hook failed")
+	}
+	return commitID, nil
+}
+
+func (g *Graveler) MergeFromMetaRange(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error) {
+	var (
+		preRunID string
+		commit   Commit
+		commitID CommitID
+	)
+
+	storageNamespace := repository.StorageNamespace
+	if err := g.prepareForCommitIDUpdate(ctx, repository, destination); err != nil {
+		return "", err
+	}
+
+	var tokensToDrop []StagingToken
+	// No retries on any failure during the merge. If the branch changed, it's either that commit is in progress, commit occurred,
+	// or some other branch changing operation. If commit is in-progress, then staging area wasn't empty after we checked so not retrying is ok.
+	// If another commit/merge succeeded, then the user should decide whether to retry the merge.
+	err := g.retryBranchUpdate(ctx, repository, destination, func(branch *Branch) (*Branch, error) {
+		empty, err := g.isSealedEmpty(ctx, repository, branch)
+		if err != nil {
+			return nil, fmt.Errorf("check if staging empty: %w", err)
+		}
+		if !empty {
+			return nil, fmt.Errorf("%s: %w", destination, ErrDirtyBranch)
+		}
+		toCommit, err := g.dereferenceCommit(ctx, repository, Ref(destination))
+		if err != nil {
+			return nil, err
+		}
+
+		// Source is not a commit - merge base is destination root
+		itr, err := g.Log(ctx, repository, toCommit.CommitID, false)
+		if err != nil {
+			return nil, err
+		}
+		root := toCommit
+		for itr.Next() {
+			root = itr.Value()
+		}
+
+		g.log(ctx).WithFields(logging.Fields{
+			"repository":             repository.RepositoryID,
+			"source":                 source,
+			"destination":            destination,
+			"source_meta_range":      source,
+			"destination_meta_range": toCommit.MetaRangeID,
+			"base_meta_range":        root,
+		}).Trace("Merge")
+
+		metaRangeID, err := g.CommittedManager.MergeFromMetaRange(ctx, storageNamespace, toCommit.MetaRangeID, root.MetaRangeID, source, MergeStrategySrc)
+		if err != nil {
+			if !errors.Is(err, ErrUserVisible) {
+				err = fmt.Errorf("merge in CommitManager: %w", err)
+			}
+			return nil, err
+		}
+		commit = NewCommit()
+		commit.Committer = commitParams.Committer
+		commit.Message = commitParams.Message
+		commit.MetaRangeID = metaRangeID
+		commit.Parents = []CommitID{toCommit.CommitID}
+		commit.Generation = toCommit.Generation + 1
+		commit.Metadata = commitParams.Metadata
+		commit.Metadata[MergeStrategyMetadataKey] = MergeStrategySrcWinsStr
+		preRunID = g.hooks.NewRunID()
+		err = g.hooks.PreMergeHook(ctx, HookRecord{
+			EventType:        EventTypePreMerge,
+			RunID:            preRunID,
+			RepositoryID:     repository.RepositoryID,
+			StorageNamespace: storageNamespace,
+			BranchID:         destination,
+			SourceRef:        toCommit.CommitID.Ref(), // Will allow running pre-merge hooks of source ref
 			Commit:           commit,
 		})
 		if err != nil {

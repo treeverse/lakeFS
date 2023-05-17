@@ -24,11 +24,10 @@ Parents: {{.Commit.Parents|join ", "}}
 `
 
 var importCmd = &cobra.Command{
-	Use:   "import --from <object store URI> --to <lakeFS path URI> [--merge]",
-	Short: "Import data from external source to an imported branch (with optional merge)",
+	Use:   "import --from <object store URI> --to <lakeFS path URI>",
+	Short: "Import data from external source to a destination branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
-		merge := MustBool(flags.GetBool("merge"))
 		noProgress := MustBool(flags.GetBool("no-progress"))
 		from := MustString(flags.GetString("from"))
 		to := MustString(flags.GetString("to"))
@@ -120,7 +119,6 @@ var importCmd = &cobra.Command{
 		}
 		_ = bar.Clear()
 
-		importedBranch := api.StringValue(statusResp.JSON200.ImportBranch)
 		Write(importSummaryTemplate, struct {
 			Objects     int64
 			MetaRangeID string
@@ -129,14 +127,9 @@ var importCmd = &cobra.Command{
 		}{
 			Objects:     api.Int64Value(statusResp.JSON200.IngestedObjects),
 			MetaRangeID: api.StringValue(statusResp.JSON200.MetarangeId),
-			Branch:      importedBranch,
+			Branch:      toURI.Ref,
 			Commit:      statusResp.JSON200.Commit,
 		})
-
-		// merge to target branch if needed
-		if merge {
-			mergeImportedBranch(ctx, client, toURI.Repository, importedBranch, toURI.Ref)
-		}
 	},
 }
 
@@ -185,24 +178,6 @@ func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientW
 	}
 }
 
-func mergeImportedBranch(ctx context.Context, client *api.ClientWithResponses, repository, fromBranch, toBranch string) {
-	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repository, fromBranch, toBranch, api.MergeIntoBranchJSONRequestBody{})
-	DieOnErrorOrUnexpectedStatusCode(mergeResp, err, http.StatusOK)
-	if mergeResp.JSON200 == nil {
-		Die("Bad response from server", 1)
-	}
-	Write(mergeCreateTemplate, struct {
-		Merge  FromTo
-		Result *api.MergeResult
-	}{
-		Merge: FromTo{
-			FromRef: fromBranch,
-			ToRef:   toBranch,
-		},
-		Result: mergeResp.JSON200,
-	})
-}
-
 func branchExists(ctx context.Context, client *api.ClientWithResponses, repository string, branch string) (error, bool) {
 	resp, err := client.GetBranchWithResponse(ctx, repository, branch)
 	if err != nil {
@@ -224,6 +199,7 @@ func init() {
 	importCmd.Flags().String("to", "", "lakeFS path to load objects into (e.g. \"lakefs://repo/branch/sub/path/\")")
 	_ = importCmd.MarkFlagRequired("to")
 	importCmd.Flags().Bool("merge", false, "merge imported branch into target branch")
+	_ = importCmd.Flags().MarkDeprecated("merge", "import is done directly into target branch")
 	importCmd.Flags().Bool("no-progress", false, "switch off the progress output")
 	importCmd.Flags().StringP("message", "m", "Import objects", "commit message")
 	importCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")

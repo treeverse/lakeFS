@@ -1272,23 +1272,6 @@ func foundAllCommits(params LogParams, commits []*CommitLog) bool {
 		len(commits) >= params.Amount+1
 }
 
-func commitLogToRecord(val *CommitLog) *graveler.CommitRecord {
-	record := &graveler.CommitRecord{
-		CommitID: graveler.CommitID(val.Reference),
-		Commit: &graveler.Commit{
-			Committer:    val.Committer,
-			Message:      val.Message,
-			MetaRangeID:  graveler.MetaRangeID(val.MetaRangeID),
-			CreationDate: val.CreationDate,
-			Metadata:     map[string]string(val.Metadata),
-		},
-	}
-	for _, parent := range val.Parents {
-		record.Parents = append(record.Parents, graveler.CommitID(parent))
-	}
-	return record
-}
-
 func CommitRecordToLog(val *graveler.CommitRecord) *CommitLog {
 	if val == nil {
 		return nil
@@ -1828,17 +1811,11 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	defer cancel()
 
-	importBranch := "_" + branchID + "_imported"
-	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID, importBranch)
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
 	if err != nil {
 		return fmt.Errorf("creating import manager: %w", err)
 	}
 	defer importManager.Close()
-
-	err = c.ensureBranchExists(ctx, repository, importBranch, branchID)
-	if err != nil {
-		return fmt.Errorf("ensure import branch: %w", err)
-	}
 
 	wg, wgCtx := c.workPool.GroupContext(ctx)
 	for _, source := range params.Paths {
@@ -1899,20 +1876,32 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		return importError
 	}
 
-	// Commit the changes
-	metarangeStr := metarange.ID.String()
-	cParams := params.Commit
-	commit, err := c.Commit(ctx, repository.RepositoryID.String(), importBranch, cParams.CommitMessage, cParams.Committer, cParams.Metadata, nil, &metarangeStr)
+	commitID, err := c.Store.MergeFromMetaRange(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
+		Committer: params.Commit.Committer,
+		Message:   params.Commit.CommitMessage,
+		Metadata:  map[string]string(params.Commit.Metadata),
+	})
 	if err != nil {
-		importError := fmt.Errorf("commit changes: %w", err)
+		importError := fmt.Errorf("merge import: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	commit, err := c.Store.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		importError := fmt.Errorf("get commit: %w", err)
 		importManager.SetError(importError)
 		return importError
 	}
 
 	// Update import status
 	status := importManager.Status()
-	status.MetaRangeID = metarange.ID
-	status.Commit = commitLogToRecord(commit)
+	status.MetaRangeID = commit.MetaRangeID
+	status.Commit = &graveler.CommitRecord{
+		CommitID: commitID,
+		Commit:   commit,
+	}
+
 	status.Completed = true
 	importManager.SetStatus(status)
 	return nil

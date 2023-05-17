@@ -189,23 +189,27 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		// changes introduced only on source
 		return source, nil
 	}
+	return c.MergeFromMetaRange(ctx, ns, destination, base, source, strategy)
+}
+
+func (c *committedManager) MergeFromMetaRange(ctx context.Context, ns graveler.StorageNamespace, destination, base, source graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
 	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
 	if err != nil {
 		return "", fmt.Errorf("get base iterator: %w", err)
 	}
 	defer baseIt.Close()
 
-	sourceIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, source)
-	if err != nil {
-		return "", fmt.Errorf("get source iterator: %w", err)
-	}
-	defer sourceIt.Close()
-
 	destIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
 	if err != nil {
 		return "", fmt.Errorf("get destination iterator: %w", err)
 	}
 	defer destIt.Close()
+
+	srcIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, source)
+	if err != nil {
+		return "", fmt.Errorf("get source iterator: %w", err)
+	}
+	defer srcIt.Close()
 
 	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
@@ -215,7 +219,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		}
 	}()
 
-	err = Merge(ctx, mwWriter, baseIt, sourceIt, destIt, strategy)
+	err = Merge(ctx, mwWriter, baseIt, srcIt, destIt, strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("merge ns=%s id=%s: %w", ns, destination, err)

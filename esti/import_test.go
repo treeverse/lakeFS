@@ -298,6 +298,7 @@ func TestAzureDataLakeV2(t *testing.T) {
 
 func TestImportNew(t *testing.T) {
 	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
+	metadata := map[string]string{"created_by": "import"}
 
 	t.Run("default", func(t *testing.T) {
 		ctx, _, repoName := setupTest(t)
@@ -308,8 +309,8 @@ func TestImportNew(t *testing.T) {
 			Path:        importPath,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-		importID, importBranch := testImportNew(t, ctx, repoName, branch, paths)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+		importID := testImportNew(t, ctx, repoName, branch, paths, nil)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 
 		// Verify we cannot cancel a completed import
 		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
@@ -340,8 +341,8 @@ func TestImportNew(t *testing.T) {
 			Path:        importPathParent,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
+		_ = testImportNew(t, ctx, repoName, branch, paths, &metadata)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", branch, importFilesToCheck, expectedContentLength)
 	})
 
 	t.Run("several_paths", func(t *testing.T) {
@@ -363,8 +364,8 @@ func TestImportNew(t *testing.T) {
 			Type:        catalog.ImportPathTypePrefix,
 		})
 
-		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+		_ = testImportNew(t, ctx, repoName, branch, paths, &metadata)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 	})
 
 	t.Run("prefixes_and_objects", func(t *testing.T) {
@@ -389,12 +390,12 @@ func TestImportNew(t *testing.T) {
 				})
 			}
 		}
-		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+		_ = testImportNew(t, ctx, repoName, branch, paths, nil)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 	})
 }
 
-func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation) (string, string) {
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation, metadata *map[string]string) string {
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
 		Name:   importBranch,
 		Source: "main",
@@ -402,13 +403,17 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 	require.NoError(t, err, "failed to create branch", importBranch)
 	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
 
-	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, api.ImportStartJSONRequestBody{
+	body := api.ImportStartJSONRequestBody{
 		Commit: api.CommitCreation{
-			Message:  "created by import",
-			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+			Message: "created by import",
 		},
 		Paths: paths,
-	})
+	}
+	if metadata != nil {
+		body.Commit.Metadata = &api.CommitCreation_Metadata{AdditionalProperties: *metadata}
+	}
+
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, body)
 	require.NotNil(t, importResp.JSON202, "failed to start import", err)
 	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
 
@@ -436,7 +441,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		}
 		if statusResp.JSON200.Completed {
 			t.Log("Import completed:", importID)
-			return importID, *statusResp.JSON200.ImportBranch
+			return importID
 		}
 	}
 }
