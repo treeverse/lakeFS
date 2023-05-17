@@ -443,7 +443,6 @@ func TestImportCancel(t *testing.T) {
 			updateTime = statusResp.JSON200.UpdateTime
 		} else {
 			require.Equal(t, updateTime, statusResp.JSON200.UpdateTime)
-			break
 		}
 		timer.Reset(3 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
 	}
