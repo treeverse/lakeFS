@@ -2304,7 +2304,7 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
-		c.log.WithError(err).Warn("Failed list repositories during delete expired imports")
+		c.log.WithError(err).Warn("Delete expired imports: failed to list repositories")
 		return
 	}
 
