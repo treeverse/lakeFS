@@ -126,7 +126,7 @@ var importCmd = &cobra.Command{
 			Branch      string
 			Commit      *api.Commit
 		}{
-			Objects:     *statusResp.JSON200.IngestedObjects,
+			Objects:     api.Int64Value(statusResp.JSON200.IngestedObjects),
 			MetaRangeID: api.StringValue(statusResp.JSON200.MetarangeId),
 			Branch:      importedBranch,
 			Commit:      statusResp.JSON200.Commit,
