@@ -64,6 +64,10 @@ var (
 	logFormat string
 	// logOutputs logging outputs
 	logOutputs []string
+
+	// userAgentPrefix is the prefix to be used for the user agent value
+	// of requests performed by the CLI.
+	userAgentPrefix string
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -191,7 +195,11 @@ func getClient() *api.ClientWithResponses {
 		api.WithHTTPClient(httpClient),
 		api.WithRequestEditorFn(basicAuthProvider.Intercept),
 		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			req.Header.Set("User-Agent", "lakectl/"+version.Version)
+			userAgent := "lakectl/" + version.Version
+			if userAgentPrefix != "" {
+				userAgent = userAgentPrefix + "_" + userAgent
+			}
+			req.Header.Set("User-Agent", userAgent)
 			return nil
 		}),
 	)
@@ -228,6 +236,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
+	rootCmd.PersistentFlags().StringVarP(&userAgentPrefix, "ua-prefix", "", os.Getenv("LAKECTL_UA_PREFIX"), "set user-agent prefix")
 	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
 	rootCmd.Flags().BoolP("version", "v", false, "version for lakectl")
 }
