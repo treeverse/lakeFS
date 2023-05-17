@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
-import {ClipboardButton,Error, LinkButton, Loading} from "../../../../../lib/components/controls";
+import {ClipboardButton, AlertError, LinkButton, Loading} from "../../../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
@@ -33,11 +33,11 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
 
     const results = resultsState.results
 
-    if (error) return <Error error={error}/>
+    if (error) return <AlertError error={error}/>
     if (loading) return <Loading/>
 
     const actionErrorDisplay = (actionError) ?
-        <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
+        <AlertError error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     const commitSha = commit.id.substring(0, 12);
     const uriNavigator = <URINavigator path={prefix} reference={commit} repo={repo}
@@ -186,7 +186,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
     }, [repo.id, commitId]);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     const commit = response;
 
@@ -231,7 +231,7 @@ const CommitContainer = () => {
     const { commitId } = router.params;
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     return (
         <CommitView

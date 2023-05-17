@@ -12,7 +12,7 @@ import {branches, commits, refs} from "../../../lib/api";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
-import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
@@ -147,7 +147,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     }
 
 
-    if (error) return <Error error={error}/>
+    if (error) return <AlertError error={error}/>
     if (loading) return <Loading/>
 
     let onReset = async (entry) => {
@@ -182,7 +182,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
     const uncommittedRef = reference.id
 
    const actionErrorDisplay = (actionError) ?
-        <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
+        <AlertError error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     return (
         <>

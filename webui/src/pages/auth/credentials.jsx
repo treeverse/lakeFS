@@ -4,7 +4,7 @@ import {AuthLayout} from "../../lib/components/auth/layout";
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../lib/components/controls";
 import {ConfirmationButton} from "../../lib/components/modals";
@@ -59,7 +59,7 @@ const CredentialsContainer = () => {
                 An access key-pair is the set of credentials used to access lakeFS. <a href="https://docs.lakefs.io/reference/authorization.html#authentication" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
-            {(!!createError) && <Error error={createError}/>}
+            {(!!createError) && <AlertError error={createError}/>}
 
             <CredentialsShowModal
                 credentials={createdKey}

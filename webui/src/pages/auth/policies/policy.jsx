@@ -13,7 +13,7 @@ import {
     ActionGroup,
     ActionsBar,
     Loading,
-    Error,
+    AlertError,
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 
@@ -31,7 +31,7 @@ const PolicyView = ({ policyId }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
         <PolicyDisplay policy={policy} asJSON={jsonView}/>
     );

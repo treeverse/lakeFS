@@ -13,7 +13,8 @@ import {
     ActionsBar,
     Checkbox,
     DataTable,
-    Error, FormattedDate,
+    AlertError,
+    FormattedDate,
     Loading,
     RefreshButton,
     Warning,
@@ -43,7 +44,7 @@ const PoliciesContainer = () => {
 
     const {RBAC: rbac} = useLoginConfigContext();
 
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
 
     return (
@@ -85,7 +86,7 @@ const PoliciesContainer = () => {
                 A policy defines the permissions of a user or a group. <a href="https://docs.lakefs.io/reference/authorization.html#authorization" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
-            {(!!deleteError) && <Error error={deleteError}/>}
+            {(!!deleteError) && <AlertError error={deleteError}/>}
 
             <PolicyEditor
                 onSubmit={(policyId, policyBody) => {

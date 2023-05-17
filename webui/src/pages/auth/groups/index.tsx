@@ -13,7 +13,8 @@ import {
     ActionsBar,
     Checkbox,
     DataTable,
-    Error, FormattedDate,
+    AlertError,
+    FormattedDate,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
@@ -94,7 +95,7 @@ const GroupsContainer = () => {
         setSelected([]);
     }, [after, refresh]);
 
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
     const headers = simplified ? ['', 'Group ID', 'Permission', 'Created At'] : ['', 'Group ID', 'Created At'];
 
@@ -132,8 +133,8 @@ const GroupsContainer = () => {
             </div>
 
 
-            {(!!deleteError) && <Error error={deleteError}/>}
-            {(!!putACLError) && <Error error={putACLError}/>}
+            {(!!deleteError) && <AlertError error={deleteError}/>}
+            {(!!putACLError) && <AlertError error={putACLError}/>}
 
             <EntityActionModal
                 show={showCreate}

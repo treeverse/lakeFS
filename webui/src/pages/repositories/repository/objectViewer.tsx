@@ -8,7 +8,7 @@ import { useAPI } from "../../../lib/hooks/api";
 import { useQuery } from "../../../lib/hooks/router";
 import { objects } from "../../../lib/api";
 import { ObjectRenderer } from "./fileRenderers";
-import { Error } from "../../../lib/components/controls";
+import { AlertError } from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeCommit } from "../../../constants";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
@@ -69,7 +69,7 @@ const FileObjectsViewerPage = () => {
   if (loading) {
     content = <Loading />;
   } else if (error) {
-    content = <Error error={error} />;
+    content = <AlertError error={error} />;
   } else {
     const fileExtension = getFileExtension(path);
     // We'll need to convert the API service to get rid of this any

@@ -3,7 +3,7 @@ import Alert from "react-bootstrap/Alert";
 import { humanSize } from "../../../../lib/components/repository/tree";
 import { useAPI } from "../../../../lib/hooks/api";
 import { objects, qs } from "../../../../lib/api";
-import { Error, Loading } from "../../../../lib/components/controls";
+import { AlertError, Loading } from "../../../../lib/components/controls";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
@@ -61,7 +61,7 @@ export const TextDownloader: FC<RendererComponentWithTextCallback> = ({
     return <Loading />;
   }
   if (error) {
-    return <Error error={error} />;
+    return <AlertError error={error} />;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

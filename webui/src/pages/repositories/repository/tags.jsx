@@ -16,7 +16,7 @@ import {tags} from "../../../lib/api";
 import {
     ActionGroup,
     ActionsBar, ClipboardButton,
-    Error, LinkButton,
+    AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
@@ -155,7 +155,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                         </Form.Group>
                     </Form>
 
-                    {!!error && <Error error={error} />}
+                    {!!error && <AlertError error={error} />}
 
                 </Modal.Body>
                 <Modal.Footer>
@@ -185,7 +185,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
     let content;
 
     if (loading) content = <Loading />;
-    else if (error) content = <Error error={error} />;
+    else if (error) content = <AlertError error={error} />;
     else content = ( results && !!results.length  ?
         <>
             <Card>

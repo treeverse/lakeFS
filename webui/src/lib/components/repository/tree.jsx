@@ -30,7 +30,7 @@ import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import {ClipboardButton, copyTextToClipboard, Error, Loading} from "../controls";
+import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
 import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
@@ -271,7 +271,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   let content = <Loading />;
 
   if (error) {
-    content = <Error error={error} />;
+    content = <AlertError error={error} />;
   }
   if (!loading && !error && commit) {
     content = (
