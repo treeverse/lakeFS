@@ -130,7 +130,7 @@ var runCmd = &cobra.Command{
 			}
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
-				cfg.Auth.API.Token,
+				cfg.Auth.API.Token.SecureValue(),
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				authparams.ServiceCache(cfg.Auth.Cache), nil, apiEmailer)
 			if err != nil {
