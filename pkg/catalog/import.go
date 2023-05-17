@@ -73,7 +73,7 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 }
 
 func (i *Import) set(record EntryRecord) error {
-	if i.closed {
+	if i.Closed() {
 		return ErrImportClosed
 	}
 	key := []byte(record.Path)
@@ -92,9 +92,10 @@ func (i *Import) set(record EntryRecord) error {
 }
 
 func (i *Import) Ingest(it *walkEntryIterator) error {
-	if i.closed {
+	if i.Closed() {
 		return ErrImportClosed
 	}
+
 	i.logger.WithField("itr", it).Debug("Ingest start")
 	for it.Next() {
 		if err := i.set(*it.Value()); err != nil {
@@ -115,23 +116,18 @@ func (i *Import) Status() graveler.ImportStatus {
 	return status
 }
 
-func (i *Import) setStatus(updater func()) {
+func (i *Import) SetStatus(status graveler.ImportStatus) {
 	i.mu.Lock()
-	updater()
+	i.status = status
 	i.status.UpdatedAt = time.Now()
 	i.mu.Unlock()
 }
 
-func (i *Import) SetStatus(status graveler.ImportStatus) {
-	i.setStatus(func() {
-		i.status = status
-	})
-}
-
 func (i *Import) SetError(err error) {
-	i.setStatus(func() {
-		i.status.Error = err
-	})
+	i.mu.Lock()
+	i.status.Error = err
+	i.status.UpdatedAt = time.Now()
+	i.mu.Unlock()
 }
 
 func (i *Import) NewItr() (*importIterator, error) {
@@ -141,11 +137,19 @@ func (i *Import) NewItr() (*importIterator, error) {
 	return newImportIterator(i.db.NewIter(nil)), nil
 }
 
+func (i *Import) Closed() bool {
+	i.mu.Lock()
+	closed := i.closed
+	i.mu.Unlock()
+	return closed
+}
+
 func (i *Import) Close() {
 	i.mu.Lock()
 	i.closed = true
 	i.mu.Unlock()
 	_ = i.wg.Wait().ErrorOrNil()
+	_ = i.db.Close()
 	_ = os.RemoveAll(i.dbPath)
 }
 
@@ -153,6 +157,7 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
 	timer := time.NewTimer(statusUpdateInterval)
+	done := false
 
 	for range timer.C {
 		pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
@@ -174,12 +179,14 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 			return err
 		}
 
-		// Check if import closed, we want to do that only after we update the import state
-		i.mu.Lock()
-		if i.closed {
+		// Ensure one last status update after import closed
+		if done {
 			return nil
 		}
-		i.mu.Unlock()
+		if i.Closed() {
+			done = true
+		}
+
 		timer.Reset(statusUpdateInterval)
 	}
 	return nil

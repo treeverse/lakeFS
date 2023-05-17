@@ -1827,17 +1827,18 @@ func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.R
 func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	defer cancel()
-	importBranch := "_" + branchID + "_imported"
-	err := c.ensureBranchExists(ctx, repository, importBranch, branchID)
-	if err != nil {
-		return fmt.Errorf("ensure import branch: %w", err)
-	}
 
+	importBranch := "_" + branchID + "_imported"
 	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID, importBranch)
 	if err != nil {
 		return fmt.Errorf("creating import manager: %w", err)
 	}
 	defer importManager.Close()
+
+	err = c.ensureBranchExists(ctx, repository, importBranch, branchID)
+	if err != nil {
+		return fmt.Errorf("ensure import branch: %w", err)
+	}
 
 	wg, wgCtx := c.workPool.GroupContext(ctx)
 	for _, source := range params.Paths {

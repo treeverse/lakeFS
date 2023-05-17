@@ -429,8 +429,9 @@ func TestImportCancel(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
 
 	// Check status is canceled
-	var updateTime *time.Time
-	for {
+	var updateTime time.Time
+	timer := time.NewTimer(0)
+	for range timer.C {
 		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
 			Id: importResp.JSON202.Id,
 		})
@@ -438,13 +439,12 @@ func TestImportCancel(t *testing.T) {
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
 		require.Contains(t, statusResp.JSON200.Error.Message, catalog.ImportCanceled)
 
-		if updateTime == nil {
-			updateTime = &statusResp.JSON200.UpdateTime
+		if updateTime.IsZero() {
+			updateTime = statusResp.JSON200.UpdateTime
 		} else {
-			require.Equal(t, *updateTime, statusResp.JSON200.UpdateTime)
-			break
+			require.Equal(t, updateTime, statusResp.JSON200.UpdateTime)
 		}
-		time.Sleep(5 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
+		timer.Reset(3 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
 	}
 }
 
@@ -471,7 +471,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		updateTime time.Time
 	)
 	importID := importResp.JSON202.Id
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
@@ -490,10 +490,9 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		}
 		if statusResp.JSON200.Completed {
 			t.Log("Import completed:", importID)
-			break
+			return importID, *statusResp.JSON200.ImportBranch
 		}
 	}
-	return importID, *statusResp.JSON200.ImportBranch
 }
 
 // #####################################################################################################################
