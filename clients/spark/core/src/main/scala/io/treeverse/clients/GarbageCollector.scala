@@ -16,6 +16,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
+import java.io.FileNotFoundException
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
@@ -565,10 +566,17 @@ object GarbageCollector {
       String.format(RUN_ID_MARKERS_LOCATION_FORMAT, storageNS.stripSuffix("/"), "")
     )
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
-    val runIDs = runIDsFS.listFiles(runIDsPath, false)
     try {
+      val runIDs = runIDsFS.listFiles(runIDsPath, false)
       previousRunID = getNthRunID(runIDs, iterations, fallbackToFull)
-    } finally {
+    } catch {
+      case e: FileNotFoundException =>
+        if(fallbackToFull) {
+          return ""
+        }
+        throw e
+    }
+    finally{
       runIDsFS.close()
     }
     println(s"----------------------- Using previous RUN ID: $previousRunID")
