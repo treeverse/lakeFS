@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.8.0 - 2023-05-18
+
+What's new:
+* Incremental committed GC implementation - supported starting from lakeFS 0.100.0
+
 ## v0.7.3 - 2023-05-07
 
 Bug fixes:
