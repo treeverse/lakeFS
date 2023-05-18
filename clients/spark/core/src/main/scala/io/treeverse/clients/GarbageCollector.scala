@@ -460,10 +460,16 @@ object GarbageCollector {
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
     val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
-    val incrementalRunFallbackToFull = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL, false)
+    val incrementalRunFallbackToFull =
+      hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL, false)
     val incrementalRunIterations = hc.getInt(LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN, 1)
     val previousRunID =
-      getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper, incrementalRunIterations, incrementalRunFallbackToFull)
+      getPreviousRunID(incrementalRun,
+                       storageNSForHadoopFS,
+                       configMapper,
+                       incrementalRunIterations,
+                       incrementalRunFallbackToFull
+                      )
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -571,26 +577,29 @@ object GarbageCollector {
       previousRunID = getNthRunID(runIDs, iterations, fallbackToFull)
     } catch {
       case e: FileNotFoundException =>
-        if(fallbackToFull) {
+        if (fallbackToFull) {
           return ""
         }
         throw e
-    }
-    finally{
+    } finally {
       runIDsFS.close()
     }
     println(s"----------------------- Using previous RUN ID: $previousRunID")
     previousRunID
   }
 
-  private def getNthRunID(iter: RemoteIterator[LocatedFileStatus], n: Int, fallbackToFull: Boolean): String = {
+  private def getNthRunID(
+      iter: RemoteIterator[LocatedFileStatus],
+      n: Int,
+      fallbackToFull: Boolean
+  ): String = {
     if (!iter.hasNext && !fallbackToFull) {
       throw RunIDException("No previous run ID")
     }
     var runIDObject: LocatedFileStatus = null
     for (_ <- 0 until n) {
       if (!iter.hasNext) {
-        if(fallbackToFull) {
+        if (fallbackToFull) {
           return ""
         }
         throw RunIDException("Required Run ID iteration doesn't exist")
