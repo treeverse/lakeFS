@@ -3,7 +3,7 @@ import React, {useCallback, useState} from "react";
 import {ArrowLeftIcon, ClockIcon, InfoIcon, PlusIcon, XIcon} from "@primer/octicons-react";
 
 import {useAPI, useAPIWithPagination} from "../../hooks/api";
-import {Error, Loading} from "../controls";
+import {AlertError, Loading} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {TreeItemType} from "../../../constants";
 import * as otfUtils from "../../../util/otfUtil";
@@ -59,7 +59,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
 
     const results = resultsState.results
     if (error)
-        return <tr><td><Error error={error}/></td></tr>
+        return <tr><td><AlertError error={error}/></td></tr>
 
     if (itemType.loading || (loading && results.length === 0)) {
         return <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true} relativeTo={relativeTo}

@@ -4,7 +4,7 @@ import Button from "react-bootstrap/Button";
 import {repositories, RepositoryDeletionError} from "../../../lib/api";
 import {TrashIcon} from "@primer/octicons-react";
 import React from "react";
-import {Error} from "../../../lib/components/controls";
+import {AlertError} from "../../../lib/components/controls";
 
 const RepositoryInDeletionContainer = ({repoId}) => {
     const router = useRouter();
@@ -34,5 +34,5 @@ export const RepoError = ({error}) => {
     if (error instanceof RepositoryDeletionError) {
         return <RepositoryInDeletionContainer repoId={error.repoId}/>;
     }
-    return <Error error={error}/>;
+    return <AlertError error={error}/>;
 };

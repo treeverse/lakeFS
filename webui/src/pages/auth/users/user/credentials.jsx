@@ -9,7 +9,7 @@ import {ConfirmationButtonWithContext} from "../../../../lib/components/modals";
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
@@ -33,7 +33,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
     };
     const content = (
             <>
-                {createError && <Error error={createError}/>}
+                {createError && <AlertError error={createError}/>}
                 <CredentialsTable
                     userId={userId}
                     currentAccessKey={(user) ? user.accessKeyId : ""}

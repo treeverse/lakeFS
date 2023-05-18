@@ -5,7 +5,7 @@ import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
-import {Error} from "../../lib/components/controls";
+import {AlertError} from "../../lib/components/controls";
 
 interface UserConfigurationProps {
     onSubmit: (email: string, admin: string, updatesCheck: boolean, securityCheck: boolean) => Promise<void>;
@@ -76,7 +76,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                                 <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="I'd like to receive security updates (recommended)" />
                             </Form.Group>
 
-                            {!!setupError && <Error error={setupError}/>}
+                            {!!setupError && <AlertError error={setupError}/>}
                             <Button variant="primary" disabled={disabled} type="submit">
                                 {disabled ? <Spinner as="span"
                                                      animation="border"

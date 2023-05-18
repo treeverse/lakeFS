@@ -3,7 +3,7 @@ import {RepositoryPageLayout} from "../../../../lib/components/repository/layout
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     Loading,
     RefreshButton,
     ToggleSwitch
@@ -78,7 +78,7 @@ const GCPolicy = ({repo}) => {
     if (loading) {
         content = <Loading/>;
     } else if (error) {
-        content = isPolicyNotSet ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> :  <Error error={error}/>;
+        content = isPolicyNotSet ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> : <AlertError error={error}/>;
     } else if (jsonView) {
         content = <>
             <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
@@ -160,7 +160,7 @@ const GCPolicy = ({repo}) => {
 const RetentionContainer = () => {
     const {repo, loading, error} = useRefs();
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     return (
         <GCPolicy repo={repo}/>

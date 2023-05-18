@@ -2,7 +2,7 @@ import React from "react";
 import {useAPI} from "../../hooks/api";
 import {objects} from "../../api";
 import ReactDiffViewer, {DiffMethod} from "react-diff-viewer-continued";
-import {Error, Loading} from "../controls";
+import {AlertError, Loading} from "../controls";
 import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
@@ -31,12 +31,12 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
                 [repoId, leftRef, path]);
             break;
         default:
-            return <Error error={"Unsupported diff type " + diffType}/>;
+            return <AlertError error={"Unsupported diff type " + diffType}/>;
     }
 
     if ((left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.err);
-    if (err) return <Error error={err}/>;
+    if (err) return <AlertError error={err}/>;
 
     const leftStat = left && left.response;
     const rightStat = right && right.response;
@@ -45,7 +45,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     }
     const objectTooBig = (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
     if (objectTooBig) {
-        return <Error error={path + " is too big (> " + humanSize(maxDiffSizeBytes)+ "). To view its diff please download" +
+        return <AlertError error={path + " is too big (> " + humanSize(maxDiffSizeBytes)+ "). To view its diff please download" +
         " the objects and use an external diff tool."}/>
     }
     const leftSize = leftStat && leftStat.size_bytes;
@@ -78,7 +78,7 @@ const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diff
 
     if ((left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.err);
-    if (err) return <Error error={err}/>;
+    if (err) return <AlertError error={err}/>;
 
     return <div>
         <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
@@ -93,18 +93,18 @@ const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diff
 function validateDiffInput(left, right, diffType) {
     switch (diffType) {
         case 'changed':
-            if (!left && !right) return <Error error={"Invalid diff input"}/>;
+            if (!left && !right) return <AlertError error={"Invalid diff input"}/>;
             break;
         case 'added':
-            if (!right) return <Error error={"Invalid diff input: right hand-side is missing"}/>;
+            if (!right) return <AlertError error={"Invalid diff input: right hand-side is missing"}/>;
             break;
         case 'removed':
-            if (!left) return <Error error={"Invalid diff input: left hand-side is missing"}/>;
+            if (!left) return <AlertError error={"Invalid diff input: left hand-side is missing"}/>;
             break;
         case 'conflict':
             break;
         default:
-            return <Error error={"Unknown diff type: " + diffType}/>;
+            return <AlertError error={"Unknown diff type: " + diffType}/>;
     }
 }
 
@@ -154,7 +154,7 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
             size = leftSize;
             break;
         default:
-            return <Error error={"Unknown diff type: " + diffType}/>;
+            return <AlertError error={"Unknown diff type: " + diffType}/>;
     }
 
 

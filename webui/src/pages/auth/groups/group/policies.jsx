@@ -15,7 +15,7 @@ import {
     DataTable,
     FormattedDate,
     Loading,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../../../lib/components/controls";
 import {Link} from "../../../../lib/components/nav";
@@ -35,10 +35,10 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
             <>
-                {attachError && <Error error={attachError}/>}
+                {attachError && <AlertError error={attachError}/>}
 
                 <DataTable
                     keyFn={policy => policy.id}

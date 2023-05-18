@@ -14,7 +14,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import Layout from "../../lib/components/layout";
-import {ActionsBar, Error, Loading, useDebouncedState} from "../../lib/components/controls";
+import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
@@ -112,7 +112,7 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
     }, [refresh, prefix, after]);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
     if (!after && !prefix && results.length === 0) {
         return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} />;
     }

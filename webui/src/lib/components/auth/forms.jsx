@@ -7,7 +7,7 @@ import {FormControl, InputGroup} from "react-bootstrap";
 import {SearchIcon} from "@primer/octicons-react";
 
 import {useAPI} from "../../hooks/api";
-import {Checkbox, DataTable, DebouncedFormControl, Error, Loading} from "../controls";
+import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
 const isEmptyString = (str) => (!str?.length);
 
@@ -30,7 +30,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content = <Error error={error}/>;
+    else if (error) content = <AlertError error={error}/>;
     else content = (
             <>
                 <DataTable
@@ -127,7 +127,7 @@ export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, 
                     <FormControl ref={idField} autoFocus placeholder={placeholder} type="text"/>
                 </Form>
 
-                {(!!error) && <Error className="mt-3" error={error}/>}
+                {(!!error) && <AlertError className="mt-3" error={error}/>}
 
             </Modal.Body>
 

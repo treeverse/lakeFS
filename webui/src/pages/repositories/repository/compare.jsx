@@ -1,7 +1,7 @@
 import React, {useCallback, useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {ActionGroup, ActionsBar, Error, Loading, RefreshButton} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-react";
@@ -101,7 +101,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     if (loading) {
         content = <Loading/>
     }
-    else if (error) content = <Error error={error}/>
+    else if (error) content = <AlertError error={error}/>
     else if (compareReference.id === reference.id) {
         content = (
             <Alert variant="warning">
@@ -256,7 +256,7 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
                         to automatically favor changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or
                         from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is made,
                         the merge process will fail in case of a conflict.</FormHelperText>
-                    {(mergeState.err) ? (<Error error={mergeState.err}/>) : (<></>)}
+                    {(mergeState.err) ? (<AlertError error={mergeState.err}/>) : (<></>)}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={mergeState.merging} onClick={hide}>

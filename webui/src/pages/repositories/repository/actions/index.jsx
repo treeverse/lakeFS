@@ -3,7 +3,7 @@ import {RepositoryPageLayout} from "../../../../lib/components/repository/layout
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     FormattedDate,
     Loading, Na, RefreshButton,
     TooltipButton
@@ -123,7 +123,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     const doRefresh = () => setRefresh(!refresh)
 
     let content;
-    if (error) content = <Error error={error}/>
+    if (error) content = <AlertError error={error}/>
 
     else if (loading) content = <Loading/>
     else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
