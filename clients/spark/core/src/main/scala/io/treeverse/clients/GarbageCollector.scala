@@ -459,7 +459,7 @@ object GarbageCollector {
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
     val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
-    val incrementalRunFallbackToFull = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL, true)
+    val incrementalRunFallbackToFull = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL, false)
     val incrementalRunIterations = hc.getInt(LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN, 1)
     val previousRunID =
       getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper, incrementalRunIterations, incrementalRunFallbackToFull)
