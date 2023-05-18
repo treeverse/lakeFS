@@ -7,7 +7,7 @@ var Actions = []string{
 	"fs:CreateRepository",
 	"fs:AttachStorageNamespace",
 	"fs:ImportFromStorage",
-	"fs:CancelImport",
+	"fs:ImportCancel",
 	"fs:DeleteRepository",
 	"fs:ListRepositories",
 	"fs:ReadObject",
