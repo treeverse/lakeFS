@@ -38,9 +38,10 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	processed := make(map[graveler.CommitID]time.Time)
-	previouslyExpiredMap := make(map[graveler.CommitID]bool)
+	// Mapping between previously expired commits to their direct children.
+	prevExpiredCommitsToChildrenMap := make(map[graveler.CommitID]map[graveler.CommitID]struct{})
 	for _, commitID := range previouslyExpired {
-		previouslyExpiredMap[commitID] = true
+		prevExpiredCommitsToChildrenMap[commitID] = make(map[graveler.CommitID]struct{})
 	}
 	activeMap := make(map[graveler.CommitID]struct{})
 	expiredMap := make(map[graveler.CommitID]struct{})
@@ -97,6 +98,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			// (it will be optionally examined later on by different commit paths to get the longest expiration threshold for a given commit)
 			processed[startingPoint.CommitID] = branchExpirationThreshold
 		}
+		var currentCommitID = startingPoint.CommitID
 		// Start traversing the commit's ancestors (path):
 		for commitNode.MainParent != "" {
 			nextCommitID := commitNode.MainParent
@@ -113,10 +115,16 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// the threshold. In either way, the PARENT is active.
 				activeMap[nextCommitID] = struct{}{}
 				delete(expiredMap, nextCommitID)
+				delete(prevExpiredCommitsToChildrenMap, nextCommitID)
 			} else if _, ok = activeMap[nextCommitID]; !ok {
 				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
 				// both expired in this run and the previous (in this path)
-				if _, ok = previouslyExpiredMap[nextCommitID]; ok {
+				if nextCommitChildren, ok := prevExpiredCommitsToChildrenMap[nextCommitID]; ok {
+					// Add current commit to previously expired commit's list of known children if it's not there.
+					if _, ok := nextCommitChildren[currentCommitID]; !ok {
+						nextCommitChildren[currentCommitID] = struct{}{}
+						prevExpiredCommitsToChildrenMap[nextCommitID] = nextCommitChildren
+					}
 					break
 				}
 				// Else, if the parent commit isn't in the active map, and the current commit's creation time isn't after the
@@ -124,6 +132,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				expiredMap[nextCommitID] = struct{}{}
 			}
 			// Continue down the rabbit hole.
+			currentCommitID = nextCommitID
 			commitNode, ok = commitsMap[nextCommitID]
 			if !ok {
 				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, nextCommitID)
@@ -136,6 +145,9 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
+	for _, se := range getStillExpiredCommits(prevExpiredCommitsToChildrenMap, activeMap) {
+		expiredMap[se] = struct{}{}
+	}
 	return &GarbageCollectionCommits{active: makeCommitMap(commitsMap, activeMap), expired: makeCommitMap(commitsMap, expiredMap)}, nil
 }
 
@@ -145,4 +157,22 @@ func makeCommitMap(commitNodes map[graveler.CommitID]CommitNode, commitSet map[g
 		res[commitID] = commitNodes[commitID].MetaRangeID
 	}
 	return res
+}
+
+func getStillExpiredCommits(previouslyExpired map[graveler.CommitID]map[graveler.CommitID]struct{},
+	currentlyActive map[graveler.CommitID]struct{}) []graveler.CommitID {
+	var stillExpiredCommitIDs []graveler.CommitID
+	for peci, children := range previouslyExpired {
+		stillExpired := false
+		for child := range children {
+			if _, ok := currentlyActive[child]; ok {
+				stillExpired = true
+				break
+			}
+		}
+		if stillExpired {
+			stillExpiredCommitIDs = append(stillExpiredCommitIDs, peci)
+		}
+	}
+	return stillExpiredCommitIDs
 }
