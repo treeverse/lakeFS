@@ -86,6 +86,7 @@ var importCmd = &cobra.Command{
 			updatedAt      time.Time
 		)
 		ticker := time.NewTicker(statusPollInterval)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-sigCtx.Done():
