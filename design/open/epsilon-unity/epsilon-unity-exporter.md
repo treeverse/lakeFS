@@ -86,9 +86,12 @@ only metadata, so it holds only objects in prefix
 Epsilon _transforms_ the metadata of the input file:
 
 * In the first version we shall drop CRC files.  A later version will
-  restore these.  (These files are 
+  restore these.  (These files are not required by Delta!)
 * For every path reference in the metadata, it creates a _translated path
-  reference_.  The translated path reference is always an absolute on the
+  reference_.  When mapping to a physical path, lakeFS destroys all
+  information encoded in its paths.  So _all paths to data files must be
+  translated into absolute paths on the storage namespace_, whether absolute
+  or relative.  The translated path reference is always an absolute on the
   provider blockstore:
   - An _absolute_ path reference `lakefs://REPO/REF/...`, is translated to
     its matching physical path on the provider blockstore by querying lakeFS.
@@ -100,7 +103,8 @@ Epsilon _transforms_ the metadata of the input file:
     Such a path has its base-85 decoded into a UUID, that UUID is then
     expanded to a relative path, which is finally translated into its
     matching physical path on the provider blockstore by querying lakeFS.
-* The `_delta_log/_last_checkpoint` file is translated to refer to a  (if it exists).
+* The `_delta_log/_last_checkpoint` file (if it exists) is translated to
+  refer to a translated pathname.
 * Each metadata file, including other files that may require no translation,
   is output to `s3://BUCKET/output/path/_delta_log/`; currently it seems
   that we will be able to maintain the last key components.[^2]
@@ -115,7 +119,7 @@ Epsilon _transforms_ the metadata of the input file:
 On lakeFS.Cloud we will be able to integrate Epsilon as hooks that run on
 commit and on merge.  We can definitely do so in post-commit and post-merge
 hooks.  But it seems possible that we will even be able to provide them as
-pre-commit and pre-merge hooks - probably even nicer for users.
+pre-commit and pre-merge hooks -- TBD which is best.
 
 ## Execution plan
 
@@ -179,6 +183,12 @@ on lakeFS.Cloud, and to view its run logs and/or status.
 
 2 person-weeks.
 
+### Phase 3: Cleanups
+
+* Transform CRC files (These files are not required by Delta, but are
+  generated anyway!)
+* Incremental reprocessing
+
 ## Current limitations and future plans
 
 * Cannot write directly to Unity.  This is the big issue.  It cannot be
@@ -190,6 +200,8 @@ on lakeFS.Cloud, and to view its run logs and/or status.
 * OSS users will need to implement hooks.  (Running hooks is surprisingly
   difficult to do in the OSS lakeFS code unless we assume a very particular
   runtime environment.  But particular users may prefer to build their own.)
+* Much of this work could be a canary on the road to rewriting Delta Lake
+  files as part of a merge.
 
 
 [Delta Transaction Log Protocol]:  https://github.com/delta-io/delta/blob/master/PROTOCOL.md
