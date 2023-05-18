@@ -59,7 +59,6 @@ trait BulkRemover {
 object BulkRemoverFactory {
   private class S3BulkRemover(
       storageNamespace: String,
-      region: String,
       client: StorageClients.S3
   ) extends BulkRemover {
     import scala.collection.JavaConversions._
@@ -68,12 +67,16 @@ object BulkRemoverFactory {
     private val bucket = uri.getHost
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
-      val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, false, false)
+      val removeKeyNames = constructRemoveKeyNames(keys,
+                                                   storageNamespace,
+                                                   keepNsSchemeAndHost = false,
+                                                   applyUTF8Encoding = false
+                                                  )
       println(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
-      val s3Client = client.getS3Client(bucket, region, S3NumRetries)
+      val s3Client = client.s3Client
       try {
         val res = s3Client.deleteObjects(delObjReq)
         res.getDeletedObjects.asScala.map(_.getKey())
@@ -100,18 +103,14 @@ object BulkRemoverFactory {
   }
 
   private class AzureBlobBulkRemover(
-      storageNamespace: String,
       client: StorageClients.Azure
   ) extends BulkRemover {
-    private val uri = new URI(storageNamespace)
-    private val storageAccountUrl = StorageUtils.AzureBlob.uriToStorageAccountUrl(uri)
-    private val storageAccountName = StorageUtils.AzureBlob.uriToStorageAccountName(uri)
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
       println(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.asJava
-      val blobBatchClient = client.getBlobBatchClient(storageAccountUrl, storageAccountName)
+      val blobBatchClient = client.blobBatchClient
 
       val extractUrlIfBlobDeleted = new java.util.function.Function[Response[Void], URI]() {
         def apply(response: Response[Void]): URI = {
@@ -151,16 +150,12 @@ object BulkRemoverFactory {
     }
   }
 
-  def apply(
-      storageClient: StorageClient,
-      storageNamespace: String,
-      region: String
-  ): BulkRemover = {
+  def apply(storageClient: StorageClient, storageNamespace: String): BulkRemover = {
     storageClient match {
       case s3: S3 =>
-        new S3BulkRemover(storageNamespace, region, s3)
+        new S3BulkRemover(storageNamespace, s3)
       case azure: Azure =>
-        new AzureBlobBulkRemover(storageNamespace, azure)
+        new AzureBlobBulkRemover(azure)
       case _ => throw new IllegalArgumentException("Invalid argument.")
     }
   }

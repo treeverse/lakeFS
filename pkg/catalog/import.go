@@ -76,6 +76,7 @@ func (i *Import) set(record EntryRecord) error {
 	if i.Closed() {
 		return ErrImportClosed
 	}
+
 	key := []byte(record.Path)
 	value, err := EntryToValue(record.Entry)
 	if err != nil {
@@ -111,27 +112,27 @@ func (i *Import) Ingest(it *walkEntryIterator) error {
 
 func (i *Import) Status() graveler.ImportStatus {
 	i.mu.Lock()
+	defer i.mu.Unlock()
 	status := i.status
-	i.mu.Unlock()
 	return status
 }
 
 func (i *Import) SetStatus(status graveler.ImportStatus) {
 	i.mu.Lock()
+	defer i.mu.Unlock()
 	i.status = status
 	i.status.UpdatedAt = time.Now()
-	i.mu.Unlock()
 }
 
 func (i *Import) SetError(err error) {
 	i.mu.Lock()
+	defer i.mu.Unlock()
 	i.status.Error = err
 	i.status.UpdatedAt = time.Now()
-	i.mu.Unlock()
 }
 
 func (i *Import) NewItr() (*importIterator, error) {
-	if i.closed {
+	if i.Closed() {
 		return nil, ErrImportClosed
 	}
 	return newImportIterator(i.db.NewIter(nil)), nil
@@ -139,8 +140,8 @@ func (i *Import) NewItr() (*importIterator, error) {
 
 func (i *Import) Closed() bool {
 	i.mu.Lock()
+	defer i.mu.Unlock()
 	closed := i.closed
-	i.mu.Unlock()
 	return closed
 }
 
@@ -156,10 +157,11 @@ func (i *Import) Close() {
 func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFunc) error {
 	const statusUpdateInterval = 1 * time.Second
 	statusData := graveler.ImportStatusData{}
-	timer := time.NewTimer(statusUpdateInterval)
+	ticker := time.NewTicker(statusUpdateInterval)
+	defer ticker.Stop()
 	done := false
 
-	for range timer.C {
+	for range ticker.C {
 		pred, err := kv.GetMsg(ctx, i.kvStore, i.repoPartition, []byte(graveler.ImportsPath(i.status.ID.String())), &statusData)
 		if err != nil {
 			cancel()
@@ -186,8 +188,6 @@ func (i *Import) importStatusAsync(ctx context.Context, cancel context.CancelFun
 		if i.Closed() {
 			done = true
 		}
-
-		timer.Reset(statusUpdateInterval)
 	}
 	return nil
 }

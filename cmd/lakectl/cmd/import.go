@@ -85,7 +85,8 @@ var importCmd = &cobra.Command{
 			updateFailures int
 			updatedAt      time.Time
 		)
-		timer := time.NewTimer(statusPollInterval)
+		ticker := time.NewTicker(statusPollInterval)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-sigCtx.Done():
@@ -93,7 +94,7 @@ var importCmd = &cobra.Command{
 				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 				Die("Import Canceled", 1)
-			case <-timer.C:
+			case <-ticker.C:
 				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
 				status := statusResp.JSON200

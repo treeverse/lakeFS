@@ -394,6 +394,53 @@ func TestImportNew(t *testing.T) {
 	})
 }
 
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation) (string, string) {
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   importBranch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", importBranch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
+
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, api.ImportStartJSONRequestBody{
+		Commit: api.CommitCreation{
+			Message:  "created by import",
+			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		},
+		Paths: paths,
+	})
+	require.NotNil(t, importResp.JSON202, "failed to start import", err)
+	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
+
+	var (
+		statusResp *api.ImportStatusResponse
+		updateTime time.Time
+	)
+	importID := importResp.JSON202.Id
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context canceled")
+		case <-ticker.C:
+			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
+				Id: importID,
+			})
+			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+			status := statusResp.JSON200
+			require.Nil(t, status.Error)
+			require.NotEqual(t, updateTime, status.UpdateTime)
+			updateTime = status.UpdateTime
+			t.Log("Import progress:", *status.IngestedObjects, importID)
+		}
+		if statusResp.JSON200.Completed {
+			t.Log("Import completed:", importID)
+			return importID, *statusResp.JSON200.ImportBranch
+		}
+	}
+}
+
 func TestImportCancel(t *testing.T) {
 	_, importPath, _ := setupImportByBlockstoreType(t)
 	ctx, _, repoName := setupTest(t)
@@ -443,55 +490,9 @@ func TestImportCancel(t *testing.T) {
 			updateTime = statusResp.JSON200.UpdateTime
 		} else {
 			require.Equal(t, updateTime, statusResp.JSON200.UpdateTime)
+			break
 		}
 		timer.Reset(3 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
-	}
-}
-
-func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation) (string, string) {
-	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
-		Name:   importBranch,
-		Source: "main",
-	})
-	require.NoError(t, err, "failed to create branch", importBranch)
-	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
-
-	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, api.ImportStartJSONRequestBody{
-		Commit: api.CommitCreation{
-			Message:  "created by import",
-			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
-		},
-		Paths: paths,
-	})
-	require.NotNil(t, importResp.JSON202, "failed to start import", err)
-	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
-
-	var (
-		statusResp *api.ImportStatusResponse
-		updateTime time.Time
-	)
-	importID := importResp.JSON202.Id
-	timer := time.NewTimer(5 * time.Second)
-	for {
-		select {
-		case <-ctx.Done():
-			t.Fatalf("context canceled")
-		case <-timer.C:
-			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
-				Id: importID,
-			})
-			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
-			status := statusResp.JSON200
-			require.Nil(t, status.Error)
-			require.NotEqual(t, updateTime, status.UpdateTime)
-			updateTime = status.UpdateTime
-			t.Log("Import progress:", *status.IngestedObjects, importID)
-			timer.Reset(10 * time.Second)
-		}
-		if statusResp.JSON200.Completed {
-			t.Log("Import completed:", importID)
-			return importID, *statusResp.JSON200.ImportBranch
-		}
 	}
 }
 

@@ -80,12 +80,14 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
   val LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = "lakefs.gc.s3.min_backoff_secs"
   val LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = "lakefs.gc.s3.max_backoff_secs"
-  val LAKEFS_CONF_GC_PREV_RUN_ID = "lakefs.gc.incremental.previous_run_id"
+  val LAKEFS_CONF_GC_INCREMENTAL = "lakefs.gc.incremental"
+  val LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN = "lakefs.gc.incremental.use-nth-previous-run"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
   val MARK_ID_KEY = "mark_id"
   val RUN_ID_KEY = "run_id"
   val COMMITS_LOCATION_KEY = "commits_location"
+  val RUN_ID_MARKERS_LOCATION_FORMAT = "%s/_lakefs/retention/gc/run_ids/%s"
   val DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = 24
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
