@@ -385,6 +385,15 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 	}
 	job1.SingletonMode()
 
+	// delete expired imports
+	job2, err := s.Every(ref.ImportExpiryTime).Do(func() {
+		c.DeleteExpiredImports(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	job2.SingletonMode()
+
 	return nil
 }
 

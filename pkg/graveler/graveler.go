@@ -606,6 +606,9 @@ type VersionController interface {
 
 	// IsLinkAddressExpired returns nil if the token is valid and not expired
 	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
+
+	// DeleteExpiredImports deletes expired imports on a given repository
+	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -825,6 +828,9 @@ type RefManager interface {
 
 	// IsLinkAddressExpired returns nil if the token is valid and not expired
 	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
+
+	// DeleteExpiredImports deletes expired imports on a given repository
+	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -2827,6 +2833,10 @@ func (g *Graveler) DeleteExpiredLinkAddresses(ctx context.Context, repository *R
 
 func (g *Graveler) IsLinkAddressExpired(token *LinkAddressData) (bool, error) {
 	return g.RefManager.IsLinkAddressExpired(token)
+}
+
+func (g *Graveler) DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error {
+	return g.RefManager.DeleteExpiredImports(ctx, repository)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {
