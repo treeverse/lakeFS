@@ -6,7 +6,7 @@ import { branches, retention, branchProtectionRules, objects } from "../api";
 
 const IMPORT_BRANCH_REGEX = /^_(.*)_imported$/;
 const HOOKS_PATH = "_lakefs_actions/";
-const SAMPLE_REPO_FILE_NAME = "lakes.parquet";
+const SAMPLE_REPO_OBJECT_PATH = "lakes.parquet";
 
 // generate a random file name to avoid collisions for the upload preflight check
 const generateRandomFileName = (): string => {
@@ -18,12 +18,13 @@ export const isSampleRepo = async (
   repo: string,
   defaultBranch: string,
 ): Promise<boolean> => {
-  const objectList = await objects.list(repo, defaultBranch, "");
-  return objectList.results.some(
-    // when the API client is typed, we can remove the eslint-disable
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (object: any) => object?.path === SAMPLE_REPO_FILE_NAME
-  );
+  try {
+    await objects.head(repo, defaultBranch, SAMPLE_REPO_OBJECT_PATH);
+    return true;
+  } catch (e) {
+    return false;
+  }
+  
 };
 
 export const canUseRepoOnboarding = async (
