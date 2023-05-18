@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**prepare_garbage_collection_commits**](RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 [**prepare_garbage_collection_uncommitted**](RetentionApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**set_garbage_collection_rules**](RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
-[**set_garbage_collection_rules_preflight**](RetentionApi.md#set_garbage_collection_rules_preflight) | **OPTIONS** /repositories/{repository}/gc/rules | 
+[**set_garbage_collection_rules_preflight**](RetentionApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 
 
 # **delete_garbage_collection_rules**

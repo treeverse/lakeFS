@@ -5,7 +5,7 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createBranchProtectionRule**](RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
-[**createBranchProtectionRulePreflight**](RepositoriesApi.md#createBranchProtectionRulePreflight) | **OPTIONS** /repositories/{repository}/branch_protection | 
+[**createBranchProtectionRulePreflight**](RepositoriesApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 [**createRepository**](RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 [**deleteBranchProtectionRule**](RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 [**deleteRepository**](RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository

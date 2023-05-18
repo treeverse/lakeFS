@@ -643,9 +643,7 @@ class Objects {
 
     async uploadPreflight(repoId, branchId, path) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/?` + query, {
-            method: 'OPTIONS',
-        });
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/stage_allowed?` + query);
 
         if (response.status === 204) {
             return true;
@@ -876,9 +874,7 @@ class Retention {
     }
 
     async setGCPolicyPreflight(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
-            method: "OPTIONS",
-        });
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules/set_allowed`);
         return response.status === 204;
     }
 
@@ -1008,9 +1004,7 @@ class BranchProtectionRules {
     }
 
     async createRulePreflight(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
-            method: "OPTIONS",
-        });
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection/set_allowed`);
         if (response.status !== 204) {
             return false;
         }

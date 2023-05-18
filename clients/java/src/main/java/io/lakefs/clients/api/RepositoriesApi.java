@@ -207,7 +207,7 @@ public class RepositoriesApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
+        String localVarPath = "/repositories/{repository}/branch_protection/set_allowed"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
@@ -231,7 +231,7 @@ public class RepositoriesApi {
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "OPTIONS", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")

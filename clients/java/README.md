@@ -211,7 +211,7 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stageObject**](docs/ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
-*ObjectsApi* | [**uploadObjectPreflight**](docs/ObjectsApi.md#uploadObjectPreflight) | **OPTIONS** /repositories/{repository}/branches/{branch}/objects | 
+*ObjectsApi* | [**uploadObjectPreflight**](docs/ObjectsApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 *OtfDiffApi* | [**getOtfDiffs**](docs/OtfDiffApi.md#getOtfDiffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *OtfDiffApi* | [**otfDiff**](docs/OtfDiffApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
@@ -221,7 +221,7 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 *RefsApi* | [**restoreRefs**](docs/RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 *RepositoriesApi* | [**createBranchProtectionRule**](docs/RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
-*RepositoriesApi* | [**createBranchProtectionRulePreflight**](docs/RepositoriesApi.md#createBranchProtectionRulePreflight) | **OPTIONS** /repositories/{repository}/branch_protection | 
+*RepositoriesApi* | [**createBranchProtectionRulePreflight**](docs/RepositoriesApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**deleteBranchProtectionRule**](docs/RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
@@ -233,7 +233,7 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 *RetentionApi* | [**prepareGarbageCollectionUncommitted**](docs/RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**setGarbageCollectionRulesPreflight**](docs/RetentionApi.md#setGarbageCollectionRulesPreflight) | **OPTIONS** /repositories/{repository}/gc/rules | 
+*RetentionApi* | [**setGarbageCollectionRulesPreflight**](docs/RetentionApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 *StagingApi* | [**updateBranchToken**](docs/StagingApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token

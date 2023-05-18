@@ -345,9 +345,9 @@ class RetentionApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/repositories/{repository}/gc/rules',
+                'endpoint_path': '/repositories/{repository}/gc/rules/set_allowed',
                 'operation_id': 'set_garbage_collection_rules_preflight',
-                'http_method': 'OPTIONS',
+                'http_method': 'GET',
                 'servers': None,
             },
             params_map={

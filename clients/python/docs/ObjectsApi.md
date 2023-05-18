@@ -14,7 +14,7 @@ Method | HTTP request | Description
 [**stage_object**](ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 [**stat_object**](ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 [**upload_object**](ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
-[**upload_object_preflight**](ObjectsApi.md#upload_object_preflight) | **OPTIONS** /repositories/{repository}/branches/{branch}/objects | 
+[**upload_object_preflight**](ObjectsApi.md#upload_object_preflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 
 
 # **copy_object**

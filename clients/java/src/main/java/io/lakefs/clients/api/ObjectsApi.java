@@ -1723,7 +1723,7 @@ public class ObjectsApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branches/{branch}/objects"
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects/stage_allowed"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
             .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
 
@@ -1752,7 +1752,7 @@ public class ObjectsApi {
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "OPTIONS", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")

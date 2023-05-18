@@ -830,9 +830,9 @@ class ObjectsApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/repositories/{repository}/branches/{branch}/objects',
+                'endpoint_path': '/repositories/{repository}/branches/{branch}/objects/stage_allowed',
                 'operation_id': 'upload_object_preflight',
-                'http_method': 'OPTIONS',
+                'http_method': 'GET',
                 'servers': None,
             },
             params_map={

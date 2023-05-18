@@ -113,9 +113,9 @@ class RepositoriesApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/repositories/{repository}/branch_protection',
+                'endpoint_path': '/repositories/{repository}/branch_protection/set_allowed',
                 'operation_id': 'create_branch_protection_rule_preflight',
-                'http_method': 'OPTIONS',
+                'http_method': 'GET',
                 'servers': None,
             },
             params_map={
