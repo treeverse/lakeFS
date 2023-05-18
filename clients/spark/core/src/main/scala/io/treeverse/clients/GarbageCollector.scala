@@ -459,9 +459,10 @@ object GarbageCollector {
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
     val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
+    val incrementalRunFallbackToFull = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL, true)
     val incrementalRunIterations = hc.getInt(LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN, 1)
     val previousRunID =
-      getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper, incrementalRunIterations)
+      getPreviousRunID(incrementalRun, storageNSForHadoopFS, configMapper, incrementalRunIterations, incrementalRunFallbackToFull)
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -550,7 +551,8 @@ object GarbageCollector {
       incrementalRun: Boolean,
       storageNS: String,
       configMapper: ConfigMapper,
-      iterations: Int
+      iterations: Int,
+      fallbackToFull: Boolean
   ): String = {
     if (!incrementalRun) {
       return ""
@@ -565,7 +567,7 @@ object GarbageCollector {
     val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
     val runIDs = runIDsFS.listFiles(runIDsPath, false)
     try {
-      previousRunID = getNthRunID(runIDs, iterations)
+      previousRunID = getNthRunID(runIDs, iterations, fallbackToFull)
     } finally {
       runIDsFS.close()
     }
@@ -573,13 +575,16 @@ object GarbageCollector {
     previousRunID
   }
 
-  private def getNthRunID(iter: RemoteIterator[LocatedFileStatus], n: Int): String = {
-    if (!iter.hasNext) {
+  private def getNthRunID(iter: RemoteIterator[LocatedFileStatus], n: Int, fallbackToFull: Boolean): String = {
+    if (!iter.hasNext && !fallbackToFull) {
       throw RunIDException("No previous run ID")
     }
     var runIDObject: LocatedFileStatus = null
     for (_ <- 0 until n) {
       if (!iter.hasNext) {
+        if(fallbackToFull) {
+          return ""
+        }
         throw RunIDException("Required Run ID iteration doesn't exist")
       }
       runIDObject = iter.next()
