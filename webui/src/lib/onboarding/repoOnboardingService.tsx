@@ -1,8 +1,8 @@
 /* eslint-disable react/jsx-no-target-blank */
 import React from "react";
-import { OnBoardingSteps } from "./types";
+import { OnboardingStep } from "./types";
 import { NavigateFunction } from "react-router-dom";
-import { branches, retention, branchProtectionRules, objects } from "../api";
+import { branches, retention, branchProtectionRules, objects, NotFoundError } from "../api";
 
 const IMPORT_BRANCH_REGEX = /^_(.*)_imported$/;
 const HOOKS_PATH = "_lakefs_actions/";
@@ -34,7 +34,7 @@ export const canUseRepoOnboarding = async (
   const promises = [
     retention.setGCPolicyPreflight(repoId),
     branchProtectionRules.createRulePreflight(repoId),
-    objects.list(
+    objects.uploadPreflight(
       repoId,
       defaultBranch,
       `${HOOKS_PATH}${generateRandomFileName()}`
@@ -54,7 +54,7 @@ export const getRepoOnboardingSteps = (
   defaultBranch: string,
   objectStoreName: string,
   navigate: NavigateFunction
-): OnBoardingSteps => [
+): OnboardingStep[] => [
   {
     id: "import-data",
     title: "Import your existing data",
@@ -67,9 +67,9 @@ export const getRepoOnboardingSteps = (
     cta: "Run import",
     onClick: () =>
       navigate(`/repositories/${currentRepo}/objects?importDialog=true`),
-    showStep: () => true, // objectStoreName !== "local",
+    showStep: () => objectStoreName !== "local",
     isCompleted: async () => {
-      const repoBranches = await branches.list(currentRepo);
+      const repoBranches = await branches.list(currentRepo, "_");
       // when the API client is typed, we can remove the eslint-disable
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return repoBranches.results.some((branch: any) =>
@@ -94,7 +94,10 @@ export const getRepoOnboardingSteps = (
         await retention.getGCPolicy(currentRepo);
         return true;
       } catch (e) {
-        return false;
+        if (e instanceof NotFoundError) {
+          return false;
+        }
+        return true;
       }
     },
   },
@@ -112,8 +115,15 @@ export const getRepoOnboardingSteps = (
     onClick: () => navigate(`/repositories/${currentRepo}/settings/branches`),
     showStep: () => true,
     isCompleted: async () => {
-      const rules = await branchProtectionRules.getRules(currentRepo);
-      return rules.length > 0;
+      try {
+        const rules = await branchProtectionRules.getRules(currentRepo);
+        return rules?.length > 0;
+      } catch (e) {
+        if (e instanceof NotFoundError) {
+          return false;
+        }
+        return true;
+      }
     },
   },
   {
@@ -126,12 +136,15 @@ export const getRepoOnboardingSteps = (
       window.open("https://docs.lakefs.io/hooks/overview.html", "_blank"),
     showStep: () => true,
     isCompleted: async () => {
-      const objectList = await objects.list(currentRepo, defaultBranch, "");
-      return objectList.results.some(
-        // when the API client is typed, we can remove the eslint-disable
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (object: any) => object?.path === HOOKS_PATH
-      );
+      try {
+        const objectList = await objects.list(currentRepo, defaultBranch, HOOKS_PATH, undefined, undefined, 1);
+        return objectList?.results?.length > 0;
+      } catch (e) {
+        if (e instanceof NotFoundError) {
+          return false;
+        }
+        return true;
+      }
     },
   },
 ];

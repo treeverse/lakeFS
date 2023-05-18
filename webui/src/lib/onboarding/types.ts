@@ -9,5 +9,3 @@ export type OnboardingStep = {
   showStep: () => boolean | Promise<boolean>;
   isCompleted: (repoName: string) => Promise<boolean>;
 };
-
-export type OnBoardingSteps = Array<OnboardingStep>;

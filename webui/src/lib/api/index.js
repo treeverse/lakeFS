@@ -630,6 +630,11 @@ class Objects {
     async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
         const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
+
+        if (response.status === 404) {
+            throw new NotFoundError(`no objects found`);
+        }
+
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
