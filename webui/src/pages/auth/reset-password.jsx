@@ -6,7 +6,7 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import {MailIcon} from "@primer/octicons-react";
-import {Error} from "../../lib/components/controls";
+import {AlertError} from "../../lib/components/controls";
 import {auth} from "../../lib/api";
 import validator from "validator/es";
 import {useRouter} from "../../lib/hooks/router";
@@ -60,7 +60,7 @@ const RequestResetPasswordForm = () => {
                                     }
                                 </Form.Group>
 
-                                {(!!reqResetPwdError) && <Error error={reqResetPwdError}/>}
+                                {(!!reqResetPwdError) && <AlertError error={reqResetPwdError}/>}
 
                                 <Button variant="primary" type="submit" className="reset-pwd" disabled={!formValid}>Reset Password</Button>
                             </Form>
@@ -133,7 +133,7 @@ const ResetPasswordForm = ({token}) => {
                                 }
                             </Form.Group>
 
-                            {(!!resetPwdError) && <Error error={resetPwdError}/>}
+                            {(!!resetPwdError) && <AlertError error={resetPwdError}/>}
 
                             <Button variant="primary" type="submit" className="reset-pwd" disabled={!formValid}>Reset</Button>
                         </Form>

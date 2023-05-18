@@ -6,7 +6,7 @@ import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     Loading,
     PrefixSearchWidget,
     RefreshButton,
@@ -279,7 +279,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                             />
                         </Form.Group>
                     </Form>
-                    {(uploadState.error) ? (<Error error={uploadState.error}/>) : (<></>)}
+                    {(uploadState.error) ? (<AlertError error={uploadState.error}/>) : (<></>)}
 
                 </Modal.Body>
                 <Modal.Footer>
@@ -327,11 +327,11 @@ const TreeContainer = ({
     const [deleteState, setDeleteState] = useState(initialState)
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     return (
         <>
-            {deleteState.error && <Error error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
+            {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
             <Tree
                 config={{config}}
                 repo={repo}

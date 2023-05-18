@@ -7,7 +7,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import {TrashIcon} from "@primer/octicons-react";
 import Col from "react-bootstrap/Col";
-import {Error, Loading} from "../../../../lib/components/controls";
+import {AlertError, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
 import {repositories} from "../../../../lib/api";
 import {useRouter} from "../../../../lib/hooks/router";
@@ -60,8 +60,8 @@ const SettingsContainer = () => {
     const [ deletionError, setDeletionError ] = useState(null);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
-    if (deletionError) return <Error error={deletionError}/>;
+    if (error) return <AlertError error={error}/>;
+    if (deletionError) return <AlertError error={deletionError}/>;
 
     return (
         <div className="mt-3 mb-5">

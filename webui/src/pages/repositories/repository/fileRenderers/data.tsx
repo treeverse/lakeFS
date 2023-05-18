@@ -10,7 +10,7 @@ import Table from "react-bootstrap/Table";
 
 import {SQLEditor} from "./editor";
 import {RendererComponent} from "./types";
-import {Error, Loading} from "../../../../lib/components/controls";
+import {AlertError, Loading} from "../../../../lib/components/controls";
 
 
 const MAX_RESULTS_RETURNED = 1000;
@@ -85,7 +85,7 @@ LIMIT 20`
     );
 
     if (error) {
-        content = <Error error={error}/>
+        content = <AlertError error={error}/>
     } else if (data === null) {
         content = <DataLoader/>
     } else {

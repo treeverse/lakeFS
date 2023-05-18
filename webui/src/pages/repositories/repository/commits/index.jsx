@@ -12,7 +12,7 @@ import {
     ActionGroup,
     ActionsBar,
     ClipboardButton,
-    Error,
+    AlertError,
     LinkButton,
     Loading, RefreshButton
 } from "../../../../lib/components/controls";
@@ -92,7 +92,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     }, [repo.id, reference.id, refresh, after])
 
     if (loading) return <Loading/>
-    if (error) return <Error error={error}/>
+    if (error) return <AlertError error={error}/>
 
     return (
         <div className="mb-5">

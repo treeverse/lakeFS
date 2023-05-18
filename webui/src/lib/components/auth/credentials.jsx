@@ -6,7 +6,7 @@ import Alert from "react-bootstrap/Alert";
 
 import {auth} from "../../api";
 import {useAPIWithPagination} from "../../hooks/api";
-import {ClipboardButton, DataTable, Error, FormattedDate, Loading} from "../controls";
+import {ClipboardButton, DataTable, AlertError, FormattedDate, Loading} from "../controls";
 import {ConfirmationButton} from "../modals";
 import {Paginator} from "../pagination";
 
@@ -19,8 +19,8 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
         return auth.listCredentials(userId, after);
     }, [refresh, internalRefresh, userId, after]);
 
-    if (error) return <Error error={error}/>;
-    if (revokeError) return <Error error={revokeError}/>;
+    if (error) return <AlertError error={error}/>;
+    if (revokeError) return <AlertError error={revokeError}/>;
     if (loading) return <Loading/>;
 
     return (
