@@ -26,7 +26,7 @@ const (
 	//	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
 	//
 	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
-	MaxBatchDelay = time.Millisecond * 3
+	MaxBatchDelay = 3 * time.Millisecond
 	// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 	commitIDStringLength = 64
 	// LinkAddressTime the time address is valid from get to link
@@ -644,6 +644,7 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 	}
 	defer itr.Close()
 
+	var errs multierror.Error
 	for itr.Next() {
 		entry := itr.Entry()
 		status, ok := entry.Value.(*graveler.ImportStatusData)
@@ -656,9 +657,9 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 			}
 			err = m.kvStoreLimited.Delete(ctx, []byte(repoPartition), entry.Key)
 			if err != nil {
-				logging.Default().WithFields(logging.Fields{"import_id": status.Id}).WithError(err).Error("removing import entry")
+				errs.Errors = append(errs.Errors, fmt.Errorf("delete failed for import ID %s: %w", status.Id, err))
 			}
 		}
 	}
-	return nil
+	return errs.ErrorOrNil()
 }

@@ -2309,7 +2309,7 @@ func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	}
 
 	for _, repo := range repos {
-		err := c.Store.DeleteExpiredImports(ctx, repo)
+		err = c.Store.DeleteExpiredImports(ctx, repo)
 		if err != nil {
 			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired imports failed")
 		}
