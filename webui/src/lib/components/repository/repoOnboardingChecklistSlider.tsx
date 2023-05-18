@@ -29,16 +29,18 @@ interface RepoOnboardingChecklistSliderProps {
   dismissChecklist: () => void;
 }
 
-const calculateChecklistTop = (checklistBodyRef: React.RefObject<HTMLDivElement>) => {
-    if (!checklistBodyRef.current) {
-      return 0;
-    }
+const calculateChecklistTop = (
+  checklistBodyRef: React.RefObject<HTMLDivElement>
+) => {
+  if (!checklistBodyRef.current) {
+    return 0;
+  }
 
-    const viewportHeight = window.innerHeight;
-    const newChecklistTop =
-      (viewportHeight - checklistBodyRef.current.getBoundingClientRect().height) /
-      2;
-    return newChecklistTop;
+  const viewportHeight = window.innerHeight;
+  const newChecklistTop =
+    (viewportHeight - checklistBodyRef.current.getBoundingClientRect().height) /
+    2;
+  return newChecklistTop;
 };
 
 const RepoOnboardingChecklistSlider: FC<RepoOnboardingChecklistSliderProps> = ({
@@ -158,9 +160,10 @@ const RepoOnboardingChecklistSlider: FC<RepoOnboardingChecklistSliderProps> = ({
     return null;
   }
 
-  const closedButtonText = steps.length > 0 && steps.some((step) => step.isCompletedValue) ?
-    `(${finishedSteps}/${totalSteps}) completed` :
-     "Start here";
+  const closedButtonText =
+    steps.length > 0 && steps.some((step) => step.isCompletedValue)
+      ? `(${finishedSteps}/${totalSteps}) completed`
+      : "Start here";
 
   return (
     <div className="checklist-container">
@@ -197,7 +200,7 @@ const RepoOnboardingChecklistSlider: FC<RepoOnboardingChecklistSliderProps> = ({
           className="checklist-slider-body"
           ref={checklistBodyRef}
         >
-          {finishedSteps !== totalSteps ? (
+          {finishedSteps === totalSteps ? (
             <RepoOnboardingChecklist steps={steps} />
           ) : (
             <RepoOnboardingComplete dismissChecklist={dismissChecklist} />

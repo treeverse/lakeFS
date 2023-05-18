@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocalStorage } from "usehooks-ts";
 
 import Container from "react-bootstrap/Container";
@@ -41,6 +41,11 @@ export const RepositoryPageLayout = ({ activePage, children, fluid = "sm" }) => 
         return config.getStorageConfig();
     }, []);
 
+    const dismissChecklist = useCallback(() => {
+        setShowChecklist(false);
+        setTimeout(() => setDismissedChecklistForRepo(true), 700);
+    }, [setDismissedChecklistForRepo]);
+
     useEffect(() => {
         if (response) {
         setConfigRes(response);
@@ -55,7 +60,7 @@ export const RepositoryPageLayout = ({ activePage, children, fluid = "sm" }) => 
                         show={showChecklist}
                         showChecklist={setShowChecklist}
                         blockstoreType={configRes.blockstore_type}
-                        dismissChecklist={setDismissedChecklistForRepo}
+                        dismissChecklist={dismissChecklist}
                     />
                 )}
                 <RepoNav/>

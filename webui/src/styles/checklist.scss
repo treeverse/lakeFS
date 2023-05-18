@@ -183,3 +183,31 @@ body {
     transform: scale3d(1, 1, 1) translateY(-50%) rotate(-90deg);
   }
 }
+
+.complete-card {
+  padding-top: 68px;
+  padding-bottom: 68px;
+
+  & .complete-card-title {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  & .checklist-complete-text {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    text-align: center;
+  }
+
+  & .dismiss-button {
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #198754;
+  }
+}
