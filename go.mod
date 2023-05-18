@@ -19,7 +19,6 @@ require (
 	github.com/go-openapi/swag v0.19.14
 	github.com/go-test/deep v1.0.7
 	github.com/gobwas/glob v0.2.3
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/golangci/golangci-lint v1.52.2
@@ -79,6 +78,8 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.18.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/google/go-github/v52 v52.0.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
@@ -114,7 +115,6 @@ require (
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
