@@ -1123,7 +1123,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.TTL = time.Minute
 		cacheParams.Jitter = time.Minute
 	}
-	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams)
+	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams, logging.Default())
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}

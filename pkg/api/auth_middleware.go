@@ -55,7 +55,6 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
-
 			if err != nil {
 				writeError(w, r, http.StatusBadRequest, err)
 				return
