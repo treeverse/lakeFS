@@ -1508,14 +1508,16 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
+	sampleData := swag.BoolValue(body.SampleData)
+	bareRepository := swag.BoolValue(params.Bare)
+	c.LogAction(ctx, "create_repo", r, body.Name, repositoryLogActionRef(sampleData, bareRepository), "")
 
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
 
-	if swag.BoolValue(params.Bare) {
+	if bareRepository {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
 		repo, err := c.Catalog.CreateBareRepository(ctx,
@@ -1571,7 +1573,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	if swag.BoolValue(body.SampleData) {
+	if sampleData {
 		// add sample data, hooks, etc.
 		user, err := auth.GetUser(ctx)
 		if err != nil {
@@ -1599,6 +1601,17 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		StorageNamespace: newRepo.StorageNamespace,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
+}
+
+func repositoryLogActionRef(sampleData bool, bareRepository bool) string {
+	var ref string
+	switch {
+	case bareRepository:
+		ref = "bare"
+	case sampleData:
+		ref = "sample"
+	}
+	return ref
 }
 
 var errStorageNamespaceInUse = errors.New("storage namespace already in use")
