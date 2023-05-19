@@ -443,7 +443,7 @@ const runBanner = `
 
 │
 │ For more information on how to use lakeFS,
-│     check out the docs at https://docs.lakefs.io/quickstart/repository
+│     check out the docs at https://docs.lakefs.io/quickstart/
 │
 
 │
