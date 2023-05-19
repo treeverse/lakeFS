@@ -322,7 +322,9 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		defer func() { _ = reader.Close() }()
 
 		// write to temp file - otherwise the file is available to other readers with partial data
-		tmpFullPath := uuid.Must(uuid.NewRandom()).String()
+		tmpFileName := uuid.Must(uuid.NewRandom()).String()
+		rPath := path.Join(fileRef.namespace, tmpFileName)
+		tmpFullPath := path.Join(tfs.fsLocalBaseDir, rPath)
 
 		writer, err := tfs.syncDir.createFile(tmpFullPath)
 		if err != nil {
