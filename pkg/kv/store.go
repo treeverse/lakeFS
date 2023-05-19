@@ -17,6 +17,7 @@ const (
 	InitialMigrateVersion    = 1
 	ACLMigrateVersion        = 2
 	ACLNoReposMigrateVersion = 3
+	ACLImportMigrateVersion  = 4
 	PathDelimiter            = "/"
 	MetadataPartitionKey     = "kv-internal-metadata"
 )
