@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"os"
 )
 
 // migrateCmd represents the migrate command
