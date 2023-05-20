@@ -6,25 +6,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
-	"log"
-	"net/http"
 )
 
 type Driver struct{}
 
 type Store struct {
-	endpoint        string
-	key             string
-	databaseName    string
-	containerName   string
-	client          *azcosmos.Client
-	databaseClient  *azcosmos.DatabaseClient
 	containerClient *azcosmos.ContainerClient
+	encoding        *base32.Encoding
 }
 
 const (
@@ -44,20 +41,26 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
 
-	cred, err := azcosmos.NewKeyCredential(params.ReadWriteKey)
-	if err != nil {
-		return nil, fmt.Errorf("creating key: %w", err)
-	}
-
-	// Create a CosmosDB client
-	client, err := azcosmos.NewClientWithKey(params.Endpoint, cred, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating client: %w", err)
-	}
-
-	databaseClient, err := client.NewDatabase(params.Database)
-	if err != nil {
-		return nil, fmt.Errorf("creating database client: %w", err)
+	var client *azcosmos.Client
+	if params.ReadWriteKey != "" {
+		cred, err := azcosmos.NewKeyCredential(params.ReadWriteKey)
+		if err != nil {
+			return nil, fmt.Errorf("creating key: %w", err)
+		}
+		// Create a CosmosDB client
+		client, err = azcosmos.NewClientWithKey(params.Endpoint, cred, nil)
+		if err != nil {
+			return nil, fmt.Errorf("creating client using access key: %w", err)
+		}
+	} else {
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, fmt.Errorf("default creds: %w", err)
+		}
+		client, err = azcosmos.NewClient("myAccountEndpointURL", cred, nil)
+		if err != nil {
+			return nil, fmt.Errorf("creating client with default creds: %w", err)
+		}
 	}
 
 	// Create container client
@@ -67,9 +70,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	}
 
 	return &Store{
-		client:          client,
-		databaseClient:  databaseClient,
 		containerClient: containerClient,
+		encoding:        base32.HexEncoding, // Encoding that keeps the strings in-order.
 	}, nil
 }
 
@@ -87,8 +89,8 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, kv.ErrMissingKey
 	}
 	item := Document{
-		PartitionKey: base32.HexEncoding.EncodeToString(partitionKey),
-		ID:           base32.HexEncoding.EncodeToString(key),
+		PartitionKey: s.encoding.EncodeToString(partitionKey),
+		ID:           s.encoding.EncodeToString(key),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
@@ -108,7 +110,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, err
 	}
 
-	val, err := base32.HexEncoding.DecodeString(itemResponseBody.Value)
+	val, err := s.encoding.DecodeString(itemResponseBody.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +133,9 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 
 	// Specifies the value of the partiton key
 	item := Document{
-		PartitionKey: base32.HexEncoding.EncodeToString(partitionKey),
-		ID:           base32.HexEncoding.EncodeToString(key),
-		Value:        base32.HexEncoding.EncodeToString(value),
+		PartitionKey: s.encoding.EncodeToString(partitionKey),
+		ID:           s.encoding.EncodeToString(key),
+		Value:        s.encoding.EncodeToString(value),
 	}
 
 	b, err := json.Marshal(item)
@@ -162,9 +164,9 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 
 	// Specifies the value of the partiton key
 	item := Document{
-		PartitionKey: base32.HexEncoding.EncodeToString(partitionKey),
-		ID:           base32.HexEncoding.EncodeToString(key),
-		Value:        base32.HexEncoding.EncodeToString(value),
+		PartitionKey: s.encoding.EncodeToString(partitionKey),
+		ID:           s.encoding.EncodeToString(key),
+		Value:        s.encoding.EncodeToString(value),
 	}
 
 	b, err := json.Marshal(item)
@@ -217,9 +219,9 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
-	pk := azcosmos.NewPartitionKeyString(base32.HexEncoding.EncodeToString(partitionKey))
+	pk := azcosmos.NewPartitionKeyString(s.encoding.EncodeToString(partitionKey))
 
-	_, err := s.containerClient.DeleteItem(ctx, pk, base32.HexEncoding.EncodeToString(key), nil)
+	_, err := s.containerClient.DeleteItem(ctx, pk, s.encoding.EncodeToString(key), nil)
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
 		return err
@@ -232,14 +234,14 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	pk := azcosmos.NewPartitionKeyString(base32.HexEncoding.EncodeToString(partitionKey))
+	pk := azcosmos.NewPartitionKeyString(s.encoding.EncodeToString(partitionKey))
 
 	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.id >= @start order by c.id ", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
 		PageSizeHint:     int32(options.BatchSize),
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
-			Value: base32.HexEncoding.EncodeToString(options.KeyStart),
+			Value: s.encoding.EncodeToString(options.KeyStart),
 		}},
 	})
 	currPage, err := queryPager.NextPage(ctx)
@@ -251,8 +253,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		queryPager: queryPager,
 		currPage:   currPage,
 		queryCtx:   ctx,
-		limit:      int64(options.BatchSize),
-		start:      options.KeyStart,
+		encoding:   s.encoding,
 	}, nil
 }
 
@@ -260,16 +261,13 @@ func (s *Store) Close() {
 }
 
 type EntriesIterator struct {
-	entry                  *kv.Entry
-	err                    error
-	store                  *Store
-	currEntryIdx           int
-	keyConditionExpression string
-	limit                  int64
-	queryPager             *runtime.Pager[azcosmos.QueryItemsResponse]
-	queryCtx               context.Context
-	start                  []byte
-	currPage               azcosmos.QueryItemsResponse
+	entry        *kv.Entry
+	err          error
+	currEntryIdx int
+	queryPager   *runtime.Pager[azcosmos.QueryItemsResponse]
+	queryCtx     context.Context
+	currPage     azcosmos.QueryItemsResponse
+	encoding     *base32.Encoding
 }
 
 func (e *EntriesIterator) Next() bool {
@@ -295,11 +293,11 @@ func (e *EntriesIterator) Next() bool {
 	if err != nil {
 		log.Default().Fatalf("Failed to unmarshal: %v", err)
 	}
-	key, err := base32.HexEncoding.DecodeString(itemResponseBody.ID)
+	key, err := e.encoding.DecodeString(itemResponseBody.ID)
 	if err != nil {
 		log.Default().Fatalf("Failed to decode: %v", err)
 	}
-	value, err := base32.HexEncoding.DecodeString(itemResponseBody.Value)
+	value, err := e.encoding.DecodeString(itemResponseBody.Value)
 	if err != nil {
 		log.Default().Fatalf("Failed to decode: %v", err)
 	}

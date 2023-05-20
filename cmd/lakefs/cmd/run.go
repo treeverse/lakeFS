@@ -33,6 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
