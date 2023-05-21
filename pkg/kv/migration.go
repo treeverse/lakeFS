@@ -52,15 +52,11 @@ func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 	}
 	switch {
 	case kvVersion < InitialMigrateVersion:
-		logging.Default().Info("Migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration")
-		return 0, ErrMigrationRequired
+		return kvVersion, fmt.Errorf("migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration: %w", ErrMigrationRequired)
 	case kvVersion < ACLNoReposMigrateVersion:
-		logging.Default().Info("Migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls")
-		return 0, ErrMigrationRequired
+		return kvVersion, fmt.Errorf("migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls: %w", ErrMigrationRequired)
 	case kvVersion < ACLImportMigrateVersion:
-		// TODO: update version and doc
-		logging.Default().Info("ACL migration required. Did you migrate using version vTBD?")
-		return 0, ErrMigrationRequired
+		return kvVersion, fmt.Errorf("ACL migration required. Please run 'lakefs migrate up': %w", ErrMigrationRequired)
 	}
 
 	logging.Default().WithField("version", kvVersion).Info("KV valid")
