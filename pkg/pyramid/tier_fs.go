@@ -130,12 +130,12 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	}
 
 	// Delete Dir async
-	go func() {
-		if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
-			tfs.logger.WithError(err).Error("Failed deleting empty dir")
-			errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
-		}
-	}()
+	//go func() {
+	//	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
+	//		tfs.logger.WithError(err).Error("Failed deleting empty dir")
+	//		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
+	//	}
+	//}()
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
