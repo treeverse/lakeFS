@@ -324,14 +324,15 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		defer func() { _ = reader.Close() }()
 
 		// write to temp file - otherwise the file is available to other readers with partial data
-		tmpFullPath := fileRef.fullPath + ".tmp"
-		writer, err := tfs.syncDir.createFile(tmpFullPath)
+		writer, err := tfs.syncDir.createTempFile(fileRef.fullPath)
 		if err != nil {
 			return nil, fmt.Errorf("creating file: %w", err)
 		}
-
+		tmpFullPath := writer.Name()
 		written, err := io.Copy(writer, reader)
 		if err != nil {
+			_ = writer.Close()
+			_ = os.Remove(tmpFullPath)
 			return nil, fmt.Errorf("copying data to file: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))
