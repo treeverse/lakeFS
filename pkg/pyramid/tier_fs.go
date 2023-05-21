@@ -327,6 +327,10 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		if err != nil {
 			return nil, fmt.Errorf("creating file: %w", err)
 		}
+		defer func() {
+			_ = writer.Close()
+			_ = os.Remove(writer.Name())
+		}()
 		tmpFullPath := writer.Name()
 
 		written, err := io.Copy(writer, reader)
