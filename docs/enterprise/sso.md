@@ -284,4 +284,5 @@ fluffy:
 
 # postgres pod for testing, when using fluffy local database type is not supported
 useDevPostgres: true
+{% endraw %}
 ```
