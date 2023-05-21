@@ -200,7 +200,7 @@ const RepoOnboardingChecklistSlider: FC<RepoOnboardingChecklistSliderProps> = ({
           className="checklist-slider-body"
           ref={checklistBodyRef}
         >
-          {finishedSteps === totalSteps ? (
+          {finishedSteps !== totalSteps ? (
             <RepoOnboardingChecklist steps={steps} />
           ) : (
             <RepoOnboardingComplete dismissChecklist={dismissChecklist} />
