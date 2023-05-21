@@ -2,6 +2,18 @@
 
 ## UNRELEASED
 
+## v0.101.0
+
+:new: What's new:
+- Support TLS for lakeFS local development (#5322)
+- Generate JWT while working with auth API when non is configured (#5894)
+- Remove email authenticator middleware (#5884)
+
+:bug: Bugs fixed:
+- Fix UI rename Error control to AlertError fixing conflict with class (#5907)
+- Fix loading metadata cache with path separator prefix (#5922)
+- Fix database setup for non-external mode (#5860)
+
 ## v0.100.0
 
 :new: What's new:
