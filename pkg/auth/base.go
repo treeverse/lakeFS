@@ -29,7 +29,6 @@ var statementByName = map[string]model.Statement{
 		Action: []string{
 			"fs:Read*",
 			"fs:List*",
-			"fs:Import*",
 			permissions.WriteObjectAction,
 			permissions.DeleteObjectAction,
 			permissions.RevertBranchAction,
