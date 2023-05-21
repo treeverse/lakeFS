@@ -62,18 +62,6 @@ func isDirEmpty(name string) (bool, error) {
 	return false, err
 }
 
-// createFile creates the file under the path and creates all parent dirs if missing.
-func (d *directory) createFile(path string) (*os.File, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if err := d.ensureParentDir(path); err != nil {
-		return nil, err
-	}
-
-	return os.Create(path)
-}
-
 // renameFile will move the src file to dst location and creates all parent dirs if missing.
 //
 //	If we fail, we check if the destination exists, as it is content addressable, and remove the source.
