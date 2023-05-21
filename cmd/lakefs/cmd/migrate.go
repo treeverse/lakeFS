@@ -98,7 +98,7 @@ func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) (boo
 		}
 		switch {
 		case version < kv.ACLNoReposMigrateVersion:
-			return false, fmt.Errorf("migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls")
+			return false, fmt.Errorf("migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls: %w", kv.ErrMigrationRequired)
 
 		case version < kv.ACLImportMigrateVersion:
 			// skip migrate to ACL for users with External authorizations
@@ -109,7 +109,7 @@ func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) (boo
 					return false, fmt.Errorf("failed to upgrade version, to fix this re-run migration: %w", err)
 				}
 			} else {
-				if err := migrations.MigrateImportPermissions(ctx, kvStore); err != nil {
+				if err = migrations.MigrateImportPermissions(ctx, kvStore); err != nil {
 					return false, err
 				}
 			}
