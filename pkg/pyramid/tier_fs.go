@@ -130,12 +130,12 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	}
 
 	// Delete Dir async
-	//go func() {
-	//	if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
-	//		tfs.logger.WithError(err).Error("Failed deleting empty dir")
-	//		errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
-	//	}
-	//}()
+	go func() {
+		if err := tfs.syncDir.deleteDirRecIfEmpty(path.Dir(string(rPath))); err != nil {
+			tfs.logger.WithError(err).Error("Failed deleting empty dir")
+			errorsTotal.WithLabelValues(tfs.fsName, "DirRemoval")
+		}
+	}()
 }
 
 func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
@@ -322,8 +322,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		defer func() { _ = reader.Close() }()
 
 		// write to temp file - otherwise the file is available to other readers with partial data
-		dir, name := filepath.Split(fileRef.fullPath)
-		writer, err := os.CreateTemp(dir, name+".*.tmp")
+		writer, err := tfs.syncDir.createFile(fileRef.fullPath, true)
 		if err != nil {
 			return nil, fmt.Errorf("creating file: %w", err)
 		}
