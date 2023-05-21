@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -21,7 +20,6 @@ type Driver struct{}
 
 type Store struct {
 	containerClient *azcosmos.ContainerClient
-	encoding        *base32.Encoding
 }
 
 const (
@@ -33,7 +31,7 @@ func init() {
 	kv.Register(DriverName, &Driver{})
 }
 
-// Open - opens and returns a KV store over DynamoDB. This function creates the DB session
+// Open - opens and returns a KV store over CosmosDB. This function creates the DB session
 // and sets up the KV table.
 func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, error) {
 	params := kvParams.CosmosDB
@@ -71,9 +69,12 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 
 	return &Store{
 		containerClient: containerClient,
-		encoding:        base32.HexEncoding, // Encoding that keeps the strings in-order.
 	}, nil
 }
+
+// encoding is the encoding used to encode the partition keys, ids and values.
+// Must be an encoding that keeps the strings in-order.
+var encoding = base32.HexEncoding // Encoding that keeps the strings in-order.
 
 type Document struct {
 	PartitionKey string `json:"partitionKey"`
@@ -89,16 +90,15 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, kv.ErrMissingKey
 	}
 	item := Document{
-		PartitionKey: s.encoding.EncodeToString(partitionKey),
-		ID:           s.encoding.EncodeToString(key),
+		PartitionKey: encoding.EncodeToString(partitionKey),
+		ID:           encoding.EncodeToString(key),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
 	// Read an item
 	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.ID, nil)
 	if err != nil {
-		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+		if isErrStatusCode(err, http.StatusNotFound) {
 			return nil, kv.ErrNotFound
 		}
 		return nil, err
@@ -110,7 +110,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, err
 	}
 
-	val, err := s.encoding.DecodeString(itemResponseBody.Value)
+	val, err := encoding.DecodeString(itemResponseBody.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +118,14 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		Value:     val,
 		Predicate: kv.Predicate([]byte(itemResponse.ETag)),
 	}, nil
+}
+
+func isErrStatusCode(err error, code int) bool {
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) && respErr.StatusCode == code {
+		return true
+	}
+	return false
 }
 
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
@@ -133,9 +141,9 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 
 	// Specifies the value of the partiton key
 	item := Document{
-		PartitionKey: s.encoding.EncodeToString(partitionKey),
-		ID:           s.encoding.EncodeToString(key),
-		Value:        s.encoding.EncodeToString(value),
+		PartitionKey: encoding.EncodeToString(partitionKey),
+		ID:           encoding.EncodeToString(key),
+		Value:        encoding.EncodeToString(value),
 	}
 
 	b, err := json.Marshal(item)
@@ -164,9 +172,9 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 
 	// Specifies the value of the partiton key
 	item := Document{
-		PartitionKey: s.encoding.EncodeToString(partitionKey),
-		ID:           s.encoding.EncodeToString(key),
-		Value:        s.encoding.EncodeToString(value),
+		PartitionKey: encoding.EncodeToString(partitionKey),
+		ID:           encoding.EncodeToString(key),
+		Value:        encoding.EncodeToString(value),
 	}
 
 	b, err := json.Marshal(item)
@@ -178,14 +186,13 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
-	if valuePredicate == nil {
+	switch valuePredicate {
+	case nil:
 		_, err = s.containerClient.CreateItem(ctx, pk, b, &itemOptions)
-		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusConflict {
+		if isErrStatusCode(err, http.StatusConflict) {
 			return kv.ErrPredicateFailed
 		}
-		return err
-	} else if valuePredicate == kv.PrecondConditionalExists {
+	case kv.PrecondConditionalExists:
 		patch := azcosmos.PatchOperations{}
 		patch.AppendReplace("/value", item.Value)
 		_, err = s.containerClient.PatchItem(
@@ -195,19 +202,16 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 			patch,
 			&itemOptions,
 		)
-		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+		if isErrStatusCode(err, http.StatusNotFound) {
 			return kv.ErrPredicateFailed
 		}
-		return err
-	}
-
-	etag := azcore.ETag(valuePredicate.([]byte))
-	itemOptions.IfMatchEtag = &etag
-	_, err = s.containerClient.UpsertItem(ctx, pk, b, &itemOptions)
-	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) && respErr.StatusCode == http.StatusPreconditionFailed {
-		return kv.ErrPredicateFailed
+	default:
+		etag := azcore.ETag(valuePredicate.([]byte))
+		itemOptions.IfMatchEtag = &etag
+		_, err = s.containerClient.UpsertItem(ctx, pk, b, &itemOptions)
+		if isErrStatusCode(err, http.StatusPreconditionFailed) {
+			return kv.ErrPredicateFailed
+		}
 	}
 	return err
 }
@@ -219,9 +223,9 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	if len(key) == 0 {
 		return kv.ErrMissingKey
 	}
-	pk := azcosmos.NewPartitionKeyString(s.encoding.EncodeToString(partitionKey))
+	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
-	_, err := s.containerClient.DeleteItem(ctx, pk, s.encoding.EncodeToString(key), nil)
+	_, err := s.containerClient.DeleteItem(ctx, pk, encoding.EncodeToString(key), nil)
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
 		return err
@@ -234,14 +238,14 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	pk := azcosmos.NewPartitionKeyString(s.encoding.EncodeToString(partitionKey))
+	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
-	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.id >= @start order by c.id ", pk, &azcosmos.QueryOptions{
+	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.id >= @start order by c.id", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
 		PageSizeHint:     int32(options.BatchSize),
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
-			Value: s.encoding.EncodeToString(options.KeyStart),
+			Value: encoding.EncodeToString(options.KeyStart),
 		}},
 	})
 	currPage, err := queryPager.NextPage(ctx)
@@ -253,7 +257,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		queryPager: queryPager,
 		currPage:   currPage,
 		queryCtx:   ctx,
-		encoding:   s.encoding,
+		encoding:   encoding,
 	}, nil
 }
 
@@ -291,15 +295,18 @@ func (e *EntriesIterator) Next() bool {
 	var itemResponseBody Document
 	err := json.Unmarshal(e.currPage.Items[e.currEntryIdx], &itemResponseBody)
 	if err != nil {
-		log.Default().Fatalf("Failed to unmarshal: %v", err)
+		e.err = fmt.Errorf("failed to unmarshal: %w", err)
+		return false
 	}
 	key, err := e.encoding.DecodeString(itemResponseBody.ID)
 	if err != nil {
-		log.Default().Fatalf("Failed to decode: %v", err)
+		e.err = fmt.Errorf("failed to decode id: %w", err)
+		return false
 	}
 	value, err := e.encoding.DecodeString(itemResponseBody.Value)
 	if err != nil {
-		log.Default().Fatalf("Failed to decode: %v", err)
+		e.err = fmt.Errorf("failed to decode value: %w", err)
+		return false
 	}
 
 	e.entry = &kv.Entry{
