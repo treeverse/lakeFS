@@ -216,8 +216,6 @@ var runCmd = &cobra.Command{
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 
-		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
-
 		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(cfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
 		if !version.IsVersionUnreleased() {
@@ -243,7 +241,6 @@ var runCmd = &cobra.Command{
 			cfg,
 			c,
 			middlewareAuthenticator,
-			controllerAuthenticator,
 			authService,
 			blockStore,
 			authMetadataManager,
