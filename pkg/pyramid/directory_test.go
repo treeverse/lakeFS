@@ -29,7 +29,7 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 			f, err := sut.createTempFile(filepath)
 			require.NoError(t, err)
 			require.NoError(t, f.Close())
-			require.NoError(t, os.Remove(filepath))
+			require.NoError(t, os.Remove(f.Name()))
 
 			wg.Done()
 		}()
