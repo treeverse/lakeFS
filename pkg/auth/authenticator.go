@@ -25,12 +25,6 @@ type Credentialler interface {
 	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 }
 
-// NewChainAuthenticator returns an Authenticator that authenticates users
-// by trying each auth in order.
-func NewChainAuthenticator(auth ...Authenticator) Authenticator {
-	return ChainAuthenticator(auth)
-}
-
 // ChainAuthenticator authenticates users by trying each Authenticator in
 // order, returning the last error in case all fail.
 type ChainAuthenticator []Authenticator
@@ -48,30 +42,6 @@ func (ca ChainAuthenticator) AuthenticateUser(ctx context.Context, username, pas
 	}
 	logger.WithError(merr).Info("Failed to authenticate user")
 	return InvalidUserID, merr
-}
-
-type EmailAuthenticator struct {
-	AuthService Service
-}
-
-func NewEmailAuthenticator(service Service) *EmailAuthenticator {
-	return &EmailAuthenticator{AuthService: service}
-}
-
-func (e EmailAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
-	user, err := e.AuthService.GetUserByEmail(ctx, username)
-	if err != nil {
-		return InvalidUserID, err
-	}
-
-	if err := user.Authenticate(password); err != nil {
-		return InvalidUserID, err
-	}
-	return user.Username, nil
-}
-
-func (e EmailAuthenticator) String() string {
-	return "email authenticator"
 }
 
 // BuiltinAuthenticator authenticates users by their access key IDs and

@@ -188,7 +188,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		cfg,
 		c,
 		authenticator,
-		authenticator,
 		authService,
 		c.BlockAdapter,
 		meta,
