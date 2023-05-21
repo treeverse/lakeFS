@@ -618,9 +618,9 @@ func TestACL(t *testing.T) {
 					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
 				acl.ACLSuper: []permissions.Permission{
-					{Action: permissions.AttachStorageNamespace, Resource: permissions.StorageNamespace("storage://bucket/path")},
+					{Action: permissions.AttachStorageNamespaceAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportFromStorageAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
-					{Action: permissions.CancelImportAction, Resource: permissions.BranchArn("foo", "twig")},
+					{Action: permissions.ImportCancelAction, Resource: permissions.BranchArn("foo", "twig")},
 				},
 				acl.ACLAdmin: []permissions.Permission{
 					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},

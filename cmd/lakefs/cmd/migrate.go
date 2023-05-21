@@ -81,7 +81,7 @@ var upCmd = &cobra.Command{
 
 			case version < kv.ACLImportMigrateVersion:
 				// skip migrate to ACL for users with External authorizations
-				if cfg.IsAuthTypeAPI() && !cfg.IsAuthUISimplified() {
+				if !cfg.IsAuthUISimplified() {
 					fmt.Println("skipping ACL migration - external Authorization")
 				} else {
 					if err = migrations.MigrateImportPermissions(ctx, kvStore); err != nil {

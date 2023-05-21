@@ -1426,7 +1426,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadConfig,
+			Action:   permissions.ReadConfigAction,
 			Resource: permissions.All,
 		},
 	}) {
@@ -1499,7 +1499,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.AttachStorageNamespace,
+					Action:   permissions.AttachStorageNamespaceAction,
 					Resource: permissions.StorageNamespace(body.StorageNamespace),
 				},
 			},
@@ -2244,7 +2244,7 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, reposi
 func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportCancelParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.CancelImportAction,
+			Action:   permissions.ImportCancelAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
 	}) {

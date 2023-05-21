@@ -122,7 +122,6 @@ func createARN(name string) string {
 	return fmt.Sprintf("arn:%s:this:is:an:arn", name)
 }
 func verifyMigration(t *testing.T, ctx context.Context, authService *auth.AuthService, policies []model.Policy) {
-
 	for _, prev := range policies {
 		policy, err := authService.GetPolicy(ctx, prev.DisplayName)
 		testutil.MustDo(t, "get policy", err)
