@@ -103,7 +103,7 @@ func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) erro
 		version int
 		err     error
 	)
-	for version < kv.LatestVersion {
+	for !kv.IsLatestSchemaVersion(version) {
 		version, err = kv.GetDBSchemaVersion(ctx, kvStore)
 		if err != nil {
 			return err

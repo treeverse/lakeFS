@@ -13,13 +13,16 @@ import (
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
+// KV Schema versions
 const (
 	InitialMigrateVersion = iota + 1
 	ACLMigrateVersion
 	ACLNoReposMigrateVersion
 	ACLImportMigrateVersion
-	LatestVersion = ACLImportMigrateVersion
+	NextSchemaVersion
+)
 
+const (
 	PathDelimiter        = "/"
 	MetadataPartitionKey = "kv-internal-metadata"
 )
@@ -214,4 +217,8 @@ func SetDBSchemaVersion(ctx context.Context, store Store, version uint) error {
 
 func dbSchemaPath() []byte {
 	return []byte(FormatPath("kv", "schema", "version"))
+}
+
+func IsLatestSchemaVersion(version int) bool {
+	return version == NextSchemaVersion-1
 }
