@@ -68,7 +68,7 @@ func CreateRBACBasePolicies(ctx context.Context, authService auth.Service, ts ti
 						"ci:*",
 						"retention:*",
 						"branches:*",
-						"fs:ReadConfigAction",
+						"fs:ReadConfig",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,
