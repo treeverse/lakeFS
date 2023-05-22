@@ -33,8 +33,8 @@ jobs:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_LAKEFS_DOCS_DEPLOY_KEY }}
         with:
           source-directory: docs/_site/
-          destination-github-username: docs-action
+          destination-github-username: treeverse
           #destination-repository-name: treeverse/docs-lakeFS
-          destination-repository-name: treeverse/docs-test
+          destination-repository-name: docs-test
           user-email: support@treeverse.io
 
