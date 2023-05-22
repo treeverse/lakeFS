@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.1 - 2023-05-22
+
+Bug fixes:
+* Read previous run ID in case of a sweep-only run (#5963)
+* Perform run ID logging only after sweep completed successfully (#5963) 
+
 ## v0.8.0 - 2023-05-18
 
 What's new:
