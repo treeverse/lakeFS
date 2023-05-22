@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/treeverse/lakefs/pkg/kv"
 )
 
 // Define errors we raise from this package - do not convert underlying errors, optionally wrap if needed to consolidate
@@ -13,8 +12,7 @@ var (
 	// ErrUserVisible is base error for "user-visible" errors, which should not be wrapped with internal debug info.
 	ErrUserVisible = errors.New("")
 
-	// TODO(ariels): Wrap with ErrUserVisible once db is gone.
-	ErrNotFound                     = wrapError(kv.ErrNotFound, "not found")
+	ErrNotFound                     = wrapError(ErrUserVisible, "not found")
 	ErrNotUnique                    = wrapError(ErrUserVisible, "not unique")
 	ErrPreconditionFailed           = errors.New("precondition failed")
 	ErrProtectedBranch              = errors.New("protected branch")
@@ -60,6 +58,7 @@ var (
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
 	ErrTooManyTries                 = errors.New("too many tries")
 	ErrSkipValueUpdate              = errors.New("skip value update")
+	ErrImport                       = wrapError(ErrUserVisible, "import error")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

@@ -16,6 +16,7 @@ const (
 	commitsPrefix          = "commits"
 	settingsPrefix         = "settings"
 	addressesPrefix        = "link-addresses"
+	importsPrefix          = "imports"
 )
 
 //nolint:gochecknoinits
@@ -69,6 +70,10 @@ func SettingsPath(key string) string {
 
 func LinkedAddressPath(key string) string {
 	return kv.FormatPath(addressesPrefix, key)
+}
+
+func ImportsPath(key string) string {
+	return kv.FormatPath(importsPrefix, key)
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
@@ -152,5 +157,52 @@ func TagFromProto(pb *TagData) *TagRecord {
 	return &TagRecord{
 		TagID:    TagID(pb.Id),
 		CommitID: CommitID(pb.CommitId),
+	}
+}
+
+func ImportStatusFromProto(pb *ImportStatusData) *ImportStatus {
+	var commit *CommitRecord
+	if pb.Commit != nil {
+		commit = &CommitRecord{
+			CommitID: CommitID(pb.Commit.Id),
+			Commit:   CommitFromProto(pb.Commit),
+		}
+	}
+	var statusErr error
+	if pb.Error != "" {
+		statusErr = fmt.Errorf("%w: %s", ErrImport, pb.Error)
+	}
+
+	return &ImportStatus{
+		ID:           ImportID(pb.Id),
+		Completed:    pb.Completed,
+		UpdatedAt:    pb.UpdatedAt.AsTime(),
+		Progress:     pb.Progress,
+		ImportBranch: pb.ImportBranch,
+		MetaRangeID:  MetaRangeID(pb.MetarangeId),
+		Commit:       commit,
+		Error:        statusErr,
+	}
+}
+
+func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
+	var commit *CommitData
+	if status.Commit != nil {
+		commit = ProtoFromCommit(status.Commit.CommitID, status.Commit.Commit)
+	}
+	var statusErr string
+	if status.Error != nil {
+		statusErr = status.Error.Error()
+	}
+
+	return &ImportStatusData{
+		Id:           status.ID.String(),
+		Completed:    status.Completed,
+		UpdatedAt:    timestamppb.New(status.UpdatedAt),
+		Progress:     status.Progress,
+		ImportBranch: status.ImportBranch,
+		MetarangeId:  status.MetaRangeID.String(),
+		Commit:       commit,
+		Error:        statusErr,
 	}
 }

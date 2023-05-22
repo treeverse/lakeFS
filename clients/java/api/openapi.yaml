@@ -3628,6 +3628,182 @@ paths:
       - staging
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/import:
+    delete:
+      operationId: importCancel
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: import canceled successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: cancel ongoing import
+      tags:
+      - import
+      x-accepts: application/json
+    get:
+      operationId: importStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportStatusResp'
+          description: import status
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get import status
+      tags:
+      - import
+      x-accepts: application/json
+    post:
+      operationId: importStart
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCreation'
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportCreationResponse'
+          description: Import started
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: import data from object store
+      tags:
+      - import
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/metaranges:
     post:
       operationId: createMetaRange
@@ -6141,6 +6317,8 @@ components:
       - location
       type: object
     Error:
+      example:
+        message: message
       properties:
         message:
           description: short message explaining the error
@@ -7039,6 +7217,48 @@ components:
       required:
       - pattern
       type: object
+    ImportLocation:
+      properties:
+        type:
+          description: Path type, can either be 'common_prefix' or 'object'
+          enum:
+          - common_prefix
+          - object
+          type: string
+        path:
+          description: A source location to ingested path or to a single object. Must
+            match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+          type: string
+        destination:
+          description: Destination for the imported objects on the branch
+          example: collections/
+          type: string
+      required:
+      - destination
+      - path
+      - type
+      type: object
+    ImportCreation:
+      example:
+        paths:
+        - path: s3://my-bucket/production/collections/
+          destination: collections/
+          type: common_prefix
+        - path: s3://my-bucket/production/collections/file1
+          destination: collections/file1
+          type: object
+      properties:
+        paths:
+          items:
+            $ref: '#/components/schemas/ImportLocation'
+          type: array
+        commit:
+          $ref: '#/components/schemas/CommitCreation'
+      required:
+      - commit
+      - paths
+      type: object
     StageRangeCreation:
       example:
         fromSourceURI: s3://my-bucket/production/collections/
@@ -7124,6 +7344,58 @@ components:
           $ref: '#/components/schemas/RangeMetadata'
         pagination:
           $ref: '#/components/schemas/ImportPagination'
+      type: object
+    ImportStatusResp:
+      example:
+        update_time: 2000-01-23T04:56:07.000+00:00
+        import_branch: import_branch
+        metarange_id: metarange_id
+        ingested_objects: 0
+        commit:
+          metadata:
+            key: metadata
+          committer: committer
+          id: id
+          creation_date: 0
+          meta_range_id: meta_range_id
+          message: message
+          parents:
+          - parents
+          - parents
+        completed: true
+        error:
+          message: message
+      properties:
+        completed:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        ingested_objects:
+          description: Number of objects processed so far
+          format: int64
+          type: integer
+        import_branch:
+          type: string
+        metarange_id:
+          type: string
+        commit:
+          $ref: '#/components/schemas/Commit'
+        error:
+          $ref: '#/components/schemas/Error'
+      required:
+      - completed
+      - update_time
+      type: object
+    ImportCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: The id of the import process
+          type: string
+      required:
+      - id
       type: object
     MetaRangeCreation:
       example:

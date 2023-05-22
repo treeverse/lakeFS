@@ -346,6 +346,20 @@ func (mr *MockVersionControllerMockRecorder) DeleteBranchProtectionRule(ctx, rep
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranchProtectionRule", reflect.TypeOf((*MockVersionController)(nil).DeleteBranchProtectionRule), ctx, repository, pattern)
 }
 
+// DeleteExpiredImports mocks base method.
+func (m *MockVersionController) DeleteExpiredImports(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteExpiredImports", ctx, repository)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteExpiredImports indicates an expected call of DeleteExpiredImports.
+func (mr *MockVersionControllerMockRecorder) DeleteExpiredImports(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredImports", reflect.TypeOf((*MockVersionController)(nil).DeleteExpiredImports), ctx, repository)
+}
+
 // DeleteExpiredLinkAddresses mocks base method.
 func (m *MockVersionController) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
 	m.ctrl.T.Helper()
@@ -1864,6 +1878,20 @@ func (m *MockRefManager) DeleteBranch(ctx context.Context, repository *graveler.
 func (mr *MockRefManagerMockRecorder) DeleteBranch(ctx, repository, branchID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranch", reflect.TypeOf((*MockRefManager)(nil).DeleteBranch), ctx, repository, branchID)
+}
+
+// DeleteExpiredImports mocks base method.
+func (m *MockRefManager) DeleteExpiredImports(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteExpiredImports", ctx, repository)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteExpiredImports indicates an expected call of DeleteExpiredImports.
+func (mr *MockRefManagerMockRecorder) DeleteExpiredImports(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredImports", reflect.TypeOf((*MockRefManager)(nil).DeleteExpiredImports), ctx, repository)
 }
 
 // DeleteExpiredLinkAddresses mocks base method.

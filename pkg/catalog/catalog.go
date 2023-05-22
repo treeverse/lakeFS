@@ -157,12 +157,44 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
-	sharedWorkers            = 15
+	sharedWorkers            = 30
 	pendingTasksPerWorker    = 3
 	workersMaxDrainDuration  = 5 * time.Second
 )
 
-var ErrUnknownDiffType = errors.New("unknown graveler difference type")
+type ImportPathType string
+
+const (
+	ImportPathTypePrefix = "common_prefix"
+	ImportPathTypeObject = "object"
+)
+
+type ImportPath struct {
+	Path        string
+	Destination string
+	Type        ImportPathType
+}
+
+func GetImportPathType(t string) (ImportPathType, error) {
+	switch t {
+	case ImportPathTypePrefix,
+		ImportPathTypeObject:
+		return ImportPathType(t), nil
+	default:
+		return "", fmt.Errorf("invalid import type: %w", graveler.ErrInvalidValue)
+	}
+}
+
+type ImportCommit struct {
+	CommitMessage string
+	Committer     string
+	Metadata      Metadata
+}
+
+type ImportRequest struct {
+	Paths  []ImportPath
+	Commit ImportCommit
+}
 
 type ctxCloser struct {
 	close context.CancelFunc
@@ -1150,7 +1182,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 				}
 				job := &commitLogJob{order: commitOrder}
 				if pathInCommit {
-					job.log = convertCommit(commitRecord)
+					job.log = CommitRecordToLog(commitRecord)
 				}
 				outCh <- job
 				return nil
@@ -1220,7 +1252,7 @@ func listCommitsWithoutPaths(it graveler.CommitIterator, params LogParams) ([]*C
 	for it.Next() {
 		val := it.Value()
 
-		commits = append(commits, convertCommit(val))
+		commits = append(commits, CommitRecordToLog(val))
 		if foundAllCommits(params, commits) {
 			// All results returned until the last commit found
 			// and the number of commits found is as expected.
@@ -1240,7 +1272,27 @@ func foundAllCommits(params LogParams, commits []*CommitLog) bool {
 		len(commits) >= params.Amount+1
 }
 
-func convertCommit(val *graveler.CommitRecord) *CommitLog {
+func commitLogToRecord(val *CommitLog) *graveler.CommitRecord {
+	record := &graveler.CommitRecord{
+		CommitID: graveler.CommitID(val.Reference),
+		Commit: &graveler.Commit{
+			Committer:    val.Committer,
+			Message:      val.Message,
+			MetaRangeID:  graveler.MetaRangeID(val.MetaRangeID),
+			CreationDate: val.CreationDate,
+			Metadata:     map[string]string(val.Metadata),
+		},
+	}
+	for _, parent := range val.Parents {
+		record.Parents = append(record.Parents, graveler.CommitID(parent))
+	}
+	return record
+}
+
+func CommitRecordToLog(val *graveler.CommitRecord) *CommitLog {
+	if val == nil {
+		return nil
+	}
 	commit := &CommitLog{
 		Reference:    val.CommitID.String(),
 		Committer:    val.Committer,
@@ -1763,6 +1815,181 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
+func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.RepositoryRecord, branch, sourceBranch string) error {
+	branchID := graveler.BranchID(branch)
+	_, err := c.Store.GetBranch(ctx, repository, branchID)
+	if errors.Is(err, graveler.ErrNotFound) {
+		_, err = c.Store.CreateBranch(ctx, repository, branchID, graveler.Ref(sourceBranch))
+	}
+	return err
+}
+
+func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
+	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
+	defer cancel()
+
+	importBranch := "_" + branchID + "_imported"
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID, importBranch)
+	if err != nil {
+		return fmt.Errorf("creating import manager: %w", err)
+	}
+	defer importManager.Close()
+
+	err = c.ensureBranchExists(ctx, repository, importBranch, branchID)
+	if err != nil {
+		return fmt.Errorf("ensure import branch: %w", err)
+	}
+
+	wg, wgCtx := c.workPool.GroupContext(ctx)
+	for _, source := range params.Paths {
+		src := source // Pinning
+		wg.Submit(func() error {
+			// TODO (niro): Need to handle this at some point (use adapter GetWalker)
+			walker, err := c.walkerFactory.GetWalker(wgCtx, store.WalkerOptions{StorageURI: src.Path})
+			if err != nil {
+				return fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
+			}
+
+			it, err := NewWalkEntryIterator(wgCtx, walker, src.Type, src.Destination, "", "")
+			if err != nil {
+				return fmt.Errorf("creating walk iterator on path %s: %w", src.Path, err)
+			}
+			logger.WithFields(logging.Fields{"source": src.Path, "itr": it}).Debug("Ingest source")
+			defer it.Close()
+			return importManager.Ingest(it)
+		})
+	}
+
+	err = wg.Wait()
+	if err != nil {
+		importError := fmt.Errorf("error on ingest: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	importItr, err := importManager.NewItr()
+	if err != nil {
+		importError := fmt.Errorf("error on import iterator: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+	defer importItr.Close()
+
+	var ranges []*graveler.RangeInfo
+	for importItr.hasMore {
+		rangeInfo, err := c.Store.WriteRange(ctx, repository, importItr)
+		if err != nil {
+			importError := fmt.Errorf("write range: %w", err)
+			importManager.SetError(importError)
+			return importError
+		}
+
+		ranges = append(ranges, rangeInfo)
+		// Check if operation was canceled
+		if ctx.Err() != nil {
+			return nil
+		}
+	}
+
+	// Create metarange
+	metarange, err := c.Store.WriteMetaRange(ctx, repository, ranges)
+	if err != nil {
+		importError := fmt.Errorf("create metarange: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	// Commit the changes
+	metarangeStr := metarange.ID.String()
+	cParams := params.Commit
+	commit, err := c.Commit(ctx, repository.RepositoryID.String(), importBranch, cParams.CommitMessage, cParams.Committer, cParams.Metadata, nil, &metarangeStr)
+	if err != nil {
+		importError := fmt.Errorf("commit changes: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	// Update import status
+	status := importManager.Status()
+	status.MetaRangeID = metarange.ID
+	status.Commit = commitLogToRecord(commit)
+	status.Completed = true
+	importManager.SetStatus(status)
+	return nil
+}
+
+func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = c.Store.GetBranch(ctx, repository, graveler.BranchID(branchID))
+	if err != nil {
+		return "", err
+	}
+
+	id := xid.New().String()
+	// Run import
+	go func() {
+		logger := c.log.WithField("import_id", id)
+		err = c.importAsync(repository, branchID, id, params, logger)
+		if err != nil {
+			logger.WithError(err).Error("import failure")
+		}
+	}()
+	return id, nil
+}
+
+func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID string) error {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	importStatus, err := c.getImportStatus(ctx, repository, importID)
+	if err != nil {
+		return err
+	}
+	if importStatus.Completed {
+		c.log.WithFields(logging.Fields{
+			"import_id": importID,
+			"completed": importStatus.Completed,
+			"error":     importStatus.Error,
+		}).Warning("Not canceling import - already completed")
+		return graveler.ErrConflictFound
+	}
+	importStatus.Error = ImportCanceled
+	importStatus.UpdatedAt = timestamppb.Now()
+	return kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.ImportsPath(importID)), importStatus)
+}
+
+func (c *Catalog) getImportStatus(ctx context.Context, repository *graveler.RepositoryRecord, importID string) (*graveler.ImportStatusData, error) {
+	repoPartition := graveler.RepoPartition(repository)
+	data := &graveler.ImportStatusData{}
+	_, err := kv.GetMsg(ctx, c.KVStore, repoPartition, []byte(graveler.ImportsPath(importID)), data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return nil, graveler.ErrNotFound
+		}
+		return nil, err
+	}
+	return data, nil
+}
+
+func (c *Catalog) GetImportStatus(ctx context.Context, repositoryID, importID string) (*graveler.ImportStatus, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.getImportStatus(ctx, repository, importID)
+	if err != nil {
+		return nil, err
+	}
+	return graveler.ImportStatusFromProto(data), nil
+}
+
 func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -1775,7 +2002,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, params.After, params.ContinuationToken)
+	it, err := NewWalkEntryIterator(ctx, walker, ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
@@ -1795,7 +2022,8 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 		}
 
 		for _, obj := range skipped {
-			entryRecord := objectStoreEntryToEntryRecord(obj, params.Prepend)
+			p := params.Prepend + obj.RelativeKey
+			entryRecord := objectStoreEntryToEntryRecord(obj, p)
 			entry, err := EntryToValue(entryRecord.Entry)
 			if err != nil {
 				return nil, nil, fmt.Errorf("parsing entry: %w", err)
@@ -2069,6 +2297,21 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
 		if err != nil {
 			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
+		}
+	}
+}
+
+func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Delete expired imports: failed to list repositories")
+		return
+	}
+
+	for _, repo := range repos {
+		err = c.Store.DeleteExpiredImports(ctx, repo)
+		if err != nil {
+			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired imports failed")
 		}
 	}
 }
