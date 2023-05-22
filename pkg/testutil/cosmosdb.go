@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -63,7 +64,9 @@ func GetCosmosDBInstance() (string, func(), error) {
 		if err != nil {
 			log.Fatalf("failed joining urls: %v", err)
 		}
-		client := http.Client{Timeout: 5 * time.Second}
+		client := http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}}
 		resp, err := client.Get(p)
 		if err != nil {
 			log.Printf("failed probing cosmos db(%s): %v", p, err)
