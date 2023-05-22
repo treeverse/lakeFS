@@ -62,4 +62,5 @@ type CosmosDB struct {
 	Endpoint     string
 	Database     string
 	Container    string
+	TLSEnabled   bool
 }

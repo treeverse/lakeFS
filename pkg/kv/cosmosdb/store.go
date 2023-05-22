@@ -47,11 +47,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			return nil, fmt.Errorf("creating key: %w", err)
 		}
 
-		// Disable ssl for local emulator
-		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		// hook for using emulator for testing
+		httpClient := &http.Client{}
+		if !params.TLSEnabled {
+			httpClient.Transport = &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
 		}
-		httpClient := &http.Client{Transport: tr}
 
 		// Create a CosmosDB client
 		client, err = azcosmos.NewClientWithKey(params.Endpoint, cred, &azcosmos.ClientOptions{

@@ -6,6 +6,7 @@ import (
 	dc "github.com/ory/dockertest/v3/docker"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -54,7 +55,11 @@ func GetCosmosDBInstance() (string, func(), error) {
 		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
 		// and so is ignored
-		resp, err := http.Get(cosmosdbLocalURI)
+		p, err := url.JoinPath(cosmosdbLocalURI, "/_explorer/emulator.pem")
+		if err != nil {
+			log.Fatalf("failed joining urls: %v", err)
+		}
+		resp, err := http.Get(p)
 		if err != nil {
 			log.Printf("failed probing cosmos db: %v", err)
 			return err
