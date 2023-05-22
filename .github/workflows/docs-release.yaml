@@ -44,6 +44,11 @@ jobs:
             curl -s https://${API_TOKEN_GITHUB}@raw.githubusercontent.com/treeverse/docs-lakeFS/main/versions.json |
             jq '."${{ steps.version.outputs.tag}}" = "${{ steps.version.outputs.tag}}"' > docs/_site/versions.json
 
+      - name: Configure git
+        run: |
+          git config --global http.version HTTP/1.1
+          git config --global http.postBuffer 157286400
+
       - name: Publish to docs repository
         uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
         env:
@@ -53,5 +58,5 @@ jobs:
           destination_repo: treeverse/docs-lakeFS
           destination_folder: /
           user_email: 'support@treeverse.io'
-          user_name: 'nopcoder'
+          user_name: 'docs-action'
 
