@@ -1426,7 +1426,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadConfig,
+			Action:   permissions.ReadConfigAction,
 			Resource: permissions.All,
 		},
 	}) {
@@ -1499,7 +1499,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.AttachStorageNamespace,
+					Action:   permissions.AttachStorageNamespaceAction,
 					Resource: permissions.StorageNamespace(body.StorageNamespace),
 				},
 			},
@@ -2136,7 +2136,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 	for _, source := range body.Paths {
 		perm.Nodes = append(perm.Nodes,
 			permissions.Node{Permission: permissions.Permission{
-				Action:   permissions.ImportFromStorage,
+				Action:   permissions.ImportFromStorageAction,
 				Resource: permissions.StorageNamespace(source.Path),
 			}},
 			permissions.Node{Permission: permissions.Permission{
@@ -2244,7 +2244,7 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, reposi
 func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportCancelParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.CancelImport,
+			Action:   permissions.ImportCancelAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
 	}) {
@@ -2266,7 +2266,7 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body In
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ImportFromStorage,
+					Action:   permissions.ImportFromStorageAction,
 					Resource: permissions.StorageNamespace(body.FromSourceURI),
 				},
 			},
