@@ -39,6 +39,7 @@ fi
 
 echo "[+] Copying contents of source repository folder $SOURCE_DIRECTORY to folder $TARGET_DIRECTORY in git repo"
 cp -ra "$SOURCE_DIRECTORY"/. "$CLONE_DIR/$TARGET_DIRECTORY"
+cd "$CLONE_DIR"
 
 COMMIT_MESSAGE="Update from ${GITHUB_REPOSITORY}@$GITHUB_REF}"
 
