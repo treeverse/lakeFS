@@ -411,15 +411,17 @@ object GarbageCollector {
     val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
     val removed = {
       if (shouldSweep) {
-        // If a mark didn't happen in this run, gcAddressesLocation will be empty and expiredAddresses will be null.
-        if (gcAddressesLocation.isEmpty) {
+        // If a mark didn't happen in this run, gcAddressesLocation, runID, and expiredAddresses will be empty.
+        if (!shouldMark) {
           gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
-        }
-        if (expiredAddresses == null) {
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
+          runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
+          println(
+            s"Sweep only run: using addresses from location '$gcAddressesLocation' and run ID '$runID'"
+          )
         }
 
-        val removed = remove(
+        remove(
           storageNSForSdkClient,
           gcAddressesLocation,
           expiredAddresses,
@@ -427,8 +429,6 @@ object GarbageCollector {
           storageClient,
           schema
         )
-        logRunID(storageNSForHadoopFS, runID, configMapper)
-        removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
@@ -442,7 +442,15 @@ object GarbageCollector {
     }
 
     val commitsDF = gc.getCommitsDF(gcCommitsLocation)
-    writeReports(storageNSForHadoopFS, gcRules, runID, markID, commitsDF, removed, configMapper)
+    writeReports(shouldSweep,
+                 storageNSForHadoopFS,
+                 gcRules,
+                 runID,
+                 markID,
+                 commitsDF,
+                 removed,
+                 configMapper
+                )
     spark.close()
   }
 
@@ -643,7 +651,16 @@ object GarbageCollector {
       .withColumn(MARK_ID_KEY, lit(markID))
   }
 
+  private def readRunIDFromMarkIDMetadata(addressesLocation: String, markID: String): String = {
+    spark.read
+      .json(s"$addressesLocation/$markID.meta")
+      .select("run_id")
+      .first()
+      .getString(0)
+  }
+
   private def writeReports(
+      isSweep: Boolean,
       storageNSForHadoopFS: String,
       gcRules: String,
       runID: String,
@@ -660,6 +677,9 @@ object GarbageCollector {
 
     val removedCount = removed.count()
     println(s"Total objects to delete (some may already have been deleted): $removedCount")
+    if (isSweep) {
+      logRunID(storageNSForHadoopFS, runID, configMapper)
+    }
     writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
     removed
       .withColumn(MARK_ID_KEY, lit(markID))
