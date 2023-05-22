@@ -418,7 +418,7 @@ object GarbageCollector {
           runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
         }
 
-        val removed = remove(
+        remove(
           storageNSForSdkClient,
           gcAddressesLocation,
           expiredAddresses,
@@ -426,8 +426,6 @@ object GarbageCollector {
           storageClient,
           schema
         )
-        logRunID(storageNSForHadoopFS, runID, configMapper)
-        removed
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
@@ -441,7 +439,7 @@ object GarbageCollector {
     }
 
     val commitsDF = gc.getCommitsDF(gcCommitsLocation)
-    writeReports(storageNSForHadoopFS, gcRules, runID, markID, commitsDF, removed, configMapper)
+    writeReports(shouldSweep, storageNSForHadoopFS, gcRules, runID, markID, commitsDF, removed, configMapper)
     spark.close()
   }
 
@@ -651,6 +649,7 @@ object GarbageCollector {
   }
 
   private def writeReports(
+      isSweep: Boolean,
       storageNSForHadoopFS: String,
       gcRules: String,
       runID: String,
@@ -667,6 +666,9 @@ object GarbageCollector {
 
     val removedCount = removed.count()
     println(s"Total objects to delete (some may already have been deleted): $removedCount")
+    if(isSweep) {
+      logRunID(storageNSForHadoopFS, runID, configMapper)
+    }
     writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
     removed
       .withColumn(MARK_ID_KEY, lit(markID))
