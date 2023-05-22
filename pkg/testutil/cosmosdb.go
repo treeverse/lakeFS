@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 const (
@@ -50,7 +49,6 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("could not expire cosmosdb local emulator: %w", err)
 	}
 
-	dockerPool.MaxWait = 3 * time.Minute
 	err = dockerPool.Retry(func() error {
 		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
@@ -61,7 +59,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 		}
 		resp, err := http.Get(p)
 		if err != nil {
-			log.Printf("failed probing cosmos db: %v", err)
+			log.Printf("failed probing cosmos db(%s): %v", p, err)
 			return err
 		}
 		_ = resp.Body.Close()

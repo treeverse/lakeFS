@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	resp2, err := databaseClient.CreateContainer(ctx, azcosmos.ContainerProperties{
 		ID: testParams.Container,
 		PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
-			Paths: []string{"/id"},
+			Paths: []string{"/partitionKey"},
 		},
 	}, nil)
 	if err != nil {
