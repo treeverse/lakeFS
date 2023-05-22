@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -62,7 +63,8 @@ func GetCosmosDBInstance() (string, func(), error) {
 		if err != nil {
 			log.Fatalf("failed joining urls: %v", err)
 		}
-		resp, err := http.Get(p)
+		client := http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Get(p)
 		if err != nil {
 			log.Printf("failed probing cosmos db(%s): %v", p, err)
 			return err
