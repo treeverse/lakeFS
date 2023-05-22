@@ -4,7 +4,13 @@
 
 ## v0.101.0
 
-:new: What's new:
+**This release requires running database migration.**
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+
+:new: What's new: 
+- Refactor import (#5840)
+- Deprecate ingest command (#5882)
 - Support TLS for lakeFS local development (#5322)
 - Generate JWT while working with auth API when non is configured (#5894)
 - Remove email authenticator middleware (#5884)

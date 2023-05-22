@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
+	"syscall"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -50,99 +52,90 @@ var importCmd = &cobra.Command{
 
 		// setup progress bar - based on `progressbar.Default` defaults + control visibility
 		bar := newImportProgressBar(!noProgress)
-		var (
-			sum               int
-			continuationToken *string
-			after             string
-			ranges            = make([]api.RangeMetadata, 0)
-			stagingToken      *string
+		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportStartJSONRequestBody{
+			Commit: api.CommitCreation{
+				Message: message,
+				Metadata: &api.CommitCreation_Metadata{
+					AdditionalProperties: metadata,
+				},
+			},
+			Paths: []api.ImportLocation{
+				{
+					Destination: api.StringValue(toURI.Path),
+					Path:        from,
+					Type:        "common_prefix",
+				},
+			},
+		})
+		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
+		if importResp.JSON202 == nil {
+			Die("Bad response from server", 1)
+		}
+		importID := importResp.JSON202.Id
+		// Handle interrupts
+		sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+		defer stop()
+
+		const (
+			statusPollInterval = 5 * time.Second
+			maxUpdateFailures  = 5
 		)
+		var (
+			statusResp     *api.ImportStatusResponse
+			updateFailures int
+			updatedAt      time.Time
+		)
+		ticker := time.NewTicker(statusPollInterval)
+		defer ticker.Stop()
 		for {
-			rangeResp, err := client.IngestRangeWithResponse(ctx, toURI.Repository, api.IngestRangeJSONRequestBody{
-				After:             after,
-				ContinuationToken: continuationToken,
-				FromSourceURI:     from,
-				Prepend:           api.StringValue(toURI.Path),
-			})
-			DieOnErrorOrUnexpectedStatusCode(rangeResp, err, http.StatusCreated)
-			if rangeResp.JSON201 == nil {
-				Die("Bad response from server", 1)
-			}
-			if rangeResp.JSON201.Range != nil {
-				rangeInfo := *rangeResp.JSON201.Range
-				ranges = append(ranges, rangeInfo)
-				sum += rangeInfo.Count
-				_ = bar.Add(rangeInfo.Count)
+			select {
+			case <-sigCtx.Done():
+				Fmt("\nCanceling import\n")
+				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
+				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+				Die("Import Canceled", 1)
+			case <-ticker.C:
+				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
+				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
+				status := statusResp.JSON200
+				if status == nil {
+					Die("Bad response from server", 1)
+				}
+				if status.Error != nil {
+					DieFmt("Import failed: %s", status.Error.Message)
+				}
+				_ = bar.Set64(*status.IngestedObjects)
+				if updatedAt == status.UpdateTime {
+					updateFailures += 1
+				}
+				if updateFailures >= maxUpdateFailures {
+					DieFmt("Import status did not update for %s - abandon", maxUpdateFailures*statusPollInterval)
+				}
+				updatedAt = status.UpdateTime
 			}
 
-			continuationToken = rangeResp.JSON201.Pagination.ContinuationToken
-			after = rangeResp.JSON201.Pagination.LastKey
-			stagingToken = rangeResp.JSON201.Pagination.StagingToken
-			if !rangeResp.JSON201.Pagination.HasMore {
+			if statusResp.JSON200.Completed {
 				break
 			}
 		}
 		_ = bar.Clear()
 
-		// create metarange with all the ranges we created
-		metaRangeResp, err := client.CreateMetaRangeWithResponse(ctx, toURI.Repository, api.CreateMetaRangeJSONRequestBody{
-			Ranges: ranges,
-		})
-		DieOnErrorOrUnexpectedStatusCode(metaRangeResp, err, http.StatusCreated)
-		if metaRangeResp.JSON201 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		importedBranchID := formatImportedBranchID(toURI.Ref)
-		ensureBranchExists(ctx, client, toURI.Repository, importedBranchID, toURI.Ref)
-
-		// commit metarange to the imported branch
-		commitResp, err := client.CommitWithResponse(ctx, toURI.Repository, importedBranchID, &api.CommitParams{
-			SourceMetarange: metaRangeResp.JSON201.Id,
-		}, api.CommitJSONRequestBody{
-			Message: message,
-			Metadata: &api.CommitCreation_Metadata{
-				AdditionalProperties: metadata,
-			},
-		})
-		DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusCreated)
-		if commitResp.JSON201 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		if stagingToken != nil && *stagingToken != "" {
-			stageResp, err := client.UpdateBranchTokenWithResponse(ctx, toURI.Repository, importedBranchID, api.UpdateBranchTokenJSONRequestBody{
-				StagingToken: *stagingToken,
-			})
-			DieOnErrorOrUnexpectedStatusCode(stageResp, err, http.StatusCreated)
-			// Commit staged data (skipped files)
-			commitResp, err = client.CommitWithResponse(ctx, toURI.Repository, importedBranchID, &api.CommitParams{}, api.CommitJSONRequestBody{
-				Message: "Import commit for staged objects",
-				Metadata: &api.CommitCreation_Metadata{
-					AdditionalProperties: metadata,
-				},
-			})
-			DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusCreated)
-			if commitResp.JSON201 == nil {
-				Die("Bad response from server", 1)
-			}
-		}
-
+		importedBranch := api.StringValue(statusResp.JSON200.ImportBranch)
 		Write(importSummaryTemplate, struct {
-			Objects     int
+			Objects     int64
 			MetaRangeID string
 			Branch      string
 			Commit      *api.Commit
 		}{
-			Objects:     sum,
-			MetaRangeID: api.StringValue(metaRangeResp.JSON201.Id),
-			Branch:      importedBranchID,
-			Commit:      commitResp.JSON201,
+			Objects:     api.Int64Value(statusResp.JSON200.IngestedObjects),
+			MetaRangeID: api.StringValue(statusResp.JSON200.MetarangeId),
+			Branch:      importedBranch,
+			Commit:      statusResp.JSON200.Commit,
 		})
 
 		// merge to target branch if needed
 		if merge {
-			mergeImportedBranch(ctx, client, toURI.Repository, importedBranchID, toURI.Ref)
+			mergeImportedBranch(ctx, client, toURI.Repository, importedBranch, toURI.Ref)
 		}
 	},
 }
@@ -222,23 +215,6 @@ func branchExists(ctx context.Context, client *api.ClientWithResponses, reposito
 		return nil, false
 	}
 	return RetrieveError(resp, err), false
-}
-
-func ensureBranchExists(ctx context.Context, client *api.ClientWithResponses, repository, branch, sourceBranch string) {
-	if err, ok := branchExists(ctx, client, repository, branch); err != nil {
-		DieErr(err)
-	} else if ok {
-		return
-	}
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repository, api.CreateBranchJSONRequestBody{
-		Name:   branch,
-		Source: sourceBranch,
-	})
-	DieOnErrorOrUnexpectedStatusCode(createBranchResp, err, http.StatusCreated)
-}
-
-func formatImportedBranchID(branch string) string {
-	return "_" + branch + "_imported"
 }
 
 //nolint:gochecknoinits,gomnd

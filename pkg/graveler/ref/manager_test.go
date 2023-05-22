@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +24,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // TestManager_GetRepositoryCache test get repository information while using cache. Match the number of times we
@@ -1182,4 +1185,67 @@ func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
 	if diff := deep.Equal(ts, expectedTokens); diff != nil {
 		t.Errorf("Found diff in tokens: %s", ts)
 	}
+}
+
+func TestManager_DeleteExpiredImports(t *testing.T) {
+	r, store := testRefManager(t)
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	imports := []*graveler.ImportStatusData{
+		{
+			Id:        "not_expired1",
+			Completed: false,
+			UpdatedAt: timestamppb.New(time.Now()),
+			Error:     "An error",
+		},
+		{
+			Id:        "not_expired2",
+			Completed: false,
+			UpdatedAt: timestamppb.New(time.Now().Add(-ref.ImportExpiryTime + time.Hour)),
+			Error:     "An error",
+		},
+		{
+			Id:        "expired",
+			Completed: true,
+			UpdatedAt: timestamppb.New(time.Now().Add(-ref.ImportExpiryTime - time.Hour)),
+			Error:     "",
+		},
+		{
+			Id:        "stale",
+			Completed: false,
+			UpdatedAt: timestamppb.New(time.Now().Add(-ref.ImportExpiryTime - time.Hour)),
+			Error:     "",
+		},
+	}
+
+	repoPartition := graveler.RepoPartition(repository)
+	for _, i := range imports {
+		data, err := proto.Marshal(i)
+		require.NoError(t, err)
+		err = store.Set(ctx, []byte(repoPartition), []byte(graveler.ImportsPath(i.Id)), data)
+		require.NoError(t, err)
+	}
+
+	err = r.DeleteExpiredImports(context.Background(), repository)
+	require.NoError(t, err)
+
+	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.ImportStatusData{}).ProtoReflect().Type(), repoPartition, []byte(graveler.ImportsPath("")), kv.IteratorOptionsFrom([]byte("")))
+	require.NoError(t, err)
+	defer it.Close()
+
+	count := 0
+	for it.Next() {
+		entry := it.Entry()
+		count += 1
+		id := string(entry.Key)
+		require.True(t, strings.HasPrefix(id, "imports/not_expired"), id)
+	}
+	require.NoError(t, it.Err())
+	require.Equal(t, 2, count)
 }

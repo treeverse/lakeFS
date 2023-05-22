@@ -175,6 +175,9 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**otf_diff**](docs/ExperimentalApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
 *ImportApi* | [**create_meta_range**](docs/ImportApi.md#create_meta_range) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
+*ImportApi* | [**import_cancel**](docs/ImportApi.md#import_cancel) | **DELETE** /repositories/{repository}/branches/{branch}/import | cancel ongoing import
+*ImportApi* | [**import_start**](docs/ImportApi.md#import_start) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
+*ImportApi* | [**import_status**](docs/ImportApi.md#import_status) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
 *ImportApi* | [**ingest_range**](docs/ImportApi.md#ingest_range) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
 *MetadataApi* | [**create_symlink_file**](docs/MetadataApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 *MetadataApi* | [**get_meta_range**](docs/MetadataApi.md#get_meta_range) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
@@ -256,7 +259,11 @@ Class | Method | HTTP request | Description
  - [GroupList](docs/GroupList.md)
  - [HookRun](docs/HookRun.md)
  - [HookRunList](docs/HookRunList.md)
+ - [ImportCreation](docs/ImportCreation.md)
+ - [ImportCreationResponse](docs/ImportCreationResponse.md)
+ - [ImportLocation](docs/ImportLocation.md)
  - [ImportPagination](docs/ImportPagination.md)
+ - [ImportStatusResp](docs/ImportStatusResp.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
  - [InlineObject1](docs/InlineObject1.md)
  - [LoginConfig](docs/LoginConfig.md)

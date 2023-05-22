@@ -10,16 +10,20 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
 const (
+	defaultExpectedContentLength = 1024
+
 	s3ImportPath       = "s3://esti-system-testing-data/import-test-data/"
 	gsImportPath       = "gs://esti-system-testing-data/import-test-data/"
 	azureImportPath    = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
@@ -45,11 +49,11 @@ var importFilesToCheck = []string{
 	"prefix-7/file000001",
 }
 
-func TestImport(t *testing.T) {
-	const defaultExpectedContentLength = 1024
-
+func setupImportByBlockstoreType(t testing.TB) (string, string, int) {
+	t.Helper()
 	importPath := ""
 	expectedContentLength := defaultExpectedContentLength
+
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	switch blockstoreType {
 	case block.BlockstoreTypeS3:
@@ -64,9 +68,13 @@ func TestImport(t *testing.T) {
 	default:
 		t.Skip("import isn't supported for non-production block adapters")
 	}
+	return blockstoreType, importPath, expectedContentLength
+}
 
+func TestImport(t *testing.T) {
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
+	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
 
 	t.Run("default", func(t *testing.T) {
 		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "default")
@@ -86,9 +94,9 @@ func TestImport(t *testing.T) {
 	})
 }
 
-func setupLocalImportPath(t *testing.T) string {
+func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
-	importDir := filepath.Join(t.TempDir(), "import-test-data")
+	importDir := filepath.Join(t.TempDir(), "import-test-data") + "/"
 	if err := os.Mkdir(importDir, dirPerm); err != nil {
 		t.Fatal(err)
 	}
@@ -288,6 +296,211 @@ func TestAzureDataLakeV2(t *testing.T) {
 	}
 }
 
+func TestImportNew(t *testing.T) {
+	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
+
+	t.Run("default", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
+		paths := []api.ImportLocation{{
+			Destination: importTargetPrefix,
+			Path:        importPath,
+			Type:        catalog.ImportPathTypePrefix,
+		}}
+		importID, importBranch := testImportNew(t, ctx, repoName, branch, paths)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+
+		// Verify we cannot cancel a completed import
+		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+			Id: importID,
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusConflict, cancelResp.StatusCode())
+
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
+			Id: importID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		require.Nil(t, statusResp.JSON200.Error)
+	})
+
+	t.Run("parent", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
+		if blockstoreType == block.BlockstoreTypeLocal {
+			t.Skip("local cannot import by prefix, only directory or object")
+		}
+		// import without the directory separator as suffix to include the parent directory
+		importPathParent := strings.TrimSuffix(importPath, "/")
+		paths := []api.ImportLocation{{
+			Destination: importTargetPrefix,
+			Path:        importPathParent,
+			Type:        catalog.ImportPathTypePrefix,
+		}}
+		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
+	})
+
+	t.Run("several_paths", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
+		var paths []api.ImportLocation
+		for i := 1; i < 8; i++ {
+			prefix := fmt.Sprintf("prefix-%d/", i)
+			paths = append(paths, api.ImportLocation{
+				Destination: importTargetPrefix + prefix,
+				Path:        importPath + prefix,
+				Type:        catalog.ImportPathTypePrefix,
+			})
+		}
+		paths = append(paths, api.ImportLocation{
+			Destination: importTargetPrefix + "nested",
+			Path:        importPath + "nested/",
+			Type:        catalog.ImportPathTypePrefix,
+		})
+
+		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+	})
+
+	t.Run("prefixes_and_objects", func(t *testing.T) {
+		ctx, _, repoName := setupTest(t)
+		defer tearDownTest(repoName)
+		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
+		var paths []api.ImportLocation
+		for i := 1; i < 8; i++ {
+			prefix := fmt.Sprintf("prefix-%d/", i)
+			paths = append(paths, api.ImportLocation{
+				Destination: importTargetPrefix + prefix,
+				Path:        importPath + prefix,
+				Type:        catalog.ImportPathTypePrefix,
+			})
+		}
+		for _, p := range importFilesToCheck {
+			if strings.HasPrefix(p, "nested") {
+				paths = append(paths, api.ImportLocation{
+					Destination: importTargetPrefix + p,
+					Path:        importPath + p,
+					Type:        catalog.ImportPathTypeObject,
+				})
+			}
+		}
+		_, importBranch := testImportNew(t, ctx, repoName, branch, paths)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
+	})
+}
+
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation) (string, string) {
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   importBranch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", importBranch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
+
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, api.ImportStartJSONRequestBody{
+		Commit: api.CommitCreation{
+			Message:  "created by import",
+			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		},
+		Paths: paths,
+	})
+	require.NotNil(t, importResp.JSON202, "failed to start import", err)
+	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
+
+	var (
+		statusResp *api.ImportStatusResponse
+		updateTime time.Time
+	)
+	importID := importResp.JSON202.Id
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context canceled")
+		case <-ticker.C:
+			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
+				Id: importID,
+			})
+			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+			status := statusResp.JSON200
+			require.Nil(t, status.Error)
+			require.NotEqual(t, updateTime, status.UpdateTime)
+			updateTime = status.UpdateTime
+			t.Log("Import progress:", *status.IngestedObjects, importID)
+		}
+		if statusResp.JSON200.Completed {
+			t.Log("Import completed:", importID)
+			return importID, *statusResp.JSON200.ImportBranch
+		}
+	}
+}
+
+func TestImportCancel(t *testing.T) {
+	_, importPath, _ := setupImportByBlockstoreType(t)
+	ctx, _, repoName := setupTest(t)
+	defer tearDownTest(repoName)
+	branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", branch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
+
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, api.ImportStartJSONRequestBody{
+		Commit: api.CommitCreation{
+			Message:  "created by import",
+			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+		},
+		Paths: []api.ImportLocation{{
+			Destination: importTargetPrefix,
+			Path:        importPath,
+			Type:        catalog.ImportPathTypePrefix,
+		}},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, importResp.JSON202, "failed to start import", err)
+
+	// Wait 1 second and cancel request
+	time.Sleep(1 * time.Second)
+	cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+		Id: importResp.JSON202.Id,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
+
+	// Check status is canceled
+	var updateTime time.Time
+	timer := time.NewTimer(0)
+	for range timer.C {
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
+			Id: importResp.JSON202.Id,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		require.Contains(t, statusResp.JSON200.Error.Message, catalog.ImportCanceled)
+
+		if updateTime.IsZero() {
+			updateTime = statusResp.JSON200.UpdateTime
+		} else {
+			require.Equal(t, updateTime, statusResp.JSON200.UpdateTime)
+			break
+		}
+		timer.Reset(3 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
+	}
+}
+
+// #####################################################################################################################
+// #																																																										#
+// #																							BENCHMARKS																														#
+// #																																																										#
+// #####################################################################################################################
 func BenchmarkIngest_Azure(b *testing.B) {
 	requireBlockstoreType(b, block.BlockstoreTypeAzure)
 	ctx, _, repoName := setupTest(b)

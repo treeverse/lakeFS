@@ -185,12 +185,6 @@ func WithIfAbsent(v bool) SetOptionsFunc {
 	}
 }
 
-func WithMaxTries(n int) SetOptionsFunc {
-	return func(opts *SetOptions) {
-		opts.MaxTries = n
-	}
-}
-
 // function/methods receiving the following basic types could assume they passed validation
 
 // StorageNamespace is the URI to the storage location
@@ -221,6 +215,20 @@ type MetaRangeID string
 
 // RangeID represents a part of a MetaRange, useful only for plumbing.
 type RangeID string
+
+// ImportID represents an import process id in the ref-store
+type ImportID string
+
+type ImportStatus struct {
+	ID           ImportID
+	Completed    bool
+	UpdatedAt    time.Time
+	Progress     int64
+	ImportBranch string
+	MetaRangeID  MetaRangeID
+	Commit       *CommitRecord
+	Error        error
+}
 
 // StagingToken represents a namespace for writes to apply as uncommitted
 type StagingToken string
@@ -598,6 +606,9 @@ type VersionController interface {
 
 	// IsLinkAddressExpired returns nil if the token is valid and not expired
 	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
+
+	// DeleteExpiredImports deletes expired imports on a given repository
+	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
 }
 
 // Plumbing includes commands for fiddling more directly with graveler implementation
@@ -817,6 +828,9 @@ type RefManager interface {
 
 	// IsLinkAddressExpired returns nil if the token is valid and not expired
 	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
+
+	// DeleteExpiredImports deletes expired imports on a given repository
+	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
 }
 
 // CommittedManager reads and applies committed snapshots
@@ -954,6 +968,10 @@ func (id StagingToken) String() string {
 }
 
 func (id MetaRangeID) String() string {
+	return string(id)
+}
+
+func (id ImportID) String() string {
 	return string(id)
 }
 
@@ -2815,6 +2833,10 @@ func (g *Graveler) DeleteExpiredLinkAddresses(ctx context.Context, repository *R
 
 func (g *Graveler) IsLinkAddressExpired(token *LinkAddressData) (bool, error) {
 	return g.RefManager.IsLinkAddressExpired(token)
+}
+
+func (g *Graveler) DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error {
+	return g.RefManager.DeleteExpiredImports(ctx, repository)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

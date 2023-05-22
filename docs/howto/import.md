@@ -25,13 +25,11 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 #### User Permissions
 
 To run import you need the following permissions:
-`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, and 
-`fs:ImportFromStorage`. The first 3 permissions are available by default to 
-users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
-Writers group ([ACL](../reference/access-control-lists.md)). The last 
-permission enables the user to import data from any location of the storage 
-provider that lakeFS has access to. Thus, it's only available to users in 
-group Supers ([ACL](../reference/access-control-lists.md)) or SuperUsers([RBAC](../reference/rbac.md)).
+`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:CancelImport`. 
+The first 3 permissions are available by default to users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
+Writers group ([ACL](../reference/access-control-lists.md)). The last permission enables the user to import data from any location of the storage 
+provider that lakeFS has access to. 
+Thus, it's only available to users in group Supers ([ACL](../reference/access-control-lists.md)) or SuperUsers([RBAC](../reference/rbac.md)).
 RBAC installations can modify policies to add that permission to any group, such as Developers.
 
 
@@ -173,60 +171,6 @@ lakectl import \
 
 The imported objects will be committed to the `_my-branch_imported`, creating it if it doesn't exists.
 Using the `--merge` flag will merge `_my-branch_imported` to `my-branch` after a successful import.
-
-### _lakectl ingest_
-
-Prerequisite: have [lakectl](/reference/cli.html) installed.
-
-The _ingest_ command adds the objects to lakeFS by listing them on the client side.
-The added objects will appear as uncommitted changes.
-
-The user calling `lakectl ingest` needs to have permissions to list the objects in the source object store.
-{: .note }
-
-<div class="tabs">
-<ul>
-  <li><a href="#ingest-tabs-1">AWS S3 or S3 API Compatible storage</a></li>
-  <li><a href="#ingest-tabs-2">Azure Blob</a></li>
-  <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
-</ul>
-<div markdown="1" id="ingest-tabs-1">
-```shell
-lakectl ingest \
-  --from s3://bucket/optional/prefix/ \
-  --to lakefs://my-repo/ingest-branch/optional/path/
-```
-
-The `lakectl ingest` command will attempt to use the current user's existing credentials and respect instance profiles,
-environment variables, and credential files ([similarly to AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" })
-Specify an endpoint to ingest from other S3 compatible storage solutions, e.g., add `--s3-endpoint-url https://play.min.io`.
-</div>
-<div markdown="1" id="ingest-tabs-2">
-```shell
-export AZURE_STORAGE_ACCOUNT="storageAccountName"
-export AZURE_STORAGE_ACCESS_KEY="EXAMPLEroozoo2gaec9fooTieWah6Oshai5Sheofievohthapob0aidee5Shaekahw7loo1aishoonuuquahr3=="
-lakectl ingest \
-   --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
-   --to lakefs://my-repo/ingest-branch/optional/path/
-```
-
-The `lakectl ingest` command currently supports storage accounts configured through environment variables as shown above.
-
-**Note:** Currently, `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
-{: .note }
-</div>
-<div markdown="1" id="ingest-tabs-3">
-```shell
-export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcs_credentials.json"  # Optional, will fallback to the default configured credentials
-lakectl ingest \
-   --from gs://bucket/optional/prefix/ \
-   --to lakefs://my-repo/ingest-branch/optional/path/
-```
-
-The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
-</div>
-</div>
-
 
 ### Limitations
 
