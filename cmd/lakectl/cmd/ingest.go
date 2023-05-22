@@ -37,8 +37,9 @@ func stageWorker(ctx context.Context, client api.ClientWithResponsesInterface, w
 }
 
 var ingestCmd = &cobra.Command{
-	Use:   "ingest --from <object store URI> --to <lakeFS path URI> [--dry-run]",
-	Short: "Ingest objects from an external source into a lakeFS branch (without actually copying them)",
+	Deprecated: "use import command instead",
+	Use:        "ingest --from <object store URI> --to <lakeFS path URI> [--dry-run]",
+	Short:      "Ingest objects from an external source into a lakeFS branch (without actually copying them)",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		verbose := MustBool(cmd.Flags().GetBool("verbose"))
