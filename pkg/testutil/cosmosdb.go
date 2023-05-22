@@ -22,12 +22,14 @@ func GetCosmosDBInstance() (string, func(), error) {
 	}
 
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
-		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
-		Tag:        "latest",
+		Repository:   "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
+		Tag:          "latest",
+		Env:          []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10", "AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true"},
+		ExposedPorts: []string{CosmosDBLocalPort},
+		Auth:         dc.AuthConfiguration{},
 		PortBindings: map[dc.Port][]dc.PortBinding{
 			"8081/tcp": {{HostPort: CosmosDBLocalPort}},
 		},
-		Env: []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10", "AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true"},
 	}
 
 	resource, err := dockerPool.RunWithOptions(cosmosdbDockerRunOptions)
