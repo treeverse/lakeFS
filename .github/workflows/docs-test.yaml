@@ -1,0 +1,41 @@
+name: documentation test
+
+on:
+  pull_request:
+
+jobs:
+  docs-release:
+    name: Documentation release
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: docs
+          ruby-version: '2.6'
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: 
+            echo "tag=v0.100.0" >> $GITHUB_OUTPUT
+
+      - name: Build release
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
+
+      - name: Push generated to docs repository
+        uses: nkoppel/push-files-to-another-repository@1.1.0
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+        with:
+          source-files: 'docs/_site/'
+          destination-username: 'docs-saction'
+          destination-repository: 'treeverse/docs-lakeFS'
+          destination-directory: '/'
+          commit-email: 'support@treeverse.io'
+
