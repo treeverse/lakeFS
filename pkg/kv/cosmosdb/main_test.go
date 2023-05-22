@@ -36,6 +36,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("creating client using access key: %v", err)
 	}
+
+	log.Printf("Creating database %s", testParams.Database)
+
 	ctx := context.Background()
 	resp, err := client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: testParams.Database}, nil)
 	if err != nil {
@@ -47,6 +50,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("creating database client: %v", err)
 	}
+	log.Printf("Creating container %s", testParams.Container)
 	resp2, err := databaseClient.CreateContainer(ctx, azcosmos.ContainerProperties{
 		ID: testParams.Container,
 		PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
