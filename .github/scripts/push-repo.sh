@@ -2,20 +2,14 @@
 set -e
 set -u
 
-if [ -n "${SSH_DEPLOY_KEY:=}" ]
-then
-    echo "[+] Using SSH_DEPLOY_KEY"
-    mkdir --parents "$HOME/.ssh"
-    DEPLOY_KEY_FILE="$HOME/.ssh/deploy_key"
-    echo "${SSH_DEPLOY_KEY}" > "$DEPLOY_KEY_FILE"
-    chmod 600 "$DEPLOY_KEY_FILE"
-    SSH_KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
-    ssh-keyscan -H "github.com" > "$SSH_KNOWN_HOSTS_FILE"
-    export GIT_SSH_COMMAND="ssh -i "$DEPLOY_KEY_FILE" -o UserKnownHostsFile=$SSH_KNOWN_HOSTS_FILE"
-else
-    echo "::error::SSH_DEPLOY_KEY is empty. Please fill one!"
-    exit 1
-fi
+echo "[+] Using SSH_DEPLOY_KEY"
+mkdir --parents "$HOME/.ssh"
+DEPLOY_KEY_FILE="$HOME/.ssh/deploy_key"
+echo "${SSH_DEPLOY_KEY}" > "$DEPLOY_KEY_FILE"
+chmod 600 "$DEPLOY_KEY_FILE"
+SSH_KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
+ssh-keyscan -H "github.com" > "$SSH_KNOWN_HOSTS_FILE"
+export GIT_SSH_COMMAND="ssh -i "$DEPLOY_KEY_FILE" -o UserKnownHostsFile=$SSH_KNOWN_HOSTS_FILE"
 
 git lfs install
 git config --global user.email "$USER_EMAIL"
@@ -24,12 +18,7 @@ git config --global user.name "$USER_NAME"
 git config --global http.version HTTP/1.1
 
 CLONE_DIR=$(mktemp -d)
-git clone --single-branch --depth 1 --branch "$TARGET_BRANCH" "$GIT_CMD_REPOSITORY" "$CLONE_DIR"
-
-# $TARGET_DIRECTORY is '' by default
-ABSOLUTE_TARGET_DIRECTORY="$CLONE_DIR/$TARGET_DIRECTORY/"
-echo "[+] Creating (now empty) $ABSOLUTE_TARGET_DIRECTORY"
-mkdir -p "$ABSOLUTE_TARGET_DIRECTORY"
+git clone --single-branch --depth 1 --branch main "$GIT_CMD_REPOSITORY" "$CLONE_DIR"
 
 echo "[+] Checking if local $SOURCE_DIRECTORY exist"
 if [ ! -d "$SOURCE_DIRECTORY" ]; then
@@ -41,7 +30,7 @@ echo "[+] Copying contents of source repository folder $SOURCE_DIRECTORY to fold
 cp -ra "$SOURCE_DIRECTORY"/. "$CLONE_DIR/$TARGET_DIRECTORY"
 cd "$CLONE_DIR"
 
-ORIGIN_COMMIT="https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+ORIGIN_COMMIT="https://github.comt/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
 COMMIT_MESSAGE="Update from ${ORIGIN_COMMIT}"
 
 echo "[+] Set directory is safe ($CLONE_DIR)"
@@ -56,5 +45,5 @@ git diff-index --quiet HEAD || git commit --message "$COMMIT_MESSAGE"
 
 echo "[+] Pushing git commit"
 # --set-upstream: sets de branch when pushing to a branch that does not exist
-git push "$GIT_CMD_REPOSITORY" --set-upstream "$TARGET_BRANCH"
+git push "$GIT_CMD_REPOSITORY" --set-upstream main
 
