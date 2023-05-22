@@ -3,7 +3,6 @@ package testutil
 import (
 	"fmt"
 	"github.com/ory/dockertest/v3"
-	dc "github.com/ory/dockertest/v3/docker"
 	"log"
 	"net/http"
 	"net/url"
@@ -11,9 +10,9 @@ import (
 
 const (
 	CosmosDBLocalPort = "8081"
-
-	cosmosdbLocalURI = "http://localhost:8081"
 )
+
+var cosmosdbLocalURI string
 
 func GetCosmosDBInstance() (string, func(), error) {
 	dockerPool, err := dockertest.NewPool("")
@@ -22,14 +21,9 @@ func GetCosmosDBInstance() (string, func(), error) {
 	}
 
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
-		Repository:   "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
-		Tag:          "latest",
-		Env:          []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10", "AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true"},
-		ExposedPorts: []string{CosmosDBLocalPort},
-		Auth:         dc.AuthConfiguration{},
-		PortBindings: map[dc.Port][]dc.PortBinding{
-			"8081/tcp": {{HostPort: CosmosDBLocalPort}},
-		},
+		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
+		Tag:        "latest",
+		Env:        []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10", "AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true"},
 	}
 
 	resource, err := dockerPool.RunWithOptions(cosmosdbDockerRunOptions)
@@ -37,6 +31,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("could not start cosmosdb emulator: %w", err)
 	}
 
+	cosmosdbLocalURI = "http://localhost:" + resource.GetPort("8081/tcp")
 	// set cleanup
 	closer := func() {
 		err = dockerPool.Purge(resource)
