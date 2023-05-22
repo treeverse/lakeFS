@@ -38,8 +38,6 @@ jobs:
           #destination-repository-name: docs-test
           #user-email: support@treeverse.io
 
-      - name: Push a file to another repository
-        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
       - name: Push generated docs to lakeFS-docs
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_LAKEFS_DOCS_DEPLOY_KEY }}
