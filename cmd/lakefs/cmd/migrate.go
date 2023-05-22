@@ -109,7 +109,7 @@ func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) erro
 			return err
 		}
 		switch {
-		case version < kv.ACLNoReposMigrateVersion:
+		case version < kv.ACLNoReposMigrateVersion || version >= kv.NextSchemaVersion:
 			return fmt.Errorf("wrong starting version %d: %w", version, kv.ErrMigrationVersion)
 
 		case version < kv.ACLImportMigrateVersion:
