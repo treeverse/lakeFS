@@ -439,7 +439,15 @@ object GarbageCollector {
     }
 
     val commitsDF = gc.getCommitsDF(gcCommitsLocation)
-    writeReports(shouldSweep, storageNSForHadoopFS, gcRules, runID, markID, commitsDF, removed, configMapper)
+    writeReports(shouldSweep,
+                 storageNSForHadoopFS,
+                 gcRules,
+                 runID,
+                 markID,
+                 commitsDF,
+                 removed,
+                 configMapper
+                )
     spark.close()
   }
 
@@ -666,7 +674,7 @@ object GarbageCollector {
 
     val removedCount = removed.count()
     println(s"Total objects to delete (some may already have been deleted): $removedCount")
-    if(isSweep) {
+    if (isSweep) {
       logRunID(storageNSForHadoopFS, runID, configMapper)
     }
     writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
