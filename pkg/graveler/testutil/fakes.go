@@ -323,7 +323,7 @@ func (m *RefsFake) GetRepository(_ context.Context, repositoryID graveler.Reposi
 	}, nil
 }
 
-func (m *RefsFake) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
+func (m *RefsFake) CreateRepository(_ context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	return &graveler.RepositoryRecord{
 		RepositoryID: repositoryID,
 		Repository:   &repository,
@@ -433,11 +433,15 @@ func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord
 	return m.addressTokenIter, nil
 }
 
-func (m *RefsFake) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
+func (m *RefsFake) IsLinkAddressExpired(*graveler.LinkAddressData) (bool, error) {
 	return false, nil
 }
 
-func (m *RefsFake) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
+func (m *RefsFake) DeleteExpiredLinkAddresses(context.Context, *graveler.RepositoryRecord) error {
+	return nil
+}
+
+func (m *RefsFake) DeleteExpiredImports(context.Context, *graveler.RepositoryRecord) error {
 	return nil
 }
 
@@ -874,40 +878,3 @@ func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ *graveler.R
 	}
 	return false, nil
 }
-
-type FakeAddressTokenIterator struct {
-	Data  []*graveler.LinkAddressData
-	Index int
-}
-
-func NewFakeAddressTokenIterator(data []*graveler.LinkAddressData) *FakeAddressTokenIterator {
-	return &FakeAddressTokenIterator{Data: data, Index: -1}
-}
-
-func (m *FakeAddressTokenIterator) Next() bool {
-	if m.Index >= len(m.Data) {
-		return false
-	}
-	m.Index++
-	return m.Index < len(m.Data)
-}
-
-func (m *FakeAddressTokenIterator) SeekGE(address string) {
-	m.Index = len(m.Data)
-	for i, item := range m.Data {
-		if item.Address >= address {
-			m.Index = i - 1
-			return
-		}
-	}
-}
-
-func (m *FakeAddressTokenIterator) Value() *graveler.LinkAddressData {
-	return m.Data[m.Index]
-}
-
-func (m *FakeAddressTokenIterator) Err() error {
-	return nil
-}
-
-func (m *FakeAddressTokenIterator) Close() {}

@@ -1274,6 +1274,47 @@ components:
       required:
         - pattern
 
+    ImportLocation:
+      type: object
+      required:
+        - type
+        - path
+        - destination
+      properties:
+        type:
+          type: string
+          enum: [ common_prefix, object ]
+          description: Path type, can either be 'common_prefix' or 'object'
+        path:
+          type: string
+          description: A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+        destination:
+          type: string
+          description: Destination for the imported objects on the branch 
+          example: collections/
+
+    ImportCreation:
+      type: object
+      required:
+        - paths
+        - commit
+      properties:
+        paths:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportLocation"
+        commit:
+          $ref: "#/components/schemas/CommitCreation"
+      example:
+        paths:
+          - path: s3://my-bucket/production/collections/
+            destination: collections/
+            type: common_prefix
+          - path: s3://my-bucket/production/collections/file1
+            destination: collections/file1
+            type: object
+
     StageRangeCreation:
       type: object
       required:
@@ -1335,6 +1376,39 @@ components:
           $ref: "#/components/schemas/RangeMetadata"
         pagination:
           $ref: "#/components/schemas/ImportPagination"
+
+    ImportStatusResp:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        ingested_objects:
+          description: Number of objects processed so far
+          type: integer
+          format: int64
+        import_branch:
+          type: string
+        metarange_id:
+          type: string
+        commit:
+          $ref: "#/components/schemas/Commit"
+        error:
+          $ref: "#/components/schemas/Error"
+      required:
+        - update_time
+        - completed
+    
+    ImportCreationResponse:
+      type: object
+      properties:
+        id:
+          description: The id of the import process
+          type: string
+      required: 
+        - id
 
     MetaRangeCreation:
       type: object
@@ -3378,6 +3452,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/import:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - import
+      operationId: importStatus
+      summary: get import status
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the import process
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: import status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportStatusResp"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - import
+      operationId: importStart
+      summary: import data from object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportCreation"
+      responses:
+        202:
+          description: Import started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportCreationResponse"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - import
+      operationId: importCancel
+      summary: cancel ongoing import
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the import process
+          schema:
+            type: string
+          required: true
+      responses:
+        204:
+          description: import canceled successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         default:
           $ref: "#/components/responses/ServerError"
 

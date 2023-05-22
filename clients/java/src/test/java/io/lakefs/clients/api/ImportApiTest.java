@@ -15,6 +15,9 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ImportCreation;
+import io.lakefs.clients.api.model.ImportCreationResponse;
+import io.lakefs.clients.api.model.ImportStatusResp;
 import io.lakefs.clients.api.model.IngestRangeCreationResponse;
 import io.lakefs.clients.api.model.MetaRangeCreation;
 import io.lakefs.clients.api.model.MetaRangeCreationResponse;
@@ -49,6 +52,57 @@ public class ImportApiTest {
         String repository = null;
         MetaRangeCreation metaRangeCreation = null;
                 MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
+        // TODO: test validations
+    }
+    
+    /**
+     * cancel ongoing import
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importCancelTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String id = null;
+                api.importCancel(repository, branch, id);
+        // TODO: test validations
+    }
+    
+    /**
+     * import data from object store
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importStartTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        ImportCreation importCreation = null;
+                ImportCreationResponse response = api.importStart(repository, branch, importCreation);
+        // TODO: test validations
+    }
+    
+    /**
+     * get import status
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void importStatusTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String id = null;
+                ImportStatusResp response = api.importStatus(repository, branch, id);
         // TODO: test validations
     }
     

@@ -146,6 +146,9 @@ type Interface interface {
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error)
+	Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error)
+	GetImportStatus(ctx context.Context, repositoryID, importID string) (*graveler.ImportStatus, error)
+	CancelImport(ctx context.Context, repositoryID, importID string) error
 	WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error)
 	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
 	UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error

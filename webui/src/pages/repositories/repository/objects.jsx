@@ -21,7 +21,7 @@ import Alert from "react-bootstrap/Alert";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects, refs, staging, retention, repositories, NotFoundError} from "../../../lib/api";
+import {config, objects, refs, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -32,7 +32,7 @@ import {
     ImportForm,
     ImportPhase,
     ImportProgress,
-    runImport
+    startImport
 } from "../services/import_data";
 import {Box} from "@mui/material";
 import {RepoError} from "./error";
@@ -61,16 +61,59 @@ const ImportButton = ({variant = "success", onClick, config }) => {
     )
 }
 
+export const useInterval = (callback, delay) => {
+    const savedCallback = useRef();
+
+    useEffect(() => {
+        savedCallback.current = callback;
+    }, [callback]);
+
+    useEffect(() => {
+        function tick() {
+            savedCallback.current();
+        }
+        if (delay !== null) {
+            const id = setInterval(tick, delay);
+            return () => clearInterval(id);
+        }
+    }, [delay]);
+}
+
 const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false}) => {
     const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
     const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [importError, setImportError] = useState(null);
     const [metadataFields, setMetadataFields] = useState([])
+    const [importID, setImportID] = useState("")
 
     const sourceRef = useRef(null);
     const destRef = useRef(null);
     const commitMsgRef = useRef(null);
+
+    useInterval(() => {
+        if (importID !== "" && importPhase === ImportPhase.InProgress) {
+            const getState = async () => {
+                try {
+                    const importState = await imports.get(repoId, referenceId, importID);
+                    setNumberOfImportedObjects(importState.ingested_objects);
+                    if (importState.error) {
+                        throw importState.error;
+                    }
+                    if (importState.completed) {
+                        setImportPhase(ImportPhase.Completed);
+                        onDone();
+                    }
+                } catch (error) {
+                    setImportPhase(ImportPhase.Failed);
+                    setImportError(error);
+                    setIsImportEnabled(false);
+                }
+            };
+            getState()
+        }
+    }, 3000);
+    
     let currBranch = referenceId;
     currBranch = currBranch.match(/^_(.*)_imported$/)?.[1] || currBranch; // trim "_imported" suffix if used as import source
     let importBranch = `_${currBranch}_imported`;
@@ -83,6 +126,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         setIsImportEnabled(false);
         setNumberOfImportedObjects(0);
         setMetadataFields([]);
+        setImportID("");
     }
 
     const hide = () => {
@@ -105,15 +149,12 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
 
     const doImport = async () => {
         setImportPhase(ImportPhase.InProgress);
-        const updateStateFromImport = ({importPhase, numObj}) => {
-            setImportPhase(importPhase);
-            setNumberOfImportedObjects(numObj);
-        }
         try {
             const metadata = {};
             metadataFields.forEach(pair => metadata[pair.key] = pair.value)
-            await runImport(
-                updateStateFromImport,
+            setImportPhase(ImportPhase.InProgress)
+            await startImport(
+                setImportID,
                 destRef.current.value,
                 commitMsgRef.current.value,
                 sourceRef.current.value,
@@ -122,7 +163,6 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 referenceId,
                 metadata
             );
-            onDone();
         } catch (error) {
             setImportPhase(ImportPhase.Failed);
             setImportError(error);
@@ -169,7 +209,12 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     }
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" disabled={importPhase === ImportPhase.InProgress} onClick={hide}>
+                    <Button variant="secondary" onClick={ async () => {
+                        if (importPhase === ImportPhase.InProgress && importID.length > 0) {
+                            await imports.delete(repoId, importBranch, importID);
+                        }
+                        hide();
+                    }}>
                         Cancel
                     </Button>
 

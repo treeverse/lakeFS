@@ -7,7 +7,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/migrations"
 )
 
 // migrateCmd represents the migrate command
@@ -41,15 +43,20 @@ var versionCmd = &cobra.Command{
 
 func mustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
 	version, err := kv.ValidateSchemaVersion(ctx, kvStore)
-	if errors.Is(err, kv.ErrNotFound) {
-		fmt.Fprintf(os.Stderr, "No version information - KV not initialized.\n")
-		os.Exit(1)
-	}
-	if err != nil {
+	switch {
+	case err == nil:
+		return version
+	case errors.Is(err, kv.ErrNotFound):
+		_, _ = fmt.Fprintf(os.Stderr, "No version information - KV not initialized.\n")
+	case errors.Is(err, kv.ErrMigrationVersion),
+		errors.Is(err, kv.ErrMigrationRequired):
+		_, _ = fmt.Fprintf(os.Stderr, "Schema version: %d. %s\n", version, err)
+	case err != nil:
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to get schema version: %s\n", err)
-		os.Exit(1)
 	}
-	return version
+
+	os.Exit(1)
+	return -1
 }
 
 var upCmd = &cobra.Command{
@@ -70,9 +77,57 @@ var upCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		_ = mustValidateSchemaVersion(ctx, kvStore)
-		fmt.Printf("No migrations to apply.\n")
+		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
+		switch {
+		case err == nil:
+			fmt.Printf("No migrations to apply.\n")
+		case errors.Is(err, kv.ErrMigrationVersion):
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		case errors.Is(err, kv.ErrMigrationRequired):
+			err = doMigration(ctx, kvStore, cfg)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Migration failed: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Migration completed successfully.\n")
+		default:
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to get KV version: %s\n", err)
+			os.Exit(1)
+		}
 	},
+}
+
+func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) error {
+	var (
+		version int
+		err     error
+	)
+	for !kv.IsLatestSchemaVersion(version) {
+		version, err = kv.GetDBSchemaVersion(ctx, kvStore)
+		if err != nil {
+			return err
+		}
+		switch {
+		case version < kv.ACLNoReposMigrateVersion || version >= kv.NextSchemaVersion:
+			return fmt.Errorf("wrong starting version %d: %w", version, kv.ErrMigrationVersion)
+
+		case version < kv.ACLImportMigrateVersion:
+			// skip migrate to ACL for users with External authorizations
+			if !cfg.IsAuthUISimplified() {
+				fmt.Println("skipping ACL migration - external Authorization")
+				err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
+				if err != nil {
+					return fmt.Errorf("failed to upgrade version, to fix this re-run migration: %w", err)
+				}
+			} else {
+				if err = migrations.MigrateImportPermissions(ctx, kvStore); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 var gotoCmd = &cobra.Command{
