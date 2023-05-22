@@ -3,10 +3,8 @@ package testutil
 import (
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/ory/dockertest/v3"
@@ -25,20 +23,12 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
 	}
 
-	ips, err := net.LookupIP("host.docker.internal")
-	if err != nil || len(ips) == 0 {
-		fmt.Fprintf(os.Stderr, "Could not get IPs: %v\n", err)
-		os.Exit(1)
-	}
-	log.Printf("host.docker.internal resolves to %v", ips)
-
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
 		Tag:        "latest",
 		Env: []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10",
 			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true",
-			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=" + ips[0].String(),
-		},
+			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1"},
 		PortBindings: map[docker.Port][]docker.PortBinding{
 			"8081/tcp": {{HostPort: CosmosDBLocalPort}},
 		},
