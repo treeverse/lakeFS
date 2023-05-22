@@ -2,7 +2,10 @@ package cosmosdb_test
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
@@ -32,7 +35,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating key: %v", err)
 	}
 	// Create a CosmosDB client
-	client, err := azcosmos.NewClientWithKey(testParams.Endpoint, cred, nil)
+	client, err := azcosmos.NewClientWithKey(testParams.Endpoint, cred, &azcosmos.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Transport: &http.Client{Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}},
+		},
+	})
 	if err != nil {
 		log.Fatalf("creating client using access key: %v", err)
 	}
