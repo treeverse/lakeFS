@@ -9,7 +9,5 @@ import (
 )
 
 func TestCosmosDB(t *testing.T) {
-	kvtest.DriverTest(t, cosmosdb.DriverName, kvparams.Config{
-		CosmosDB: testParams,
-	})
+	kvtest.DriverTest(t, cosmosdb.DriverName, kvparams.Config{CosmosDB: testParams})
 }
