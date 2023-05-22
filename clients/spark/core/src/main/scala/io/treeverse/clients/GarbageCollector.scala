@@ -411,12 +411,11 @@ object GarbageCollector {
     val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
     val removed = {
       if (shouldSweep) {
-        // If a mark didn't happen in this run, gcAddressesLocation will be empty and expiredAddresses will be null.
-        if (gcAddressesLocation.isEmpty) {
-          gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
-        }
-        if (expiredAddresses == null) {
-          expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
+        // If a mark didn't happen in this run, gcAddressesLocation, runID, and expiredAddresses will be empty.
+        if(!shouldMark) {
+            gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
+            expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
+            runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
         }
 
         val removed = remove(
@@ -641,6 +640,14 @@ object GarbageCollector {
     spark.read
       .parquet(s"$addressesLocation/$MARK_ID_KEY=$markID")
       .withColumn(MARK_ID_KEY, lit(markID))
+  }
+
+  private def readRunIDFromMarkIDMetadata(addressesLocation: String, markID: String): String = {
+    spark.read
+      .json(s"$addressesLocation/$markID.meta")
+      .select("run_id")
+      .first()
+      .getString(0)
   }
 
   private def writeReports(
