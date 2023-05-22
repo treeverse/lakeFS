@@ -9,6 +9,7 @@ type Config struct {
 	Postgres *Postgres
 	DynamoDB *DynamoDB
 	Local    *Local
+	CosmosDB *CosmosDB
 }
 
 type Local struct {
@@ -54,4 +55,12 @@ type DynamoDB struct {
 	AwsAccessKeyID      string
 	AwsSecretAccessKey  string
 	HealthCheckInterval time.Duration
+}
+
+type CosmosDB struct {
+	ReadWriteKey string
+	Endpoint     string
+	Database     string
+	Container    string
+	TLSEnabled   bool
 }
