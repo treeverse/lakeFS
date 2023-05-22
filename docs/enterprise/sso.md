@@ -49,55 +49,49 @@ openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -da
 
 lakeFS Server Configuration (Update in helm's `values.yaml` file):
 ```yaml
-lakefsConfig: |
-  # Important: make sure to include the rest of your lakeFS Configuration here!
-
-  auth:
-    cookie_auth_verification:
-      auth_source: saml
-      friendly_name_claim_name: displayName
-      external_user_id_claim_name: samName
-      default_initial_groups:
-        - "Developers"
-    logout_redirect_url: "https://lakefs.company.com/logout-saml"
-    encrypt:
-      secret_key: shared-secrey-key
-    ui_config:
-      login_url: "https://lakefs.company.com/sso/login-saml"
-      logout_url: "https://lakefs.company.com/sso/logout-saml"
-      login_cookie_names:
-        - internal_auth_session
-        - saml_auth_session
+auth:
+  cookie_auth_verification:
+    auth_source: saml
+    friendly_name_claim_name: displayName
+    external_user_id_claim_name: samName
+    default_initial_groups:
+      - "Developers"
+  logout_redirect_url: "https://lakefs.company.com/logout-saml"
+  encrypt:
+    secret_key: shared-secrey-key
+  ui_config:
+    login_url: "https://lakefs.company.com/sso/login-saml"
+    logout_url: "https://lakefs.company.com/sso/logout-saml"
+    login_cookie_names:
+      - internal_auth_session
+      - saml_auth_session
 ```
 
 Fluffy Configuration (Update in helm's `values.yaml` file):
 ```yaml
-fluffyConfig: |
-  logging:
-    format: "json"
-    level: "INFO"
-    audit_log_level: "INFO"
-    output: "="
-  installation:
-    fixed_id: fluffy-authenticator
-  auth:  
-    # better set from secret FLUFFY_AUTH_ENCRYPT_SECRET_KEY must be equal to what is used in lakeFS for auth_encrypt_secret_key
-    encrypt:
-      secret_key: shared-secrey-key    
-    logout_redirect_url: https://lakefs.company.com
-    post_login_redirect_url: https://lakefs.company.com
-    saml:
-      enabled: true 
-      sp_root_url: https://lakefs.company.com
-      sp_x509_key_path: '/etc/saml_certs/rsa_saml_private.cert'
-      sp_x509_cert_path: '/etc/saml_certs/rsa_saml_public.pem'
-      sp_sign_request: true
-      sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-      idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
-      # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
-      external_user_id_claim_name: samName
-      # idp_metadata_file_path: 
-      # idp_skip_verify_tls_cert: true
+logging:
+  format: "json"
+  level: "INFO"
+  audit_log_level: "INFO"
+  output: "="
+auth:  
+  encrypt:
+    # in Helm set via kind Secret
+    secret_key: shared-secrey-key    
+  logout_redirect_url: https://lakefs.company.com
+  post_login_redirect_url: https://lakefs.company.com
+  saml:
+    enabled: true 
+    sp_root_url: https://lakefs.company.com
+    sp_x509_key_path: '/etc/saml_certs/rsa_saml_private.cert'
+    sp_x509_cert_path: '/etc/saml_certs/rsa_saml_public.pem'
+    sp_sign_request: true
+    sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+    idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
+    # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+    external_user_id_claim_name: samName
+    # idp_metadata_file_path: 
+    # idp_skip_verify_tls_cert: true
 ```
   </div>
   <div markdown="1" id="oidc">
@@ -115,51 +109,48 @@ In order for Fluffy to work, the following values must be configured. Update (or
 
 lakeFS Server Configuration (Update in helm's `values.yaml` file):
 ```yaml
-lakefsConfig: |
   # Important: make sure to include the rest of your lakeFS Configuration here!
-
-  auth:
-    encrypt:
-      secret_key: shared-secrey-key
-    oidc:
-      friendly_name_claim_name: "name"
-      default_initial_groups: ["Developers"]
-    ui_config:
-      login_url: /oidc/login
-      logout_url: /oidc/logout
-      login_cookie_names:
-        - internal_auth_session
-        - oidc_auth_session
+auth:
+  encrypt:
+    secret_key: shared-secrey-key
+  oidc:
+    friendly_name_claim_name: "name"
+    default_initial_groups: ["Developers"]
+  ui_config:
+    login_url: /oidc/login
+    logout_url: /oidc/logout
+    login_cookie_names:
+      - internal_auth_session
+      - oidc_auth_session
 ```
 
 Fluffy Configuration (Update in helm's `values.yaml` file):
 ```yaml
-fluffyConfig: |
-  logging:
-    format: "json"
-    level: "INFO"
-    audit_log_level: "INFO"
-    output: "="
-  installation:
-    fixed_id: fluffy-authenticator
-  auth:
-    post_login_redirect_url: /
-    logout_redirect_url: https://oidc-provider-url.com/logout/url
-    oidc:
-      enabled: true
-      url: https://oidc-provider-url.com/
-      client_id: <oidc-client-id>
-      # in production better set values.yaml instead fluffy.sso.oidc.client_secret
-      client_secret: <oidc-client-secret>
-      callback_base_url: https://lakefs.company.com
-      is_default_login: true
-      logout_client_id_query_parameter: client_id
-      logout_endpoint_query_parameters:
-        - returnTo 
-        - https://lakefs.company.com/oidc/login
-    # better set from secret FLUFFY_AUTH_ENCRYPT_SECRET_KEY must be equal to what is used in lakeFS for auth_encrypt_secret_key
-    # encrypt:
-    #   secret_key: shared-secrey-key
+logging:
+  format: "json"
+  level: "INFO"
+  audit_log_level: "INFO"
+  output: "="
+installation:
+  fixed_id: fluffy-authenticator
+auth:
+  post_login_redirect_url: /
+  logout_redirect_url: https://oidc-provider-url.com/logout/url
+  oidc:
+    enabled: true
+    url: https://oidc-provider-url.com/
+    client_id: <oidc-client-id>
+    # in Helm set via kind Secret
+    client_secret: <oidc-client-secret>
+    callback_base_url: https://lakefs.company.com
+    is_default_login: true
+    logout_client_id_query_parameter: client_id
+    logout_endpoint_query_parameters:
+      - returnTo 
+      - https://lakefs.company.com/oidc/login
+  # in Helm set via kind Secret
+  # encrypt:
+  #   secret_key: shared-secrey-key
 ```
   </div>
   <div markdown="1" id="ldap">
@@ -173,116 +164,53 @@ In order for Fluffy to work, the following values must be configured. Update (or
 
 lakeFS Server Configuration (Update in helm's `values.yaml` file):
 ```yaml
-lakefsConfig: |
-  # Important: make sure to include the rest of your lakeFS Configuration here!
+# Important: make sure to include the rest of your lakeFS Configuration here!
 
-  auth:
-    remote_authenticator:
-      enabled: true
-      endpoint: https://lakefs.company.com/api/v1/ldap/login
-      default_user_group: "Developers"
-    ui_config:
-      logout_url: /logout
-      login_cookie_names:
-        - internal_auth_session
+auth:
+  remote_authenticator:
+    enabled: true
+    endpoint: https://lakefs.company.com/api/v1/ldap/login
+    default_user_group: "Developers"
+  ui_config:
+    logout_url: /logout
+    login_cookie_names:
+      - internal_auth_session
 ```
 
 Fluffy Configuration (Update in helm's `values.yaml` file):
 ```yaml
-fluffyConfig: |
-  logging:
-    format: "json"
-    level: "INFO"
-    audit_log_level: "INFO"
-    output: "="
-  installation:
-    fixed_id: fluffy-authenticator
-  auth:
-    post_login_redirect_url: /
-    ldap: 
-      server_endpoint: 'ldaps://ldap.company.com:636'
-      bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
-      bind_password: '<ldap pwd>'
-      username_attribute: uid
-      user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
-      user_filter: (objectClass=inetOrgPerson)
-      connection_timeout_seconds: 15
-      request_timeout_seconds: 7
+logging:
+  format: "json"
+  level: "INFO"
+  audit_log_level: "INFO"
+  output: "="
+installation:
+  fixed_id: fluffy-authenticator
+auth:
+  post_login_redirect_url: /
+  ldap: 
+    server_endpoint: 'ldaps://ldap.company.com:636'
+    bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
+    bind_password: '<ldap pwd>'
+    username_attribute: uid
+    user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
+    user_filter: (objectClass=inetOrgPerson)
+    connection_timeout_seconds: 15
+    request_timeout_seconds: 7
 ```
   </div>
 </div>
 
 ## Helm
 
-In order to use lakeFS Enterprise and Fluffy, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
 Notes:
-* In this example we use RBAC for enterprise `values.rbac.enabled=true`.
-* `secrets.authEncryptSecretKey` is shared between fluffy & lakeFS and must be equal 
+* Check the [examples](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (`oidc`/`adfs`/`ldap` + `rbac`).
+* The examples are provisioned with a Postgres pod for quick-start, make sure to replace that to a stable database once ready.
+* `secrets.authEncryptSecretKey` is shared between fluffy & lakeFS for authentication.
 * lakeFS `image.tag` must be >= 0.100.0
 * fluffy `image.tag` must be >= 0.2.0
 * Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
 * Update the `ingress` configuration with other optional fields if used
-* Fluffy docker image: replace the `fluffy.image.secretToken` with real token to dockerhub for the fluffy docker image.
-
-```yaml
-{% raw %}###############################################
-
-###############################################
-########## Example OIDC Configuration #########
-###############################################
-
-
-lakefsConfig: | 
-  ...
-ingress:
-  enabled: true
-  ingressClassName: 'example-nginx'
-  hosts:
-    - host: lakefs.company.com
-      paths: 
-       - /
-
-##################################################
-########### lakeFS enterprise - FLUFFY ###########
-##################################################
-
-fluffy:
-  enabled: true
-  image:
-    repository: treeverse/fluffy
-    tag: '0.2.0'
-    pullPolicy: IfNotPresent
-    privateRegistry:
-      enabled: true
-      secretToken: <token provided for lakeFS enterprise installations>
-  fluffyConfig: |
-    ...
-  secrets:
-    create: true
-    authEncryptSecretKey: 'secret'
-  sso:
-    enabled: true
-    oidc:
-      enabled: true
-      client_secret: <oidc-client-secret>
-    saml:
-      enabled: false
-      createSecret: true
-      certificate:
-        saml_rsa_public_cert: |
-          -----BEGIN CERTIFICATE-----
-          -----END CERTIFICATE-----
-        saml_rsa_private_key: |
-          -----BEGIN PRIVATE KEY-----
-          -----END PRIVATE KEY-----
-    ldap:
-      enabled: false
-      bind_password: ''
-  rbac:
-    enabled: true
-
-# postgres pod for testing, when using fluffy local database type is not supported
-useDevPostgres: true
-{% endraw %}
-```
+* Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
