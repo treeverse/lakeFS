@@ -75,9 +75,12 @@ require (
 	github.com/alitto/pond v1.8.2
 	github.com/antonmedv/expr v1.12.5
 	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
+	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/dgraph-io/badger/v3 v3.2103.2
+	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.18.0
+	github.com/go-git/go-git/v5 v5.6.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/google/go-github/v52 v52.0.0
@@ -88,6 +91,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.3.1
+	github.com/mitchellh/go-ps v1.0.0
 	github.com/puzpuzpuz/xsync v1.5.2
 	go.uber.org/ratelimit v0.2.0
 )
@@ -102,6 +106,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v2 v2.3.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230426101702-58e86b294756 // indirect
+	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
@@ -112,9 +117,12 @@ require (
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
+	github.com/go-git/gcfg v1.5.0 // indirect
+	github.com/go-git/go-billy/v5 v5.4.1 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -123,7 +131,9 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
+	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/junk1tm/musttag v0.5.0 // indirect
+	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.4 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
@@ -135,6 +145,7 @@ require (
 	github.com/nunnatsa/ginkgolinter v0.9.0 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
+	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4 // indirect
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
@@ -143,13 +154,16 @@ require (
 	github.com/sanposhiho/wastedassign/v2 v2.0.7 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.23.0 // indirect
+	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sivchari/containedctx v1.0.2 // indirect
 	github.com/sivchari/nosnakecase v1.7.0 // indirect
 	github.com/sivchari/tenv v1.7.1 // indirect
+	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/t-yuki/gocover-cobertura v0.0.0-20180217150009-aaee18c8195c // indirect
 	github.com/timonwong/loggercheck v0.9.4 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.8.1 // indirect
+	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
@@ -157,6 +171,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	gonum.org/v1/gonum v0.9.3 // indirect
+	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
 require (
@@ -169,7 +184,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
-	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/ashanbrown/forbidigo v1.5.1 // indirect

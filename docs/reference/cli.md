@@ -2570,14 +2570,14 @@ commands used to sync and reproduce data from lakeFS locally
 add a local directory to a lakeFS branch under the specified uri
 
 ```
-lakectl local add <directory> <lakefs branch+path uri> [flags]
+lakectl local add <directory> [<remote path>] [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-add path/to/data lakefs://example-repo/main/path/to/data/
+add training_data datasets/training/
 ```
 
 #### Options
@@ -2591,17 +2591,17 @@ add path/to/data lakefs://example-repo/main/path/to/data/
 
 ### lakectl local checkout
 
-sync the target directory with the specified ref
+sync this repository's data  with the specified ref
 
 ```
-lakectl local checkout <target directory> <lakeFS ref> [flags]
+lakectl local checkout <lakeFS ref> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-checkout path/to/data lakefs://example-repo/experiment-1
+checkout my-branch
 ```
 
 #### Options
@@ -2609,24 +2609,24 @@ checkout path/to/data lakefs://example-repo/experiment-1
 
 ```
   -h, --help              help for checkout
-  -p, --parallelism int   maximum objects to download in parallel (default 20)
+  -p, --parallelism int   maximum objects to download in parallel (default 25)
 ```
 
 
 
 ### lakectl local clone
 
-clone a lakeFS directory locally (committed only)
+clone a lakeFS directory locally (committed data only)
 
 ```
-lakectl local clone <lakeFS branch/path uri> [<target directory>] [flags]
+lakectl local clone <remote path> [<target directory>] [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-clone lakefs://example-repo/main/path/to/data/
+clone datasets/my/dataset/ my_input/
 ```
 
 #### Options
@@ -2634,7 +2634,7 @@ clone lakefs://example-repo/main/path/to/data/
 
 ```
   -h, --help              help for clone
-  -p, --parallelism int   maximum objects to download in parallel (default 20)
+  -p, --parallelism int   maximum objects to download in parallel (default 25)
 ```
 
 
@@ -2644,18 +2644,17 @@ clone lakefs://example-repo/main/path/to/data/
 upload & commit changes to data files to the remote lakeFS repository
 
 ```
-lakectl local commit <target directory> [flags]
+lakectl local commit [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-      --allow-dirty       allow committing while the Git repository has uncommitted changes. Enabling this might hurt reproducibility.
   -h, --help              help for commit
   -m, --message string    commit message to use for the resulting lakeFS commit
       --meta strings      key value pair in the form of key=value
-  -p, --parallelism int   maximum objects to download in parallel (default 20)
+  -p, --parallelism int   maximum objects to upload in parallel (default 25)
 ```
 
 
@@ -2683,39 +2682,46 @@ lakectl local help [command] [flags]
 
 
 
+### lakectl local init
+
+initialize the current Git repository to track the remote lakeFS repository
+
+```
+lakectl local init <lakeFS ref> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+init lakefs://example-repo/main
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for init
+```
+
+
+
 ### lakectl local pull
 
 pull data files from lakeFS as described in data.yaml
 
 ```
-lakectl local pull [<target directory>] [flags]
+lakectl local pull [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
+  -f, --force             force pull data from the remote. Will overwrite any local changes.
   -h, --help              help for pull
-  -p, --parallelism int   maximum objects to download in parallel (default 20)
+  -p, --parallelism int   maximum objects to download in parallel (default 25)
   -u, --update            pull the latest data available on the remote (and update data.yaml)
-```
-
-
-
-### lakectl local reset
-
-overwrite local data files with files from lakeFS as described in data.yaml
-
-```
-lakectl local reset [<target directory>] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help              help for reset
-  -p, --parallelism int   maximum objects to download in parallel (default 20)
 ```
 
 
