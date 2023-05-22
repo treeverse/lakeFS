@@ -48,17 +48,12 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 
 		// hook for using emulator for testing
-		httpClient := &http.Client{}
-		if !params.TLSEnabled {
-			httpClient.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-		}
-
 		// Create a CosmosDB client
 		client, err = azcosmos.NewClientWithKey(params.Endpoint, cred, &azcosmos.ClientOptions{
 			ClientOptions: azcore.ClientOptions{
-				Transport: httpClient,
+				Transport: &http.Client{Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: !params.TLSEnabled},
+				}},
 			},
 		})
 		if err != nil {

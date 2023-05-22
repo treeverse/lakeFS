@@ -78,7 +78,6 @@ func GetCosmosDBInstance() (string, func(), error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("could not connect to cosmosdb emulator at %s: %w", cosmosdbLocalURI, err)
 	}
-
 	log.Printf("cosmosdb emulator is ready at %s", cosmosdbLocalURI)
 
 	// return DB URI
