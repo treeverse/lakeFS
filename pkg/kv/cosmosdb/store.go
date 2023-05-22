@@ -11,7 +11,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -51,7 +50,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		httpClient := &http.Client{}
 		if !params.TLSEnabled {
 			httpClient.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 			}
 		}
 
