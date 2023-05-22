@@ -2,10 +2,12 @@ package testutil
 
 import (
 	"fmt"
-	"github.com/ory/dockertest/v3"
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 )
 
 const (
@@ -24,6 +26,10 @@ func GetCosmosDBInstance() (string, func(), error) {
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
 		Tag:        "latest",
 		Env:        []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10", "AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true"},
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"8081/tcp": {{HostPort: CosmosDBLocalPort}},
+		},
+		ExposedPorts: []string{CosmosDBLocalPort},
 	}
 
 	resource, err := dockerPool.RunWithOptions(cosmosdbDockerRunOptions)
