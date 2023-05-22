@@ -21,7 +21,7 @@ jobs:
       - name: Extract version
         id: version
         shell: bash
-        run: echo "tag=v0.101.0" >> $GITHUB_OUTPUT
+        run: echo "tag=v0.100.0" >> $GITHUB_OUTPUT
 
       - name: Build release
         working-directory: docs
