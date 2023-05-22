@@ -40,7 +40,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("could not start cosmosdb emulator: %w", err)
 	}
 
-	cosmosdbLocalURI = "http://localhost:" + resource.GetPort("8081/tcp")
+	cosmosdbLocalURI = "https://localhost:" + resource.GetPort("8081/tcp")
 	// set cleanup
 	closer := func() {
 		err = dockerPool.Purge(resource)
