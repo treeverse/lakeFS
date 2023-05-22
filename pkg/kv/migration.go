@@ -17,7 +17,10 @@ type DatabaseMigrator struct {
 	params kvparams.Config
 }
 
-var ErrMigrationRequired = errors.New("wrong kv version")
+var (
+	ErrMigrationVersion  = errors.New("wrong kv version")
+	ErrMigrationRequired = errors.New("migration required")
+)
 
 func NewDatabaseMigrator(params kvparams.Config) *DatabaseMigrator {
 	return &DatabaseMigrator{
@@ -52,9 +55,9 @@ func ValidateSchemaVersion(ctx context.Context, store Store) (int, error) {
 	}
 	switch {
 	case kvVersion < InitialMigrateVersion:
-		return kvVersion, fmt.Errorf("migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration: %w", ErrMigrationRequired)
+		return kvVersion, fmt.Errorf("migration to KV required. Did you migrate using version v0.80.x? https://docs.lakefs.io/reference/upgrade.html#lakefs-0800-or-greater-kv-migration: %w", ErrMigrationVersion)
 	case kvVersion < ACLNoReposMigrateVersion:
-		return kvVersion, fmt.Errorf("migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls: %w", ErrMigrationRequired)
+		return kvVersion, fmt.Errorf("migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls: %w", ErrMigrationVersion)
 	case kvVersion < ACLImportMigrateVersion:
 		return kvVersion, fmt.Errorf("ACL migration required. Please run 'lakefs migrate up': %w", ErrMigrationRequired)
 	}

@@ -72,33 +72,40 @@ var upCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		wasMigrated, err := doMigration(ctx, kvStore, cfg)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Migration failed: %s\n", err)
-			os.Exit(1)
-		}
-		if wasMigrated {
-			fmt.Printf("Migration completed successfully.\n")
-		} else {
+		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
+		switch {
+		case err == nil:
 			fmt.Printf("No migrations to apply.\n")
+		case errors.Is(err, kv.ErrMigrationVersion):
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		case errors.Is(err, kv.ErrMigrationRequired):
+			err = doMigration(ctx, kvStore, cfg)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Migration failed: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Migration completed successfully.\n")
+		default:
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to get KV version: %s\n", err)
+			os.Exit(1)
 		}
 	},
 }
 
-func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) (bool, error) {
+func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) error {
 	var (
-		version     int
-		wasMigrated bool
-		err         error
+		version int
+		err     error
 	)
 	for version < kv.LatestVersion {
-		version, err = kv.ValidateSchemaVersion(ctx, kvStore)
-		if err != nil && !errors.Is(err, kv.ErrMigrationRequired) {
-			return false, err
+		version, err = kv.GetDBSchemaVersion(ctx, kvStore)
+		if err != nil {
+			return err
 		}
 		switch {
 		case version < kv.ACLNoReposMigrateVersion:
-			return false, fmt.Errorf("migration to ACL required. Did you migrate using version v0.99.x? https://docs.lakefs.io/reference/access-control-list.html#migrating-from-the-previous-version-of-acls: %w", kv.ErrMigrationRequired)
+			return fmt.Errorf("wrong starting version %d: %w", version, kv.ErrMigrationVersion)
 
 		case version < kv.ACLImportMigrateVersion:
 			// skip migrate to ACL for users with External authorizations
@@ -106,17 +113,16 @@ func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) (boo
 				fmt.Println("skipping ACL migration - external Authorization")
 				err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
 				if err != nil {
-					return false, fmt.Errorf("failed to upgrade version, to fix this re-run migration: %w", err)
+					return fmt.Errorf("failed to upgrade version, to fix this re-run migration: %w", err)
 				}
 			} else {
 				if err = migrations.MigrateImportPermissions(ctx, kvStore); err != nil {
-					return false, err
+					return err
 				}
 			}
-			wasMigrated = true
 		}
 	}
-	return wasMigrated, nil
+	return nil
 }
 
 var gotoCmd = &cobra.Command{
