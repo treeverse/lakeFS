@@ -416,7 +416,9 @@ object GarbageCollector {
           gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
           runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
-          println(s"Sweep only run: using addresses from location '$gcAddressesLocation' and run ID '$runID'")
+          println(
+            s"Sweep only run: using addresses from location '$gcAddressesLocation' and run ID '$runID'"
+          )
         }
 
         remove(
