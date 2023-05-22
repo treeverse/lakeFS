@@ -206,7 +206,7 @@ auth:
 In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
 Notes:
-* Check the [examples](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (`oidc`/`adfs`/`ldap` + `rbac`).
+* Check the [examples](https://github.com/treeverse/charts/tree/add_enterprise_support/examples/lakefs/enterprise) we provide for each authentication method (`oidc`/`adfs`/`ldap` + `rbac`).
 * The examples are provisioned with a Postgres pod for quick-start, make sure to replace that to a stable database once ready.
 * `secrets.authEncryptSecretKey` is shared between fluffy & lakeFS for authentication.
 * lakeFS `image.tag` must be >= 0.100.0
