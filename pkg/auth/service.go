@@ -356,9 +356,6 @@ func (s *AuthService) ListUserCredentials(ctx context.Context, username string, 
 	if err != nil {
 		return nil, nil, err
 	}
-	sort.Slice(creds, func(i, j int) bool {
-		return creds[i].IssuedDate.After(creds[j].IssuedDate)
-	})
 	return creds, paginator, nil
 }
 

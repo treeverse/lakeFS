@@ -28,7 +28,7 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
             <DataTable
                 keyFn={row => row.access_key_id}
                 emptyState={'No credentials found'}
-                results={results}
+                results={results.sort((a, b) => b.creation_date - a.creation_date)}
                 headers={['Access Key ID', 'Creation Date', '']}
                 rowFn={row => [
                     <>
