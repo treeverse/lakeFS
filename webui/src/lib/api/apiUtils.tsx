@@ -3,7 +3,8 @@ import { branches } from "./index";
 export const findBranchRegexMatch = async (
   repoId: string,
   prefix: string,
-  regex: string | RegExp
+  regex: string | RegExp,
+  resultsPerPage = 100
 ): Promise<string | null> => {
   let hasMore = true;
   let after: string | undefined;
@@ -12,7 +13,7 @@ export const findBranchRegexMatch = async (
       repoId,
       prefix,
       after,
-      100
+      resultsPerPage
     );
     // Once we type the API we can remove the eslint-disable
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -13,6 +13,7 @@ import { findBranchRegexMatch } from "../api/apiUtils";
 const IMPORT_BRANCH_REGEX = /^_(.*)_imported$/;
 const HOOKS_PATH = "_lakefs_actions/";
 const SAMPLE_REPO_OBJECT_PATH = "lakes.parquet";
+const LAKEFS_MAX_PAGE_SIZE = 1000;
 
 export const isSampleRepo = async (
   repo: string,
@@ -87,7 +88,8 @@ export const getRepoOnboardingSteps = (
         const branch = await findBranchRegexMatch(
           currentRepo,
           "_",
-          IMPORT_BRANCH_REGEX
+          IMPORT_BRANCH_REGEX,
+          LAKEFS_MAX_PAGE_SIZE
         );
         if (branch) {
           return true;
