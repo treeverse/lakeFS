@@ -25,9 +25,13 @@ type Metadata struct {
 	Entries        []MetadataEntry `json:"entries"`
 }
 
-func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, authMetadataManager auth.MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+type MetadataManager interface {
+	Write(context.Context) (map[string]string, error)
+}
+
+func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, statsMetadataManager MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
 	res := &Metadata{}
-	authMetadata, err := authMetadataManager.Write(ctx)
+	authMetadata, err := statsMetadataManager.Write(ctx)
 	if err != nil {
 		logger.WithError(err).Debug("failed to collect account metadata")
 	}
