@@ -43,14 +43,19 @@ var versionCmd = &cobra.Command{
 
 func mustValidateSchemaVersion(ctx context.Context, kvStore kv.Store) int {
 	version, err := kv.ValidateSchemaVersion(ctx, kvStore)
-	if errors.Is(err, kv.ErrNotFound) {
+	switch {
+	case errors.Is(err, kv.ErrNotFound):
 		_, _ = fmt.Fprintf(os.Stderr, "No version information - KV not initialized.\n")
 		os.Exit(1)
-	}
-	if err != nil {
+	case errors.Is(err, kv.ErrMigrationVersion),
+		errors.Is(err, kv.ErrMigrationRequired):
+		_, _ = fmt.Fprintf(os.Stderr, "Schema version: %d. %s\n", version, err)
+		os.Exit(1)
+	case err != nil:
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to get schema version: %s\n", err)
 		os.Exit(1)
 	}
+
 	return version
 }
 
