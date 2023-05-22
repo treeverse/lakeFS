@@ -27,15 +27,14 @@ jobs:
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
 
-      #- name: Push generated docs to lakeFS-docs repository
-        #uses: cpina/github-action-push-to-another-repository@v1.7.2
-        #env:
-          #SSH_DEPLOY_KEY: ${{ secrets.SSH_LAKEFS_DOCS_DEPLOY_KEY }}
-        #with:
-          #source-directory: docs/_site/
-          #destination-github-username: treeverse
-          ##destination-repository-name: treeverse/docs-lakeFS
-          #destination-repository-name: docs-test
-          #user-email: support@treeverse.io
-
-
+      - name: Publish to lakeFS-docs repository
+        env:
+          SSH_DEPLOY_KEY: '${{ secrets.SSH_LAKEFS_DOCS_DEPLOY_KEY }}'
+          SOURCE_DIRECTORY: 'docs/_site/'
+          TARGET_DIRECTORY: ''
+          GIT_CMD_REPOSITORY: 'git@github.com:treeverse/docs-test.git'
+          USER_EMAIL: 'support@treeverse.io'
+          USER_NAME: 'docs-action'
+          TARGET_BRANCH: 'main'
+        shell: bash
+        run: ./.github/scripts/push-repo.sh
