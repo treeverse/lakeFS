@@ -24,14 +24,13 @@ type Metadata struct {
 	InstallationID string          `json:"installation_id"`
 	Entries        []MetadataEntry `json:"entries"`
 }
-
-type MetadataManager interface {
-	Write(context.Context) (map[string]string, error)
+type MetadataProvider interface {
+	GetMetadata(context.Context) (map[string]string, error)
 }
 
-func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, statsMetadataManager MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, metadataProvider MetadataProvider, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
 	res := &Metadata{}
-	authMetadata, err := statsMetadataManager.Write(ctx)
+	authMetadata, err := metadataProvider.GetMetadata(ctx)
 	if err != nil {
 		logger.WithError(err).Debug("failed to collect account metadata")
 	}

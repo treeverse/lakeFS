@@ -230,11 +230,11 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	return creds, nil
 }
 
-func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string) (*model.Credential, error) {
+func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataProvider, username string) (*model.Credential, error) {
 	return CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataProvider, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{User: model.User{
 		CreatedAt: time.Now(),
 		Username:  username,

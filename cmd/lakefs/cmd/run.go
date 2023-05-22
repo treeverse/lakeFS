@@ -113,7 +113,7 @@ var runCmd = &cobra.Command{
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		authMetadataProvider := auth.NewKVMetadataProvider(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
 		// initialize auth service
@@ -156,7 +156,7 @@ var runCmd = &cobra.Command{
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
-		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataProvider, cloudMetadataProvider)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
@@ -227,7 +227,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal(mismatchedReposFlagName)
 		}
 		if !allowForeign {
-			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
+			checkRepos(ctx, logger, authMetadataProvider, blockStore, c)
 		}
 
 		// update health info with installation ID
@@ -243,7 +243,7 @@ var runCmd = &cobra.Command{
 			middlewareAuthenticator,
 			authService,
 			blockStore,
-			authMetadataManager,
+			authMetadataProvider,
 			migrator,
 			bufferedCollector,
 			cloudMetadataProvider,
@@ -332,8 +332,8 @@ var runCmd = &cobra.Command{
 }
 
 // checkRepos iterates on all repos and validates that their settings are correct.
-func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
-	initialized, err := authMetadataManager.IsInitialized(ctx)
+func checkRepos(ctx context.Context, logger logging.Logger, authMetadataProvider auth.MetadataProvider, blockStore block.Adapter, c *catalog.Catalog) {
+	initialized, err := authMetadataProvider.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
 	}
