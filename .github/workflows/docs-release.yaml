@@ -45,7 +45,7 @@ jobs:
             jq '."${{ steps.version.outputs.tag}}" = "${{ steps.version.outputs.tag}}"' > docs/_site/versions.json
 
       - name: Push generated to docs repository
-        uses: nkoppel/push-files-to-another-repository@1.1.0
+        uses: nkoppel/push-files-to-another-repository@v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:

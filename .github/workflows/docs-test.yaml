@@ -29,13 +29,13 @@ jobs:
         run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
 
       - name: Push generated to docs repository
-        uses: nkoppel/push-files-to-another-repository@1.1.0
+        uses: nkoppel/push-files-to-another-repository@v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
         with:
           source-files: 'docs/_site/'
-          destination-username: 'docs-saction'
-          destination-repository: 'treeverse/docs-lakeFS'
+          destination-username: 'docs-action'
+          destination-repository: 'treeverse/docs-test'
           destination-directory: '/'
           commit-email: 'support@treeverse.io'
 
