@@ -38,7 +38,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 		Env: []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10",
 			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true",
 			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=" + ips[0].String(),
-		}
+		},
 		PortBindings: map[docker.Port][]docker.PortBinding{
 			"8081/tcp": {{HostPort: CosmosDBLocalPort}},
 		},
