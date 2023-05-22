@@ -3,7 +3,6 @@ package stats
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/cloud/aws"
@@ -24,15 +23,18 @@ type Metadata struct {
 	InstallationID string          `json:"installation_id"`
 	Entries        []MetadataEntry `json:"entries"`
 }
+type MetadataProvider interface {
+	GetMetadata(context.Context) (map[string]string, error)
+}
 
-func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, authMetadataManager auth.MetadataManager, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, metadataProvider MetadataProvider, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
 	res := &Metadata{}
-	authMetadata, err := authMetadataManager.Write(ctx)
+	authMetadata, err := metadataProvider.GetMetadata(ctx)
 	if err != nil {
 		logger.WithError(err).Debug("failed to collect account metadata")
 	}
 	for k, v := range authMetadata {
-		if k == auth.InstallationIDKeyName {
+		if k == "installation_id" {
 			res.InstallationID = v
 		}
 		res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
