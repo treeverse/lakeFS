@@ -36,7 +36,7 @@ func init() {
 	kv.MustRegisterType("auth", SetupTimestampKeyName, nil)
 }
 
-type MetadataProvider interface {
+type MetadataManager interface {
 	IsInitialized(ctx context.Context) (bool, error)
 	GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error)
 	UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error)
@@ -44,7 +44,7 @@ type MetadataProvider interface {
 	GetMetadata(context.Context) (map[string]string, error)
 }
 
-type KVMetadataProvider struct {
+type KVMetadataManager struct {
 	version        string
 	kvType         string
 	installationID string
@@ -58,8 +58,8 @@ type CommPrefs struct {
 	InstallationID  string
 }
 
-func NewKVMetadataProvider(version, fixedInstallationID, kvType string, store kv.Store) *KVMetadataProvider {
-	return &KVMetadataProvider{
+func NewKVMetadataManager(version, fixedInstallationID, kvType string, store kv.Store) *KVMetadataManager {
+	return &KVMetadataManager{
 		version:        version,
 		kvType:         kvType,
 		installationID: generateInstallationID(fixedInstallationID),
@@ -74,7 +74,7 @@ func generateInstallationID(installationID string) string {
 	return installationID
 }
 
-func (m *KVMetadataProvider) insertOrGetInstallationID(ctx context.Context, installationID string) (string, error) {
+func (m *KVMetadataManager) insertOrGetInstallationID(ctx context.Context, installationID string) (string, error) {
 	err := m.store.SetIf(ctx, []byte(model.PartitionKey), []byte(InstallationIDKeyName), []byte(installationID), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
@@ -89,7 +89,7 @@ func (m *KVMetadataProvider) insertOrGetInstallationID(ctx context.Context, inst
 	return installationID, nil
 }
 
-func (m *KVMetadataProvider) getSetupTimestamp(ctx context.Context) (time.Time, error) {
+func (m *KVMetadataManager) getSetupTimestamp(ctx context.Context) (time.Time, error) {
 	valWithPred, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(SetupTimestampKeyName)))
 	if err != nil {
 		return time.Time{}, err
@@ -97,7 +97,7 @@ func (m *KVMetadataProvider) getSetupTimestamp(ctx context.Context) (time.Time, 
 	return time.Parse(time.RFC3339, string(valWithPred.Value))
 }
 
-func (m *KVMetadataProvider) GetCommPrefs(ctx context.Context) (CommPrefs, error) {
+func (m *KVMetadataManager) GetCommPrefs(ctx context.Context) (CommPrefs, error) {
 	email, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(EmailKeyName)))
 	if err != nil {
 		return CommPrefs{}, err
@@ -127,7 +127,7 @@ func (m *KVMetadataProvider) GetCommPrefs(ctx context.Context) (CommPrefs, error
 	}, nil
 }
 
-func (m *KVMetadataProvider) areCommPrefsSet(ctx context.Context) (bool, error) {
+func (m *KVMetadataManager) areCommPrefsSet(ctx context.Context) (bool, error) {
 	commPrefsSet, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(CommPrefsSetKeyName)))
 	if err != nil {
 		return false, err
@@ -141,7 +141,7 @@ func (m *KVMetadataProvider) areCommPrefsSet(ctx context.Context) (bool, error) 
 	return commPrefsSetBool, nil
 }
 
-func (m *KVMetadataProvider) GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error) {
+func (m *KVMetadataManager) GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error) {
 	// for backwards compatibility (i.e. so existing instances don't need to go through setup again)
 	// we first check if the setup timestamp has already been set
 	isInitialized, err := m.IsInitialized(ctx)
@@ -164,7 +164,7 @@ func (m *KVMetadataProvider) GetSetupState(ctx context.Context, emailSubscriptio
 	return SetupStateCommPrefsDone, nil
 }
 
-func (m *KVMetadataProvider) writeMetadata(ctx context.Context, items map[string]string) error {
+func (m *KVMetadataManager) writeMetadata(ctx context.Context, items map[string]string) error {
 	for key, value := range items {
 		kvKey := model.MetadataKeyPath(key)
 		err := m.store.Set(ctx, []byte(model.PartitionKey), []byte(kvKey), []byte(value))
@@ -175,13 +175,13 @@ func (m *KVMetadataProvider) writeMetadata(ctx context.Context, items map[string
 	return nil
 }
 
-func (m *KVMetadataProvider) UpdateSetupTimestamp(ctx context.Context, ts time.Time) error {
+func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Time) error {
 	return m.writeMetadata(ctx, map[string]string{
 		SetupTimestampKeyName: ts.UTC().Format(time.RFC3339),
 	})
 }
 
-func (m *KVMetadataProvider) UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error) {
+func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error) {
 	encodedEmail := ""
 	if commPrefs.UserEmail != "" {
 		encodedEmail = base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail))
@@ -195,7 +195,7 @@ func (m *KVMetadataProvider) UpdateCommPrefs(ctx context.Context, commPrefs Comm
 	})
 }
 
-func (m *KVMetadataProvider) IsInitialized(ctx context.Context) (bool, error) {
+func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	setupTimestamp, err := m.getSetupTimestamp(ctx)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
@@ -206,7 +206,7 @@ func (m *KVMetadataProvider) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
-func (m *KVMetadataProvider) GetMetadata(ctx context.Context) (map[string]string, error) {
+func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
 	metadata["lakefs_kv_type"] = m.kvType
@@ -220,7 +220,7 @@ func (m *KVMetadataProvider) GetMetadata(ctx context.Context) (map[string]string
 	// write installation id
 	m.installationID, err = m.insertOrGetInstallationID(ctx, m.installationID)
 	if err == nil {
-		metadata[InstallationIDKeyName] = m.installationID
+		metadata["installation_id"] = m.installationID
 	}
 
 	setupTS, err := m.getSetupTimestamp(ctx)

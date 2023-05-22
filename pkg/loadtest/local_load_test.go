@@ -50,7 +50,7 @@ func TestLocalLoad(t *testing.T) {
 
 	kvStore := kvtest.GetStore(ctx, t)
 	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.Default().WithField("service", "auth"))
-	meta := auth.NewKVMetadataProvider("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
+	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
 	if blockstoreType == "" {

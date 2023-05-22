@@ -87,7 +87,7 @@ type Controller struct {
 	Authenticator         auth.Authenticator
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
-	MetadataProvider      auth.MetadataProvider
+	MetadataManager       auth.MetadataManager
 	Migrator              Migrator
 	Collector             stats.Collector
 	CloudMetadataProvider cloud.MetadataProvider
@@ -3981,7 +3981,7 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	savedState, err := c.MetadataProvider.GetSetupState(ctx, emailSubscriptionEnabled)
+	savedState, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -4011,7 +4011,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	// check if previous setup completed
 	ctx := r.Context()
 	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	initialized, err := c.MetadataProvider.GetSetupState(ctx, emailSubscriptionEnabled)
+	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -4039,16 +4039,16 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 	}
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataProvider, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
 	} else {
-		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataProvider, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataProvider, c.CloudMetadataProvider)
+	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
@@ -4064,7 +4064,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body SetupCommPrefsJSONRequestBody) {
 	ctx := r.Context()
 	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	initialized, err := c.MetadataProvider.GetSetupState(ctx, emailSubscriptionEnabled)
+	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4112,7 +4112,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		SecurityUpdates: body.SecurityUpdates,
 	}
 
-	installationID, err := c.MetadataProvider.UpdateCommPrefs(ctx, commPrefs)
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -4601,7 +4601,7 @@ func NewController(
 	authenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
-	metadataProvider auth.MetadataProvider,
+	metadataManager auth.MetadataManager,
 	migrator Migrator,
 	collector stats.Collector,
 	cloudMetadataProvider cloud.MetadataProvider,
@@ -4620,7 +4620,7 @@ func NewController(
 		Authenticator:         authenticator,
 		Auth:                  authService,
 		BlockAdapter:          blockAdapter,
-		MetadataProvider:      metadataProvider,
+		MetadataManager:       metadataManager,
 		Migrator:              migrator,
 		Collector:             collector,
 		CloudMetadataProvider: cloudMetadataProvider,

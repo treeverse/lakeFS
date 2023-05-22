@@ -61,8 +61,8 @@ var setupCmd = &cobra.Command{
 		}
 
 		var (
-			authService      auth.Service
-			metadataProvider auth.MetadataProvider
+			authService     auth.Service
+			metadataManager auth.MetadataManager
 		)
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
@@ -73,12 +73,12 @@ var setupCmd = &cobra.Command{
 		logger := logging.Default()
 		authLogger := logger.WithField("service", "auth_service")
 		authService = auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
-		metadataProvider = auth.NewKVMetadataProvider(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), metadataProvider, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), metadataManager, cloudMetadataProvider)
 
-		initialized, err := metadataProvider.IsInitialized(ctx)
+		initialized, err := metadataManager.IsInitialized(ctx)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
@@ -88,7 +88,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataProvider, userName, &accessKeyID, &secretAccessKey)
+		credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)

@@ -59,10 +59,10 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		authService := auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, authparams.ServiceCache(cfg.Auth.Cache), logger.WithField("service", "auth_service"))
-		authMetadataProvider := auth.NewKVMetadataProvider(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), authMetadataProvider, metadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), authMetadataManager, metadataProvider)
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
 				CreatedAt: time.Now(),

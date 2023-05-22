@@ -139,7 +139,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 		Enabled: false,
 	}, logging.Default())
-	meta := auth.NewKVMetadataProvider("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
