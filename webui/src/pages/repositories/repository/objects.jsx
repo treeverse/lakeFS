@@ -21,9 +21,9 @@ import Alert from "react-bootstrap/Alert";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
+import {objects, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
-import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
+import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
 import {RefTypeBranch} from "../../../constants";
 import {
