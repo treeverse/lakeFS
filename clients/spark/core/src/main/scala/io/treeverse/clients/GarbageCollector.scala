@@ -412,10 +412,10 @@ object GarbageCollector {
     val removed = {
       if (shouldSweep) {
         // If a mark didn't happen in this run, gcAddressesLocation, runID, and expiredAddresses will be empty.
-        if(!shouldMark) {
-            gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
-            expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
-            runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
+        if (!shouldMark) {
+          gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
+          expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
+          runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
         }
 
         val removed = remove(
