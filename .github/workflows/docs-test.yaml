@@ -21,7 +21,7 @@ jobs:
       - name: Extract version
         id: version
         shell: bash
-        run: echo "tag=v0.101.0" >> $GITHUB_OUTPUT
+        run: echo "tag=v0.102.0" >> $GITHUB_OUTPUT
 
       - name: Build release
         working-directory: docs
@@ -38,15 +38,4 @@ jobs:
           #destination-repository-name: docs-test
           #user-email: support@treeverse.io
 
-      - name: Push generated docs to lakeFS-docs
-        env:
-          SSH_DEPLOY_KEY: '${{ secrets.SSH_LAKEFS_DOCS_DEPLOY_KEY }}'
-          SOURCE_DIRECTORY: 'docs/_site/'
-          TARGET_DIRECTORY: ''
-          GIT_CMD_REPOSITORY: 'git@github.com:treeverse/docs-test.git'
-          USER_EMAIL: 'support@treeverse.io'
-          USER_NAME: 'docs-action'
-          TARGET_BRANCH: 'main'
-        shell: bash
-        run: ./.github/scripts/push-repo.sh
 

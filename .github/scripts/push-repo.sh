@@ -41,7 +41,8 @@ echo "[+] Copying contents of source repository folder $SOURCE_DIRECTORY to fold
 cp -ra "$SOURCE_DIRECTORY"/. "$CLONE_DIR/$TARGET_DIRECTORY"
 cd "$CLONE_DIR"
 
-COMMIT_MESSAGE="Update from ${GITHUB_REPOSITORY}@$GITHUB_REF}"
+ORIGIN_COMMIT="https://$GITHUB_SERVER/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+COMMIT_MESSAGE="Update from ${ORIGIN_COMMIT}"
 
 echo "[+] Set directory is safe ($CLONE_DIR)"
 git config --global --add safe.directory "$CLONE_DIR"
