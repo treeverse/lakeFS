@@ -62,5 +62,8 @@ type CosmosDB struct {
 	Endpoint     string
 	Database     string
 	Container    string
-	TLSEnabled   bool
+
+	// These value should only be set to false for testing purposes using the CosmosDB emulator
+	TLSEnabled        bool
+	StrongConsistency bool
 }

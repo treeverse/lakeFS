@@ -20,7 +20,8 @@ import (
 type Driver struct{}
 
 type Store struct {
-	containerClient *azcosmos.ContainerClient
+	containerClient  *azcosmos.ContainerClient
+	consistencyLevel azcosmos.ConsistencyLevel
 }
 
 const (
@@ -76,8 +77,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("creating container client: %w", err)
 	}
 
+	cLevel := azcosmos.ConsistencyLevelBoundedStaleness
+	if !params.StrongConsistency {
+		cLevel = azcosmos.ConsistencyLevelSession
+	}
 	return &Store{
-		containerClient: containerClient,
+		containerClient:  containerClient,
+		consistencyLevel: cLevel,
 	}, nil
 }
 
@@ -160,7 +166,7 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 		return err
 	}
 	itemOptions := azcosmos.ItemOptions{
-		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
+		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
@@ -191,7 +197,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		return err
 	}
 	itemOptions := azcosmos.ItemOptions{
-		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
+		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
@@ -250,7 +256,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
 	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.id >= @start order by c.id", pk, &azcosmos.QueryOptions{
-		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
+		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 		PageSizeHint:     int32(options.BatchSize),
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
