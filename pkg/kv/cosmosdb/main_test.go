@@ -50,7 +50,9 @@ func TestMain(m *testing.M) {
 	log.Printf("Creating database %s", testParams.Database)
 
 	ctx := context.Background()
-	resp, err := client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: testParams.Database}, nil)
+	throughput := azcosmos.NewManualThroughputProperties(4000)
+	resp, err := client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: testParams.Database},
+		&azcosmos.CreateDatabaseOptions{ThroughputProperties: &throughput})
 	if err != nil {
 		print(resp.RawResponse)
 		log.Fatalf("creating database: %v", err)
@@ -67,7 +69,7 @@ func TestMain(m *testing.M) {
 		PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
 			Paths: []string{"/partitionKey"},
 		},
-	}, nil)
+	}, azcosmos.CreateContainerOptions{ThroughputProperties: &throughput})
 	if err != nil {
 		print(resp2.RawResponse)
 		log.Fatalf("creating container: %v", err)
