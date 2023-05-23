@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 		PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
 			Paths: []string{"/partitionKey"},
 		},
-	}, azcosmos.CreateContainerOptions{ThroughputProperties: &throughput})
+	}, &azcosmos.CreateContainerOptions{ThroughputProperties: &throughput})
 	if err != nil {
 		print(resp2.RawResponse)
 		log.Fatalf("creating container: %v", err)
