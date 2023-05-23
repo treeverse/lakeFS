@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/migrations"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // migrateCmd represents the migrate command
@@ -77,6 +78,8 @@ var upCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
+		force, _ := cmd.Flags().GetBool("force")
+
 		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
 		switch {
 		case err == nil:
@@ -85,7 +88,7 @@ var upCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		case errors.Is(err, kv.ErrMigrationRequired):
-			err = doMigration(ctx, kvStore, cfg)
+			err = DoMigration(ctx, kvStore, cfg, force)
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "Migration failed: %s\n", err)
 				os.Exit(1)
@@ -98,7 +101,7 @@ var upCmd = &cobra.Command{
 	},
 }
 
-func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) error {
+func DoMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config, force bool) error {
 	var (
 		version int
 		err     error
@@ -109,22 +112,15 @@ func doMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config) erro
 			return err
 		}
 		switch {
-		case version < kv.ACLNoReposMigrateVersion || version >= kv.NextSchemaVersion:
+		case version >= kv.NextSchemaVersion || version < kv.ACLMigrateVersion:
 			return fmt.Errorf("wrong starting version %d: %w", version, kv.ErrMigrationVersion)
-
+		case version < kv.ACLNoReposMigrateVersion:
+			err = migrations.MigrateToACL(ctx, kvStore, cfg, logging.Default(), version, force)
 		case version < kv.ACLImportMigrateVersion:
-			// skip migrate to ACL for users with External authorizations
-			if !cfg.IsAuthUISimplified() {
-				fmt.Println("skipping ACL migration - external Authorization")
-				err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
-				if err != nil {
-					return fmt.Errorf("failed to upgrade version, to fix this re-run migration: %w", err)
-				}
-			} else {
-				if err = migrations.MigrateImportPermissions(ctx, kvStore); err != nil {
-					return err
-				}
-			}
+			err = migrations.MigrateImportPermissions(ctx, kvStore, cfg)
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
