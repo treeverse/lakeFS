@@ -31,9 +31,10 @@ func GetCosmosDBInstance() (string, func(), error) {
 			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true",
 			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1"},
 		PortBindings: map[docker.Port][]docker.PortBinding{
-			"8081/tcp": {{HostPort: CosmosDBLocalPort}},
+			"8081/tcp":        {{HostPort: CosmosDBLocalPort}},
+			"10251-10255/tcp": {{HostPort: "10251-10255"}},
 		},
-		ExposedPorts: []string{CosmosDBLocalPort},
+		ExposedPorts: []string{CosmosDBLocalPort, "10251-10255"},
 	}
 
 	resource, err := dockerPool.RunWithOptions(cosmosdbDockerRunOptions)
