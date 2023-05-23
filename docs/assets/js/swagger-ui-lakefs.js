@@ -17,4 +17,20 @@ window.onload = function() {
     // End Swagger UI call region
 
     window.ui = ui
+    
+    // Added this from https://github.com/swagger-api/swagger-ui/issues/1369
+    var elemId = window.location.hash.replace('!/', '').replace('/', '').replace('#', '');
+    setTimeout(function () {
+        var elem = document.getElementById(elemId);
+        if (elem) {
+            var anchor = elem.querySelector('.model');
+            if (anchor) {
+                anchor.click();
+            }
+            setTimeout(function () {
+                var top = elem.offsetTop;
+                window.scrollTo({ top: top, behavior: 'auto' });
+            }, 100);
+        }
+    }, 700);
 }
