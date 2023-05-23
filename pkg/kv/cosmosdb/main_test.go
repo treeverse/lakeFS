@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
@@ -27,7 +28,7 @@ func TestMain(m *testing.M) {
 		ReadWriteKey: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
 		Database:     "test-db",
 		Container:    "test-container",
-		Client: &http.Client{Transport: &http.Transport{
+		Client: &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
 		}},
 		StrongConsistency: false,
