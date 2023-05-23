@@ -1,6 +1,7 @@
 package params
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -64,6 +65,6 @@ type CosmosDB struct {
 	Container    string
 
 	// These value should only be set to false for testing purposes using the CosmosDB emulator
-	TLSEnabled        bool
+	Client            *http.Client
 	StrongConsistency bool
 }

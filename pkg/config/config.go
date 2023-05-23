@@ -486,7 +486,6 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 			Endpoint:     c.Database.CosmosDB.Endpoint,
 			Database:     c.Database.CosmosDB.Database,
 			Container:    c.Database.CosmosDB.Container,
-			TLSEnabled:   true,
 		}
 	}
 

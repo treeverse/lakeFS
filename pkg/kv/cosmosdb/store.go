@@ -2,7 +2,6 @@ package cosmosdb
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/base32"
 	"encoding/json"
 	"errors"
@@ -49,12 +48,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 
 		// hook for using emulator for testing
+		if params.Client == nil {
+			params.Client = http.DefaultClient
+		}
 		// Create a CosmosDB client
 		client, err = azcosmos.NewClientWithKey(params.Endpoint, cred, &azcosmos.ClientOptions{
 			ClientOptions: azcore.ClientOptions{
-				Transport: &http.Client{Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: !params.TLSEnabled},
-				}},
+				Transport: params.Client,
 			},
 		})
 		if err != nil {

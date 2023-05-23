@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -69,8 +68,8 @@ func GetCosmosDBInstance() (string, func(), error) {
 		if err != nil {
 			log.Fatalf("failed joining urls: %v", err)
 		}
-		client := http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		client := http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
 		}}
 		resp, err := client.Get(p)
 		if err != nil {
