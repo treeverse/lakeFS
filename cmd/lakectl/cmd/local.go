@@ -280,6 +280,18 @@ var localCommitCmd = &cobra.Command{
 		}
 		for remoteName, remoteUrl := range remoteUrls {
 			kvPairs[fmt.Sprintf("git.remotes.%s.url", remoteName)] = remoteUrl
+			// best effort, try and add a button to the UI for GitHub
+			if currentCommitId != "" {
+				p, err := local.ParseGitUrl(remoteUrl)
+				if err == nil {
+					Fmt("p: %s", p)
+					if p.Domain == "github.com" {
+						kvPairs["::lakefs::Code in GitHub::url[url:ui]"] = fmt.Sprintf("https://github.com/%s/%s/commit/%s",
+							p.Org, p.Name, currentCommitId)
+					}
+				}
+			}
+
 		}
 		commitId, err := client.Commit(remoteUri, message, kvPairs)
 		DieIfErr(err)
