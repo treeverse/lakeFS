@@ -51,12 +51,9 @@ var importCmd = &cobra.Command{
 
 		// setup progress bar - based on `progressbar.Default` defaults + control visibility
 		bar := newImportProgressBar(!noProgress)
-		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, api.ImportStartJSONRequestBody{
+		body := api.ImportStartJSONRequestBody{
 			Commit: api.CommitCreation{
 				Message: message,
-				Metadata: &api.CommitCreation_Metadata{
-					AdditionalProperties: metadata,
-				},
 			},
 			Paths: []api.ImportLocation{
 				{
@@ -65,7 +62,12 @@ var importCmd = &cobra.Command{
 					Type:        "common_prefix",
 				},
 			},
-		})
+		}
+		if metadata != nil {
+			body.Commit.Metadata = &api.CommitCreation_Metadata{AdditionalProperties: metadata}
+		}
+
+		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, body)
 		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
 		if importResp.JSON202 == nil {
 			Die("Bad response from server", 1)

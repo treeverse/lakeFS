@@ -2528,7 +2528,7 @@ lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 
 
 
-### lakectl ingest (Deprecated - use [import](#lakectl_import) instead)
+### lakectl ingest
 
 Ingest objects from an external source into a lakeFS branch (without actually copying them)
 

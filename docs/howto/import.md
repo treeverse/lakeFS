@@ -125,6 +125,7 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
 2. Under _Import from_, fill in the location on your object store you would like to import from.
 3. Fill in the import destination in lakeFS 
 4. Add a commit message, and optionally metadata.
+5. Press _Import_
 
 Once the import is complete, the changes are merged into the source branch.
 
