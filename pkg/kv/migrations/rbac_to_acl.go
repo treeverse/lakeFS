@@ -55,7 +55,7 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		if force {
 			return updateKVSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
 		} else {
-			return fmt.Errorf("migrating from previous version of ACL will leave repository level groups until the group is re-edited - please run migrate again with --force flag or contact services@treeverse.io: %w\n", kv.ErrMigrationVersion)
+			return fmt.Errorf("migrating from previous version of ACL will leave repository level groups until the group is re-edited - please run migrate again with --force flag or contact services@treeverse.io: %w", kv.ErrMigrationVersion)
 		}
 	}
 
@@ -80,7 +80,7 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upgrade RBAC policies to ACLs: %w\n", err)
+		return fmt.Errorf("failed to upgrade RBAC policies to ACLs: %w", err)
 	}
 
 	for _, w := range groupReports {
@@ -110,11 +110,11 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		fmt.Printf("USER (%s)  detaching directly-attached policies\n", username)
 	}
 
-	usersWithPolicies, err = rbacToACL(ctx, authService, true, updateTime, func(groupID string, acl model.ACL, warn error) {
+	_, err = rbacToACL(ctx, authService, true, updateTime, func(groupID string, acl model.ACL, warn error) {
 		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upgrade RBAC policies to ACLs: %w\n", err)
+		return fmt.Errorf("failed to upgrade RBAC policies to ACLs: %w", err)
 	}
 
 	return updateKVSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
