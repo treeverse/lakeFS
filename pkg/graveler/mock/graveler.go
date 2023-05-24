@@ -703,6 +703,21 @@ func (mr *MockVersionControllerMockRecorder) Merge(ctx, repository, destination,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockVersionController)(nil).Merge), ctx, repository, destination, source, commitParams, strategy)
 }
 
+// MergeFromMetaRange mocks base method.
+func (m *MockVersionController) MergeFromMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MergeFromMetaRange", ctx, repository, destination, source, commitParams)
+	ret0, _ := ret[0].(graveler.CommitID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MergeFromMetaRange indicates an expected call of MergeFromMetaRange.
+func (mr *MockVersionControllerMockRecorder) MergeFromMetaRange(ctx, repository, destination, source, commitParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeFromMetaRange", reflect.TypeOf((*MockVersionController)(nil).MergeFromMetaRange), ctx, repository, destination, source, commitParams)
+}
+
 // ParseRef mocks base method.
 func (m *MockVersionController) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	m.ctrl.T.Helper()
@@ -2424,6 +2439,21 @@ func (m *MockCommittedManager) Merge(ctx context.Context, ns graveler.StorageNam
 func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, base, strategy interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockCommittedManager)(nil).Merge), ctx, ns, destination, source, base, strategy)
+}
+
+// MergeFromMetaRange mocks base method.
+func (m *MockCommittedManager) MergeFromMetaRange(ctx context.Context, ns graveler.StorageNamespace, destination, base, source graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MergeFromMetaRange", ctx, ns, destination, base, source, strategy)
+	ret0, _ := ret[0].(graveler.MetaRangeID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MergeFromMetaRange indicates an expected call of MergeFromMetaRange.
+func (mr *MockCommittedManagerMockRecorder) MergeFromMetaRange(ctx, ns, destination, base, source, strategy interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeFromMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).MergeFromMetaRange), ctx, ns, destination, base, source, strategy)
 }
 
 // WriteMetaRange mocks base method.

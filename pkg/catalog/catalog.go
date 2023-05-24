@@ -1798,15 +1798,6 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) ensureBranchExists(ctx context.Context, repository *graveler.RepositoryRecord, branch, sourceBranch string) error {
-	branchID := graveler.BranchID(branch)
-	_, err := c.Store.GetBranch(ctx, repository, branchID)
-	if errors.Is(err, graveler.ErrNotFound) {
-		_, err = c.Store.CreateBranch(ctx, repository, branchID, graveler.Ref(sourceBranch))
-	}
-	return err
-}
-
 func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	defer cancel()
