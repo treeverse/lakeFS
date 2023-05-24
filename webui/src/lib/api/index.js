@@ -632,7 +632,7 @@ class Objects {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
 
         if (response.status === 404) {
-            throw new NotFoundError(`no objects found`);
+            throw new NotFoundError(response.message ?? "ref not found");
         }
 
         if (response.status !== 200) {
@@ -875,7 +875,10 @@ class Retention {
 
     async setGCPolicyPreflight(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules/set_allowed`);
-        return response.status === 204;
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+        return response;
     }
 
     async setGCPolicy(repoID, policy) {
