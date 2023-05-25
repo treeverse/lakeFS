@@ -37,10 +37,6 @@ This reference uses `.` to denote the nesting of values.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed.
 * `actions.lua.net_http_enabled` `(bool : false)` - Setting this to true will load the `net/http` package.
-* ~~`database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use~~
-* ~~`database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database~~
-* ~~`database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool~~
-* ~~`database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused~~
 
   **Note:** Deprecated - See `database` section
   {: .note }
@@ -65,6 +61,13 @@ This reference uses `.` to denote the nesting of values.
     + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
       {: .note }
     + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
+  + `database.cosmosdb` - Configuration section when using `database.type="cosmosdb"`
+    + `database.cosmosdb.readwritekey` `(string : "")` - If specified, will 
+      be used to authenticate to the CosmosDB account.
+    + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account 
+      endpoint, e.g. `https://<account>.documents.azure.com:443/`.
+    + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
+    + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
   + `database.local` - Configuration section when using `database.type="local"`
     + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
     + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
@@ -324,9 +327,12 @@ logging:
   output: "-"
 
 database:
-  type: "postgres"
-  postgres:
-    connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+  type: "cosmosdb"
+  cosmosdb:
+    readwritekey: "ExampleReadWriteKeyMD7nkPOWgV7d4BUjzLw=="
+    endpoint: "https://lakefs-account.documents.azure.com:443/"
+    database: "lakefs-db"
+    container: "lakefs-container"
 
 auth:
   encrypt:
