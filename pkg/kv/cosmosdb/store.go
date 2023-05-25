@@ -97,17 +97,12 @@ func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *k
 		return nil, fmt.Errorf("creating database client: %w", err)
 	}
 	dbResp, err := dbClient.Read(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("reading database: %w", err)
-	}
-	switch dbResp.RawResponse.StatusCode {
-	case http.StatusOK:
-		return nil, nil
-	case http.StatusNotFound:
-		tp := azcosmos.NewAutoscaleThroughputProperties(400)
-		dbResp, err = client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database},
-			&azcosmos.CreateDatabaseOptions{
-				ThroughputProperties: &tp})
+	errCode := errStatusCode(err)
+	switch {
+	case errCode == -1 && dbResp.RawResponse.StatusCode == http.StatusOK:
+		return dbClient, nil
+	case errCode == http.StatusNotFound:
+		dbResp, err = client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database}, nil)
 		if err != nil || dbResp.RawResponse.StatusCode != http.StatusCreated {
 			return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
 		}
@@ -123,26 +118,21 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 		return nil, fmt.Errorf("creating database client: %w", err)
 	}
 	cResp, err := containerClient.Read(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("reading database: %w", err)
-	}
-	switch cResp.RawResponse.StatusCode {
-	case http.StatusOK:
-		return nil, nil
-	case http.StatusNotFound:
-		tp := azcosmos.NewAutoscaleThroughputProperties(400)
+	errCode := errStatusCode(err)
+	switch {
+	case errCode == -1 && cResp.RawResponse.StatusCode == http.StatusOK:
+		return containerClient, nil
+	case errCode == http.StatusNotFound:
 		cResp, err = dbClient.CreateContainer(ctx,
 			azcosmos.ContainerProperties{
 				ID: params.Container,
 				PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
 					Paths: []string{"/partitionKey"},
 				},
-			}, &azcosmos.CreateContainerOptions{
-				ThroughputProperties: &tp,
-			})
+			}, nil)
 
 		if err != nil || cResp.RawResponse.StatusCode != http.StatusCreated {
-			return nil, fmt.Errorf("creating container(%d): %w", cResp.RawResponse.StatusCode, err)
+			return nil, fmt.Errorf("creating container: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("reading database(%d): %w", cResp.RawResponse.StatusCode, err)
@@ -199,12 +189,15 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}, nil
 }
 
-func isErrStatusCode(err error, code int) bool {
+func errStatusCode(err error) int {
 	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) && respErr.StatusCode == code {
-		return true
+	if !errors.As(err, &respErr) {
+		return -1
 	}
-	return false
+	return respErr.StatusCode
+}
+func isErrStatusCode(err error, code int) bool {
+	return errStatusCode(err) == code
 }
 
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
