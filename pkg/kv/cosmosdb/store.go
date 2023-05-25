@@ -370,7 +370,7 @@ func (e *EntriesIterator) Next() bool {
 		var err error
 		e.currPage, err = e.queryPager.NextPage(e.queryCtx)
 		if err != nil {
-			e.err = err
+			e.err = fmt.Errorf("getting next page: %w", err)
 			return false
 		}
 		e.currEntryIdx = 0
