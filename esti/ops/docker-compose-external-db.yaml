@@ -48,10 +48,10 @@ services:
       - ESTI_AWS_SECRET_ACCESS_KEY
       - ESTI_ENDPOINT_URL=http://lakefs:8000
       - ESTI_LAKECTL_DIR=/app
-      - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
-      - ESTI_POST_MIGRATE
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
+      - ESTI_FORCE_PATH_STYLE
+      - ESTI_ADLS_IMPORT_BASE_URL
     working_dir: /lakefs
     command:
       - /bin/sh
