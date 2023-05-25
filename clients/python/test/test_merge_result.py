@@ -13,8 +13,6 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.merge_result_summary import MergeResultSummary
-globals()['MergeResultSummary'] = MergeResultSummary
 from lakefs_client.model.merge_result import MergeResult
 
 

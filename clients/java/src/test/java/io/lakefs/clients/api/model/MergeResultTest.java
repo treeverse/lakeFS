@@ -18,7 +18,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.MergeResultSummary;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -39,14 +38,6 @@ public class MergeResultTest {
     @Test
     public void testMergeResult() {
         // TODO: test MergeResult
-    }
-
-    /**
-     * Test the property 'summary'
-     */
-    @Test
-    public void summaryTest() {
-        // TODO: test summary
     }
 
     /**
