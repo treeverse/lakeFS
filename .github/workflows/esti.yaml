@@ -1193,7 +1193,6 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - id: check-dns
-        env:
         run: |
           nslookup esti-e2e-tests.documents.azure.com
 
