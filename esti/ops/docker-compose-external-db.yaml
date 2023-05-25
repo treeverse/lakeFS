@@ -5,8 +5,6 @@ services:
     command: "${COMMAND:-run}"
     ports:
       - "8000:8000"
-    depends_on:
-      - "dynamodb"
     volumes:
       - lakefs-app:/app:ro
     environment:
@@ -19,7 +17,6 @@ services:
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_STATS_ENABLED
-      - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
       - ACTIONS_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=cosmosdb
       - LAKEFS_DATABASE_COSMOSDB_ENDPOINT
