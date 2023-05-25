@@ -482,10 +482,11 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 
 	if c.Database.CosmosDB != nil {
 		p.CosmosDB = &kvparams.CosmosDB{
-			ReadWriteKey: c.Database.CosmosDB.ReadWriteKey.SecureValue(),
-			Endpoint:     c.Database.CosmosDB.Endpoint,
-			Database:     c.Database.CosmosDB.Database,
-			Container:    c.Database.CosmosDB.Container,
+			ReadWriteKey:      c.Database.CosmosDB.ReadWriteKey.SecureValue(),
+			Endpoint:          c.Database.CosmosDB.Endpoint,
+			Database:          c.Database.CosmosDB.Database,
+			Container:         c.Database.CosmosDB.Container,
+			StrongConsistency: true,
 		}
 	}
 

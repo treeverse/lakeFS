@@ -6,14 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"net/http"
 )
 
 type Driver struct{}
@@ -71,10 +70,15 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 	}
 
-	// Create container client
-	containerClient, err := client.NewContainer(params.Database, params.Container)
+	dbClient, err := getOrCreateDatabase(ctx, client, params)
 	if err != nil {
-		return nil, fmt.Errorf("creating container client: %w", err)
+		return nil, err
+	}
+
+	// Create container client
+	containerClient, err := getOrCreateContainer(ctx, dbClient, params)
+	if err != nil {
+		return nil, err
 	}
 
 	cLevel := azcosmos.ConsistencyLevelBoundedStaleness
@@ -85,6 +89,67 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		containerClient:  containerClient,
 		consistencyLevel: cLevel,
 	}, nil
+}
+
+func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *kvparams.CosmosDB) (*azcosmos.DatabaseClient, error) {
+	dbClient, err := client.NewDatabase(params.Database)
+	if err != nil {
+		return nil, fmt.Errorf("creating database client: %w", err)
+	}
+	dbResp, err := dbClient.Read(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("reading database: %w", err)
+	}
+	switch dbResp.RawResponse.StatusCode {
+	case http.StatusOK:
+		return nil, nil
+	case http.StatusNotFound:
+		tp := azcosmos.NewAutoscaleThroughputProperties(400)
+		dbResp, err = client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database},
+			&azcosmos.CreateDatabaseOptions{
+				ThroughputProperties: &tp})
+		if err != nil || dbResp.RawResponse.StatusCode != http.StatusCreated {
+			return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
+		}
+	default:
+		return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
+	}
+	return dbClient, nil
+}
+
+func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient, params *kvparams.CosmosDB) (*azcosmos.ContainerClient, error) {
+	containerClient, err := dbClient.NewContainer(params.Container)
+	if err != nil {
+		return nil, fmt.Errorf("creating database client: %w", err)
+	}
+	cResp, err := containerClient.Read(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("reading database: %w", err)
+	}
+	switch cResp.RawResponse.StatusCode {
+	case http.StatusOK:
+		return nil, nil
+	case http.StatusNotFound:
+		tp := azcosmos.NewAutoscaleThroughputProperties(400)
+		cResp, err = dbClient.CreateContainer(ctx,
+			azcosmos.ContainerProperties{
+				ID: params.Container,
+				PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
+					Paths: []string{"/partitionKey"},
+				},
+			}, &azcosmos.CreateContainerOptions{
+				ThroughputProperties: &tp,
+			})
+
+		if err != nil || cResp.RawResponse.StatusCode != http.StatusCreated {
+			return nil, fmt.Errorf("creating container(%d): %w", cResp.RawResponse.StatusCode, err)
+		}
+	default:
+		return nil, fmt.Errorf("reading database(%d): %w", cResp.RawResponse.StatusCode, err)
+	}
+
+	containerClient.
+	return containerClient, nil
 }
 
 // encoding is the encoding used to encode the partition keys, ids and values.
