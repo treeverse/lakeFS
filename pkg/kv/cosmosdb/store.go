@@ -76,7 +76,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		if err != nil {
 			return nil, fmt.Errorf("default creds: %w", err)
 		}
-		client, err = azcosmos.NewClient("myAccountEndpointURL", cred, nil)
+		client, err = azcosmos.NewClient(params.Endpoint, cred, nil)
 		if err != nil {
 			return nil, fmt.Errorf("creating client with default creds: %w", err)
 		}

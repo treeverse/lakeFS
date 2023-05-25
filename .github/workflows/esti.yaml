@@ -1192,10 +1192,6 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      - id: check-dns
-        run: |
-          nslookup esti-e2e-tests.documents.azure.com
-
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
