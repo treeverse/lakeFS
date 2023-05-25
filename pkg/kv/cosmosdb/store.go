@@ -14,7 +14,6 @@ import (
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"log"
 	"net/http"
-	"time"
 )
 
 type Driver struct{}
@@ -143,8 +142,6 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 					Paths: []string{"/partitionKey"},
 				},
 			}, nil)
-
-		time.Sleep(60 * time.Second)
 
 		if err != nil || cResp.RawResponse.StatusCode != http.StatusCreated {
 			return nil, fmt.Errorf("creating container: %w", err)
