@@ -76,7 +76,6 @@ logging:
   output: "="
 auth:  
   encrypt:
-    # in Helm set via kind Secret
     secret_key: shared-secrey-key    
   logout_redirect_url: https://lakefs.company.com
   post_login_redirect_url: https://lakefs.company.com
@@ -102,8 +101,8 @@ In order for Fluffy to work, the following values must be configured. Update (or
 1. Replace `lakefsConfig.default_initial_groups` with desired claim name (See [pre-configured](https://docs.lakefs.io/reference/rbac.html#preconfigured-groups) groups for enterprise)
 2. Replace `fluffyConfig.auth.logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/logout/path`)
 3. Replace `fluffyConfig.auth.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com`)
-4. Replace `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters you'd like to pass to theOIDC provider for logout.
-5. Replace `fluffyConfig.auth.oidc.client_id` and `fluffyConfig.auth.oidc.client_secret` with the client ID & secret for OIDC (<b>note:</b> in production the secret should be set via `fluffy.sso.oidc.client_secret`) 
+4. Replace `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters you'd like to pass to the OIDC provider for logout.
+5. Replace `fluffyConfig.auth.oidc.client_id` and `fluffyConfig.auth.oidc.client_secret` with the client ID & secret for OIDC.
 6. Replace `fluffyConfig.auth.oidc.logout_client_id_query_parameter` with the query parameter that represent the client_id, note that it should match the the key/query param that represents the client id and required by the specific OIDC provider.
 7. Replace `lakefs.company.com` with the lakeFS server URL.
 
@@ -140,7 +139,6 @@ auth:
     enabled: true
     url: https://oidc-provider-url.com/
     client_id: <oidc-client-id>
-    # in Helm set via kind Secret
     client_secret: <oidc-client-secret>
     callback_base_url: https://lakefs.company.com
     is_default_login: true
@@ -148,9 +146,8 @@ auth:
     logout_endpoint_query_parameters:
       - returnTo 
       - https://lakefs.company.com/oidc/login
-  # in Helm set via kind Secret
-  # encrypt:
-  #   secret_key: shared-secrey-key
+  encrypt:
+    secret_key: shared-secrey-key
 ```
   </div>
   <div markdown="1" id="ldap">
