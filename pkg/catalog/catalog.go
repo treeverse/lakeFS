@@ -1188,8 +1188,10 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 				return nil
 			})
 		}
-		// wait until workers are done and return the first error
+		// wait until workers are done or the first non-nil error was returned from a worker
 		if err := workerGroup.Wait(); err != nil {
+			// Wait until all workers are done regardless of the error.
+			workerGroup.TaskGroup.Wait()
 			return err
 		}
 		return it.Err()
