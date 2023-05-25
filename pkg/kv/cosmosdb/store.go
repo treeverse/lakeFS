@@ -38,6 +38,15 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
+	if params.Endpoint == "" {
+		return nil, fmt.Errorf("missing endpoint: %w", kv.ErrDriverConfiguration)
+	}
+	if params.Database == "" {
+		return nil, fmt.Errorf("missing database: %w", kv.ErrDriverConfiguration)
+	}
+	if params.Container == "" {
+		return nil, fmt.Errorf("missing container: %w", kv.ErrDriverConfiguration)
+	}
 
 	var client *azcosmos.Client
 	if params.ReadWriteKey != "" {
