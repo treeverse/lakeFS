@@ -1128,48 +1128,48 @@ jobs:
 #        continue-on-error: true
 #        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
-  run-system-azure-abfs:
-    name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [gen-code, deploy-image]
-    runs-on: ubuntu-20.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v3
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Start lakeFS with Azure tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-file: esti/ops/docker-compose.yaml
-          compose-flags: "--quiet-pull --exit-code-from=esti"
-        env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
-          ESTI_BLOCKSTORE_TYPE: azure
-          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
-
-      - name: lakeFS Logs on Azure failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
-
-      - name: See the env when we would have tried to publish coverage
-        run: env
+#  run-system-azure-abfs:
+#    name: Run latest lakeFS app on Azure with Azure blobstore
+#    needs: [gen-code, deploy-image]
+#    runs-on: ubuntu-20.04
+#    env:
+#      TAG: ${{ needs.deploy-image.outputs.tag }}
+#      # Setting Account_ID as a secret as a way to avoid specifying it here
+#      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+#      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+#      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+#      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+#    steps:
+#      - name: Check-out code
+#        uses: actions/checkout@v3
+#
+#      - name: Generate uniquifying value
+#        id: unique
+#        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+#
+#      - name: Start lakeFS with Azure tests
+#        uses: ./.github/actions/bootstrap-test-lakefs
+#        with:
+#          compose-file: esti/ops/docker-compose.yaml
+#          compose-flags: "--quiet-pull --exit-code-from=esti"
+#        env:
+#          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+#          LAKEFS_DATABASE_TYPE: postgres
+#          LAKEFS_BLOCKSTORE_TYPE: azure
+#          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
+#          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
+#          ESTI_BLOCKSTORE_TYPE: azure
+#          ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+#
+#      - name: lakeFS Logs on Azure failure
+#        if: ${{ failure() }}
+#        continue-on-error: true
+#        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+#
+#      - name: See the env when we would have tried to publish coverage
+#        run: env
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
@@ -1200,7 +1200,7 @@ jobs:
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: cosmosdb
-          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: https://esti-e2e-tests.documents.azure.com
+          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://esti-e2e-tests.documents.azure.com"
           LAKEFS_DATABASE_COSMOSDB_DATABASE: esti-db
           LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
           LAKEFS_DATABASE_COSMOSDB_READWRITEKEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}

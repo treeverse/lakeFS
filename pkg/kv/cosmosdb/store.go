@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"log"
 	"net/http"
 )
 
@@ -47,6 +48,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	if params.Container == "" {
 		return nil, fmt.Errorf("missing container: %w", kv.ErrDriverConfiguration)
 	}
+
+	log.Printf("CosmosDB: connecting to %s", params.Endpoint)
 
 	var client *azcosmos.Client
 	if params.ReadWriteKey != "" {
