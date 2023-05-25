@@ -148,7 +148,6 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 		return nil, fmt.Errorf("reading database(%d): %w", cResp.RawResponse.StatusCode, err)
 	}
 
-	containerClient.
 	return containerClient, nil
 }
 

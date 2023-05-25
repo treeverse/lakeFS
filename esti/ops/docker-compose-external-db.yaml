@@ -1,0 +1,75 @@
+version: '3'
+services:
+  lakefs:
+    image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
+    command: "${COMMAND:-run}"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - "dynamodb"
+    volumes:
+      - lakefs-app:/app:ro
+    environment:
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
+      - LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES=/tmp
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_STATS_ENABLED
+      - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - ACTIONS_VAR=this_is_actions_var
+      - LAKEFS_DATABASE_TYPE=cosmosdb
+      - LAKEFS_DATABASE_COSMOSDB_ENDPOINT
+      - LAKEFS_DATABASE_COSMOSDB_DATABASE
+      - LAKEFS_DATABASE_COSMOSDB_CONTAINER
+      - LAKEFS_DATABASE_COSMOSDB_READWRITEKEY
+    entrypoint: [ "/app/lakefs", "run" ]
+  esti:
+    image: "golang:1.19.2-alpine3.16"
+    links:
+      - lakefs:s3.local.lakefs.io
+      - lakefs:testmultipartupload.s3.local.lakefs.io
+      - lakefs:testmultipartuploadabort.s3.local.lakefs.io
+      - lakefs:testdeleteobjects.s3.local.lakefs.io
+      - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
+      - lakefs:migrate.s3.local.lakefs.io
+    environment:
+      - CGO_ENABLED=0
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION=us-east-1
+      - ESTI_TEST_DATA_ACCESS
+      - ESTI_STORAGE_NAMESPACE
+      - ESTI_BLOCKSTORE_TYPE
+      - ESTI_AWS_ACCESS_KEY_ID
+      - ESTI_SETUP_LAKEFS
+      - ESTI_AWS_SECRET_ACCESS_KEY
+      - ESTI_ENDPOINT_URL=http://lakefs:8000
+      - ESTI_LAKECTL_DIR=/app
+      - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
+      - ESTI_POST_MIGRATE
+      - ESTI_GOTEST_FLAGS
+      - ESTI_FLAGS
+    working_dir: /lakefs
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache util-linux
+        go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
+    volumes:
+      - lakefs-code:/lakefs
+      - lakefs-app:/app:ro
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:
+
