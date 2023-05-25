@@ -99,7 +99,7 @@ func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *k
 	dbResp, err := dbClient.Read(ctx, nil)
 	errCode := errStatusCode(err)
 	switch {
-	case errCode == -1 && dbResp.RawResponse.StatusCode == http.StatusOK:
+	case errCode == -1 && dbResp.RawResponse != nil && dbResp.RawResponse.StatusCode == http.StatusOK:
 		return dbClient, nil
 	case errCode == http.StatusNotFound:
 		dbResp, err = client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database}, nil)
@@ -107,7 +107,7 @@ func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *k
 			return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
 		}
 	default:
-		return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
+		return nil, fmt.Errorf("reading database: %w", err)
 	}
 	return dbClient, nil
 }
@@ -120,7 +120,7 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 	cResp, err := containerClient.Read(ctx, nil)
 	errCode := errStatusCode(err)
 	switch {
-	case errCode == -1 && cResp.RawResponse.StatusCode == http.StatusOK:
+	case errCode == -1 && cResp.RawResponse != nil && cResp.RawResponse.StatusCode == http.StatusOK:
 		return containerClient, nil
 	case errCode == http.StatusNotFound:
 		cResp, err = dbClient.CreateContainer(ctx,

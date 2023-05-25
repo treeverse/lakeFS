@@ -10,7 +10,7 @@ var testParams *kvparams.CosmosDB
 
 func TestMain(m *testing.M) {
 	testParams = &kvparams.CosmosDB{
-		ReadWriteKey: "Y2Z65CW7lNe1OYFVErwcIRBSgvxCGgJWhFBgFsL22KukCBddDGFc2EtRrDLjnKYPcjLKZQwvK7iaACDbFE5DIA==",
+		ReadWriteKey: "==",
 		Endpoint:     "https://esti-e2e-tests.documents.azure.com:443/",
 		Database:     "esti-db",
 		Container:    "aaa",
