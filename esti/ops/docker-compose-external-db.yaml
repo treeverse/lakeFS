@@ -61,7 +61,7 @@ services:
       - -c
       - |
         apk add --no-cache util-linux
-        go test -timeout 60m -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
+        go test -timeout 20m -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
