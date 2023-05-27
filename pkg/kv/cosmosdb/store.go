@@ -2,11 +2,10 @@ package cosmosdb
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/ident"
 	"log"
 	"net/http"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
@@ -157,7 +157,7 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 
 // encoding is the encoding used to encode the partition keys, ids and values.
 // Must be an encoding that keeps the strings in-order.
-var encoding = base64.URLEncoding // Encoding that keeps the strings in-order.
+var encoding = base32.HexEncoding // Encoding that keeps the strings in-order.
 
 // hashID returns a hash of the key that is used as the document id.
 func (s *Store) hashID(key []byte) string {
@@ -365,7 +365,7 @@ type EntriesIterator struct {
 	queryPager   *runtime.Pager[azcosmos.QueryItemsResponse]
 	queryCtx     context.Context
 	currPage     azcosmos.QueryItemsResponse
-	encoding     *base64.Encoding
+	encoding     *base32.Encoding
 }
 
 func (e *EntriesIterator) Next() bool {
