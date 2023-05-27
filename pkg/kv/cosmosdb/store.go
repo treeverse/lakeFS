@@ -2,10 +2,11 @@ package cosmosdb
 
 import (
 	"context"
-	"encoding/base32"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/ident"
 	"log"
 	"net/http"
 
@@ -156,11 +157,17 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 
 // encoding is the encoding used to encode the partition keys, ids and values.
 // Must be an encoding that keeps the strings in-order.
-var encoding = base32.HexEncoding // Encoding that keeps the strings in-order.
+var encoding = base64.URLEncoding // Encoding that keeps the strings in-order.
+
+// hashID returns a hash of the key that is used as the document id.
+func (s *Store) hashID(key []byte) string {
+	return encoding.EncodeToString(ident.NewAddressWriter().MarshalBytes(key).Identity())
+}
 
 type Document struct {
 	PartitionKey string `json:"partitionKey"`
-	ID           string `json:"id"`
+	HashID       string `json:"id"`
+	SortID       string `json:"sortID"`
 	Value        string `json:"value"`
 }
 
@@ -173,12 +180,12 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
-		ID:           encoding.EncodeToString(key),
+		HashID:       s.hashID(key),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
 	// Read an item
-	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.ID, nil)
+	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.HashID, nil)
 	if err != nil {
 		if isErrStatusCode(err, http.StatusNotFound) {
 			return nil, kv.ErrNotFound
@@ -227,7 +234,8 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 	// Specifies the value of the partiton key
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
-		ID:           encoding.EncodeToString(key),
+		HashID:       s.hashID(key),
+		SortID:       encoding.EncodeToString(key),
 		Value:        encoding.EncodeToString(value),
 	}
 
@@ -258,7 +266,8 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	// Specifies the value of the partiton key
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
-		ID:           encoding.EncodeToString(key),
+		HashID:       s.hashID(key),
+		SortID:       encoding.EncodeToString(key),
 		Value:        encoding.EncodeToString(value),
 	}
 
@@ -283,7 +292,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		_, err = s.containerClient.PatchItem(
 			ctx,
 			pk,
-			item.ID,
+			item.HashID,
 			patch,
 			&itemOptions,
 		)
@@ -310,7 +319,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
-	_, err := s.containerClient.DeleteItem(ctx, pk, encoding.EncodeToString(key), nil)
+	_, err := s.containerClient.DeleteItem(ctx, pk, s.hashID(key), nil)
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
 		return err
@@ -325,7 +334,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
-	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.id >= @start order by c.id", pk, &azcosmos.QueryOptions{
+	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.sortID >= @start order by c.sortID", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 		PageSizeHint:     int32(options.BatchSize),
 		QueryParameters: []azcosmos.QueryParameter{{
@@ -356,7 +365,7 @@ type EntriesIterator struct {
 	queryPager   *runtime.Pager[azcosmos.QueryItemsResponse]
 	queryCtx     context.Context
 	currPage     azcosmos.QueryItemsResponse
-	encoding     *base32.Encoding
+	encoding     *base64.Encoding
 }
 
 func (e *EntriesIterator) Next() bool {
@@ -383,7 +392,7 @@ func (e *EntriesIterator) Next() bool {
 		e.err = fmt.Errorf("failed to unmarshal: %w", err)
 		return false
 	}
-	key, err := e.encoding.DecodeString(itemResponseBody.ID)
+	key, err := e.encoding.DecodeString(itemResponseBody.SortID)
 	if err != nil {
 		e.err = fmt.Errorf("failed to decode id: %w", err)
 		return false
