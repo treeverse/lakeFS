@@ -143,6 +143,15 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 				PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
 					Paths: []string{"/partitionKey"},
 				},
+				// Excluding the value field from indexing since it is not used in queries and saves RUs for writes.
+				// partitionKey is automatically not indexed. The rest of the fields are indexed by default, including id
+				// which is unnecessary, but cannot be excluded.
+				IndexingPolicy: &azcosmos.IndexingPolicy{
+					Automatic:     false,
+					IndexingMode:  azcosmos.IndexingModeConsistent,
+					IncludedPaths: []azcosmos.IncludedPath{{Path: "/*"}},
+					ExcludedPaths: []azcosmos.ExcludedPath{{Path: "/value/?"}},
+				},
 			}, nil)
 
 		if err != nil || cResp.RawResponse.StatusCode != http.StatusCreated {
