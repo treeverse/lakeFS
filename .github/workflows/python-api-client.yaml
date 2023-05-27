@@ -50,7 +50,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         working-directory: clients/python
-        ruby-version: '2.6'
+        ruby-version: '2.7'
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
     - name: Build release as latest
