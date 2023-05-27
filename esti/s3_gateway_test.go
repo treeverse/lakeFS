@@ -32,7 +32,7 @@ var (
 
 const (
 	numUploads           = 100
-	randomDataPathLength = 400
+	randomDataPathLength = 1020
 	gatewayTestPrefix    = "main/data/"
 )
 
