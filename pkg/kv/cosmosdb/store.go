@@ -2,17 +2,16 @@ package cosmosdb
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
@@ -20,7 +19,8 @@ import (
 type Driver struct{}
 
 type Store struct {
-	containerClient *azcosmos.ContainerClient
+	containerClient  *azcosmos.ContainerClient
+	consistencyLevel azcosmos.ConsistencyLevel
 }
 
 const (
@@ -39,6 +39,17 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	if params == nil {
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
+	if params.Endpoint == "" {
+		return nil, fmt.Errorf("missing endpoint: %w", kv.ErrDriverConfiguration)
+	}
+	if params.Database == "" {
+		return nil, fmt.Errorf("missing database: %w", kv.ErrDriverConfiguration)
+	}
+	if params.Container == "" {
+		return nil, fmt.Errorf("missing container: %w", kv.ErrDriverConfiguration)
+	}
+
+	log.Printf("CosmosDB: connecting to %s", params.Endpoint)
 
 	var client *azcosmos.Client
 	if params.ReadWriteKey != "" {
@@ -48,17 +59,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 
 		// hook for using emulator for testing
-		httpClient := &http.Client{}
-		if !params.TLSEnabled {
-			httpClient.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
-			}
+		if params.Client == nil {
+			params.Client = http.DefaultClient
 		}
-
 		// Create a CosmosDB client
 		client, err = azcosmos.NewClientWithKey(params.Endpoint, cred, &azcosmos.ClientOptions{
 			ClientOptions: azcore.ClientOptions{
-				Transport: httpClient,
+				Transport: params.Client,
 			},
 		})
 		if err != nil {
@@ -69,30 +76,105 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		if err != nil {
 			return nil, fmt.Errorf("default creds: %w", err)
 		}
-		client, err = azcosmos.NewClient("myAccountEndpointURL", cred, nil)
+		client, err = azcosmos.NewClient(params.Endpoint, cred, nil)
 		if err != nil {
 			return nil, fmt.Errorf("creating client with default creds: %w", err)
 		}
 	}
 
-	// Create container client
-	containerClient, err := client.NewContainer(params.Database, params.Container)
+	dbClient, err := getOrCreateDatabase(ctx, client, params)
 	if err != nil {
-		return nil, fmt.Errorf("creating container client: %w", err)
+		return nil, err
 	}
 
+	// Create container client
+	containerClient, err := getOrCreateContainer(ctx, dbClient, params)
+	if err != nil {
+		return nil, err
+	}
+
+	cLevel := azcosmos.ConsistencyLevelBoundedStaleness
+	if !params.StrongConsistency {
+		cLevel = azcosmos.ConsistencyLevelSession
+	}
 	return &Store{
-		containerClient: containerClient,
+		containerClient:  containerClient,
+		consistencyLevel: cLevel,
 	}, nil
+}
+
+func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *kvparams.CosmosDB) (*azcosmos.DatabaseClient, error) {
+	dbClient, err := client.NewDatabase(params.Database)
+	if err != nil {
+		return nil, fmt.Errorf("creating database client: %w", err)
+	}
+	dbResp, err := dbClient.Read(ctx, nil)
+	errCode := errStatusCode(err)
+	switch {
+	case errCode == -1 && dbResp.RawResponse != nil && dbResp.RawResponse.StatusCode == http.StatusOK:
+		return dbClient, nil
+	case errCode == http.StatusNotFound:
+		dbResp, err = client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database}, nil)
+		if err != nil || dbResp.RawResponse.StatusCode != http.StatusCreated {
+			return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
+		}
+	default:
+		return nil, fmt.Errorf("reading database: %w", err)
+	}
+	return dbClient, nil
+}
+
+func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient, params *kvparams.CosmosDB) (*azcosmos.ContainerClient, error) {
+	containerClient, err := dbClient.NewContainer(params.Container)
+	if err != nil {
+		return nil, fmt.Errorf("creating database client: %w", err)
+	}
+	cResp, err := containerClient.Read(ctx, nil)
+	errCode := errStatusCode(err)
+	switch {
+	case errCode == -1 && cResp.RawResponse != nil && cResp.RawResponse.StatusCode == http.StatusOK:
+		return containerClient, nil
+	case errCode == http.StatusNotFound:
+		cResp, err = dbClient.CreateContainer(ctx,
+			azcosmos.ContainerProperties{
+				ID: params.Container,
+				PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
+					Paths: []string{"/partitionKey"},
+				},
+				// Excluding the value field from indexing since it is not used in queries and saves RUs for writes.
+				// partitionKey is automatically not indexed. The rest of the fields are indexed by default, including id
+				// which is unnecessary, but cannot be excluded.
+				IndexingPolicy: &azcosmos.IndexingPolicy{
+					Automatic:     false,
+					IndexingMode:  azcosmos.IndexingModeConsistent,
+					IncludedPaths: []azcosmos.IncludedPath{{Path: "/*"}},
+					ExcludedPaths: []azcosmos.ExcludedPath{{Path: "/value/?"}},
+				},
+			}, nil)
+
+		if err != nil || cResp.RawResponse.StatusCode != http.StatusCreated {
+			return nil, fmt.Errorf("creating container: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("reading database(%d): %w", cResp.RawResponse.StatusCode, err)
+	}
+
+	return containerClient, nil
 }
 
 // encoding is the encoding used to encode the partition keys, ids and values.
 // Must be an encoding that keeps the strings in-order.
 var encoding = base32.HexEncoding // Encoding that keeps the strings in-order.
 
+// hashID returns a hash of the key that is used as the document id.
+func (s *Store) hashID(key []byte) string {
+	return encoding.EncodeToString(ident.NewAddressWriter().MarshalBytes(key).Identity())
+}
+
 type Document struct {
 	PartitionKey string `json:"partitionKey"`
-	ID           string `json:"id"`
+	HashID       string `json:"id"`
+	SortID       string `json:"sortID"`
 	Value        string `json:"value"`
 }
 
@@ -105,12 +187,12 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
-		ID:           encoding.EncodeToString(key),
+		HashID:       s.hashID(key),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
 	// Read an item
-	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.ID, nil)
+	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.HashID, nil)
 	if err != nil {
 		if isErrStatusCode(err, http.StatusNotFound) {
 			return nil, kv.ErrNotFound
@@ -134,12 +216,15 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}, nil
 }
 
-func isErrStatusCode(err error, code int) bool {
+func errStatusCode(err error) int {
 	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) && respErr.StatusCode == code {
-		return true
+	if !errors.As(err, &respErr) {
+		return -1
 	}
-	return false
+	return respErr.StatusCode
+}
+func isErrStatusCode(err error, code int) bool {
+	return errStatusCode(err) == code
 }
 
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
@@ -156,7 +241,8 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 	// Specifies the value of the partiton key
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
-		ID:           encoding.EncodeToString(key),
+		HashID:       s.hashID(key),
+		SortID:       encoding.EncodeToString(key),
 		Value:        encoding.EncodeToString(value),
 	}
 
@@ -165,7 +251,7 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 		return err
 	}
 	itemOptions := azcosmos.ItemOptions{
-		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
+		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
@@ -187,7 +273,8 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	// Specifies the value of the partiton key
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
-		ID:           encoding.EncodeToString(key),
+		HashID:       s.hashID(key),
+		SortID:       encoding.EncodeToString(key),
 		Value:        encoding.EncodeToString(value),
 	}
 
@@ -196,7 +283,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		return err
 	}
 	itemOptions := azcosmos.ItemOptions{
-		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
+		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 	}
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
@@ -212,7 +299,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		_, err = s.containerClient.PatchItem(
 			ctx,
 			pk,
-			item.ID,
+			item.HashID,
 			patch,
 			&itemOptions,
 		)
@@ -239,7 +326,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
-	_, err := s.containerClient.DeleteItem(ctx, pk, encoding.EncodeToString(key), nil)
+	_, err := s.containerClient.DeleteItem(ctx, pk, s.hashID(key), nil)
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
 		return err
@@ -254,8 +341,8 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
-	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.id >= @start order by c.id", pk, &azcosmos.QueryOptions{
-		ConsistencyLevel: azcosmos.ConsistencyLevelBoundedStaleness.ToPtr(),
+	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.sortID >= @start order by c.sortID", pk, &azcosmos.QueryOptions{
+		ConsistencyLevel: s.consistencyLevel.ToPtr(),
 		PageSizeHint:     int32(options.BatchSize),
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
@@ -300,7 +387,7 @@ func (e *EntriesIterator) Next() bool {
 		var err error
 		e.currPage, err = e.queryPager.NextPage(e.queryCtx)
 		if err != nil {
-			e.err = err
+			e.err = fmt.Errorf("getting next page: %w", err)
 			return false
 		}
 		e.currEntryIdx = 0
@@ -312,7 +399,7 @@ func (e *EntriesIterator) Next() bool {
 		e.err = fmt.Errorf("failed to unmarshal: %w", err)
 		return false
 	}
-	key, err := e.encoding.DecodeString(itemResponseBody.ID)
+	key, err := e.encoding.DecodeString(itemResponseBody.SortID)
 	if err != nil {
 		e.err = fmt.Errorf("failed to decode id: %w", err)
 		return false

@@ -184,7 +184,7 @@ type Config struct {
 		} `mapstructure:"dynamodb"`
 
 		CosmosDB *struct {
-			ReadWriteKey SecureString `mapstructure:"read_write_key"`
+			ReadWriteKey SecureString `mapstructure:"readwritekey"`
 			Endpoint     string       `mapstructure:"endpoint"`
 			Database     string       `mapstructure:"database"`
 			Container    string       `mapstructure:"container"`
@@ -482,11 +482,11 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 
 	if c.Database.CosmosDB != nil {
 		p.CosmosDB = &kvparams.CosmosDB{
-			ReadWriteKey: c.Database.CosmosDB.ReadWriteKey.SecureValue(),
-			Endpoint:     c.Database.CosmosDB.Endpoint,
-			Database:     c.Database.CosmosDB.Database,
-			Container:    c.Database.CosmosDB.Container,
-			TLSEnabled:   true,
+			ReadWriteKey:      c.Database.CosmosDB.ReadWriteKey.SecureValue(),
+			Endpoint:          c.Database.CosmosDB.Endpoint,
+			Database:          c.Database.CosmosDB.Database,
+			Container:         c.Database.CosmosDB.Container,
+			StrongConsistency: true,
 		}
 	}
 
