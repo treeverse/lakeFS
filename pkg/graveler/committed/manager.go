@@ -180,19 +180,18 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffValueIterator(ctx, leftIt, rightIt), nil
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
-	if source == base {
-		// no changes on source
-		return "", graveler.ErrNoChanges
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, validate bool) (graveler.MetaRangeID, error) {
+	if validate {
+		if source == base {
+			// no changes on source
+			return "", graveler.ErrNoChanges
+		}
+		if destination == base {
+			// changes introduced only on source
+			return source, nil
+		}
 	}
-	if destination == base {
-		// changes introduced only on source
-		return source, nil
-	}
-	return c.MergeFromMetaRange(ctx, ns, destination, base, source, strategy)
-}
 
-func (c *committedManager) MergeFromMetaRange(ctx context.Context, ns graveler.StorageNamespace, destination, base, source graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
 	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
 	if err != nil {
 		return "", fmt.Errorf("get base iterator: %w", err)

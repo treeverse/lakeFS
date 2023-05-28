@@ -2168,7 +2168,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	metadata := map[string]string{}
+	var metadata map[string]string
 	if body.Commit.Metadata != nil {
 		metadata = body.Commit.Metadata.AdditionalProperties
 	}

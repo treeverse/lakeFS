@@ -88,14 +88,14 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	if len(kvList) == 0 {
 		return nil, nil
 	}
-	const keyValueParts = 2
+
 	kv := make(map[string]string)
 	for _, pair := range kvList {
-		parts := strings.SplitN(pair, "=", keyValueParts)
-		if len(parts) != keyValueParts {
+		key, value, found := strings.Cut(pair, "=")
+		if !found {
 			return nil, errInvalidKeyValueFormat
 		}
-		kv[parts[0]] = parts[1]
+		kv[key] = value
 	}
 	return kv, nil
 }

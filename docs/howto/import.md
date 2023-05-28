@@ -127,7 +127,7 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
 4. Add a commit message, and optionally metadata.
 5. Press _Import_
 
-Once the import is complete, the changes are merged into the source branch.
+Once the import is complete, the changes are merged into the destination branch.
 
 #### Notes
 {: .no_toc }
