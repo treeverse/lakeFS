@@ -13,14 +13,14 @@ pub(crate) async fn get_delta_table(config: &HashMap<String, String>, repo: &str
         return Err(Status::new(Code::InvalidArgument, "Missing path or namespace info"))
     }
     let path = create_s3_path(repo, table_path);
-    return match create_table_with_config(config, path).await {
+    match create_table_with_config(config, path).await {
         Ok(table) => {
             Ok(table)
         },
         Err(err) => {
             return Err(convert_delta_error(err));
         }
-    };
+    }
 }
 
 fn create_s3_path(repo: &str, table_path: &TablePath) -> String {
@@ -36,14 +36,14 @@ async fn create_table_with_config(config: &HashMap<String, String>, path: String
 }
 
 pub(crate) async fn history(delta: &mut DeltaTable, limit: Option<usize>) -> Result<Vec<CommitInfo>, Status> {
-    return match delta.history(limit).await {
+    match delta.history(limit).await {
         Ok(vec) => {
             Ok(vec)
         },
         Err(err) => {
             return Err(convert_delta_error(err))
         }
-    };
+    }
 }
 
 lazy_static! {
@@ -69,7 +69,7 @@ lazy_static! {
 }
 
 fn convert_delta_error(e: DeltaTableError) -> Status {
-    return match e {
+    match e {
         DeltaTableError::LoadCheckpoint { .. } | DeltaTableError::MissingDataFile { .. } |
         DeltaTableError::NotATable(_) | DeltaTableError::NoMetadata => {
             Status::new(Code::NotFound, format!("{:?}", e))
