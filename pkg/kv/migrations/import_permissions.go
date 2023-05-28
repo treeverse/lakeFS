@@ -13,7 +13,7 @@ import (
 )
 
 func MigrateImportPermissions(ctx context.Context, kvStore kv.Store, cfg *config.Config) error {
-	// skip migrate to ACL for users with External authorizations
+	// skip migrate for users with External authorizations
 	if !cfg.IsAuthUISimplified() {
 		fmt.Println("skipping ACL migration - external Authorization")
 		return updateKVSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)

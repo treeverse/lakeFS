@@ -22,11 +22,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// #####################################################################################
-//																																										 #
-//												 				rbac_to_acl                                          #
-//																																										 #
-// #####################################################################################
+// # rbac_to_acl test code
 
 func TestGetMinPermission(t *testing.T) {
 	tests := []struct {
@@ -115,18 +111,16 @@ func TestComputePermission(t *testing.T) {
 
 	ctx := context.Background()
 
-	mig := migrations.NewACLsMigrator(nil, false)
-
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			mig := migrations.NewACLsMigrator(nil, false)
+
 			permission, err := mig.ComputePermission(ctx, tt.Actions)
-
-			if permission != tt.Permission {
-				t.Errorf("Got permission %s when expecting %s", permission, tt.Permission)
-			}
-
 			if !errors.Is(err, tt.Err) {
 				t.Errorf("Got error %s but expected %s", err, tt.Err)
+			}
+			if permission != tt.Permission {
+				t.Errorf("Got permission %s when expecting %s", permission, tt.Permission)
 			}
 		})
 	}
@@ -136,17 +130,15 @@ func TestBroaderPermission(t *testing.T) {
 	perms := []model.ACLPermission{"", acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
 	for i, a := range perms {
 		for j, b := range perms {
-			t.Run(fmt.Sprintf("%s:%s", a, b), func(t *testing.T) {
-				after := i > j
-				broader := migrations.BroaderPermission(a, b)
-				if after != broader {
-					if after {
-						t.Error("Expected broader permission")
-					} else {
-						t.Error("Expected not a broader permission")
-					}
+			after := i > j
+			broader := migrations.BroaderPermission(a, b)
+			if after != broader {
+				if after {
+					t.Error("Expected broader permission")
+				} else {
+					t.Error("Expected not a broader permission")
 				}
-			})
+			}
 		}
 	}
 }
@@ -185,10 +177,6 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 		Policies []*model.Policy
 		// ACL is expected to be returned by NewACLForPolicies
 		ACL model.ACL
-		// Warnings is a slice of warning messages.  Each message
-		// should be contained in some returned warning (but not
-		// every returned warning must be matched!).
-		Warnings []string
 		// Err, if set, is expected to be the error returned from NewACLForPolicies
 		Err error
 	}{
@@ -223,38 +211,21 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			acp, warn, err := mig.NewACLForPolicies(ctx, tt.Policies)
+			acp, _, err := mig.NewACLForPolicies(ctx, tt.Policies)
 			if !errors.Is(err, tt.Err) {
 				t.Errorf("Got error %s, expected %s", err, tt.Err)
 			}
 			if diffs := deep.Equal(acp, &tt.ACL); diffs != nil {
 				t.Errorf("Bad ACL: %s", diffs)
 			}
-			if len(tt.Warnings) > 0 {
-				if warn == nil {
-					t.Fatalf("No warnings returned when expecting %v", tt.Warnings)
-				}
-				fullWarning := warn.Error()
-				for _, expectedWarning := range tt.Warnings {
-					if !strings.Contains(fullWarning, expectedWarning) {
-						t.Errorf("Got warnings %v, which did not include expected warning %s", fullWarning, expectedWarning)
-					}
-				}
-			}
 		})
 	}
 }
 
-// #####################################################################################
-//
-//																														 #
-//	   import_permissions                                      #
-//																														 #
-//
-// #####################################################################################
+// # import_permissions test code
+
 func TestMigrateImportPermissions(t *testing.T) {
 	ctx := context.Background()
-	authService, store := authtestutil.SetupService(t, ctx, []byte("some secret"))
 	cfg := config.Config{}
 
 	tests := []struct {
@@ -365,6 +336,7 @@ func TestMigrateImportPermissions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			authService, store := authtestutil.SetupService(t, ctx, []byte("some secret"))
 			for _, policy := range tt.policies {
 				testutil.MustDo(t, "create Policy", authService.WritePolicy(ctx, &policy, false))
 			}

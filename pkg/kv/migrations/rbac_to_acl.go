@@ -403,9 +403,7 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 // ComputeAddedActions returns the list of actions that permission allows
 // that are not in alreadyAllowedActions.
 func (mig *ACLsMigrator) ComputeAddedActions(permission model.ACLPermission, alreadyAllowedActions map[string]struct{}) []string {
-	var (
-		allAllowedActions map[string]struct{}
-	)
+	var allAllowedActions map[string]struct{}
 	switch permission {
 	case acl.ACLRead:
 		allAllowedActions = mig.Actions[acl.ACLRead]
@@ -430,7 +428,7 @@ func (mig *ACLsMigrator) ComputeAddedActions(permission model.ACLPermission, alr
 	return addedActionsSlice
 }
 
-// BroaderPermission returns true if a offers strictly more permissions that b.
+// BroaderPermission returns true if a offers strictly more permissions than b. Unknown ACLPermission will panic.
 func BroaderPermission(a, b model.ACLPermission) bool {
 	switch a {
 	case "":
