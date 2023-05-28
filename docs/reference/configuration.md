@@ -189,6 +189,11 @@ This reference uses `.` to denote the nesting of values.
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
 * `security.audit_check_interval` `(duration : 24h)` - Duration in which we check for security audit.
 * `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary
+* `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin.
+* `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
+* `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
+* `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
+
 {: .ref-list }
 
 ## Using Environment Variables
