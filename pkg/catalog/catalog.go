@@ -52,8 +52,7 @@ const (
 
 	NumberOfParentsOfNonMergeCommit = 1
 
-	gcParquetParallelNum            = 1                // Number of goroutines to handle marshaling of data
-	defaultGCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+	gcParquetParallelNum = 1 // Number of goroutines to handle marshaling of data
 
 	// Calculation of size deviation by gcPeriodicCheckSize value
 	// "data" prefix = 4 bytes
@@ -127,28 +126,28 @@ const (
 )
 
 type Config struct {
-	Config                   *config.Config
-	KVStore                  kv.Store
-	WalkerFactory            WalkerFactory
-	SettingsManagerOption    settings.ManagerOption
-	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
-	PathProvider             *upload.PathPartitionProvider
-	Limiter                  ratelimit.Limiter
+	Config                *config.Config
+	KVStore               kv.Store
+	WalkerFactory         WalkerFactory
+	SettingsManagerOption settings.ManagerOption
+	PathProvider          *upload.PathPartitionProvider
+	Limiter               ratelimit.Limiter
 }
 
 type Catalog struct {
-	BlockAdapter             block.Adapter
-	Store                    Store
-	GCMaxUncommittedFileSize int
-	log                      logging.Logger
-	walkerFactory            WalkerFactory
-	managers                 []io.Closer
-	workPool                 *pond.WorkerPool
-	PathProvider             *upload.PathPartitionProvider
-	BackgroundLimiter        ratelimit.Limiter
-	KVStore                  kv.Store
-	KVStoreLimited           kv.Store
-	addressProvider          *ident.HexAddressProvider
+	BlockAdapter          block.Adapter
+	Store                 Store
+	log                   logging.Logger
+	walkerFactory         WalkerFactory
+	managers              []io.Closer
+	workPool              *pond.WorkerPool
+	PathProvider          *upload.PathPartitionProvider
+	BackgroundLimiter     ratelimit.Limiter
+	KVStore               kv.Store
+	KVStoreLimited        kv.Store
+	addressProvider       *ident.HexAddressProvider
+	UGCPrepareMaxFileSize int64
+	UGCPrepareInterval    time.Duration
 }
 
 const (
@@ -214,9 +213,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	if cfg.WalkerFactory == nil {
 		cfg.WalkerFactory = store.NewFactory(cfg.Config)
-	}
-	if cfg.GCMaxUncommittedFileSize == 0 {
-		cfg.GCMaxUncommittedFileSize = defaultGCMaxUncommittedFileSize
 	}
 
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
@@ -290,18 +286,19 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 	return &Catalog{
-		BlockAdapter:             tierFSParams.Adapter,
-		Store:                    gStore,
-		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
-		PathProvider:             cfg.PathProvider,
-		BackgroundLimiter:        cfg.Limiter,
-		log:                      logging.Default().WithField("service_name", "entry_catalog"),
-		walkerFactory:            cfg.WalkerFactory,
-		workPool:                 workPool,
-		KVStore:                  cfg.KVStore,
-		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
-		KVStoreLimited:           storeLimiter,
-		addressProvider:          addressProvider,
+		BlockAdapter:          tierFSParams.Adapter,
+		Store:                 gStore,
+		UGCPrepareMaxFileSize: cfg.Config.UGC.PrepareMaxFileSize,
+		UGCPrepareInterval:    cfg.Config.UGC.PrepareInterval,
+		PathProvider:          cfg.PathProvider,
+		BackgroundLimiter:     cfg.Limiter,
+		log:                   logging.Default().WithField("service_name", "entry_catalog"),
+		walkerFactory:         cfg.WalkerFactory,
+		workPool:              workPool,
+		KVStore:               cfg.KVStore,
+		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		KVStoreLimited:        storeLimiter,
+		addressProvider:       addressProvider,
 	}, nil
 }
 
@@ -2190,7 +2187,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
+	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, repository, uw, mark, runID, c.UGCPrepareMaxFileSize, c.UGCPrepareInterval)
 	if err != nil {
 		return nil, err
 	}
