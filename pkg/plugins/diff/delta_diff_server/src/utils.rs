@@ -74,6 +74,6 @@ pub(crate) fn construct_table_op(commit_info: &CommitInfo, version: DeltaDataTyp
         timestamp: Option::from(ts),
         operation: op_name.to_string(),
         content: op_content_hash,
-        operation_type: i32::from(op_type),
+        operation_type: op_type,
     })
 }

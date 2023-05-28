@@ -7,7 +7,7 @@ use deltalake::action::CommitInfo;
 use deltalake::delta::DeltaTable;
 use deltalake::DeltaDataTypeVersion;
 use futures::join;
-use portpicker;
+
 use tonic::{Code, Request, Response, Status, transport::Server};
 
 use differ::{DiffRequest, DiffResponse, GatewayConfig, table_differ_server::{TableDiffer, TableDifferServer}};
@@ -146,7 +146,7 @@ async fn run_diff(left_table: &mut DeltaTable, right_table: &mut DeltaTable) -> 
     let mut left_history_version = HistoryAndVersion{ history: left_table_history?, version: left_table.version() };
     let mut right_history_version = HistoryAndVersion{ history: right_table_history?, version: right_table.version() };
     let diff = compare(&mut left_history_version,  &mut right_history_version).unwrap();
-    return Ok(Response::new(DiffResponse { entries: diff, diff_type: i32::from(DiffType::Changed) }))
+    Ok(Response::new(DiffResponse { entries: diff, diff_type: i32::from(DiffType::Changed) }))
 }
 
 struct HistoryAndVersion {
@@ -181,7 +181,7 @@ fn show_history(mut hist: Vec<CommitInfo>, mut table_version: DeltaDataTypeVersi
 fn compare(left_history_version: &mut HistoryAndVersion,
            right_history_version: &mut HistoryAndVersion) -> Result<Vec<TableOperation>, Status> {
     // The lower limit of the two (earliest common version):
-    let common_ancestor = right_history_version.get_common_available_ancestor(&left_history_version);
+    let common_ancestor = right_history_version.get_common_available_ancestor(left_history_version);
     let mut table_op_list: Vec<TableOperation> = vec![];
 
     let right_table_version = right_history_version.version;
@@ -240,10 +240,10 @@ fn compare_table_slices(left_commit_slice: &[CommitInfo],
 }
 
 fn construct_table_op(commit_info: &CommitInfo, version: DeltaDataTypeVersion) -> Result<TableOperation, Status> {
-    return match utils::construct_table_op(commit_info, version) {
+    match utils::construct_table_op(commit_info, version) {
         Ok(table_ops) => Ok(table_ops),
         Err(e) => Err(Status::new(Code::Aborted, format!("Creating operation history aborted due to:\n{:?}", e)))
-    };
+    }
 }
 
 #[tokio::main]
@@ -263,7 +263,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .serve(address);
 
     // Communicating to the go-plugin application client (handshake)
-    println!("1|{}|tcp|{}|grpc", version, address.to_string());
+    println!("1|{}|tcp|{}|grpc", version, address);
     io::stdout().flush().unwrap();
 
     serve.await?;
