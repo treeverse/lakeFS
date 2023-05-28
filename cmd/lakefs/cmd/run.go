@@ -188,6 +188,14 @@ var runCmd = &cobra.Command{
 		}
 		deleteScheduler.StartAsync()
 
+		// initial setup if needed, do not fail on error
+		if cfg.Setup.UserName != "" && cfg.Setup.AccessKeyID.SecureValue() != "" && cfg.Setup.SecretAccessKey.SecureValue() != "" {
+			_, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Setup.UserName, cfg.Setup.AccessKeyID.SecureValue(), cfg.Setup.SecretAccessKey.SecureValue())
+			if err != nil {
+				logger.WithError(err).Warn("Failed to run initial setup")
+			}
+		}
+
 		templater := templater.NewService(templates.Content, cfg, authService)
 
 		actionsService := actions.NewService(

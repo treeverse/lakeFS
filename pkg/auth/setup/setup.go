@@ -185,6 +185,8 @@ func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.T
 func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	now := time.Now()
 
+	// TODO(barak): Make sure one setup is done
+
 	// Set up the basic groups and policies
 	err := SetupBaseGroups(ctx, authService, cfg, now)
 	if err != nil {
@@ -235,14 +237,17 @@ func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *
 }
 
 func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
-	adminUser := &model.SuperuserConfiguration{User: model.User{
-		CreatedAt: time.Now(),
-		Username:  username,
-	}}
+	adminUser := &model.SuperuserConfiguration{
+		User: model.User{
+			CreatedAt: time.Now(),
+			Username:  username,
+		},
+	}
 	if accessKeyID != nil && secretAccessKey != nil {
 		adminUser.AccessKeyID = *accessKeyID
 		adminUser.SecretAccessKey = *secretAccessKey
 	}
+
 	// create first admin user
 	cred, err := SetupAdminUser(ctx, authService, cfg, adminUser)
 	if err != nil {
