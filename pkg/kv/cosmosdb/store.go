@@ -106,61 +106,55 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 }
 
 func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *kvparams.CosmosDB) (*azcosmos.DatabaseClient, error) {
+	dbResp, err := client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database}, nil)
+	if err != nil {
+		errCode := errStatusCode(err)
+		if errCode != http.StatusConflict && errCode != http.StatusCreated {
+			errPrefix := "creating database"
+			if dbResp.RawResponse != nil {
+				errPrefix += fmt.Sprintf("(%d)", dbResp.RawResponse.StatusCode)
+			}
+			return nil, fmt.Errorf("%s: %w", errPrefix, err)
+		}
+	}
 	dbClient, err := client.NewDatabase(params.Database)
 	if err != nil {
 		return nil, fmt.Errorf("creating database client: %w", err)
-	}
-	dbResp, err := dbClient.Read(ctx, nil)
-	errCode := errStatusCode(err)
-	switch {
-	case errCode == -1 && dbResp.RawResponse != nil && dbResp.RawResponse.StatusCode == http.StatusOK:
-		return dbClient, nil
-	case errCode == http.StatusNotFound:
-		dbResp, err = client.CreateDatabase(ctx, azcosmos.DatabaseProperties{ID: params.Database}, nil)
-		if err != nil || dbResp.RawResponse.StatusCode != http.StatusCreated {
-			return nil, fmt.Errorf("reading database(%d): %w", dbResp.RawResponse.StatusCode, err)
-		}
-	default:
-		return nil, fmt.Errorf("reading database: %w", err)
 	}
 	return dbClient, nil
 }
 
 func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient, params *kvparams.CosmosDB) (*azcosmos.ContainerClient, error) {
+	cResp, err := dbClient.CreateContainer(ctx,
+		azcosmos.ContainerProperties{
+			ID: params.Container,
+			PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
+				Paths: []string{"/partitionKey"},
+			},
+			// Excluding the value field from indexing since it is not used in queries and saves RUs for writes.
+			// partitionKey is automatically not indexed. The rest of the fields are indexed by default, including id
+			// which is unnecessary, but cannot be excluded.
+			IndexingPolicy: &azcosmos.IndexingPolicy{
+				Automatic:     false,
+				IndexingMode:  azcosmos.IndexingModeConsistent,
+				IncludedPaths: []azcosmos.IncludedPath{{Path: "/*"}},
+				ExcludedPaths: []azcosmos.ExcludedPath{{Path: "/value/?"}},
+			},
+		}, nil)
+	if err != nil {
+		errCode := errStatusCode(err)
+		if errCode != http.StatusConflict && errCode != http.StatusCreated {
+			errPrefix := "creating container"
+			if cResp.RawResponse != nil {
+				errPrefix += fmt.Sprintf("(%d)", cResp.RawResponse.StatusCode)
+			}
+			return nil, fmt.Errorf("%s: %w", errPrefix, err)
+		}
+	}
 	containerClient, err := dbClient.NewContainer(params.Container)
 	if err != nil {
-		return nil, fmt.Errorf("creating database client: %w", err)
+		return nil, fmt.Errorf("creating container client: %w", err)
 	}
-	cResp, err := containerClient.Read(ctx, nil)
-	errCode := errStatusCode(err)
-	switch {
-	case errCode == -1 && cResp.RawResponse != nil && cResp.RawResponse.StatusCode == http.StatusOK:
-		return containerClient, nil
-	case errCode == http.StatusNotFound:
-		cResp, err = dbClient.CreateContainer(ctx,
-			azcosmos.ContainerProperties{
-				ID: params.Container,
-				PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
-					Paths: []string{"/partitionKey"},
-				},
-				// Excluding the value field from indexing since it is not used in queries and saves RUs for writes.
-				// partitionKey is automatically not indexed. The rest of the fields are indexed by default, including id
-				// which is unnecessary, but cannot be excluded.
-				IndexingPolicy: &azcosmos.IndexingPolicy{
-					Automatic:     false,
-					IndexingMode:  azcosmos.IndexingModeConsistent,
-					IncludedPaths: []azcosmos.IncludedPath{{Path: "/*"}},
-					ExcludedPaths: []azcosmos.ExcludedPath{{Path: "/value/?"}},
-				},
-			}, nil)
-
-		if err != nil || cResp.RawResponse.StatusCode != http.StatusCreated {
-			return nil, fmt.Errorf("creating container: %w", err)
-		}
-	default:
-		return nil, fmt.Errorf("reading database(%d): %w", cResp.RawResponse.StatusCode, err)
-	}
-
 	return containerClient, nil
 }
 
