@@ -147,6 +147,7 @@ type Catalog struct {
 	KVStoreLimited        kv.Store
 	addressProvider       *ident.HexAddressProvider
 	UGCPrepareMaxFileSize int64
+	UGCPrepareInterval    time.Duration
 }
 
 const (
@@ -288,6 +289,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		BlockAdapter:          tierFSParams.Adapter,
 		Store:                 gStore,
 		UGCPrepareMaxFileSize: cfg.Config.UGC.PrepareMaxFileSize,
+		UGCPrepareInterval:    cfg.Config.UGC.PrepareInterval,
 		PathProvider:          cfg.PathProvider,
 		BackgroundLimiter:     cfg.Limiter,
 		log:                   logging.Default().WithField("service_name", "entry_catalog"),
@@ -2185,7 +2187,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, repository, uw, mark, runID, c.UGCPrepareMaxFileSize)
+	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, repository, uw, mark, runID, c.UGCPrepareMaxFileSize, c.UGCPrepareInterval)
 	if err != nil {
 		return nil, err
 	}
