@@ -2558,6 +2558,130 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 
 
+### lakectl local
+
+local
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for local
+```
+
+
+
+### lakectl local clone
+
+
+
+```
+lakectl local clone [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for clone
+  -p, --parallelism int   max concurrent operations to perform (default 5)
+```
+
+
+
+### lakectl local diff
+
+
+
+```
+lakectl local diff [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help         help for diff
+  -l, --local-only   don't compare against remote changes
+```
+
+
+
+### lakectl local hash
+
+
+
+```
+lakectl local hash [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for hash
+```
+
+
+
+### lakectl local help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type local help [path to command] for full details.
+
+```
+lakectl local help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl local list
+
+
+
+```
+lakectl local list [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for list
+```
+
+
+
+### lakectl local sync
+
+
+
+```
+lakectl local sync [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for sync
+  -p, --parallelism int   max concurrent operations to perform (default 5)
+```
+
+
+
 ### lakectl log
 
 Show log of commits
