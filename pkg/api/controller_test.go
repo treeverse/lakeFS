@@ -44,6 +44,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -2758,6 +2759,37 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 			t.Fatalf("expected error creating invalid policy: arn")
 		}
 	})
+}
+
+func TestController_LogAction(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// create repository
+	name := testUniqueRepoName()
+	resp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+		Name:             name,
+		StorageNamespace: onBlock(deps, name),
+	})
+	verifyResponseOK(t, resp, err)
+
+	// lookup and verify action metric
+	idx := slices.IndexFunc(deps.collector.Metrics, func(item *stats.Metric) bool {
+		return item.Class == "api_server" && item.Name == "create_repo"
+	})
+	if idx == -1 {
+		t.Fatal("Failed to find create_repo metric")
+	}
+	m := deps.collector.Metrics[idx]
+	if m.UserID != "admin" {
+		t.Fatalf("Expected userID to be admin, got %s", m.UserID)
+	}
+	if m.Repository != name {
+		t.Fatalf("Expected repository to be %s, got %s", name, m.Repository)
+	}
+	if len(m.Client) == 0 {
+		t.Fatalf("Expected client to be set, got empty Client")
+	}
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
