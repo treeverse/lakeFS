@@ -539,7 +539,7 @@ type VersionController interface {
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
-	MergeFromMetaRange(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error)
+	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error)
@@ -2528,7 +2528,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	return commitID, nil
 }
 
-func (g *Graveler) MergeFromMetaRange(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error) {
+func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error) {
 	var (
 		preRunID string
 		commit   Commit
@@ -2559,12 +2559,10 @@ func (g *Graveler) MergeFromMetaRange(ctx context.Context, repository *Repositor
 
 		g.log(ctx).WithFields(logging.Fields{
 			"repository":             repository.RepositoryID,
-			"source":                 source,
 			"destination":            destination,
 			"source_meta_range":      source,
 			"destination_meta_range": toCommit.MetaRangeID,
-			"base_meta_range":        "",
-		}).Trace("MergeFromMetaRange")
+		}).Trace("Import")
 
 		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, source, "", MergeStrategySrc, false)
 		if err != nil {
@@ -2582,22 +2580,23 @@ func (g *Graveler) MergeFromMetaRange(ctx context.Context, repository *Repositor
 		commit.Metadata = commitParams.Metadata
 		commit.Metadata[MergeStrategyMetadataKey] = MergeStrategySrcWinsStr
 		preRunID = g.hooks.NewRunID()
-		err = g.hooks.PreMergeHook(ctx, HookRecord{
-			EventType:        EventTypePreMerge,
+		err = g.hooks.PreCommitHook(ctx, HookRecord{
 			RunID:            preRunID,
+			EventType:        EventTypePreCommit,
+			SourceRef:        destination.Ref(),
 			RepositoryID:     repository.RepositoryID,
 			StorageNamespace: storageNamespace,
 			BranchID:         destination,
-			SourceRef:        toCommit.CommitID.Ref(), // Will allow running pre-merge hooks of source ref
 			Commit:           commit,
 		})
 		if err != nil {
 			return nil, &HookAbortError{
-				EventType: EventTypePreMerge,
+				EventType: EventTypePreCommit,
 				RunID:     preRunID,
 				Err:       err,
 			}
 		}
+
 		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
@@ -2614,24 +2613,22 @@ func (g *Graveler) MergeFromMetaRange(ctx context.Context, repository *Repositor
 
 	g.dropTokens(ctx, tokensToDrop...)
 	postRunID := g.hooks.NewRunID()
-	err = g.hooks.PostMergeHook(ctx, HookRecord{
-		EventType:        EventTypePostMerge,
+	err = g.hooks.PostCommitHook(ctx, HookRecord{
+		EventType:        EventTypePostCommit,
 		RunID:            postRunID,
 		RepositoryID:     repository.RepositoryID,
 		StorageNamespace: storageNamespace,
+		SourceRef:        commitID.Ref(),
 		BranchID:         destination,
-
-		SourceRef: commitID.Ref(),
-		Commit:    commit,
-		CommitID:  commitID,
-		PreRunID:  preRunID,
+		Commit:           commit,
+		CommitID:         commitID,
+		PreRunID:         preRunID,
 	})
 	if err != nil {
-		g.log(ctx).
-			WithError(err).
+		g.log(ctx).WithError(err).
 			WithField("run_id", postRunID).
 			WithField("pre_run_id", preRunID).
-			Error("Post-merge hook failed")
+			Error("Post-commit hook failed")
 	}
 	return commitID, nil
 }

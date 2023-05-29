@@ -1867,7 +1867,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		return importError
 	}
 
-	commitID, err := c.Store.MergeFromMetaRange(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
+	commitID, err := c.Store.Import(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
 		Committer: params.Commit.Committer,
 		Message:   params.Commit.CommitMessage,
 		Metadata:  map[string]string(params.Commit.Metadata),
