@@ -3,13 +3,14 @@ package catalog
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
 )
 
-func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string, maxFileSize int64) (*GCUncommittedMark, bool, error) {
+func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.RepositoryRecord, w *UncommittedWriter, mark *GCUncommittedMark, runID string, maxFileSize int64, prepareDuration time.Duration) (*GCUncommittedMark, bool, error) {
 	pw, err := writer.NewParquetWriterFromWriter(w, new(UncommittedParquetObject), gcParquetParallelNum)
 	if err != nil {
 		return nil, false, err
@@ -33,6 +34,7 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	}
 
 	count := 0
+	startTime := time.Now()
 	var nextMark *GCUncommittedMark
 	for it.Next() {
 		entry := it.Value()
@@ -55,7 +57,11 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 				return nil, false, err
 			}
 		}
-		if w.Size() > maxFileSize {
+		// check if we need to stop - based on max file size or prepare duration.
+		// prepare duration is optional, if 0 it will be ignored.
+		// prepare duration is used to stop the process in cases we scan a lot of data, and we want to stop
+		// so the api call will not time out.
+		if w.Size() > maxFileSize || (prepareDuration > 0 && time.Since(startTime) > prepareDuration) {
 			nextMark = &GCUncommittedMark{
 				RunID:    runID,
 				BranchID: entry.branchID,
