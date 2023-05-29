@@ -14,13 +14,13 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> SSO is also available on [lakeFS Cloud](../cloud/sso.html). Using the open-source version of lakeFS? Read more on [authentication](/reference/authentication.html). 
+> SSO is also available on [lakeFS Cloud](../cloud/sso.md). Using the open-source version of lakeFS? Read more on [authentication](../reference/authentication.md). 
 
 Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
 
-* [Active Directory Federation Services (AD FS) (using SAML)](#adfs)
-* [OpenID Connect](#oidc)
-* [LDAP](#ldap)
+* Active Directory Federation Services (AD FS) (using SAML)
+* OpenID Connect
+* LDAP
 
 If you're using an authentication provider that is not listed please [contact us](support@treeverse.io) for further assistance.
 
@@ -43,11 +43,13 @@ In order for Fluffy to work, the following values must be configured. Update (or
 4. Replace `lakefs.company.com` with your lakeFS server URL.
 
 If you'd like to generate the certificates using OpenSSL, you can take a look at the following example:
+
 ```sh
 openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com" -
 ```
 
 lakeFS Server Configuration (Update in helm's `values.yaml` file):
+
 ```yaml
 auth:
   cookie_auth_verification:
@@ -68,6 +70,7 @@ auth:
 ```
 
 Fluffy Configuration (Update in helm's `values.yaml` file):
+
 ```yaml
 logging:
   format: "json"
@@ -94,11 +97,12 @@ auth:
 ```
   </div>
   <div markdown="1" id="oidc">
+
 ## OpenID Connect
 
 In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
 1. Replace `lakefsConfig.friendly_name_claim_name` with the right claim name.
-1. Replace `lakefsConfig.default_initial_groups` with desired claim name (See [pre-configured](https://docs.lakefs.io/reference/rbac.html#preconfigured-groups) groups for enterprise)
+1. Replace `lakefsConfig.default_initial_groups` with desired claim name (See [pre-configured](../reference/rbac.md#preconfigured-groups) groups for enterprise)
 2. Replace `fluffyConfig.auth.logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/logout/path`)
 3. Replace `fluffyConfig.auth.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com`)
 4. Replace `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters you'd like to pass to the OIDC provider for logout.
@@ -107,6 +111,7 @@ In order for Fluffy to work, the following values must be configured. Update (or
 7. Replace `lakefs.company.com` with the lakeFS server URL.
 
 lakeFS Server Configuration (Update in helm's `values.yaml` file):
+
 ```yaml
   # Important: make sure to include the rest of your lakeFS Configuration here!
 auth:
@@ -124,6 +129,7 @@ auth:
 ```
 
 Fluffy Configuration (Update in helm's `values.yaml` file):
+
 ```yaml
 logging:
   format: "json"
@@ -160,6 +166,7 @@ In order for Fluffy to work, the following values must be configured. Update (or
 4. Replace `fluffyConfig.auth.ldap.remote_authenticator.user_base_dn` with the user base to search users in.
 
 lakeFS Server Configuration (Update in helm's `values.yaml` file):
+
 ```yaml
 # Important: make sure to include the rest of your lakeFS Configuration here!
 
@@ -175,6 +182,7 @@ auth:
 ```
 
 Fluffy Configuration (Update in helm's `values.yaml` file):
+
 ```yaml
 logging:
   format: "json"
@@ -200,14 +208,14 @@ auth:
 
 ## Helm
 
-In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts).
 
 Notes:
-* Check the [examples](https://github.com/treeverse/charts/tree/add_enterprise_support/examples/lakefs/enterprise) we provide for each authentication method (`oidc`/`adfs`/`ldap` + `rbac`).
+* Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc/adfs/ldap + rbac).
 * The examples are provisioned with a Postgres pod for quick-start, make sure to replace that to a stable database once ready.
-* `secrets.authEncryptSecretKey` is shared between fluffy & lakeFS for authentication.
-* lakeFS `image.tag` must be >= 0.100.0
-* fluffy `image.tag` must be >= 0.2.0
+* The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
+* The lakeFS `image.tag` must be >= 0.100.0
+* The fluffy `image.tag` must be >= 0.2.0
 * Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
