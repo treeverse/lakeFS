@@ -432,6 +432,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
 				Id: importID,
 			})
+			require.NoError(t, err)
 			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
 			status := statusResp.JSON200
 			require.Nil(t, status.Error)

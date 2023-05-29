@@ -85,9 +85,6 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(kvList) == 0 {
-		return nil, nil
-	}
 
 	kv := make(map[string]string)
 	for _, pair := range kvList {

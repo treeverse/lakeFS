@@ -63,7 +63,7 @@ var importCmd = &cobra.Command{
 				},
 			},
 		}
-		if metadata != nil {
+		if len(metadata) > 0 {
 			body.Commit.Metadata = &api.CommitCreation_Metadata{AdditionalProperties: metadata}
 		}
 
