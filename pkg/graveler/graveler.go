@@ -2557,26 +2557,16 @@ func (g *Graveler) MergeFromMetaRange(ctx context.Context, repository *Repositor
 			return nil, err
 		}
 
-		// Source is not a commit - merge base is destination root
-		itr, err := g.Log(ctx, repository, toCommit.CommitID, false)
-		if err != nil {
-			return nil, err
-		}
-		root := toCommit
-		for itr.Next() {
-			root = itr.Value()
-		}
-
 		g.log(ctx).WithFields(logging.Fields{
 			"repository":             repository.RepositoryID,
 			"source":                 source,
 			"destination":            destination,
 			"source_meta_range":      source,
 			"destination_meta_range": toCommit.MetaRangeID,
-			"base_meta_range":        root,
+			"base_meta_range":        "",
 		}).Trace("MergeFromMetaRange")
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, root.MetaRangeID, source, MergeStrategySrc, false)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, source, "", MergeStrategySrc, false)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
