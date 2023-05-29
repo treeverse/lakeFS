@@ -1729,7 +1729,7 @@ func runMergeTests(tests testCases, t *testing.T) {
 					metaRangeId := graveler.MetaRangeID("merge")
 					writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
 					committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
-					_, err := committedManager.Merge(ctx, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
+					_, err := committedManager.Merge(ctx, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy, true)
 					if err != expectedResult.expectedErr {
 						t.Fatal(err)
 					}
