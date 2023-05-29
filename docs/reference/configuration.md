@@ -62,10 +62,10 @@ This reference uses `.` to denote the nesting of values.
       {: .note }
     + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
   + `database.cosmosdb` - Configuration section when using `database.type="cosmosdb"`
-    + `database.cosmosdb.readwritekey` `(string : "")` - If specified, will 
-      be used to authenticate to the CosmosDB account.
-    + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account 
-      endpoint, e.g. `https://<account>.documents.azure.com:443/`.
+    + `database.cosmosdb.read_write_key` `(string : "")` - If specified, will 
+      be used to authenticate to the CosmosDB account. Otherwise, Azure SDK 
+      default authentication (with env vars) will be used.
+    + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
     + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
     + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
   + `database.local` - Configuration section when using `database.type="local"`
@@ -329,7 +329,7 @@ logging:
 database:
   type: "cosmosdb"
   cosmosdb:
-    readwritekey: "ExampleReadWriteKeyMD7nkPOWgV7d4BUjzLw=="
+    read_write_key: "ExampleReadWriteKeyMD7nkPOWgV7d4BUjzLw=="
     endpoint: "https://lakefs-account.documents.azure.com:443/"
     database: "lakefs-db"
     container: "lakefs-container"

@@ -184,7 +184,7 @@ type Config struct {
 		} `mapstructure:"dynamodb"`
 
 		CosmosDB *struct {
-			ReadWriteKey SecureString `mapstructure:"readwritekey"`
+			ReadWriteKey SecureString `mapstructure:"read_write_key"`
 			Endpoint     string       `mapstructure:"endpoint"`
 			Database     string       `mapstructure:"database"`
 			Container    string       `mapstructure:"container"`
