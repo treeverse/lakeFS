@@ -292,8 +292,7 @@ type Config struct {
 		} `mapstructure:"sstable"`
 	} `mapstructure:"committed"`
 	UGC struct {
-		PrepareMaxFileSize int64         `mapstructure:"prepare_max_file_size"`
-		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
+		PrepareMaxFileSize int64 `mapstructure:"prepare_max_file_size"`
 	} `mapstructure:"ugc"`
 	Graveler struct {
 		RepositoryCache struct {
