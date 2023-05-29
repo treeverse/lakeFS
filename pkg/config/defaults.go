@@ -115,4 +115,7 @@ func setDefaults(local bool) {
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
 
 	viper.SetDefault("plugins.default_path", "~/.lakefs/plugins")
+
+	viper.SetDefault("ugc.prepare_interval", time.Minute)
+	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 }

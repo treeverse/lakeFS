@@ -565,10 +565,10 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
-				Store:                    g.Sut,
-				BlockAdapter:             blockAdapter,
-				GCMaxUncommittedFileSize: 500 * 1024,
-				KVStore:                  g.KVStore,
+				Store:                 g.Sut,
+				BlockAdapter:          blockAdapter,
+				UGCPrepareMaxFileSize: 500 * 1024,
+				KVStore:               g.KVStore,
 			}
 
 			var (
