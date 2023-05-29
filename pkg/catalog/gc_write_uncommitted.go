@@ -57,6 +57,10 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 				return nil, false, err
 			}
 		}
+		// check if we need to stop - based on max file size or prepare duration.
+		// prepare duration is optional, if 0 it will be ignored.
+		// prepare duration is used to stop the process in cases we scan a lot of data, and we want to stop
+		// so the api call will not time out.
 		if w.Size() > maxFileSize || (prepareDuration > 0 && time.Since(startTime) > prepareDuration) {
 			nextMark = &GCUncommittedMark{
 				RunID:    runID,
