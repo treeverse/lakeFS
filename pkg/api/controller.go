@@ -2243,7 +2243,8 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	status, err := c.Catalog.GetImportStatus(ctx, repository, params.Id)
+	id := swag.StringValue(params.Id)
+	status, err := c.Catalog.GetImportStatus(ctx, repository, id)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
