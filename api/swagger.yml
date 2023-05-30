@@ -1389,8 +1389,6 @@ components:
           description: Number of objects processed so far
           type: integer
           format: int64
-        import_branch:
-          type: string
         metarange_id:
           type: string
         commit:

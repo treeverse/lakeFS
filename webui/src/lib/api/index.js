@@ -1110,7 +1110,7 @@ class Import {
         return response.json();
     }
 
-    async create(repoId, branchId, source, prepend, commitMessage, commitMetadata) {
+    async create(repoId, branchId, source, prepend, commitMessage, commitMetadata = {}) {
         const body = {
             "paths": [
                 {
@@ -1119,10 +1119,13 @@ class Import {
                     "type": "common_prefix",
             }],
             "commit": {
-                "message": commitMessage,
-                "metadata": commitMetadata,
-            }
+                "message": commitMessage
+            },
+        };
+        if (Object.keys(commitMetadata).length > 0) {
+            body.commit["metadata"] = commitMetadata
         }
+
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import`, {
             method: 'POST',
             body: JSON.stringify(body),

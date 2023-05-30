@@ -7348,7 +7348,6 @@ components:
     ImportStatusResp:
       example:
         update_time: 2000-01-23T04:56:07.000+00:00
-        import_branch: import_branch
         metarange_id: metarange_id
         ingested_objects: 0
         commit:
@@ -7375,8 +7374,6 @@ components:
           description: Number of objects processed so far
           format: int64
           type: integer
-        import_branch:
-          type: string
         metarange_id:
           type: string
         commit:

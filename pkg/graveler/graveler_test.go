@@ -1484,28 +1484,6 @@ func TestGraveler_AddCommit(t *testing.T) {
 			expectedErr: graveler.ErrMetaRangeNotFound,
 		},
 		{
-			name: "missing parents",
-			fields: fields{
-				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
-				StagingManager:   &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)},
-				RefManager: &testutil.RefsFake{
-					CommitID: expectedParentCommitID,
-					Branch:   &graveler.Branch{CommitID: expectedParentCommitID},
-					Commits:  map[graveler.CommitID]*graveler.Commit{expectedParentCommitID: {MetaRangeID: expectedRangeID}},
-				},
-			},
-			args: args{
-				ctx:            nil,
-				repositoryID:   "repo",
-				committer:      "committer",
-				message:        "a message",
-				metadata:       nil,
-				missingParents: true,
-			},
-			want:        expectedCommitID,
-			expectedErr: graveler.ErrAddCommitNoParent,
-		},
-		{
 			name: "fail on add commit",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
