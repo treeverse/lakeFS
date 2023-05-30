@@ -189,6 +189,8 @@ This reference uses `.` to denote the nesting of values.
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
 * `security.audit_check_interval` `(duration : 24h)` - Duration in which we check for security audit.
 * `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary
+* `ugc.prepare_max_file_size` `(int: 125829120)` - Uncommitted garbage collection prepare request, limit the produced file maximum size
+* `ugc.prepare_interval` `(duraction: 1m)` - Uncommitted garbage collection prepare request, limit produce time to interval
 * `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin.
 * `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
 * `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.

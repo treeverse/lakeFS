@@ -4645,8 +4645,8 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		SourceRef:  sourceRef,
 		Client:     client,
 	}
-	user, err := auth.GetUser(ctx)
-	if err != nil {
+	user, _ := auth.GetUser(ctx)
+	if user != nil {
 		ev.UserID = user.Username
 	}
 

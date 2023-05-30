@@ -259,7 +259,6 @@ const onTableDiffExpansion = (entry, setTableDiffState, setIsTableMerge) => () =
 export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
     const onChangeKey = useCallback((i) => {
         return e => {
-            console.log(e)
             const key = e.currentTarget.value;
             setMetadataFields(prev => [...prev.slice(0,i), {...prev[i], key}, ...prev.slice(i+1)]);
             e.preventDefault()
