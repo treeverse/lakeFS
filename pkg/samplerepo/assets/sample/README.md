@@ -1,3 +1,5 @@
+[repository]: test
+
 # Welcome to the Lake!
 
 ![Waving Axolotl](/images/waving-axolotl-transparent-w90.gif)
@@ -67,13 +69,13 @@ _We'll start off by querying the sample data to orient ourselves around what it 
 
 _You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in Git against which you develop software code._
 
-<img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Frepo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
+![The lakeFS objects list with a highlight to indicate that the branch is set to main.](images/repo-contents.png)
 
 _Let's have a look at the data, ahead of making some changes to it on a branch in the following steps._.
 
 Click on [`lakes.parquet`](object?ref=main&path=lakes.parquet) from the object browser and notice that the built-it DuckDB runs a query to show a preview of the file's contents.
 
-<img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fduckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
+![The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file.](images/duckdb-main-01.png)
 
 _Now we'll run our own query on it to look at the top five countries represented in the data_.
 
@@ -87,7 +89,7 @@ ORDER BY COUNT(*.
 DESC LIMIT 5;
 ```
 
-<img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
+![An embedded DuckDB query showing a count of rows per country in the dataset.](images/duckdb-main-02.png)
 
 _Next we're going to make some changes to the data—but on a development branch so that the data in the main branch remains untouched._
 
@@ -112,41 +114,43 @@ From the [branches](./branches) page, click on **Create Branch**. Call the new b
 
 <details>
   <summary>CLI (Docker)</summary>
-_We'll use the `lakectl` tool to create the branch._ 
+
+_We'll use the `lakectl` tool to create the branch._
 
 In a new terminal window run the following:
 
 ```bash
 docker exec lakefs \
     lakectl branch create \
-	    lakefs://quickstart/denmark-lakes \
-    --source lakefs://quickstart/main
+	    lakefs://<repo_name>/denmark-lakes \
+    --source lakefs://<repo_name>/main
 ```
 
 _You should get a confirmation message like this:_
 
 ```bash
-Source ref: lakefs://quickstart/main
+Source ref: lakefs://<repo_name>/main
 created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
 ```
 </details>
 
 <details>
   <summary>CLI (local)</summary>
-_We'll use the `lakectl` tool to create the branch._ 
+
+_We'll use the `lakectl` tool to create the branch._
 
 In a new terminal window run the following:
 
 ```bash
 lakectl branch create \
-  lakefs://quickstart/denmark-lakes \
-  --source lakefs://quickstart/main
+  lakefs://<repo_name>/denmark-lakes \
+  --source lakefs://<repo_name>/main
 ```
 
 _You should get a confirmation message like this:_
 
 ```bash
-Source ref: lakefs://quickstart/main
+Source ref: lakefs://<repo_name>/main
 created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
 ```
 </details>
@@ -314,7 +318,8 @@ GROUP BY country
 ORDER BY COUNT(*.
 DESC LIMIT 5;
 ```
-<img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
+
+![The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected.](images/duckdb-main-02.png)
 
 _In the next step we'll see how to merge our branch back into main._
 
@@ -348,14 +353,14 @@ Run the following from a terminal window:
 
 ```bash
 docker exec lakefs \
-  lakectl commit lakefs://quickstart/denmark-lakes \
+  lakectl commit lakefs://<repo_name>/denmark-lakes \
 	-m "Create a dataset of just the lakes in Denmark"
 ```
 
 _You will get confirmation of the commit including its hash._
 
 ```bash
-Branch: lakefs://quickstart/denmark-lakes
+Branch: lakefs://<repo_name>/denmark-lakes
 Commit for branch "denmark-lakes" completed.
 
 ID: ba6d71d0965fa5d97f309a17ce08ad006c0dde15f99c5ea0904d3ad3e765bd74
@@ -371,14 +376,14 @@ Parents: 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
 Run the following from a terminal window:
 
 ```bash
-lakectl commit lakefs://quickstart/denmark-lakes \
+lakectl commit lakefs://<repo_name>/denmark-lakes \
   -m "Create a dataset of just the lakes in Denmark"
 ```
 
 _You will get confirmation of the commit including its hash._
 
 ```bash
-Branch: lakefs://quickstart/denmark-lakes
+Branch: lakefs://<repo_name>/denmark-lakes
 Commit for branch "denmark-lakes" completed.
 
 ID: ba6d71d0965fa5d97f309a17ce08ad006c0dde15f99c5ea0904d3ad3e765bd74
@@ -419,8 +424,8 @@ Run this from a terminal window.
 ```bash
 docker exec lakefs \
   lakectl merge \
-    lakefs://quickstart/denmark-lakes \
-    lakefs://quickstart/main
+    lakefs://<repo_name>/denmark-lakes \
+    lakefs://<repo_name>/main
 ```
 
 </details>
@@ -434,8 +439,8 @@ Run this from a terminal window.
 
 ```bash
 lakectl merge \
-  lakefs://quickstart/denmark-lakes \
-  lakefs://quickstart/main
+  lakefs://<repo_name>/denmark-lakes \
+  lakefs://<repo_name>/main
 ```
 
 </details>
@@ -443,7 +448,7 @@ lakectl merge \
 
 _We can confirm that this has worked by returning to the same object view of [`lakes.parquet`](object?ref=main&path=lakes.parquet) as before and clicking on **Execute** to rerun the same query. You'll see that the country row counts have changed, and only Denmark is left in the data._
 
-<img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fduckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
+![The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark.](images/duckdb-main-03.png)
 
 **But…oh no!** 😬 A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻‍♀.
 
@@ -466,14 +471,14 @@ From your terminal window run `lakectl` with the `revert` command:
 ```bash
 docker exec -it lakefs \
     lakectl branch revert \
-	    lakefs://quickstart/main \
+	    lakefs://<repo_name>/main \
 	    main --parent-number 1 --yes
 ```
 
 _You should see a confirmation of a successful rollback:_
 
 ```bash
-Branch: lakefs://quickstart/main
+Branch: lakefs://<repo_name>/main
 commit main successfully reverted
 ```
 
@@ -486,14 +491,14 @@ From your terminal window run `lakectl` with the `revert` command:
 
 ```bash
 lakectl branch revert \
-  lakefs://quickstart/main \
+  lakefs://<repo_name>/main \
   main --parent-number 1 --yes
 ```
 
 _You should see a confirmation of a successful rollback:_
 
 ```bash
-Branch: lakefs://quickstart/main
+Branch: lakefs://<repo_name>/main
 commit main successfully reverted
 ```
 
@@ -501,7 +506,7 @@ commit main successfully reverted
 
 Back in the object page and the DuckDB query we can see that the original file is now back to how it was.
 
-<img width="75%" src="/api/v1/repositories/quickstart/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge." class="quickstart"/>
+![The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge.](images/duckdb-main-02.png)
 
 ## Bonus Challenge
 
