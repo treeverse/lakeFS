@@ -504,7 +504,7 @@ public class ImportApi {
      * Build call for importStatus
      * @param repository  (required)
      * @param branch  (required)
-     * @param id Unique identifier of the import process (required)
+     * @param id Unique identifier of the import process (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -566,11 +566,6 @@ public class ImportApi {
             throw new ApiException("Missing the required parameter 'branch' when calling importStatus(Async)");
         }
         
-        // verify the required parameter 'id' is set
-        if (id == null) {
-            throw new ApiException("Missing the required parameter 'id' when calling importStatus(Async)");
-        }
-        
 
         okhttp3.Call localVarCall = importStatusCall(repository, branch, id, _callback);
         return localVarCall;
@@ -582,7 +577,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param id Unique identifier of the import process (required)
+     * @param id Unique identifier of the import process (optional)
      * @return ImportStatusResp
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -604,7 +599,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param id Unique identifier of the import process (required)
+     * @param id Unique identifier of the import process (optional)
      * @return ApiResponse&lt;ImportStatusResp&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -627,7 +622,7 @@ public class ImportApi {
      * 
      * @param repository  (required)
      * @param branch  (required)
-     * @param id Unique identifier of the import process (required)
+     * @param id Unique identifier of the import process (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object

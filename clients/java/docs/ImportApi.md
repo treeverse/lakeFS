@@ -370,7 +370,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **branch** | **String**|  |
- **id** | **String**| Unique identifier of the import process |
+ **id** | **String**| Unique identifier of the import process | [optional]
 
 ### Return type
 

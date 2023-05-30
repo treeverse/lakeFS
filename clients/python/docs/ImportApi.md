@@ -373,7 +373,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **import_status**
-> ImportStatusResp import_status(repository, branch, id)
+> ImportStatusResp import_status(repository, branch)
 
 get import status
 
@@ -438,12 +438,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = import_api.ImportApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
-    id = "id_example" # str | Unique identifier of the import process
+    id = "id_example" # str | Unique identifier of the import process (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # get import status
-        api_response = api_instance.import_status(repository, branch, id)
+        api_response = api_instance.import_status(repository, branch)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ImportApi->import_status: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # get import status
+        api_response = api_instance.import_status(repository, branch, id=id)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ImportApi->import_status: %s\n" % e)
@@ -456,7 +465,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
- **id** | **str**| Unique identifier of the import process |
+ **id** | **str**| Unique identifier of the import process | [optional]
 
 ### Return type
 

@@ -264,7 +264,6 @@ class ImportApi(object):
                 'required': [
                     'repository',
                     'branch',
-                    'id',
                 ],
                 'nullable': [
                 ],
@@ -589,7 +588,6 @@ class ImportApi(object):
         self,
         repository,
         branch,
-        id,
         **kwargs
     ):
         """get import status  # noqa: E501
@@ -597,15 +595,15 @@ class ImportApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.import_status(repository, branch, id, async_req=True)
+        >>> thread = api.import_status(repository, branch, async_req=True)
         >>> result = thread.get()
 
         Args:
             repository (str):
             branch (str):
-            id (str): Unique identifier of the import process
 
         Keyword Args:
+            id (str): Unique identifier of the import process. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -654,8 +652,6 @@ class ImportApi(object):
             repository
         kwargs['branch'] = \
             branch
-        kwargs['id'] = \
-            id
         return self.import_status_endpoint.call_with_http_info(**kwargs)
 
     def ingest_range(
