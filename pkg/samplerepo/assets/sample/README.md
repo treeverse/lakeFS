@@ -81,7 +81,7 @@ Copy and paste the following SQL statement into the DuckDB query panel and click
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('quickstart', 'main', 'lakes.parquet'))
+FROM     READ_PARQUET(LAKEFS_OBJECT('<repo_name>', 'main', 'lakes.parquet'))
 GROUP BY country
 ORDER BY COUNT(*.
 DESC LIMIT 5;
@@ -209,7 +209,7 @@ _Now we'll load the lakes data into a DuckDB table so that we can manipulate it.
 
 ```sql
 CREATE TABLE lakes AS
-    SELECT * FROM READ_PARQUET('s3://quickstart/denmark-lakes/lakes.parquet');
+    SELECT * FROM READ_PARQUET('s3://<repo_name>/denmark-lakes/lakes.parquet');
 ```
 
 _Just to check that it's the same we saw before we're run the same query._
@@ -274,7 +274,7 @@ _The changes so far have only been to DuckDB's copy of the data. Let's now push 
 _Note the S3 path is different this time as we're writing it to the `denmark-lakes` branch, not `main`._
 
 ```sql
-COPY lakes TO 's3://quickstart/denmark-lakes/lakes.parquet'
+COPY lakes TO 's3://<repo_name>/denmark-lakes/lakes.parquet'
     (FORMAT 'PARQUET', ALLOW_OVERWRITE TRUE);
 ```
 
@@ -288,7 +288,7 @@ _We'll drop the `lakes` table just to be sure, and then query the parquet file d
 DROP TABLE lakes;
 
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET('s3://quickstart/denmark-lakes/lakes.parquet')
+FROM     READ_PARQUET('s3://<repo_name>/denmark-lakes/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*.
 DESC LIMIT 5;
@@ -311,7 +311,7 @@ See for yourself by returning to [the lakeFS object view](object?ref=main&path=l
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('quickstart', 'main', 'lakes.parquet'))
+FROM     READ_PARQUET(LAKEFS_OBJECT('<repo_name>', 'main', 'lakes.parquet'))
 GROUP BY country
 ORDER BY COUNT(*.
 DESC LIMIT 5;
