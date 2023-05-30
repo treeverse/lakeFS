@@ -37,6 +37,12 @@ In lakeFS, a _repository_ is a set of related objects (or collections of objects
 
 lakeFS represents repositories as a logical namespace used to group together objects, branches, and commits - analogous to a repository in Git.
 
+lakeFS repository naming requirements are as follows: 
+
+- Start with a lower case letter or number
+- Contain only lower case letters, numbers and hyphens
+- Be between 3 and 63 characters long
+
 ### Commits
 
 Using commits, you can view a [repository](#repository) at a certain point in its history and you're guaranteed that the data you see is exactly as it was at the point of committing it.
