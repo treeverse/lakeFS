@@ -424,7 +424,7 @@ const ReadmeContainer = ({config, repo, reference, path='', refreshDep=''}) => {
     return (
         <FileContents 
             repoId={repo.id} 
-            refId={reference.id}
+            reference={reference}
             path={readmePath}
             fileExtension={fileExtension}
             contentType={contentType}
