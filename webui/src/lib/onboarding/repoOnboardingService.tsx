@@ -82,7 +82,7 @@ export const getRepoOnboardingSteps = (
     cta: "Run import",
     onClick: () =>
       navigate(`/repositories/${currentRepo}/objects?importDialog=true`),
-    showStep: () => true, // objectStoreName !== "local",
+    showStep: () => objectStoreName !== "local",
     isCompleted: async () => {
       try {
         const branch = await findBranchRegexMatch(
