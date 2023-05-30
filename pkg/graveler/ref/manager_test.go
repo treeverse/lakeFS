@@ -1222,11 +1222,18 @@ func TestManager_DeleteExpiredImports(t *testing.T) {
 			UpdatedAt: timestamppb.New(time.Now().Add(-ref.ImportExpiryTime - time.Hour)),
 			Error:     "",
 		},
+		{
+			Id:        "",
+			Completed: false,
+			UpdatedAt: timestamppb.New(time.Now().Add(-ref.ImportExpiryTime - time.Hour)),
+			Error:     "",
+		},
 	}
 
 	repoPartition := graveler.RepoPartition(repository)
+	var data []byte
 	for _, i := range imports {
-		data, err := proto.Marshal(i)
+		data, err = proto.Marshal(i)
 		require.NoError(t, err)
 		err = store.Set(ctx, []byte(repoPartition), []byte(graveler.ImportsPath(i.Id)), data)
 		require.NoError(t, err)
@@ -1239,13 +1246,20 @@ func TestManager_DeleteExpiredImports(t *testing.T) {
 	require.NoError(t, err)
 	defer it.Close()
 
+	var found bool
 	count := 0
 	for it.Next() {
 		entry := it.Entry()
 		count += 1
 		id := string(entry.Key)
-		require.True(t, strings.HasPrefix(id, "imports/not_expired"), id)
+		if id != ref.ImportRepoPath {
+			require.True(t, strings.HasPrefix(id, "imports/not_expired"), id)
+		} else {
+			found = true
+		}
 	}
+	require.True(t, found)
 	require.NoError(t, it.Err())
-	require.Equal(t, 2, count)
+	require.Equal(t, 3, count)
+
 }

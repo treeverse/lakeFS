@@ -3476,7 +3476,6 @@ paths:
           description: Unique identifier of the import process
           schema:
             type: string
-          required: true
       responses:
         200:
           description: import status

@@ -1,6 +1,7 @@
 package ref
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -34,6 +35,8 @@ const (
 	// ImportExpiryTime Expiry time to remove imports from ref-store
 	ImportExpiryTime = 24 * time.Hour
 )
+
+var ImportRepoPath = graveler.ImportsPath("")
 
 type CacheConfig struct {
 	Size   int
@@ -647,6 +650,9 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 	var errs multierror.Error
 	for itr.Next() {
 		entry := itr.Entry()
+		if bytes.Compare(entry.Key, []byte(ImportRepoPath)) == 0 { // Repository level indicator - we do not delete it
+			continue
+		}
 		status, ok := entry.Value.(*graveler.ImportStatusData)
 		if !ok {
 			return fmt.Errorf("invalid protobuf type %s: %w", entry.Value.ProtoReflect().Type().Descriptor().FullName(), graveler.ErrReadingFromStore)
