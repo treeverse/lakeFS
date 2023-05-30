@@ -174,14 +174,13 @@ func ImportStatusFromProto(pb *ImportStatusData) *ImportStatus {
 	}
 
 	return &ImportStatus{
-		ID:           ImportID(pb.Id),
-		Completed:    pb.Completed,
-		UpdatedAt:    pb.UpdatedAt.AsTime(),
-		Progress:     pb.Progress,
-		ImportBranch: pb.ImportBranch,
-		MetaRangeID:  MetaRangeID(pb.MetarangeId),
-		Commit:       commit,
-		Error:        statusErr,
+		ID:          ImportID(pb.Id),
+		Completed:   pb.Completed,
+		UpdatedAt:   pb.UpdatedAt.AsTime(),
+		Progress:    pb.Progress,
+		MetaRangeID: MetaRangeID(pb.MetarangeId),
+		Commit:      commit,
+		Error:       statusErr,
 	}
 }
 
@@ -196,13 +195,12 @@ func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
 	}
 
 	return &ImportStatusData{
-		Id:           status.ID.String(),
-		Completed:    status.Completed,
-		UpdatedAt:    timestamppb.New(status.UpdatedAt),
-		Progress:     status.Progress,
-		ImportBranch: status.ImportBranch,
-		MetarangeId:  status.MetaRangeID.String(),
-		Commit:       commit,
-		Error:        statusErr,
+		Id:          status.ID.String(),
+		Completed:   status.Completed,
+		UpdatedAt:   timestamppb.New(status.UpdatedAt),
+		Progress:    status.Progress,
+		MetarangeId: status.MetaRangeID.String(),
+		Commit:      commit,
+		Error:       statusErr,
 	}
 }

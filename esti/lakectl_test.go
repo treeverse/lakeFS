@@ -517,11 +517,10 @@ func TestLakectlImport(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
-		"REPO":            repoName,
-		"STORAGE":         storage,
-		"BRANCH":          mainBranch,
-		"IMPORTED_BRANCH": "_" + mainBranch + "_imported",
-		"OBJECTS":         "10",
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"OBJECTS": "10",
 	}
 
 	const from = "s3://lakectl-ingest-test-data"

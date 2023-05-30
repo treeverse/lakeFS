@@ -68,14 +68,6 @@ public class ImportStatusRespTest {
     }
 
     /**
-     * Test the property 'importBranch'
-     */
-    @Test
-    public void importBranchTest() {
-        // TODO: test importBranch
-    }
-
-    /**
      * Test the property 'metarangeId'
      */
     @Test
