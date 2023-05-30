@@ -2,12 +2,12 @@ package samplerepo
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"io/fs"
 	"os"
 	"path"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -28,11 +28,15 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 	// upload sample data
 	// we skip checking if the repo and branch exist, since we just created them
 	// we also skip checking if the file exists, since we know the repo is empty
-	readme := path.Join(sampleRepoFSRootPath, "README.md")
-	readmeBuf, err := fs.ReadFile(assets.SampleData, readme)
+	readmeTmpl := path.Join(sampleRepoFSRootPath, "README.md.tmpl")
+	config := map[string]string{
+		"RepoName": repo.Name,
+	}
+	tmpl, err := template.ParseFS(assets.SampleData, "sample/README.md.tmpl")
 	if err != nil {
 		return err
 	}
+
 	err = fs.WalkDir(assets.SampleData, sampleRepoFSRootPath, func(p string, d fs.DirEntry, topLevelErr error) error {
 		// handle a top-level error
 		if topLevelErr != nil {
@@ -48,15 +52,15 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 			file fs.File
 			err  error
 		)
-		if p == readme {
-			readmeBuf = bytes.ReplaceAll(readmeBuf, []byte("<repo_name>"), []byte(repo.Name))
-			f, err := os.Create("README.md")
+		if p == readmeTmpl {
+			p = "README.md"
+			f, err := os.Create(p)
 			if err != nil {
 				return err
 			}
 			defer f.Close()
 			writer := bufio.NewWriter(f)
-			_, err = writer.Write(readmeBuf)
+			err = tmpl.Execute(writer, config)
 			if err != nil {
 				return err
 			}
