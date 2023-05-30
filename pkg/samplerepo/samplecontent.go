@@ -4,6 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"io/fs"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -11,11 +17,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/samplerepo/assets"
 	"github.com/treeverse/lakefs/pkg/upload"
-	"io/fs"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 const (
