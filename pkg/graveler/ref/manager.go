@@ -650,7 +650,7 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 	var errs multierror.Error
 	for itr.Next() {
 		entry := itr.Entry()
-		if bytes.Compare(entry.Key, []byte(ImportRepoPath)) == 0 { // Repository level indicator - we do not delete it
+		if bytes.Equal(entry.Key, []byte(ImportRepoPath)) { // Repository level indicator - we do not delete it
 			continue
 		}
 		status, ok := entry.Value.(*graveler.ImportStatusData)
