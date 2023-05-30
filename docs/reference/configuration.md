@@ -191,6 +191,11 @@ This reference uses `.` to denote the nesting of values.
 * `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary
 * `ugc.prepare_max_file_size` `(int: 125829120)` - Uncommitted garbage collection prepare request, limit the produced file maximum size
 * `ugc.prepare_interval` `(duraction: 1m)` - Uncommitted garbage collection prepare request, limit produce time to interval
+* `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin.
+* `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
+* `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
+* `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
+
 {: .ref-list }
 
 ## Using Environment Variables
