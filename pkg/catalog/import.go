@@ -42,11 +42,6 @@ func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Lo
 	if err != nil {
 		return nil, err
 	}
-	// This code is used to indicate import was invoked at least once at the repository level
-	err = kv.SetMsg(ctx, kvStore, repoPartition, []byte(graveler.ImportsPath("")), graveler.ProtoFromImportStatus(&status))
-	if err != nil {
-		return nil, err
-	}
 	dbPath, err := os.MkdirTemp("", "import_"+importID)
 	if err != nil {
 		return nil, err

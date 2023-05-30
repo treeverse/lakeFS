@@ -309,12 +309,6 @@ func TestImportNew(t *testing.T) {
 			Path:        importPath,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-
-		// Verify import indication in repository missing
-		repoResp, err := client.ImportStatusWithResponse(ctx, repoName, "bar", &api.ImportStatusParams{})
-		require.NoError(t, err)
-		require.NotNil(t, repoResp.JSON404, "expected not found", err)
-
 		importID := testImportNew(t, ctx, repoName, branch, paths, nil)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 
@@ -326,16 +320,11 @@ func TestImportNew(t *testing.T) {
 		require.Equal(t, http.StatusConflict, cancelResp.StatusCode())
 
 		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
-			Id: &importID,
+			Id: importID,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
 		require.Nil(t, statusResp.JSON200.Error)
-
-		// Ensure we get a response for a general Get
-		repoResp, err = client.ImportStatusWithResponse(ctx, repoName, "foo", &api.ImportStatusParams{})
-		require.NoError(t, err)
-		require.NotNil(t, repoResp.JSON200, "failed to get import status", err)
 	})
 
 	t.Run("parent", func(t *testing.T) {
@@ -441,7 +430,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 			t.Fatalf("context canceled")
 		case <-ticker.C:
 			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
-				Id: &importID,
+				Id: importID,
 			})
 			require.NoError(t, err)
 			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
@@ -497,7 +486,7 @@ func TestImportCancel(t *testing.T) {
 	timer := time.NewTimer(0)
 	for range timer.C {
 		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
-			Id: &importResp.JSON202.Id,
+			Id: importResp.JSON202.Id,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
