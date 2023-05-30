@@ -21,7 +21,7 @@ import Alert from "react-bootstrap/Alert";
 import {BsCloudArrowUp} from "react-icons/bs";
 
 import {Tree} from "../../../lib/components/repository/tree";
-import {config, objects, refs, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
+import {config, objects, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -114,12 +114,10 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         }
     }, 3000);
     
-    let currBranch = referenceId;
-    currBranch = currBranch.match(/^_(.*)_imported$/)?.[1] || currBranch; // trim "_imported" suffix if used as import source
-    let importBranch = `_${currBranch}_imported`;
-
     if (!referenceId || referenceType !== RefTypeBranch) return <></>
 
+    let branchId = referenceId;
+    
     const resetState = () => {
         setImportError(null);
         setImportPhase(ImportPhase.NotStarted);
@@ -135,18 +133,6 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
         onHide()
     };
 
-    const doMerge = async () => {
-        setImportPhase(ImportPhase.Merging);
-        try {
-            await refs.merge(repoId, importBranch, currBranch);
-            onDone();
-            hide();
-        } catch (error) {
-            setImportPhase(ImportPhase.MergeFailed);
-            setImportError(error);
-        }
-    };
-
     const doImport = async () => {
         setImportPhase(ImportPhase.InProgress);
         try {
@@ -158,9 +144,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 destRef.current.value,
                 commitMsgRef.current.value,
                 sourceRef.current.value,
-                importBranch,
                 repoId,
-                referenceId,
+                branchId,
                 metadata
             );
         } catch (error) {
@@ -180,16 +165,13 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 <Modal.Body>
                     {
                         (importPhase === ImportPhase.NotStarted ||
-                            importPhase === ImportPhase.Failed  ||
-                            importPhase === ImportPhase.MergeFailed) &&
+                            importPhase === ImportPhase.Failed) &&
                         <ImportForm
                             config={config}
                             pathStyle={pathStyle}
                             sourceRef={sourceRef}
                             destRef={destRef}
                             updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
-                            repoId={repoId}
-                            importBranch={importBranch}
                             path={path}
                             commitMsgRef={commitMsgRef}
                             shouldAddPath={true}
@@ -204,25 +186,24 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                     }
                     {
                         importPhase === ImportPhase.Completed &&
-                        <ImportDone currBranch={currBranch} importBranch={importBranch}
+                        <ImportDone branch={branchId}
                                     numObjects={numberOfImportedObjects}/>
                     }
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={ async () => {
                         if (importPhase === ImportPhase.InProgress && importID.length > 0) {
-                            await imports.delete(repoId, importBranch, importID);
+                            await imports.delete(repoId, branchId, importID);
                         }
                         hide();
-                    }}>
+                    }} hidden={importPhase === ImportPhase.Completed}>
                         Cancel
                     </Button>
 
                     <ExecuteImportButton
                         importPhase={importPhase}
                         importFunc={doImport}
-                        mergeFunc={doMerge}
-                        doneFunc={onDone}
+                        doneFunc={hide}
                         isEnabled={isImportEnabled}/>
 
                 </Modal.Footer>

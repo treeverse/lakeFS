@@ -93,7 +93,6 @@ class ImportStatusResp(ModelNormal):
             'completed': (bool,),  # noqa: E501
             'update_time': (datetime,),  # noqa: E501
             'ingested_objects': (int,),  # noqa: E501
-            'import_branch': (str,),  # noqa: E501
             'metarange_id': (str,),  # noqa: E501
             'commit': (Commit,),  # noqa: E501
             'error': (Error,),  # noqa: E501
@@ -108,7 +107,6 @@ class ImportStatusResp(ModelNormal):
         'completed': 'completed',  # noqa: E501
         'update_time': 'update_time',  # noqa: E501
         'ingested_objects': 'ingested_objects',  # noqa: E501
-        'import_branch': 'import_branch',  # noqa: E501
         'metarange_id': 'metarange_id',  # noqa: E501
         'commit': 'commit',  # noqa: E501
         'error': 'error',  # noqa: E501
@@ -160,7 +158,6 @@ class ImportStatusResp(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             ingested_objects (int): Number of objects processed so far. [optional]  # noqa: E501
-            import_branch (str): [optional]  # noqa: E501
             metarange_id (str): [optional]  # noqa: E501
             commit (Commit): [optional]  # noqa: E501
             error (Error): [optional]  # noqa: E501
@@ -252,7 +249,6 @@ class ImportStatusResp(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             ingested_objects (int): Number of objects processed so far. [optional]  # noqa: E501
-            import_branch (str): [optional]  # noqa: E501
             metarange_id (str): [optional]  # noqa: E501
             commit (Commit): [optional]  # noqa: E501
             error (Error): [optional]  # noqa: E501

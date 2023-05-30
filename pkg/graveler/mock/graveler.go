@@ -598,6 +598,21 @@ func (mr *MockVersionControllerMockRecorder) GetTag(ctx, repository, tagID inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTag", reflect.TypeOf((*MockVersionController)(nil).GetTag), ctx, repository, tagID)
 }
 
+// Import mocks base method.
+func (m *MockVersionController) Import(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Import", ctx, repository, destination, source, commitParams)
+	ret0, _ := ret[0].(graveler.CommitID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Import indicates an expected call of Import.
+func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination, source, commitParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), ctx, repository, destination, source, commitParams)
+}
+
 // IsLinkAddressExpired mocks base method.
 func (m *MockVersionController) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
 	m.ctrl.T.Helper()

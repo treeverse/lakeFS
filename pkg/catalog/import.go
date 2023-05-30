@@ -31,11 +31,10 @@ type Import struct {
 	mu            sync.Mutex
 }
 
-func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, importID, importBranch string) (*Import, error) {
+func NewImport(ctx context.Context, cancel context.CancelFunc, logger logging.Logger, kvStore kv.Store, repository *graveler.RepositoryRecord, importID string) (*Import, error) {
 	status := graveler.ImportStatus{
-		ID:           graveler.ImportID(importID),
-		UpdatedAt:    time.Now(),
-		ImportBranch: importBranch,
+		ID:        graveler.ImportID(importID),
+		UpdatedAt: time.Now(),
 	}
 	repoPartition := graveler.RepoPartition(repository)
 	// Must be set first

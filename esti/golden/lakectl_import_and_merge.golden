@@ -1,7 +1,7 @@
-Import of ${OBJECTS} object(s) into "${IMPORTED_BRANCH}" completed.
+Flag --merge has been deprecated, import is done directly into target branch
+Import of ${OBJECTS} object(s) into "${BRANCH}" completed.
 MetaRange ID: <COMMIT_ID>
 Commit ID: <COMMIT_ID>
 Message: Import objects
 Timestamp: <DATE> <TIME> <TZ>
 Parents: <COMMIT_ID>
-Merged "${IMPORTED_BRANCH}" into "${BRANCH}" to get "<COMMIT_ID>".

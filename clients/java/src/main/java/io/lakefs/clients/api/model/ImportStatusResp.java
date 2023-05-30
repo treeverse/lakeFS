@@ -44,10 +44,6 @@ public class ImportStatusResp {
   @SerializedName(SERIALIZED_NAME_INGESTED_OBJECTS)
   private Long ingestedObjects;
 
-  public static final String SERIALIZED_NAME_IMPORT_BRANCH = "import_branch";
-  @SerializedName(SERIALIZED_NAME_IMPORT_BRANCH)
-  private String importBranch;
-
   public static final String SERIALIZED_NAME_METARANGE_ID = "metarange_id";
   @SerializedName(SERIALIZED_NAME_METARANGE_ID)
   private String metarangeId;
@@ -127,29 +123,6 @@ public class ImportStatusResp {
 
   public void setIngestedObjects(Long ingestedObjects) {
     this.ingestedObjects = ingestedObjects;
-  }
-
-
-  public ImportStatusResp importBranch(String importBranch) {
-    
-    this.importBranch = importBranch;
-    return this;
-  }
-
-   /**
-   * Get importBranch
-   * @return importBranch
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-
-  public String getImportBranch() {
-    return importBranch;
-  }
-
-
-  public void setImportBranch(String importBranch) {
-    this.importBranch = importBranch;
   }
 
 
@@ -234,7 +207,6 @@ public class ImportStatusResp {
     return Objects.equals(this.completed, importStatusResp.completed) &&
         Objects.equals(this.updateTime, importStatusResp.updateTime) &&
         Objects.equals(this.ingestedObjects, importStatusResp.ingestedObjects) &&
-        Objects.equals(this.importBranch, importStatusResp.importBranch) &&
         Objects.equals(this.metarangeId, importStatusResp.metarangeId) &&
         Objects.equals(this.commit, importStatusResp.commit) &&
         Objects.equals(this.error, importStatusResp.error);
@@ -242,7 +214,7 @@ public class ImportStatusResp {
 
   @Override
   public int hashCode() {
-    return Objects.hash(completed, updateTime, ingestedObjects, importBranch, metarangeId, commit, error);
+    return Objects.hash(completed, updateTime, ingestedObjects, metarangeId, commit, error);
   }
 
   @Override
@@ -252,7 +224,6 @@ public class ImportStatusResp {
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    ingestedObjects: ").append(toIndentedString(ingestedObjects)).append("\n");
-    sb.append("    importBranch: ").append(toIndentedString(importBranch)).append("\n");
     sb.append("    metarangeId: ").append(toIndentedString(metarangeId)).append("\n");
     sb.append("    commit: ").append(toIndentedString(commit)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
