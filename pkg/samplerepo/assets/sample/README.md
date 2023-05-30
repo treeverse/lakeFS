@@ -1,5 +1,3 @@
-[repository]: test
-
 # Welcome to the Lake!
 
 ![Waving Axolotl](/images/waving-axolotl-transparent-w90.gif)
@@ -69,13 +67,13 @@ _We'll start off by querying the sample data to orient ourselves around what it 
 
 _You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in Git against which you develop software code._
 
-![The lakeFS objects list with a highlight to indicate that the branch is set to main.](images/repo-contents.png)
+<img width="75%" src="/api/v1/repositories/<repo_name>/refs/main/objects?path=images%2Frepo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
 
 _Let's have a look at the data, ahead of making some changes to it on a branch in the following steps._.
 
 Click on [`lakes.parquet`](object?ref=main&path=lakes.parquet) from the object browser and notice that the built-it DuckDB runs a query to show a preview of the file's contents.
 
-![The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file.](images/duckdb-main-01.png)
+<img width="75%" src="/api/v1/repositories/<repo_name>/refs/main/objects?path=images%2Fduckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
 _Now we'll run our own query on it to look at the top five countries represented in the data_.
 
@@ -89,7 +87,7 @@ ORDER BY COUNT(*.
 DESC LIMIT 5;
 ```
 
-![An embedded DuckDB query showing a count of rows per country in the dataset.](images/duckdb-main-02.png)
+<img width="75%" src="/api/v1/repositories/<repo_name>/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
 
 _Next we're going to make some changes to the data—but on a development branch so that the data in the main branch remains untouched._
 
@@ -318,8 +316,7 @@ GROUP BY country
 ORDER BY COUNT(*.
 DESC LIMIT 5;
 ```
-
-![The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected.](images/duckdb-main-02.png)
+<img width="75%" src="/api/v1/repositories/<repo_name>/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
 
 _In the next step we'll see how to merge our branch back into main._
 
@@ -448,7 +445,7 @@ lakectl merge \
 
 _We can confirm that this has worked by returning to the same object view of [`lakes.parquet`](object?ref=main&path=lakes.parquet) as before and clicking on **Execute** to rerun the same query. You'll see that the country row counts have changed, and only Denmark is left in the data._
 
-![The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark.](images/duckdb-main-03.png)
+<img width="75%" src="/api/v1/repositories/<repo_name>/refs/main/objects?path=images%2Fduckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
 
 **But…oh no!** 😬 A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻‍♀.
 
@@ -506,7 +503,7 @@ commit main successfully reverted
 
 Back in the object page and the DuckDB query we can see that the original file is now back to how it was.
 
-![The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge.](images/duckdb-main-02.png)
+<img width="75%" src="/api/v1/repositories/<repo_name>/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge." class="quickstart"/>
 
 ## Bonus Challenge
 

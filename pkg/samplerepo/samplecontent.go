@@ -1,11 +1,9 @@
 package samplerepo
 
 import (
+	"bufio"
+	"bytes"
 	"context"
-	"io/fs"
-	"strings"
-	"time"
-
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -13,6 +11,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/samplerepo/assets"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"io/fs"
+	"os"
+	"path"
+	"strings"
+	"time"
 )
 
 const (
@@ -24,8 +27,12 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 	// upload sample data
 	// we skip checking if the repo and branch exist, since we just created them
 	// we also skip checking if the file exists, since we know the repo is empty
-
-	err := fs.WalkDir(assets.SampleData, sampleRepoFSRootPath, func(path string, d fs.DirEntry, topLevelErr error) error {
+	readme := path.Join(sampleRepoFSRootPath, "README.md")
+	readmeBuf, err := fs.ReadFile(assets.SampleData, readme)
+	if err != nil {
+		return err
+	}
+	err = fs.WalkDir(assets.SampleData, sampleRepoFSRootPath, func(p string, d fs.DirEntry, topLevelErr error) error {
 		// handle a top-level error
 		if topLevelErr != nil {
 			return topLevelErr
@@ -36,13 +43,36 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 			return nil
 		}
 
-		// open file from embedded FS
-		file, err := assets.SampleData.Open(path)
-		if err != nil {
-			return err
+		var (
+			file fs.File
+			err  error
+		)
+		if p == readme {
+			readmeBuf = bytes.ReplaceAll(readmeBuf, []byte("<repo_name>"), []byte(repo.Name))
+			f, err := os.Create("README.md")
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			writer := bufio.NewWriter(f)
+			_, err = writer.Write(readmeBuf)
+			if err != nil {
+				return err
+			}
+			_, err = f.Seek(0, 0)
+			if err != nil {
+				return err
+			}
+			file = f
+		} else {
+			// open file from embedded FS
+			file, err = assets.SampleData.Open(p)
+			if err != nil {
+				return err
+			}
+			// since we're not writing to the file, not a big risk in disregarding the error possibly returned by Close
+			defer file.Close()
 		}
-		// since we're not writing to the file, not a big risk in disregarding the error possibly returned by Close
-		defer file.Close()
 
 		// get file stats for size
 		fileInfo, err := file.Stat()
@@ -60,7 +90,7 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 		// create metadata entry
 		writeTime := time.Now()
 		entry := catalog.NewDBEntryBuilder().
-			Path(strings.TrimPrefix(path, sampleRepoFSRootPath+"/")).
+			Path(strings.TrimPrefix(p, sampleRepoFSRootPath+"/")).
 			PhysicalAddress(blob.PhysicalAddress).
 			CreationDate(writeTime).
 			Size(blob.Size).
