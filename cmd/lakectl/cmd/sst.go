@@ -71,7 +71,7 @@ func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, 
 			break
 		}
 		v := iter.Value()
-		gv, err := committed.UnmarshalValue(v.Value)
+		gv, err := committed.UnmarshalValue(v.Value, "", "", graveler.Key(""))
 		if err != nil {
 			panic(err)
 		}
@@ -105,7 +105,7 @@ func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 			break
 		}
 		v := iter.Value()
-		gv, err := committed.UnmarshalValue(v.Value)
+		gv, err := committed.UnmarshalValue(v.Value, "", "", graveler.Key(""))
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +132,7 @@ func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 			break
 		}
 		v := iter.Value()
-		gv, err := committed.UnmarshalValue(v.Value)
+		gv, err := committed.UnmarshalValue(v.Value, "", "", graveler.Key(""))
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 			break
 		}
 		v := iter.Value()
-		gv, err := committed.UnmarshalValue(v.Value)
+		gv, err := committed.UnmarshalValue(v.Value, "", "", graveler.Key(""))
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +226,7 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 			break
 		}
 		v := iter.Value()
-		gv, err := committed.UnmarshalValue(v.Value)
+		gv, err := committed.UnmarshalValue(v.Value, "", "", graveler.Key(""))
 		if err != nil {
 			panic(err)
 		}
