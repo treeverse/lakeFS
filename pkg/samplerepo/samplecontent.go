@@ -2,10 +2,11 @@ package samplerepo
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"io"
 	"io/fs"
-	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -28,16 +29,12 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 	// upload sample data
 	// we skip checking if the repo and branch exist, since we just created them
 	// we also skip checking if the file exists, since we know the repo is empty
-	readmeTmpl := path.Join(sampleRepoFSRootPath, "README.md.tmpl")
+	const tmplSuffix = ".tmpl"
 	config := map[string]string{
 		"RepoName": repo.Name,
 	}
-	tmpl, err := template.ParseFS(assets.SampleData, "sample/README.md.tmpl")
-	if err != nil {
-		return err
-	}
 
-	err = fs.WalkDir(assets.SampleData, sampleRepoFSRootPath, func(p string, d fs.DirEntry, topLevelErr error) error {
+	err := fs.WalkDir(assets.SampleData, sampleRepoFSRootPath, func(p string, d fs.DirEntry, topLevelErr error) error {
 		// handle a top-level error
 		if topLevelErr != nil {
 			return topLevelErr
@@ -49,45 +46,42 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 		}
 
 		var (
-			file fs.File
-			err  error
+			contentPath   string
+			contentReader io.Reader
+			contentSize   int64
 		)
-		if p == readmeTmpl {
-			p = "README.md"
-			f, err := os.Create(p)
+		if filepath.Ext(p) == tmplSuffix {
+			tmpl, err := template.ParseFS(assets.SampleData, p)
 			if err != nil {
 				return err
 			}
-			defer f.Close()
-			writer := bufio.NewWriter(f)
-			err = tmpl.Execute(writer, config)
-			if err != nil {
+			var buf bytes.Buffer
+			if err := tmpl.Execute(&buf, config); err != nil {
 				return err
 			}
-			_, err = f.Seek(0, 0)
-			if err != nil {
-				return err
-			}
-			file = f
+			contentPath = strings.TrimSuffix(p, tmplSuffix)
+			contentReader = bufio.NewReader(&buf)
+			contentSize = int64(buf.Len())
 		} else {
 			// open file from embedded FS
-			file, err = assets.SampleData.Open(p)
+			file, err := assets.SampleData.Open(p)
 			if err != nil {
 				return err
 			}
-			// since we're not writing to the file, not a big risk in disregarding the error possibly returned by Close
-			defer file.Close()
-		}
-
-		// get file stats for size
-		fileInfo, err := file.Stat()
-		if err != nil {
-			return err
+			// embed file close does nothing, we just like to keep it aligned with the open
+			defer func() { _ = file.Close() }()
+			fileStat, err := d.Info()
+			if err != nil {
+				return err
+			}
+			contentPath = p
+			contentReader = file
+			contentSize = fileStat.Size()
 		}
 
 		// write file to storage
 		address := pathProvider.NewPath()
-		blob, err := upload.WriteBlob(ctx, blockAdapter, repo.StorageNamespace, address, file, fileInfo.Size(), block.PutOpts{})
+		blob, err := upload.WriteBlob(ctx, blockAdapter, repo.StorageNamespace, address, contentReader, contentSize, block.PutOpts{})
 		if err != nil {
 			return err
 		}
@@ -95,7 +89,7 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 		// create metadata entry
 		writeTime := time.Now()
 		entry := catalog.NewDBEntryBuilder().
-			Path(strings.TrimPrefix(p, sampleRepoFSRootPath+"/")).
+			Path(strings.TrimPrefix(contentPath, sampleRepoFSRootPath+"/")).
 			PhysicalAddress(blob.PhysicalAddress).
 			CreationDate(writeTime).
 			Size(blob.Size).
