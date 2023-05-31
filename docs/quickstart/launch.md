@@ -17,7 +17,7 @@ Launch the lakeFS container:
 ```bash
 docker run --name lakefs \
            --rm --publish 8000:8000 \
-           treeverse/lakefs:0.100.0-duckdb \
+           treeverse/lakefs:0.101.1-duckdb \
              run --local-settings
 ```
 
