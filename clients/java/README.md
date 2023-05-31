@@ -289,7 +289,6 @@ Class | Method | HTTP request | Description
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
  - [MergeResult](docs/MergeResult.md)
- - [MergeResultSummary](docs/MergeResultSummary.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
  - [NextStep](docs/NextStep.md)

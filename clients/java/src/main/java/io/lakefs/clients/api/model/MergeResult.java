@@ -20,7 +20,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.MergeResultSummary;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -30,36 +29,9 @@ import java.io.IOException;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MergeResult {
-  public static final String SERIALIZED_NAME_SUMMARY = "summary";
-  @SerializedName(SERIALIZED_NAME_SUMMARY)
-  private MergeResultSummary summary;
-
   public static final String SERIALIZED_NAME_REFERENCE = "reference";
   @SerializedName(SERIALIZED_NAME_REFERENCE)
   private String reference;
-
-
-  public MergeResult summary(MergeResultSummary summary) {
-    
-    this.summary = summary;
-    return this;
-  }
-
-   /**
-   * Get summary
-   * @return summary
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-
-  public MergeResultSummary getSummary() {
-    return summary;
-  }
-
-
-  public void setSummary(MergeResultSummary summary) {
-    this.summary = summary;
-  }
 
 
   public MergeResult reference(String reference) {
@@ -94,20 +66,18 @@ public class MergeResult {
       return false;
     }
     MergeResult mergeResult = (MergeResult) o;
-    return Objects.equals(this.summary, mergeResult.summary) &&
-        Objects.equals(this.reference, mergeResult.reference);
+    return Objects.equals(this.reference, mergeResult.reference);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(summary, reference);
+    return Objects.hash(reference);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class MergeResult {\n");
-    sb.append("    summary: ").append(toIndentedString(summary)).append("\n");
     sb.append("    reference: ").append(toIndentedString(reference)).append("\n");
     sb.append("}");
     return sb.toString();
