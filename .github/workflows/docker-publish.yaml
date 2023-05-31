@@ -91,3 +91,15 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
+
+      - name: Build and push lakefs-duckdb
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.duckdb
+          push: true
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          build-args: LAKEFS_RELEASE_TAG=$${ steps.version.outputs.tag }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}-duckdb
+            treeverse/lakefs:${{ steps.version.outputs.tag }}-duckdb

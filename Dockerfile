@@ -52,18 +52,6 @@ COPY ./pkg/plugins/diff/delta_diff_server/src ./src
 RUN rm ./target/release/deps/delta_diff*
 RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 
-# Build DuckDB
-FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS build-duckdb
-ARG DUCKDB_RELEASE_TAG=v0.7.1
-
-RUN apk add --no-cache git
-WORKDIR /
-RUN git clone --depth 1 --branch ${DUCKDB_RELEASE_TAG} https://github.com/duckdb/duckdb.git
-
-WORKDIR /duckdb
-RUN apk add --no-cache build-base cmake openssl-dev ninja
-RUN GEN=ninja BUILD_HTTPFS=1 make 
-
 # Just lakectl
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakectl
 RUN apk add -U --no-cache ca-certificates
@@ -75,8 +63,8 @@ USER lakefs
 WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
-# Add lakefs
-FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-lakectl
+# lakefs with lakectl
+FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs
 
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
@@ -122,14 +110,3 @@ RUN mkdir -p /home/lakefs/.lakefs/plugins/diff && ln -s /app/delta_diff /home/la
 
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
-
-FROM --platform=$BUILDPLATFORM lakefs-plugins AS lakefs-with-duckdb
-
-# Add DuckDB
-USER root
-WORKDIR /app
-COPY --from=build-duckdb /duckdb/build/release/duckdb  ./
-
-USER lakefs
-# Create ~/.duckdbrc file to customise the prompt 🦆
-RUN echo ".prompt '⚫◗ '" > $HOME/.duckdbrc
