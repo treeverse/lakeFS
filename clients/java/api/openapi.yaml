@@ -5696,41 +5696,10 @@ components:
       - destination_commit_id
       - source_commit_id
       type: object
-    MergeResultSummary:
-      example:
-        removed: 6
-        added: 0
-        changed: 1
-        conflict: 5
-      properties:
-        added:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-        removed:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-        changed:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-        conflict:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-      type: object
     MergeResult:
       example:
-        summary:
-          removed: 6
-          added: 0
-          changed: 1
-          conflict: 5
         reference: reference
       properties:
-        summary:
-          $ref: '#/components/schemas/MergeResultSummary'
         reference:
           type: string
       required:
@@ -7348,7 +7317,6 @@ components:
     ImportStatusResp:
       example:
         update_time: 2000-01-23T04:56:07.000+00:00
-        import_branch: import_branch
         metarange_id: metarange_id
         ingested_objects: 0
         commit:
@@ -7375,8 +7343,6 @@ components:
           description: Number of objects processed so far
           format: int64
           type: integer
-        import_branch:
-          type: string
         metarange_id:
           type: string
         commit:

@@ -25,10 +25,10 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 #### User Permissions
 
 To run import you need the following permissions:
-`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:CancelImport`. 
+`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:ImportCancel`. 
 The first 3 permissions are available by default to users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
-Writers group ([ACL](../reference/access-control-lists.md)). The last permission enables the user to import data from any location of the storage 
-provider that lakeFS has access to. 
+Writers group ([ACL](../reference/access-control-lists.md)). The `Import*` permissions enable the user to import data from any location of the storage 
+provider that lakeFS has access to and cancel the operation if needed. 
 Thus, it's only available to users in group Supers ([ACL](../reference/access-control-lists.md)) or SuperUsers([RBAC](../reference/rbac.md)).
 RBAC installations can modify policies to add that permission to any group, such as Developers.
 
@@ -123,14 +123,16 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
    ![img.png](../assets/img/UI-Import-Dialog.png)
 
 2. Under _Import from_, fill in the location on your object store you would like to import from.
-3. Fill in the import destination in lakeFS and a commit message.
+3. Fill in the import destination in lakeFS 
+4. Add a commit message, and optionally metadata.
+5. Press _Import_
 
-Once the import is complete, you can merge the changes from the import branch to the source branch.
+Once the import is complete, the changes are merged into the destination branch.
 
 #### Notes
 {: .no_toc }
 
-* On the first import to a branch, a dedicated branch named `_<branch_name>_imported` will be created. lakeFS will import all objects to this branch under the given prefix.
+* Import uses the `src-wins` merge strategy. Therefore - import of existing objects nad prefixes in destination will override them.
 * The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
 ### _lakectl import_
@@ -168,9 +170,6 @@ lakectl import \
 ```
 </div>
 </div>
-
-The imported objects will be committed to the `_my-branch_imported`, creating it if it doesn't exists.
-Using the `--merge` flag will merge `_my-branch_imported` to `my-branch` after a successful import.
 
 ### Limitations
 

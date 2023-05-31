@@ -54,7 +54,6 @@ docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
-docs/MergeResultSummary.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
@@ -181,7 +180,6 @@ lakefs_client/model/login_config.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
 lakefs_client/model/merge_result.py
-lakefs_client/model/merge_result_summary.py
 lakefs_client/model/meta_range_creation.py
 lakefs_client/model/meta_range_creation_response.py
 lakefs_client/model/next_step.py
@@ -289,7 +287,6 @@ test/test_login_config.py
 test/test_login_information.py
 test/test_merge.py
 test/test_merge_result.py
-test/test_merge_result_summary.py
 test/test_meta_range_creation.py
 test/test_meta_range_creation_response.py
 test/test_metadata_api.py

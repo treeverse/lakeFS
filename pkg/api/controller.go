@@ -1604,14 +1604,13 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 }
 
 func repositoryLogActionRef(sampleData bool, bareRepository bool) string {
-	var ref string
 	switch {
 	case bareRepository:
-		ref = "bare"
+		return "bare"
 	case sampleData:
-		ref = "sample"
+		return "sample"
 	}
-	return ref
+	return ""
 }
 
 var errStorageNamespaceInUse = errors.New("storage namespace already in use")
@@ -2168,7 +2167,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	var metadata map[string]string
+	metadata := map[string]string{}
 	if body.Commit.Metadata != nil {
 		metadata = body.Commit.Metadata.AdditionalProperties
 	}
@@ -2216,9 +2215,7 @@ func importStatusToResponse(status *graveler.ImportStatus) ImportStatusResp {
 		metarange := status.MetaRangeID.String()
 		resp.MetarangeId = &metarange
 	}
-	if status.ImportBranch != "" {
-		resp.ImportBranch = &status.ImportBranch
-	}
+
 	commitLog := catalog.CommitRecordToLog(status.Commit)
 	if commitLog != nil {
 		resp.Commit = &Commit{
@@ -3817,10 +3814,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		metadata,
 		StringValue(body.Strategy))
 
-	var (
-		hookAbortErr *graveler.HookAbortError
-		zero         int
-	)
+	var hookAbortErr *graveler.HookAbortError
 	switch {
 	case errors.As(err, &hookAbortErr):
 		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
@@ -3829,7 +3823,6 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	case errors.Is(err, graveler.ErrConflictFound):
 		writeResponse(w, r, http.StatusConflict, MergeResult{
 			Reference: reference,
-			Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
 		})
 		return
 	}
@@ -3838,7 +3831,6 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	writeResponse(w, r, http.StatusOK, MergeResult{
 		Reference: reference,
-		Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
 	})
 }
 

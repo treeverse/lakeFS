@@ -214,33 +214,11 @@ components:
           type: string
           description: "The commit ID of the merge base"
 
-    MergeResultSummary:
-      type: object
-      properties:
-        added:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-        removed:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-        changed:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-        conflict:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-
     MergeResult:
       type: object
       required:
         - reference
       properties:
-        summary:
-          $ref: "#/components/schemas/MergeResultSummary"
         reference:
           type: string
 
@@ -1389,8 +1367,6 @@ components:
           description: Number of objects processed so far
           type: integer
           format: int64
-        import_branch:
-          type: string
         metarange_id:
           type: string
         commit:
