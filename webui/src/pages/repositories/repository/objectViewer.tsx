@@ -10,7 +10,7 @@ import { objects } from "../../../lib/api";
 import { ObjectRenderer } from "./fileRenderers";
 import { AlertError } from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
-import { RefTypeCommit } from "../../../constants";
+import { RefTypeBranch } from "../../../constants";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import { RefContextProvider } from "../../../lib/hooks/repo";
 import { linkToPath } from "../../../lib/api";
@@ -30,7 +30,7 @@ interface ObjectViewerQueryString {
 
 interface FileContentsProps {
   repoId: string;
-  refId: string;
+  reference:  { id: string; type: string };
   path: string;
   loading: boolean;
   error: Error | null;
@@ -82,7 +82,10 @@ const FileObjectsViewerPage = () => {
     content = (
       <FileContents
         repoId={repoId || ""}
-        refId={refId}
+        // ref type is unknown since we lost that context while reaching here (and it's not worth a url param).
+        // Effectively it means that if the ref is commit, we won't truncate it in the URI navigator,
+        // which is a better behaviour than truncating it when it's a branch/tag.
+        reference={{ id: refId, type: RefTypeBranch}}
         path={path}
         fileExtension={fileExtension}
         contentType={contentType}
@@ -104,7 +107,7 @@ const FileObjectsViewerPage = () => {
 
 export const FileContents: FC<FileContentsProps> = ({
   repoId,
-  refId,
+  reference,
   path,
   loading,
   error,
@@ -114,7 +117,7 @@ export const FileContents: FC<FileContentsProps> = ({
   showFullNavigator = true,
   presign = false,
 }) => {
-  const objectUrl = linkToPath(repoId, refId, path, presign);
+  const objectUrl = linkToPath(repoId, reference.id, path, presign);
 
   if (loading || error) {
     return <></>;
@@ -122,11 +125,6 @@ export const FileContents: FC<FileContentsProps> = ({
 
   const repo = {
     id: repoId,
-  };
-
-  const reference = {
-    id: refId,
-    type: RefTypeCommit,
   };
 
   const titleComponent = showFullNavigator ? (
@@ -151,7 +149,7 @@ export const FileContents: FC<FileContentsProps> = ({
         <Box sx={{ mx: 1 }}>
           <ObjectRenderer
             repoId={repoId}
-            refId={refId}
+            refId={reference.id}
             path={path}
             fileExtension={fileExtension}
             contentType={contentType}
