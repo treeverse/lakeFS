@@ -3,6 +3,10 @@ on:
   release:
     types: [released]
   workflow_dispatch:
+    inputs:
+      tag:
+        required: false
+        description: Tag/version to publish
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
@@ -31,7 +35,12 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//g)" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_OUTPUT
+          else
+            echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_OUTPUT
+          fi
         id: version
 
       - name: Generate code
