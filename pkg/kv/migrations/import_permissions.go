@@ -5,13 +5,20 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func MigrateImportPermissions(ctx context.Context, kvStore kv.Store) error {
+func MigrateImportPermissions(ctx context.Context, kvStore kv.Store, cfg *config.Config) error {
+	// skip migrate for users with External authorizations
+	if !cfg.IsAuthUISimplified() {
+		fmt.Println("skipping ACL migration - external Authorization")
+		return updateKVSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
+	}
+
 	const action = "fs:Import*"
 	it, err := kv.NewPrimaryIterator(ctx, kvStore, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, model.PolicyPath(""), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
@@ -42,9 +49,5 @@ func MigrateImportPermissions(ctx context.Context, kvStore kv.Store) error {
 		}
 	}
 
-	err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
-	if err != nil {
-		return fmt.Errorf("migration succeeded but failed to upgrade version, to fix this re-run migration: %w", err)
-	}
-	return nil
+	return updateKVSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
 }
