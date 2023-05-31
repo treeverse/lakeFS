@@ -76,6 +76,25 @@ var statementByName = map[string]model.Statement{
 	},
 }
 
+// GetActionsForPolicyType returns the actions for police type typ.
+func GetActionsForPolicyType(typ string) ([]string, error) {
+	statement, ok := statementByName[typ]
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrStatementNotFound, typ)
+	}
+	actions := make([]string, len(statement.Action))
+	copy(actions, statement.Action)
+	return actions, nil
+}
+
+func GetActionsForPolicyTypeOrDie(typ string) []string {
+	ret, err := GetActionsForPolicyType(typ)
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
 // MakeStatementForPolicyType returns statements for policy type typ,
 // limited to resources.
 func MakeStatementForPolicyType(typ string, resources []string) (model.Statements, error) {
