@@ -31,7 +31,7 @@ func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypt
 	if cache != nil { // nil cache allowed (size=0), see sstable.ReaderOptions
 		cache.Ref()
 	}
-	opts := sstable.ReaderOptions{Cache: cache}
+	opts := sstable.ReaderOptions{Cache: nil}
 	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
 		return newReader(ctx, fs, ns, id, opts)
 	}
