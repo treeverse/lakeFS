@@ -38,6 +38,7 @@ var (
 	ErrAddedActions    = errors.New("added actions")
 	ErrEmpty           = errors.New("empty")
 	ErrPolicyExists    = errors.New("policy exists")
+	ErrHasWarnings     = errors.New("has warnings")
 
 	// allPermissions lists all permissions, from most restrictive to
 	// most permissive.  It includes "" for some edge cases.
@@ -83,9 +84,11 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		return fmt.Errorf("failed to upgrade RBAC policies to ACLs: %w", err)
 	}
 
+	hasWarnings := false
 	for _, w := range groupReports {
 		fmt.Printf("GROUP %s\n\tACL: %s\n", w.GroupID, reportACL(w.ACL))
 		if w.Warn != nil {
+			hasWarnings = true
 			var multi *multierror.Error
 			if errors.As(w.Warn, &multi) {
 				multi.ErrorFormat = func(es []error) string {
@@ -108,6 +111,10 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 	}
 	for _, username := range usersWithPolicies {
 		fmt.Printf("USER (%s)  detaching directly-attached policies\n", username)
+	}
+
+	if hasWarnings && !force {
+		return fmt.Errorf("warnings found. Please fix or run using --force flag: %w", ErrHasWarnings)
 	}
 
 	_, err = rbacToACL(ctx, authService, true, updateTime, func(groupID string, acl model.ACL, warn error) {
