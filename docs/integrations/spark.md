@@ -682,7 +682,7 @@ and then add these into a configuration file, e.g., `$SPARK_HOME/conf/hdfs-site.
 Add the following the cluster's configuration under `Configuration ➡️ Advanced options`:
 
 ```
-spark.hadoop.fs.access.mode presigned
+spark.hadoop.fs.lakefs.access.mode presigned
 spark.hadoop.fs.lakefs.impl io.lakefs.LakeFSFileSystem
 spark.hadoop.fs.lakefs.access.key AKIAlakefs12345EXAMPLE
 spark.hadoop.fs.lakefs.secret.key abc/lakefs/1234567bPxRfiCYEXAMPLEKEY
