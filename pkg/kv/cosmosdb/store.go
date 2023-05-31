@@ -60,8 +60,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	logger.Infof("CosmosDB: connecting to %s", params.Endpoint)
 
 	var client *azcosmos.Client
-	if params.ReadWriteKey != "" {
-		cred, err := azcosmos.NewKeyCredential(params.ReadWriteKey)
+	if params.Key != "" {
+		cred, err := azcosmos.NewKeyCredential(params.Key)
 		if err != nil {
 			return nil, fmt.Errorf("creating key: %w", err)
 		}

@@ -59,10 +59,10 @@ type DynamoDB struct {
 }
 
 type CosmosDB struct {
-	ReadWriteKey string
-	Endpoint     string
-	Database     string
-	Container    string
+	Key       string
+	Endpoint  string
+	Database  string
+	Container string
 
 	// These value should only be set to false for testing purposes using the CosmosDB emulator
 	Client            *http.Client

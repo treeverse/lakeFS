@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	//
 	//testParams = &kvparams.CosmosDB{
 	//	Endpoint:     databaseURI,
-	//	ReadWriteKey: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+	//	Key: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
 	//	Database:     "test-db",
 	//	Container:    "test-container",
 	//	Client: &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	//	StrongConsistency: false,
 	//}
 	//
-	//cred, err := azcosmos.NewKeyCredential(testParams.ReadWriteKey)
+	//cred, err := azcosmos.NewKeyCredential(testParams.Key)
 	//if err != nil {
 	//	log.Fatalf("creating key: %v", err)
 	//}
