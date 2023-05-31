@@ -2,6 +2,25 @@
 
 ## UNRELEASED
 
+
+## v0.101.1
+
+**This release eliminates the need to go through previous ACL migration versions (v0.98.0 and up)**
+Migrations can be perfomed from this version instead
+
+:new: What's new: 
+- Improved Import experience
+- UGC prepare configurable max file size and produce time (#5969)
+- Migrations: Revert remove ACL migration (#5942)
+- Merge API response - remove summary field (#5115)
+- Split and publish lakefs duckdb build and images (#5985)
+
+:bug: Bugs fixed:
+- GC: Read provided mark ID's run id in case that the run is a sweep-only run (#5936)
+- Avoid panics after errors in log-commits (#5956)
+- Fix extended stats user id report (#5970)
+- Fix branch truncation in object viewer (#5982)
+
 ## v0.101.0
 
 **This release requires running database migration.**
