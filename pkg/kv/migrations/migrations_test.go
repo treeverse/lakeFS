@@ -22,8 +22,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// # rbac_to_acl test code
-
 func TestGetMinPermission(t *testing.T) {
 	tests := []struct {
 		Action     string
@@ -221,8 +219,6 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 		})
 	}
 }
-
-// # import_permissions test code
 
 func TestMigrateImportPermissions(t *testing.T) {
 	ctx := context.Background()
