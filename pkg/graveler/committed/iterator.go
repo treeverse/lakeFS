@@ -56,7 +56,7 @@ func (rvi *iterator) NextRange() bool {
 		rngRecord = rvi.rangesIt.Value()
 	}
 
-	gv, err := UnmarshalValue(rngRecord.Value)
+	gv, err := UnmarshalValue(rngRecord.Value, "", "", graveler.Key(""))
 	if err != nil {
 		rvi.err = fmt.Errorf("unmarshal value for %s: %w", string(rngRecord.Key), err)
 		return false

@@ -80,14 +80,14 @@ func getBytes(b *[]byte) ([]byte, error) {
 	return ret, nil
 }
 
-func UnmarshalValue(b []byte) (*graveler.Value, error) {
+func UnmarshalValue(b []byte, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
 	ret := &graveler.Value{}
 	var err error
 	if ret.Identity, err = getBytes(&b); err != nil {
-		return nil, fmt.Errorf("identity field: %w", err)
+		return nil, fmt.Errorf("ns: %s\nid: %s\nkey: %s\nidentity field: %w", ns, id, key, err)
 	}
 	if ret.Data, err = getBytes(&b); err != nil {
-		return nil, fmt.Errorf("data field: %w", err)
+		return nil, fmt.Errorf("ns: %s\nid: %s\nkey: %s\ndata field: %w", ns, id, key, err)
 	}
 	return ret, nil
 }

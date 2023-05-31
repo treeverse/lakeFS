@@ -61,7 +61,7 @@ func TestGravelerValueUnmarshal(t *testing.T) {
 			c.v.Data = make([]byte, 0)
 		}
 		t.Run(c.name, func(t *testing.T) {
-			v, err := committed.UnmarshalValue(c.b)
+			v, err := committed.UnmarshalValue(c.b, "", "", graveler.Key(""))
 			if !errors.Is(err, c.err) {
 				t.Errorf("got error %s != %s", err, c.err)
 			}

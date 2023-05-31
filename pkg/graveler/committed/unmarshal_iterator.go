@@ -27,7 +27,7 @@ func (r *UnmarshalIterator) Next() bool {
 	// unmarshal value
 	var v *graveler.Value
 	if val.Value != nil {
-		v, r.err = UnmarshalValue(val.Value)
+		v, r.err = UnmarshalValue(val.Value, "", "", graveler.Key(""))
 		if r.err != nil {
 			r.value = nil
 			return false

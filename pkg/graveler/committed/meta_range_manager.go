@@ -59,7 +59,7 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 	if err != nil {
 		return nil, fmt.Errorf("get value in range %s of %s for %s: %w", rng.ID, id, key, err)
 	}
-	value, err := UnmarshalValue(r.Value)
+	value, err := UnmarshalValue(r.Value, ns, id, key)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (m *metaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.Storag
 		return nil, fmt.Errorf("find range in %s: %w", id, err)
 	}
 
-	gv, err := UnmarshalValue(v.Value)
+	gv, err := UnmarshalValue(v.Value, ns, id, key)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal value for %s: %w", string(v.Key), err)
 	}
