@@ -86,6 +86,7 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean failedFSForConfig = false;
     private PhysicalAddressTranslator physicalAddressTranslator;
     private StorageAccessStrategy storageAccessStrategy;
+    private AccessMode accessMode;
     private static File emptyFile = new File("/dev/null");
 
     // Currently bulk deletes *must* receive a single-threaded executor!
@@ -136,7 +137,7 @@ public class LakeFSFileSystem extends FileSystem {
             throw new IOException("Failed to get lakeFS blockstore type", e);
         }
         String accessModeConf = FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX);
-        AccessMode accessMode = AccessMode.valueOf(StringUtils.defaultIfBlank(accessModeConf, AccessMode.SIMPLE.toString()).toUpperCase());
+        accessMode = AccessMode.valueOf(StringUtils.defaultIfBlank(accessModeConf, AccessMode.SIMPLE.toString()).toUpperCase());
         if (accessMode == AccessMode.PRESIGNED) {
             storageAccessStrategy = new PresignedStorageAccessStrategy(this, lfsClient);
         } else if (accessMode == AccessMode.SIMPLE) {
@@ -150,7 +151,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (fsForConfig != null) {
             return fsForConfig;
         }
-        if (failedFSForConfig) {
+        if (failedFSForConfig || accessMode == AccessMode.PRESIGNED) {
             return null;
         }
         Path path = new Path(uri);
