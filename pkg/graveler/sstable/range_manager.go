@@ -43,7 +43,7 @@ func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id co
 	if err != nil {
 		return nil, fmt.Errorf("open sstable file %s %s: %w", ns, id, err)
 	}
-	//println("Initializing new reader with cache: ", opts.Cache)
+	println("Merger name (unused): ", opts.MergerName)
 	r, err := sstable.NewReader(file, sstable.ReaderOptions{})
 	println("Initialized new reader : ", r)
 	if err != nil {
