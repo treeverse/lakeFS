@@ -2,7 +2,7 @@ import React, {useCallback, useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
+import {useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
@@ -316,11 +316,9 @@ const CompareContainer = () => {
 
 const RepositoryComparePage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'compare'}>
-                <CompareContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'compare'}>
+            <CompareContainer/>
+        </RepositoryPageLayout>
     );
 };
 

@@ -2,7 +2,7 @@ import React, {useState} from "react";
 
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {AlertError, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
+import {useRefs} from "../../../../../lib/hooks/repo";
 import {useAPI} from "../../../../../lib/hooks/api";
 import {actions} from "../../../../../lib/api";
 import Row from "react-bootstrap/Row";
@@ -246,11 +246,9 @@ const ActionContainer = () => {
 
 const RepositoryActionPage = () => {
     return (
-        <RefContextProvider>
             <RepositoryPageLayout activePage={'actions'} fluid>
                 <ActionContainer/>
             </RepositoryPageLayout>
-        </RefContextProvider>
     );
 };
 

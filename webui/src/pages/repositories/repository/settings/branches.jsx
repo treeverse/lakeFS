@@ -1,7 +1,7 @@
 import React, {useRef, useState} from "react";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {AlertError, Loading, RefreshButton} from "../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {SettingsLayout} from "./layout";
 import {Button, ListGroup, Row} from "react-bootstrap";
@@ -47,8 +47,8 @@ const SettingsContainer = () => {
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
-                                {rules && rules.length > 0 ? rules.map(r => {
-                                    return <ListGroup.Item >
+                                {rules && rules.length > 0 ? rules.map((r) => {
+                                    return <ListGroup.Item key={r.pattern}>
                                         <div className="d-flex">
                                             <code>{r.pattern}</code>
                                             <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => {
@@ -129,13 +129,11 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
 
 const RepositorySettingsBranchesPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'settings'}>
-                <SettingsLayout activeTab={"branches"}>
-                    <SettingsContainer/>
-                </SettingsLayout>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"branches"}>
+                <SettingsContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
     );
 };
 

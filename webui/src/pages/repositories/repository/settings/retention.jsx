@@ -11,7 +11,7 @@ import {
 import Button from "react-bootstrap/Button";
 import {NotFoundError, retention} from "../../../../lib/api";
 import {useAPI} from "../../../../lib/hooks/api";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {SettingsLayout} from "./layout";
@@ -169,13 +169,11 @@ const RetentionContainer = () => {
 
 const RepositoryRetentionPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'settings'}>
-                <SettingsLayout activeTab={"retention"}>
-                    <RetentionContainer/>
-                </SettingsLayout>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"retention"}>
+                <RetentionContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
     );
 };
 

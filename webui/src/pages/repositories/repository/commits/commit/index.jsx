@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {ClipboardButton, AlertError, LinkButton, Loading} from "../../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
+import {useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
 import {commits, refs} from "../../../../../lib/api";
@@ -89,7 +89,7 @@ const CommitActions = ({ repo, commit }) => {
     );
 };
 
-const getKeysOrNull = (metadata: Record<string>): Array<string> | null => {
+const getKeysOrNull = (metadata) => {
     if (!metadata) return null;
     const keys = Object.getOwnPropertyNames(metadata);
     if (keys.length === 0) return null;
@@ -253,11 +253,9 @@ const CommitContainer = () => {
 
 const RepositoryCommitPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'commits'}>
-                <CommitContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'commits'}>
+            <CommitContainer/>
+        </RepositoryPageLayout>
     )
 }
 

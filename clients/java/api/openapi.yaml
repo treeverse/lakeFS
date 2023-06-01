@@ -3978,6 +3978,64 @@ paths:
       - staging
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/stage_allowed:
+    get:
+      operationId: uploadObjectPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: User has permissions to upload this object. This does not guarantee
+            that the upload will be successful or even possible. It indicates only
+            the permission at the time of calling this endpoint
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - objects
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
       operationId: deleteObject
@@ -4970,6 +5028,42 @@ paths:
       tags:
       - metadata
       x-accepts: application/json
+  /repositories/{repository}/gc/rules/set_allowed:
+    get:
+      operationId: setGarbageCollectionRulesPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User has permissions to set garbage collection rules on this
+            repository
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - retention
+      x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
       operationId: delete garbage collection rules
@@ -5181,6 +5275,42 @@ paths:
       tags:
       - retention
       x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branch_protection/set_allowed:
+    get:
+      operationId: createBranchProtectionRulePreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User has permissions to create a branch protection rule in
+            this repository
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
