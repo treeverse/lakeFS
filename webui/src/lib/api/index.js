@@ -630,10 +630,30 @@ class Objects {
     async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
         const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
+
+        if (response.status === 404) {
+            throw new NotFoundError(response.message ?? "ref not found");
+        }
+
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
         return await response.json();
+    }
+
+    async uploadPreflight(repoId, branchId, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/stage_allowed?` + query);
+
+        if (response.status === 204) {
+            return true;
+        }
+        if (response.status === 401) {
+            return false;
+        }
+        
+        // This is not one of the expected responses
+        throw new Error(await extractError(response));
     }
 
     async upload(repoId, branchId, path, fileObject) {
@@ -853,6 +873,14 @@ class Retention {
         return response.json();
     }
 
+    async setGCPolicyPreflight(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules/set_allowed`);
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+        return response;
+    }
+
     async setGCPolicy(repoID, policy) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
             method: 'POST',
@@ -976,6 +1004,14 @@ class BranchProtectionRules {
             throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
         }
         return response.json();
+    }
+
+    async createRulePreflight(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection/set_allowed`);
+        if (response.status !== 204) {
+            return false;
+        }
+        return true;
     }
 
     async createRule(repoID, pattern) {

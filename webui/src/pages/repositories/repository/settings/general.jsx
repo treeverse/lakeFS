@@ -1,6 +1,6 @@
 import React, {useRef, useState} from "react";
 
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
@@ -120,13 +120,11 @@ const SettingsContainer = () => {
 
 const RepositoryGeneralSettingsPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'settings'}>
-                <SettingsLayout activeTab={"general"}>
-                    <SettingsContainer/>
-                </SettingsLayout>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"general"}>
+                <SettingsContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
     )
 }
 

@@ -2492,6 +2492,22 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Request, repository, branch string, params UploadObjectPreflightParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "put_object_preflight", r, repository, branch, "")
+
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository, branch string, params UploadObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2907,6 +2923,22 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 	writeResponse(w, r, http.StatusOK, resp)
 }
 
+func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "set_gc_collection_rules_preflight", r, repository, "", "")
+
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -3015,6 +3047,22 @@ func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.R
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "create_branch_protection_rule_preflight", r, repository, "", "")
+
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 

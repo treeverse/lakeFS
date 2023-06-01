@@ -20,7 +20,7 @@ import {
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
-import { RefContextProvider, useRefs } from "../../../lib/hooks/repo";
+import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
 import { Paginator } from "../../../lib/components/pagination";
 import Modal from "react-bootstrap/Modal";
@@ -256,11 +256,9 @@ const TagsContainer = () => {
 
 const RepositoryTagsPage = () => {
     return (
-        <RefContextProvider>
             <RepositoryPageLayout activePage={'tags'}>
                 <TagsContainer />
             </RepositoryPageLayout>
-        </RefContextProvider>
     )
 }
 

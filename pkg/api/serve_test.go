@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -115,6 +116,32 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 		IssuedDate:      time.Unix(res.JSON200.CreationDate, 0),
 		AccessKeyID:     res.JSON200.AccessKeyId,
 		SecretAccessKey: res.JSON200.SecretAccessKey,
+	}
+}
+
+func createUserWithDefaultGroup(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
+	t.Helper()
+	// create the user
+	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{
+		Id:         "test@example.com",
+		InviteUser: swag.Bool(false),
+	})
+	testutil.Must(t, err)
+	if createUsrRes.JSON201 == nil {
+		t.Fatal("Failed to create user", createUsrRes.HTTPResponse.StatusCode, createUsrRes.HTTPResponse.Status)
+	}
+
+	// create credentials for the user
+	createCredsRes, err := clt.CreateCredentialsWithResponse(context.Background(), createUsrRes.JSON201.Id)
+	testutil.Must(t, err)
+	if createCredsRes.JSON201 == nil {
+		t.Fatal("Failed to create credentials", createCredsRes.HTTPResponse.StatusCode, createCredsRes.HTTPResponse.Status)
+	}
+
+	return &authmodel.BaseCredential{
+		IssuedDate:      time.Unix(createCredsRes.JSON201.CreationDate, 0),
+		AccessKeyID:     createCredsRes.JSON201.AccessKeyId,
+		SecretAccessKey: createCredsRes.JSON201.SecretAccessKey,
 	}
 }
 

@@ -56,6 +56,12 @@ class TestRetentionApi(unittest.TestCase):
         """
         pass
 
+    def test_set_garbage_collection_rules_preflight(self):
+        """Test case for set_garbage_collection_rules_preflight
+
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
