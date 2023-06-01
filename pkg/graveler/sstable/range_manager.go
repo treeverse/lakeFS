@@ -89,13 +89,13 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 	// Ranges are keyed by MaxKey, seek to the range that might contain key.
 	println("Seeking value with iterator from reader: ", reader)
 	key, value := it.SeekGE(lookup, sstable.SeekGEFlags(0))
-	println("Found key: ", key.String())
 	if key == nil {
 		if it.Error() != nil {
 			return nil, fmt.Errorf("read metarange from sstable id %s: %w", id, it.Error())
 		}
 		return nil, ErrKeyNotFound
 	}
+	println("Found key: ", key.String())
 	vBytes, _, err := value.Value(nil)
 	if err != nil {
 		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
