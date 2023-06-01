@@ -82,7 +82,9 @@ export const getRepoOnboardingSteps = (
     cta: "Run import",
     onClick: () =>
       navigate(`/repositories/${currentRepo}/objects?importDialog=true`),
-    showStep: () => objectStoreName !== "local",
+    // Disable import step until the new import process and indicator PRs are merged
+    // https://github.com/treeverse/lakeFS/pull/5981
+    showStep: () => false, // objectStoreName !== "local",
     isCompleted: async () => {
       try {
         const branch = await findBranchRegexMatch(
