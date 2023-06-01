@@ -102,3 +102,46 @@ Stay up to date and get lakeFS support via:
 ## Licensing
 
 lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+## Who Uses lakeFS?
+
+lakeFS is used by numerous companies, including those below. _If you use lakeFS and would like to be included here please open a PR._
+
+* AirAsia
+* APEX Global
+* AppsFlyer
+* Auburn University
+* BAE Systems
+* Bureau of Labor Statistics
+* Cambridge Consultants
+* Connor, Clark & Lunn Financial Group
+* Context Labs Bv
+* Daimler Truck
+* Enigma
+* EPCOR
+* Ford Motor Company
+* Generali
+* Giesecke+Devrient
+* greehill
+* Karius
+* Lockheed Martin
+* Luxonis
+* Mixpeek
+* Netflix
+* Paige
+* PETRONAS
+* Pollinate
+* Proton Technologies AG
+* ProtonMail
+* Renaissance Computing Institute
+* RHEA Group 
+* RMS
+* Sensum
+* Similarweb
+* State Street Global Advisors
+* Terramera
+* Tredence
+* Volvo Cars
+* Webiks
+* Windward
+* Woven by Toyota
