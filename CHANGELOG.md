@@ -2,6 +2,14 @@
 
 ## UNRELEASED
 
+## v0.102.0
+
+:new: What's new: 
+- Onboarding progress indicator - repository level (#5876)
+
+:bug: Bugs fixed:
+- Publish docker lakefs+duckdb with latest tag (#5993)
+- Fix import start permissions (#5996)
 
 ## v0.101.1
 
