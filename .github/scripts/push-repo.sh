@@ -26,8 +26,8 @@ if [ ! -d "$SOURCE_DIRECTORY" ]; then
     exit 1
 fi
 
-echo "[+] Copying contents of source repository folder $SOURCE_DIRECTORY to folder $TARGET_DIRECTORY in git repo"
-cp -ra "$SOURCE_DIRECTORY"/. "$CLONE_DIR/$TARGET_DIRECTORY"
+echo "[+] Copying contents of source repository folder $SOURCE_DIRECTORY to the root folder in the git repo"
+cp -ra "$SOURCE_DIRECTORY"/. "$CLONE_DIR/"
 cd "$CLONE_DIR"
 
 ORIGIN_COMMIT="https://github.comt/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
