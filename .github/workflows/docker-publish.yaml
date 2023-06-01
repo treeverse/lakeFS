@@ -112,3 +112,4 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}-duckdb
             treeverse/lakefs:${{ steps.version.outputs.tag }}-duckdb
+            treeverse/lakefs:latest-duckdb
