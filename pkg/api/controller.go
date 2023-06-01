@@ -2153,7 +2153,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 			}},
 			permissions.Node{Permission: permissions.Permission{
 				Action:   permissions.WriteObjectAction,
-				Resource: permissions.StorageNamespace(source.Destination),
+				Resource: permissions.ObjectArn(repository, source.Destination),
 			}})
 	}
 	if !c.authorize(w, r, perm) {
