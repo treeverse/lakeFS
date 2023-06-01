@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+## v0.102.1
+
+:bug: Bugs fixed:
+- Non-Blocking write to wakeup channel (#6007)
+
 ## v0.102.0
 
 :new: What's new: 
