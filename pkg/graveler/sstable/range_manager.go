@@ -43,8 +43,8 @@ func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id co
 	if err != nil {
 		return nil, fmt.Errorf("open sstable file %s %s: %w", ns, id, err)
 	}
-	println("Initializing new reader with cache: ", opts.Cache)
-	r, err := sstable.NewReader(file, opts)
+	//println("Initializing new reader with cache: ", opts.Cache)
+	r, err := sstable.NewReader(file, sstable.ReaderOptions{})
 	println("Initialized new reader : ", r)
 	if err != nil {
 		return nil, fmt.Errorf("open sstable reader %s %s: %w", ns, id, err)
@@ -96,6 +96,7 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 		return nil, ErrKeyNotFound
 	}
 	println("Found key: ", key.String())
+	println("Found value: ", value.ValueOrHandle)
 	vBytes, _, err := value.Value(nil)
 	if err != nil {
 		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
