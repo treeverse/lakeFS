@@ -224,6 +224,11 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 
 	// check if file is there - without taking the lock
 	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
+	if tfs.logger.IsTracing() {
+		tfs.log(ctx).WithFields(logging.Fields{
+			"file_full_path": fileRef.fullPath,
+		}).Trace("Trying to open file")
+	}
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
 		if tfs.logger.IsTracing() {

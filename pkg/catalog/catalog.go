@@ -242,11 +242,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
-	pebbleSSTableCache2 := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
-	defer pebbleSSTableCache2.Unref()
 
-	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache2, metaRangeFS, hashAlg)
+	sstableManager := sstable.NewPebbleSSTableRangeManager(nil, rangeFS, hashAlg)
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(nil, metaRangeFS, hashAlg)
 
 	committedParams := cfg.Config.CommittedParams()
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(

@@ -43,7 +43,9 @@ func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id co
 	if err != nil {
 		return nil, fmt.Errorf("open sstable file %s %s: %w", ns, id, err)
 	}
+	println("Initializing new reader with cache: ", opts.Cache)
 	r, err := sstable.NewReader(file, opts)
+	println("Initialized new reader : ", r)
 	if err != nil {
 		return nil, fmt.Errorf("open sstable reader %s %s: %w", ns, id, err)
 	}
@@ -85,7 +87,9 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 	defer m.execAndLog(ctx, it.Close, "close iterator")
 
 	// Ranges are keyed by MaxKey, seek to the range that might contain key.
+	println("Seeking value with iterator from reader: ", reader)
 	key, value := it.SeekGE(lookup, sstable.SeekGEFlags(0))
+	println("Found key: ", key.String())
 	if key == nil {
 		if it.Error() != nil {
 			return nil, fmt.Errorf("read metarange from sstable id %s: %w", id, it.Error())
