@@ -77,14 +77,20 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 	if err != nil {
 		return nil, err
 	}
-	defer m.execAndLog(ctx, reader.Close, "close reader")
+	defer func() {
+		println("Closing reader: ", reader.Properties.String())
+		m.execAndLog(ctx, reader.Close, "close reader")
+	}()
 
 	// TODO(ariels): reader.NewIter(lookup, lookup)?
 	it, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
-	defer m.execAndLog(ctx, it.Close, "close iterator")
+	defer func() {
+		println("Closing iterator: ", it.String())
+		m.execAndLog(ctx, it.Close, "close iterator")
+	}()
 
 	// Ranges are keyed by MaxKey, seek to the range that might contain key.
 	println("Seeking value with iterator from reader: ", reader)
@@ -114,13 +120,19 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 	if err != nil {
 		return nil, err
 	}
-	defer m.execAndLog(ctx, reader.Close, "close reader")
+	defer func() {
+		println("Closing reader: ", reader.Properties.String())
+		m.execAndLog(ctx, reader.Close, "close reader")
+	}()
 
 	it, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
-	defer m.execAndLog(ctx, it.Close, "close iterator")
+	defer func() {
+		println("Closing iterator: ", it.String())
+		m.execAndLog(ctx, it.Close, "close iterator")
+	}()
 
 	// actual reading
 	key, value := it.SeekGE(lookup, sstable.SeekGEFlags(0))
@@ -182,6 +194,8 @@ func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg strin
 }
 
 func (m *RangeManager) Close() error {
+	println("Reader Close was called, cache about to be unrefed: ", m.cache)
 	m.cache.Unref()
+	println("Reader Close was called, cache unrefed: ", m.cache)
 	return nil
 }
