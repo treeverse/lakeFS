@@ -1509,15 +1509,17 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 	ctx := r.Context()
 	sampleData := swag.BoolValue(body.SampleData)
-	bareRepository := swag.BoolValue(params.Bare)
-	c.LogAction(ctx, "create_repo", r, body.Name, repositoryLogActionRef(sampleData, bareRepository), "")
+	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
+	if sampleData {
+		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
+	}
 
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
 
-	if bareRepository {
+	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
 		repo, err := c.Catalog.CreateBareRepository(ctx,
@@ -1551,7 +1553,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		case errors.Is(err, block.ErrInvalidAddress):
 			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
 			reason = "invalid_namespace"
-		case errors.Is(err, errStorageNamespaceInUse):
+		case errors.Is(err, ErrStorageNamespaceInUse):
 			retErr = err
 			reason = "already_in_use"
 		default:
@@ -1603,18 +1605,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func repositoryLogActionRef(sampleData bool, bareRepository bool) string {
-	switch {
-	case bareRepository:
-		return "bare"
-	case sampleData:
-		return "sample"
-	}
-	return ""
-}
-
-var errStorageNamespaceInUse = errors.New("storage namespace already in use")
-
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
@@ -1629,7 +1619,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	objLen := int64(len(dummyData))
 	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
-			storageNamespace, errStorageNamespaceInUse)
+			storageNamespace, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
