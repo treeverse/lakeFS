@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+## v0.102.2
+
+:bug: Bugs fixed:
+- Using not owned LazyValue after closing a reader (#6004)
+
 ## v0.102.1
 
 :bug: Bugs fixed:
