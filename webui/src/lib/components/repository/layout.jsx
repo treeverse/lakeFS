@@ -48,7 +48,7 @@ export const RepositoryPageLayout = ({ activePage, children, fluid = "sm" }) => 
 
     useEffect(() => {
         if (response) {
-        setConfigRes(response);
+            setConfigRes(response);
         }
     }, [response, setConfigRes]);
 
