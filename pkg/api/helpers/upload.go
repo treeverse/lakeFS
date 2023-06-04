@@ -104,6 +104,11 @@ func clientUploadPreSignHelper(ctx context.Context, client api.ClientWithRespons
 	if _, err := contents.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
+	if contentLength == 0 {
+		// If we pass a reader to http.NewRequestWithContext, a Transfer-Encoding header will be added as well.
+		// In cases where body is empty, S3 would fail that request.
+		contents = nil
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, contents)
 	if err != nil {
