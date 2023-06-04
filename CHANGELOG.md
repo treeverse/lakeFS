@@ -6,7 +6,7 @@
 
 :bug: Bugs fixed:
 - Using not owned LazyValue after closing a reader (#6004)
-- Fix pre sign url ui config default and property name (#6014)
+- Fix pre-signed URL UI config default and property name (#6014)
 
 ## v0.102.1
 
