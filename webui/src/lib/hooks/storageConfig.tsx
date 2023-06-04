@@ -17,7 +17,7 @@ type StorageConfigContextType = {
   default_namespace_prefix: string | null;
   import_support: boolean;
   pre_sign_support: boolean;
-  pre_sign_support_UI: boolean;
+  pre_sign_support_ui: boolean;
 };
 
 const storageConfigInitialState: StorageConfigContextType = {
@@ -29,7 +29,7 @@ const storageConfigInitialState: StorageConfigContextType = {
   default_namespace_prefix: null,
   import_support: false,
   pre_sign_support: false,
-  pre_sign_support_UI: false,
+  pre_sign_support_ui: false,
 };
 
 export const fetchStorageConfig = async () => {

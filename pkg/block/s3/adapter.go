@@ -132,7 +132,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
-	// for unknown size we assume we like to stream content, will use s3manager to perform the request.
+	// for unknown size, we assume we like to stream content, will use s3manager to perform the request.
 	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
 	if sizeBytes == -1 {
 		return a.managerUpload(ctx, obj, reader, opts)
