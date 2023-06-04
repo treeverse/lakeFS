@@ -4423,6 +4423,12 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 		return
 	}
 
+	listenAddress := c.Config.ListenAddress
+	if strings.HasPrefix(listenAddress, ":") {
+		// workaround in case we listen on all interfaces without specifying ip
+		listenAddress = fmt.Sprintf("localhost%s", listenAddress)
+	}
+
 	tdp := tablediff.Params{
 		// TODO(jonathan): add base RefPath
 		TablePaths: tablediff.TablePaths{
@@ -4438,7 +4444,7 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 		S3Creds: tablediff.S3Creds{
 			Key:      config.SecureString(baseCredential.AccessKeyID),
 			Secret:   config.SecureString(baseCredential.SecretAccessKey),
-			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
+			Endpoint: "http://" + listenAddress,
 		},
 		Repo: repository,
 	}
