@@ -74,8 +74,7 @@ func getBytes(b *[]byte) ([]byte, error) {
 	if l < 0 {
 		return nil, fmt.Errorf("impossible negative length %d: %w", l, ErrBadValueBytes)
 	}
-	ret := make([]byte, l)
-	copy(ret, (*b)[:l])
+	ret := (*b)[:l]
 	*b = (*b)[l:]
 	return ret, nil
 }
