@@ -89,7 +89,7 @@ type Interface interface {
 	// DeleteRepository delete a repository
 	DeleteRepository(ctx context.Context, repository string) error
 
-	// ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
+	// ListRepositories list repository information, the bool returned is true when more repositories can be listed.
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
 	ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error)
 
