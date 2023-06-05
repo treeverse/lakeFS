@@ -1,6 +1,7 @@
 package params
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -9,6 +10,7 @@ type Config struct {
 	Postgres *Postgres
 	DynamoDB *DynamoDB
 	Local    *Local
+	CosmosDB *CosmosDB
 }
 
 type Local struct {
@@ -54,4 +56,15 @@ type DynamoDB struct {
 	AwsAccessKeyID      string
 	AwsSecretAccessKey  string
 	HealthCheckInterval time.Duration
+}
+
+type CosmosDB struct {
+	Key       string
+	Endpoint  string
+	Database  string
+	Container string
+
+	// These value should only be set to false for testing purposes using the CosmosDB emulator
+	Client            *http.Client
+	StrongConsistency bool
 }
