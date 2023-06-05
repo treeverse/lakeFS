@@ -675,7 +675,7 @@ object GarbageCollector {
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
 
-    val removedCount = removed.count()
+    val removedCount = removed.cache().count()
     println(s"Total objects to delete (some may already have been deleted): $removedCount")
     if (isSweep) {
       logRunID(storageNSForHadoopFS, runID, configMapper)
