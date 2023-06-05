@@ -1172,7 +1172,7 @@ jobs:
         run: env
 
   run-system-azure-adls-gen2:
-    name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2
+    name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
@@ -1195,11 +1195,15 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-external-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_DATABASE_TYPE: cosmosdb
+          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://esti-e2e-tests.documents.azure.com"
+          LAKEFS_DATABASE_COSMOSDB_DATABASE: esti-db
+          LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
+          LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti4hns
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
