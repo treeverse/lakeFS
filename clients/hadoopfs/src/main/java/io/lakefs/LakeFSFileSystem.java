@@ -129,18 +129,19 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
 
         listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
-        try {
-            StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig();
-            physicalAddressTranslator = new PhysicalAddressTranslator(storageConfig.getBlockstoreType(),
-                    storageConfig.getBlockstoreNamespaceValidityRegex());
-        } catch (ApiException e) {
-            throw new IOException("Failed to get lakeFS blockstore type", e);
-        }
         String accessModeConf = FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX);
         accessMode = AccessMode.valueOf(StringUtils.defaultIfBlank(accessModeConf, AccessMode.SIMPLE.toString()).toUpperCase());
         if (accessMode == AccessMode.PRESIGNED) {
             storageAccessStrategy = new PresignedStorageAccessStrategy(this, lfsClient);
         } else if (accessMode == AccessMode.SIMPLE) {
+            // setup address translator for simple storage access strategy
+            try {
+                StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig();
+                physicalAddressTranslator = new PhysicalAddressTranslator(storageConfig.getBlockstoreType(),
+                        storageConfig.getBlockstoreNamespaceValidityRegex());
+            } catch (ApiException e) {
+                throw new IOException("Failed to get lakeFS blockstore type", e);
+            }
             storageAccessStrategy = new SimpleStorageAccessStrategy(this, lfsClient, conf, physicalAddressTranslator);
         } else {
             throw new IOException("Invalid access mode: " + accessMode);
@@ -151,7 +152,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (fsForConfig != null) {
             return fsForConfig;
         }
-        if (failedFSForConfig || accessMode == AccessMode.PRESIGNED) {
+        if (failedFSForConfig || accessMode == AccessMode.PRESIGNED || physicalAddressTranslator == null) {
             return null;
         }
         Path path = new Path(uri);
