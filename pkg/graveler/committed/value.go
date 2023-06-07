@@ -62,6 +62,8 @@ func MustMarshalValue(v *graveler.Value) []byte {
 	return val
 }
 
+// splitBytes splits a given byte slice into two: the first part defined by the interpreted length (provided in the
+// slice), and the second part is the remainder of bytes from the slice
 func splitBytes(b *[]byte) ([]byte, []byte, error) {
 	l, o := binary.Varint(*b)
 	if o < 0 {
