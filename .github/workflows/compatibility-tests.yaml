@@ -1,4 +1,4 @@
-name: lakeFS HadoopFS Compatability Tests
+name: lakeFS HadoopFS Compatibility Tests
 
 on:
   push:
