@@ -216,9 +216,7 @@ func rbacToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 		if err != nil {
 			return nil, err
 		}
-		if len(users) == 0 { // avoid infinite loop when no users
-			break
-		}
+
 		for _, user := range users {
 			// get policies attracted to user
 			hasMoreUserPolicy := true
@@ -245,9 +243,9 @@ func rbacToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 				afterUserPolicy = userPoliciesPaginator.NextPageToken
 				hasMoreUserPolicy = userPoliciesPaginator.NextPageToken != ""
 			}
-			afterUser = userPaginator.NextPageToken
-			hasMoreUser = userPaginator.NextPageToken != ""
 		}
+		afterUser = userPaginator.NextPageToken
+		hasMoreUser = userPaginator.NextPageToken != ""
 	}
 	return usersWithPolicies, nil
 }
