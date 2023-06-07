@@ -91,9 +91,3 @@ func UnmarshalValue(b []byte) (*graveler.Value, error) {
 	}
 	return ret, nil
 }
-
-// UnmarshalIdentity returns *only* the Identity field encoded by b.  It does not even examine
-// any bytes beyond the prefix of b holding Identity.
-func UnmarshalIdentity(b []byte) ([]byte, []byte, error) {
-	return splitBytes(&b)
-}
