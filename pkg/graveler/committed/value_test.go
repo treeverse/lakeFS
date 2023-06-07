@@ -95,7 +95,7 @@ func TestGravelerValueIdentityUnmarshal(t *testing.T) {
 			c.id = make([]byte, 0)
 		}
 		t.Run(c.name, func(t *testing.T) {
-			id, err := committed.UnmarshalIdentity(c.b)
+			id, _, err := committed.UnmarshalIdentity(c.b)
 			if !errors.Is(err, c.err) {
 				t.Errorf("got error %s != %s", err, c.err)
 			}
