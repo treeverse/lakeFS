@@ -21,6 +21,12 @@ If you're upgrading, check whether the [release](https://github.com/treeverse/la
 
 ## When DB migrations are required
 
+### lakeFS 0.101.1 or greater
+
+Version 0.101.1 added support for rolling KV upgrade. This means that users who already migrated to the KV ref-store (versions 0.80.0 and above) no longer have to pass through specific versions for migration.
+This includes [ACL migration](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) which was introduced in lakeFS version 0.98.0.
+Running migrate up on the latest lakeFS version, will perform all the necessary migrations up to that point.
+
 ### lakeFS 0.80.0 or greater (KV Migration)
 
 Starting with version 0.80.2, lakeFS has transitioned from using a PostgreSQL based database implementation to a Key-Value datastore interface supporting
