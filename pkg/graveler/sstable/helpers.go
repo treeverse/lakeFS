@@ -5,7 +5,7 @@ import "github.com/cockroachdb/pebble"
 func retrieveValue(lazyValue pebble.LazyValue) ([]byte, error) {
 	val, owned, err := lazyValue.Value(nil)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	if owned || val == nil {
 		return val, nil
