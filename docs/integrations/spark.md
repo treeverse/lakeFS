@@ -413,7 +413,7 @@ interact with your data on lakeFS.
 Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.14
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.15
   ```
 
   </div>
@@ -421,7 +421,7 @@ Add the package to your `spark-submit` command:
 In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
 ```
-io.lakefs:hadoop-lakefs-assembly:0.1.14
+io.lakefs:hadoop-lakefs-assembly:0.1.15
 ```
 
 Once installed, it should look something like this:
@@ -434,7 +434,7 @@ Once installed, it should look something like this:
 Add the package to your `pyspark` or `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.14
+  --packages io.lakefs:hadoop-lakefs-assembly:0.1.15
   ```
 
 Add the configuration to access the S3 bucket used by lakeFS to your `pyspark` or `spark-submit` command or add this configuration at the Cloudera cluster level (see below):
@@ -489,7 +489,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.14 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.15 \
               io.example.ExampleClass
 ```
   </div>
@@ -599,6 +599,7 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
 ### Hadoop FileSystem in Presigned mode <sup>BETA</sup>
+
 _Available starting version 0.1.13 of the FileSystem_
 
 In this mode, the lakeFS server is responsible for authenticating with your storage.
@@ -622,7 +623,7 @@ spark-shell --conf spark.hadoop.fs.access.mode=presigned \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.14 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.15 \
               io.example.ExampleClass
 ```
   </div>
