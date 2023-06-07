@@ -2,7 +2,12 @@
 
 ## _Upcoming_
 
+## 0.1.15
+
+* Fix presigned mode on Azure fails getting blockstore type (#6028)
+
 ## 0.1.14
+
 * Fix bug #5603: fix issues with Delta tables on Databricks 9.1 ML.
 * Reduce listObjects calls and results amount (#5683) 
 
