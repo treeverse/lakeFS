@@ -46,8 +46,8 @@ var (
 )
 
 func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, version int, force bool) error {
-	if cfg.IsAuthTypeAPI() {
-		fmt.Println("skipping ACL migration - external Authorization")
+	if !cfg.IsAuthUISimplified() {
+		fmt.Println("skipping ACL migration - not simplified")
 		return updateKVSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
 	}
 
@@ -216,6 +216,7 @@ func rbacToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 		if err != nil {
 			return nil, err
 		}
+
 		for _, user := range users {
 			// get policies attracted to user
 			hasMoreUserPolicy := true
@@ -242,9 +243,9 @@ func rbacToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 				afterUserPolicy = userPoliciesPaginator.NextPageToken
 				hasMoreUserPolicy = userPoliciesPaginator.NextPageToken != ""
 			}
-			afterUser = userPaginator.NextPageToken
-			hasMoreUser = userPaginator.NextPageToken != ""
 		}
+		afterUser = userPaginator.NextPageToken
+		hasMoreUser = userPaginator.NextPageToken != ""
 	}
 	return usersWithPolicies, nil
 }
