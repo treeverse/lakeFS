@@ -85,7 +85,7 @@ func UnmarshalValue(b []byte) (*graveler.Value, error) {
 	ret := &graveler.Value{}
 	var err error
 	data := b
-	if ret.Identity, data, err = splitBytes(b); err != nil {
+	if ret.Identity, data, err = splitBytes(data); err != nil {
 		return nil, fmt.Errorf("identity field: %w", err)
 	}
 	if ret.Data, _, err = splitBytes(data); err != nil {
