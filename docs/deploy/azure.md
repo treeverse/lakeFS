@@ -31,13 +31,12 @@ This guide walks you through the options available and how to configure them, fi
 
 ## 1. Object Storage
 
-lakeFS supports the following storage account types:
+lakeFS supports the following [Azure Storage](https://learn.microsoft.com/en-us/azure/storage/common/storage-introduction) types:
 
 1. [Azure Blob Storage](https://azure.microsoft.com/en-gb/products/storage/blobs)
 2. [Azure Data Lake Storage Gen2](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction) ([HNS](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-namespace))
-    * Data Lake Storage Gen1 is not supported
 
-Other Azure storage types have not been tested. For more information see: [Introduction to Azure Storage](https://learn.microsoft.com/en-us/azure/storage/common/storage-introduction)
+Data Lake Storage Gen1 is not supported.
 
 ## 2. Authentication Method
 
@@ -110,6 +109,8 @@ Storage account credentials can be set directly in the lakeFS configuration usin
 
 * `blockstore.azure.storage_account`
 * `blockstore.azure.storage_access_key`  
+
+#### Limitations
 
 Please note that using this authentication method limits lakeFS to the scope of the given storage account. Specifically, **the following operations will not work**:
 
