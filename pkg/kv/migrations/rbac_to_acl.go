@@ -46,7 +46,7 @@ var (
 )
 
 func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, version int, force bool) error {
-	if cfg.IsAuthTypeAPI() {
+	if !cfg.IsAuthUISimplified() {
 		fmt.Println("skipping ACL migration - external Authorization")
 		return updateKVSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
 	}
