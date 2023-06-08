@@ -71,39 +71,3 @@ func TestGravelerValueUnmarshal(t *testing.T) {
 		})
 	}
 }
-
-func TestGravelerValueIdentityUnmarshal(t *testing.T) {
-	cases := []struct {
-		name string
-		id   []byte
-		b    []byte
-		err  error
-	}{
-		{name: "empty", b: []byte{0, 0}},
-		{name: "identity", id: []byte("foo"), b: []byte{6, 102, 111, 111, 0}},
-		{name: "data", b: []byte{0, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
-		{name: "identityAndData", id: []byte("foo"), b: []byte{6, 102, 111, 111, 38, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
-		{name: "failIdentityNegativeLength", b: []byte{3, 102, 111, 111, 0}, err: committed.ErrBadValueBytes},
-		{name: "okIdentityTooShort", id: []byte("fo"), b: []byte{4, 102, 111, 111, 0}},
-		{name: "failIdentityTooLong", b: []byte{16, 102, 111, 111, 0}, err: committed.ErrBadValueBytes},
-		{name: "okIdentityDataNegativeLength", id: []byte("foo"), b: []byte{6, 102, 111, 111, 17, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
-		{name: "okIdentityDataTooLong", id: []byte("foo"), b: []byte{6, 102, 111, 111, 250, 116, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32, 102, 111, 120}},
-	}
-
-	for _, c := range cases {
-		if c.id == nil {
-			c.id = make([]byte, 0)
-		}
-		t.Run(c.name, func(t *testing.T) {
-			id, err := committed.UnmarshalIdentity(c.b)
-			if !errors.Is(err, c.err) {
-				t.Errorf("got error %s != %s", err, c.err)
-			}
-			if err == nil {
-				if diffs := deep.Equal(id, c.id); diffs != nil {
-					t.Errorf("bad value %+v: %s", id, diffs)
-				}
-			}
-		})
-	}
-}
