@@ -76,19 +76,19 @@ func splitBytes(b []byte) ([]byte, []byte, error) {
 	if l < 0 {
 		return nil, nil, fmt.Errorf("impossible negative length %d: %w", l, ErrBadValueBytes)
 	}
-	left := remainedBuf[:l]
-	right := remainedBuf[l:]
-	return left, right, nil
+	value := remainedBuf[:l]
+	rest := remainedBuf[l:]
+	return value, rest, nil
 }
 
 func UnmarshalValue(b []byte) (*graveler.Value, error) {
 	ret := &graveler.Value{}
 	var err error
-	var right []byte
-	if ret.Identity, right, err = splitBytes(b); err != nil {
+	data := b
+	if ret.Identity, data, err = splitBytes(b); err != nil {
 		return nil, fmt.Errorf("identity field: %w", err)
 	}
-	if ret.Data, _, err = splitBytes(right); err != nil {
+	if ret.Data, _, err = splitBytes(data); err != nil {
 		return nil, fmt.Errorf("data field: %w", err)
 	}
 	return ret, nil
