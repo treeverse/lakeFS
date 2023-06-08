@@ -64,12 +64,12 @@ func MustMarshalValue(v *graveler.Value) []byte {
 
 // splitBytes splits a given byte slice into two: the first part defined by the interpreted length (provided in the
 // slice), and the second part is the remainder of bytes from the slice
-func splitBytes(b *[]byte) ([]byte, []byte, error) {
-	l, o := binary.Varint(*b)
+func splitBytes(b []byte) ([]byte, []byte, error) {
+	l, o := binary.Varint(b)
 	if o < 0 {
 		return nil, nil, fmt.Errorf("read length: %w", ErrBadValueBytes)
 	}
-	remainedBuf := (*b)[o:]
+	remainedBuf := b[o:]
 	if len(remainedBuf) < int(l) {
 		return nil, nil, fmt.Errorf("not enough bytes to read %d bytes: %w", l, ErrBadValueBytes)
 	}
@@ -85,10 +85,10 @@ func UnmarshalValue(b []byte) (*graveler.Value, error) {
 	ret := &graveler.Value{}
 	var err error
 	var right []byte
-	if ret.Identity, right, err = splitBytes(&b); err != nil {
+	if ret.Identity, right, err = splitBytes(b); err != nil {
 		return nil, fmt.Errorf("identity field: %w", err)
 	}
-	if ret.Data, _, err = splitBytes(&right); err != nil {
+	if ret.Data, _, err = splitBytes(right); err != nil {
 		return nil, fmt.Errorf("data field: %w", err)
 	}
 	return ret, nil
