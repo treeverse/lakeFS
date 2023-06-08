@@ -92,12 +92,7 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 		}
 		return nil, ErrKeyNotFound
 	}
-	vBytes, owned, err := value.Value(nil)
-	if !owned {
-		b := vBytes
-		vBytes = make([]byte, len(b))
-		copy(vBytes, b)
-	}
+	vBytes, err := retrieveValue(value)
 
 	if err != nil {
 		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
@@ -138,12 +133,7 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 		// lookup path in range but key not found
 		return nil, ErrKeyNotFound
 	}
-	vBytes, owned, err := value.Value(nil)
-	if !owned {
-		b := vBytes
-		vBytes = make([]byte, len(b))
-		copy(vBytes, b)
-	}
+	vBytes, err := retrieveValue(value)
 
 	if err != nil {
 		return nil, fmt.Errorf("extract value from sstable id %s (key %s): %w", id, key, err)
