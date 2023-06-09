@@ -241,9 +241,9 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 	user, _ := auth.GetUser(ctx)
 	username := user.Username
-	var accessKeyId string
+	var accessKeyID string
 	if authContext, ok := ctx.Value(ContextKeyAuthContext).(sig.SigContext); ok {
-		accessKeyId = authContext.GetAccessKeyID()
+		accessKeyID = authContext.GetAccessKeyID()
 	}
 
 	if len(perms.Nodes) == 0 && len(perms.Permission.Action) == 0 {
@@ -265,8 +265,8 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 	}
 	if authResp.Error != nil || !authResp.Allowed {
 		l := o.Log(req).WithError(authResp.Error)
-		if accessKeyId != "" {
-			l = l.WithField("key", accessKeyId)
+		if accessKeyID != "" {
+			l = l.WithField("key", accessKeyID)
 		}
 		l.Warn("no permission")
 		_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
