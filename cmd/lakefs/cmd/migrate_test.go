@@ -24,12 +24,25 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("not_meets_required_version", func(t *testing.T) {
 		kvStore := kvtest.GetStore(ctx, t)
-		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.InitialMigrateVersion))
+		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, 0))
 		err := cmd.DoMigration(ctx, kvStore, nil, false)
 		require.ErrorIs(t, err, kv.ErrMigrationVersion)
 		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
 		require.NoError(t, err)
-		require.Equal(t, kv.InitialMigrateVersion, version)
+		require.Equal(t, 0, version)
+	})
+
+	t.Run("initial_kv_version", func(t *testing.T) {
+		cfg := config.Config{}
+		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
+		cfg.Auth.Encrypt.SecretKey = "test"
+		kvStore := kvtest.GetStore(ctx, t)
+		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.InitialMigrateVersion))
+		err := cmd.DoMigration(ctx, kvStore, &cfg, false)
+		require.NoError(t, err)
+		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
+		require.NoError(t, err)
+		require.True(t, kv.IsLatestSchemaVersion(version))
 	})
 
 	t.Run("from_acl_v1_no_force", func(t *testing.T) {
@@ -94,17 +107,5 @@ func TestDoMigrate(t *testing.T) {
 		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
 		require.NoError(t, err)
 		require.Equal(t, kv.NextSchemaVersion, version)
-	})
-
-	t.Run("invalid_version", func(t *testing.T) {
-		cfg := config.Config{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
-		kvStore := kvtest.GetStore(ctx, t)
-		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, 0))
-		err := cmd.DoMigration(ctx, kvStore, &cfg, false)
-		require.ErrorIs(t, err, kv.ErrMigrationVersion)
-		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
-		require.NoError(t, err)
-		require.Equal(t, 0, version)
 	})
 }

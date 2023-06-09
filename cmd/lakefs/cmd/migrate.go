@@ -112,7 +112,7 @@ func DoMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config, forc
 			return err
 		}
 		switch {
-		case version >= kv.NextSchemaVersion || version < kv.ACLMigrateVersion:
+		case version >= kv.NextSchemaVersion || version < kv.InitialMigrateVersion:
 			return fmt.Errorf("wrong starting version %d: %w", version, kv.ErrMigrationVersion)
 		case version < kv.ACLNoReposMigrateVersion:
 			err = migrations.MigrateToACL(ctx, kvStore, cfg, logging.Default(), version, force)
