@@ -134,6 +134,11 @@ func IsAWSSignedRequest(req *http.Request) bool {
 	if strings.HasPrefix(v2Value, "AWS ") {
 		return true
 	}
+	// unauthenticated requests might still pass X-Amz-Date
+	dateHeader := headers.Get("X-Amz-Date")
+	if dateHeader != "" {
+		return true
+	}
 
 	// then request params
 	queryParams := req.URL.Query()

@@ -42,6 +42,11 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
+func defaultSecurityRequirements(router routers.Router) (openapi3.SecurityRequirements, error) {
+	r, _ := http.NewRequest("GET", "/api/v1/user", nil)
+	return extractSecurityRequirements(router, r)
+}
+
 func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
@@ -56,8 +61,18 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
-				writeError(w, r, http.StatusBadRequest, err)
-				return
+				// if we can't find the route, assume it's the base one.
+				if _, ok := err.(*routers.RouteError); ok {
+					var defaultErr error
+					securityRequirements, defaultErr = defaultSecurityRequirements(router)
+					if defaultErr != nil {
+						writeError(w, r, http.StatusBadRequest, err)
+						return
+					}
+				} else {
+					writeError(w, r, http.StatusBadRequest, err)
+					return
+				}
 			}
 			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
 			if err != nil {

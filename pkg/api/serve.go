@@ -37,6 +37,16 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
+func MakeAuthMiddleware(logger logging.Logger, cfg *config.Config, middlewareAuthenticator auth.Authenticator, authService auth.Service) (func(next http.Handler) http.Handler, error) {
+	swagger, err := GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	mw := AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC, &cfg.Auth.CookieAuthVerification)
+	return mw, nil
+}
+
 func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
@@ -62,7 +72,6 @@ func Serve(
 	if err != nil {
 		panic(err)
 	}
-
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
 	apiRouter := r.With(

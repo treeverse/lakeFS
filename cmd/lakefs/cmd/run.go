@@ -276,6 +276,17 @@ var runCmd = &cobra.Command{
 			}
 		}
 
+		// setup authenticator for s3 gateway to also support swagger auth
+		apiAuthenticator, err := api.MakeAuthMiddleware(
+			logger.WithField("service", "api_gateway"),
+			cfg,
+			middlewareAuthenticator,
+			authService,
+		)
+		if err != nil {
+			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
+		}
+
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.Gateways.S3.Region,
 			c,
@@ -304,7 +315,8 @@ var runCmd = &cobra.Command{
 				if httputil.HostMatches(request, cfg.Gateways.S3.DomainNames) ||
 					httputil.HostSubdomainOf(request, cfg.Gateways.S3.DomainNames) ||
 					sig.IsAWSSignedRequest(request) {
-					s3gatewayHandler.ServeHTTP(writer, request)
+					h := apiAuthenticator(s3gatewayHandler)
+					h.ServeHTTP(writer, request)
 					return
 				}
 
