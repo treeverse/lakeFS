@@ -7,7 +7,6 @@ has_children: false
 ---
 
 # Setting up lakeFS Cloud on Azure
-{: .no_toc }
 {: .pb-3 }
 
 {: .note}

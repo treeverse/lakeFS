@@ -10,7 +10,6 @@ redirect_from:
   - /understand/kv-in-a-nutshell.html
 ---
 # Internal database structure
-{: .no_toc }
 
 {% include toc.html %}
 

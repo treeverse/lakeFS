@@ -9,7 +9,6 @@ redirect_from: /using/dbt.html
 ---
 
 ## Maintaining environments with dbt and lakeFS
-{: .no_toc }
 
 dbt can run on lakeFS with a Spark adapter or Presto/Trino adapter. 
 Both Spark and Presto use Hive metastore or Glue to manage tables and views.

@@ -12,7 +12,6 @@ redirect_from:
 
 # Using lakeFS with Presto/Trino
 
-{: .no_toc }
 [Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engines designed to query large data sets distributed over one or more heterogeneous data sources.
 {: .pb-5 }
 

@@ -12,7 +12,6 @@ redirect_from:
 ---
 
 # Model
-{: .no_toc }
 
 {% include toc.html %}
 

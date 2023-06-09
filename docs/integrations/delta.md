@@ -8,7 +8,6 @@ has_children: false
 ---
 
 # Using lakeFS with Delta Lake
-{: .no_toc }
 
 [Delta Lake](https://delta.io/) Delta Lake is an open-source storage framework designed to improve performance and provide transactional guarantees to data lake tables.
 

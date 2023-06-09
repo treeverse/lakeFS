@@ -10,7 +10,6 @@ redirect_from:
 ---
 
 # Import data into lakeFS
-{: .no_toc }
 
 
 The simplest way to bring data into lakeFS is by [copying it](#copying-data-into-a-lakefs-repository), but this approach may not be suitable when a lot of data is involved.
@@ -49,7 +48,6 @@ In addition, see the following storage provider specific instructions:
 
 
 #### AWS S3: Importing from public buckets
-{: .no_toc }
 
 lakeFS needs access to the imported location to first list the files to import and later read the files upon users request.
 
@@ -93,7 +91,6 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
 #### Azure Data Lake Gen2
-{: .no_toc }
 
 lakeFS requires a hint in the import source URL to understand that the provided storage account is ADLS Gen2
 
@@ -130,7 +127,6 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
 Once the import is complete, the changes are merged into the destination branch.
 
 #### Notes
-{: .no_toc }
 
 * Import uses the `src-wins` merge strategy. Therefore - import of existing objects nad prefixes in destination will override them.
 * The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.

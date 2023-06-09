@@ -18,7 +18,6 @@ Glue and Hive Metastore store metadata related to Hive and other services (such 
 They contain metadata such as the location of the table, information about columns, partitions and many more.
 
 ## Without lakeFS
-{: .no_toc }
 To query the table `my_table`, Spark will:
 * Request the metadata from Hive metastore (steps 1,2),
 * Use the location from the metadata to access the data in S3 (steps 3,4).
@@ -26,7 +25,6 @@ To query the table `my_table`, Spark will:
 
 
 ## With lakeFS
-{: .no_toc }
 When using lakeFS, the flow stays exactly the same. Note that the location of the table `my_table` now contains the branch `s3://example/main/path/to/table`
 ![metastore with S3]({{ site.baseurl }}/assets/img/metastore-lakefs.svg)
 
@@ -49,7 +47,6 @@ The `lakectl metastore` commands can run on Glue or Hive metastore.
 Add the following to the lakectl configuration file (by default `~/.lakectl.yaml`):
 
 ### Hive
-{: .no_toc }
 
 ``` yaml
 metastore:
@@ -59,7 +56,6 @@ metastore:
 ```
 
 ### Glue
-{: .no_toc }
 
 ``` yaml
 metastore:
@@ -133,7 +129,6 @@ lakectl metastore copy --from-schema default --from-table inventory --to-schema 
 After running this command, query the table `example_branch.inventory` to get the data from `s3://my_repo/DEV/path/to/table`
 
 #### Copy Partition
-{: .no_toc }
 
 After adding a partition to the branch table, you may want to copy the partition to the main table.
 For example, for the new partition `2020-08-01`, run the following to copy the partition to the main table:

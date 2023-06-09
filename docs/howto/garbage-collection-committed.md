@@ -14,7 +14,6 @@ redirect_from:
 ---
 
 ## Garbage Collection: committed objects
-{: .no_toc }
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
@@ -230,7 +229,6 @@ You will find the list of objects hard-deleted by the job in the storage
 namespace of the repository. It is saved in Parquet format under `_lakefs/logs/gc/deleted_objects`.
 
 #### GC job options
-{: .no_toc }
 
 By default, GC first creates a list of expired objects according to your retention rules and then hard-deletes those objects. 
 However, you can use GC options to break the GC job down into two stages: 
@@ -241,7 +239,6 @@ By breaking GC into these stages, you can pause and create a backup of the objec
 restore them. You can use the [GC backup and restore](#backup-and-restore) utility to do that.   
 
 ###### Mark only mode 
-{: .no_toc }
 
 To make GC run the mark stage only, add the following properties to your spark-submit command:
 ```properties
@@ -255,7 +252,6 @@ Running in mark only mode, GC will write the addresses of the expired objects to
 * The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated with v0.4.0.
 
 ###### Sweep only mode
-{: .no_toc }
 
 To make GC run the sweep stage only, add the following properties to your spark-submit command:
 ```properties
@@ -297,7 +293,6 @@ Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path which points to the l
 The `BACKUP_STORAGE_LOCATION` attribute points to a storage location outside your lakeFS storage namespace into which you want to save the backup.
 
 #### Backup command
-{: .no_toc }
 
 ```shell
 rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
@@ -305,7 +300,6 @@ rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/ad
 ```
 
 #### Restore command
-{: .no_toc }
 
 ```shell
 rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
@@ -313,7 +307,6 @@ rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/ad
 ```
 
 #### Example
-{: .no_toc }
 
 The following of commands used to backup/resource a configured remote 'azure' (Azure blob storage) to access example repository storage namespace `https://lakefs.blob.core.windows.net/repo/example/`:
 

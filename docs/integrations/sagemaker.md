@@ -9,7 +9,6 @@ redirect_from: /using/sagemaker.html
 ---
 
 # Using lakeFS with SageMaker 
-{: .no_toc }
 [Amazon SageMaker](https://aws.amazon.com/sagemaker/) helps to prepare, build, train and deploy ML models quickly by bringing together a broad set of capabilities purpose-built for ML.
 
 {% include toc.html %}

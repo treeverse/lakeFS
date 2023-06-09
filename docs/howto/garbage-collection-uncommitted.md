@@ -9,7 +9,6 @@ has_children: false
 ---
 
 ## Garbage collection: uncommitted objects <sup>BETA</sup>
-{: .no_toc }
 
 Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and
 take precautions before applying the actual delete ("sweep"), like copying the marked objects.
@@ -92,7 +91,6 @@ The uncommitted GC will not clean:
 
 
 ### Uncommitted GC job options
-{: .no_toc }
 
 Similar to the [committed GC option](./garbage-collection-committed.md#gc-job-options).
 
@@ -119,7 +117,6 @@ The uncommitted GC is under development, next releases will include:
 5. Support for non-S3 repositories.
 
 ### Performance
-{: .no_toc }
 
 The uncommitted GC job was tested on a repository with 1K branches,
 25K uncommitted objects and 2K commits.

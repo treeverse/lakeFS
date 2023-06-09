@@ -8,7 +8,6 @@ has_children: false
 ---
 
 # Presigned URL
-{: .no_toc }
 
 {% include toc.html %}
 

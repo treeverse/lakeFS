@@ -10,7 +10,6 @@ redirect_from:
 ---
 
 # Exporting Data
-{: .no_toc }
 The export operation copies all data from a given lakeFS commit to
 a designated object store location.
 
