@@ -12,7 +12,7 @@ redirect_from:
 # Architecture Overview
 
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Overview
 

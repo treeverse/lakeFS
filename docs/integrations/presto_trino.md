@@ -15,12 +15,7 @@ redirect_from:
 [Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engines designed to query large data sets distributed over one or more heterogeneous data sources.
 {: .pb-5 }
 
-## Table of contents
-
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc .pb-5 }
+{% include toc.html %}
 
 Querying data in lakeFS from Presto/Trino is similar to querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
 

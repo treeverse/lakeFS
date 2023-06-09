@@ -11,11 +11,12 @@ redirect_from:
   - /integrations/boto.html
 ---
 
-{% include toc.html %}
+# Use Python to interact with your objects on lakeFS
 
-## Boto vs. lakeFS SDK
+{% include toc_2-3.html %}
 
-To interact with lakeFS from Python:
+There are two primary ways to work with lakeFS from Python: 
+
 * [Use Boto](#using-boto) to perform **object operations** through the lakeFS S3 gateway.
 * [Use the lakeFS SDK](#using-the-lakefs-sdk) to perform **versioning** and other lakeFS-specific operations.
 

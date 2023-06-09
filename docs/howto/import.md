@@ -15,7 +15,7 @@ redirect_from:
 The simplest way to bring data into lakeFS is by [copying it](#copying-data-into-a-lakefs-repository), but this approach may not be suitable when a lot of data is involved.
 To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). With this approach, lakeFS only creates pointers to your existing objects in your new repository.
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Zero-copy import
 
