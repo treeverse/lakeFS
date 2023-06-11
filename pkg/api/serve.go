@@ -62,7 +62,6 @@ func Serve(
 	if err != nil {
 		panic(err)
 	}
-
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
 	apiRouter := r.With(

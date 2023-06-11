@@ -276,6 +276,18 @@ var runCmd = &cobra.Command{
 			}
 		}
 
+		// setup authenticator for s3 gateway to also support swagger auth
+		apiAuthenticator, err := api.GenericAuthMiddleware(
+			logger.WithField("service", "s3_gateway"),
+			middlewareAuthenticator,
+			authService,
+			&cfg.Auth.OIDC,
+			&cfg.Auth.CookieAuthVerification,
+		)
+		if err != nil {
+			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
+		}
+
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.Gateways.S3.Region,
 			c,
@@ -289,6 +301,7 @@ var runCmd = &cobra.Command{
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
 		)
+		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
 		bufferedCollector.Start(ctx)
 		defer bufferedCollector.Close()

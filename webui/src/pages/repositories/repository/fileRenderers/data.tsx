@@ -1,6 +1,5 @@
 import React, {FC, FormEvent, useCallback, useEffect, useState} from "react";
-import {getDuckDBConnection, closeDuckDBConnection} from "./duckdb";
-import * as duckdb from '@duckdb/duckdb-wasm';
+import {runDuckDBQuery} from "./duckdb";
 import * as arrow from 'apache-arrow';
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -20,17 +19,11 @@ export const DataLoader: FC = () => {
 }
 
 export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, fileExtension }) => {
-    let initialQuery = `SELECT * 
-FROM read_parquet(lakefs_object('${repoId}', '${refId}', '${path}')) 
-LIMIT 20`;
+    let initialQuery = `SELECT * FROM read_parquet('lakefs://${repoId}/${refId}/${path}')  LIMIT 20`;
     if (fileExtension === 'csv') {
-        initialQuery = `SELECT * 
-FROM read_csv(lakefs_object('${repoId}', '${refId}', '${path}'), AUTO_DETECT = TRUE) 
-LIMIT 20`
+        initialQuery = `SELECT *  FROM read_csv('lakefs://${repoId}/${refId}/${path}', AUTO_DETECT = TRUE)  LIMIT 20`
     } else if (fileExtension === 'tsv') {
-        initialQuery = `SELECT * 
-FROM read_csv(lakefs_object('${repoId}', '${refId}', '${path}'), DELIM='\t', AUTO_DETECT=TRUE) 
-LIMIT 20`
+        initialQuery = `SELECT *  FROM read_csv('lakefs://${repoId}/${refId}/${path}', DELIM='\t', AUTO_DETECT=TRUE)  LIMIT 20`
     }
     const [shouldSubmit, setShouldSubmit] = useState<boolean>(true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,17 +53,14 @@ LIMIT 20`
         const runQuery = async (sql: string) => {
             setLoading(true)
             setError(null)
-            let conn: duckdb.AsyncDuckDBConnection | null = null
             try {
-                conn = await getDuckDBConnection()
-                const results = await conn.query(sql)
+                const results = await runDuckDBQuery(sql)
                 setData(results)
             } catch (e) {
                 setError(e.toString())
                 setData(null)
             } finally {
                 setLoading(false)
-                await closeDuckDBConnection(conn)
             }
         }
         runQuery(sql).catch(console.error);
