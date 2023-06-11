@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -27,7 +26,6 @@ import (
 type contextKey string
 
 const (
-	ContextKeyUser         contextKey = "user"
 	ContextKeyRepositoryID contextKey = "repository_id"
 	ContextKeyRepository   contextKey = "repository"
 	ContextKeyAuthContext  contextKey = "auth_context"
@@ -241,8 +239,17 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 func authorize(w http.ResponseWriter, req *http.Request, authService auth.GatewayService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-	username := ctx.Value(ContextKeyUser).(*model.User).Username
-	authContext := ctx.Value(ContextKeyAuthContext).(sig.SigContext)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		o.Log(req).WithError(err).Error("failed to authorize, get user")
+		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+		return nil
+	}
+	username := user.Username
+	var accessKeyID string
+	if authContext, ok := ctx.Value(ContextKeyAuthContext).(sig.SigContext); ok {
+		accessKeyID = authContext.GetAccessKeyID()
+	}
 
 	if len(perms.Nodes) == 0 && len(perms.Permission.Action) == 0 {
 		// has not provided required permissions
@@ -262,7 +269,11 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 		return nil
 	}
 	if authResp.Error != nil || !authResp.Allowed {
-		o.Log(req).WithError(authResp.Error).WithField("key", authContext.GetAccessKeyID()).Warn("no permission")
+		l := o.Log(req).WithError(authResp.Error)
+		if accessKeyID != "" {
+			l = l.WithField("key", accessKeyID)
+		}
+		l.Warn("no permission")
 		_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 		return nil
 	}
