@@ -7,7 +7,7 @@
 :new: What's new:
 - Add Azure Cosmos DB kvstore driver (#5915)
 - UI: Allow writing to lakeFS from duckdb-wasm (#6044)
-- show object's user metadata in UI and CLI (#6050)
+- Show object's user metadata in UI and CLI (#6050)
 
 :bug: Bugs fixed:
 - Fix gateway list bucket 1k limit (#6025)
