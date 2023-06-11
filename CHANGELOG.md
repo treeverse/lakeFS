@@ -5,7 +5,7 @@
 ## v0.103.0
 
 :new: What's new:
-- Adding cosmos db kvstore driver (#5915)
+- Add Azure Cosmos DB kvstore driver (#5915)
 - UI: Allow writing to lakeFS from duckdb-wasm (#6044)
 - show object's user metadata in UI and CLI (#6050)
 
