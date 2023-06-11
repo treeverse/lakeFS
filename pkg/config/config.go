@@ -182,6 +182,13 @@ type Config struct {
 			// Won't run when is equal or less than 0.
 			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
 		} `mapstructure:"dynamodb"`
+
+		CosmosDB *struct {
+			Key       SecureString `mapstructure:"key"`
+			Endpoint  string       `mapstructure:"endpoint"`
+			Database  string       `mapstructure:"database"`
+			Container string       `mapstructure:"container"`
+		} `mapstructure:"cosmosdb"`
 	}
 
 	Auth struct {
@@ -476,6 +483,17 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
 		}
 	}
+
+	if c.Database.CosmosDB != nil {
+		p.CosmosDB = &kvparams.CosmosDB{
+			Key:               c.Database.CosmosDB.Key.SecureValue(),
+			Endpoint:          c.Database.CosmosDB.Endpoint,
+			Database:          c.Database.CosmosDB.Database,
+			Container:         c.Database.CosmosDB.Container,
+			StrongConsistency: true,
+		}
+	}
+
 	return p, nil
 }
 

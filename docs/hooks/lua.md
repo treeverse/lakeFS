@@ -9,11 +9,10 @@ redirect_from: []
 ---
 
 
-# Lua Hooks <span>Experimental</span>{: .label }
+# Lua Hooks
 {: .no_toc }
 
-
-As of version 0.86.0, lakeFS supports running hooks without relying on external components using an [embedded Lua VM](https://github.com/Shopify/go-lua)
+lakeFS supports running hooks without relying on external components using an [embedded Lua VM](https://github.com/Shopify/go-lua)
 
 Using Lua hooks, it is possible to pass a Lua script to be executed directly by the lakeFS server when an action occurs.
 
@@ -22,12 +21,66 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 1. Accessing any of the running lakeFS server's environment
 2. Accessing the local filesystem available the lakeFS process
 
-
-
 {% include toc.html %}
 
+## Example Lua Hooks
+
+### Display information about an event
+
+This example will print out a JSON representation of the event that occurred:
+
+```yaml
+name: dump_all
+on:
+  post-commit:
+  post-merge:
+  post-create-tag:
+  post-create-branch:
+hooks:
+  - id: dump_event
+    type: lua
+    properties:
+      script: |
+        json = require("encoding/json")
+        print(json.marshal(action))
+```
+
+### Ensure that a commit includes a mandatory metadata field
+
+A more useful example: ensure every commit contains a required metadata field:
+
+```yaml
+name: pre commit metadata field check
+on:
+pre-commit:
+    branches:
+    - main
+    - dev
+hooks:
+  - id: ensure_commit_metadata
+    type: lua
+    properties:
+      args:
+        notebook_url: {"pattern": "my-jupyter.example.com/.*"}
+        spark_version:  {}
+      script: |
+        regexp = require("regexp")
+        for k, props in pairs(args) do
+          current_value = action.commit.metadata[k]
+          if current_value == nil then
+            error("missing mandatory metadata field: " .. k)
+          end
+          if props.pattern and not regexp.match(props.pattern, current_value) then
+            error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
+          end
+        end
+```
+
+For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository.
 
 ## Lua Library reference
+
+The Lua runtime embedded in lakeFS is limited for security reasons. The provided APIs are shown below.
 
 ### `aws/s3.get_object(bucket, key)`
 
@@ -374,55 +427,3 @@ else
     print("Failed to post data - status code: " .. code)
 end
 ```
-
-
-## Example Hooks
-
-This example will simply print out a JSON representation of the event that occurred:
-
-```yaml
-name: dump_all
-on:
-  post-commit:
-  post-merge:
-  post-create-tag:
-  post-create-branch:
-hooks:
-  - id: dump_event
-    type: lua
-    properties:
-      script: |
-        json = require("encoding/json")
-        print(json.marshal(action))
-```
-
-A more useful example: ensure every commit contains a required metadata field:
-
-```yaml
-name: pre commit metadata field check
-on:
-pre-commit:
-    branches:
-    - main
-    - dev
-hooks:
-  - id: ensure_commit_metadata
-    type: lua
-    properties:
-      args:
-        notebook_url: {"pattern": "my-jupyter.example.com/.*"}
-        spark_version:  {}
-      script: |
-        regexp = require("regexp")
-        for k, props in pairs(args) do
-          current_value = action.commit.metadata[k]
-          if current_value == nil then
-            error("missing mandatory metadata field: " .. k)
-          end
-          if props.pattern and not regexp.match(props.pattern, current_value) then
-            error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
-          end
-        end
-```
-
-For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository.

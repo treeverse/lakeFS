@@ -118,7 +118,7 @@ Next step is to configure the custom logic for your hooks server and configuring
 
 ## Set up your first lakeFS webhook under 10 minutes
 
-To configure and set up a pre-merge lakeFS hook that validates file format of your data on staging branch before promoting it to production, refer to the [sample](https://github.com/treeverse/lakeFS-samples/tree/main/04-data-quality-checks-with-lakeFS-hooks) demo notebook and actions.yaml here. 
+To configure and set up a pre-merge lakeFS hook that validates file format of your data on staging branch before promoting it to production, refer to [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/notebooks/hooks-demo.ipynb) in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples).
 
 To explore different checks and validations on your data, refer to [pre-built hooks config](https://github.com/treeverse/lakeFS-hooks#included-webhooks) by the lakeFS team. 
 
