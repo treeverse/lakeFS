@@ -300,6 +300,7 @@ var runCmd = &cobra.Command{
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
 		)
+		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
 		bufferedCollector.Start(ctx)
 		defer bufferedCollector.Close()
@@ -315,8 +316,7 @@ var runCmd = &cobra.Command{
 				if httputil.HostMatches(request, cfg.Gateways.S3.DomainNames) ||
 					httputil.HostSubdomainOf(request, cfg.Gateways.S3.DomainNames) ||
 					sig.IsAWSSignedRequest(request) {
-					h := apiAuthenticator(s3gatewayHandler)
-					h.ServeHTTP(writer, request)
+					s3gatewayHandler.ServeHTTP(writer, request)
 					return
 				}
 

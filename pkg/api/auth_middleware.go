@@ -47,6 +47,17 @@ func defaultSecurityRequirements(router routers.Router) (openapi3.SecurityRequir
 	return extractSecurityRequirements(router, r)
 }
 
+// MakeAuthMiddleware will check all calls against our basic auth/cookie/jwt.
+func MakeAuthMiddleware(logger logging.Logger, cfg *config.Config, middlewareAuthenticator auth.Authenticator, authService auth.Service) (func(next http.Handler) http.Handler, error) {
+	swagger, err := GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	mw := AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC, &cfg.Auth.CookieAuthVerification)
+	return mw, nil
+}
+
 func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {

@@ -239,7 +239,12 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 func authorize(w http.ResponseWriter, req *http.Request, authService auth.GatewayService, perms permissions.Node) *operations.AuthorizedOperation {
 	ctx := req.Context()
 	o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-	user, _ := auth.GetUser(ctx)
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		o.Log(req).WithError(err).Error("failed to authorize, get user")
+		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+		return nil
+	}
 	username := user.Username
 	var accessKeyID string
 	if authContext, ok := ctx.Value(ContextKeyAuthContext).(sig.SigContext); ok {
