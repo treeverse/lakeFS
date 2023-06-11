@@ -28,7 +28,7 @@ Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
 Physical Address: {{ .PhysicalAddress }}
 Checksum: {{ .Checksum }}
-Content-Type: {{ .ContentType }}{{ if $.Metadata }}
+Content-Type: {{ .ContentType }}{{ if and $.Metadata $.Metadata.AdditionalProperties }}
 Metadata:
 	{{ range $key, $value := .Metadata.AdditionalProperties }}
 	{{ $key | printf "%-18s" }} = {{ $value }}
