@@ -220,12 +220,44 @@ const StatModal = ({ show, onHide, entry }) => {
                 </td>
               </tr>
             )}
+            {entry.metadata && (
+                <tr>
+                  <td>
+                    <strong>Metadata</strong>
+                  </td>
+                  <td>
+                    <EntryMetadata metadata={entry.metadata}/>
+                  </td>
+                </tr>
+            )}
           </tbody>
         </Table>
       </Modal.Body>
     </Modal>
   );
 };
+
+const EntryMetadata = ({ metadata }) => {
+    return (
+        <Table hover striped>
+          <thead>
+          <tr>
+            <th>Key</th>
+            <th>Value</th>
+          </tr>
+          </thead>
+          <tbody>
+          {Object.getOwnPropertyNames(metadata).map(key =>
+              <tr key={`metadata:${key}`}>
+                <td><code>{key}</code></td>
+                <td><code>{metadata[key]}</code></td>
+              </tr>
+          )}
+          </tbody>
+        </Table>
+    )
+};
+
 
 const CommitMetadata = ({ metadata }) => {
   const entries = Object.entries(metadata);
