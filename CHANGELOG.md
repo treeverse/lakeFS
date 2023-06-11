@@ -2,6 +2,18 @@
 
 ## UNRELEASED
 
+## v0.103.0
+
+:new: What's new:
+- Adding cosmos db kvstore driver (#5915)
+- UI: Allow writing to lakeFS from duckdb-wasm (#6044)
+- show object's user metadata in UI and CLI (#6050)
+
+:bug: Bugs fixed:
+- Fix gateway list bucket 1k limit (#6025)
+- Fix lakeFSFS non simple access mode with address translator (#6028)
+- Fix: Migration start version (#6039)
+
 ## v0.102.2
 
 :bug: Bugs fixed:
