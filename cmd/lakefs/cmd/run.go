@@ -277,11 +277,12 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
-		apiAuthenticator, err := api.MakeAuthMiddleware(
-			logger.WithField("service", "api_gateway"),
-			cfg,
+		apiAuthenticator, err := api.GenericAuthMiddleware(
+			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
 			authService,
+			&cfg.Auth.OIDC,
+			&cfg.Auth.CookieAuthVerification,
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")

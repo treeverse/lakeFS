@@ -42,20 +42,26 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func defaultSecurityRequirements(router routers.Router) (openapi3.SecurityRequirements, error) {
-	r, _ := http.NewRequest("GET", "/api/v1/user", nil)
-	return extractSecurityRequirements(router, r)
-}
-
-// MakeAuthMiddleware will check all calls against our basic auth/cookie/jwt.
-func MakeAuthMiddleware(logger logging.Logger, cfg *config.Config, middlewareAuthenticator auth.Authenticator, authService auth.Service) (func(next http.Handler) http.Handler, error) {
+func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) (func(next http.Handler) http.Handler, error) {
 	swagger, err := GetSwagger()
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	mw := AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC, &cfg.Auth.CookieAuthVerification)
-	return mw, nil
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
+			if err != nil {
+				writeError(w, r, http.StatusUnauthorized, err)
+				return
+			}
+			if user != nil {
+				ctx := logging.AddFields(r.Context(), logging.Fields{logging.UserFieldKey: user.Username})
+				r = r.WithContext(auth.WithUser(ctx, user))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}, nil
 }
 
 func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
@@ -72,18 +78,8 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
-				// if we can't find the route, assume it's the base one.
-				if _, ok := err.(*routers.RouteError); ok {
-					var defaultErr error
-					securityRequirements, defaultErr = defaultSecurityRequirements(router)
-					if defaultErr != nil {
-						writeError(w, r, http.StatusBadRequest, err)
-						return
-					}
-				} else {
-					writeError(w, r, http.StatusBadRequest, err)
-					return
-				}
+				writeError(w, r, http.StatusBadRequest, err)
+				return
 			}
 			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
 			if err != nil {
