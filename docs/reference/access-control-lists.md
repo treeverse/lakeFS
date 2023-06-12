@@ -11,7 +11,7 @@ redirect_from: /reference/access-control-list.html
 # Access Control Lists (ACLs)
 
 {: .note}
-> ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+> ACLs were introduced in their current form in v0.98 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
 
 
 {% include toc.html %}
@@ -36,7 +36,7 @@ If you are using ACL then the lakeFS configuration element `auth.ui_config.RBAC`
 
 ## Previous versions of ACL in lakeFS
 
-Here's how the current ACL model compares to to that prior to [the changes introduced](/posts/security_update.html#whats-changing) in v0.97.
+Here's a comparison of the current ACL model against the behavior prior to [the changes introduced](/posts/security_update.html#whats-changing) in v0.98.
 
 | Permission | Allows                                     | Previous Group Name       | Previous Policy Names and Actions                                                                                                                                                                                                                                                                                                                                                | 
 |------------|--------------------------------------------|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
