@@ -15,8 +15,6 @@ next:  ["Import data into your installation", "../howto/import.html"]
 ⏰ Expected deployment time: 25 min
 {: .note }
 
-## Overview
-
 lakeFS has several dependencies for which you need to select and configure a technology or interface: 
 
 ![](./deploy-on-azure.excalidraw.png)
@@ -112,7 +110,9 @@ Storage account credentials can be set directly in the lakeFS configuration usin
 
 #### Limitations
 
-Please note that using this authentication method limits lakeFS to the scope of the given storage account. Specifically, **the following operations will not work**:
+Please note that using this authentication method limits lakeFS to the scope of the given storage account. 
+
+Specifically, **the following operations will not work**:
 
 1. Import of data from different storage accounts
 1. Copy/Read/Write of data that was imported from a different storage account
