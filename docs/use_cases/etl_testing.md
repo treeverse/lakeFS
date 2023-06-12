@@ -113,18 +113,18 @@ Open the [local Jupyter Notebook](http://localhost:8888) and go to the `spark-de
 
 #### Configuring lakeFS Python Client
 
-Setup lakeFS access credentials for the lakeFS instance running. If you are using lakeFS playground environment, use the access key, secret key and endpoint details you received in your email. If you are running lakeFS using everything bagel docker, these details are found in the docker-compose.yaml file under `lakefs_setup` section.
+Setup lakeFS access credentials for the lakeFS instance running. The defaults for these that the samples repo Docker Compose uses are shown here:
 
 ```bash
-lakefsAccessKey = '<lakeFS Access Key>'
-lakefsSecretKey = '<lakeFS Secret Key>'
-lakefsEndPoint = '<lakeFS Endpoint URL>' # e.g. 'https://expert-robin.lakefs-demo.io/'
+lakefsAccessKey = 'AKIAIOSFODNN7EXAMPLE'
+lakefsSecretKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+lakefsEndPoint = 'http://lakefs:8000'
 ```
 
-Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. If you are using the lakeFS playground environment, you can find the storage namespace under the repository name.
+Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. 
 
 ```bash
-storageNamespace = 's3://<S3 Bucket Name>/' # e.g. "s3://treeverse-demo-lakefs-storage-production/user_expert-robin/my-repo"
+storageNamespace = 's3://example/' 
 ```
 
 You can use lakeFS through the UI, API or `lakectl` commandline. For this use-case, we use python `lakefs_client` to run lakeFS core operations.
@@ -153,7 +153,7 @@ To upload an object to the `my-repo`, use the following command.
 
 ```bash
 import os
-contentToUpload = open(os.path.expanduser('~')+'/lakefs_test.csv', 'rb')
+contentToUpload = open('/data/lakefs_test.csv', 'rb')
 client.objects.upload_object(
     repository="my-repo",
     branch="main",
