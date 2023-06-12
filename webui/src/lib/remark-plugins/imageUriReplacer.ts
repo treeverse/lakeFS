@@ -33,10 +33,11 @@ const imageUriReplacer: Plugin<[ImageUriReplacerOptions], Root> =
         node.url = getImageUrl(repo, ref, imgPath.join("/"));
       } else if (!node.url.match(ABSOLUTE_URL_REGEX)) {
         // If the image is not an absolute URL, we assume it's a relative path
-        // and we prefix it with the repo and ref.'
+        // relative to repo and ref
         if (node.url.startsWith("/")) {
           node.url = node.url.slice(1);
         }
+        // relative to MD file location
         if (node.url.startsWith("./")) {
           node.url = `${options.path.split("/").slice(0, -1)}/${node.url.slice(
             2
