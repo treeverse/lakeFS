@@ -58,9 +58,31 @@ pub(crate) fn construct_table_op(commit_info: &CommitInfo, version: DeltaDataTyp
     };
 
     let op_type = match OP_TYPES.get(op_name) {
-        None => return Err(TableOperationsError::UnknownOperation(op_name.to_string())),
-        Some(t) => *t
+        Some(t) => *t,
+        None => {
+            // Try prefix matching
+            let prefix_matches: Vec<(&str, i32)> = OP_TYPES
+                .iter()
+                .filter(|(key, _)| op_name.starts_with(*key))
+                .map(|(key, value)| (*key, *value))
+                .collect();
+
+            match prefix_matches.len() {
+                0 => return Err(TableOperationsError::UnknownOperation(op_name.to_string())),
+                1 => prefix_matches[0].1,
+                _ => {
+                    // Handle multiple prefix matches
+                    // (e.g., if "WR" and "WRITE" both match, choose the longer match)
+                    let (longest_prefix, _) = prefix_matches
+                        .iter()
+                        .max_by_key(|(prefix, _)| prefix.len())
+                        .unwrap();
+                    OP_TYPES[longest_prefix]
+                }
+            }
+        }
     };
+
 
     let seconds = match &commit_info.timestamp {
         None => return Err(TableOperationsError::MissingKey(TIMESTAMP_KEY.to_string())),
