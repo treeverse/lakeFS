@@ -10,7 +10,6 @@ redirect_from: []
 
 
 # Lua Hooks
-{: .no_toc }
 
 lakeFS supports running hooks without relying on external components using an [embedded Lua VM](https://github.com/Shopify/go-lua)
 

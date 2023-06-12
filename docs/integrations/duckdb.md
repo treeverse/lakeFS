@@ -9,14 +9,13 @@ has_children: false
 
 # Using lakeFS with DuckDB
 
-[DuckDB](https://duckdb.org/){:target="_blank"} is an in-process  SQL OLAP database management system.
+[DuckDB](https://duckdb.org/){:target="_blank"} is an in-process SQL OLAP database management system.
+
 {% include toc.html %}
 
 ## Configuration
 
-Querying data in lakeFS from DuckDB is similar to querying data in S3 from DuckDB. It is done using the [httpfs extension](https://duckdb.org/docs/extensions/httpfs.html){:target="_blank"}.
-
-### Configure the lakeFS S3 Gateway endpoint
+Querying data in lakeFS from DuckDB is similar to querying data in S3 from DuckDB. It is done using the [httpfs extension](https://duckdb.org/docs/extensions/httpfs.html){:target="_blank"} connecting to the [S3 Gateway that lakeFS provides](https://docs.lakefs.io/understand/architecture.html#s3-gateway).
 
 If not loaded already, install and load the HTTPFS extension: 
 
@@ -43,7 +42,7 @@ SET s3_url_style='path';
 * `s3_url_style` needs to be set to `path`
 * `s3_region` is the S3 region on which your bucket resides. If local storage, or not S3, then just set it to `us-east-1`. 
 
-### Querying Data
+## Querying Data
 
 Once configured, you can query data using the lakeFS S3 Gateway using the following URI pattern:
 
@@ -61,7 +60,7 @@ FROM parquet_scan('s3://example-repo/main/data/population/by-region/*.parquet', 
 ORDER BY name;
 ```
 
-### Writing Data
+## Writing Data
 
 No special configuration required for writing to a branch. Assuming the configuration above and write permissions to a `dev` branch,
 a write operation would look like any DuckDB write:

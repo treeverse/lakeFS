@@ -9,7 +9,6 @@ redirect_from: /reference/access-control-list.html
 ---
 
 # Access Control Lists (ACLs)
-{: .no_toc }
 
 {: .note}
 > ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.

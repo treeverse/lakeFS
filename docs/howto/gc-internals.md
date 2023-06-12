@@ -62,7 +62,6 @@ Some objects will _not_ be collected regardless of configured GC rules:
 * Uncommitted objects, see [Uncommitted Garbage Collection](./garbage-collection-uncommitted.md),
 
 ### Performance
-{: .no_toc }
 
 Garbage collection reads many commits.  It uses Spark to spread the load of
 reading the contents of all of these commits.  For very large jobs running
@@ -78,7 +77,6 @@ on very large clusters, you may want to tweak this load.  To do this:
 Normally this should not be needed.
 
 ### Networking
-{: .no_toc }
 
 Garbage collection communicates with the lakeFS server.  Very large
 repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakeFS consider increasing these timeouts:

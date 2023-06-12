@@ -1,26 +1,25 @@
 ---
 layout: default
 title: Presigned URL
-description: Configuring lakeFS to use presigned URLs.
+description: Configuring lakeFS to use presigned URLs
 parent: Reference
 nav_order: 100
 has_children: false
 ---
 
-# Presigned URL
-{: .no_toc }
+# Configuring lakeFS to use presigned URLs
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
-With lakeFS, you can access data directly from the storage and not through lakeFS using a presined URL.
+With lakeFS, you can access data directly from the storage and not through lakeFS using a presigned URL.
 Based on the user's access to an object in the object store, the presigned URL will get read or write access.
-The presign support is enabled for block adapter that supports it (S3, GCP, Azure), and can be disabled by the [configuration](configuration.md) (blockstore.blockstore-name.disable_pre_signed). Note that the UI support is disabled by default.
+The presign support is enabled for block adapter that supports it (S3, GCP, Azure), and can be disabled by the [configuration](configuration.md) (`blockstore.blockstore-name.disable_pre_signed`). Note that the UI support is disabled by default.
 
-# Using presigned URLs in the UI
+## Using presigned URLs in the UI
 For using presigned URLs in the UI:
-1. Enable the presigned URL support UI in the lakeFS [configuration](configuration.md) (blockstore.blockstore-name.disable_pre_signed_ui).
+1. Enable the presigned URL support UI in the lakeFS [configuration](configuration.md) (`blockstore.blockstore-name.disable_pre_signed_ui`).
 2. Add CORS (Cross-Origin Resource Sharing) permissions to the bucket for the UI to fetch objects using a presigned URL (instead of through lakeFS).
-3. The disable_pre_signed needs to be enabled to enable it in the UI.
+3. The `disable_pre_signed` needs to be enabled to enable it in the UI.
 
 **⚠️ Note** Currently DuckDB fetching data from lakeFS does not support fetching data using presigned URL.
 

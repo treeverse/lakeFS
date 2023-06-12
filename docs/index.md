@@ -10,7 +10,6 @@ redirect_from: /downloads.html
 
 <img src="/assets/img/waving-axolotl-transparent.gif" width="90"/>
 
-{: .no_toc }
 
 **lakeFS brings software engineering best practices and applies them to data engineering.** 
 

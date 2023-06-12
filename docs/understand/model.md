@@ -12,9 +12,8 @@ redirect_from:
 ---
 
 # Model
-{: .no_toc }
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 lakeFS blends concepts from object stores such as S3 with concepts from Git. This reference
 defines the common concepts of lakeFS.

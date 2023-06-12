@@ -7,7 +7,6 @@ nav_order: 26
 has_children: false
 --- 
 # Performance Best Practices
-{: .no_toc }
 
 {% include toc.html %}
 

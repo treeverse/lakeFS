@@ -9,7 +9,6 @@ redirect_from: []
 ---
 
 # Webhooks
-{: .no_toc }
 
 {% include toc.html %}
 

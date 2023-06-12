@@ -16,7 +16,6 @@ redirect_from:
 ---
 
 # Using lakeFS with Spark
-{: .no_toc }
 
 ## Ways to use lakeFS with Spark
 
@@ -33,7 +32,6 @@ You will access your data using S3-style URIs, e.g. `s3a://example-repo/example-
 You can use the S3-compatible API regardless of where your data is hosted.
 
 ### Configuration
-{: .no_toc }
 
 To configure Spark to work with lakeFS, we set S3A Hadoop configuration to the lakeFS endpoint and credentials:
 
@@ -374,7 +372,6 @@ df.write.partitionBy("example-column").parquet(s"s3a://${repo}/${branch}/output-
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
 ### Configuring Azure Databricks with the S3-compatible API
-{: .no_toc }
 
 If you use Azure Databricks, you can take advantage of the lakeFS S3-compatible API with your Azure account and the S3A FileSystem. 
 This will require installing the `hadoop-aws` package (with the same version as your `hadoop-azure` package) to your Databricks cluster.
