@@ -12,7 +12,6 @@ redirect_from:
 
 # Using lakeFS with Kafka
 
-{: .no_toc }
 [Apache Kafka](https://kafka.apache.org/) provides a unified, high-throughput, low-latency platform for handling real-time data feeds.
 
 Different distributions of Kafka offer different methods for exporting data to S3 called Kafka Sink Connectors.

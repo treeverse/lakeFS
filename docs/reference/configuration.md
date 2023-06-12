@@ -8,7 +8,6 @@ has_children: false
 ---
 
 # Configuration Reference
-{: .no_toc }
 
 {% include toc.html %}
 

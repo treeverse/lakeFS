@@ -11,7 +11,6 @@ redirect_from:
 ---
 
 # lakeFS Hooks
-{: .no_toc }
 
 {% include toc.html %}
 
@@ -65,7 +64,6 @@ This allows configuration-as-code inside lakeFS, where Action files are declarat
 ## Terminology
 
 ### Action
-{: .no_toc }
 
 An **Action** is a list of Hooks with the same trigger configuration, i.e. an event will trigger all Hooks under an Action or none at all.
 The Hooks under an Action are ordered and so is their execution.
@@ -73,13 +71,11 @@ Before each hook execution the `if` boolean expression is evaluated. The express
 By default, when `if` is empty or omitted, the step will run only if no error occurred (same as evaluate of success function).
 
 ### Hook
-{: .no_toc }
 
 A **Hook** is the basic building block of an Action.
 The failure of a single Hook will stop the execution of the containing Action and fail the Run.
 
 ### Action file
-{: .no_toc }
 
 Schema of the Action file:
 
@@ -139,7 +135,6 @@ Use `lakectl actions validate <path>` to validate your action files locally.
 {: .note }
 
 ### Run
-{: .no_toc }
 
 A **Run** is an instantiation of the repository's Action files when the triggering event occurs.
 For example, if your repository contains a pre-commit hook, every commit would generate a Run for that specific commit.
@@ -166,7 +161,6 @@ The endpoint also allows to download the execution log of any executed Hook unde
 
 
 ### Result Files
-{: .no_toc }
 
 The metadata section of lakeFS repository with each Run contains two types of files:
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific Hook run.

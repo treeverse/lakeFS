@@ -9,7 +9,6 @@ redirect_from: []
 ---
 
 # Airflow Hooks
-{: .no_toc }
 
 {% include toc.html %}
 

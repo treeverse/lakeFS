@@ -14,7 +14,6 @@ redirect_from:
 
 
 # Versioning Internals
-{: .no_toc }
 
 {% include toc.html %}
 

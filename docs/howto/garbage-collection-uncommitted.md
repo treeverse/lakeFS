@@ -8,8 +8,7 @@ nav_order: 20
 has_children: false
 ---
 
-## Garbage collection: uncommitted objects <sup>BETA</sup>
-{: .no_toc }
+# Garbage collection: uncommitted objects <sup>BETA</sup>
 
 Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and
 take precautions before applying the actual delete ("sweep"), like copying the marked objects.
@@ -30,7 +29,7 @@ The uncommitted GC will not clean:
 1. Committed objects. See [Committed Garbage Collection](./garbage-collection-committed.md)
 2. Everything mentioned in [what does not get collected](./gc-internals.md#what-does-_not_-get-collected)
 
-### Prerequisites
+## Prerequisites
 
 1. lakeFS server version must be at least [v0.87.0](https://github.com/treeverse/lakeFS/releases/tag/v0.87.0).
    If your version is lower, you should first upgrade.
@@ -38,7 +37,7 @@ The uncommitted GC will not clean:
 3. Setup [rclone](https://rclone.org/) to access underlying bucket for backup and restore.
 
 
-### Running the uncommitted GC
+## Running the uncommitted GC
 
 1. Mark the files to delete - summary and report will be generated under `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/uncommitted/<MARK_ID>/`.
    By listing the bucket under 'uncommitted' the last entry represents the last mark ID of the uncommitted GC.
@@ -91,19 +90,18 @@ The uncommitted GC will not clean:
    ```
 
 
-### Uncommitted GC job options
-{: .no_toc }
+## Uncommitted GC job options
 
 Similar to the [committed GC option](./garbage-collection-committed.md#gc-job-options).
 
-### Limitations
+## Limitations
 
 The uncommitted GC job has several limitations in its Beta version:
 1. Support is limited to S3 repositories, it was not tested on ABS, GS or MinIO.
 1. Scale may be limited, see performance results below.
 1. [Issue](https://github.com/treeverse/lakeFS/issues/5088) associated to commit during copy object.
 
-### Next steps
+## Next steps
 
 The uncommitted GC is under development, next releases will include:
 
@@ -118,8 +116,7 @@ The uncommitted GC is under development, next releases will include:
 4. Backup & Restore, similar to [committed GC](./garbage-collection-committed.md#backup-and-restore).
 5. Support for non-S3 repositories.
 
-### Performance
-{: .no_toc }
+## Performance
 
 The uncommitted GC job was tested on a repository with 1K branches,
 25K uncommitted objects and 2K commits.

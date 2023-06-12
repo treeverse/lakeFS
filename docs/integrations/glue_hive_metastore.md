@@ -8,32 +8,32 @@ has_children: false
 redirect_from: /using/glue_hive_metastore.html
 ---
 
-{% include toc.html %}
+# Using lakeFS with the Glue/Hive Metastore
 
-# About Glue / Hive Metastore
+{% include toc_2-3.html %}
+
+## About Glue / Hive Metastore
 
 This part explains about how Glue/Hive Metastore work with lakeFS.
 
 Glue and Hive Metastore store metadata related to Hive and other services (such as Spark and Trino).
 They contain metadata such as the location of the table, information about columns, partitions and many more.
 
-## Without lakeFS
-{: .no_toc }
+### Without lakeFS
 To query the table `my_table`, Spark will:
 * Request the metadata from Hive metastore (steps 1,2),
 * Use the location from the metadata to access the data in S3 (steps 3,4).
 ![metastore with S3]({{ site.baseurl }}/assets/img/metastore-S3.svg)
 
 
-## With lakeFS
-{: .no_toc }
+### With lakeFS
 When using lakeFS, the flow stays exactly the same. Note that the location of the table `my_table` now contains the branch `s3://example/main/path/to/table`
 ![metastore with S3]({{ site.baseurl }}/assets/img/metastore-lakefs.svg)
 
 
 
-# Managing Tables With lakeFS Branches
-## Motivation
+## Managing Tables With lakeFS Branches
+### Motivation
 When creating a table in Glue/Hive metastore (using a client such as Spark, Hive, Presto), we specify the table location.
 Consider the table `my_table` that was created with the location `s3://example/main/path/to/table`.
 
@@ -44,12 +44,11 @@ The metadata is not managed in lakeFS, meaning you don't have any table pointing
 To address this, lakeFS introduces `lakectl metastore` commands. The case above can be handled using the copy command: it creates a copy of `my_table` with data located in `s3://example/DEV/path/to/table`. Note that this is a fast, metadata-only operation.
 
 
-## Configurations
+### Configurations
 The `lakectl metastore` commands can run on Glue or Hive metastore.
 Add the following to the lakectl configuration file (by default `~/.lakectl.yaml`):
 
-### Hive
-{: .no_toc }
+#### Hive
 
 ``` yaml
 metastore:
@@ -58,8 +57,7 @@ metastore:
     uri: hive-metastore:9083
 ```
 
-### Glue
-{: .no_toc }
+#### Glue
 
 ``` yaml
 metastore:
@@ -76,7 +74,7 @@ metastore:
 **Note:** It's recommended to set type and catalog-id/metastore-uri in the lakectl configuration file.
 {: .note .pb-3 }
 
-## Suggested Model
+### Suggested Model
 
 For simplicity, we recommend creating a schema for each branch. That way, you can use the same table name across different schemas.
 
@@ -85,7 +83,7 @@ after creating branch `example_branch`, also create a schema named `example_bran
 For a table named `my_table` under the schema `main`, create a new table under the same name and under the schema `example_branch`. You now have two `my_table`, one in the main schema and one in the branch schema.
 
 
-## Commands
+### Commands
 
 Metastore tools support three commands: `copy`, `diff`, and `create-symlink`.
 copy and diff can work both on Glue and on Hive.
@@ -98,7 +96,7 @@ create-symlink works only on Glue.
 **Note:** Metastore commands can only run on tables located in lakeFS. You should not use tables that aren't located in lakeFS.
 {: .note .pb-3 }
 
-### Copy
+#### Copy
 
 The `copy` command creates a copy of a table pointing to the defined branch.
 In case the destination table already exists, the command will only merge the changes.
@@ -133,7 +131,6 @@ lakectl metastore copy --from-schema default --from-table inventory --to-schema 
 After running this command, query the table `example_branch.inventory` to get the data from `s3://my_repo/DEV/path/to/table`
 
 #### Copy Partition
-{: .no_toc }
 
 After adding a partition to the branch table, you may want to copy the partition to the main table.
 For example, for the new partition `2020-08-01`, run the following to copy the partition to the main table:
@@ -148,7 +145,7 @@ For a table partitioned by more than one column, specify the partition flag for 
 lakectl metastore copy --from-schema example_branch --from-table branch_inventory --to-schema default --to-branch main -p 2020 -p 08 -p 01
 ```
 
-### Diff
+#### Diff
 
 Provides a two-way diff between two tables.
 Shows added`+` , removed`-` and changed`~` partitions and columns.

@@ -10,7 +10,6 @@ redirect_from:
     - /understand/sizing-guide.html
 ---
 # Sizing guide
-{: .no_toc }
 
 
 {% include toc.html %}

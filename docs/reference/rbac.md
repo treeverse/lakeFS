@@ -17,7 +17,6 @@ lakeFS Cloud
 
 lakeFS Enterprise
 {: .label .label-purple }
-{: .no_toc }
 
 
 {: .note}
