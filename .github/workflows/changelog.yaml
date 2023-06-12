@@ -3,6 +3,8 @@ name: changelog
 on:
   pull_request:
     types: [labeled, unlabeled, opened, edited, synchronize]
+    paths-ignore:
+      - 'docs/**'
 
 jobs:
   enforce-label:

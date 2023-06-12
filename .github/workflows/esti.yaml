@@ -1,6 +1,8 @@
 name: Esti
 on:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
   push:
     branches:
       - master
