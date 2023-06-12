@@ -94,7 +94,7 @@ docs-serve-docker: ### Serve local docs from Docker
 			--volume="$$PWD/docs:/srv/jekyll:Z" \
 			--volume="$$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
 			--interactive --tty \
-			jekyll/jekyll:3.8 \
+			jekyll/jekyll:3.9.3 \
 			jekyll serve --livereload
 
 gen-docs: ## Generate CLI docs automatically

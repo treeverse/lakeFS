@@ -196,7 +196,7 @@ GEM
       gemoji (~> 3.0)
       html-pipeline (~> 2.2)
       jekyll (>= 3.0, < 5.0)
-    just-the-docs (0.5.1)
+    just-the-docs (0.5.2)
       jekyll (>= 3.8.5)
       jekyll-seo-tag (>= 2.0)
       rake (>= 12.3.1)
@@ -254,6 +254,7 @@ GEM
       unf_ext
     unf_ext (0.0.8.2)
     unicode-display_width (1.8.0)
+    webrick (1.8.1)
 
 PLATFORMS
   ruby
@@ -261,6 +262,7 @@ PLATFORMS
 DEPENDENCIES
   github-pages
   just-the-docs
+  webrick (~> 1.8)
 
 BUNDLED WITH
    2.1.4
