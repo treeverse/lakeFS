@@ -87,3 +87,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 </div>
 </div>
 </div>
+
+
+{: .note}
+You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
