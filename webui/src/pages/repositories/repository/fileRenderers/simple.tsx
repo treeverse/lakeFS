@@ -73,6 +73,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
   text,
   repoId,
   refId,
+  path,
 }) => {
   return (
     <ReactMarkdown
@@ -83,6 +84,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
           {
             repo: repoId,
             ref: refId,
+            path,
           },
         ],
         remarkGfm,
