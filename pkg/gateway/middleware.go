@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
@@ -26,6 +25,13 @@ import (
 func AuthenticationHandler(authService auth.GatewayService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		user, err := auth.GetUser(ctx)
+		if err == nil {
+			ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
+			req = req.WithContext(auth.WithUser(ctx, user))
+			next.ServeHTTP(w, req)
+			return
+		}
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		authenticator := sig.ChainedAuthenticator(
 			sig.NewV4Authenticator(req),
@@ -57,14 +63,14 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			return
 		}
 
-		user, err := authService.GetUser(ctx, creds.Username)
+		user, err = authService.GetUser(ctx, creds.Username)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
 			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
-		ctx = context.WithValue(ctx, ContextKeyUser, user)
+		ctx = auth.WithUser(ctx, user)
 		ctx = context.WithValue(ctx, ContextKeyAuthContext, authContext)
 		req = req.WithContext(ctx)
 		next.ServeHTTP(w, req)
@@ -152,7 +158,8 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		username := ctx.Value(ContextKeyUser).(*model.User).Username
+		user, _ := auth.GetUser(ctx)
+		username := user.Username
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		if repoID == "" {
 			// action without repo

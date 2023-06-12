@@ -8,9 +8,8 @@ has_children: false
 ---
 
 # Authentication 
-{: .no_toc }
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Authentication
 

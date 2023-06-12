@@ -9,7 +9,6 @@ redirect_from: /deploying-aws/monitor.md
 ---
 
 # Monitoring using Prometheus
-{: .no_toc }
 
 {: .pb-3 }
 

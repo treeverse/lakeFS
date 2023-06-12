@@ -11,11 +11,12 @@ redirect_from:
   - /integrations/boto.html
 ---
 
-{% include toc.html %}
+# Use Python to interact with your objects on lakeFS
 
-## Boto vs. lakeFS SDK
+{% include toc_2-3.html %}
 
-To interact with lakeFS from Python:
+There are two primary ways to work with lakeFS from Python: 
+
 * [Use Boto](#using-boto) to perform **object operations** through the lakeFS S3 gateway.
 * [Use the lakeFS SDK](#using-the-lakefs-sdk) to perform **versioning** and other lakeFS-specific operations.
 
@@ -53,7 +54,6 @@ client = LakeFSClient(configuration)
 Now that you have a client object, you can use it to interact with the API.
 
 #### Creating a repository
-{: .no_toc }
 
 ```python
 repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
@@ -66,7 +66,6 @@ client.repositories.create_repository(repo)
 ```
 
 #### Creating a branch, uploading files, committing changes
-{: .no_toc }
 
 List the repository branches:
 
@@ -140,7 +139,6 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 ```
 
 #### Merging changes from a branch into main 
-{: .no_toc }
 
 Let's diff between your branch and the main branch:
 
@@ -169,13 +167,11 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 ```
 
 ### Python Client documentation
-{: .no_toc }
 
 For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
 
 
 ### Full API reference
-{: .no_toc }
 
 For a full reference of the lakeFS API, see [lakeFS API](../reference/api.md)
 
@@ -203,7 +199,6 @@ The client is now configured to operate on your lakeFS installation.
 ### Usage Examples
 
 #### Put an object into lakeFS
-{: .no_toc }
 
 Use a branch name and a path to put an object in lakeFS:
 
@@ -215,7 +210,6 @@ with open('/local/path/to/file_0', 'rb') as f:
 You can now commit this change using the lakeFS UI or CLI.
 
 #### List objects
-{: .no_toc }
 
 List the branch objects starting with a prefix:
  
@@ -234,7 +228,6 @@ for obj in list_resp['Contents']:
 ```
 
 #### Get object metadata
-{: .no_toc }
 
 Get object metadata using branch and path:
 ```python

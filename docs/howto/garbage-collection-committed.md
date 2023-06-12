@@ -13,8 +13,7 @@ redirect_from:
   - /howto/garbage-collection.html
 ---
 
-## Garbage Collection: committed objects
-{: .no_toc }
+# Garbage Collection: committed objects
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
@@ -32,7 +31,7 @@ but trying to read these objects from lakeFS will result in a `410 Gone` HTTP st
 
 {% include toc.html %}
 
-### Understanding Garbage Collection
+## Understanding Garbage Collection
 
 For every branch, the GC job retains deleted objects for the number of days defined for the branch.
 In the absence of a branch-specific rule, the default rule for the repository is used.
@@ -53,7 +52,7 @@ Example GC rules for a repository:
 In the above example, objects are retained for 14 days after deletion by default. However, if they are present in the branch `main`, they are retained for 21 days.
 Objects present in the `dev` branch (but not in any other branch) are retained for 7 days after they are deleted.
 
-### Configuring GC rules
+## Configuring GC rules
 
 To define garbage collection rules, either use the `lakectl` command or the lakeFS web UI:
 
@@ -96,7 +95,7 @@ From the lakeFS web UI:
 </div>
 </div>
 
-### Running the GC job
+## Running the GC job
  
 To run the job, use the following `spark-submit` command (or using your preferred method of running Spark programs).
 The job will hard-delete objects that were deleted and whose retention period has ended according to the GC rules.
@@ -229,8 +228,7 @@ You can now delete the objects appearing in the list from your Google Storage bu
 You will find the list of objects hard-deleted by the job in the storage
 namespace of the repository. It is saved in Parquet format under `_lakefs/logs/gc/deleted_objects`.
 
-#### GC job options
-{: .no_toc }
+### GC job options
 
 By default, GC first creates a list of expired objects according to your retention rules and then hard-deletes those objects. 
 However, you can use GC options to break the GC job down into two stages: 
@@ -240,8 +238,7 @@ However, you can use GC options to break the GC job down into two stages:
 By breaking GC into these stages, you can pause and create a backup of the objects that GC is about to sweep and later 
 restore them. You can use the [GC backup and restore](#backup-and-restore) utility to do that.   
 
-###### Mark only mode 
-{: .no_toc }
+#### Mark only mode 
 
 To make GC run the mark stage only, add the following properties to your spark-submit command:
 ```properties
@@ -254,8 +251,7 @@ Running in mark only mode, GC will write the addresses of the expired objects to
 * Mark only mode is only available from v0.4.0 of lakeFS Spark client.
 * The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated with v0.4.0.
 
-###### Sweep only mode
-{: .no_toc }
+#### Sweep only mode
 
 To make GC run the sweep stage only, add the following properties to your spark-submit command:
 ```properties
@@ -266,7 +262,7 @@ Running in sweep only mode, GC will hard-delete the expired objects marked by a 
 
 **Note:** Mark only mode is only available from v0.4.0 of lakeFS Spark client.
 
-### Considerations
+## Considerations
 
 1. In order for an object to be hard-deleted, it must be deleted from all branches.
    You should remove stale branches to prevent them from retaining old objects.
@@ -283,7 +279,7 @@ Running in sweep only mode, GC will hard-delete the expired objects marked by a 
    1. Expanding the retention period of a branch.
    1. Creating a branch from an existing branch, where the new branch has a longer retention period.
 
-### Backup and restore 
+## Backup and restore 
 
 GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start
 using the feature you may want to first gain confidence in the decisions GC makes. The GC backup and restore utility helps you do that. 
@@ -296,24 +292,21 @@ Follow [rclone documentation](https://rclone.org/docs/) to configure remote acce
 Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path which points to the lakeFS repository storage namespace.
 The `BACKUP_STORAGE_LOCATION` attribute points to a storage location outside your lakeFS storage namespace into which you want to save the backup.
 
-#### Backup command
-{: .no_toc }
+### Backup command
 
 ```shell
 rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
   rclone -P --no-traverse --files-from - copy <LAKEFS_STORAGE_NAMESPACE> <BACKUP_STORAGE_LOCATION>
 ```
 
-#### Restore command
-{: .no_toc }
+### Restore command
 
 ```shell
 rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
   rclone -P --no-traverse --files-from - copy <BACKUP_STORAGE_LOCATION> <LAKEFS_STORAGE_NAMESPACE>
 ```
 
-#### Example
-{: .no_toc }
+### Example
 
 The following of commands used to backup/resource a configured remote 'azure' (Azure blob storage) to access example repository storage namespace `https://lakefs.blob.core.windows.net/repo/example/`:
 

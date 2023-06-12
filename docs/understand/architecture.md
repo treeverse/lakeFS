@@ -10,10 +10,9 @@ redirect_from:
     - /architecture/overview.html
 ---
 # Architecture Overview
-{: .no_toc }
 
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Overview
 

@@ -10,7 +10,6 @@ next:  ["Import data into your installation", "../howto/import.html"]
 ---
 
 # Deploy lakeFS on Azure
-{: .no_toc }
 
 ⏰ Expected deployment time: 25 min
 {: .note }

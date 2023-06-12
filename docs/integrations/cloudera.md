@@ -9,7 +9,6 @@ redirect_from:
 ---
 
 # Using lakeFS with Cloudera Spark
-{: .no_toc }
 
 Use [the lakeFS Hadoop FileSystem](/integrations/spark.html#use-the-lakefs-hadoop-filesystem) to integrate lakeFS with Cloudera Spark.
 
