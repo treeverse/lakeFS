@@ -58,7 +58,7 @@ For deployments inside the Azure ecosystem it is recommended to use a managed id
 
 More information on authentication methods and environment variables can be found [here](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
 
-#### How to Create Service Principal for Resource Group
+### How to Create Service Principal for Resource Group
 
 It is recommended to create a resource group that consists of all the resources lakeFS should have access to.
 
@@ -108,7 +108,7 @@ Storage account credentials can be set directly in the lakeFS configuration usin
 * `blockstore.azure.storage_account`
 * `blockstore.azure.storage_access_key`  
 
-#### Limitations
+### Limitations
 
 Please note that using this authentication method limits lakeFS to the scope of the given storage account. 
 
@@ -278,7 +278,6 @@ To install lakeFS with Helm:
 
 
 ### Load balancing
-{: .no_toc }
 
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
