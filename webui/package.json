@@ -30,6 +30,7 @@
     "react-bootstrap": "^2.7.0",
     "react-diff-viewer-continued": "^3.2.3",
     "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.3",
     "react-icons": "^4.3.1",
     "react-ipynb-renderer": "^0.3.0",
     "react-markdown": "^8.0.3",

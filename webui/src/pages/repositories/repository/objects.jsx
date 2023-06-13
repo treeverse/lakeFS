@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
-import { UploadIcon } from "@primer/octicons-react";
+import {CheckboxIcon, UploadIcon, XIcon} from "@primer/octicons-react";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
@@ -15,13 +15,11 @@ import {
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
 import { BsCloudArrowUp } from "react-icons/bs";
 
-import {Tree} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError} from "../../../lib/api";
+import {humanSize, Tree} from "../../../lib/components/repository/tree";
+import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -37,10 +35,14 @@ import {
 import { Box } from "@mui/material";
 import { RepoError } from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import { OverlayTrigger } from "react-bootstrap";
+import {OverlayTrigger, ProgressBar} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import { useSearchParams } from "react-router-dom";
 import { useStorageConfig } from "../../../lib/hooks/storageConfig";
+import {useDropzone} from "react-dropzone";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
@@ -221,87 +223,131 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-const UploadButton = ({
-  config,
-  repo,
-  reference,
-  path,
-  onDone,
-  onClick,
-  onHide,
-  show = false,
-}) => {
+
+const uploadFile = async (config, repo, reference, path, file, onProgress) => {
+  const fpath = `${path ? path : ""}${file.path.replace(/\\/, '/').replace(/^\//, '')}`;
+  if (config.pre_sign_support_ui) {
+    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+    const { status, etag } = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress)
+    if (status >= 400) {
+      throw new Error(`Error uploading file: HTTP ${status}`)
+    }
+    const hash = etag.replace(/"/g, "");
+    await staging.link(repo.id, reference.id, fpath, getResp, hash, file.size, file.type);
+  } else {
+    await objects.upload(repo.id, reference.id, fpath, file, onProgress);
+  }
+};
+
+const destinationPath = (path, file) => {
+  return `${path ? path : ""}${file.path.replace(/\\/, '/').replace(/^\//, '')}`;
+};
+
+const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }) => {
+  const fpath = destinationPath(path, file)
+  let uploadIndicator = null;
+  if (state && state.status === "uploading") {
+    uploadIndicator = <ProgressBar variant="success" now={state.percent}/>
+  } else if (state && state.status === "done") {
+    uploadIndicator = <strong><CheckboxIcon/></strong>
+  } else if (!state && onRemove !== null) {
+    uploadIndicator = (
+      <a  href="#" onClick={ e => {
+        e.preventDefault()
+        onRemove()
+      }}>
+        <XIcon />
+      </a>
+    );
+  }
+  return (
+    <Container>
+      <Row className={`upload-item upload-item-${state ? state.status : "none"}`}>
+        <Col>
+          <span className="path">
+            lakefs://{repo.id}/{reference.id}/{fpath}
+          </span>
+        </Col>
+        <Col xs md="2">
+          <span className="size">
+            {humanSize(file.size)}
+          </span>
+        </Col>
+        <Col xs md="1">
+          <span className="upload-state">
+            {uploadIndicator ? uploadIndicator : <></>}
+          </span>
+        </Col>
+      </Row>
+    </Container>
+  )
+};
+
+const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false}) => {
   const initialState = {
     inProgress: false,
     error: null,
     done: false,
   };
+  const [currentPath, setCurrentPath] = useState(path);
   const [uploadState, setUploadState] = useState(initialState);
+  const [files, setFiles] = useState([]);
+  const [fileStates, setFileStates] = useState({})
+  const onDrop = useCallback(acceptedFiles => {
+    setFiles([...acceptedFiles])
+  }, [files])
 
-  const textRef = useRef(null);
-  const fileRef = useRef(null);
+  const { getRootProps, getInputProps, isDragAccept } = useDropzone({onDrop})
 
   if (!reference || reference.type !== RefTypeBranch) return <></>;
 
   const hide = () => {
     if (uploadState.inProgress) return;
     setUploadState(initialState);
+    setFileStates({});
+    setFiles([]);
+    setCurrentPath(path)
     onHide();
   };
+
+  useEffect(() => {
+    setCurrentPath(path)
+  }, [path])
 
   const upload = async () => {
-    setUploadState({
-      ...initialState,
-      inProgress: true,
-    });
-    try {
-      if (config.pre_sign_support_ui) {
-        const getResp = await staging.get(
-          repo.id,
-          reference.id,
-          textRef.current.value,
-          config.pre_sign_support_ui
-        );
-
-        const putResp = await fetch(getResp.presigned_url, {
-          method: "PUT",
-          mode: "cors",
-          body: fileRef.current.files[0],
-        });
-
-        const etag = putResp.headers.get("ETag").replace(/["]/g, "");
-        await staging.link(
-          repo.id,
-          reference.id,
-          textRef.current.value,
-          getResp,
-          etag,
-          fileRef.current.files[0].size
-        );
-      } else {
-        await objects.upload(
-          repo.id,
-          reference.id,
-          textRef.current.value,
-          fileRef.current.files[0]
-        );
-      }
-      setUploadState({ ...initialState });
-      onDone();
-    } catch (error) {
-      setUploadState({ ...initialState, error });
-      throw error;
+    if (files.length < 1) {
+      return
     }
-    onHide();
+    setUploadState({...initialState,  inProgress: true });
+    for (let i = 0; i < files.length; i++) {
+      try {
+        setFileStates(next => ( {...next, [files[i].path]: {status: 'uploading', percent: 0}}))
+        await uploadFile(config, repo, reference, currentPath, files[i], progress => {
+          setFileStates(next => ( {...next, [files[i].path]: {status: 'uploading', percent: progress}}))
+        })
+      } catch (error) {
+        setFileStates(next => ( {...next, [files[i].path]: {status: 'error'}}))
+        setUploadState({ ...initialState, error });
+        throw error;
+      }
+      setFileStates(next => ( {...next, [files[i].path]: {status: 'done'}}))
+    }
+    setUploadState({ ...initialState });
+    onDone();
+    hide();
   };
 
-  const basePath = `${repo.id}/${reference.id}/\u00A0`;
+  const changeCurrentPath = useCallback(e => {
+    setCurrentPath(e.target.value)
+  }, [setCurrentPath])
 
-  const pathStyle = { minWidth: "25%" };
+  const onRemoveCandidate = useCallback(file => {
+    return () => setFiles(current => current.filter(f => f !== file))
+  }, [setFiles])
 
   return (
     <>
-      <Modal show={show} onHide={hide}>
+      <Modal size="xl" show={show} onHide={hide}>
         <Modal.Header closeButton>
           <Modal.Title>Upload Object</Modal.Title>
         </Modal.Header>
@@ -309,8 +355,8 @@ const UploadButton = ({
           <Form
             onSubmit={(e) => {
               if (uploadState.inProgress) return;
-              upload();
               e.preventDefault();
+              upload();
             }}
           >
             {config?.warnings && (
@@ -318,60 +364,60 @@ const UploadButton = ({
                 <Warnings warnings={config.warnings} />
               </Form.Group>
             )}
+
             <Form.Group controlId="path" className="mb-3">
-              <Row className="g-0">
-                <Col className="col-auto d-flex align-items-center justify-content-start">
-                  {basePath}
-                </Col>
-                <Col style={pathStyle}>
-                  <Form.Control
-                    type="text"
-                    placeholder="Object name"
-                    autoFocus
-                    name="text"
-                    ref={textRef}
-                    defaultValue={path}
-                  />
-                </Col>
-              </Row>
+              <Form.Text>Path</Form.Text>
+              <Form.Control defaultValue={currentPath} onChange={changeCurrentPath}/>
             </Form.Group>
 
-                        <Form.Group controlId="content" className="mb-3">
-                            <Form.Control
-                                type="file"
-                                name="content"
-                                ref={fileRef}
-                                onChange={(e) => {
-                                    const currPath = textRef.current.value.substr(0, textRef.current.value.lastIndexOf('/') + 1);
-                                    const currName = (e.currentTarget.files.length > 0) ? e.currentTarget.files[0].name : ""
-                                    textRef.current.value = currPath + currName;
-                                }}
-                            />
-                        </Form.Group>
-                    </Form>
-                    {(uploadState.error) ? (<AlertError error={uploadState.error}/>) : (<></>)}
+            <Form.Group controlId="content" className="mb-3">
+              <div {...getRootProps({className: 'dropzone'})}>
+                  <input {...getInputProps()} />
+                  <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
+                    Drag &apos;n&apos; drop files or folders here (or click to select)
+                  </div>
+              </div>
+              <aside className="mt-3">
+                {(files && files.length > 0) &&
+                  <h5>Files to upload</h5>
+                }
+                {files && files.map(file =>
+                    <UploadCandidate
+                      key={file.path}
+                      config={config}
+                      repo={repo}
+                      reference={reference}
+                      file={file}
+                      path={currentPath}
+                      state={fileStates[file.path]}
+                      onRemove={!uploadState.inProgress ? onRemoveCandidate(file) : null}
+                    />
+                )}
+              </aside>
+            </Form.Group>
+          </Form>
+        {(uploadState.error) ? (<AlertError error={uploadState.error}/>) : (<></>)}
+      </Modal.Body>
+    <Modal.Footer>
+        <Button variant="secondary" disabled={uploadState.inProgress} onClick={hide}>
+            Cancel
+        </Button>
+        <Button variant="success" disabled={uploadState.inProgress || files.length < 1} onClick={() => {
+            if (uploadState.inProgress) return;
+            upload()
+        }}>
+            {(uploadState.inProgress) ? 'Uploading...' : 'Upload'}
+        </Button>
+    </Modal.Footer>
+  </Modal>
 
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" disabled={uploadState.inProgress} onClick={hide}>
-                        Cancel
-                    </Button>
-                    <Button variant="success" disabled={uploadState.inProgress} onClick={() => {
-                        if (uploadState.inProgress) return;
-                        upload()
-                    }}>
-                        {(uploadState.inProgress) ? 'Uploading...' : 'Upload'}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-      <Button
-        variant={!config.import_support ? "success" : "light"}
-        onClick={onClick}
+    <Button
+      variant={!config.import_support ? "success" : "light"}
+      onClick={onClick}
       >
-        <UploadIcon /> Upload Object
-      </Button>
-    </>
+      <UploadIcon /> Upload Object
+    </Button>
+  </>
   );
 };
 

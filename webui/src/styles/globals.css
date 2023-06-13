@@ -836,3 +836,36 @@ td.entry-type-indicator {
 .create-sample-repo-button.btn-link:hover {
   background: none;
 }
+
+.file-drop-zone {
+  text-align: center;
+  background-color: #EFEFEF;
+  height: 80px;
+  vertical-align: center;
+  line-height: 80px;
+  border: 2px dashed #DEDEDE;
+  color: #999;
+  font-size: 1.3em;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.file-drop-zone.file-drop-zone-focus {
+  border: 2px dashed #94B49F;
+  color: #94B49F;
+  background-color: #E8F3D6;
+}
+
+.upload-item {
+  font-family: "SFMono-Regular", menlo, consolas, monospace;
+  padding: 3px 0;
+  font-size: .75em;
+}
+
+.upload-item-uploading {
+  background-color: #EFEFEF;
+}
+
+.upload-item-done {
+  color: #198754;
+}
