@@ -577,9 +577,11 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
 	}
 	return blockparams.GS{
-		CredentialsFile: credPath,
-		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
-		PreSignedExpiry: c.Blockstore.GS.PreSignedExpiry,
+		CredentialsFile:    credPath,
+		CredentialsJSON:    c.Blockstore.GS.CredentialsJSON,
+		PreSignedExpiry:    c.Blockstore.GS.PreSignedExpiry,
+		DisablePreSigned:   c.Blockstore.GS.DisablePreSigned,
+		DisablePreSignedUI: c.Blockstore.GS.DisablePreSignedUI,
 	}, nil
 }
 
@@ -588,11 +590,13 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		logging.Default().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
 	return blockparams.Azure{
-		StorageAccount:   c.Blockstore.Azure.StorageAccount,
-		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
-		TryTimeout:       c.Blockstore.Azure.TryTimeout,
-		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
-		TestEndpointURL:  c.Blockstore.Azure.TestEndpointURL,
+		StorageAccount:     c.Blockstore.Azure.StorageAccount,
+		StorageAccessKey:   c.Blockstore.Azure.StorageAccessKey,
+		TryTimeout:         c.Blockstore.Azure.TryTimeout,
+		PreSignedExpiry:    c.Blockstore.Azure.PreSignedExpiry,
+		TestEndpointURL:    c.Blockstore.Azure.TestEndpointURL,
+		DisablePreSigned:   c.Blockstore.Azure.DisablePreSigned,
+		DisablePreSignedUI: c.Blockstore.Azure.DisablePreSignedUI,
 	}, nil
 }
 
