@@ -71,7 +71,7 @@ Now we'll load the lakes data into a DuckDB table so that we can manipulate it:
 
 ```sql
 CREATE TABLE lakes AS 
-    SELECT * FROM READ_PARQUET('s3://quickstart/denmark-lakes/lakes.parquet');
+    SELECT * FROM read_parquet('s3://quickstart/denmark-lakes/lakes.parquet');
 ```
 
 Just to check that it's the same we saw before we're run the same query: 
@@ -145,7 +145,7 @@ Let's just confirm for ourselves that the parquet file itself has the new data. 
 DROP TABLE lakes;
 
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET('s3://quickstart/denmark-lakes/lakes.parquet')
+FROM     read_parquet('s3://quickstart/denmark-lakes/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
@@ -166,7 +166,7 @@ So we've changed the data in our `denmark-lakes` branch, deleting swathes of the
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('quickstart', 'main', 'lakes.parquet'))
+FROM     read_parquet('lakefs://quickstart/main/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
