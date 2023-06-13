@@ -28,7 +28,7 @@ Copy and paste the following SQL statement into the DuckDB query panel and click
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('quickstart', 'main', 'lakes.parquet'))
+FROM     read_parquet('lakefs://quickstart/main/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
