@@ -81,9 +81,9 @@ Copy and paste the following SQL statement into the DuckDB query panel and click
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('{{.RepoName}}', 'main', 'lakes.parquet'))
+FROM     read_parquet('lakefs://{{.RepoName}}/main/lakes.parquet')
 GROUP BY country
-ORDER BY COUNT(*.
+ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
@@ -209,7 +209,7 @@ _Now we'll load the lakes data into a DuckDB table so that we can manipulate it.
 
 ```sql
 CREATE TABLE lakes AS
-    SELECT * FROM READ_PARQUET('s3://{{.RepoName}}/denmark-lakes/lakes.parquet');
+    SELECT * FROM read_parquet('s3://{{.RepoName}}/denmark-lakes/lakes.parquet');
 ```
 
 _Just to check that it's the same we saw before we're run the same query._
@@ -218,7 +218,7 @@ _Just to check that it's the same we saw before we're run the same query._
 SELECT   country, COUNT(*)
 FROM     lakes
 GROUP BY country
-ORDER BY COUNT(*.
+ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
@@ -255,7 +255,7 @@ _We can verify that it's worked by reissuing the same query as before:_
 SELECT   country, COUNT(*)
 FROM     lakes
 GROUP BY country
-ORDER BY COUNT(*.
+ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
@@ -288,9 +288,9 @@ _We'll drop the `lakes` table just to be sure, and then query the parquet file d
 DROP TABLE lakes;
 
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET('s3://{{.RepoName}}/denmark-lakes/lakes.parquet')
+FROM     read_parquet('s3://{{.RepoName}}/denmark-lakes/lakes.parquet')
 GROUP BY country
-ORDER BY COUNT(*.
+ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
@@ -311,9 +311,9 @@ See for yourself by returning to [the lakeFS object view](object?ref=main&path=l
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('{{.RepoName}}', 'main', 'lakes.parquet'))
+FROM     read_parquet('lakefs://{{.RepoName}}/main/lakes.parquet')
 GROUP BY country
-ORDER BY COUNT(*.
+ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 <img width="75%" src="/api/v1/repositories/{{.RepoName}}/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
