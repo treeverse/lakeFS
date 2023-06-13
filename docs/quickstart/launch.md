@@ -10,6 +10,9 @@ previous: ["Quickstart introduction", "./index.html"]
 
 # 👩🏻‍💻 Spin up the environment 👨🏻‍💻
 
+{: .note}
+If you don't want to use Docker, you can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register). Once you launch the free trial you will have access to the same content as this quickstart within the provided repository once you login.
+
 _The quickstart uses Docker to bring up the lakeFS container, pre-populate it with some data, and also provides DuckDB from where we can interact with the data. You'll need [Docker](https://docs.docker.com/get-docker/) installed to run this._
 
 Launch the lakeFS container:
