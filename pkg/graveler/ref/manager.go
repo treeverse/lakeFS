@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -156,6 +157,14 @@ func (m *Manager) createBareRepository(ctx context.Context, repositoryID gravele
 		}
 		return nil, err
 	}
+
+	// Create repo metadata
+	metadata := graveler.RepoMetadata{LastImportTimestamp: timestamppb.New(time.Time{})}
+	err = kv.SetMsg(ctx, m.kvStore, graveler.RepoPartition(repoRecord), []byte(graveler.RepoMetadataPath()), &metadata)
+	if err != nil {
+		return nil, err
+	}
+
 	return repoRecord, nil
 }
 
@@ -251,6 +260,10 @@ func (m *Manager) deleteRepositoryCommits(ctx context.Context, repository *grave
 	return wg.Wait().ErrorOrNil()
 }
 
+func (m *Manager) deleteRepositoryMetadata(ctx context.Context, repository *graveler.RepositoryRecord) error {
+	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.RepoMetadataPath()))
+}
+
 func (m *Manager) deleteRepository(ctx context.Context, repo *graveler.RepositoryRecord) error {
 	// ctx := context.Background() TODO (niro): When running this async create a new context and remove ctx from signature
 	var wg multierror.Group
@@ -262,6 +275,9 @@ func (m *Manager) deleteRepository(ctx context.Context, repo *graveler.Repositor
 	})
 	wg.Go(func() error {
 		return m.deleteRepositoryCommits(ctx, repo)
+	})
+	wg.Go(func() error {
+		return m.deleteRepositoryMetadata(ctx, repo)
 	})
 
 	if err := wg.Wait().ErrorOrNil(); err != nil {
@@ -288,6 +304,43 @@ func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.Re
 
 	// TODO(niro): This should be a background delete process
 	return m.deleteRepository(ctx, repo)
+}
+
+func (m *Manager) getRepositoryMetadata(ctx context.Context, repo *graveler.RepositoryRecord) (*graveler.RepositoryMetadata, kv.Predicate, error) {
+	data := graveler.RepoMetadata{}
+	pred, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repo), []byte(graveler.RepoMetadataPath()), &data)
+	if err != nil {
+		return nil, nil, err
+	}
+	return graveler.RepoMetadataFromProto(&data), pred, nil
+}
+
+func (m *Manager) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryMetadata, error) {
+	repo, err := m.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, _, err := m.getRepositoryMetadata(ctx, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	return metadata, nil
+}
+
+func (m *Manager) SetRepositoryMetadata(ctx context.Context, repo *graveler.RepositoryRecord, updateFunc graveler.RepoMetadataUpdateFunc) error {
+	metadata, pred, err := m.getRepositoryMetadata(ctx, repo)
+	if err != nil {
+		return err
+	}
+
+	newMetadata, err := updateFunc(metadata)
+	// return on error or nothing to update
+	if err != nil || newMetadata == nil {
+		return err
+	}
+	return kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repo), []byte(graveler.RepoMetadataPath()), graveler.ProtoFromRepositoryMetadata(newMetadata), pred)
 }
 
 func (m *Manager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {

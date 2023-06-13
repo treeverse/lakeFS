@@ -82,3 +82,7 @@ message ImportStatusData {
   CommitData commit = 6;
   string error = 7;
 }
+
+message RepoMetadata {
+  google.protobuf.Timestamp last_import_timestamp = 1;
+}

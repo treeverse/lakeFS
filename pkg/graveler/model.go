@@ -17,6 +17,7 @@ const (
 	settingsPrefix         = "settings"
 	addressesPrefix        = "link-addresses"
 	importsPrefix          = "imports"
+	repoMetadataPrefix     = "metadata"
 )
 
 //nolint:gochecknoinits
@@ -74,6 +75,10 @@ func LinkedAddressPath(key string) string {
 
 func ImportsPath(key string) string {
 	return kv.FormatPath(importsPrefix, key)
+}
+
+func RepoMetadataPath() string {
+	return repoMetadataPrefix
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
@@ -202,5 +207,17 @@ func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
 		MetarangeId: status.MetaRangeID.String(),
 		Commit:      commit,
 		Error:       statusErr,
+	}
+}
+
+func RepoMetadataFromProto(pb *RepoMetadata) *RepositoryMetadata {
+	return &RepositoryMetadata{
+		LastImportTimestamp: pb.LastImportTimestamp.AsTime(),
+	}
+}
+
+func ProtoFromRepositoryMetadata(metadata *RepositoryMetadata) *RepoMetadata {
+	return &RepoMetadata{
+		LastImportTimestamp: timestamppb.New(metadata.LastImportTimestamp),
 	}
 }
