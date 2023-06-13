@@ -56,8 +56,7 @@ The alternative is to use Docker which has the benefit of handling all the depen
               --publish 4000:4000 --publish 35729:35729 \
               --volume="$PWD/docs:/srv/jekyll:Z" \
               --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
-              --interactive --tty \
-              jekyll/jekyll:3.9.3 \
+              jekyll/jekyll:3.8.6 \
               jekyll serve --livereload
    ```
 
