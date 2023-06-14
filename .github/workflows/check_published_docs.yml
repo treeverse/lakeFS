@@ -14,18 +14,18 @@ jobs:
       - name: Checkout Docs source
         uses: actions/checkout@v2
         with:
-          repository: treeverse/lakefs
+          repository: treeverse/lakeFS
           ref: main
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          working-directory: lakefs/docs
+          working-directory: lakeFS/docs
           ruby-version: '2.7'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
       - name: Build Docs from Source
-        working-directory: lakefs/docs
+        working-directory: lakeFS/docs
         run: bundle exec jekyll build --config _config.yml 
 
       - name: Checkout Published Docs
