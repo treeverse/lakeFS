@@ -2,7 +2,7 @@ name: Docs - Check docs.lakefs.io matches source
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   schedule:
     - cron: '0 0 * * *'
 
