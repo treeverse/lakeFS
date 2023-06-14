@@ -43,9 +43,11 @@ import {useDropzone} from "react-dropzone";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import pMap from "p-map";
 
 const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
+const MAX_PARALLEL_UPLOADS = 5;
 
 const ImportButton = ({ variant = "success", onClick, config }) => {
   const tip = config.import_support
@@ -292,7 +294,8 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
   const [currentPath, setCurrentPath] = useState(path);
   const [uploadState, setUploadState] = useState(initialState);
   const [files, setFiles] = useState([]);
-  const [fileStates, setFileStates] = useState({})
+  const [fileStates, setFileStates] = useState({});
+  const [abortController, setAbortController] = useState(null)
   const onDrop = useCallback(acceptedFiles => {
     setFiles([...acceptedFiles])
   }, [files])
@@ -302,11 +305,18 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
   if (!reference || reference.type !== RefTypeBranch) return <></>;
 
   const hide = () => {
-    if (uploadState.inProgress) return;
+    if (uploadState.inProgress) {
+      if (abortController !== null) {
+          abortController.abort()
+      } else {
+        return
+      }
+    }
     setUploadState(initialState);
     setFileStates({});
     setFiles([]);
-    setCurrentPath(path)
+    setCurrentPath(path);
+    setAbortController(null)
     onHide();
   };
 
@@ -318,23 +328,43 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
     if (files.length < 1) {
       return
     }
-    setUploadState({...initialState,  inProgress: true });
-    for (let i = 0; i < files.length; i++) {
+
+    const abortController = new AbortController()
+    setAbortController(abortController)
+
+    const mapper = async (file) => {
       try {
-        setFileStates(next => ( {...next, [files[i].path]: {status: 'uploading', percent: 0}}))
-        await uploadFile(config, repo, reference, currentPath, files[i], progress => {
-          setFileStates(next => ( {...next, [files[i].path]: {status: 'uploading', percent: progress}}))
+        setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: 0}}))
+        await uploadFile(config, repo, reference, currentPath, file, progress => {
+          setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: progress}}))
         })
       } catch (error) {
-        setFileStates(next => ( {...next, [files[i].path]: {status: 'error'}}))
+        setFileStates(next => ( {...next, [file.path]: {status: 'error'}}))
         setUploadState({ ...initialState, error });
         throw error;
       }
-      setFileStates(next => ( {...next, [files[i].path]: {status: 'done'}}))
+      setFileStates(next => ( {...next, [file.path]: {status: 'done'}}))
     }
-    setUploadState({ ...initialState });
-    onDone();
-    hide();
+
+    setUploadState({...initialState,  inProgress: true });
+    try {
+      await pMap(files, mapper, {
+        concurrency: MAX_PARALLEL_UPLOADS,
+        signal: abortController.signal
+      });
+      onDone();
+      hide();
+    } catch (error) {
+      if (error instanceof DOMException) {
+        // abort!
+        onDone();
+        hide();
+      } else {
+        setUploadState({ ...initialState, error });
+      }
+    }
+
+
   };
 
   const changeCurrentPath = useCallback(e => {
@@ -399,7 +429,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         {(uploadState.error) ? (<AlertError error={uploadState.error}/>) : (<></>)}
       </Modal.Body>
     <Modal.Footer>
-        <Button variant="secondary" disabled={uploadState.inProgress} onClick={hide}>
+        <Button variant="secondary" onClick={hide}>
             Cancel
         </Button>
         <Button variant="success" disabled={uploadState.inProgress || files.length < 1} onClick={() => {
