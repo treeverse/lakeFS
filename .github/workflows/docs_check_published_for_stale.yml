@@ -37,11 +37,12 @@ jobs:
       - name: Compare Generated Site
         run: |
           diff --brief --recursive docs-lakeFS lakeFS/docs/_site | \
-                  grep -v --extended-regexp 'Only in docs-lakeFS: v?\d+(\.\d+)?' | \
+                  grep -v --extended-regexp 'Only in docs-lakeFS: v?[[:digit:]]+(\.[[:digit:]]+)?' | \
                   grep -v -e ": .git" -e ": versions.json" -e ": CNAME" > diffs.txt
           diffs=$(wc -l < diffs.txt | tr -d '[:space:]')
           if [ "$diffs" -ne 0 ]; then
-            echo "Docs published on docs.lakefs.io don't match docs generated from source"
+            echo "🚨 Docs published on docs.lakefs.io don't match docs generated from source 🚨"
+            echo " "
             cat diffs.txt
             exit 1
           fi
