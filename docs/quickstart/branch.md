@@ -40,41 +40,41 @@ created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8
 
 ## Transforming the Data
 
-Now we'll make a change to the data. lakeFS has several native clients, as well as an S3-compatible endpoint. This means that anything that can use S3 will work with lakeFS. Pretty neat. We're going to use DuckDB, but unlike in the previous step where it was run within the lakeFS web page, we've got a standalone container running. 
+Now we'll make a change to the data. lakeFS has several native clients, as well as an S3-compatible endpoint. This means that anything that can use S3 will work with lakeFS. Pretty neat. We're going to use DuckDB which is embedded within the web interface of lakeFS.
 
 ### Setting up DuckDB
 
-Run the following in a new terminal window to launch the DuckDB CLI:
+From the lakeFS **Objects** page select the `lakes.parquet` file to open the DuckDB editor: 
 
-```bash
-docker exec --interactive --tty lakefs duckdb
-```
+<img src="/assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
-The first thing to do is configure the S3 connection so that DuckDB can access lakeFS, as well as tell DuckDB to report back how many rows are changed by the query we'll soon be executing. Run this from the DuckDB prompt: 
+Delete the query text from the editor, as we're going to use it now to run our own commands on DuckDB. 
+
+The first thing to do is configure the S3 connection so that DuckDB can access lakeFS, as well as tell DuckDB to report back how many rows are changed by the query we'll soon be executing. Enter the following text in the DuckDB editor: 
 
 ```sql
 SET s3_url_style='path';
 SET s3_region='us-east-1';
 SET s3_use_ssl=false;
 SET s3_endpoint='localhost:8000';
-.changes on
-```
-
-In addition, replace your credentials in the following and then run it too. 
-
-```sql
 SET s3_access_key_id='YOUR-ACCESS-KEY-ID';
 SET s3_secret_access_key='YOUR-SECRET-ACCESS-KEY';
 ```
 
-Now we'll load the lakes data into a DuckDB table so that we can manipulate it:
+Replace the values for authentication with your own. Click on **Execute**
+
+<img src="/assets/img/quickstart/duckdb-editor-01.png" alt="The DuckDB editor pane with a series of SET commands" class="quickstart"/>
+
+You'll see the message "No Rows Returned", which is as expected. 
+
+Now we'll load the lakes data into a DuckDB table so that we can manipulate it. Replace the previous text in the DuckDB editor with this: 
 
 ```sql
-CREATE TABLE lakes AS 
-    SELECT * FROM read_parquet('s3://quickstart/denmark-lakes/lakes.parquet');
+CREATE OR REPLACE TABLE lakes AS 
+    SELECT * FROM read_parquet('lakefs://quickstart/denmark-lakes/lakes.parquet');
 ```
 
-Just to check that it's the same we saw before we're run the same query: 
+You'll see a row count of 100,000 to confirm that the DuckDB table has been created Just to check that it's the same we saw before we're run the same query: 
 
 ```sql
 SELECT   country, COUNT(*)
@@ -84,18 +84,7 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-```
-┌──────────────────────────┬──────────────┐
-│         Country          │ count_star() │
-│         varchar          │    int64     │
-├──────────────────────────┼──────────────┤
-│ Canada                   │        83819 │
-│ United States of America │         6175 │
-│ Russia                   │         2524 │
-│ Denmark                  │         1677 │
-│ China                    │          966 │
-└──────────────────────────┴──────────────┘
-```
+<img src="/assets/img/quickstart/duckdb-editor-02.png" alt="The DuckDB editor pane querying the lakes table" class="quickstart"/>
 
 ### Making a Change to the Data
 
@@ -105,13 +94,10 @@ Now we can change our table, which was loaded from the original `lakes.parquet`,
 DELETE FROM lakes WHERE Country != 'Denmark';
 ```
 
-You'll see that 98k rows have been deleted: 
-
-```sql
-changes: 98323   total_changes: 198323
-```
+<img src="/assets/img/quickstart/duckdb-editor-03.png" alt="The DuckDB editor pane deleting rows from the lakes table" class="quickstart"/>
 
 We can verify that it's worked by reissuing the same query as before:
+
 ```sql
 SELECT   country, COUNT(*)
 FROM     lakes
@@ -120,20 +106,15 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-```
-┌─────────┬──────────────┐
-│ Country │ count_star() │
-│ varchar │    int64     │
-├─────────┼──────────────┤
-│ Denmark │         1677 │
-└─────────┴──────────────┘
-```
+
+<img src="/assets/img/quickstart/duckdb-editor-04.png" alt="The DuckDB editor pane querying the lakes table showing only rows for Denmark remain" class="quickstart"/>
+
 ## Write the Data back to lakeFS
 
 The changes so far have only been to DuckDB's copy of the data. Let's now push it back to lakeFS. Note the S3 path is different this time as we're writing it to the `denmark-lakes` branch, not `main`: 
 
 ```sql
-COPY lakes TO 's3://quickstart/denmark-lakes/lakes.parquet' 
+COPY lakes TO 'lakefs://quickstart/denmark-lakes/lakes.parquet' 
     (FORMAT 'PARQUET', ALLOW_OVERWRITE TRUE);
 ```
 
@@ -145,7 +126,7 @@ Let's just confirm for ourselves that the parquet file itself has the new data. 
 DROP TABLE lakes;
 
 SELECT   country, COUNT(*)
-FROM     read_parquet('s3://quickstart/denmark-lakes/lakes.parquet')
+FROM     READ_PARQUET('lakefs://quickstart/denmark-lakes/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
