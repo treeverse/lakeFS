@@ -609,6 +609,26 @@ public abstract class LakeFSFileSystemTest {
         }
     }
 
+    @Test
+    public void testOpenWithSpace() throws IOException, ApiException {
+        String contents = "The quick brown fox jumps over the lazy dog.";
+        byte[] contentsBytes = contents.getBytes();
+        String physicalKey = "/repo-base/with space/open";
+        int readBufferSize = 5;
+
+        // Write physical file to S3.
+        ObjectMetadata s3Metadata = new ObjectMetadata();
+        s3Metadata.setContentLength(contentsBytes.length);
+        s3Client.putObject(new PutObjectRequest(s3Bucket, physicalKey, new ByteArrayInputStream(contentsBytes), s3Metadata));
+
+        Path p = new Path("lakefs://repo/main/read.me");
+        mockStatObject("repo", "main", "read.me", physicalKey, (long)contentsBytes.length);
+        try (InputStream in = fs.open(p, readBufferSize)) {
+            String actual = IOUtils.toString(in);
+            Assert.assertEquals(contents, actual);
+        }
+    }
+    
     @Test(expected = FileNotFoundException.class)
     public void testOpen_NotExists() throws IOException, ApiException {
         Path p = new Path("lakefs://repo/main/doesNotExi.st");

@@ -3,7 +3,6 @@ package io.lakefs.storage;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -50,7 +49,7 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
 
     @Override
     public FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize)
-            throws ApiException, MalformedURLException, IOException {
+            throws ApiException, IOException {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         ObjectStats stats = objectsApi.statObject(objectLocation.getRepository(),
                 objectLocation.getRef(), objectLocation.getPath(), false, true);
