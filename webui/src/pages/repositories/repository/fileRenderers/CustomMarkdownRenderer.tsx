@@ -20,7 +20,9 @@ export const CustomMarkdownRenderer: Components = {
         {String(children).replace(/\n$/, "")}
       </SyntaxHighlighter>
     ) : (
-      <code className={className} {...props} />
+      <code className={className} {...props}>
+        {children}
+      </code>
     );
   },
 };

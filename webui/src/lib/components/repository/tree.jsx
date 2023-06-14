@@ -30,7 +30,7 @@ import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import {ClipboardButton, copyTextToClipboard, Error, Loading} from "../controls";
+import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
 import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
@@ -220,12 +220,44 @@ const StatModal = ({ show, onHide, entry }) => {
                 </td>
               </tr>
             )}
+            {entry.metadata && (
+                <tr>
+                  <td>
+                    <strong>Metadata</strong>
+                  </td>
+                  <td>
+                    <EntryMetadata metadata={entry.metadata}/>
+                  </td>
+                </tr>
+            )}
           </tbody>
         </Table>
       </Modal.Body>
     </Modal>
   );
 };
+
+const EntryMetadata = ({ metadata }) => {
+    return (
+        <Table hover striped>
+          <thead>
+          <tr>
+            <th>Key</th>
+            <th>Value</th>
+          </tr>
+          </thead>
+          <tbody>
+          {Object.getOwnPropertyNames(metadata).map(key =>
+              <tr key={`metadata:${key}`}>
+                <td><code>{key}</code></td>
+                <td><code>{metadata[key]}</code></td>
+              </tr>
+          )}
+          </tbody>
+        </Table>
+    )
+};
+
 
 const CommitMetadata = ({ metadata }) => {
   const entries = Object.entries(metadata);
@@ -271,7 +303,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   let content = <Loading />;
 
   if (error) {
-    content = <Error error={error} />;
+    content = <AlertError error={error} />;
   }
   if (!loading && !error && commit) {
     content = (

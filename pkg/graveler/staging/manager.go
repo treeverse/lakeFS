@@ -113,7 +113,11 @@ func (m *Manager) Drop(ctx context.Context, st graveler.StagingToken) error {
 
 func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error {
 	err := m.kvStore.Set(ctx, []byte(graveler.CleanupTokensPartition()), []byte(st), []byte("stub-value"))
-	m.wakeup <- cleanTokens
+	select {
+	case m.wakeup <- cleanTokens:
+	default:
+		m.log.Debug("wakeup channel is full, skipping wakeup")
+	}
 	return err
 }
 

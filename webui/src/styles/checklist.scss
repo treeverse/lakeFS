@@ -1,0 +1,213 @@
+body {
+  overflow-x: hidden;
+}
+
+.checklist {
+  color: #343a40;
+
+  & .checklist-title {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  & .checklist-description {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+
+  & .checklist-item-header {
+    height: 96px;
+    padding: 32px 0;
+    box-sizing: border-box;
+    border: none;
+
+    & > button {
+      padding: 0;
+      color: #343a40;
+      background-color: #fff;
+      border: none;
+
+      &:focus {
+        outline: 0;
+        box-shadow: none;
+      }
+      &:not(.collapsed) {
+        color: #343a40;
+      }
+    }
+  }
+
+  & .checklist-item-header-text {
+    font-size: 14px;
+    font-weight: 400;
+    margin-left: 16px;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  & .accordion-body {
+    padding-top: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+
+  & .checklist-item-text {
+    margin-bottom: 8px;
+  }
+
+  & .cta-button {
+    display: block;
+    font-size: 14px;
+  }
+}
+
+.checklist-slider {
+  bottom: initial;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25);
+  border-radius: 8px 0 0 8px;
+  border: none;
+
+  & .checklist-slider-body {
+    flex-grow: 0;
+    padding: 32px 32px 0 32px;
+  }
+}
+
+.checklist-slider-button {
+  padding: 16px 24px;
+  width: 192px;
+  height: 56px;
+
+  &:active {
+    background-color: #343a40 !important;
+    color: #000 !important;
+  }
+
+  &.checklist-button-external {
+    transform: translateY(-50%) rotate(-90deg);
+    position: absolute;
+    right: -68px;
+    top: 50%;
+    background-color: #343a40;
+    color: #fff;
+    border-radius: 8px 8px 0 0;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+
+    &:hover {
+      animation-name: pullOut;
+      animation-duration: 1.4s;
+      animation-fill-mode: both;
+    }
+  }
+
+  &.checklist-button-internal {
+    border-radius: 8px 8px 0 0;
+    background-color: #343a40;
+    color: #fff;
+    position: absolute;
+    left: -125px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    z-index: -1;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+  }
+}
+
+.accordion-button:not(.collapsed)::after {
+  background-image: var(--bs-accordion-btn-icon);
+}
+
+@keyframes pullOut {
+  from {
+    transform: scale3d(1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  20% {
+    transform: scale3d(1.1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  25% {
+    transform: scale3d(1.15, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  30% {
+    transform: scale3d(1.2, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  35% {
+    transform: scale3d(1.15, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  40% {
+    transform: scale3d(1.1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  45% {
+    transform: scale3d(1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  50% {
+    transform: scale3d(1.1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  55% {
+    transform: scale3d(1.15, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  60% {
+    transform: scale3d(1.2, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  65% {
+    transform: scale3d(1.15, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  70% {
+    transform: scale3d(1.1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  75% {
+    transform: scale3d(1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+
+  to {
+    transform: scale3d(1, 1, 1) translateY(-50%) rotate(-90deg);
+  }
+}
+
+.complete-card {
+  padding-top: 68px;
+  padding-bottom: 68px;
+
+  & .complete-card-title {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  & .checklist-complete-text {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    text-align: center;
+  }
+
+  & .dismiss-button {
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #198754;
+  }
+}

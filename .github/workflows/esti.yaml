@@ -32,50 +32,34 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      # No way to share code between workflows :-( If you change this, find and change the
-      # same code wherever "Find Go module and build caches" appears!
-      - name: Find Go module and build caches
-        run: |
-          echo GOMODCACHE=`go env GOMODCACHE` >> $GITHUB_ENV
-          echo GOCACHE=`go env GOCACHE` >> $GITHUB_ENV
-          cat $GITHUB_ENV
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
+        with:
+          path: /tmp/generated.tar.gz
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
+          restore-keys: ${{ runner.os }}-go-
 
       - name: Setup Go
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v3
         with:
           go-version: 1.19.2
         id: go
 
-      - name: Cache Go modules and builds
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
-        with:
-          path: |
-            ${{ env.GOMODCACHE }}
-            ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('go.mod', 'go.sum') }}
-          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "16.17.1"
-
       - name: Generate code
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
           touch webui/dist/index.html
-          tar -cf /tmp/generated.tar.gz .
+          tar -cf /tmp/generated.tar.gz ./pkg ./webui
 
       - name: Store generated code
         uses: actions/upload-artifact@v3
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
-
 
   deploy-image:
     name: Build and push Docker image
@@ -88,17 +72,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16.17.1"
-
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19.2
-        id: go
-
       - name: Retrieve generated code
         uses: actions/download-artifact@v3
         with:
@@ -109,7 +82,7 @@ jobs:
         run: tar -xf /tmp/generated.tar.gz
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -127,63 +100,27 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Export ECR parameters
-        run: |
-          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-          echo "ECR_REPOSITORY_LAKEFS=lakefs" >> $GITHUB_ENV
-
-      - name: Login to GitHub Docker Registry
-        uses: docker/login-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and Push
+        uses: docker/build-push-action@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull last built docker image cache
-        run: |
-          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2:${{ steps.version.outputs.tag }} || \
-          docker pull ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2 || \
-          true
-
-      - name: Build Docker image with cache and push
-        run: |
-          set -ex
-          ghr=ghcr.io/${GITHUB_REPOSITORY,,}/build-cache-2
-          ghr_build_tag="-t ${ghr}:${{ steps.version.outputs.tag }}"
-          if [[ -n $GITHUB_REF ]]; then
-              ghr_ref_tag="-t ${ghr}:${GITHUB_REF##*/}"
-          else
-              ghr_ref_tag=''
-          fi
-          ecr_tag="-t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}"
-          docker build . \
-              ${ghr_ref_tag} ${ghr_build_tag} ${ecr_tag} \
-              --build-arg VERSION=${{ steps.version.outputs.tag }} \
-              --label db-schema-version=${{ steps.schema.outputs.dbschema_version }} \
-              --cache-from=${ghr}
-          docker push ${ghr_build_tag#-t }
-          if [[ -n ${ghr_ref_tag} ]]; then docker push ${ghr_ref_tag#-t }; fi
-        env:
-          DOCKER_BUILDKIT: "1"
-
-      - name: Push to Amazon ECR
-        run: |
-          set +e
-          describe_image="$( aws ecr describe-images --repository-name $ECR_REPOSITORY_LAKEFS --image-ids imageTag=${{ steps.version.outputs.tag }})"
-          if [ $? -eq 0 ]; then
-            echo "Image exists"
-          else
-            echo "Image doesn't exist"
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
-          fi
-
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          context: .
+          labels: db-schema-version=${{ steps.schema.outputs.dbschema_version }}
+          cache-from: |
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
+          cache-to: |
+            type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [check-secrets]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -257,12 +194,12 @@ jobs:
           go-version: 1.19.2
         id: go
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Generate uniquifying value
         id: unique
@@ -337,8 +274,6 @@ jobs:
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          SPARK_WORKER_MEMORY: 4G
-          SPARK_WORKER_CORES: 4
         ports:
           - '8080:8080'
           - '7077:7077'
@@ -381,12 +316,12 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: GC test
         run: |
@@ -483,12 +418,12 @@ jobs:
         shell: bash
         run: tar -xf /tmp/generated.tar.gz
 
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: GC test
         run: |
@@ -516,7 +451,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -530,16 +465,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Export ECR parameters
-        run: |
-          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: Build and Push to Amazon ECR
-        run: |
-          docker build deployments/tools/export -t $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
-          docker push $ECR_REGISTRY/lakefs-rclone-export:${{ steps.version.outputs.tag }}
-        env:
-          DOCKER_BUILDKIT: "1"
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
+          context: deployments/tools/export
 
 
   hadoopfs-tests:
@@ -847,16 +780,33 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v3
 
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19.2
-        id: go
-
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build and Push hive-metastore
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ghcr.io/treeverse/hive-metastore:${{ needs.deploy-image.outputs.tag }}
+          context: test/lakectl_metastore/hive
+          cache-from: type=gha,scope=hive-metastore
+          cache-to: type=gha,mode=max,scope=hive-metastore
+      - name: Build and Push dbt
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ghcr.io/treeverse/dbt:${{ needs.deploy-image.outputs.tag }}
+          context: test/lakectl_metastore/dbt
+          cache-from: type=gha,scope=dbt
+          cache-to: type=gha,mode=max,scope=dbt
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -920,34 +870,35 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
+        with:
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.artifact-suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
 
       - name: Package Metaclient
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: clients/spark
         run: |
           sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client-${{ matrix.spark.project-suffix }}/assembly
 
       - name: Prepare Metaclient location for export
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         # upload-artifact cannot take a working-directory option (that only
         # applies to "run" steps), so copy the compiled metaclient to a
         # known location.
         working-directory: clients/spark
         run: |
-          mkdir -p /tmp/export
-          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar /tmp/export/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
-
-      - name: Export Metaclient
-        uses: actions/upload-artifact@v3
-        with:
-          name: metaclient${{ matrix.spark.artifact-suffix }}
-          path: /tmp/export/
-          if-no-files-found: error
-          retention-days: 7
+          mkdir -p ${{ github.workspace }}/test/spark/metaclient
+          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
@@ -969,13 +920,12 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
-
-      - name: Import Metaclient
-        id: import_metaclient
-        uses: actions/download-artifact@v3
+      - name: Restore cache
+        uses: actions/cache@v3
+        id: restore-cache
         with:
-          name: metaclient${{ matrix.spark.suffix }}
-          path: test/spark/metaclient
+          path: ${{ github.workspace }}/test/spark/metaclient
+          key: metadata-client-${{ matrix.spark.suffix }}-${{ hashFiles('./clients/spark/**') }}
 
       - name: Generate uniquifying value
         id: unique
@@ -1007,7 +957,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{steps.import_metaclient.outputs.download-path}}/spark-assembly${{ matrix.spark.suffix }}.jar
+          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.suffix }}.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
@@ -1222,7 +1172,7 @@ jobs:
         run: env
 
   run-system-azure-adls-gen2:
-    name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2
+    name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
     needs: [gen-code, deploy-image]
     runs-on: ubuntu-20.04
     env:
@@ -1245,11 +1195,15 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-external-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          LAKEFS_DATABASE_TYPE: postgres
+          LAKEFS_DATABASE_TYPE: cosmosdb
+          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://esti-e2e-tests.documents.azure.com"
+          LAKEFS_DATABASE_COSMOSDB_DATABASE: esti-db
+          LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
+          LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti4hns
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}

@@ -212,7 +212,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -280,7 +280,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -364,7 +364,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -615,11 +615,12 @@ func TestACL(t *testing.T) {
 					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
+					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
 				acl.ACLSuper: []permissions.Permission{
-					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
-					{Action: permissions.AttachStorageNamespace, Resource: permissions.StorageNamespace("storage://bucket/path")},
-					{Action: permissions.ImportFromStorage, Resource: permissions.StorageNamespace("storage://bucket/path")},
+					{Action: permissions.AttachStorageNamespaceAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
+					{Action: permissions.ImportFromStorageAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
+					{Action: permissions.ImportCancelAction, Resource: permissions.BranchArn("foo", "twig")},
 				},
 				acl.ACLAdmin: []permissions.Permission{
 					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},
@@ -632,7 +633,7 @@ func TestACL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			s := auth_testutil.SetupService(t, ctx, someSecret)
+			s, _ := auth_testutil.SetupService(t, ctx, someSecret)
 			userID := make(map[model.ACLPermission]string, len(hierarchy))
 			for _, aclPermission := range hierarchy {
 				tt.ACL.Permission = aclPermission
@@ -730,7 +731,11 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 				Results:    returnedUsers,
 			}
 
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID})).Return(&auth.ListUsersResponse{
+			const amount = 2
+			paginationAmount := auth.PaginationAmount(amount)
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
+				gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID, Amount: &paginationAmount}),
+			).Return(&auth.ListUsersResponse{
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
 				},
@@ -1077,7 +1082,11 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 				Pagination: auth.Pagination{},
 				Results:    returnedUsers,
 			}
-			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(), gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email)})).Return(&auth.ListUsersResponse{
+			const amount = 2
+			paginationAmount := auth.PaginationAmount(amount)
+			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
+				gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email), Amount: &paginationAmount}),
+			).Return(&auth.ListUsersResponse{
 				Body: nil,
 				HTTPResponse: &http.Response{
 					StatusCode: tt.responseStatusCode,
@@ -1115,7 +1124,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.TTL = time.Minute
 		cacheParams.Jitter = time.Minute
 	}
-	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams)
+	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams, logging.Default())
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}

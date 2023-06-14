@@ -78,17 +78,25 @@ object LakeFSContext {
   val LAKEFS_CONF_GC_DO_MARK = "lakefs.gc.do_mark"
   val LAKEFS_CONF_GC_DO_SWEEP = "lakefs.gc.do_sweep"
   val LAKEFS_CONF_GC_MARK_ID = "lakefs.gc.mark_id"
+  val LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = "lakefs.gc.s3.min_backoff_secs"
+  val LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = "lakefs.gc.s3.max_backoff_secs"
+  val LAKEFS_CONF_GC_INCREMENTAL = "lakefs.gc.incremental"
+  val LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL = "lakefs.gc.incremental.fallback_to_full"
+  val LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN = "lakefs.gc.incremental.use-nth-previous-run"
   val LAKEFS_CONF_DEBUG_GC_NO_DELETE_KEY = "lakefs.debug.gc.no_delete"
 
   val MARK_ID_KEY = "mark_id"
   val RUN_ID_KEY = "run_id"
   val COMMITS_LOCATION_KEY = "commits_location"
+  val RUN_ID_MARKERS_LOCATION_FORMAT = "%s/_lakefs/retention/gc/run_ids/%s"
   val DEFAULT_LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = 24
   val DEFAULT_LAKEFS_CONF_GC_NUM_RANGE_PARTITIONS = 50
   val DEFAULT_LAKEFS_CONF_GC_NUM_ADDRESS_PARTITIONS = 200
   val DEFAULT_LAKEFS_CONF_GC_APPROX_NUM_RANGES_PER_PARTITION = 1e5
   // By default, objects that are written in the last 6 hours are not collected
   val DEFAULT_GC_UNCOMMITTED_MIN_AGE_SECONDS = 6 * 60 * 60
+  val DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS = 1
+  val DEFAULT_LAKEFS_CONF_GC_S3_MAX_BACKOFF_SECONDS = 120
 
   def newRDD(
       sc: SparkContext,

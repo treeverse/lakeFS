@@ -10,7 +10,7 @@ on:
         type: choice
         options:
           - lakefs-plugins
-          - lakefs-lakectl
+          - lakefs
           - lakectl
           - build-delta-diff-plugin
           - build

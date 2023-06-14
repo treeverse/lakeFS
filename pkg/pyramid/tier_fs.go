@@ -21,19 +21,15 @@ import (
 // All files are stored in the block storage. Local paths are treated as a
 // cache layer that will be evicted according to the eviction control.
 type TierFS struct {
-	logger  logging.Logger
-	adapter block.Adapter
-
-	eviction    params.Eviction
-	keyLock     cache.OnlyOne
-	syncDir     *directory
-	fileTracker *fileTracker
-
-	fsName string
-
+	logger         logging.Logger
+	adapter        block.Adapter
+	eviction       params.Eviction
+	keyLock        cache.OnlyOne
+	syncDir        *directory
+	fileTracker    *fileTracker
+	fsName         string
 	fsLocalBaseDir string
-
-	remotePrefix string
+	remotePrefix   string
 }
 
 const workspaceDir = "workspace"
@@ -42,7 +38,7 @@ const workspaceDir = "workspace"
 // It will traverse the existing local folders and will update
 // the local disk cache to reflect existing files.
 func NewFS(c *params.InstanceParams) (FS, error) {
-	fsLocalBaseDir := filepath.Clean(path.Join(c.Local.BaseDir, c.FSName))
+	fsLocalBaseDir := filepath.Join(c.Local.BaseDir, c.FSName)
 	if err := os.MkdirAll(fsLocalBaseDir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("creating base dir: %s - %w", fsLocalBaseDir, err)
 	}
@@ -85,7 +81,13 @@ func (tfs *TierFS) log(ctx context.Context) logging.Logger {
 //  2. Remove workspace directories and all its content if it
 //     exists under the namespace dir.
 func (tfs *TierFS) handleExistingFiles() error {
-	if err := filepath.Walk(tfs.fsLocalBaseDir, func(p string, info os.FileInfo, err error) error {
+	// setup cache dir location with separator as suffix. store are relative without prefix.
+	dir := tfs.fsLocalBaseDir
+	if !strings.HasSuffix(dir, string(filepath.Separator)) {
+		dir += string(filepath.Separator)
+	}
+	// walk the local dir and add all files to the cache
+	if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -100,7 +102,7 @@ func (tfs *TierFS) handleExistingFiles() error {
 			return nil
 		}
 
-		rPath := strings.TrimPrefix(p, tfs.fsLocalBaseDir)
+		rPath := strings.TrimPrefix(p, dir)
 		tfs.storeLocalFile(params.RelativePath(rPath), info.Size())
 		return nil
 	}); err != nil {
@@ -322,14 +324,15 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		defer func() { _ = reader.Close() }()
 
 		// write to temp file - otherwise the file is available to other readers with partial data
-		tmpFullPath := fileRef.fullPath + ".tmp"
-		writer, err := tfs.syncDir.createFile(tmpFullPath)
+		writer, err := tfs.syncDir.createTempFile(fileRef.fullPath)
 		if err != nil {
 			return nil, fmt.Errorf("creating file: %w", err)
 		}
-
+		tmpFullPath := writer.Name()
 		written, err := io.Copy(writer, reader)
 		if err != nil {
+			_ = writer.Close()
+			_ = os.Remove(tmpFullPath)
 			return nil, fmt.Errorf("copying data to file: %w", err)
 		}
 		downloadHistograms.WithLabelValues(tfs.fsName).Observe(float64(written))

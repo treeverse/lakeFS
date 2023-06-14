@@ -13,7 +13,8 @@ import {
     ActionsBar,
     Checkbox,
     DataTable,
-    Error, FormattedDate,
+    AlertError,
+    FormattedDate,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
@@ -23,6 +24,7 @@ import {Link} from "../../../lib/components/nav";
 import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
+import {useLoginConfigContext} from "../../../lib/hooks/conf";
 
 
 const permissions = {
@@ -81,9 +83,11 @@ const GroupsContainer = () => {
 
     const router = useRouter();
     const after = (router.query.after) ? router.query.after : "";
+    const lc = useLoginConfigContext();
+    const simplified = lc.RBAC === 'simplified';
     const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
         const groups = await auth.listGroups(after);
-        const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: await getACLMaybe(group.id)})));
+        const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: simplified && await getACLMaybe(group.id)})));
         return {...groups, results: enrichedResults};
     }, [after, refresh]);
 
@@ -91,8 +95,9 @@ const GroupsContainer = () => {
         setSelected([]);
     }, [after, refresh]);
 
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
+    const headers = simplified ? ['', 'Group ID', 'Permission', 'Created At'] : ['', 'Group ID', 'Created At'];
 
     return (
         <>
@@ -128,8 +133,8 @@ const GroupsContainer = () => {
             </div>
 
 
-            {(!!deleteError) && <Error error={deleteError}/>}
-            {(!!putACLError) && <Error error={putACLError}/>}
+            {(!!deleteError) && <AlertError error={deleteError}/>}
+            {(!!putACLError) && <AlertError error={putACLError}/>}
 
             <EntityActionModal
                 show={showCreate}
@@ -149,23 +154,26 @@ const GroupsContainer = () => {
 
             <DataTable
                 results={results}
-                headers={['', 'Group ID', 'Permission', 'Created At']}
+                headers={headers}
                 keyFn={group => group.id}
-                rowFn={group => [
-                    <Checkbox
-                        name={group.id}
-                        onAdd={() => setSelected([...selected, group])}
-                        onRemove={() => setSelected(selected.filter(g => g !== group))}
-                    />,
-                    <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
-                        {group.id}
-                    </Link>,
-                    group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
-                        ((permission) => auth.putACL(group.id, {...group.acl, permission})
-                            .then(() => setPutACLError(null), (e) => setPutACLError(e)))
-                    }/> : <></>,
-                    <FormattedDate dateValue={group.creation_date}/>,
-            ]}/>
+                rowFn={group => {
+                    const elements = [
+                        <Checkbox
+                            name={group.id}
+                            onAdd={() => setSelected([...selected, group])}
+                            onRemove={() => setSelected(selected.filter(g => g !== group))}
+                        />,
+                        <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
+                            {group.id}
+                        </Link>]
+                    simplified && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
+                            ((permission) => auth.putACL(group.id, {...group.acl, permission})
+                                .then(() => setPutACLError(null), (e) => setPutACLError(e)))
+                        }/> : <></>)
+                    elements.push(<FormattedDate dateValue={group.creation_date}/>)
+
+                    return elements;
+                }}/>
 
             <Paginator
                 nextPage={nextPage}

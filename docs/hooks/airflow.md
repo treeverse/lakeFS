@@ -9,14 +9,13 @@ redirect_from: []
 ---
 
 # Airflow Hooks
-{: .no_toc }
 
 {% include toc.html %}
 
 Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST API](https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/post_dag_run).
 The hook run succeeds if the DAG was triggered, and fails otherwise.
 
-#### Action file Airflow hook properties
+## Action file Airflow hook properties
 
 | Property      | Description                                                     | Data Type                                                                                 | Example                 | Required | Env Vars Support |
 |---------------|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------|----------|------------------|
@@ -45,7 +44,7 @@ hooks:
 ...
 ```
 
-#### Hook Record in configuration field
+## Hook Record in configuration field
 
 lakeFS will add an entry to the Airflow request configuration property (`conf`) with the event that triggered the action.
 

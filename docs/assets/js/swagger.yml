@@ -214,33 +214,11 @@ components:
           type: string
           description: "The commit ID of the merge base"
 
-    MergeResultSummary:
-      type: object
-      properties:
-        added:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-        removed:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-        changed:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-        conflict:
-          type: integer
-          deprecated: true
-          description: "Deprecated: inaccurate and will be removed."
-
     MergeResult:
       type: object
       required:
         - reference
       properties:
-        summary:
-          $ref: "#/components/schemas/MergeResultSummary"
         reference:
           type: string
 
@@ -261,6 +239,10 @@ components:
         default_branch:
           type: string
           example: "main"
+        sample_data:
+          type: boolean
+          example: "true"
+          default: false
 
     PathList:
       type: object
@@ -1028,7 +1010,7 @@ components:
         - blockstore_namespace_example
         - blockstore_namespace_ValidityRegex
         - pre_sign_support
-        - pre_sign_support_UI
+        - pre_sign_support_ui
         - import_support
       properties:
         blockstore_type:
@@ -1041,7 +1023,7 @@ components:
           type: string
         pre_sign_support:
           type: boolean
-        pre_sign_support_UI:
+        pre_sign_support_ui:
           type: boolean
         import_support:
           type: boolean
@@ -1207,6 +1189,9 @@ components:
           type: string
           description: location to use for expired addresses parquet table (partitioned by run_id)
           example: s3://my-storage-namespace/_lakefs/retention/addresses
+        gc_commits_presigned_url:
+          type: string
+          description: a presigned url to download the commits csv
       required:
         - run_id
         - gc_commits_location
@@ -1266,6 +1251,47 @@ components:
           minLength: 1
       required:
         - pattern
+
+    ImportLocation:
+      type: object
+      required:
+        - type
+        - path
+        - destination
+      properties:
+        type:
+          type: string
+          enum: [ common_prefix, object ]
+          description: Path type, can either be 'common_prefix' or 'object'
+        path:
+          type: string
+          description: A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+        destination:
+          type: string
+          description: Destination for the imported objects on the branch 
+          example: collections/
+
+    ImportCreation:
+      type: object
+      required:
+        - paths
+        - commit
+      properties:
+        paths:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportLocation"
+        commit:
+          $ref: "#/components/schemas/CommitCreation"
+      example:
+        paths:
+          - path: s3://my-bucket/production/collections/
+            destination: collections/
+            type: common_prefix
+          - path: s3://my-bucket/production/collections/file1
+            destination: collections/file1
+            type: object
 
     StageRangeCreation:
       type: object
@@ -1328,6 +1354,37 @@ components:
           $ref: "#/components/schemas/RangeMetadata"
         pagination:
           $ref: "#/components/schemas/ImportPagination"
+
+    ImportStatusResp:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        ingested_objects:
+          description: Number of objects processed so far
+          type: integer
+          format: int64
+        metarange_id:
+          type: string
+        commit:
+          $ref: "#/components/schemas/Commit"
+        error:
+          $ref: "#/components/schemas/Error"
+      required:
+        - update_time
+        - completed
+    
+    ImportCreationResponse:
+      type: object
+      properties:
+        id:
+          description: The id of the import process
+          type: string
+      required: 
+        - id
 
     MetaRangeCreation:
       type: object
@@ -2681,6 +2738,11 @@ paths:
           description: limit the number of items in return to 'amount'. Without further indication on actual number of items.
           schema:
             type: boolean
+        - in: query
+          name: first_parent
+          description: if set to true, follow only the first parent upon reaching a merge commit
+          schema:
+            type: boolean
       responses:
         200:
           description: commit log
@@ -3369,6 +3431,95 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/branches/{branch}/import:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - import
+      operationId: importStatus
+      summary: get import status
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the import process
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: import status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportStatusResp"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - import
+      operationId: importStart
+      summary: import data from object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportCreation"
+      responses:
+        202:
+          description: Import started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportCreationResponse"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - import
+      operationId: importCancel
+      summary: cancel ongoing import
+      parameters:
+        - in: query
+          name: id
+          description: Unique identifier of the import process
+          schema:
+            type: string
+          required: true
+      responses:
+        204:
+          description: import canceled successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/branches/metaranges:
     parameters:
       - in: path
@@ -3477,6 +3628,40 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/branches/{branch}/objects/stage_allowed:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: path
+        description: relative to the branch
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - objects
+      operationId: uploadObjectPreflight
+      responses:
+        204:
+          description: User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/branches/{branch}/objects:
     parameters:
       - in: path
@@ -3523,6 +3708,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+
     post:
       tags:
         - objects
@@ -4057,6 +4243,27 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/gc/rules/set_allowed:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - retention
+      operationId: setGarbageCollectionRulesPreflight
+      responses:
+        204:
+          description: User has permissions to set garbage collection rules on this repository
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/gc/rules:
     parameters:
       - in: path
@@ -4081,6 +4288,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+    
     post:
       tags:
         - retention
@@ -4178,6 +4386,27 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/branch_protection/set_allowed:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: createBranchProtectionRulePreflight
+      responses:
+        204:
+          description: User has permissions to create a branch protection rule in this repository
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/branch_protection:
     parameters:
       - in: path
@@ -4205,6 +4434,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+
     post:
       tags:
         - repositories

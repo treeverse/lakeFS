@@ -17,7 +17,8 @@ import {
     ActionsBar,
     Checkbox,
     DataTable,
-    Error, FormattedDate,
+    AlertError,
+    FormattedDate,
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
@@ -45,7 +46,7 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
     useEffect(() => { setSelected([]); }, [refresh, after]);
 
     const authCapabilities = useAPI(() => auth.getAuthCapabilities());
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
     if (authCapabilities.loading) return <Loading/>;
 
@@ -71,7 +72,7 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                 Users are entities that access and use lakeFS. <a href="https://docs.lakefs.io/reference/authentication.html" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
-            {(!!deleteError) && <Error error={deleteError}/>}
+            {(!!deleteError) && <AlertError error={deleteError}/>}
 
             <EntityActionModal
                 show={showCreate}

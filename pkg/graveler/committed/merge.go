@@ -199,7 +199,7 @@ func (m *merger) handleAll(iter Iterator, strategyToInclude graveler.MergeStrate
 						return graveler.ErrConflictFound
 					}
 					// In case of conflict, if the strategy favors the given iter we
-					// still want to write the record. Otherwise it will be ignored.
+					// still want to write the record. Otherwise, it will be ignored.
 					if m.strategy != strategyToInclude {
 						shouldWriteRecord = false
 					}

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -118,6 +119,32 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
+func createUserWithDefaultGroup(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
+	t.Helper()
+	// create the user
+	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{
+		Id:         "test@example.com",
+		InviteUser: swag.Bool(false),
+	})
+	testutil.Must(t, err)
+	if createUsrRes.JSON201 == nil {
+		t.Fatal("Failed to create user", createUsrRes.HTTPResponse.StatusCode, createUsrRes.HTTPResponse.Status)
+	}
+
+	// create credentials for the user
+	createCredsRes, err := clt.CreateCredentialsWithResponse(context.Background(), createUsrRes.JSON201.Id)
+	testutil.Must(t, err)
+	if createCredsRes.JSON201 == nil {
+		t.Fatal("Failed to create credentials", createCredsRes.HTTPResponse.StatusCode, createCredsRes.HTTPResponse.Status)
+	}
+
+	return &authmodel.BaseCredential{
+		IssuedDate:      time.Unix(createCredsRes.JSON201.CreationDate, 0),
+		AccessKeyID:     createCredsRes.JSON201.AccessKeyId,
+		SecretAccessKey: createCredsRes.JSON201.SecretAccessKey,
+	}
+}
+
 func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
@@ -126,9 +153,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
 	viper.Set("database.type", mem.DriverName)
-	// Fake external mode using the internal service (this only works in
-	// tests).
-	viper.Set("auth.ui_config.rbac", "external")
+	// Use 'internal' mode in order to have access to policies
+	viper.Set("auth.ui_config.rbac", "internal")
 
 	collector := &memCollector{}
 
@@ -188,7 +214,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	handler := api.Serve(
 		cfg,
 		c,
-		authenticator,
 		authenticator,
 		authService,
 		c.BlockAdapter,

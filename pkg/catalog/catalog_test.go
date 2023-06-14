@@ -12,14 +12,12 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
-	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	cUtils "github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	gUtils "github.com/treeverse/lakefs/pkg/graveler/testutil"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/xitongsys/parquet-go-source/buffer"
 	"github.com/xitongsys/parquet-go/reader"
@@ -527,25 +525,12 @@ func TestCatalog_ListEntries(t *testing.T) {
 	}
 }
 
-var (
-	repoID     = graveler.RepositoryID("repo1")
-	repository = &graveler.RepositoryRecord{
-		RepositoryID: repoID,
-		Repository: &graveler.Repository{
-			StorageNamespace: "mock-sn",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  "main",
-		},
-	}
-)
-
 func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name                   string
 		numBranch              int
 		numRecords             int
-		numTracked             int
 		expectedCalls          int
 		expectedForUncommitted int
 	}{
@@ -562,21 +547,9 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			expectedCalls: 1,
 		},
 		{
-			name:          "sanity_all",
+			name:          "sanity",
 			numBranch:     5,
 			numRecords:    3,
-			numTracked:    7,
-			expectedCalls: 1,
-		},
-		{
-			name:          "sanity_uncommitted",
-			numBranch:     5,
-			numRecords:    3,
-			expectedCalls: 1,
-		},
-		{
-			name:          "sanity_tracked",
-			numTracked:    7,
 			expectedCalls: 1,
 		},
 		{
@@ -585,25 +558,18 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			numRecords:    500,
 			expectedCalls: 2,
 		},
-		{
-			name:          "tokenized_mix",
-			numBranch:     500,
-			numRecords:    500,
-			numTracked:    500,
-			expectedCalls: 2,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, expectedRecords := createPrepareUncommittedTestScenario(t, tt.numBranch, tt.numRecords, tt.numTracked, tt.expectedCalls)
+			const repositoryID = "repo1"
+			g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
-				Store:                    g.Sut,
-				BlockAdapter:             blockAdapter,
-				GCMaxUncommittedFileSize: 500 * 1024,
-				KVStore:                  g.KVStore,
+				Store:                 g.Sut,
+				BlockAdapter:          blockAdapter,
+				UGCPrepareMaxFileSize: 500 * 1024,
+				KVStore:               g.KVStore,
 			}
-			repositoryID := repoID.String()
 
 			var (
 				mark       *catalog.GCUncommittedMark
@@ -621,14 +587,14 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 					require.Equal(t, runID, result.RunID)
 				}
 
-				if tt.numRecords+tt.numTracked == 0 {
+				if tt.numRecords == 0 {
 					require.Equal(t, "", result.Location)
 					require.Equal(t, "", result.Filename)
 				} else {
 					// read parquet information if data was stored to location
 					objLocation, err := url.JoinPath(result.Location, result.Filename)
 					require.NoError(t, err)
-					addresses := readPhysicalAddressesFromParquetObject(t, ctx, c, objLocation)
+					addresses := readPhysicalAddressesFromParquetObject(t, repositoryID, ctx, c, objLocation)
 					allRecords = append(allRecords, addresses...)
 				}
 
@@ -648,7 +614,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords, numTracked, expectedCalls int) (*gUtils.GravelerTest, []string) {
+func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
 	t.Helper()
 
 	test := gUtils.InitGravelerTest(t)
@@ -669,7 +635,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 			// create full and relative addresses
 			if j%2 == 0 {
 				addressType = catalog.Entry_FULL
-				address = fmt.Sprintf("%s/%s_record%04d", repository.StorageNamespace, branchID, j)
+				address = fmt.Sprintf("%s/%s_record%04d", "mem://"+repositoryID, branchID, j)
 			} else {
 				addressType = catalog.Entry_RELATIVE
 				address = fmt.Sprintf("%s_record%04d", branchID, j)
@@ -724,26 +690,16 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		})
 	}
 
-	// tracked linked addresses
-	trackedEntries := make([]*kv.Entry, 0, numTracked)
-	for i := 0; i < numTracked; i++ {
-		address := fmt.Sprintf("tracked/record%04d", i)
-		e := catalog.Entry{
-			Address:      address,
-			LastModified: timestamppb.New(time.Now()),
-			AddressType:  catalog.Entry_RELATIVE,
-		}
-		val, err := proto.Marshal(&e)
-		require.NoError(t, err)
-		trackedEntries = append(trackedEntries, &kv.Entry{
-			Key:   []byte("track/" + xid.New().String()),
-			Value: val,
-		})
-		expectedRecords = append(expectedRecords, address)
-	}
-
 	test.GarbageCollectionManager.EXPECT().NewID().Return("TestRunID")
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), repoID).Times(expectedCalls).Return(repository, nil)
+	repository := &graveler.RepositoryRecord{
+		RepositoryID: graveler.RepositoryID(repositoryID),
+		Repository: &graveler.Repository{
+			StorageNamespace: graveler.StorageNamespace("mem://" + repositoryID),
+			CreationDate:     time.Now(),
+			DefaultBranchID:  "main",
+		},
+	}
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).Times(expectedCalls).Return(repository, nil)
 
 	// expect tracked addresses does not list branches, so remove one and keep at least the first
 	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
@@ -754,7 +710,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
 	}
 
-	if numRecords+numTracked > 0 {
+	if numRecords > 0 {
 		test.GarbageCollectionManager.EXPECT().
 			GetUncommittedLocation(gomock.Any(), gomock.Any()).
 			Times(expectedCalls).
@@ -762,18 +718,16 @@ func createPrepareUncommittedTestScenario(t *testing.T, numBranches, numRecords,
 				return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 			})
 	}
-	repoPartition := graveler.RepoPartition(repository)
-	test.KVStore.EXPECT().Scan(gomock.Any(), []byte(repoPartition), gomock.Any()).AnyTimes().Return(cUtils.NewFakeKVEntryIterator(trackedEntries), nil)
 
 	sort.Strings(expectedRecords)
 	return test, expectedRecords
 }
 
-func readPhysicalAddressesFromParquetObject(t *testing.T, ctx context.Context, c *catalog.Catalog, obj string) []string {
+func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, ctx context.Context, c *catalog.Catalog, obj string) []string {
 	objReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
 		Identifier:       obj,
 		IdentifierType:   block.IdentifierTypeFull,
-		StorageNamespace: repository.StorageNamespace.String(),
+		StorageNamespace: "mem://" + repositoryID,
 	}, 0)
 	require.NoError(t, err)
 	defer func() { _ = objReader.Close() }()

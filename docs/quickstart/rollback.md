@@ -47,5 +47,5 @@ object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
 Once you've finished the quickstart, shut down your local environment with the following command: 
 
 ```bash
-docker-compose down
+docker stop lakefs
 ```

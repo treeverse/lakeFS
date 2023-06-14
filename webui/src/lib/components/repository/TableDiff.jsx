@@ -6,14 +6,14 @@ import Tooltip from "react-bootstrap/Tooltip";
 import {OtfDiffType, OtfType} from "../../../constants";
 import {useAPI} from "../../hooks/api";
 import {repositories} from "../../api";
-import {Error, Loading} from "../controls";
+import {AlertError, Loading} from "../controls";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 
 export const DeltaLakeDiff = ({repo, leftRef, rightRef, tablePath}) => {
     let { error, loading, response } = useAPI(() => repositories.otfDiff(repo.id, leftRef, rightRef, tablePath, OtfType.Delta), [])
     if (loading) return <Loading style={{margin: 0+"px"}}/>;
-    if (!loading && error) return <Error error={error}/>;
+    if (!loading && error) return <AlertError error={error}/>;
 
     const otfDiffs = response.results;
     const diffType = response.diff_type;

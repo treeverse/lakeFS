@@ -1,6 +1,6 @@
 ---
 title: 2️⃣ Query the data
-description: lakeFS quickstart / Query the pre-populated data using lakeFS' built-in DuckDB browser
+description: lakeFS quickstart / Query the pre-populated data using DuckDB browser that's built into lakeFS
 parent: ⭐ Quickstart ⭐
 nav_order: 10
 has_children: false
@@ -28,7 +28,7 @@ Copy and paste the following SQL statement into the DuckDB query panel and click
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     READ_PARQUET(LAKEFS_OBJECT('quickstart', 'main', 'lakes.parquet'))
+FROM     read_parquet('lakefs://quickstart/main/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;

@@ -26,10 +26,10 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 		filepath := path.Join(pathDir, strconv.Itoa(i))
 		wg.Add(2)
 		go func() {
-			f, err := sut.createFile(filepath)
+			f, err := sut.createTempFile(filepath)
 			require.NoError(t, err)
 			require.NoError(t, f.Close())
-			require.NoError(t, os.Remove(filepath))
+			require.NoError(t, os.Remove(f.Name()))
 
 			wg.Done()
 		}()

@@ -8,9 +8,8 @@ has_children: false
 ---
 
 # Authentication 
-{: .no_toc }
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Authentication
 
@@ -52,11 +51,11 @@ Configure the LDAP server using the [configuration fields](./configuration.html)
   Authentication, and are used to convert a user ID attribute to a full
   user DN.
 * `default_user_group`: A group to add users the first time they log in
-  using LDAP.  Typically "`Viewers`" or "`Developers`".
+  using LDAP.  Typically `Viewers` or `Developers`.
 
   Once logged in, LDAP users may be added as normal to any other group.
 * `username_attribute`: Attribute on LDAP user to identify user when
-  logging in.  Typically "`uid`" or "`cn`".
+  logging in.  Typically `uid` or `cn`.
 * `user_base_dn`: DN of root of DAP tree containing users,
   e.g. `ou=Users,dc=treeverse,dc=io`.
 * `user_filter`: An additional filter for users allowed to login,

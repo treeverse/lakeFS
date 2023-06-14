@@ -10,7 +10,6 @@ next:  ["Import data into your installation", "../howto/import.html"]
 ---
 
 # Deploy lakeFS on GCP
-{: .no_toc }
 
 ⏰ Expected deployment time: 25 min
 {: .note }
@@ -130,7 +129,6 @@ To install lakeFS with Helm:
 
 
 ## Load balancing
-{: .no_toc }
 
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.

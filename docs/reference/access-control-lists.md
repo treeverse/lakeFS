@@ -5,14 +5,13 @@ parent: Reference
 description: Access control lists (ACLs) are one of the resource-based options that you can use to manage access to your repositories and objects. There are limits to managing permissions using ACLs.
 nav_order: 100
 has_children: false
-redirect_from: access-control-list.html
+redirect_from: /reference/access-control-list.html
 ---
 
 # Access Control Lists (ACLs)
-{: .no_toc }
 
 {: .note}
-> ACLs were introduced in their current form in v0.97 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+> ACLs were introduced in their current form in v0.98 of lakeFS as part of [changes to the security model](/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
 
 
 {% include toc.html %}
@@ -22,20 +21,12 @@ redirect_from: access-control-list.html
 You can attach Permissions and scope them to groups in the Groups page.
 There are 4 default groups, named after the 4 permissions. Each group is global (applies for all repositories).
 
-| Group ID    | Allows | Repositories |
-|-------------|--------------------|--------------|
-| **Read**    | Read operations, creating access keys               | All          |
-| **Write**   | Allows all data read and write operations.              | All          |
-| **Super**   | Allows all operations except auth.              | All          |
-| **Admin**   | Allows all operations.              | All          |
-
-
-## Scopes
-
-When granted to a group, permissions Read, Write, and Super may be scoped to a set of repositories.
-
-Admin includes global abilities that apply across repos and cannot be scoped to a set of repositories
-
+| Group ID  | Allows                                     | 
+|-----------|--------------------------------------------|
+| **Read**  | Read operations, creating access keys      |
+| **Write** | Allows all data read and write operations. |
+| **Super** | Allows all operations except auth.         |
+| **Admin** | Allows all operations.                     |
 
 ## Pluggable Authentication and Authorization
 
@@ -45,9 +36,9 @@ If you are using ACL then the lakeFS configuration element `auth.ui_config.RBAC`
 
 ## Previous versions of ACL in lakeFS
 
-Here's how the current ACL model compares to to that prior to [the changes introduced](/posts/security_update.html#whats-changing) in v0.97.
+Here's a comparison of the current ACL model against the behavior prior to [the changes introduced](/posts/security_update.html#whats-changing) in v0.98.
 
-| Permission | Allows                                     | Previous Group Name       | Previous Policy Names and Actions                                                                                         | 
+| Permission | Allows                                     | Previous Group Name       | Previous Policy Names and Actions                                                                                                                                                                                                                                                                                                                                                | 
 |------------|--------------------------------------------|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Read**   | Read operations, creating access keys.     | Viewers                   | FSReadAll \[fs:List*, fs:Read*]                                                                                                                                                                                                                                                                                                                                                  |
 | **Write**  | Allows all data read and write operations. | Developers                | FSReadWriteAll \[fs:ListRepositories, fs:ReadRepository, fs:ReadCommit, fs:ListBranches, fs:ListTags, fs:ListObjects, fs:ReadObject, fs:WriteObject, fs:DeleteObject, fs:RevertBranch, fs:ReadBranch, fs:ReadTag, fs:CreateBranch, fs:CreateTag, fs:DeleteBranch, fs:DeleteTag, fs:CreateCommit] RepoManagementReadAll \[ci:Read*, retention:Get*, branches:Get*, fs:ReadConfig] |
@@ -72,11 +63,11 @@ The upgrade will ensure that the 4 default groups exist, and modify existing gro
     1. Any "Deny" rules are stripped, and a warning printed.
     2. "Manage own credentials" is added.
     3. If any actions outside of "fs:" and manage own credentials are allowed, the group becomes an Admin group, a warning is printed, and no further changes apply.
-    4. The upgrade script unifies repositories: If a resource applies to a set of repositories with a wildcard, permissions are unified to all repositories. Otherwise they apply to the list of all repositories, in all the policies.
+    4. The upgrade script unifies repositories: If a resource applies to a set of repositories, permissions are unified to all repositories.
     5. The upgrade script unifies actions: it selects the least permission of Read, Write, Super that contains all of the allowed actions.
 
 The upgrade will detach every directly attached policy from users 
 
-Note that moving to `ACL` from `RBAC` may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
+Note that moving to ACL from RBAC may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).

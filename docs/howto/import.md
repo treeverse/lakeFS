@@ -10,17 +10,29 @@ redirect_from:
 ---
 
 # Import data into lakeFS
-{: .no_toc }
 
 
 The simplest way to bring data into lakeFS is by [copying it](#copying-data-into-a-lakefs-repository), but this approach may not be suitable when a lot of data is involved.
 To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). With this approach, lakeFS only creates pointers to your existing objects in your new repository.
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Zero-copy import
 
 ### Prerequisites
+
+#### User Permissions
+
+To run import you need the following permissions:
+`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:ImportCancel`. 
+The first 3 permissions are available by default to users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
+Writers group ([ACL](../reference/access-control-lists.md)). The `Import*` permissions enable the user to import data from any location of the storage 
+provider that lakeFS has access to and cancel the operation if needed. 
+Thus, it's only available to users in group Supers ([ACL](../reference/access-control-lists.md)) or SuperUsers([RBAC](../reference/rbac.md)).
+RBAC installations can modify policies to add that permission to any group, such as Developers.
+
+
+#### lakeFS Permissions
 
 lakeFS must have permissions to list the objects in the source object store,
 and the source bucket must be in the same region of your destination bucket.  
@@ -34,8 +46,8 @@ In addition, see the following storage provider specific instructions:
 </ul>
 <div markdown="1" id="aws-s3">
 
-### AWS S3: Importing from public buckets
-{: .no_toc }
+
+#### AWS S3: Importing from public buckets
 
 lakeFS needs access to the imported location to first list the files to import and later read the files upon users request.
 
@@ -78,8 +90,7 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 <div markdown="1" id="azure-storage">
 See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
-### Azure Data Lake Gen2
-{: .no_toc }
+#### Azure Data Lake Gen2
 
 lakeFS requires a hint in the import source URL to understand that the provided storage account is ADLS Gen2
 
@@ -109,14 +120,15 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
    ![img.png](../assets/img/UI-Import-Dialog.png)
 
 2. Under _Import from_, fill in the location on your object store you would like to import from.
-3. Fill in the import destination in lakeFS and a commit message.
+3. Fill in the import destination in lakeFS 
+4. Add a commit message, and optionally metadata.
+5. Press _Import_
 
-Once the import is complete, you can merge the changes from the import branch to the source branch.
+Once the import is complete, the changes are merged into the destination branch.
 
 #### Notes
-{: .no_toc }
 
-* On the first import to a branch, a dedicated branch named `_<branch_name>_imported` will be created. lakeFS will import all objects to this branch under the given prefix.
+* Import uses the `src-wins` merge strategy. Therefore - import of existing objects nad prefixes in destination will override them.
 * The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
 ### _lakectl import_
@@ -154,63 +166,6 @@ lakectl import \
 ```
 </div>
 </div>
-
-The imported objects will be committed to the `_my-branch_imported`, creating it if it doesn't exists.
-Using the `--merge` flag will merge `_my-branch_imported` to `my-branch` after a successful import.
-
-### _lakectl ingest_
-
-Prerequisite: have [lakectl](/reference/cli.html) installed.
-
-The _ingest_ command adds the objects to lakeFS by listing them on the client side.
-The added objects will appear as uncommitted changes.
-
-The user calling `lakectl ingest` needs to have permissions to list the objects in the source object store.
-{: .note }
-
-<div class="tabs">
-<ul>
-  <li><a href="#ingest-tabs-1">AWS S3 or S3 API Compatible storage</a></li>
-  <li><a href="#ingest-tabs-2">Azure Blob</a></li>
-  <li><a href="#ingest-tabs-3">Google Cloud Storage</a></li>
-</ul>
-<div markdown="1" id="ingest-tabs-1">
-```shell
-lakectl ingest \
-  --from s3://bucket/optional/prefix/ \
-  --to lakefs://my-repo/ingest-branch/optional/path/
-```
-
-The `lakectl ingest` command will attempt to use the current user's existing credentials and respect instance profiles,
-environment variables, and credential files ([similarly to AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html){: target="_blank" })
-Specify an endpoint to ingest from other S3 compatible storage solutions, e.g., add `--s3-endpoint-url https://play.min.io`.
-</div>
-<div markdown="1" id="ingest-tabs-2">
-```shell
-export AZURE_STORAGE_ACCOUNT="storageAccountName"
-export AZURE_STORAGE_ACCESS_KEY="EXAMPLEroozoo2gaec9fooTieWah6Oshai5Sheofievohthapob0aidee5Shaekahw7loo1aishoonuuquahr3=="
-lakectl ingest \
-   --from https://storageAccountName.blob.core.windows.net/container/optional/prefix/ \
-   --to lakefs://my-repo/ingest-branch/optional/path/
-```
-
-The `lakectl ingest` command currently supports storage accounts configured through environment variables as shown above.
-
-**Note:** Currently, `lakectl import` supports the `http://` and `https://` schemes for Azure storage URIs. `wasb`, `abfs` or `adls` are currently not supported.
-{: .note }
-</div>
-<div markdown="1" id="ingest-tabs-3">
-```shell
-export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcs_credentials.json"  # Optional, will fallback to the default configured credentials
-lakectl ingest \
-   --from gs://bucket/optional/prefix/ \
-   --to lakefs://my-repo/ingest-branch/optional/path/
-```
-
-The `lakectl ingest` command currently supports the standard `GOOGLE_APPLICATION_CREDENTIALS` environment variable [as described in Google Cloud's documentation](https://cloud.google.com/docs/authentication/getting-started).
-</div>
-</div>
-
 
 ### Limitations
 

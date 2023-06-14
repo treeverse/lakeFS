@@ -3,6 +3,10 @@ on:
   release:
     types: [released]
   workflow_dispatch:
+    inputs:
+      tag:
+        required: false
+        description: Tag/version to publish
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
@@ -31,7 +35,12 @@ jobs:
 
       - name: Extract version
         shell: bash
-        run: echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//g)" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event.inputs.tag }}" != "" ]; then
+            echo "tag=$(echo ${{ github.event.inputs.tag }} | sed s/^v//)" >> $GITHUB_OUTPUT
+          else
+            echo "tag=$(echo ${GITHUB_REF##*/} | sed s/^v//)" >> $GITHUB_OUTPUT
+          fi
         id: version
 
       - name: Generate code
@@ -43,7 +52,7 @@ jobs:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -92,20 +101,15 @@ jobs:
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
 
-      - name: Determine if version is a production release
-        id: check_version
-        run: |
-          if [[ ${{ steps.version.outputs.tag }} =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            echo "is_valid=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_valid=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Dispatch lakeFS release trigger for Playground
-        uses: peter-evans/repository-dispatch@v2
-        if: ${{ steps.check_version.outputs.is_valid == 'true' }}
+      - name: Build and push lakefs-duckdb
+        uses: docker/build-push-action@v3
         with:
-          token: ${{ secrets.GH_TOKEN_DISPATCH_EVENT }}
-          repository: ${{ secrets.REPOSITORY_NAME }}
-          event-type: lakefs-image-release
-          client-payload: '{"ref":"main", "inputs": { "lakefs_image": "${{ steps.version.outputs.tag }}" }}'
+          context: .
+          file: Dockerfile.duckdb
+          push: true
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          build-args: LAKEFS_RELEASE_TAG=${{ steps.version.outputs.tag }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}-duckdb
+            treeverse/lakefs:${{ steps.version.outputs.tag }}-duckdb
+            treeverse/lakefs:latest-duckdb

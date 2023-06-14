@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
@@ -23,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -34,12 +33,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
+	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -57,15 +58,13 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to "external" without setting an external auth service`)
+var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
 
 func checkAuthModeSupport(cfg *config.Config) error {
-	switch {
-	case !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI():
+	if !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI() {
 		return errSimplifiedOrExternalAuth
-	default:
-		return nil
 	}
+	return nil
 }
 
 var runCmd = &cobra.Command{
@@ -132,9 +131,12 @@ var runCmd = &cobra.Command{
 			}
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
-				cfg.Auth.API.Token,
+				cfg.Auth.API.Token.SecureValue(),
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-				cfg.Auth.Cache, nil, apiEmailer)
+				authparams.ServiceCache(cfg.Auth.Cache),
+				apiEmailer,
+				logger.WithField("service", "auth_api"),
+			)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
@@ -143,7 +145,7 @@ var runCmd = &cobra.Command{
 				kvStore,
 				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
 				emailer,
-				cfg.Auth.Cache,
+				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
 		}
@@ -215,8 +217,6 @@ var runCmd = &cobra.Command{
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 
-		controllerAuthenticator := append(middlewareAuthenticator, auth.NewEmailAuthenticator(authService))
-
 		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(cfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
 		if !version.IsVersionUnreleased() {
@@ -242,7 +242,6 @@ var runCmd = &cobra.Command{
 			cfg,
 			c,
 			middlewareAuthenticator,
-			controllerAuthenticator,
 			authService,
 			blockStore,
 			authMetadataManager,
@@ -277,6 +276,18 @@ var runCmd = &cobra.Command{
 			}
 		}
 
+		// setup authenticator for s3 gateway to also support swagger auth
+		apiAuthenticator, err := api.GenericAuthMiddleware(
+			logger.WithField("service", "s3_gateway"),
+			middlewareAuthenticator,
+			authService,
+			&cfg.Auth.OIDC,
+			&cfg.Auth.CookieAuthVerification,
+		)
+		if err != nil {
+			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
+		}
+
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.Gateways.S3.Region,
 			c,
@@ -290,6 +301,7 @@ var runCmd = &cobra.Command{
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
 		)
+		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
 		bufferedCollector.Start(ctx)
 		defer bufferedCollector.Close()
@@ -317,7 +329,13 @@ var runCmd = &cobra.Command{
 		actionsService.SetEndpoint(server)
 
 		go func() {
-			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			var err error
+			if cfg.TLS.Enabled {
+				err = server.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+			} else {
+				err = server.ListenAndServe()
+			}
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				_, _ = fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", cfg.ListenAddress, err)
 				os.Exit(1)
 			}
@@ -381,18 +399,15 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 	}
 	job1.SingletonMode()
 
-	// delete expired tracked physical addresses
-	const (
-		deleteTrackedLowerTimeMin = 50
-		deleteTrackedUpperTimeMin = 70
-	)
-	job2, err := s.EveryRandom(deleteTrackedLowerTimeMin, deleteTrackedUpperTimeMin).Minute().Do(func() {
-		c.DeleteTrackedPhysicalAddresses(ctx)
+	// delete expired imports
+	job2, err := s.Every(ref.ImportExpiryTime).Do(func() {
+		c.DeleteExpiredImports(ctx)
 	})
 	if err != nil {
 		return err
 	}
 	job2.SingletonMode()
+
 	return nil
 }
 
@@ -448,7 +463,7 @@ const runBanner = `
 
 │
 │ For more information on how to use lakeFS,
-│     check out the docs at https://docs.lakefs.io/quickstart/repository
+│     check out the docs at https://docs.lakefs.io/quickstart/
 │
 
 │

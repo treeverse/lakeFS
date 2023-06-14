@@ -13,41 +13,40 @@ import (
 )
 
 // Test Admin permissions: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
-func TestAdminPermissionss(t *testing.T) {
+func TestAdminPermissions(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	adminClient := client
 
 	// creating new group should succeed
-	gid := "TestGroup"
-	resCreateGroup, err := adminClient.CreateGroupWithResponse(ctx, api.CreateGroupJSONRequestBody{
+	const gid = "TestGroup"
+	resCreateGroup, err := client.CreateGroupWithResponse(ctx, api.CreateGroupJSONRequestBody{
 		Id: gid,
 	})
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
 	// setting a group ACL should succeed
-	resSetACL, err := adminClient.SetGroupACLWithResponse(ctx, gid, api.SetGroupACLJSONRequestBody{
+	resSetACL, err := client.SetGroupACLWithResponse(ctx, gid, api.SetGroupACLJSONRequestBody{
 		Permission: "Write",
 	})
 	require.NoError(t, err, "Admin failed while setting group ACL")
 	require.Equal(t, http.StatusCreated, resSetACL.StatusCode(), "Admin unexpectedly failed to set group ACL")
 
 	// creating a new user should succeed
-	uid := "test-user"
-	resCreateUser, err := adminClient.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
+	const uid = "test-user"
+	resCreateUser, err := client.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
 		Id: uid,
 	})
 	require.NoError(t, err, "Admin failed while creating user")
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
 
 	// adding group to user should succeed
-	resAddGroup, err := adminClient.AddGroupMembershipWithResponse(ctx, gid, uid)
+	resAddGroup, err := client.AddGroupMembershipWithResponse(ctx, gid, uid)
 	require.NoError(t, err, "Admin failed while adding the group membership to the user")
 	require.Equal(t, http.StatusCreated, resAddGroup.StatusCode(), "Admin unexpectedly failed to add the group membership to the user")
 
 	// deleting the user should succeed
-	resDeleteUser, err := adminClient.DeleteUserWithResponse(ctx, uid)
+	resDeleteUser, err := client.DeleteUserWithResponse(ctx, uid)
 	require.NoError(t, err, "Admin failed while deleting the user")
 	require.Equal(t, http.StatusNoContent, resDeleteUser.StatusCode(), "Admin unexpectedly failed to delete the user")
 }
@@ -57,7 +56,7 @@ func TestSuperPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 
 	// generate the Super client
-	superClient := newClientFromGroup(t, ctx, logger, "Supers")
+	superClient := newClientFromGroup(t, ctx, logger, "super", []string{"Supers", "SuperUsers"})
 
 	// listing the available branches should succeed
 	resListBranches, err := superClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -106,7 +105,7 @@ func TestWriterPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 
 	// generate the Writer client
-	writerClient := newClientFromGroup(t, ctx, logger, "Writers")
+	writerClient := newClientFromGroup(t, ctx, logger, "writer", []string{"Writers", "Developers"})
 
 	// listing the available branches should succeed
 	resListBranches, err := writerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -150,7 +149,7 @@ func TestReaderPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 
 	// generate the reader client
-	readerClient := newClientFromGroup(t, ctx, logger, "Readers")
+	readerClient := newClientFromGroup(t, ctx, logger, "reader", []string{"Readers", "Viewers"})
 
 	// listing the available branches should succeed
 	resListBranches, err := readerClient.ListBranchesWithResponse(ctx, repo, &api.ListBranchesParams{})
@@ -165,7 +164,7 @@ func TestReaderPermissions(t *testing.T) {
 	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Reader unexpectedly failed to read branch commit")
 
 	// attempting to create a branch should be unauthorized
-	branch1 := "feature-1"
+	const branch1 = "feature-1"
 	resAddBranch, err := readerClient.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
 		Name:   branch1,
 		Source: mainBranch,
@@ -180,28 +179,30 @@ func TestReaderPermissions(t *testing.T) {
 }
 
 // Creates a client with a user of the given group
-func newClientFromGroup(t *testing.T, context context.Context, logger logging.Logger, groupId string) *api.ClientWithResponses {
-	userId := "test-user-" + groupId
+func newClientFromGroup(t *testing.T, context context.Context, logger logging.Logger, id string, groupIDs []string) *api.ClientWithResponses {
 	endpointURL := testutil.ParseEndpointURL(logger, viper.GetString("endpoint_url")) // defined in setup.go
 
-	adminClient := client
-	_, err := adminClient.CreateUserWithResponse(context, api.CreateUserJSONRequestBody{
-		Id: userId,
+	userID := "test-user-" + id
+	_, err := client.CreateUserWithResponse(context, api.CreateUserJSONRequestBody{
+		Id: userID,
 	})
-	require.NoError(t, err, "Failed to create user "+userId)
+	require.NoErrorf(t, err, "Failed to create user %s", userID)
 
-	_, err = adminClient.AddGroupMembershipWithResponse(context, groupId, userId)
-	require.NoError(t, err, "Failed to add group "+groupId+" to user "+userId)
+	addGroupStatusCodes := make([]int, len(groupIDs))
+	for i, groupID := range groupIDs {
+		resp, err := client.AddGroupMembershipWithResponse(context, groupID, userID)
+		require.NoErrorf(t, err, "Failed to add group %s to user %s", groupID, userID)
+		addGroupStatusCodes[i] = resp.StatusCode()
+	}
+	require.Containsf(t, addGroupStatusCodes, http.StatusCreated, "Failed to add group membership to user %s", userID)
 
 	// give the user access credentials
-	r, err := adminClient.CreateCredentialsWithResponse(context, userId)
-	require.NoError(t, err, "Failed to create credentials for user "+userId)
-	require.Equal(t, http.StatusCreated, r.StatusCode(), "Failed to create credentials for user "+userId)
-
-	readerCredentials := r.JSON201
+	r, err := client.CreateCredentialsWithResponse(context, userID)
+	require.NoErrorf(t, err, "Failed to create credentials for user %s", userID)
+	require.Equalf(t, http.StatusCreated, r.StatusCode(), "Failed to create credentials for user %s", userID)
 
 	// create the new client
-	cli, err := testutil.NewClientFromCreds(logger, readerCredentials.AccessKeyId, readerCredentials.SecretAccessKey, endpointURL)
+	cli, err := testutil.NewClientFromCreds(logger, r.JSON201.AccessKeyId, r.JSON201.SecretAccessKey, endpointURL)
 	require.NoError(t, err, "failed to initialize client with group")
 
 	return cli

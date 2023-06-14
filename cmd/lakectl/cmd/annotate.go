@@ -30,6 +30,7 @@ var annotateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
+		firstParent, _ := cmd.Flags().GetBool("first-parent")
 		client := getClient()
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
@@ -57,8 +58,9 @@ var annotateCmd = &cobra.Command{
 			}
 			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
-					Amount: api.PaginationAmountPtr(1),
-					Limit:  &limit,
+					Amount:      api.PaginationAmountPtr(1),
+					Limit:       &limit,
+					FirstParent: &firstParent,
 				}
 				if recursive {
 					logCommitsParams.Objects = &[]string{obj.Path}
@@ -104,4 +106,5 @@ func init() {
 	rootCmd.AddCommand(annotateCmd)
 
 	annotateCmd.Flags().BoolP("recursive", "r", false, "recursively annotate all entries under a given path or prefix")
+	annotateCmd.Flags().Bool("first-parent", false, "follow only the first parent commit upon seeing a merge commit")
 }

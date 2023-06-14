@@ -14,7 +14,6 @@ next:  ["Import data into your installation", "../howto/import.html"]
 ---
 
 # Deploy lakeFS on AWS
-{: .no_toc }
 
 
 ⏰ Expected deployment time: 25 min
@@ -104,7 +103,6 @@ Connect to your EC2 instance using SSH:
 {: .note }
 
 ### Advanced: Deploying lakeFS behind an AWS Application Load Balancer
-{: .no_toc }
 
 1. Your security groups should allow the load balancer to access the lakeFS server.
 1. Create a target group with a listener for port 8000.
@@ -152,7 +150,6 @@ If you can't provide such access, configure lakeFS with an AWS key-pair.
 {: .note .note-warning }
 
 ### Load balancing
-{: .no_toc }
 
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.

@@ -16,11 +16,11 @@ import {branches} from "../../../lib/api";
 import {
     ActionGroup,
     ActionsBar, ClipboardButton,
-    Error, LinkButton,
+    AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
-import {RefContextProvider, useRefs} from "../../../lib/hooks/repo";
+import {useRefs} from "../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {Paginator} from "../../../lib/components/pagination";
 import Modal from "react-bootstrap/Modal";
@@ -182,7 +182,7 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
                         </Form.Group>
                     </Form>
 
-                    {!!error && <Error error={error}/>}
+                    {!!error && <AlertError error={error}/>}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={disabled} onClick={hide}>
@@ -211,7 +211,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
     let content;
 
     if (loading) content = <Loading/>;
-    else if (error) content = <Error error={error}/>;
+    else if (error) content = <AlertError error={error}/>;
     else content = (
         <>
             <Card>
@@ -279,11 +279,9 @@ const BranchesContainer = () => {
 
 const RepositoryBranchesPage = () => {
     return (
-        <RefContextProvider>
             <RepositoryPageLayout activePage={'branches'}>
                 <BranchesContainer/>
             </RepositoryPageLayout>
-        </RefContextProvider>
     )
 }
 

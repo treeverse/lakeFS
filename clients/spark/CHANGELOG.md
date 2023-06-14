@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.8.1 - 2023-05-22
+
+Bug fixes:
+* Read previous run ID in case of a sweep-only run (#5963)
+* Perform run ID logging only after sweep completed successfully (#5963) 
+
+## v0.8.0 - 2023-05-18
+
+What's new:
+* Incremental committed GC implementation - supported starting from lakeFS 0.100.0
+
+## v0.7.3 - 2023-05-07
+
+Bug fixes:
+* Fix uncommitted gc to handle no uncommitted location (#5817)
+
+## v0.7.2 - 2023-05-02
+
+Bug fixes:
+* Fix uncommitted garbage collection bulk remove out of disk space (#5776)
+
+## v0.7.1 - 2023-04-24
+
+=== Performance improvements===
+
+No user-visible parts inside, but some parameters...
+
+Deletion now retries S3 deleteObjects, a **lot**.  Parameters
+`lakefs.gc.s3.min_backoff_secs`, `lakefs.gc.s3.max_backoff_secs` control how
+long it will try.
+
 ## v0.7.0 - 2023-03-13
 
 === Performance improvements===

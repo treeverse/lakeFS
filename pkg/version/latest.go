@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 	goversion "github.com/hashicorp/go-version"
 )
 
@@ -97,10 +97,10 @@ func CheckLatestVersion(targetVersion string) (*LatestVersionResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tag parse %s: %w", targetVersion, err)
 	}
-
+	// if the target version is unreleased, we don't want to show it as outdated
 	if IsVersionUnreleased() {
 		return &LatestVersionResponse{
-			Outdated:       true,
+			Outdated:       false,
 			LatestVersion:  targetV.String(),
 			CurrentVersion: Version,
 		}, nil

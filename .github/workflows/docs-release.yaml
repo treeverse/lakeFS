@@ -17,10 +17,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@v1.79.0
+        uses: ruby/setup-ruby@v1
         with:
           working-directory: docs
-          ruby-version: 2.6
+          ruby-version: '2.7'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
       - name: Extract version
@@ -44,14 +44,12 @@ jobs:
             curl -s https://${API_TOKEN_GITHUB}@raw.githubusercontent.com/treeverse/docs-lakeFS/main/versions.json |
             jq '."${{ steps.version.outputs.tag}}" = "${{ steps.version.outputs.tag}}"' > docs/_site/versions.json
 
-      - name: Publish to docs repository
-        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+      - name: Publish to lakeFS-docs repository
         env:
-          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
-        with:
-          source_file: docs/_site/.
-          destination_repo: treeverse/docs-lakeFS
-          destination_folder: /
-          user_email: 'support@treeverse.io'
-          user_name: 'nopcoder'
-
+          SSH_DEPLOY_KEY: '${{ secrets.SSH_LAKEFS_DOCS_DEPLOY_KEY }}'
+          SOURCE_DIRECTORY: 'docs/_site/'
+          GIT_CMD_REPOSITORY: 'git@github.com:treeverse/docs-lakeFS.git'
+          USER_EMAIL: 'support@treeverse.io'
+          USER_NAME: 'docs-action'
+        shell: bash
+        run: ./.github/scripts/push-repo.sh

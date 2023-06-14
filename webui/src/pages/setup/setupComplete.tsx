@@ -45,7 +45,7 @@ server:
     return (
         <>
         <Row>
-            <Col md={{offset: 4, span: 4}}>
+            <Col md={{offset: 3, span: 6}}>
                 <Card className="setup-widget">
                     <Card.Body className="after-setup-card">
                         <h2>You&apos;re all set!</h2>
@@ -53,12 +53,12 @@ server:
                             Here are your credentials:<br/>
                         </Card.Text>
                         <div className="ms-2 row mt-4">
-                            <div className="col-3">Access Key ID:</div>
-                            <div className="col-7"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={accessKeyId} tooltip="Copy"/></div>
+                            <div className="col-4">Access Key ID:</div>
+                            <div className="col-8"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={accessKeyId} tooltip="Copy"/></div>
                         </div>
                         <div className="ms-2 row mt-2">
-                            <div className="col-3">Secret Access Key:</div>
-                            <div className="col-7"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={secretAccessKey} tooltip="Copy"/></div>
+                            <div className="col-4">Secret Access Key:</div>
+                            <div className="col-8"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={secretAccessKey} tooltip="Copy"/></div>
                         </div>
                         <Alert className="mt-4" variant="warning">
                             This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
@@ -73,7 +73,7 @@ server:
                         <h5>lakectl</h5>
                         <div className="ms-2 mt-2">
                             <a target="_blank" rel="noreferrer" 
-                               href="https://docs.lakefs.io/reference/commands.html">lakectl</a> is a CLI tool for working with lakeFS.
+                               href="https://docs.lakefs.io/reference/cli.html">lakectl</a> is a CLI tool for working with lakeFS.
                             <p className="mt-2">
                             Download lakectl as part of the <a target="_blank" rel="noreferrer" href="https://github.com/treeverse/lakeFS/releases">lakeFS release package</a> and save the above credentials file as <code>~/.lakectl.yaml</code>.
                             </p>

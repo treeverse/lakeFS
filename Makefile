@@ -43,6 +43,7 @@ UI_BUILD_DIR=$(UI_DIR)/dist
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
+DOCKER_WITH_DUCKDB_TAG=$(DOCKER_TAG)-duckdb
 VERSION=dev
 export VERSION
 
@@ -84,6 +85,17 @@ docs: docs/assets/js/swagger.yml
 
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
+
+docs-serve-docker: ### Serve local docs from Docker
+	docker run --rm \
+			--name lakefs_docs \
+			-e TZ="Etc/UTC" \
+			--publish 4000:4000 --publish 35729:35729 \
+			--volume="$$PWD/docs:/srv/jekyll:Z" \
+			--volume="$$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
+			--interactive --tty \
+			jekyll/jekyll:3.8 \
+			jekyll serve --livereload
 
 gen-docs: ## Generate CLI docs automatically
 	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/cli.md
@@ -182,7 +194,8 @@ system-tests: # Run system tests locally
 	./esti/scripts/runner.sh -r all
 
 build-docker: build ## Build Docker image file (Docker required)
-	$(DOCKER) buildx build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) buildx build --target lakefs-plugins -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) buildx build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_WITH_DUCKDB_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
@@ -269,9 +282,6 @@ help:  ## Show Help menu
 # helpers
 gen: gen-ui gen-api clients gen-docs
 
-delta-plugin: validate-cargo
+delta-plugin: ## Build delta plugin
 	cargo clean --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
 	cargo build --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
-
-validate-cargo:
-	$(or $(shell which cargo), $(error "Missing dependency - no cargo in PATH"))

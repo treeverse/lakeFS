@@ -9,6 +9,7 @@ import (
 
 // Define errors we raise from this package - do not convert underlying errors, optionally wrap if needed to consolidate
 var (
+	ErrUnknownDiffType          = errors.New("unknown graveler difference type")
 	ErrPathRequiredValue        = fmt.Errorf("missing path: %w", graveler.ErrRequiredValue)
 	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata src format")
 	ErrExpired                  = errors.New("expired from storage")

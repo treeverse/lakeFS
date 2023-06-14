@@ -8,18 +8,17 @@ has_children: false
 
 ---
 # Using lakeFS with Kubeflow pipelines
-{: .no_toc }
 [Kubeflow](https://www.kubeflow.org/docs/about/kubeflow/) is a project dedicated to making deployments of ML workflows on Kubernetes simple, portable, and scalable.
 A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kubeflow-pipelines.readthedocs.io/en/stable/source/kfp.dsl.html#kfp.dsl.ContainerOp).
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 
 ## Add pipeline steps for lakeFS operations
 
 To integrate lakeFS into your Kubeflow pipeline, you need to create Kubeflow components that perform lakeFS operations.
 Currently, there are two methods to create lakeFS ContainerOps:
-1. Implement a function-based ContainerOp that uses lakeFS's Python API to invoke lakeFS operations.
+1. Implement a function-based ContainerOp that uses the lakeFS Python API to invoke lakeFS operations.
 1. Implement a ContainerOp that uses the `lakectl` CLI docker image to invoke lakeFS operations.
 
 ### Function-based ContainerOps
@@ -28,7 +27,6 @@ To implement a [function-based component](https://www.kubeflow.org/docs/componen
 you should use the [Python OpenAPI client](python.md) lakeFS provides. See the example below that demonstrates how to make the client's package available to your ContainerOp.
 
 #### Example operations
-{: .no_toc }
 
 Create a new branch: A function-based ContainerOp that creates a branch called `example-branch` based on the `main` branch of `example-repo`.
 
@@ -70,7 +68,6 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
 * `LAKECTL_SERVER_ENDPOINT_URL: https://lakefs.example.com`
 
 #### Example operations
-{: .no_toc }
 
 1. Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
 
@@ -106,7 +103,6 @@ The lakeFS Kubeflow integration that uses `lakectl` is supported on lakeFS versi
 Add the steps created in the previous step to your pipeline before compiling it.
 
 ### Example pipeline
-{: .no_toc }
 
 A pipeline that implements a simple ETL that has steps for branch creation and commits.
 

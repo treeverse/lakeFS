@@ -62,38 +62,34 @@ func MustMarshalValue(v *graveler.Value) []byte {
 	return val
 }
 
-func getBytes(b *[]byte) ([]byte, error) {
-	l, o := binary.Varint(*b)
+// splitBytes splits a given byte slice into two: the first part defined by the interpreted length (provided in the
+// slice), and the second part is the remainder of bytes from the slice
+func splitBytes(b []byte) ([]byte, []byte, error) {
+	l, o := binary.Varint(b)
 	if o < 0 {
-		return nil, fmt.Errorf("read length: %w", ErrBadValueBytes)
+		return nil, nil, fmt.Errorf("read length: %w", ErrBadValueBytes)
 	}
-	*b = (*b)[o:]
-	if len(*b) < int(l) {
-		return nil, fmt.Errorf("not enough bytes to read %d bytes: %w", l, ErrBadValueBytes)
+	remainedBuf := b[o:]
+	if len(remainedBuf) < int(l) {
+		return nil, nil, fmt.Errorf("not enough bytes to read %d bytes: %w", l, ErrBadValueBytes)
 	}
 	if l < 0 {
-		return nil, fmt.Errorf("impossible negative length %d: %w", l, ErrBadValueBytes)
+		return nil, nil, fmt.Errorf("impossible negative length %d: %w", l, ErrBadValueBytes)
 	}
-	ret := make([]byte, l)
-	copy(ret, (*b)[:l])
-	*b = (*b)[l:]
-	return ret, nil
+	value := remainedBuf[:l]
+	rest := remainedBuf[l:]
+	return value, rest, nil
 }
 
 func UnmarshalValue(b []byte) (*graveler.Value, error) {
 	ret := &graveler.Value{}
 	var err error
-	if ret.Identity, err = getBytes(&b); err != nil {
+	data := b
+	if ret.Identity, data, err = splitBytes(data); err != nil {
 		return nil, fmt.Errorf("identity field: %w", err)
 	}
-	if ret.Data, err = getBytes(&b); err != nil {
+	if ret.Data, _, err = splitBytes(data); err != nil {
 		return nil, fmt.Errorf("data field: %w", err)
 	}
 	return ret, nil
-}
-
-// UnmarshalIdentity returns *only* the Identity field encoded by b.  It does not even examine
-// any bytes beyond the prefix of b holding Identity.
-func UnmarshalIdentity(b []byte) ([]byte, error) {
-	return getBytes(&b)
 }

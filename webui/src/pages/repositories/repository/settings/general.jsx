@@ -1,13 +1,13 @@
 import React, {useRef, useState} from "react";
 
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import {TrashIcon} from "@primer/octicons-react";
 import Col from "react-bootstrap/Col";
-import {Error, Loading} from "../../../../lib/components/controls";
+import {AlertError, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
 import {repositories} from "../../../../lib/api";
 import {useRouter} from "../../../../lib/hooks/router";
@@ -60,8 +60,8 @@ const SettingsContainer = () => {
     const [ deletionError, setDeletionError ] = useState(null);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
-    if (deletionError) return <Error error={deletionError}/>;
+    if (error) return <AlertError error={error}/>;
+    if (deletionError) return <AlertError error={deletionError}/>;
 
     return (
         <div className="mt-3 mb-5">
@@ -120,13 +120,11 @@ const SettingsContainer = () => {
 
 const RepositoryGeneralSettingsPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'settings'}>
-                <SettingsLayout activeTab={"general"}>
-                    <SettingsContainer/>
-                </SettingsLayout>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"general"}>
+                <SettingsContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
     )
 }
 

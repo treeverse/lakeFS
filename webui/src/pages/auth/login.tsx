@@ -6,7 +6,7 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
-import {Error} from "../../lib/components/controls"
+import {AlertError} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 
@@ -60,7 +60,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                                 <Form.Control type="password" placeholder={passwordPlaceholder}/>
                             </Form.Group>
 
-                            {(!!loginError) && <Error error={loginError}/>}
+                            {(!!loginError) && <AlertError error={loginError}/>}
 
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>

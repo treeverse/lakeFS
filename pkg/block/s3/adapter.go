@@ -132,7 +132,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
-	// for unknown size we assume we like to stream content, will use s3manager to perform the request.
+	// for unknown size, we assume we like to stream content, will use s3manager to perform the request.
 	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
 	if sizeBytes == -1 {
 		return a.managerUpload(ctx, obj, reader, opts)
@@ -575,9 +575,9 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, err
 	}
-	uploadID := *resp.UploadId
+	uploadID := aws.StringValue(resp.UploadId)
 	a.log(ctx).WithFields(logging.Fields{
-		"upload_id":     *resp.UploadId,
+		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
 		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
@@ -603,13 +603,18 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	_, err = client.AbortMultipartUploadWithContext(ctx, input)
-	a.log(ctx).WithFields(logging.Fields{
+	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
 		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
-	}).Debug("aborted multipart upload")
-	return err
+	})
+	if err != nil {
+		lg.Error("Failed to abort multipart upload")
+		return err
+	}
+	lg.Debug("aborted multipart upload")
+	return nil
 }
 
 func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUploadCompletion) *s3.CompletedMultipartUpload {

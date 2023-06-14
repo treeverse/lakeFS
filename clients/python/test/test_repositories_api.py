@@ -30,6 +30,12 @@ class TestRepositoriesApi(unittest.TestCase):
         """
         pass
 
+    def test_create_branch_protection_rule_preflight(self):
+        """Test case for create_branch_protection_rule_preflight
+
+        """
+        pass
+
     def test_create_repository(self):
         """Test case for create_repository
 

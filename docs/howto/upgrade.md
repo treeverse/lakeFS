@@ -11,7 +11,6 @@ redirect_from:
 ---
 
 # Upgrading lakeFS
-{: .no_toc }
 
 Note: For a fully managed lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
@@ -20,6 +19,12 @@ Upgrading lakeFS from a previous version usually just requires re-deploying with
 If you're upgrading, check whether the [release](https://github.com/treeverse/lakeFS/releases) requires a migration.
 
 ## When DB migrations are required
+
+### lakeFS 0.103.0 or greater
+
+Version 0.103.0 added support for rolling KV upgrade. This means that users who already migrated to the KV ref-store (versions 0.80.0 and above) no longer have to pass through specific versions for migration.
+This includes [ACL migration](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) which was introduced in lakeFS version 0.98.0.
+Running `lakefs migrate up` on the latest lakeFS version will perform all the necessary migrations up to that point.
 
 ### lakeFS 0.80.0 or greater (KV Migration)
 

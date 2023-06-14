@@ -13,9 +13,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
@@ -1167,6 +1170,7 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 type APIAuthService struct {
 	apiClient              ClientWithResponsesInterface
 	secretStore            crypt.SecretStore
+	logger                 logging.Logger
 	cache                  Cache
 	delegatedInviteHandler *EmailInviteHandler
 }
@@ -1181,6 +1185,7 @@ func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
 		Username: email,
 	})
 	if err != nil {
+		a.logger.WithError(err).Error("failed to create user")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
@@ -1207,6 +1212,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (stri
 		ExternalId:   user.ExternalID,
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("username", user.Username).Error("failed to create user")
 		return InvalidUserID, err
 	}
 	if err := a.validateResponse(resp, http.StatusCreated); err != nil {
@@ -1219,6 +1225,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (stri
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
 	resp, err := a.apiClient.DeleteUserWithResponse(ctx, username)
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to delete user")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1231,19 +1238,28 @@ func userIDToInt(userID string) (int64, error) {
 
 func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
+		// fetch at least two users to make sure we don't have duplicates
+		if params.Amount == nil {
+			const amount = 2
+			params.Amount = paginationAmount(amount)
+		}
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
+			a.logger.WithError(err).Error("failed to list users")
 			return nil, err
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, ErrInvalidResponse
 		}
 		results := resp.JSON200.Results
 		if len(results) == 0 {
 			return nil, ErrNotFound
 		}
 		if len(results) > 1 {
-			// make sure we work with just one user based on email
+			// make sure we work with just one user based on 'params'
 			return nil, ErrNonUnique
 		}
 		u := results[0]
@@ -1270,6 +1286,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 	return a.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
+			a.logger.WithError(err).WithField("username", username).Error("failed to get user")
 			return nil, err
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1312,6 +1329,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 		Amount: &paginationAmount,
 	})
 	if err != nil {
+		a.logger.WithError(err).Error("failed to list users")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1340,6 +1358,7 @@ func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username str
 	}
 	resp, err := a.apiClient.UpdatePasswordWithResponse(ctx, username, UpdatePasswordJSONRequestBody{EncryptedPassword: encryptedPassword})
 	if err != nil {
+		a.logger.WithField("username", username).WithError(err).Error("failed to update password")
 		return err
 	}
 
@@ -1351,6 +1370,7 @@ func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) er
 		Id: group.DisplayName,
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("group", group).Error("failed to create group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
@@ -1394,6 +1414,7 @@ func paginationAmount(amount int) *PaginationAmount {
 func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
 	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupDisplayName)
 	if err != nil {
+		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to delete group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1402,6 +1423,7 @@ func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName strin
 func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
 	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupDisplayName)
 	if err != nil {
+		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to get group")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1420,6 +1442,7 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
+		a.logger.WithError(err).Error("failed to list groups")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1439,6 +1462,7 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
 	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupDisplayName, username)
 	if err != nil {
+		a.logger.WithError(err).WithField("group", groupDisplayName).WithField("username", username).Error("failed to add user to group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
@@ -1447,6 +1471,7 @@ func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisp
 func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
 	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupDisplayName, username)
 	if err != nil {
+		a.logger.WithError(err).WithField("group", groupDisplayName).WithField("username", username).Error("failed to remove user from group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1459,6 +1484,7 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to list user groups")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1481,6 +1507,7 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName st
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list group users")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1513,13 +1540,15 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	}
 	createdAt := policy.CreatedAt.Unix()
 
-	if update { // Update existing policy
+	if update {
+		// Update existing policy
 		resp, err := a.apiClient.UpdatePolicyWithResponse(ctx, policy.DisplayName, UpdatePolicyJSONRequestBody{
 			CreationDate: &createdAt,
 			Name:         policy.DisplayName,
 			Statement:    stmts,
 		})
 		if err != nil {
+			a.logger.WithError(err).WithField("policy", policy.DisplayName).Error("failed to update policy")
 			return err
 		}
 		return a.validateResponse(resp, http.StatusOK)
@@ -1531,6 +1560,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 		Statement:    stmts,
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("policy", policy.DisplayName).Error("failed to create policy")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
@@ -1559,6 +1589,7 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
 	resp, err := a.apiClient.GetPolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
+		a.logger.WithError(err).WithField("policy", policyDisplayName).Error("failed to get policy")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1571,6 +1602,7 @@ func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string
 func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
 	resp, err := a.apiClient.DeletePolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
+		a.logger.WithError(err).WithField("policy", policyDisplayName).Error("failed to delete policy")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1583,6 +1615,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
+		a.logger.WithError(err).Error("failed to list policies")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1599,6 +1632,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 func (a *APIAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	resp, err := a.apiClient.CreateCredentialsWithResponse(ctx, username, &CreateCredentialsParams{})
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to create credentials")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusCreated); err != nil {
@@ -1621,6 +1655,7 @@ func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKey
 		SecretKey: &secretAccessKey,
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to add credentials")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusCreated); err != nil {
@@ -1640,6 +1675,7 @@ func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKey
 func (a *APIAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
 	resp, err := a.apiClient.DeleteCredentialsWithResponse(ctx, username, accessKeyID)
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to delete credentials")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1648,6 +1684,7 @@ func (a *APIAuthService) DeleteCredentials(ctx context.Context, username, access
 func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
 	resp, err := a.apiClient.GetCredentialsForUserWithResponse(ctx, username, accessKeyID)
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to get credentials")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1667,16 +1704,23 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 	return a.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		resp, err := a.apiClient.GetCredentialsWithResponse(ctx, accessKeyID)
 		if err != nil {
+			a.logger.WithError(err).Error("failed to get credentials by access key id")
 			return nil, err
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
 		}
 		credentials := resp.JSON200
-		// TODO(Guys): return username instead of this call
-		user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
-		if err != nil {
-			return nil, err
+		if credentials == nil {
+			return nil, fmt.Errorf("get credentials api %w", ErrInvalidResponse)
+		}
+		username := aws.StringValue(credentials.UserName)
+		if username == "" {
+			user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
+			if err != nil {
+				return nil, err
+			}
+			username = user.Username
 		}
 		return &model.Credential{
 			BaseCredential: model.BaseCredential{
@@ -1685,7 +1729,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 				SecretAccessKeyEncryptedBytes: nil,
 				IssuedDate:                    time.Unix(credentials.CreationDate, 0),
 			},
-			Username: user.Username,
+			Username: username,
 		}, nil
 	})
 }
@@ -1697,6 +1741,7 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to list credentials")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1720,6 +1765,7 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
 	resp, err := a.apiClient.AttachPolicyToUserWithResponse(ctx, username, policyDisplayName)
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to attach policy to user")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
@@ -1728,6 +1774,7 @@ func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNa
 func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
 	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, username, policyDisplayName)
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to detach policy from user")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1741,6 +1788,7 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 		Effective: &effective,
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("username", username).Error("failed to list policies")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1795,6 +1843,9 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
 	if err != nil {
+		a.logger.WithError(err).
+			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupDisplayName}).
+			Error("failed to attach policy to group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
@@ -1803,6 +1854,9 @@ func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayN
 func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
 	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
 	if err != nil {
+		a.logger.WithError(err).
+			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupDisplayName}).
+			Error("failed to detach policy from group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1815,6 +1869,7 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
+		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list policies")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1856,6 +1911,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 		TokenId:   tokenID,
 	})
 	if err != nil {
+		a.logger.WithError(err).Error("failed to claim token id")
 		return err
 	}
 	if res.StatusCode() == http.StatusBadRequest {
@@ -1864,25 +1920,32 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, timeout *time.Duration, emailer *email.Emailer) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, emailer *email.Emailer, logger logging.Logger) (*APIAuthService, error) {
+	if token == "" {
+		// when no token is provided, generate one.
+		// communicate with auth service always uses a token
+		var err error
+		token, err = generateAuthAPIJWT(secretStore.SharedSecret())
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate auth api token: %w", err)
+		}
+	}
+
 	bearerToken, err := securityprovider.NewSecurityProviderBearerToken(token)
 	if err != nil {
 		return nil, err
 	}
 
 	httpClient := &http.Client{}
-	if timeout != nil {
-		httpClient.Timeout = *timeout
-	}
 	client, err := NewClientWithResponses(
 		apiEndpoint,
 		WithRequestEditorFn(bearerToken.Intercept),
 		WithHTTPClient(httpClient),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create auth api client: %w", err)
 	}
-	logging.Default().Info("initialized authorization service")
+	logger.Info("initialized authorization service")
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -1892,6 +1955,7 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 	res := &APIAuthService{
 		apiClient:   client,
 		secretStore: secretStore,
+		logger:      logger,
 		cache:       cache,
 	}
 	if emailer != nil {
@@ -1900,7 +1964,25 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 	return res, nil
 }
 
-func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache) (*APIAuthService, error) {
+// generateAuthAPIJWT generates a new auth api jwt token
+func generateAuthAPIJWT(secret []byte) (string, error) {
+	const tokenExprInYears = 10
+	now := time.Now()
+	exp := now.AddDate(tokenExprInYears, 0, 0)
+	id := xid.New().String()
+	claims := &jwt.RegisteredClaims{
+		ID:        id,
+		Audience:  jwt.ClaimStrings{"auth-client"},
+		Subject:   "_lakefs-internal",
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(exp),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	logging.Default().WithField("id", id).Info("generated auth api token")
+	return token.SignedString(secret)
+}
+
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -1911,5 +1993,6 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStor
 		apiClient:   client,
 		secretStore: secretStore,
 		cache:       cache,
+		logger:      logger,
 	}, nil
 }

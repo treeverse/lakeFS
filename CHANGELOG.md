@@ -2,6 +2,98 @@
 
 ## UNRELEASED
 
+## v0.103.0
+
+:new: What's new:
+- Add Azure Cosmos DB kvstore driver (#5915)
+- UI: Allow writing to lakeFS from duckdb-wasm (#6044)
+- Show object's user metadata in UI and CLI (#6050)
+
+:bug: Bugs fixed:
+- Fix gateway list bucket 1k limit (#6025)
+- Fix lakeFSFS non simple access mode with address translator (#6028)
+- Fix: Migration start version (#6039)
+
+## v0.102.2
+
+:bug: Bugs fixed:
+- Using not owned LazyValue after closing a reader (#6004)
+- Fix pre-signed URL UI config default and property name (#6014)
+
+## v0.102.1
+
+:bug: Bugs fixed:
+- Non-Blocking write to wakeup channel (#6007)
+
+## v0.102.0
+
+:new: What's new: 
+- Onboarding progress indicator - repository level (#5876)
+
+:bug: Bugs fixed:
+- Publish docker lakefs+duckdb with latest tag (#5993)
+- Fix import start permissions (#5996)
+
+## v0.101.1
+
+**This release eliminates the need to go through previous ACL migration versions (v0.98.0 and up)**
+Migrations can be perfomed from this version instead
+
+:new: What's new: 
+- Improved Import experience
+- UGC prepare configurable max file size and produce time (#5969)
+- Migrations: Revert remove ACL migration (#5942)
+- Merge API response - remove summary field (#5115)
+- Split and publish lakefs duckdb build and images (#5985)
+
+:bug: Bugs fixed:
+- GC: Read provided mark ID's run id in case that the run is a sweep-only run (#5936)
+- Avoid panics after errors in log-commits (#5956)
+- Fix extended stats user id report (#5970)
+- Fix branch truncation in object viewer (#5982)
+
+## v0.101.0
+
+**This release requires running database migration.**
+The lakeFS service will not run if the migration version isn't compatible with the binary.
+Before running the new version you will be required to run migrate, with the new version.
+
+:new: What's new: 
+- Refactor import (#5840)
+- Deprecate ingest command (#5882)
+- Support TLS for lakeFS local development (#5322)
+- Generate JWT while working with auth API when non is configured (#5894)
+- Remove email authenticator middleware (#5884)
+
+:bug: Bugs fixed:
+- Fix UI rename Error control to AlertError fixing conflict with class (#5907)
+- Fix loading metadata cache with path separator prefix (#5922)
+- Fix database setup for non-external mode (#5860)
+
+## v0.100.0
+
+:new: What's new:
+- Support `--first-parent` option for commit log (#5733)
+- Homebrew support as part of lakefs release (#5738)
+- [actions] Add conditional execution to hooks (#5707)
+- :wind_face: [UI] Display buttons to open (Airflow) metadata from UI (#5763)
+- [bagel] Add docker-compose-airflow (#5757)
+- :gift: Add Sample Repository with Quickstart option for new repositories (#5787)
+
+:bug: Bugs fixed:
+- [API] LinkPhysicalAddress twice should fail with status code 400 (#5727)
+- [UI] Add back the copy URI button + add cache-control header to GET objects (#5731)
+- [export] Fix lakeFS export docker image to use python 3.11 (#5755)
+- [S3gw] Fix s3 multipart upload abort (#5725)
+- [setup] Fix warning on ACL write group for ACL during setupFS (#5792)
+- [UI] Fix repository name while validating storage namespace (#5802)
+- [UI/setup] Require admin username in initial setup (#5818)
+- [lakectl] Validate fs upload path is not empty (#5819)
+- [lakectl] refs-dump output should be valid JSON (#5831)
+- [auth] Add metarange creation permissions to Developers and to Writers (#5833)
+- [UI] only show group ACL column in simplified mode (#5843)
+- [auth] Remove auth API pass and use username with credentials (#5838)
+
 ## v0.99.0
 
 This release requires running database migration.

@@ -1,21 +1,23 @@
 package io.treeverse.clients
 
-import scala.collection.JavaConverters._
-import org.scalatest._
-import org.scalatest.prop.TableDrivenPropertyChecks._
-import matchers.should._
-import funspec._
-
 import io.treeverse.lakefs.catalog
-
 import org.apache.commons.io.FileUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{Dataset, SparkSession}
-
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.SparkSession
 import org.json4s._
 import org.json4s.native.JsonMethods
+import org.scalatest._
+import org.scalatest.prop.TableDrivenPropertyChecks._
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import scala.collection.JavaConverters._
+
+import matchers.should._
+import funspec._
 
 trait TempDirectory {
   def withTempDirectory(testMethod: (Path) => Any) {
@@ -39,6 +41,11 @@ class ARangeGetter(
     if (repo != this.repo) {
       throw new Exception(s"Expected repo ${this.repo} but got ${repo}")
     }
+  }
+
+  def getRangeIDs(metaRangeURL: String): Iterator[String] = {
+    verifyRepo(repo)
+    commitRanges(StringUtils.substringAfterLast(metaRangeURL, "/mr-")).iterator
   }
 
   def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
@@ -81,7 +88,7 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
   }
 
   val getter = new ARangeGetter("repo",
-                                null,
+                                Map("c1" -> Seq("aaa", "bbb"), "c2" -> Seq("bbb")),
                                 Map("aaa" -> Seq("a1", "a2", "s3://some-ns/a3"),
                                     "bbb" -> Seq("b1", "b2", "b3"),
                                     "ab12" -> Seq("a1", "a2", "b1", "b2"),
@@ -273,6 +280,32 @@ class GarbageCollectorSpec extends AnyFunSpec with Matchers with SparkSessionSet
               compareDS(actualToDelete, expectedToDelete)
             }
           }
+        })
+      }
+    }
+
+    describe("getRangeIDsForCommits") {
+      it("should fetch ranges when commits don't include metarange ids") {
+        withSparkSession(spark => {
+          import spark.implicits._
+          val gc = new GarbageCollector(getter)
+          val commits = Seq(("c1", false), ("c2", true)).toDF
+          val expectedRanges = Seq(("aaa", false), ("bbb", false), ("bbb", true)).toDS
+          val actualRanges =
+            gc.getRangeIDsForCommits(commits, "repo", "s3://example-bucket/example-ns/")
+          compareDS(actualRanges, expectedRanges)
+        })
+      }
+
+      it("should fetch ranges when commits include metarange ids") {
+        withSparkSession(spark => {
+          import spark.implicits._
+          val gc = new GarbageCollector(getter)
+          val commits = Seq(("c1", false, "mr-c1"), ("c2", true, "mr-c2")).toDF
+          val expectedRanges = Seq(("aaa", false), ("bbb", false), ("bbb", true)).toDS
+          val actualRanges =
+            gc.getRangeIDsForCommits(commits, "repo", "s3://example-bucket/example-ns/")
+          compareDS(actualRanges, expectedRanges)
         })
       }
     }

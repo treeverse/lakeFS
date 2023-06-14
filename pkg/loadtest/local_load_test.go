@@ -90,7 +90,6 @@ func TestLocalLoad(t *testing.T) {
 		conf,
 		c,
 		authenticator,
-		authenticator,
 		authService,
 		blockAdapter,
 		meta,

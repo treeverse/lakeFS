@@ -1,8 +1,8 @@
 import React, {useState} from "react";
 
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
-import {Error, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
+import {AlertError, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
+import {useRefs} from "../../../../../lib/hooks/repo";
 import {useAPI} from "../../../../../lib/hooks/api";
 import {actions} from "../../../../../lib/api";
 import Row from "react-bootstrap/Row";
@@ -91,7 +91,7 @@ const HookLog = ({ repo, run, execution }) => {
         if (loading) {
             content = <pre>Loading...</pre>;
         } else if (error) {
-            content = <Error error={error}/>;
+            content = <AlertError error={error}/>;
         } else {
             content = <pre>{response}</pre>;
         }
@@ -206,7 +206,7 @@ const RunContainer = ({ repo, runId, onSelectAction, selectedAction }) => {
     }, [repo.id, runId]);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     return (
         <ActionBrowser
@@ -226,7 +226,7 @@ const ActionContainer = () => {
     const {loading, error, repo} = useRefs();
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     const params = {repoId: repo.id, runId};
 
@@ -246,11 +246,9 @@ const ActionContainer = () => {
 
 const RepositoryActionPage = () => {
     return (
-        <RefContextProvider>
             <RepositoryPageLayout activePage={'actions'} fluid>
                 <ActionContainer/>
             </RepositoryPageLayout>
-        </RefContextProvider>
     );
 };
 

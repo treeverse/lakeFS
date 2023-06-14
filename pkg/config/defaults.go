@@ -56,6 +56,7 @@ func setDefaults(local bool) {
 	viper.SetDefault("blockstore.s3.max_retries", 5)
 	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
 	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)
+	viper.SetDefault("blockstore.s3.disable_pre_signed_ui", true)
 
 	viper.SetDefault("committed.local_cache.size_bytes", 1*1024*1024*1024)
 	viper.SetDefault("committed.local_cache.dir", "~/lakefs/data/cache")
@@ -74,6 +75,7 @@ func setDefaults(local bool) {
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", "https://storage.googleapis.com")
 	viper.SetDefault("blockstore.gs.pre_signed_expiry", 15*time.Minute)
+	viper.SetDefault("blockstore.gs.disable_pre_signed_ui", true)
 
 	viper.SetDefault("stats.enabled", true)
 	viper.SetDefault("stats.address", "https://stats.treeverse.io")
@@ -84,6 +86,7 @@ func setDefaults(local bool) {
 
 	viper.SetDefault("blockstore.azure.try_timeout", 10*time.Minute)
 	viper.SetDefault("blockstore.azure.pre_signed_expiry", 15*time.Minute)
+	viper.SetDefault("blockstore.azure.disable_pre_signed_ui", true)
 
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)
 	viper.SetDefault("security.audit_check_url", "https://audit.lakefs.io/audit")
@@ -115,4 +118,7 @@ func setDefaults(local bool) {
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
 
 	viper.SetDefault("plugins.default_path", "~/.lakefs/plugins")
+
+	viper.SetDefault("ugc.prepare_interval", time.Minute)
+	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 }

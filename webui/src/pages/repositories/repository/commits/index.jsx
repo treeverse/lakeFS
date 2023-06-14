@@ -12,12 +12,12 @@ import {
     ActionGroup,
     ActionsBar,
     ClipboardButton,
-    Error,
+    AlertError,
     LinkButton,
     Loading, RefreshButton
 } from "../../../../lib/components/controls";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
@@ -92,7 +92,7 @@ const CommitsBrowser = ({ repo, reference, after, onPaginate, onSelectRef }) => 
     }, [repo.id, reference.id, refresh, after])
 
     if (loading) return <Loading/>
-    if (error) return <Error error={error}/>
+    if (error) return <AlertError error={error}/>
 
     return (
         <div className="mb-5">
@@ -160,11 +160,9 @@ const CommitsContainer = () => {
 
 const RepositoryCommitsPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'commits'}>
-                <CommitsContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'commits'}>
+            <CommitsContainer/>
+        </RepositoryPageLayout>
     );
 };
 

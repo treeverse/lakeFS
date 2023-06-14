@@ -42,6 +42,28 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
+func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) (func(next http.Handler) http.Handler, error) {
+	swagger, err := GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
+			if err != nil {
+				writeError(w, r, http.StatusUnauthorized, err)
+				return
+			}
+			if user != nil {
+				ctx := logging.AddFields(r.Context(), logging.Fields{logging.UserFieldKey: user.Username})
+				r = r.WithContext(auth.WithUser(ctx, user))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}, nil
+}
+
 func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
@@ -55,7 +77,6 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
-
 			if err != nil {
 				writeError(w, r, http.StatusBadRequest, err)
 				return

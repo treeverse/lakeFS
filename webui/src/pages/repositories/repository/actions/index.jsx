@@ -3,12 +3,12 @@ import {RepositoryPageLayout} from "../../../../lib/components/repository/layout
 import {
     ActionGroup,
     ActionsBar,
-    Error,
+    AlertError,
     FormattedDate,
     Loading, Na, RefreshButton,
     TooltipButton
 } from "../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {actions} from "../../../../lib/api";
 import {
@@ -123,7 +123,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     const doRefresh = () => setRefresh(!refresh)
 
     let content;
-    if (error) content = <Error error={error}/>
+    if (error) content = <AlertError error={error}/>
 
     else if (loading) content = <Loading/>
     else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
@@ -213,11 +213,9 @@ const ActionsContainer = () => {
 
 const RepositoryActionsPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'actions'}>
-                <ActionsContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'actions'}>
+            <ActionsContainer/>
+        </RepositoryPageLayout>
     );
 };
 

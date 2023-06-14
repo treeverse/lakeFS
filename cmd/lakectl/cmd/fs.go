@@ -28,7 +28,12 @@ Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
 Physical Address: {{ .PhysicalAddress }}
 Checksum: {{ .Checksum }}
-Content-Type: {{ .ContentType }}
+Content-Type: {{ .ContentType }}{{ if and $.Metadata $.Metadata.AdditionalProperties }}
+Metadata:
+	{{ range $key, $value := .Metadata.AdditionalProperties }}
+	{{ $key | printf "%-18s" }} = {{ $value }}
+	{{- end }}
+{{- end }}
 `
 
 const fsRecursiveTemplate = `Files: {{.Count}}
@@ -56,8 +61,9 @@ var fsStatCmd = &cobra.Command{
 		preSign := MustBool(cmd.Flags().GetBool("pre-sign"))
 		client := getClient()
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
-			Path:    *pathURI.Path,
-			Presign: swag.Bool(preSign),
+			Path:         *pathURI.Path,
+			Presign:      swag.Bool(preSign),
+			UserMetadata: swag.Bool(true),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -252,6 +258,9 @@ var fsUploadCmd = &cobra.Command{
 		ctx := cmd.Context()
 		transport := transportMethodFromFlags(direct, preSignMode)
 		if !recursive {
+			if pathURI.GetPath() == "" {
+				Die("target path is not a valid URI", 1)
+			}
 			stat, err := upload(ctx, client, source, pathURI, contentType, transport)
 			if err != nil {
 				DieErr(err)
@@ -259,6 +268,7 @@ var fsUploadCmd = &cobra.Command{
 			Write(fsStatTemplate, stat)
 			return
 		}
+
 		// copy recursively
 		var totals struct {
 			Bytes int64

@@ -93,6 +93,12 @@ class TestObjectsApi(unittest.TestCase):
         """
         pass
 
+    def test_upload_object_preflight(self):
+        """Test case for upload_object_preflight
+
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

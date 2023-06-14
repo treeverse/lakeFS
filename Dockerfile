@@ -1,3 +1,4 @@
+# Build lakeFS
 FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine3.16 AS build
 
 ARG VERSION=dev
@@ -9,7 +10,7 @@ RUN apk add --no-cache build-base
 
 # Copy project deps first since they don't change often
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg go mod download
 
 # Copy project
 COPY . ./
@@ -24,6 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
     GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
+
 
 # Build delta diff binary
 FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.16 AS build-delta-diff-plugin
@@ -50,7 +52,7 @@ COPY ./pkg/plugins/diff/delta_diff_server/src ./src
 RUN rm ./target/release/deps/delta_diff*
 RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 
-# lakectl image
+# Just lakectl
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakectl
 RUN apk add -U --no-cache ca-certificates
 WORKDIR /app
@@ -61,8 +63,8 @@ USER lakefs
 WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
-# lakefs image
-FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-lakectl
+# lakefs with lakectl
+FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs
 
 RUN apk add -U --no-cache ca-certificates
 # Be Docker compose friendly (i.e. support wait-for)
@@ -83,7 +85,7 @@ WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
-# lakefs image
+# Include lakefs-plugins
 FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-plugins
 
 RUN apk add -U --no-cache ca-certificates

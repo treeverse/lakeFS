@@ -441,8 +441,9 @@ lakectl annotate <path uri> [flags]
 {:.no_toc}
 
 ```
-  -h, --help        help for annotate
-  -r, --recursive   recursively annotate all entries under a given path or prefix
+      --first-parent   follow only the first parent commit upon seeing a merge commit
+  -h, --help           help for annotate
+  -r, --recursive      recursively annotate all entries under a given path or prefix
 ```
 
 
@@ -2507,10 +2508,10 @@ lakectl help [command] [flags]
 
 ### lakectl import
 
-Import data from external source to an imported branch (with optional merge)
+Import data from external source to a destination branch
 
 ```
-lakectl import --from <object store URI> --to <lakeFS path URI> [--merge] [flags]
+lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 ```
 
 #### Options
@@ -2519,7 +2520,6 @@ lakectl import --from <object store URI> --to <lakeFS path URI> [--merge] [flags
 ```
       --from string      prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
   -h, --help             help for import
-      --merge            merge imported branch into target branch
   -m, --message string   commit message (default "Import objects")
       --meta strings     key value pair in the form of key=value
       --no-progress      switch off the progress output
@@ -2578,6 +2578,7 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
       --after string         show results after this value (used for pagination)
       --amount int           number of results to return. By default, all results are returned
       --dot                  return results in a dotgraph format
+      --first-parent         follow only the first parent commit upon seeing a merge commit
   -h, --help                 help for log
       --limit                limit result just to amount. By default, returns whether more items are available.
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together

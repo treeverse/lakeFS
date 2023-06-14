@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -80,6 +81,9 @@ func getKey(obj block.ObjectPointer) string {
 }
 
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
+	if err := verifyObjectPointer(obj); err != nil {
+		return err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	data, err := io.ReadAll(reader)
@@ -93,6 +97,9 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 }
 
 func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return nil, err
+	}
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	key := getKey(obj)
@@ -103,15 +110,33 @@ func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.R
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
+func verifyObjectPointer(obj block.ObjectPointer) error {
+	const prefix = "mem://"
+	if obj.StorageNamespace == "" {
+		if !strings.HasPrefix(obj.Identifier, prefix) {
+			return fmt.Errorf("mem block adapter: %w identifier: %s", block.ErrInvalidAddress, obj.Identifier)
+		}
+	} else if !strings.HasPrefix(obj.StorageNamespace, prefix) {
+		return fmt.Errorf("mem block adapter: %w storage namespace: %s", block.ErrInvalidAddress, obj.StorageNamespace)
+	}
+	return nil
+}
+
 func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
 	return nil, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return "", err
+	}
 	return "", fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return false, err
+	}
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	_, ok := a.data[getKey(obj)]
@@ -119,6 +144,9 @@ func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, erro
 }
 
 func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return nil, err
+	}
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
@@ -129,6 +157,9 @@ func (a *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, startPosi
 }
 
 func (a *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (block.Properties, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return block.Properties{}, err
+	}
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	props, ok := a.properties[getKey(obj)]
@@ -139,6 +170,9 @@ func (a *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 }
 
 func (a *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
+	if err := verifyObjectPointer(obj); err != nil {
+		return err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	delete(a.data, getKey(obj))
@@ -146,6 +180,12 @@ func (a *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
 }
 
 func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.ObjectPointer) error {
+	if err := verifyObjectPointer(sourceObj); err != nil {
+		return err
+	}
+	if err := verifyObjectPointer(destinationObj); err != nil {
+		return err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	destinationKey := getKey(destinationObj)
@@ -156,6 +196,9 @@ func (a *Adapter) Copy(_ context.Context, sourceObj, destinationObj block.Object
 }
 
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+	if err := verifyObjectPointer(sourceObj); err != nil {
+		return nil, err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu, ok := a.mpu[uploadID]
@@ -184,6 +227,9 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, _ block.ObjectP
 }
 
 func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
+	if err := verifyObjectPointer(sourceObj); err != nil {
+		return nil, err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu, ok := a.mpu[uploadID]
@@ -212,7 +258,10 @@ func (a *Adapter) UploadCopyPartRange(_ context.Context, sourceObj, _ block.Obje
 	}, nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return nil, err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu := newMPU()
@@ -222,7 +271,10 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, _ block.ObjectPointer
 	}, nil
 }
 
-func (a *Adapter) UploadPart(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+func (a *Adapter) UploadPart(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return nil, err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu, ok := a.mpu[uploadID]
@@ -246,7 +298,10 @@ func (a *Adapter) UploadPart(_ context.Context, _ block.ObjectPointer, _ int64, 
 	}, nil
 }
 
-func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, uploadID string) error {
+func (a *Adapter) AbortMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string) error {
+	if err := verifyObjectPointer(obj); err != nil {
+		return err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	_, ok := a.mpu[uploadID]
@@ -258,6 +313,9 @@ func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer,
 }
 
 func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
+	if err := verifyObjectPointer(obj); err != nil {
+		return nil, err
+	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu, ok := a.mpu[uploadID]

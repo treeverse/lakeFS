@@ -1,7 +1,7 @@
 import React, {useRef, useState} from "react";
 import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
-import {Error, Loading, RefreshButton} from "../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../lib/hooks/repo";
+import {AlertError, Loading, RefreshButton} from "../../../../lib/components/controls";
+import {useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {SettingsLayout} from "./layout";
 import {Button, ListGroup, Row} from "react-bootstrap";
@@ -22,9 +22,9 @@ const SettingsContainer = () => {
     const {response: rules, error: rulesError, loading: rulesLoading} = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
-    if (error) return <Error error={error}/>;
-    if (rulesError) return <Error error={rulesError}/>;
-    if (actionError) return <Error error={actionError}/>;
+    if (error) return <AlertError error={error}/>;
+    if (rulesError) return <AlertError error={rulesError}/>;
+    if (actionError) return <AlertError error={actionError}/>;
     return (<>
         <div className="mt-3 mb-5">
             <div className={"section-title"}>
@@ -47,8 +47,8 @@ const SettingsContainer = () => {
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
-                                {rules && rules.length > 0 ? rules.map(r => {
-                                    return <ListGroup.Item >
+                                {rules && rules.length > 0 ? rules.map((r) => {
+                                    return <ListGroup.Item key={r.pattern}>
                                         <div className="d-flex">
                                             <code>{r.pattern}</code>
                                             <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => {
@@ -113,7 +113,7 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
                     </Col>
                 </Form.Group>
             </Form>
-            {error && <Error error={error}/>}
+            {error && <AlertError error={error}/>}
         </Modal.Body>
         <Modal.Footer>
             <Button disabled={createButtonDisabled} onClick={() => createRule(patternField.current.value)}
@@ -129,13 +129,11 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
 
 const RepositorySettingsBranchesPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'settings'}>
-                <SettingsLayout activeTab={"branches"}>
-                    <SettingsContainer/>
-                </SettingsLayout>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"branches"}>
+                <SettingsContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
     );
 };
 

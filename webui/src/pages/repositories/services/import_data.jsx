@@ -1,9 +1,8 @@
-import {branches, commits, metaRanges, NotFoundError, ranges} from "../../../lib/api";
+import {imports} from "../../../lib/api";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {LinearProgress} from "@mui/material";
 import React, {useState} from "react";
-import {Link} from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Form from "react-bootstrap/Form";
@@ -14,67 +13,11 @@ const ImportPhase = {
     InProgress: 1,
     Completed: 2,
     Failed: 3,
-    Merging: 4,
-    MergeFailed: 5,
-    Merged: 6,
 }
 
-const runImport = async (updateImportState, prependPath, commitMsg, sourceRef, branch, repoId, refId, metadata = {}) => {
-    let paginationResp = {};
-    let after = "";
-    let importBranchResp;
-    let sum = 0;
-    let stagingToken = "";
-    const rangeArr = [];
-    const importStatusUpdate = {
-        importPhase: ImportPhase.InProgress,
-        numObj: sum,
-    }
-    updateImportState(importStatusUpdate);
-    do {
-        const response = await ranges.createRange(repoId, sourceRef, after, prependPath, paginationResp.continuation_token);
-        rangeArr.push(response.range);
-        paginationResp = response.pagination;
-        stagingToken = paginationResp.staging_token
-        after = paginationResp.last_key;
-        sum += response.range.count;
-        importStatusUpdate.numObj = sum
-        updateImportState(importStatusUpdate);
-    } while (paginationResp.has_more);
-    const metarange = await metaRanges.createMetaRange(repoId, rangeArr);
-
-    try {
-        importBranchResp = await branches.get(repoId, branch);
-    } catch (error) {
-        if (error instanceof NotFoundError) {
-            importBranchResp = await createBranch(repoId, refId, branch);
-        } else {
-            throw error;
-        }
-    }
-    await commits.commit(repoId, importBranchResp.id, commitMsg, metadata, metarange.id);
-    
-    if (stagingToken.length > 0) {
-        await branches.updateToken(repoId, importBranchResp.id, stagingToken);
-        await commits.commit(repoId, importBranchResp.id, "Import commit for out of order skipped objects", metadata);
-    }
-    importStatusUpdate.importPhase = ImportPhase.Completed;
-    updateImportState(importStatusUpdate);
-}
-
-const createBranch = async (repoId, refId, branch) => {
-    // Find root commit for repository
-    let hasMore = true;
-    let nextOffset = "";
-    let baseCommit = refId;
-    do {
-        let response = await commits.log(repoId, refId, nextOffset, 1000);
-        hasMore = response.pagination.has_more;
-        nextOffset = response.pagination.next_offset;
-        baseCommit = response.results.at(-1);
-    } while (hasMore)
-    await branches.create(repoId, branch, baseCommit.id);
-    return await branches.get(repoId, branch);
+const startImport = async (setImportID, prependPath, commitMsg, sourceRef, repoId, refId, metadata = {}) => {
+    const response = await imports.create(repoId, refId, sourceRef, prependPath, commitMsg, metadata);
+    setImportID(response.id);
 }
 
 const ImportProgress = ({numObjects}) => {
@@ -95,7 +38,7 @@ const ImportProgress = ({numObjects}) => {
     </Row>);
 }
 
-const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
+const ImportDone = ({numObjects, branch = ''}) => {
     return (<Row>
         <Col>
             <div className={"mt-10 mb-2 me-2 row mt-4 import-success"}>
@@ -104,26 +47,22 @@ const ImportDone = ({numObjects, importBranch, currBranch = ''}) => {
             <div className='import-text'>
                 <strong>
                     <span className='import-num-objects'> {numObjects} </span>
-                </strong> objects imported and committed into branch {importBranch}.
+                </strong> objects imported and committed into branch
+                <strong>
+                    <span className='import-num-objects'> {branch} </span>
+                </strong>.
             </div>
-            {(currBranch && importBranch !== currBranch) &&
-                <div className='import-text'>
-                    <p> Use the&nbsp;<Link to={`${location.pathname.replace(/[^/]*$/, "compare")}?ref=${currBranch}&compare=${importBranch}`}
-                                           variant="success">Compare tab</Link>&nbsp;to view the changes and merge, or merge directly below.
-                    </p>
-                </div>
-            }
         </Col>
     </Row>);
 }
-const ExecuteImportButton = ({isEnabled, importPhase, importFunc, mergeFunc, doneFunc}) => {
+const ExecuteImportButton = ({isEnabled, importPhase, importFunc, doneFunc}) => {
     switch (importPhase) {
         case ImportPhase.Completed:
             return <Button
                 variant="success"
-                onClick={mergeFunc}
+                onClick={doneFunc}
                 disabled={!isEnabled}>
-                    Merge Changes
+                    Close
             </Button>
         case ImportPhase.Failed:
         case ImportPhase.NotStarted:
@@ -139,26 +78,6 @@ const ExecuteImportButton = ({isEnabled, importPhase, importFunc, mergeFunc, don
                 disabled={true}>
                 Importing...
             </Button>
-        case ImportPhase.Merging:
-            return <Button
-                variant="success"
-                disabled={true}>
-                Merging Changes...
-            </Button>
-        case ImportPhase.MergeFailed:
-            return <Button
-                variant="success"
-                onClick={importFunc}
-                disabled={!isEnabled}>
-                Try Again
-            </Button>
-        case ImportPhase.Merged:
-            return <Button
-                variant="success"
-                disabled={!isEnabled}
-                onClick={doneFunc}>
-                Done
-            </Button>
     }
 }
 
@@ -167,8 +86,6 @@ const ImportForm = ({
                         pathStyle,
                         sourceRef,
                         destRef,
-                        repoId,
-                        importBranch,
                         path,
                         commitMsgRef,
                         updateSrcValidity,
@@ -192,7 +109,6 @@ const ImportForm = ({
         updateSrcValidity(isValid);
         setIsSourceValid(isValid);
     };
-    const basePath = `lakefs://${repoId}/${importBranch}/\u00A0`;
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
     return (<>
         <Alert variant="info">
@@ -220,14 +136,7 @@ const ImportForm = ({
             {shouldAddPath &&
                 <Form.Group className='form-group'>
                     <Form.Label><strong>Destination:</strong></Form.Label>
-                    <Row className="g-0">
-                        <Col className="col-auto d-flex align-items-center justify-content-start">
-                            {basePath}
-                        </Col>
-                        <Col style={pathStyle}>
-                            <Form.Control type="text" autoFocus name="destination" ref={destRef} defaultValue={path}/>
-                        </Col>
-                    </Row>
+                        <Form.Control type="text" autoFocus name="destination" ref={destRef} defaultValue={path}/>
                     <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
                         Leave empty to import to the repository&apos;s root.
                     </Form.Text>
@@ -245,5 +154,5 @@ const ImportForm = ({
 }
 
 export {
-    runImport, ImportProgress, ImportDone, ExecuteImportButton, ImportForm, ImportPhase,
+    startImport, ImportProgress, ImportDone, ExecuteImportButton, ImportForm, ImportPhase,
 }

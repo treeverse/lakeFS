@@ -5,7 +5,7 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import {FormControl} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
-import {Error, FormattedDate} from "./controls";
+import {AlertError, FormattedDate} from "./controls";
 
 export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = false, isCreate = false, validationFunction = null, externalError = null }) => {
     const [error, setError] = useState(null);
@@ -93,8 +93,8 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
                     </Form.Group>
                 </Form>
 
-                {(!!error) && <Error className="mt-3" error={error}/>}
-                {(!!externalError) && <Error className="mt-3" error={externalError}/>}
+                {(!!error) && <AlertError className="mt-3" error={error}/>}
+                {(!!externalError) && <AlertError className="mt-3" error={externalError}/>}
 
             </Modal.Body>
 

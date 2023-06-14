@@ -12,9 +12,8 @@ redirect_from:
 ---
 
 # Model
-{: .no_toc }
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 lakeFS blends concepts from object stores such as S3 with concepts from Git. This reference
 defines the common concepts of lakeFS.
@@ -36,6 +35,12 @@ lakeFS is spearheading version control semantics for data. Most of these concept
 In lakeFS, a _repository_ is a set of related objects (or collections of objects). In many cases, these represent tables of [various formats](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/){:target="_blank"} for tabular data, semi-structured data such as JSON or log files - or a set of unstructured objects such as images, videos, sensor data, etc.
 
 lakeFS represents repositories as a logical namespace used to group together objects, branches, and commits - analogous to a repository in Git.
+
+lakeFS repository naming requirements are as follows: 
+
+- Start with a lower case letter or number
+- Contain only lower case letters, numbers and hyphens
+- Be between 3 and 63 characters long
 
 ### Commits
 

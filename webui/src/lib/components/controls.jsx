@@ -75,7 +75,7 @@ export const Na = () => {
     );
 };
 
-export const Error = ({error, onDismiss = null, className = null}) => {
+export const AlertError = ({error, onDismiss = null, className = null}) => {
     let content = React.isValidElement(error) ? error : error.toString();
     // handle wrapped errors
     let err = error;

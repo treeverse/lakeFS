@@ -31,6 +31,27 @@ class TestImportApi(unittest.TestCase):
         """
         pass
 
+    def test_import_cancel(self):
+        """Test case for import_cancel
+
+        cancel ongoing import  # noqa: E501
+        """
+        pass
+
+    def test_import_start(self):
+        """Test case for import_start
+
+        import data from object store  # noqa: E501
+        """
+        pass
+
+    def test_import_status(self):
+        """Test case for import_status
+
+        get import status  # noqa: E501
+        """
+        pass
+
     def test_ingest_range(self):
         """Test case for ingest_range
 

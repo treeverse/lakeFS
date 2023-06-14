@@ -9,7 +9,6 @@ redirect_from:
 ---
 
 # Roadmap
-{: .no_toc }
 
 This is the lakeFS public roadmap. As the project evolves and the community grows, this roadmap might change.
 

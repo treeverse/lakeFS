@@ -41,6 +41,7 @@ type LogParams struct {
 	FromReference string
 	Amount        int
 	Limit         bool
+	FirstParent   bool
 }
 
 type ExpireResult struct {
@@ -88,7 +89,7 @@ type Interface interface {
 	// DeleteRepository delete a repository
 	DeleteRepository(ctx context.Context, repository string) error
 
-	// ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
+	// ListRepositories list repository information, the bool returned is true when more repositories can be listed.
 	// In this case pass the last repository name as 'after' on the next call to ListRepositories
 	ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error)
 
@@ -115,7 +116,7 @@ type Interface interface {
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*DBEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-	CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, bool, error)
+	CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, error)
 
 	Commit(ctx context.Context, repository, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
@@ -142,13 +143,12 @@ type Interface interface {
 	LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error
 	LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error
 
-	// TrackPhysicalAddress track physical address (copy-table) to ensure physical address will not be collected by GC.
-	// returns the id used to track the address.
-	TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error)
-
 	// forward metadata for thick clients
 	GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error)
 	GetRange(ctx context.Context, repositoryID, rangeID string) (graveler.RangeAddress, error)
+	Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error)
+	GetImportStatus(ctx context.Context, repositoryID, importID string) (*graveler.ImportStatus, error)
+	CancelImport(ctx context.Context, repositoryID, importID string) error
 	WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error)
 	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
 	UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error

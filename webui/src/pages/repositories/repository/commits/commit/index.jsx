@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
-import {ClipboardButton,Error, LinkButton, Loading} from "../../../../../lib/components/controls";
-import {RefContextProvider, useRefs} from "../../../../../lib/hooks/repo";
+import {ClipboardButton, AlertError, LinkButton, Loading} from "../../../../../lib/components/controls";
+import {useRefs} from "../../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
 import {commits, refs} from "../../../../../lib/api";
@@ -14,6 +14,7 @@ import {Link} from "../../../../../lib/components/nav";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
 import {appendMoreResults} from "../../changes";
+import {MetadataRow, MetadataUIButton} from "./metadata";
 
 const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
     const [actionError, setActionError] = useState(null);
@@ -32,11 +33,11 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
 
     const results = resultsState.results
 
-    if (error) return <Error error={error}/>
+    if (error) return <AlertError error={error}/>
     if (loading) return <Loading/>
 
     const actionErrorDisplay = (actionError) ?
-        <Error error={actionError} onDismiss={() => setActionError(null)}/> : <></>
+        <AlertError error={actionError} onDismiss={() => setActionError(null)}/> : <></>
 
     const commitSha = commit.id.substring(0, 12);
     const uriNavigator = <URINavigator path={prefix} reference={commit} repo={repo}
@@ -88,11 +89,16 @@ const CommitActions = ({ repo, commit }) => {
     );
 };
 
+const getKeysOrNull = (metadata) => {
+    if (!metadata) return null;
+    const keys = Object.getOwnPropertyNames(metadata);
+    if (keys.length === 0) return null;
+    return keys;
+};
 
 const CommitMetadataTable = ({ commit }) => {
-    if (!commit.metadata) return <></>
-    const keys = Object.getOwnPropertyNames(commit.metadata)
-    if (keys.length === 0) return <></>
+    const keys = getKeysOrNull(commit.metadata);
+    if (!keys) return null;
 
     return (
         <>
@@ -104,15 +110,22 @@ const CommitMetadataTable = ({ commit }) => {
                 </tr>
             </thead>
             <tbody>
-            {keys.map(key => (
-                <tr key={key}>
-                    <td><code>{key}</code></td>
-                    <td><code>{commit.metadata[key]}</code></td>
-                </tr>
-            ))}
+                {keys.map(key =>
+                    <MetadataRow metadata_key={key} metadata_value={commit.metadata[key]}/>)}
             </tbody>
         </Table>
         </>
+    );
+};
+
+const CommitMetadataUIButtons = ({ commit }) => {
+    const keys = getKeysOrNull(commit.metadata);
+    if (!keys) return null;
+
+    return (
+        <>{
+            keys.map((key) => <MetadataUIButton metadata_key={key} metadata_value={commit.metadata[key]}/>)
+        }</>
     );
 };
 
@@ -173,7 +186,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
     }, [repo.id, commitId]);
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     const commit = response;
 
@@ -192,6 +205,7 @@ const CommitView = ({ repo, commitId, onNavigate, view, prefix }) => {
 
                     <div className="mt-4">
                         <CommitInfo repo={repo} commit={commit}/>
+                        <CommitMetadataUIButtons commit={commit}/>
                         <CommitMetadataTable commit={commit}/>
                     </div>
                 </Card.Body>
@@ -217,7 +231,7 @@ const CommitContainer = () => {
     const { commitId } = router.params;
 
     if (loading) return <Loading/>;
-    if (error) return <Error error={error}/>;
+    if (error) return <AlertError error={error}/>;
 
     return (
         <CommitView
@@ -239,11 +253,9 @@ const CommitContainer = () => {
 
 const RepositoryCommitPage = () => {
     return (
-        <RefContextProvider>
-            <RepositoryPageLayout activePage={'commits'}>
-                <CommitContainer/>
-            </RepositoryPageLayout>
-        </RefContextProvider>
+        <RepositoryPageLayout activePage={'commits'}>
+            <CommitContainer/>
+        </RepositoryPageLayout>
     )
 }
 

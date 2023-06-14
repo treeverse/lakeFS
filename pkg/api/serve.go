@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers"
@@ -25,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -42,7 +41,6 @@ func Serve(
 	cfg *config.Config,
 	catalog catalog.Interface,
 	middlewareAuthenticator auth.Authenticator,
-	controllerAuthenticator auth.Authenticator,
 	authService auth.Service,
 	blockAdapter block.Adapter,
 	metadataManager auth.MetadataManager,
@@ -64,7 +62,6 @@ func Serve(
 	if err != nil {
 		panic(err)
 	}
-
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	r := chi.NewRouter()
 	apiRouter := r.With(
@@ -82,7 +79,7 @@ func Serve(
 	controller := NewController(
 		cfg,
 		catalog,
-		controllerAuthenticator,
+		middlewareAuthenticator,
 		authService,
 		blockAdapter,
 		metadataManager,

@@ -3,10 +3,11 @@ import Alert from "react-bootstrap/Alert";
 import { humanSize } from "../../../../lib/components/repository/tree";
 import { useAPI } from "../../../../lib/hooks/api";
 import { objects, qs } from "../../../../lib/api";
-import { Error, Loading } from "../../../../lib/components/controls";
+import { AlertError, Loading } from "../../../../lib/components/controls";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
+import rehypeRaw from "rehype-raw";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { githubGist as syntaxHighlightStyle } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
@@ -60,7 +61,7 @@ export const TextDownloader: FC<RendererComponentWithTextCallback> = ({
     return <Loading />;
   }
   if (error) {
-    return <Error error={error} />;
+    return <AlertError error={error} />;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,6 +73,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
   text,
   repoId,
   refId,
+  path,
 }) => {
   return (
     <ReactMarkdown
@@ -82,12 +84,13 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
           {
             repo: repoId,
             ref: refId,
+            path,
           },
         ],
         remarkGfm,
         remarkHtml,
       ]}
-      linkTarget={"_blank"}
+      rehypePlugins={[rehypeRaw]}
     >
       {text}
     </ReactMarkdown>

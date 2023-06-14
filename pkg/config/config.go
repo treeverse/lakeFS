@@ -11,7 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -45,8 +45,8 @@ type OIDC struct {
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
 }
 
-// TODO(isan) consolidate with OIDC
 // CookieAuthVerification is related to auth based on a cookie set by an external service
+// TODO(isan) consolidate with OIDC
 type CookieAuthVerification struct {
 	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
 	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
@@ -104,6 +104,11 @@ type DiffProps struct {
 // do that.
 type Config struct {
 	ListenAddress string `mapstructure:"listen_address"`
+	TLS           struct {
+		Enabled  bool   `mapstructure:"enabled"`
+		CertFile string `mapstructure:"cert_file"`
+		KeyFile  string `mapstructure:"key_file"`
+	} `mapstructure:"tls"`
 
 	Actions struct {
 		// ActionsEnabled set to false will block any hook execution
@@ -142,7 +147,7 @@ type Config struct {
 		} `mapstructure:"local"`
 
 		Postgres *struct {
-			ConnectionString      string        `mapstructure:"connection_string"`
+			ConnectionString      SecureString  `mapstructure:"connection_string"`
 			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
 			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
 			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
@@ -168,32 +173,39 @@ type Config struct {
 			// in case there are no credentials configured in the system
 			// This is a client requirement as described in section 4 in
 			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-			AwsRegion          string `mapstructure:"aws_region"`
-			AwsProfile         string `mapstructure:"aws_profile"`
-			AwsAccessKeyID     string `mapstructure:"aws_access_key_id"`
-			AwsSecretAccessKey string `mapstructure:"aws_secret_access_key"`
+			AwsRegion          string       `mapstructure:"aws_region"`
+			AwsProfile         string       `mapstructure:"aws_profile"`
+			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
+			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
 
 			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
 			// Won't run when is equal or less than 0.
 			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
 		} `mapstructure:"dynamodb"`
+
+		CosmosDB *struct {
+			Key       SecureString `mapstructure:"key"`
+			Endpoint  string       `mapstructure:"endpoint"`
+			Database  string       `mapstructure:"database"`
+			Container string       `mapstructure:"container"`
+		} `mapstructure:"cosmosdb"`
 	}
 
 	Auth struct {
 		Cache struct {
-			Enabled bool
-			Size    int
-			TTL     time.Duration
-			Jitter  time.Duration
-		}
+			Enabled bool          `mapstructure:"enabled"`
+			Size    int           `mapstructure:"size"`
+			TTL     time.Duration `mapstructure:"ttl"`
+			Jitter  time.Duration `mapstructure:"jitter"`
+		} `mapstructure:"cache"`
 		Encrypt struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
-		}
+		} `mapstructure:"encrypt"`
 		API struct {
-			Endpoint        string
-			Token           string
-			SupportsInvites bool `mapstructure:"supports_invites"`
-		}
+			Endpoint        string       `mapstructure:"endpoint"`
+			Token           SecureString `mapstructure:"token"`
+			SupportsInvites bool         `mapstructure:"supports_invites"`
+		} `mapstructure:"api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
 			Enabled bool `mapstructure:"enabled"`
@@ -219,7 +231,7 @@ type Config struct {
 			LoginCookieNames   []string `mapstructure:"login_cookie_names"`
 			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
-	}
+	} `mapstructure:"auth"`
 	Blockstore struct {
 		Type                   string  `mapstructure:"type" validate:"required"`
 		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
@@ -228,7 +240,7 @@ type Config struct {
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
 			ImportHidden            bool     `mapstructure:"import_hidden"`
 			AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
-		}
+		} `mapstructure:"local"`
 		S3 *struct {
 			S3AuthInfo                    `mapstructure:",squash"`
 			Region                        string        `mapstructure:"region"`
@@ -265,7 +277,7 @@ type Config struct {
 			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
 		} `mapstructure:"gs"`
-	}
+	} `mapstructure:"blockstore"`
 	Committed struct {
 		LocalCache struct {
 			SizeBytes             int64   `mapstructure:"size_bytes"`
@@ -284,8 +296,12 @@ type Config struct {
 			Memory struct {
 				CacheSizeBytes int64 `mapstructure:"cache_size_bytes"`
 			} `mapstructure:"memory"`
-		}
-	}
+		} `mapstructure:"sstable"`
+	} `mapstructure:"committed"`
+	UGC struct {
+		PrepareMaxFileSize int64         `mapstructure:"prepare_max_file_size"`
+		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
+	} `mapstructure:"ugc"`
 	Graveler struct {
 		RepositoryCache struct {
 			Size   int           `mapstructure:"size"`
@@ -448,7 +464,7 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 
 	if c.Database.Postgres != nil {
 		p.Postgres = &kvparams.Postgres{
-			ConnectionString:      c.Database.Postgres.ConnectionString,
+			ConnectionString:      c.Database.Postgres.ConnectionString.SecureValue(),
 			MaxIdleConnections:    c.Database.Postgres.MaxIdleConnections,
 			MaxOpenConnections:    c.Database.Postgres.MaxOpenConnections,
 			ConnectionMaxLifetime: c.Database.Postgres.ConnectionMaxLifetime,
@@ -462,11 +478,22 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 			Endpoint:            c.Database.DynamoDB.Endpoint,
 			AwsRegion:           c.Database.DynamoDB.AwsRegion,
 			AwsProfile:          c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID,
-			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey,
+			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
 		}
 	}
+
+	if c.Database.CosmosDB != nil {
+		p.CosmosDB = &kvparams.CosmosDB{
+			Key:               c.Database.CosmosDB.Key.SecureValue(),
+			Endpoint:          c.Database.CosmosDB.Endpoint,
+			Database:          c.Database.CosmosDB.Database,
+			Container:         c.Database.CosmosDB.Container,
+			StrongConsistency: true,
+		}
+	}
+
 	return p, nil
 }
 
@@ -550,9 +577,11 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
 	}
 	return blockparams.GS{
-		CredentialsFile: credPath,
-		CredentialsJSON: c.Blockstore.GS.CredentialsJSON,
-		PreSignedExpiry: c.Blockstore.GS.PreSignedExpiry,
+		CredentialsFile:    credPath,
+		CredentialsJSON:    c.Blockstore.GS.CredentialsJSON,
+		PreSignedExpiry:    c.Blockstore.GS.PreSignedExpiry,
+		DisablePreSigned:   c.Blockstore.GS.DisablePreSigned,
+		DisablePreSignedUI: c.Blockstore.GS.DisablePreSignedUI,
 	}, nil
 }
 
@@ -561,11 +590,13 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		logging.Default().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
 	return blockparams.Azure{
-		StorageAccount:   c.Blockstore.Azure.StorageAccount,
-		StorageAccessKey: c.Blockstore.Azure.StorageAccessKey,
-		TryTimeout:       c.Blockstore.Azure.TryTimeout,
-		PreSignedExpiry:  c.Blockstore.Azure.PreSignedExpiry,
-		TestEndpointURL:  c.Blockstore.Azure.TestEndpointURL,
+		StorageAccount:     c.Blockstore.Azure.StorageAccount,
+		StorageAccessKey:   c.Blockstore.Azure.StorageAccessKey,
+		TryTimeout:         c.Blockstore.Azure.TryTimeout,
+		PreSignedExpiry:    c.Blockstore.Azure.PreSignedExpiry,
+		TestEndpointURL:    c.Blockstore.Azure.TestEndpointURL,
+		DisablePreSigned:   c.Blockstore.Azure.DisablePreSigned,
+		DisablePreSignedUI: c.Blockstore.Azure.DisablePreSignedUI,
 	}, nil
 }
 
@@ -620,8 +651,13 @@ func (c *Config) CommittedParams() committed.Params {
 	}
 }
 
+const (
+	AuthRBACSimplified = "simplified"
+	AuthRBACExternal   = "external"
+)
+
 func (c *Config) IsAuthUISimplified() bool {
-	return c.Auth.UIConfig.RBAC == "simplified"
+	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
 func (c *Config) IsAuthTypeAPI() bool {

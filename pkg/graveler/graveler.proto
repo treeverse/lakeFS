@@ -72,3 +72,13 @@ message LinkAddressData {
   // xid physical address that includes the creation date
   string address = 1;
 }
+
+message ImportStatusData {
+  string id = 1;
+  bool completed = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  int64 progress = 4;
+  string metarange_id = 5;
+  CommitData commit = 6;
+  string error = 7;
+}

@@ -27,6 +27,7 @@ Text and whatever and hey look at this image:
       .use(imageUriReplacer, {
         repo: TEST_REPO,
         ref: TEST_REF,
+        path: "",
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
@@ -55,6 +56,7 @@ Text and whatever and hey look at this image:
         {
           repo: TEST_REPO,
           ref: TEST_REF,
+          path: "",
         },
       ])
       .process(markdown);
@@ -78,6 +80,7 @@ Text and whatever and hey look at this image:
       .use(imageUriReplacer, {
         repo: TEST_REPO,
         ref: TEST_REF,
+        path: "",
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);
@@ -100,6 +103,35 @@ Text and whatever and hey look at this image:
       .use(imageUriReplacer, {
         repo: TEST_REPO,
         ref: TEST_REF,
+        path: "",
+      })
+      .process(markdown);
+    expect(result.toString()).toEqual(markdownWithReplacedImage);
+  });
+
+  test("Supports relative paths ./", async () => {
+    const markdownFilePath = "test";
+    const markdown = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](./${TEST_FILE_NAME})
+`;
+
+    const markdownWithReplacedImage = `# README
+
+Text and whatever and hey look at this image:
+![lakefs://image.png](${getImageUrl(
+      TEST_REPO,
+      TEST_REF,
+      `${markdownFilePath}/${TEST_FILE_NAME}`
+    )})
+`;
+
+    const result = await remark()
+      .use(imageUriReplacer, {
+        repo: TEST_REPO,
+        ref: TEST_REF,
+        path: `${markdownFilePath}/test.md`,
       })
       .process(markdown);
     expect(result.toString()).toEqual(markdownWithReplacedImage);

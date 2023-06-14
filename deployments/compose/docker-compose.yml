@@ -208,14 +208,13 @@ services:
     entrypoint: dbt
 
   notebook:
-    # To login to jupyter notebook, use password:lakefs
     build: jupyter
     container_name: notebook
     ports:
       - 8888:8888
     volumes:
-      - ./etc/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py
       - ./etc/hive-site.xml:/usr/local/spark/conf/hive-site.xml
+      - ./jupyter/work:/home/jovyan/work
 
 networks:
   default:

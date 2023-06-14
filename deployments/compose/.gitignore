@@ -1,0 +1,4 @@
+# Ignore files used by Airflow docker-compose
+dags/
+logs/
+plugins/

@@ -45,11 +45,12 @@ jobs:
           echo "tag=$(echo ${GITHUB_REF##*/} | cut -d. -f1-2)" >> $GITHUB_OUTPUT
         fi
       id: docver
+
     - name: Setup Ruby
-      uses: ruby/setup-ruby@v1.79.0
+      uses: ruby/setup-ruby@v1
       with:
         working-directory: clients/python
-        ruby-version: 2.6
+        ruby-version: '2.7'
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
     - name: Build release as latest

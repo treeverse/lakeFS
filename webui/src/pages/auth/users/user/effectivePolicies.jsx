@@ -11,7 +11,7 @@ import {
     DataTable,
     FormattedDate,
     Loading,
-    Error,
+    AlertError,
     RefreshButton
 } from "../../../../lib/components/controls";
 import {Link} from "../../../../lib/components/nav";
@@ -28,7 +28,7 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
     let content;
     if (loading) content = <Loading/>;
-    else if (error) content=  <Error error={error}/>;
+    else if (error) content=  <AlertError error={error}/>;
     else content = (
             <>
                <DataTable

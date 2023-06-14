@@ -9,7 +9,6 @@ redirect_from: []
 ---
 
 # Webhooks
-{: .no_toc }
 
 {% include toc.html %}
 
@@ -60,10 +59,10 @@ Upon execution, a webhook will send a request containing a JSON object with the 
 
 | Field               | Description                                                       | Type   |
 |---------------------|-------------------------------------------------------------------|--------|
-| event_type          | Type of the event that triggered the `Action`                     | string |
-| event_time          | Time of the event that triggered the `Action` (RFC3339 formatted) | string |
-| action_name         | Containing `Hook` Action's Name                                   | string |
-| hook_id             | ID of the `Hook`                                                  | string |
+| event_type          | Type of the event that triggered the _Action_                     | string |
+| event_time          | Time of the event that triggered the _Action_ (RFC3339 formatted) | string |
+| action_name         | Containing _Hook_ Action's Name                                   | string |
+| hook_id             | ID of the _Hook_                                                  | string |
 | repository_id       | ID of the Repository                                              | string |
 | branch_id[^1]       | ID of the Branch                                                  | string |
 | source_ref          | Reference to the source on which the event was triggered          | string |

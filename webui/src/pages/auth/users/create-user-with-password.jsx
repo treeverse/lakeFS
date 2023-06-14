@@ -6,7 +6,7 @@ import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import {auth} from "../../../lib/api";
-import {ActionGroup, ActionsBar, Error} from "../../../lib/components/controls";
+import {ActionGroup, ActionsBar, AlertError} from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import {useRouter} from "../../../lib/hooks/router";
 
@@ -75,7 +75,7 @@ const CreateUserWithPasswordForm = ({token, email}) => {
                                 }
                             </Form.Group>
 
-                            {(!!reqActivateUserError) && <Error error={reqActivateUserError}/>}
+                            {(!!reqActivateUserError) && <AlertError error={reqActivateUserError}/>}
                         </Form>
                     </Card.Body>
                 </Card>

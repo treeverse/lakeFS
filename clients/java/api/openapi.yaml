@@ -2407,6 +2407,15 @@ paths:
         schema:
           type: boolean
         style: form
+      - description: if set to true, follow only the first parent upon reaching a
+          merge commit
+        explode: true
+        in: query
+        name: first_parent
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -3619,6 +3628,182 @@ paths:
       - staging
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/import:
+    delete:
+      operationId: importCancel
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: import canceled successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: cancel ongoing import
+      tags:
+      - import
+      x-accepts: application/json
+    get:
+      operationId: importStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Unique identifier of the import process
+        explode: true
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportStatusResp'
+          description: import status
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get import status
+      tags:
+      - import
+      x-accepts: application/json
+    post:
+      operationId: importStart
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCreation'
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportCreationResponse'
+          description: Import started
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: import data from object store
+      tags:
+      - import
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/metaranges:
     post:
       operationId: createMetaRange
@@ -3792,6 +3977,64 @@ paths:
       tags:
       - staging
       x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/stage_allowed:
+    get:
+      operationId: uploadObjectPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: User has permissions to upload this object. This does not guarantee
+            that the upload will be successful or even possible. It indicates only
+            the permission at the time of calling this endpoint
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - objects
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
@@ -4785,6 +5028,42 @@ paths:
       tags:
       - metadata
       x-accepts: application/json
+  /repositories/{repository}/gc/rules/set_allowed:
+    get:
+      operationId: setGarbageCollectionRulesPreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User has permissions to set garbage collection rules on this
+            repository
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - retention
+      x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
       operationId: delete garbage collection rules
@@ -4996,6 +5275,42 @@ paths:
       tags:
       - retention
       x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branch_protection/set_allowed:
+    get:
+      operationId: createBranchProtectionRulePreflight
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: User has permissions to create a branch protection rule in
+            this repository
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
@@ -5511,41 +5826,10 @@ components:
       - destination_commit_id
       - source_commit_id
       type: object
-    MergeResultSummary:
-      example:
-        removed: 6
-        added: 0
-        changed: 1
-        conflict: 5
-      properties:
-        added:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-        removed:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-        changed:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-        conflict:
-          deprecated: true
-          description: 'Deprecated: inaccurate and will be removed.'
-          type: integer
-      type: object
     MergeResult:
       example:
-        summary:
-          removed: 6
-          added: 0
-          changed: 1
-          conflict: 5
         reference: reference
       properties:
-        summary:
-          $ref: '#/components/schemas/MergeResultSummary'
         reference:
           type: string
       required:
@@ -5553,6 +5837,7 @@ components:
       type: object
     RepositoryCreation:
       example:
+        sample_data: true
         name: name
         default_branch: main
         storage_namespace: s3://example-bucket/
@@ -5568,6 +5853,10 @@ components:
         default_branch:
           example: main
           type: string
+        sample_data:
+          default: false
+          example: true
+          type: boolean
       required:
       - name
       - storage_namespace
@@ -6127,6 +6416,8 @@ components:
       - location
       type: object
     Error:
+      example:
+        message: message
       properties:
         message:
           description: short message explaining the error
@@ -6679,7 +6970,7 @@ components:
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
-        pre_sign_support_UI: true
+        pre_sign_support_ui: true
         import_support: true
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
@@ -6694,7 +6985,7 @@ components:
           type: string
         pre_sign_support:
           type: boolean
-        pre_sign_support_UI:
+        pre_sign_support_ui:
           type: boolean
         import_support:
           type: boolean
@@ -6704,7 +6995,7 @@ components:
       - blockstore_type
       - import_support
       - pre_sign_support
-      - pre_sign_support_UI
+      - pre_sign_support_ui
       type: object
     VersionConfig:
       example:
@@ -6933,6 +7224,7 @@ components:
         run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
         gc_addresses_location: s3://my-storage-namespace/_lakefs/retention/addresses
         gc_commits_location: s3://my-storage-namespace/_lakefs/retention/commits
+        gc_commits_presigned_url: gc_commits_presigned_url
       properties:
         run_id:
           description: a unique identifier generated for this GC job
@@ -6947,6 +7239,9 @@ components:
           description: location to use for expired addresses parquet table (partitioned
             by run_id)
           example: s3://my-storage-namespace/_lakefs/retention/addresses
+          type: string
+        gc_commits_presigned_url:
+          description: a presigned url to download the commits csv
           type: string
       required:
       - gc_addresses_location
@@ -7020,6 +7315,48 @@ components:
           type: string
       required:
       - pattern
+      type: object
+    ImportLocation:
+      properties:
+        type:
+          description: Path type, can either be 'common_prefix' or 'object'
+          enum:
+          - common_prefix
+          - object
+          type: string
+        path:
+          description: A source location to ingested path or to a single object. Must
+            match the lakeFS installation blockstore type.
+          example: s3://my-bucket/production/collections/
+          type: string
+        destination:
+          description: Destination for the imported objects on the branch
+          example: collections/
+          type: string
+      required:
+      - destination
+      - path
+      - type
+      type: object
+    ImportCreation:
+      example:
+        paths:
+        - path: s3://my-bucket/production/collections/
+          destination: collections/
+          type: common_prefix
+        - path: s3://my-bucket/production/collections/file1
+          destination: collections/file1
+          type: object
+      properties:
+        paths:
+          items:
+            $ref: '#/components/schemas/ImportLocation'
+          type: array
+        commit:
+          $ref: '#/components/schemas/CommitCreation'
+      required:
+      - commit
+      - paths
       type: object
     StageRangeCreation:
       example:
@@ -7106,6 +7443,55 @@ components:
           $ref: '#/components/schemas/RangeMetadata'
         pagination:
           $ref: '#/components/schemas/ImportPagination'
+      type: object
+    ImportStatusResp:
+      example:
+        update_time: 2000-01-23T04:56:07.000+00:00
+        metarange_id: metarange_id
+        ingested_objects: 0
+        commit:
+          metadata:
+            key: metadata
+          committer: committer
+          id: id
+          creation_date: 0
+          meta_range_id: meta_range_id
+          message: message
+          parents:
+          - parents
+          - parents
+        completed: true
+        error:
+          message: message
+      properties:
+        completed:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        ingested_objects:
+          description: Number of objects processed so far
+          format: int64
+          type: integer
+        metarange_id:
+          type: string
+        commit:
+          $ref: '#/components/schemas/Commit'
+        error:
+          $ref: '#/components/schemas/Error'
+      required:
+      - completed
+      - update_time
+      type: object
+    ImportCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: The id of the import process
+          type: string
+      required:
+      - id
       type: object
     MetaRangeCreation:
       example:

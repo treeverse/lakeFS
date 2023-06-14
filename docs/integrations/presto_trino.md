@@ -12,16 +12,10 @@ redirect_from:
 
 # Using lakeFS with Presto/Trino
 
-{: .no_toc }
 [Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engines designed to query large data sets distributed over one or more heterogeneous data sources.
 {: .pb-5 }
 
-## Table of contents
-
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc .pb-5 }
+{% include toc.html %}
 
 Querying data in lakeFS from Presto/Trino is similar to querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
 
@@ -33,7 +27,7 @@ In the following examples, we set AWS credentials at runtime for clarity. In pro
 
 ### Configure the Hive connector
 
-Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the `hive` catalog, replacing `example.net:9083` with the correct host and port for your Hive Metastore Thrift service:
+Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the Hive catalog, replacing `example.net:9083` with the correct host and port for your Hive Metastore Thrift service:
 ```properties
 connector.name=hive-hadoop2
 hive.metastore.uri=thrift://example.net:9083

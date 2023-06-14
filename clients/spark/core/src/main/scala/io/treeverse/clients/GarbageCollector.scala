@@ -3,29 +3,32 @@ package io.treeverse.clients
 import com.amazonaws.services.s3.AmazonS3
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse
 import io.treeverse.clients.LakeFSContext._
+import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import org.apache.spark.HashPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.HashPartitioner
+import org.apache.spark.storage.StorageLevel
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
+import java.io.FileNotFoundException
+import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneOffset}
-import java.net.URI
 import java.util.UUID
-import org.apache.commons.lang3.StringUtils
 
 trait RangeGetter extends Serializable {
 
   /** @return all rangeIDs in metarange of commitID on repo.
    */
   def getRangeIDs(commitID: String, repo: String): Iterator[String]
+
+  def getRangeIDs(metaRangeURL: String): Iterator[String]
 
   /** @return all object addresses in range rangeID on repo.
    */
@@ -34,6 +37,16 @@ trait RangeGetter extends Serializable {
 
 class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: ConfigMapper)
     extends RangeGetter {
+  def getRangeIDs(metaRangeURL: String): Iterator[String] = {
+    val conf = configMapper.configuration
+    if (metaRangeURL == "") Iterator.empty
+    else
+      SSTableReader
+        .forMetaRange(conf, metaRangeURL)
+        .newIterator()
+        .map(o => new String(o.id))
+  }
+
   def getRangeIDs(commitID: String, repo: String): Iterator[String] = {
     val conf = configMapper.configuration
     val apiClient = ApiClient.get(apiConf)
@@ -43,14 +56,9 @@ class LakeFSRangeGetter(val apiConf: APIConfigurations, val configMapper: Config
       return Iterator.empty
     }
     val location = apiClient.getMetaRangeURL(repo, commit)
+    getRangeIDs(location)
     // continue on empty location, empty location is a result of a commit
     // with no metaRangeID (e.g 'Repository created' commit)
-    if (location == "") Iterator.empty
-    else
-      SSTableReader
-        .forMetaRange(conf, location)
-        .newIterator()
-        .map(o => new String(o.id))
   }
 
   def getRangeEntries(
@@ -106,15 +114,26 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   }
 
   def getRangeIDsForCommits(
-      commitIDs: Dataset[(String, Boolean)],
-      repo: String
+      commits: Dataset[Row],
+      repo: String,
+      storageNSForHadoopFS: String
   ): Dataset[(String, Boolean)] = {
     import spark.implicits._
-
-    commitIDs.flatMap({ case (commitID, expire) =>
-      rangeGetter
-        .getRangeIDs(commitID, repo)
-        .map((_, expire))
+    val hasMetaRangeIDs = commits.schema.fields.length == 3
+    commits.flatMap({
+      case (row) => {
+        val commitID = row.getString(0)
+        val expired = row.getBoolean(1)
+        val metaRangeID = if (hasMetaRangeIDs) row.getString(2) else null
+        val rangeIDs =
+          if (hasMetaRangeIDs && StringUtils.isNotBlank(metaRangeID))
+            rangeGetter
+              .getRangeIDs(storageNSForHadoopFS + "_lakefs/" + metaRangeID)
+          else
+            rangeGetter
+              .getRangeIDs(commitID, repo)
+        rangeIDs.map((_, expired))
+      }
     })
   }
 
@@ -205,7 +224,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
   def getExpiredAddresses(
       repo: String,
       storageNS: String,
-      runID: String,
+      storageNSForHadoopFS: String,
       commitDFLocation: String,
       numCommitPartitions: Int,
       numRangePartitions: Int,
@@ -213,13 +232,10 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       approxNumRangesToSpreadPerPartition: Double,
       sampleFraction: Double
   ): Dataset[String] = {
-    import spark.implicits._
-
     val commitsDS = getCommitsDF(commitDFLocation)
-      .as[(String, Boolean)]
-      .repartition(numRangePartitions)
+      .repartition(numCommitPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
-    val rangeIDs = getRangeIDsForCommits(commitsDS, repo)
+    val rangeIDs = getRangeIDsForCommits(commitsDS, repo, storageNSForHadoopFS)
 
     try {
       getAddressesToDelete(
@@ -290,7 +306,7 @@ object GarbageCollector {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) = {
     val hc = spark.sparkContext.hadoopConfiguration
 
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
@@ -311,7 +327,9 @@ object GarbageCollector {
 
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, UUID.randomUUID().toString)
 
-    if (!maxCommitIsoDatetime.isEmpty) {
+    println(s"Got mark_id $markID")
+
+    if (maxCommitIsoDatetime.nonEmpty) {
       hc.setLong(
         LAKEFS_CONF_DEBUG_GC_MAX_COMMIT_EPOCH_SECONDS_KEY,
         LocalDateTime
@@ -367,6 +385,9 @@ object GarbageCollector {
     var runID = ""
     var expiredAddresses: DataFrame = null
     val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+    val region = getRegion(args)
+    val storageClient: StorageClient =
+      StorageClients(storageType, configMapper, storageNSForSdkClient, region)
 
     if (shouldMark) {
       val markInfo =
@@ -378,7 +399,8 @@ object GarbageCollector {
                       apiURL,
                       markID,
                       storageNSForSdkClient,
-                      storageNSForHadoopFS
+                      storageNSForHadoopFS,
+                      configMapper
                      )
       gcAddressesLocation = markInfo._1
       gcCommitsLocation = markInfo._2
@@ -389,25 +411,24 @@ object GarbageCollector {
     val schema = StructType(Array(StructField("addresses", StringType, nullable = false)))
     val removed = {
       if (shouldSweep) {
-        // If a mark didn't happen in this run, gcAddressesLocation will be empty and expiredAddresses will be null.
-        if (gcAddressesLocation.isEmpty) {
+        // If a mark didn't happen in this run, gcAddressesLocation, runID, and expiredAddresses will be empty.
+        if (!shouldMark) {
           gcAddressesLocation = getAddressesLocation(storageNSForHadoopFS)
-        }
-        if (expiredAddresses == null) {
           expiredAddresses = readExpiredAddresses(gcAddressesLocation, markID)
+          runID = readRunIDFromMarkIDMetadata(gcAddressesLocation, markID)
+          println(
+            s"Sweep only run: using addresses from location '$gcAddressesLocation' and run ID '$runID'"
+          )
         }
 
-        val region = getRegion(args)
-
-        remove(configMapper,
-               storageNSForSdkClient,
-               gcAddressesLocation,
-               expiredAddresses,
-               markID,
-               region,
-               storageType,
-               schema
-              )
+        remove(
+          storageNSForSdkClient,
+          gcAddressesLocation,
+          expiredAddresses,
+          markID,
+          storageClient,
+          schema
+        )
       } else {
         spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       }
@@ -421,12 +442,12 @@ object GarbageCollector {
     }
 
     val commitsDF = gc.getCommitsDF(gcCommitsLocation)
-    writeReports(storageNSForHadoopFS,
+    writeReports(shouldSweep,
+                 storageNSForHadoopFS,
                  gcRules,
                  runID,
                  markID,
                  commitsDF,
-                 expiredAddresses,
                  removed,
                  configMapper
                 )
@@ -442,12 +463,21 @@ object GarbageCollector {
       apiURL: String,
       markID: String,
       storageNS: String,
-      storageNSForHadoopFS: String
+      storageNSForHadoopFS: String,
+      configMapper: ConfigMapper
   ): (String, String, DataFrame, String) = {
     val runIDToReproduce = hc.get(LAKEFS_CONF_DEBUG_GC_REPRODUCE_RUN_ID_KEY, "")
+    val incrementalRun = hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL, false)
+    val incrementalRunFallbackToFull =
+      hc.getBoolean(LAKEFS_CONF_GC_INCREMENTAL_FALLBACK_TO_FULL, false)
+    val incrementalRunIterations = hc.getInt(LAKEFS_CONF_GC_INCREMENTAL_NTH_PREVIOUS_RUN, 1)
     val previousRunID =
-      "" //args(2) // TODO(Guys): get previous runID from arguments or from storage
-
+      getPreviousRunID(incrementalRun,
+                       storageNSForHadoopFS,
+                       configMapper,
+                       incrementalRunIterations,
+                       incrementalRunFallbackToFull
+                      )
     var prepareResult: GarbageCollectionPrepareResponse = null
     var runID = ""
     var gcCommitsLocation = ""
@@ -490,16 +520,17 @@ object GarbageCollector {
     val sampleFraction = hc.getDouble(LAKEFS_CONF_DEBUG_GC_SAMPLE_FRACTION, 1.0)
 
     val expiredAddresses = gc
-      .getExpiredAddresses(repo,
-                           storageNS,
-                           runID,
-                           gcCommitsLocation,
-                           numCommitPartitions,
-                           numRangePartitions,
-                           numAddressPartitions,
-                           approxNumRangesToSpreadPerPartition,
-                           sampleFraction
-                          )
+      .getExpiredAddresses(
+        repo,
+        storageNS,
+        storageNSForHadoopFS,
+        gcCommitsLocation,
+        numCommitPartitions,
+        numRangePartitions,
+        numAddressPartitions,
+        approxNumRangesToSpreadPerPartition,
+        sampleFraction
+      )
       .toDF("address")
       .withColumn(MARK_ID_KEY, lit(markID))
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -531,6 +562,75 @@ object GarbageCollector {
     (gcAddressesLocation, gcCommitsLocation, expiredAddresses, runID)
   }
 
+  private def getPreviousRunID(
+      incrementalRun: Boolean,
+      storageNS: String,
+      configMapper: ConfigMapper,
+      iterations: Int,
+      fallbackToFull: Boolean
+  ): String = {
+    if (!incrementalRun) {
+      return ""
+    }
+    if (iterations < 1) {
+      throw RunIDException(s"Run ID iteration number ($iterations) cannot be smaller than 1")
+    }
+    var previousRunID = ""
+    val runIDsPath = new Path(
+      String.format(RUN_ID_MARKERS_LOCATION_FORMAT, storageNS.stripSuffix("/"), "")
+    )
+    val runIDsFS = runIDsPath.getFileSystem(configMapper.configuration)
+    try {
+      val runIDs = runIDsFS.listFiles(runIDsPath, false)
+      previousRunID = getNthRunID(runIDs, iterations, fallbackToFull)
+    } catch {
+      case e: FileNotFoundException =>
+        if (fallbackToFull) {
+          return ""
+        }
+        throw e
+    } finally {
+      runIDsFS.close()
+    }
+    println(s"----------------------- Using previous RUN ID: $previousRunID")
+    previousRunID
+  }
+
+  private def getNthRunID(
+      iter: RemoteIterator[LocatedFileStatus],
+      n: Int,
+      fallbackToFull: Boolean
+  ): String = {
+    if (!iter.hasNext && !fallbackToFull) {
+      throw RunIDException("No previous run ID")
+    }
+    var runIDObject: LocatedFileStatus = null
+    for (_ <- 0 until n) {
+      if (!iter.hasNext) {
+        if (fallbackToFull) {
+          return ""
+        }
+        throw RunIDException("Required Run ID iteration doesn't exist")
+      }
+      runIDObject = iter.next()
+    }
+    runIDObject.getPath.getName
+  }
+
+  private def logRunID(storageNS: String, runID: String, configMapper: ConfigMapper): Unit = {
+    val runIDPath = new Path(
+      String.format(RUN_ID_MARKERS_LOCATION_FORMAT, storageNS.stripSuffix("/"), runID)
+    )
+    val runIDFS = runIDPath.getFileSystem(configMapper.configuration)
+
+    val runIDStream = runIDFS.create(runIDPath, false)
+    try {
+      runIDStream.write(new Array[Byte](0))
+    } finally {
+      runIDStream.close()
+    }
+  }
+
   def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
     // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
     // a translated storage namespace that triggers processing by Hadoop FileSystems.
@@ -551,13 +651,21 @@ object GarbageCollector {
       .withColumn(MARK_ID_KEY, lit(markID))
   }
 
+  private def readRunIDFromMarkIDMetadata(addressesLocation: String, markID: String): String = {
+    spark.read
+      .json(s"$addressesLocation/$markID.meta")
+      .select("run_id")
+      .first()
+      .getString(0)
+  }
+
   private def writeReports(
+      isSweep: Boolean,
       storageNSForHadoopFS: String,
       gcRules: String,
       runID: String,
       markID: String,
       commitsDF: DataFrame,
-      expiredAddresses: DataFrame,
       removed: DataFrame,
       configMapper: ConfigMapper
   ) = {
@@ -567,23 +675,19 @@ object GarbageCollector {
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
     writeParquetReport(commitsDF, reportLogsDst, time, "commits.parquet")
 
-    try {
-      val removedCount = removed.count()
-      writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
-      removed
-        .withColumn(MARK_ID_KEY, lit(markID))
-        .withColumn(RUN_ID_KEY, lit(runID))
-        .write
-        .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
-        .mode(SaveMode.Overwrite)
-        .parquet(f"${deletedObjectsDst}/dt=$time")
-      println(f"Total objects deleted (or already had been deleted): ${removedCount}")
-    } catch {
-      case e: Throwable => {
-        println("Error when trying to write the summary, moving on:")
-        e.printStackTrace()
-      }
+    val removedCount = removed.count()
+    println(s"Total objects to delete (some may already have been deleted): $removedCount")
+    if (isSweep) {
+      logRunID(storageNSForHadoopFS, runID, configMapper)
     }
+    writeJsonSummary(configMapper, reportLogsDst, removedCount, gcRules, time)
+    removed
+      .withColumn(MARK_ID_KEY, lit(markID))
+      .withColumn(RUN_ID_KEY, lit(runID))
+      .write
+      .partitionBy(MARK_ID_KEY, RUN_ID_KEY)
+      .mode(SaveMode.Overwrite)
+      .parquet(f"${deletedObjectsDst}/dt=$time")
   }
 
   private def concatToGCLogsPrefix(storageNameSpace: String, key: String): String = {
@@ -598,51 +702,50 @@ object GarbageCollector {
   }
 
   def bulkRemove(
-      configMapper: ConfigMapper,
       readKeysDF: DataFrame,
       storageNamespace: String,
-      region: String,
-      storageType: String
+      storageClient: StorageClient
   ): Dataset[String] = {
     import spark.implicits._
     val bulkRemover =
-      BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+      BulkRemoverFactory(storageClient, storageNamespace)
     val bulkSize = bulkRemover.getMaxBulkSize()
     val repartitionedKeys = repartitionBySize(readKeysDF, bulkSize, "address")
     val bulkedKeyStrings = repartitionedKeys
       .select("address")
       .map(_.getString(0)) // get address as string (address is in index 0 of row)
 
-    bulkedKeyStrings
+    val ds = bulkedKeyStrings
       .mapPartitions(iter => {
         // mapPartitions lambda executions are sent over to Spark executors, the executors don't have access to the
         // bulkRemover created above because it was created on the driver and it is not a serializable object. Therefore,
         // we create new bulkRemovers.
         val bulkRemover =
-          BulkRemoverFactory(storageType, configMapper.configuration, storageNamespace, region)
+          BulkRemoverFactory(storageClient, storageNamespace)
         iter
           .grouped(bulkSize)
           .flatMap(bulkRemover.deleteObjects(_, storageNamespace))
       })
+
+    ds
   }
 
   def remove(
-      configMapper: ConfigMapper,
       storageNamespace: String,
       addressDFLocation: String,
       expiredAddresses: Dataset[Row],
       markID: String,
-      region: String,
-      storageType: String,
+      storageClient: StorageClient,
       schema: StructType
   ) = {
     println("addressDFLocation: " + addressDFLocation)
 
     val df = expiredAddresses.where(col(MARK_ID_KEY) === markID)
-    bulkRemove(configMapper, df, storageNamespace, region, storageType).toDF(schema.fieldNames: _*)
+    bulkRemove(df.orderBy("address"), storageNamespace, storageClient)
+      .toDF(schema.fieldNames: _*)
   }
 
-  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String) = {
+  private def getMetadataMarkLocation(markId: String, gcAddressesLocation: String): String = {
     s"$gcAddressesLocation/$markId.meta"
   }
 
@@ -726,4 +829,6 @@ object GarbageCollector {
   }
 
   def writeJsonSummaryForTesting = writeJsonSummary _
+
+  case class RunIDException(private val message: String = "") extends Exception(message)
 }

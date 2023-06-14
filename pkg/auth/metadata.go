@@ -41,7 +41,7 @@ type MetadataManager interface {
 	GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error)
 	UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error)
 	UpdateSetupTimestamp(context.Context, time.Time) error
-	Write(context.Context) (map[string]string, error)
+	GetMetadata(context.Context) (map[string]string, error)
 }
 
 type KVMetadataManager struct {
@@ -206,7 +206,7 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
-func (m *KVMetadataManager) Write(ctx context.Context) (map[string]string, error) {
+func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
 	metadata["lakefs_kv_type"] = m.kvType
@@ -220,7 +220,7 @@ func (m *KVMetadataManager) Write(ctx context.Context) (map[string]string, error
 	// write installation id
 	m.installationID, err = m.insertOrGetInstallationID(ctx, m.installationID)
 	if err == nil {
-		metadata[InstallationIDKeyName] = m.installationID
+		metadata["installation_id"] = m.installationID
 	}
 
 	setupTS, err := m.getSetupTimestamp(ctx)

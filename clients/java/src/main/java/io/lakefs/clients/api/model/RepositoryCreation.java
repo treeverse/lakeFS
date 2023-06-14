@@ -41,6 +41,10 @@ public class RepositoryCreation {
   @SerializedName(SERIALIZED_NAME_DEFAULT_BRANCH)
   private String defaultBranch;
 
+  public static final String SERIALIZED_NAME_SAMPLE_DATA = "sample_data";
+  @SerializedName(SERIALIZED_NAME_SAMPLE_DATA)
+  private Boolean sampleData = false;
+
 
   public RepositoryCreation name(String name) {
     
@@ -111,6 +115,29 @@ public class RepositoryCreation {
   }
 
 
+  public RepositoryCreation sampleData(Boolean sampleData) {
+    
+    this.sampleData = sampleData;
+    return this;
+  }
+
+   /**
+   * Get sampleData
+   * @return sampleData
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(example = "true", value = "")
+
+  public Boolean getSampleData() {
+    return sampleData;
+  }
+
+
+  public void setSampleData(Boolean sampleData) {
+    this.sampleData = sampleData;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class RepositoryCreation {
     RepositoryCreation repositoryCreation = (RepositoryCreation) o;
     return Objects.equals(this.name, repositoryCreation.name) &&
         Objects.equals(this.storageNamespace, repositoryCreation.storageNamespace) &&
-        Objects.equals(this.defaultBranch, repositoryCreation.defaultBranch);
+        Objects.equals(this.defaultBranch, repositoryCreation.defaultBranch) &&
+        Objects.equals(this.sampleData, repositoryCreation.sampleData);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, storageNamespace, defaultBranch);
+    return Objects.hash(name, storageNamespace, defaultBranch, sampleData);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class RepositoryCreation {
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    storageNamespace: ").append(toIndentedString(storageNamespace)).append("\n");
     sb.append("    defaultBranch: ").append(toIndentedString(defaultBranch)).append("\n");
+    sb.append("    sampleData: ").append(toIndentedString(sampleData)).append("\n");
     sb.append("}");
     return sb.toString();
   }

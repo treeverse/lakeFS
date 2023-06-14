@@ -41,6 +41,10 @@ public class GarbageCollectionPrepareResponse {
   @SerializedName(SERIALIZED_NAME_GC_ADDRESSES_LOCATION)
   private String gcAddressesLocation;
 
+  public static final String SERIALIZED_NAME_GC_COMMITS_PRESIGNED_URL = "gc_commits_presigned_url";
+  @SerializedName(SERIALIZED_NAME_GC_COMMITS_PRESIGNED_URL)
+  private String gcCommitsPresignedUrl;
+
 
   public GarbageCollectionPrepareResponse runId(String runId) {
     
@@ -111,6 +115,29 @@ public class GarbageCollectionPrepareResponse {
   }
 
 
+  public GarbageCollectionPrepareResponse gcCommitsPresignedUrl(String gcCommitsPresignedUrl) {
+    
+    this.gcCommitsPresignedUrl = gcCommitsPresignedUrl;
+    return this;
+  }
+
+   /**
+   * a presigned url to download the commits csv
+   * @return gcCommitsPresignedUrl
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "a presigned url to download the commits csv")
+
+  public String getGcCommitsPresignedUrl() {
+    return gcCommitsPresignedUrl;
+  }
+
+
+  public void setGcCommitsPresignedUrl(String gcCommitsPresignedUrl) {
+    this.gcCommitsPresignedUrl = gcCommitsPresignedUrl;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class GarbageCollectionPrepareResponse {
     GarbageCollectionPrepareResponse garbageCollectionPrepareResponse = (GarbageCollectionPrepareResponse) o;
     return Objects.equals(this.runId, garbageCollectionPrepareResponse.runId) &&
         Objects.equals(this.gcCommitsLocation, garbageCollectionPrepareResponse.gcCommitsLocation) &&
-        Objects.equals(this.gcAddressesLocation, garbageCollectionPrepareResponse.gcAddressesLocation);
+        Objects.equals(this.gcAddressesLocation, garbageCollectionPrepareResponse.gcAddressesLocation) &&
+        Objects.equals(this.gcCommitsPresignedUrl, garbageCollectionPrepareResponse.gcCommitsPresignedUrl);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(runId, gcCommitsLocation, gcAddressesLocation);
+    return Objects.hash(runId, gcCommitsLocation, gcAddressesLocation, gcCommitsPresignedUrl);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class GarbageCollectionPrepareResponse {
     sb.append("    runId: ").append(toIndentedString(runId)).append("\n");
     sb.append("    gcCommitsLocation: ").append(toIndentedString(gcCommitsLocation)).append("\n");
     sb.append("    gcAddressesLocation: ").append(toIndentedString(gcAddressesLocation)).append("\n");
+    sb.append("    gcCommitsPresignedUrl: ").append(toIndentedString(gcCommitsPresignedUrl)).append("\n");
     sb.append("}");
     return sb.toString();
   }

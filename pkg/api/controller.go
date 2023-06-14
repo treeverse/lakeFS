@@ -40,6 +40,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
+	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -67,10 +68,6 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
-
-	httpHeaderCopyType        = "X-Lakefs-Copy-Type"
-	httpHeaderCopyTypeFull    = "full"
-	httpHeaderCopyTypeShallow = "shallow"
 )
 
 type actionsHandler interface {
@@ -372,8 +369,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
 			"expected_type":   expectedType,
 			"blockstore_type": blockStoreType,
-		}).
-			Error("invalid blockstore type")
+		}).Error("invalid blockstore type")
 		c.handleAPIError(ctx, w, r, fmt.Errorf("invalid blockstore type: %w", block.ErrInvalidAddress))
 		return
 	}
@@ -383,8 +379,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	// validate token
 	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
-	if err != nil {
-		c.handleAPIError(ctx, w, r, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -406,12 +401,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
-	if errors.Is(err, graveler.ErrNotFound) {
-		writeError(w, r, http.StatusNotFound, err)
-		return
-	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -597,17 +587,17 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 		return
 	}
 
-	var acl model.ACL
+	var groupACL model.ACL
 	switch len(policies) {
 	case 0: // Blank ACL is valid and allows nothing
 		break
 	case 1:
-		acl = policies[0].ACL
-		if len(acl.Permission) == 0 {
+		groupACL = policies[0].ACL
+		if len(groupACL.Permission) == 0 {
 			c.Logger.
 				WithContext(ctx).
 				WithField("policy", fmt.Sprintf("%+v", policies[0])).
-				WithField("acl", fmt.Sprintf("%+v", acl)).
+				WithField("acl", fmt.Sprintf("%+v", groupACL)).
 				WithField("group", groupID).
 				Warn("Policy attached to group has no ACL")
 			response := NotFoundOrNoACL{
@@ -632,7 +622,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	response := ACL{
-		Permission: string(acl.Permission),
+		Permission: string(groupACL.Permission),
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -1436,7 +1426,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadStorageConfiguration,
+			Action:   permissions.ReadConfigAction,
 			Resource: permissions.All,
 		},
 	}) {
@@ -1453,7 +1443,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           defaultNamespacePrefix,
 		PreSignSupport:                   info.PreSignSupport,
-		PreSignSupportUI:                 info.PreSignSupportUI,
+		PreSignSupportUi:                 info.PreSignSupportUI,
 		ImportSupport:                    info.ImportSupport,
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1509,7 +1499,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.AttachStorageNamespace,
+					Action:   permissions.AttachStorageNamespaceAction,
 					Resource: permissions.StorageNamespace(body.StorageNamespace),
 				},
 			},
@@ -1518,14 +1508,18 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 	ctx := r.Context()
+	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
+	if sampleData {
+		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
+	}
 
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
 
-	if params.Bare != nil && *params.Bare {
+	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
 		repo, err := c.Catalog.CreateBareRepository(ctx,
@@ -1547,9 +1541,11 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 
 	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
 	if err != nil {
-		reason := "unknown"
-		var retErr error
-		var urlErr *url.Error
+		var (
+			reason string
+			retErr error
+			urlErr *url.Error
+		)
 		switch {
 		case errors.As(err, &urlErr) && urlErr.Op == "parse":
 			retErr = err
@@ -1557,11 +1553,12 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		case errors.Is(err, block.ErrInvalidAddress):
 			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
 			reason = "invalid_namespace"
-		case errors.Is(err, errStorageNamespaceInUse):
+		case errors.Is(err, ErrStorageNamespaceInUse):
 			retErr = err
 			reason = "already_in_use"
 		default:
 			retErr = ErrFailedToAccessStorage
+			reason = "unknown"
 		}
 		c.Logger.
 			WithError(err).
@@ -1578,6 +1575,27 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
+	if sampleData {
+		// add sample data, hooks, etc.
+		user, err := auth.GetUser(ctx)
+		if err != nil {
+			writeError(w, r, http.StatusUnauthorized, "missing user")
+			return
+		}
+
+		err = samplerepo.PopulateSampleRepo(ctx, newRepo, c.Catalog, c.PathProvider, c.BlockAdapter, user)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error populating sample repository: %w", err))
+			return
+		}
+
+		err = samplerepo.SampleRepoAddBranchProtection(ctx, newRepo, c.Catalog)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("error adding branch protection to sample repository: %w", err))
+			return
+		}
+	}
+
 	response := Repository{
 		CreationDate:     newRepo.CreationDate.Unix(),
 		DefaultBranch:    newRepo.DefaultBranch,
@@ -1586,8 +1604,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
-
-var errStorageNamespaceInUse = errors.New("lakeFS repositories can't share storage namespace")
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
@@ -1603,7 +1619,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	objLen := int64(len(dummyData))
 	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
-			storageNamespace, errStorageNamespaceInUse)
+			storageNamespace, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
@@ -1990,7 +2006,13 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	log := c.Logger.WithContext(ctx).WithError(err)
 
+	// order of case is important, more specific errors should be first
 	switch {
+	case errors.Is(err, graveler.ErrAddressTokenNotFound),
+		errors.Is(err, graveler.ErrAddressTokenExpired):
+		log.Debug("Expired or invalid address token")
+		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
+
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
@@ -2043,11 +2065,6 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		log.Debug("Retried too many times")
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
 
-	case errors.Is(err, graveler.ErrAddressTokenNotFound),
-		errors.Is(err, graveler.ErrAddressTokenExpired):
-		log.Debug("Expired or invalid address token")
-		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
-
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
@@ -2092,13 +2109,164 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body Re
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ImportStartJSONRequestBody, repository, branch string) {
+	perm := permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.BranchArn(repository, branch),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateBranchAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.BranchArn(repository, branch),
+				},
+			},
+		},
+	}
+	// Add import permissions per source
+	// Add object permissions per destination
+	for _, source := range body.Paths {
+		perm.Nodes = append(perm.Nodes,
+			permissions.Node{Permission: permissions.Permission{
+				Action:   permissions.ImportFromStorageAction,
+				Resource: permissions.StorageNamespace(source.Path),
+			}},
+			permissions.Node{Permission: permissions.Permission{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(repository, source.Destination),
+			}})
+	}
+	if !c.authorize(w, r, perm) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "import", r, repository, branch, "")
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing user")
+		return
+	}
+	metadata := map[string]string{}
+	if body.Commit.Metadata != nil {
+		metadata = body.Commit.Metadata.AdditionalProperties
+	}
+	paths := make([]catalog.ImportPath, 0, len(body.Paths))
+	for _, p := range body.Paths {
+		pathType, err := catalog.GetImportPathType(p.Type)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		paths = append(paths, catalog.ImportPath{
+			Destination: p.Destination,
+			Path:        p.Path,
+			Type:        pathType,
+		})
+	}
+
+	committer := user.Username
+	importID, err := c.Catalog.Import(r.Context(), repository, branch, catalog.ImportRequest{
+		Paths: paths,
+		Commit: catalog.ImportCommit{
+			CommitMessage: body.Commit.Message,
+			Committer:     committer,
+			Metadata:      metadata,
+		},
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, ImportCreationResponse{
+		Id: importID,
+	})
+}
+
+func importStatusToResponse(status *graveler.ImportStatus) ImportStatusResp {
+	resp := ImportStatusResp{
+		Completed:       status.Completed,
+		IngestedObjects: &status.Progress,
+		UpdateTime:      status.UpdatedAt,
+	}
+
+	if status.Error != nil {
+		resp.Error = &Error{Message: status.Error.Error()}
+	}
+	if status.MetaRangeID != "" {
+		metarange := status.MetaRangeID.String()
+		resp.MetarangeId = &metarange
+	}
+
+	commitLog := catalog.CommitRecordToLog(status.Commit)
+	if commitLog != nil {
+		resp.Commit = &Commit{
+			Committer:    commitLog.Committer,
+			CreationDate: commitLog.CreationDate.Unix(),
+			Id:           commitLog.Reference,
+			Message:      commitLog.Message,
+			MetaRangeId:  commitLog.MetaRangeID,
+			Metadata:     &Commit_Metadata{AdditionalProperties: commitLog.Metadata},
+			Parents:      commitLog.Parents,
+		}
+	}
+
+	return resp
+}
+
+func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadBranchAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	status, err := c.Catalog.GetImportStatus(ctx, repository, params.Id)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	resp := importStatusToResponse(status)
+	writeResponse(w, r, http.StatusOK, resp)
+}
+
+func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params ImportCancelParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ImportCancelAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "cancel_import", r, repository, branch, "")
+	err := c.Catalog.CancelImport(ctx, repository, params.Id)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body IngestRangeJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ImportFromStorage,
+					Action:   permissions.ImportFromStorageAction,
 					Resource: permissions.StorageNamespace(body.FromSourceURI),
 				},
 			},
@@ -2235,16 +2403,13 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body CommitJ
 }
 
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
-	newMetadata := Commit_Metadata{
-		AdditionalProperties: map[string]string(newCommit.Metadata),
-	}
 	response := Commit{
 		Committer:    newCommit.Committer,
 		CreationDate: newCommit.CreationDate.Unix(),
 		Id:           newCommit.Reference,
 		Message:      newCommit.Message,
 		MetaRangeId:  newCommit.MetaRangeID,
-		Metadata:     &newMetadata,
+		Metadata:     &Commit_Metadata{AdditionalProperties: newCommit.Metadata},
 		Parents:      newCommit.Parents,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -2314,6 +2479,22 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Request, repository, branch string, params UploadObjectPreflightParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "put_object_preflight", r, repository, branch, "")
+
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
@@ -2583,7 +2764,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 	}
 
 	// copy entry
-	entry, fullCopy, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
+	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2594,11 +2775,6 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body Cop
 		return
 	}
 
-	copyType := httpHeaderCopyTypeShallow
-	if fullCopy {
-		copyType = httpHeaderCopyTypeFull
-	}
-	w.Header().Set(httpHeaderCopyType, copyType)
 	response := ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -2703,16 +2879,13 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	metadata := Commit_Metadata{
-		AdditionalProperties: map[string]string(commit.Metadata),
-	}
 	response := Commit{
 		Id:           commit.Reference,
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
-		Metadata:     &metadata,
+		Metadata:     &Commit_Metadata{AdditionalProperties: commit.Metadata},
 		Parents:      commit.Parents,
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -2738,6 +2911,22 @@ func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Re
 		resp.Branches = append(resp.Branches, GarbageCollectionRule{BranchId: branchID, RetentionDays: int(retentionDays)})
 	}
 	writeResponse(w, r, http.StatusOK, resp)
+}
+
+func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "set_gc_collection_rules_preflight", r, repository, "", "")
+
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body SetGarbageCollectionRulesJSONRequestBody, repository string) {
@@ -2796,10 +2985,18 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	presignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		Identifier:     gcRunMetadata.CommitsCSVLocation,
+		IdentifierType: block.IdentifierTypeFull,
+	}, block.PreSignModeRead)
+	if err != nil {
+		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
+	}
 	writeResponse(w, r, http.StatusCreated, GarbageCollectionPrepareResponse{
-		GcCommitsLocation:   gcRunMetadata.CommitsCSVLocation,
-		GcAddressesLocation: gcRunMetadata.AddressLocation,
-		RunId:               gcRunMetadata.RunID,
+		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
+		GcAddressesLocation:   gcRunMetadata.AddressLocation,
+		RunId:                 gcRunMetadata.RunID,
+		GcCommitsPresignedUrl: &presignedURL,
 	})
 }
 
@@ -2840,6 +3037,22 @@ func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.R
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "create_branch_protection_rule_preflight", r, repository, "", "")
+
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
@@ -3234,6 +3447,7 @@ func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, re
 		FromReference: paginationAfter(params.After),
 		Amount:        paginationAmount(params.Amount),
 		Limit:         swag.BoolValue(params.Limit),
+		FirstParent:   swag.BoolValue(params.FirstParent),
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3295,6 +3509,9 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	w.Header().Set("Last-Modified", lastModified)
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Content-Type", entry.ContentType)
+	// for security, make sure the browser and any proxies en route don't cache the response
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
+	w.Header().Set("Expires", "0")
 
 	// calculate possible byte range, if any.
 	if params.Range != nil {
@@ -3391,6 +3608,9 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
 	w.Header().Set("Last-Modified", lastModified)
 	w.Header().Set("Content-Type", entry.ContentType)
+	// for security, make sure the browser and any proxies en route don't cache the response
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
+	w.Header().Set("Expires", "0")
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		c.Logger.
@@ -3632,10 +3852,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		metadata,
 		StringValue(body.Strategy))
 
-	var (
-		hookAbortErr *graveler.HookAbortError
-		zero         int
-	)
+	var hookAbortErr *graveler.HookAbortError
 	switch {
 	case errors.As(err, &hookAbortErr):
 		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
@@ -3644,7 +3861,6 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	case errors.Is(err, graveler.ErrConflictFound):
 		writeResponse(w, r, http.StatusConflict, MergeResult{
 			Reference: reference,
-			Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
 		})
 		return
 	}
@@ -3653,7 +3869,6 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	writeResponse(w, r, http.StatusOK, MergeResult{
 		Reference: reference,
-		Summary:   &MergeResultSummary{Added: &zero, Changed: &zero, Conflict: &zero, Removed: &zero},
 	})
 }
 
@@ -3804,7 +4019,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 	state := string(savedState)
 	// no need to create an admin user if users are managed externally
-	if c.Config.IsAuthTypeAPI() {
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		state = string(auth.SetupStateInitialized)
 	} else if savedState == auth.SetupStateNotInitialized {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
@@ -3847,7 +4062,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	if c.Config.IsAuthTypeAPI() {
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, CredentialsWithSecret{})
 		return
@@ -3901,7 +4116,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	// this is the "natural" next step in the setup process
 	nextStep := auth.SetupStateCommPrefsDone
 	// if users are managed externally, we can skip the admin user creation step
-	if c.Config.IsAuthTypeAPI() {
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		nextStep = auth.SetupStateInitialized
 	}
 	response := NextStep{
@@ -4198,6 +4413,12 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 		return
 	}
 
+	listenAddress := c.Config.ListenAddress
+	if strings.HasPrefix(listenAddress, ":") {
+		// workaround in case we listen on all interfaces without specifying ip
+		listenAddress = fmt.Sprintf("localhost%s", listenAddress)
+	}
+
 	tdp := tablediff.Params{
 		// TODO(jonathan): add base RefPath
 		TablePaths: tablediff.TablePaths{
@@ -4211,9 +4432,9 @@ func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository,
 			},
 		},
 		S3Creds: tablediff.S3Creds{
-			Key:      baseCredential.AccessKeyID,
-			Secret:   baseCredential.SecretAccessKey,
-			Endpoint: fmt.Sprintf("http://%s", c.Config.ListenAddress),
+			Key:      config.SecureString(baseCredential.AccessKeyID),
+			Secret:   config.SecureString(baseCredential.SecretAccessKey),
+			Endpoint: "http://" + listenAddress,
 		},
 		Repo: repository,
 	}
@@ -4460,8 +4681,8 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		SourceRef:  sourceRef,
 		Client:     client,
 	}
-	user, err := auth.GetUser(ctx)
-	if err != nil {
+	user, _ := auth.GetUser(ctx)
+	if user != nil {
 		ev.UserID = user.Username
 	}
 

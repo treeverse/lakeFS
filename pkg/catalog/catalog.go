@@ -52,8 +52,7 @@ const (
 
 	NumberOfParentsOfNonMergeCommit = 1
 
-	gcParquetParallelNum            = 1                // Number of goroutines to handle marshaling of data
-	defaultGCMaxUncommittedFileSize = 20 * 1024 * 1024 // 20 MB
+	gcParquetParallelNum = 1 // Number of goroutines to handle marshaling of data
 
 	// Calculation of size deviation by gcPeriodicCheckSize value
 	// "data" prefix = 4 bytes
@@ -64,11 +63,6 @@ const (
 	// Total per entry ~52 bytes
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
-
-	kvTrackPrefix                = "track"
-	kvTrackDeleteBatchInterval   = 2 * time.Second
-	kvTrackDeleteBatchSize       = 1000
-	kvTrackDeleteAddressDuration = time.Hour
 )
 
 type Path string
@@ -132,28 +126,28 @@ const (
 )
 
 type Config struct {
-	Config                   *config.Config
-	KVStore                  kv.Store
-	WalkerFactory            WalkerFactory
-	SettingsManagerOption    settings.ManagerOption
-	GCMaxUncommittedFileSize int // The maximum file size for uncommitted dump created during PrepareUncommittedGC
-	PathProvider             *upload.PathPartitionProvider
-	Limiter                  ratelimit.Limiter
+	Config                *config.Config
+	KVStore               kv.Store
+	WalkerFactory         WalkerFactory
+	SettingsManagerOption settings.ManagerOption
+	PathProvider          *upload.PathPartitionProvider
+	Limiter               ratelimit.Limiter
 }
 
 type Catalog struct {
-	BlockAdapter             block.Adapter
-	Store                    Store
-	GCMaxUncommittedFileSize int
-	log                      logging.Logger
-	walkerFactory            WalkerFactory
-	managers                 []io.Closer
-	workPool                 *pond.WorkerPool
-	PathProvider             *upload.PathPartitionProvider
-	BackgroundLimiter        ratelimit.Limiter
-	KVStore                  kv.Store
-	KVStoreLimited           kv.Store
-	addressProvider          *ident.HexAddressProvider
+	BlockAdapter          block.Adapter
+	Store                 Store
+	log                   logging.Logger
+	walkerFactory         WalkerFactory
+	managers              []io.Closer
+	workPool              *pond.WorkerPool
+	PathProvider          *upload.PathPartitionProvider
+	BackgroundLimiter     ratelimit.Limiter
+	KVStore               kv.Store
+	KVStoreLimited        kv.Store
+	addressProvider       *ident.HexAddressProvider
+	UGCPrepareMaxFileSize int64
+	UGCPrepareInterval    time.Duration
 }
 
 const (
@@ -162,12 +156,44 @@ const (
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
 	ListEntriesLimitMax      = 10000
-	sharedWorkers            = 15
+	sharedWorkers            = 30
 	pendingTasksPerWorker    = 3
 	workersMaxDrainDuration  = 5 * time.Second
 )
 
-var ErrUnknownDiffType = errors.New("unknown graveler difference type")
+type ImportPathType string
+
+const (
+	ImportPathTypePrefix = "common_prefix"
+	ImportPathTypeObject = "object"
+)
+
+type ImportPath struct {
+	Path        string
+	Destination string
+	Type        ImportPathType
+}
+
+func GetImportPathType(t string) (ImportPathType, error) {
+	switch t {
+	case ImportPathTypePrefix,
+		ImportPathTypeObject:
+		return ImportPathType(t), nil
+	default:
+		return "", fmt.Errorf("invalid import type: %w", graveler.ErrInvalidValue)
+	}
+}
+
+type ImportCommit struct {
+	CommitMessage string
+	Committer     string
+	Metadata      Metadata
+}
+
+type ImportRequest struct {
+	Paths  []ImportPath
+	Commit ImportCommit
+}
 
 type ctxCloser struct {
 	close context.CancelFunc
@@ -187,9 +213,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	if cfg.WalkerFactory == nil {
 		cfg.WalkerFactory = store.NewFactory(cfg.Config)
-	}
-	if cfg.GCMaxUncommittedFileSize == 0 {
-		cfg.GCMaxUncommittedFileSize = defaultGCMaxUncommittedFileSize
 	}
 
 	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
@@ -263,18 +286,19 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 	return &Catalog{
-		BlockAdapter:             tierFSParams.Adapter,
-		Store:                    gStore,
-		GCMaxUncommittedFileSize: cfg.GCMaxUncommittedFileSize,
-		PathProvider:             cfg.PathProvider,
-		BackgroundLimiter:        cfg.Limiter,
-		log:                      logging.Default().WithField("service_name", "entry_catalog"),
-		walkerFactory:            cfg.WalkerFactory,
-		workPool:                 workPool,
-		KVStore:                  cfg.KVStore,
-		managers:                 []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
-		KVStoreLimited:           storeLimiter,
-		addressProvider:          addressProvider,
+		BlockAdapter:          tierFSParams.Adapter,
+		Store:                 gStore,
+		UGCPrepareMaxFileSize: cfg.Config.UGC.PrepareMaxFileSize,
+		UGCPrepareInterval:    cfg.Config.UGC.PrepareInterval,
+		PathProvider:          cfg.PathProvider,
+		BackgroundLimiter:     cfg.Limiter,
+		log:                   logging.Default().WithField("service_name", "entry_catalog"),
+		walkerFactory:         cfg.WalkerFactory,
+		workPool:              workPool,
+		KVStore:               cfg.KVStore,
+		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		KVStoreLimited:        storeLimiter,
+		addressProvider:       addressProvider,
 	}, nil
 }
 
@@ -1072,7 +1096,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
-	it, err := c.Store.Log(ctx, repository, commitID)
+	it, err := c.Store.Log(ctx, repository, commitID, params.FirstParent)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1155,14 +1179,16 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 				}
 				job := &commitLogJob{order: commitOrder}
 				if pathInCommit {
-					job.log = convertCommit(commitRecord)
+					job.log = CommitRecordToLog(commitRecord)
 				}
 				outCh <- job
 				return nil
 			})
 		}
-		// wait until workers are done and return the first error
+		// wait until workers are done or the first non-nil error was returned from a worker
 		if err := workerGroup.Wait(); err != nil {
+			// Wait until all workers are done regardless of the error.
+			workerGroup.TaskGroup.Wait()
 			return err
 		}
 		return it.Err()
@@ -1225,7 +1251,7 @@ func listCommitsWithoutPaths(it graveler.CommitIterator, params LogParams) ([]*C
 	for it.Next() {
 		val := it.Value()
 
-		commits = append(commits, convertCommit(val))
+		commits = append(commits, CommitRecordToLog(val))
 		if foundAllCommits(params, commits) {
 			// All results returned until the last commit found
 			// and the number of commits found is as expected.
@@ -1245,7 +1271,10 @@ func foundAllCommits(params LogParams, commits []*CommitLog) bool {
 		len(commits) >= params.Amount+1
 }
 
-func convertCommit(val *graveler.CommitRecord) *CommitLog {
+func CommitRecordToLog(val *graveler.CommitRecord) *CommitLog {
+	if val == nil {
+		return nil
+	}
 	commit := &CommitLog{
 		Reference:    val.CommitID.String(),
 		Committer:    val.Committer,
@@ -1768,6 +1797,178 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
+func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
+	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
+	defer cancel()
+
+	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
+	if err != nil {
+		return fmt.Errorf("creating import manager: %w", err)
+	}
+	defer importManager.Close()
+
+	wg, wgCtx := c.workPool.GroupContext(ctx)
+	for _, source := range params.Paths {
+		src := source // Pinning
+		wg.Submit(func() error {
+			// TODO (niro): Need to handle this at some point (use adapter GetWalker)
+			walker, err := c.walkerFactory.GetWalker(wgCtx, store.WalkerOptions{StorageURI: src.Path})
+			if err != nil {
+				return fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
+			}
+
+			it, err := NewWalkEntryIterator(wgCtx, walker, src.Type, src.Destination, "", "")
+			if err != nil {
+				return fmt.Errorf("creating walk iterator on path %s: %w", src.Path, err)
+			}
+			logger.WithFields(logging.Fields{"source": src.Path, "itr": it}).Debug("Ingest source")
+			defer it.Close()
+			return importManager.Ingest(it)
+		})
+	}
+
+	err = wg.Wait()
+	if err != nil {
+		importError := fmt.Errorf("error on ingest: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	importItr, err := importManager.NewItr()
+	if err != nil {
+		importError := fmt.Errorf("error on import iterator: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+	defer importItr.Close()
+
+	var ranges []*graveler.RangeInfo
+	for importItr.hasMore {
+		rangeInfo, err := c.Store.WriteRange(ctx, repository, importItr)
+		if err != nil {
+			importError := fmt.Errorf("write range: %w", err)
+			importManager.SetError(importError)
+			return importError
+		}
+
+		ranges = append(ranges, rangeInfo)
+		// Check if operation was canceled
+		if ctx.Err() != nil {
+			return nil
+		}
+	}
+
+	// Create metarange
+	metarange, err := c.Store.WriteMetaRange(ctx, repository, ranges)
+	if err != nil {
+		importError := fmt.Errorf("create metarange: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	commitID, err := c.Store.Import(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
+		Committer: params.Commit.Committer,
+		Message:   params.Commit.CommitMessage,
+		Metadata:  map[string]string(params.Commit.Metadata),
+	})
+	if err != nil {
+		importError := fmt.Errorf("merge import: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	commit, err := c.Store.GetCommit(ctx, repository, commitID)
+	if err != nil {
+		importError := fmt.Errorf("get commit: %w", err)
+		importManager.SetError(importError)
+		return importError
+	}
+
+	// Update import status
+	status := importManager.Status()
+	status.MetaRangeID = commit.MetaRangeID
+	status.Commit = &graveler.CommitRecord{
+		CommitID: commitID,
+		Commit:   commit,
+	}
+
+	status.Completed = true
+	importManager.SetStatus(status)
+	return nil
+}
+
+func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = c.Store.GetBranch(ctx, repository, graveler.BranchID(branchID))
+	if err != nil {
+		return "", err
+	}
+
+	id := xid.New().String()
+	// Run import
+	go func() {
+		logger := c.log.WithField("import_id", id)
+		err = c.importAsync(repository, branchID, id, params, logger)
+		if err != nil {
+			logger.WithError(err).Error("import failure")
+		}
+	}()
+	return id, nil
+}
+
+func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID string) error {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+
+	importStatus, err := c.getImportStatus(ctx, repository, importID)
+	if err != nil {
+		return err
+	}
+	if importStatus.Completed {
+		c.log.WithFields(logging.Fields{
+			"import_id": importID,
+			"completed": importStatus.Completed,
+			"error":     importStatus.Error,
+		}).Warning("Not canceling import - already completed")
+		return graveler.ErrConflictFound
+	}
+	importStatus.Error = ImportCanceled
+	importStatus.UpdatedAt = timestamppb.Now()
+	return kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.ImportsPath(importID)), importStatus)
+}
+
+func (c *Catalog) getImportStatus(ctx context.Context, repository *graveler.RepositoryRecord, importID string) (*graveler.ImportStatusData, error) {
+	repoPartition := graveler.RepoPartition(repository)
+	data := &graveler.ImportStatusData{}
+	_, err := kv.GetMsg(ctx, c.KVStore, repoPartition, []byte(graveler.ImportsPath(importID)), data)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return nil, graveler.ErrNotFound
+		}
+		return nil, err
+	}
+	return data, nil
+}
+
+func (c *Catalog) GetImportStatus(ctx context.Context, repositoryID, importID string) (*graveler.ImportStatus, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.getImportStatus(ctx, repository, importID)
+	if err != nil {
+		return nil, err
+	}
+	return graveler.ImportStatusFromProto(data), nil
+}
+
 func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -1780,7 +1981,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, params.Prepend, params.After, params.ContinuationToken)
+	it, err := NewWalkEntryIterator(ctx, walker, ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
@@ -1800,7 +2001,8 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 		}
 
 		for _, obj := range skipped {
-			entryRecord := objectStoreEntryToEntryRecord(obj, params.Prepend)
+			p := params.Prepend + obj.RelativeKey
+			entryRecord := objectStoreEntryToEntryRecord(obj, p)
 			entry, err := EntryToValue(entryRecord.Entry)
 			if err != nil {
 				return nil, nil, fmt.Errorf("parsing entry: %w", err)
@@ -1894,7 +2096,6 @@ type GCUncommittedMark struct {
 	BranchID graveler.BranchID `json:"branch"`
 	Path     Path              `json:"path"`
 	RunID    string            `json:"run_id"`
-	Tracked  bool              `json:"tracked"`
 	Key      string            `json:"key"`
 }
 
@@ -1966,7 +2167,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	uw := NewUncommittedWriter(fd)
 
 	// Write parquet to local storage
-	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, c.KVStore, repository, uw, mark, runID, int64(c.GCMaxUncommittedFileSize))
+	newMark, hasData, err := gcWriteUncommitted(ctx, c.Store, repository, uw, mark, runID, c.UGCPrepareMaxFileSize, c.UGCPrepareInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -1996,119 +2197,56 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-// CopyEntry copy entry information - will try to perform shallow copy. Source on the same repository branch and in staging, or it will do full copy.
-// Full copy will use the block adapter to make a copy of the data to a new physical address.
-// The return boolean is true in case of full copy.
-func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, bool, error) {
-	var (
-		entry    *DBEntry // set to the entry we created (shallow or copy)
-		srcEntry *DBEntry // in case we load entry from staging we can reuse on full-copy
-		err      error
-	)
+// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
+func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string) (*DBEntry, error) {
+	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
+	// fetch src entry if needed - optimization in case we already have the entry
+	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
+	if err != nil {
+		return nil, err
+	}
 
-	// try shallow copy if we are copy from same repository and branch
-	if srcRepository == destRepository && srcRef == destBranch {
-		// get entry from staging (fallback in case not found)
-		srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{StageOnly: true})
-		if err != nil && !errors.Is(err, graveler.ErrNotFound) {
-			return nil, false, err
-		}
-		if err == nil {
-			// track physical address (copy-table)
-			_, err := c.TrackPhysicalAddress(ctx, srcRepository, srcEntry.PhysicalAddress)
-			if err != nil {
-				return nil, false, err
-			}
+	// load repositories information for storage namespace
+	destRepo, err := c.GetRepository(ctx, destRepository)
+	if err != nil {
+		return nil, err
+	}
 
-			// create entry only once. in case the first try fails because of commit we need to fall back to full copy
-			dstEntry := *srcEntry
-			dstEntry.CreationDate = time.Now()
-			dstEntry.Path = destPath
-			err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, graveler.WithMaxTries(1))
-			if err != nil {
-				return nil, false, err
-			}
-			entry = &dstEntry
+	srcRepo := destRepo
+	if srcRepository != destRepository {
+		srcRepo, err = c.GetRepository(ctx, srcRepository)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
-	// fetch src entry if needed - optimization in case we already have the entry
-	fullCopy := false
-	if entry == nil {
-		fullCopy = true
-		// get an entry if needed
-		if srcEntry == nil {
-			srcEntry, err = c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
-			if err != nil {
-				return nil, false, err
-			}
-		}
-
-		// load repositories information for storage namespace
-		destRepo, err := c.GetRepository(ctx, destRepository)
-		if err != nil {
-			return nil, false, err
-		}
-
-		srcRepo := destRepo
-		if srcRepository != destRepository {
-			srcRepo, err = c.GetRepository(ctx, srcRepository)
-			if err != nil {
-				return nil, false, err
-			}
-		}
-
-		// copy data to a new physical address
-		dstEntry := *srcEntry
-		dstEntry.CreationDate = time.Now()
-		dstEntry.Path = destPath
-		dstEntry.AddressType = AddressTypeRelative
-		dstEntry.PhysicalAddress = c.PathProvider.NewPath()
-		srcObject := block.ObjectPointer{
-			StorageNamespace: srcRepo.StorageNamespace,
-			IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-			Identifier:       srcEntry.PhysicalAddress,
-		}
-		destObj := block.ObjectPointer{
-			StorageNamespace: destRepo.StorageNamespace,
-			IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
-			Identifier:       dstEntry.PhysicalAddress,
-		}
-		err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
-		if err != nil {
-			return nil, false, err
-		}
-		entry = &dstEntry
+	// copy data to a new physical address
+	dstEntry := *srcEntry
+	dstEntry.CreationDate = time.Now()
+	dstEntry.Path = destPath
+	dstEntry.AddressType = AddressTypeRelative
+	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
+	srcObject := block.ObjectPointer{
+		StorageNamespace: srcRepo.StorageNamespace,
+		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+		Identifier:       srcEntry.PhysicalAddress,
+	}
+	destObj := block.ObjectPointer{
+		StorageNamespace: destRepo.StorageNamespace,
+		IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
+		Identifier:       dstEntry.PhysicalAddress,
+	}
+	err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
+	if err != nil {
+		return nil, err
 	}
 
 	// create entry for the final copy
-	err = c.CreateEntry(ctx, destRepository, destBranch, *entry)
+	err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return entry, fullCopy, nil
-}
-
-// TrackPhysicalAddress store physical address under repository partition, key is unique identifier that we keep in
-// time based order to later delete old ones
-func (c *Catalog) TrackPhysicalAddress(ctx context.Context, repository, physicalAddress string) (string, error) {
-	repo, err := c.getRepository(ctx, repository)
-	if err != nil {
-		return "", err
-	}
-	repoPartition := graveler.RepoPartition(repo)
-	id := xid.New().String()
-	key := kv.FormatPath(kvTrackPrefix, id)
-	ent := &Entry{
-		Address:      physicalAddress,
-		LastModified: timestamppb.Now(),
-	}
-	err = kv.SetMsg(ctx, c.KVStore, repoPartition, []byte(key), ent)
-	if err != nil {
-		return "", err
-	}
-	return id, nil
+	return &dstEntry, nil
 }
 
 func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
@@ -2142,6 +2280,21 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 	}
 }
 
+func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log.WithError(err).Warn("Delete expired imports: failed to list repositories")
+		return
+	}
+
+	for _, repo := range repos {
+		err = c.Store.DeleteExpiredImports(ctx, repo)
+		if err != nil {
+			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired imports failed")
+		}
+	}
+}
+
 func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
 	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
@@ -2157,88 +2310,6 @@ func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.Repos
 		return nil, err
 	}
 	return repos, nil
-}
-
-func (c *Catalog) DeleteTrackedPhysicalAddresses(ctx context.Context) {
-	repos, err := c.listRepositoriesHelper(ctx)
-	if err != nil {
-		c.log.WithError(err).Warn("Failed list repositories during delete tracked physical addresses")
-		return
-	}
-
-	for _, repo := range repos {
-		if err := c.deleteRepoTrackedPhysicalAddresses(ctx, repo); err != nil {
-			c.log.WithError(err).
-				WithField("repository", repo.RepositoryID).
-				Warn("Repository delete tracked physical addresses failed")
-		}
-	}
-}
-
-func (c *Catalog) deleteRepoTrackedPhysicalAddresses(ctx context.Context, repo *graveler.RepositoryRecord) error {
-	// collect and delete old keys - work in 'kvTrackDeleteBatchSize' and interval of 5 min between if batch is bigger
-	// based on the last modified field.
-	for {
-		hasMore, err := c.deleteRepoTrackedPhysicalAddressHelper(ctx, repo)
-		if err != nil {
-			return err
-		}
-		if !hasMore {
-			break
-		}
-		// sleep and process more
-		select {
-		case <-time.After(kvTrackDeleteBatchInterval):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-	return nil
-}
-
-func (c *Catalog) deleteRepoTrackedPhysicalAddressHelper(ctx context.Context, repo *graveler.RepositoryRecord) (bool, error) {
-	repoPartition := graveler.RepoPartition(repo)
-	msgType := (&Entry{}).ProtoReflect().Type()
-	prefix := []byte(kv.FormatPath(kvTrackPrefix, ""))
-	it, err := kv.NewPrimaryIterator(ctx, c.KVStoreLimited, msgType, repoPartition, prefix, kv.IteratorOptionsFrom([]byte{}))
-	if err != nil {
-		return false, err
-	}
-	defer it.Close()
-
-	var (
-		keysToDelete []string
-		hasMore      = false
-	)
-	for it.Next() {
-		if len(keysToDelete) >= kvTrackDeleteBatchSize {
-			hasMore = true
-			break
-		}
-		e := it.Entry()
-		entry := e.Value.(*Entry)
-		addressTime := entry.LastModified.AsTime()
-		if time.Since(addressTime) < kvTrackDeleteAddressDuration {
-			break
-		}
-		keysToDelete = append(keysToDelete, string(e.Key))
-	}
-	if err := it.Err(); err != nil {
-		return false, err
-	}
-
-	// delete the collected keys
-	for _, key := range keysToDelete {
-		err := c.KVStoreLimited.Delete(ctx, []byte(repoPartition), []byte(key))
-		if err != nil {
-			c.log.WithError(err).
-				WithFields(logging.Fields{"repository": repo.RepositoryID, "key": key}).
-				Warn("Failed to delete key while clear tracked physical addresses")
-
-			return false, err
-		}
-	}
-	return hasMore, nil
 }
 
 func (c *Catalog) Close() error {

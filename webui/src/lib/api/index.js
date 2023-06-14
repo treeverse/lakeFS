@@ -552,7 +552,7 @@ class Branches {
         }
     }
 
-    async revert(repoId, branch, options) {
+    async reset(repoId, branch, options) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}`, {
             method: 'PUT',
             body: JSON.stringify(options),
@@ -625,31 +625,81 @@ class Tags {
 
 }
 
+// uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
+//  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
+export const uploadWithProgress = (url, file, method = 'POST', onProgress = null) => {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', event => {
+            if (onProgress)
+                onProgress((event.loaded / event.total) * 100)
+        });
+        xhr.addEventListener('load', () => {
+          resolve({
+              status: xhr.status,
+              body: xhr.responseText,
+              contentType: xhr.getResponseHeader('Content-Type'),
+              etag: xhr.getResponseHeader('ETag')
+          })
+        });
+        xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
+        xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
+        xhr.open(method, url, true);
+        xhr.setRequestHeader('Accept', 'application/json')
+        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion')
+        if (url.startsWith(API_ENDPOINT)) {
+            // swagger API requires a form with a "content" field
+            const data = new FormData();
+            data.append('content', file);
+            xhr.send(data)
+        } else {
+            xhr.send(file);
+        }
+    });
+};
+
 class Objects {
 
     async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
         const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
+
+        if (response.status === 404) {
+            throw new NotFoundError(response.message ?? "ref not found");
+        }
+
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
         return await response.json();
     }
 
-    async upload(repoId, branchId, path, fileObject) {
-        const data = new FormData();
-        data.append('content', fileObject);
-        window.data = data;
+    async uploadPreflight(repoId, branchId, path) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
-            method: 'POST',
-            body: data,
-            headers: new Headers({'Accept': 'application/json'})
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/stage_allowed?` + query);
+
+        if (response.status === 204) {
+            return true;
         }
-        return response.json();
+        if (response.status === 401) {
+            return false;
+        }
+        
+        // This is not one of the expected responses
+        throw new Error(await extractError(response));
+    }
+
+    async upload(repoId, branchId, path, fileObject, onProgressFn = null) {
+        const query = qs({path});
+        const uploadUrl = `${API_ENDPOINT}/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query;
+        const {status, body, contentType} = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
+        if (status !== 201) {
+            if (contentType === "application/json" && body) {
+                const responseData = JSON.parse(body)
+                throw new Error(responseData.message)
+            }
+            throw new Error(body);
+        }
     }
 
     async delete(repoId, branchId, path) {
@@ -672,11 +722,6 @@ class Objects {
         }
 
         return response.text()
-    }
-
-    async getPresignedUrlForDownload(repoId, ref, path) {
-        const response = await this.getStat(repoId, ref, path, true);
-        return response?.physical_address;
     }
 
     async head(repoId, ref, path) {
@@ -853,6 +898,14 @@ class Retention {
         return response.json();
     }
 
+    async setGCPolicyPreflight(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules/set_allowed`);
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+        return response;
+    }
+
     async setGCPolicy(repoID, policy) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
             method: 'POST',
@@ -978,6 +1031,14 @@ class BranchProtectionRules {
         return response.json();
     }
 
+    async createRulePreflight(repoID) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection/set_allowed`);
+        if (response.status !== 204) {
+            return false;
+        }
+        return true;
+    }
+
     async createRule(repoID, pattern) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
             method: 'POST',
@@ -1072,11 +1133,11 @@ class Staging {
         return response.json();
     }
 
-    async link(repoId, branchId, path, staging, checksum, sizeBytes) {
+    async link(repoId, branchId, path, staging, checksum, sizeBytes, contentType = 'application/octet-stream') {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
-            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes})
+            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes, content_type: contentType})
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -1094,6 +1155,56 @@ class OTFDiffs {
             throw new Error(await extractError(response));
         }
         return response.json();
+    }
+}
+
+class Import {
+
+    async get(repoId, branchId, importId) {
+        const query = qs({id: importId});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import?` + query);
+        if (response.status === 404) {
+            throw new NotFoundError(`could not find import ${importId}`);
+        } else if (response.status !== 200) {
+            throw new Error(`could not get import status: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
+
+    async create(repoId, branchId, source, prepend, commitMessage, commitMetadata = {}) {
+        const body = {
+            "paths": [
+                {
+                    "path": source,
+                    "destination": prepend,
+                    "type": "common_prefix",
+            }],
+            "commit": {
+                "message": commitMessage
+            },
+        };
+        if (Object.keys(commitMetadata).length > 0) {
+            body.commit["metadata"] = commitMetadata
+        }
+
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+        if (response.status !== 202) {
+            throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async delete(repoId, branchId, importId) {
+        const query = qs({id: importId});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import?` + query, {
+            method: 'DELETE',
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
     }
 }
 
@@ -1115,3 +1226,4 @@ export const templates = new Templates();
 export const statistics = new Statistics();
 export const staging = new Staging();
 export const otfDiffs = new OTFDiffs();
+export const imports = new Import();
