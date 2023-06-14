@@ -15,21 +15,25 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: treeverse/lakeFS
+          path: lakeFS
 
       - name: list folder
         run: |
           pwd 
-          ls -l $GITHUB_WORKSPACE
-  
+          echo $GITHUB_WORKSPACE
+          ls -l
+
       - name: Checkout Published Docs
         uses: actions/checkout@v2
         with:
           repository: treeverse/docs-lakeFS
+          path: docs-lakeFS
 
       - name: list folder
         run: |
           pwd 
-          ls -l $GITHUB_WORKSPACE
+          echo $GITHUB_WORKSPACE
+          ls -l
   
       - name: Setup Ruby    
         uses: ruby/setup-ruby@v1
