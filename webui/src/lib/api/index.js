@@ -625,6 +625,39 @@ class Tags {
 
 }
 
+// uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
+//  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
+export const uploadWithProgress = (url, file, method = 'POST', onProgress = null) => {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', event => {
+            if (onProgress)
+                onProgress((event.loaded / event.total) * 100)
+        });
+        xhr.addEventListener('load', () => {
+          resolve({
+              status: xhr.status,
+              body: xhr.responseText,
+              contentType: xhr.getResponseHeader('Content-Type'),
+              etag: xhr.getResponseHeader('ETag')
+          })
+        });
+        xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
+        xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
+        xhr.open(method, url, true);
+        xhr.setRequestHeader('Accept', 'application/json')
+        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion')
+        if (url.startsWith(API_ENDPOINT)) {
+            // swagger API requires a form with a "content" field
+            const data = new FormData();
+            data.append('content', file);
+            xhr.send(data)
+        } else {
+            xhr.send(file);
+        }
+    });
+};
+
 class Objects {
 
     async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
@@ -656,20 +689,17 @@ class Objects {
         throw new Error(await extractError(response));
     }
 
-    async upload(repoId, branchId, path, fileObject) {
-        const data = new FormData();
-        data.append('content', fileObject);
-        window.data = data;
+    async upload(repoId, branchId, path, fileObject, onProgressFn = null) {
         const query = qs({path});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
-            method: 'POST',
-            body: data,
-            headers: new Headers({'Accept': 'application/json'})
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
+        const uploadUrl = `${API_ENDPOINT}/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query;
+        const {status, body, contentType} = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
+        if (status !== 201) {
+            if (contentType === "application/json" && body) {
+                const responseData = JSON.parse(body)
+                throw new Error(responseData.message)
+            }
+            throw new Error(body);
         }
-        return response.json();
     }
 
     async delete(repoId, branchId, path) {
@@ -692,11 +722,6 @@ class Objects {
         }
 
         return response.text()
-    }
-
-    async getPresignedUrlForDownload(repoId, ref, path) {
-        const response = await this.getStat(repoId, ref, path, true);
-        return response?.physical_address;
     }
 
     async head(repoId, ref, path) {
@@ -1108,11 +1133,11 @@ class Staging {
         return response.json();
     }
 
-    async link(repoId, branchId, path, staging, checksum, sizeBytes) {
+    async link(repoId, branchId, path, staging, checksum, sizeBytes, contentType = 'application/octet-stream') {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
-            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes})
+            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes, content_type: contentType})
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
