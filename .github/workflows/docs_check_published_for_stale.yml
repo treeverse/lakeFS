@@ -16,22 +16,28 @@ jobs:
         with:
           repository: treeverse/lakeFS
 
-      - name: Setup Ruby
+      - name: list folder
+        run: ls -l
+  
+      - name: Checkout Published Docs
+        uses: actions/checkout@v2
+        with:
+          repository: treeverse/docs-lakeFS
+
+      - name: list folder
+        run: ls -l
+
+      - name: Setup Ruby    
         uses: ruby/setup-ruby@v1
         with:
           working-directory: lakeFS/docs
           ruby-version: '2.7'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
-      - name: Build Docs from Source
+      - name: Build Docs from Source    
         working-directory: lakeFS/docs
         run: bundle exec jekyll build --config _config.yml 
-
-      - name: Checkout Published Docs
-        uses: actions/checkout@v2
-        with:
-          repository: treeverse/docs-lakeFS
-
+  
       - name: Compare Generated Site
         run: |
           diff --brief --recursive docs-lakeFS lakeFS/docs/_site | \
