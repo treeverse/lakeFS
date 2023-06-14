@@ -397,7 +397,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
             <Form.Group controlId="path" className="mb-3">
               <Form.Text>Path</Form.Text>
-              <Form.Control defaultValue={currentPath} onChange={changeCurrentPath}/>
+              <Form.Control disabled={uploadState.inProgress} defaultValue={currentPath} onChange={changeCurrentPath}/>
             </Form.Group>
 
             <Form.Group controlId="content" className="mb-3">
@@ -409,7 +409,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
               </div>
               <aside className="mt-3">
                 {(files && files.length > 0) &&
-                  <h5>Files to upload</h5>
+                  <h5>{files.length} File{files.length > 1 ? "s":""} to upload ({humanSize(files.reduce((a,f) => a + f.size ,0))})</h5>
                 }
                 {files && files.map(file =>
                     <UploadCandidate
