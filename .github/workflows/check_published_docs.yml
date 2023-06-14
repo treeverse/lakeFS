@@ -1,4 +1,4 @@
-name: Check Published Docs match Docs Source
+name: Docs - Check docs.lakefs.io matches source
 
 on:
   push:
