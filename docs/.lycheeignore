@@ -5,6 +5,7 @@ http://127.0.0.1:8888
 http://lakefs-hooks
 http://localhost:4000
 http://localhost:8000
+http://localhost:8888
 http://localhost:9000
 https://account.blob.core.windows.net
 https://ajax.googleapis.com
