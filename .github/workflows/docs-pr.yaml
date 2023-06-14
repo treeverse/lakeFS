@@ -26,7 +26,7 @@ jobs:
       - name: Build latest
         id: build-latest
         working-directory: docs
-        run: bundle exec jekyll build --config _config.yml -d _site/ --verbose --profile
+        run: bundle exec jekyll build --config _config.yml -d _site/ --verbose
 
       - name: Overlay PR message on each page
         working-directory: docs/_site
