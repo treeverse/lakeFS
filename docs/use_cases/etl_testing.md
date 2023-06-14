@@ -7,29 +7,31 @@ nav_order: 10
 has_children: false
 redirect_from:
   - /use_cases/iso_env.html
+  - /quickstart/iso_env.html
 ---
 
 # ETL Testing with Isolated Dev/Test Environments
 
-## Why do I need multiple environments?
+{% include toc.html %}
+
+## Why are multiple environments so important?
 
 When working with a data lake, it's useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting the consumers of the production data.
 
-Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production.
+Running ETL and transformation jobs directly in production without proper ETL testing presents a huge risk of having data issues flow into dashboards, ML models, and other consumers sooner or later. 
 
-The issue with this approach is that it's time-consuming and costly to maintain these separate dev/test environments to enable thorough effective ETL testing. And for larger teams it forces multiple people to share these environments, requiring significant coordination.
+The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environments give you a space in which to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production.
 
-## How do I create dev/test environments with lakeFS?
+Without lakeFS, the challenge with this approach is that it can be time-consuming and costly to maintain these separate dev/test environments to enable thorough effective ETL testing. And for larger teams it forces multiple people to share these environments, requiring significant coordination. Depending on the size of the data involved there can also be high costs due to the duplication of data.
 
-lakeFS makes creating isolated dev/test environments for ETL testing instantaneous. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
+## How does lakeFS help with Dev/Test environments?
+
+lakeFS makes creating isolated dev/test environments for ETL testing quick and cheap. lakeFS uses Copy-on-Write which means that there is no duplication of data when you create a new environment. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
 Objects that remain unchanged between two branches are not copied, but rather shared to both branches via metadata pointers that lakeFS manages. If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
 {: .note }
-
-Let’s see an example of using multiple lakeFS branches for isolation.
-
 
 ## Using branches as development and testing environments
 
@@ -39,11 +41,19 @@ This is different from creating a long-living test environment used as a staging
 
 ![dev/test branches as environments]({{ site.baseurl }}/assets/img/iso_env_dev_test_branching.png)
 
-# Creating Dev/Test Environments with lakeFS for ETL Testing
+## Try it out! Creating Dev/Test Environments with lakeFS for ETL Testing
 
-lakeFS supports UI, CLI (`lakectl` commandline utility) and several client API [integrations](../integrations) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
+lakeFS supports UI, CLI (`lakectl` commandline utility) and several clients for the [API](/reference/api.html) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
-## Using lakeFS Playground experience
+There are two ways that you can try out lakeFS:
+
+* The lakeFS Playground on lakeFS Cloud - fully managed lakeFS with a 30-day free trial
+* Local Docker-based [quickstart](/quickstart) and [samples](https://github.com/treeverse/lakeFS-samples/)
+
+You can also [deploy lakeFS](/deploy) locally or self-managed on your cloud of choice.
+
+### Using lakeFS Playground on lakeFS Cloud
+
 In this tutorial, we will use [a lakeFS playground environment](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
 First, let us spin up a [playground](https://demo.lakefs.io/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
@@ -66,53 +76,55 @@ You can create a new branch (say, `test-env`) by going to the _Branches_ tab and
 
 Now you can add, modify or delete objects under the `test-env` branch without affecting the data in the main branch.
 
-## Using lakeFS Python Client API and Jupyter Notebook
+### Trying out lakeFS with Docker and Jupyter Notebooks
 
-This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial will use an existing lakeFS environment (i.e., playground), a Jupyter notebook, and Python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark.html). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python lakefs_client API to demonstrate integration of lakeFS with [Spark](../integrations/spark.html). You can run this tutorial on your local machine.
 
 Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
 
-### Prerequisites
+#### Prerequisites
 
-To instantly spin up a lakeFS environment and to work with sample data, use [the lakeFS playground environment](https://demo.lakefs.io/). To use lakeFS with your own production data or to run it in your own machine, check out the [Quickstart](../quickstart/index.md) guide.
+Before getting started, you will need [Docker](https://docs.docker.com/engine/install/) installed on your machine.
 
-Before getting started, you will need [docker](https://docs.docker.com/engine/install/) installed on your machine.
-
-{: .note}
-Once you have docker installed and a lakeFS instance running, you can access the lakeFS demo notebooks by cloning the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples) Git repo.
+#### Running lakeFS and Jupyter Notebooks
 
 Follow along the steps below to create dev/test environment with lakeFS.
 
 * Start by cloning the lakeFS samples Git repository:
-```bash
-git clone https://github.com/treeverse/lakeFS-samples.git && cd 03-apache-spark-python-demo
-```
+
+    ```bash
+git clone https://github.com/treeverse/lakeFS-samples.git
+    ```
+
+    ```bash
+cd lakeFS-samples
+    ```
 
 * Run following commands to download and run Docker container which includes Python, Spark, Jupyter Notebook, JDK, Hadoop binaries, lakeFS Python client and Airflow (Docker image size is around 4.5GB):
-```bash
-   docker build -t lakefs-spark-python-demo .
 
-   docker run -d -p 8888:8888 -p 4040:4040 -p 8080:8080 --user root -e GRANT_SUDO=yes -v $PWD:/home/jovyan -v $PWD/jupyter_notebook_config.py:/home/jovyan/.jupyter/jupyter_notebook_config.py --name lakefs-spark-python-demo lakefs-spark-python-demo
-```
-* Open JupyterLab UI http://127.0.0.1:8888/ in your web browser.
-
-Once you have successfully completed setup, open the "Spark Demo" notebook from JupyterLab UI and follow the instructions in the notebook.
-
-### Configuring lakeFS Python Client
-
-Setup lakeFS access credentials for the lakeFS instance running. If you are using lakeFS playground environment, use the access key, secret key and endpoint details you received in your email. If you are running lakeFS using everything bagel docker, these details are found in the docker-compose.yaml file under `lakefs_setup` section.
-
-```bash
-lakefsAccessKey = '<lakeFS Access Key>'
-lakefsSecretKey = '<lakeFS Secret Key>'
-lakefsEndPoint = '<lakeFS Endpoint URL>' # e.g. 'https://expert-robin.lakefs-demo.io/'
+    ```bash
+git submodule init
+git submodule update
+docker compose up
 ```
 
-Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. If you are using the lakeFS playground environment, you can find the storage namespace under the repository name.
+Open the [local Jupyter Notebook](http://localhost:8888) and go to the `spark-demo.ipynb` notebook.
+
+#### Configuring lakeFS Python Client
+
+Setup lakeFS access credentials for the lakeFS instance running. The defaults for these that the samples repo Docker Compose uses are shown here:
 
 ```bash
-storageNamespace = 's3://<S3 Bucket Name>/' # e.g. "s3://treeverse-demo-lakefs-storage-production/user_expert-robin/my-repo"
+lakefsAccessKey = 'AKIAIOSFODNN7EXAMPLE'
+lakefsSecretKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+lakefsEndPoint = 'http://lakefs:8000'
+```
+
+Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. 
+
+```bash
+storageNamespace = 's3://example/' 
 ```
 
 You can use lakeFS through the UI, API or `lakectl` commandline. For this use-case, we use python `lakefs_client` to run lakeFS core operations.
@@ -135,13 +147,13 @@ lakeFS can be configured to work with Spark in two ways:
 * Access lakeFS using the [S3-compatible API](../integrations/spark.md#use-the-s3-compatible-api)
 * Access lakeFS using the [lakeFS-specific Hadoop FileSystem](../integrations/spark.md#use-the-lakefs-hadoop-filesystem)
 
-### Upload the Sample Data to Main Branch
+#### Upload the Sample Data to Main Branch
 
 To upload an object to the `my-repo`, use the following command.
 
 ```bash
 import os
-contentToUpload = open(os.path.expanduser('~')+'/lakefs_test.csv', 'rb')
+contentToUpload = open('/data/lakefs_test.csv', 'rb')
 client.objects.upload_object(
     repository="my-repo",
     branch="main",
@@ -165,7 +177,7 @@ df = spark.read.csv(dataPath)
 df.show()
 ```
 
-### Create a Test Branch
+#### Create a Test Branch
 
 Let us start by creating a new branch `test-env` on the example repo `my-repo`.
 
@@ -192,8 +204,8 @@ On the `main` branch however, there is still just the original data - untouched 
 
 You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities.
 
-## Case Study: Enigma
-Learn how Enigma increased Data Engineers' efficiency using lakeFS branching to [achieve islated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/).
-
 ## Further Reading
-For further details on the best practices of ETL testing on data lakes with lakeFS visit the [lakeFS Blog](https://lakefs.io/blog/etl-testing/)
+
+* Case Study: [How Enigma use lakeFS for isolated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/)
+* [ETL Testing: A Practical Guide](https://lakefs.io/blog/etl-testing/)
+* [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
