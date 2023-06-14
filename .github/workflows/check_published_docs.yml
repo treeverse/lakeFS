@@ -1,0 +1,47 @@
+name: Check Published Docs match Docs Source
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  build-and-compare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Docs source
+        uses: actions/checkout@v2
+        with:
+          repository: treeverse/lakefs
+          ref: main
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: lakefs/docs
+          ruby-version: '2.7'
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Build Docs from Source
+        working-directory: lakefs/docs
+        run: bundle exec jekyll build --config _config.yml 
+
+      - name: Checkout Published Docs
+        uses: actions/checkout@v2
+        with:
+          repository: treeverse/docs-lakeFS
+          ref: main
+
+      - name: Compare Generated Site
+        run: |
+          diff --brief --recursive docs-lakeFS lakeFS/docs/_site | \
+                  grep -v --extended-regexp 'Only in docs-lakeFS: v?\d+(\.\d+)?' | \
+                  grep -v -e ": .git" -e ": versions.json" -e ": CNAME" > diffs.txt
+          diffs=$(wc -l diffs.txt| tr -d '[:space:]')
+          if [ "$diffs" -ne 0 ]; then
+            echo "Docs published on docs.lakefs.io don't match docs generated from source"
+            cat diffs.txt
+            exit 1
+          fi
