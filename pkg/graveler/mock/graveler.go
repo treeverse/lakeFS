@@ -569,10 +569,10 @@ func (mr *MockVersionControllerMockRecorder) GetRepository(ctx, repositoryID int
 }
 
 // GetRepositoryMetadata mocks base method.
-func (m *MockVersionController) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryMetadata, error) {
+func (m *MockVersionController) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.RepositoryMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepositoryMetadata", ctx, repositoryID)
-	ret0, _ := ret[0].(*graveler.RepositoryMetadata)
+	ret0, _ := ret[0].(graveler.RepositoryMetadata)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -2077,10 +2077,10 @@ func (mr *MockRefManagerMockRecorder) GetRepository(ctx, repositoryID interface{
 }
 
 // GetRepositoryMetadata mocks base method.
-func (m *MockRefManager) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryMetadata, error) {
+func (m *MockRefManager) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.RepositoryMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepositoryMetadata", ctx, repositoryID)
-	ret0, _ := ret[0].(*graveler.RepositoryMetadata)
+	ret0, _ := ret[0].(graveler.RepositoryMetadata)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

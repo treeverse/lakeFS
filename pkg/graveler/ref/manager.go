@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -155,13 +154,6 @@ func (m *Manager) createBareRepository(ctx context.Context, repositoryID gravele
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = graveler.ErrNotUnique
 		}
-		return nil, err
-	}
-
-	// Create repo metadata
-	metadata := graveler.RepoMetadata{LastImportTimestamp: timestamppb.New(time.Time{})}
-	err = kv.SetMsg(ctx, m.kvStore, graveler.RepoPartition(repoRecord), []byte(graveler.RepoMetadataPath()), &metadata)
-	if err != nil {
 		return nil, err
 	}
 
@@ -306,7 +298,7 @@ func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.Re
 	return m.deleteRepository(ctx, repo)
 }
 
-func (m *Manager) getRepositoryMetadata(ctx context.Context, repo *graveler.RepositoryRecord) (*graveler.RepositoryMetadata, kv.Predicate, error) {
+func (m *Manager) getRepositoryMetadata(ctx context.Context, repo *graveler.RepositoryRecord) (graveler.RepositoryMetadata, kv.Predicate, error) {
 	data := graveler.RepoMetadata{}
 	pred, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repo), []byte(graveler.RepoMetadataPath()), &data)
 	if err != nil {
@@ -315,7 +307,7 @@ func (m *Manager) getRepositoryMetadata(ctx context.Context, repo *graveler.Repo
 	return graveler.RepoMetadataFromProto(&data), pred, nil
 }
 
-func (m *Manager) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryMetadata, error) {
+func (m *Manager) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.RepositoryMetadata, error) {
 	repo, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
@@ -331,7 +323,10 @@ func (m *Manager) GetRepositoryMetadata(ctx context.Context, repositoryID gravel
 
 func (m *Manager) SetRepositoryMetadata(ctx context.Context, repo *graveler.RepositoryRecord, updateFunc graveler.RepoMetadataUpdateFunc) error {
 	metadata, pred, err := m.getRepositoryMetadata(ctx, repo)
-	if err != nil {
+	if errors.Is(err, kv.ErrNotFound) { // Create new metadata map and set predicate to nil for setIf not exists
+		metadata = graveler.RepositoryMetadata{}
+		pred = nil
+	} else if err != nil {
 		return err
 	}
 

@@ -17,7 +17,7 @@ const (
 	settingsPrefix         = "settings"
 	addressesPrefix        = "link-addresses"
 	importsPrefix          = "imports"
-	repoMetadataPrefix     = "metadata"
+	repoMetadataPrefix     = "repo-metadata"
 )
 
 //nolint:gochecknoinits
@@ -210,14 +210,12 @@ func ProtoFromImportStatus(status *ImportStatus) *ImportStatusData {
 	}
 }
 
-func RepoMetadataFromProto(pb *RepoMetadata) *RepositoryMetadata {
-	return &RepositoryMetadata{
-		LastImportTimestamp: pb.LastImportTimestamp.AsTime(),
-	}
+func RepoMetadataFromProto(pb *RepoMetadata) RepositoryMetadata {
+	return pb.Metadata
 }
 
-func ProtoFromRepositoryMetadata(metadata *RepositoryMetadata) *RepoMetadata {
+func ProtoFromRepositoryMetadata(metadata RepositoryMetadata) *RepoMetadata {
 	return &RepoMetadata{
-		LastImportTimestamp: timestamppb.New(metadata.LastImportTimestamp),
+		Metadata: metadata,
 	}
 }

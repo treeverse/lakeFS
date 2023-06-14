@@ -1279,19 +1279,17 @@ func TestManager_GetRepositoryMetadata(t *testing.T) {
 	})
 
 	t.Run("basic", func(t *testing.T) {
-		expected := &graveler.RepositoryMetadata{}
-		metadata, err := r.GetRepositoryMetadata(ctx, repository.RepositoryID)
-		require.NoError(t, err)
-		require.Equal(t, metadata, expected)
+		_, err = r.GetRepositoryMetadata(ctx, repository.RepositoryID)
+		require.ErrorIs(t, err, kv.ErrNotFound)
 	})
 }
 
 func TestManager_SetRepositoryMetadata(t *testing.T) {
 	ctx := context.Background()
 	r, store := testRefManager(t)
-	now := time.Now().UTC()
 	const (
 		repoID = "repo1"
+		key    = "test_key"
 	)
 	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
 		StorageNamespace: "s3://",
@@ -1303,36 +1301,38 @@ func TestManager_SetRepositoryMetadata(t *testing.T) {
 		name             string
 		f                graveler.RepoMetadataUpdateFunc
 		err              error
-		expectedMetadata *graveler.RepositoryMetadata
+		expectedMetadata graveler.RepositoryMetadata
 	}{
 		{
 			name: "success_branch_update",
-			f: func(metadata *graveler.RepositoryMetadata) (*graveler.RepositoryMetadata, error) {
-				metadata.LastImportTimestamp = now
+			f: func(metadata graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
+				metadata[key] = "success"
 				return metadata, nil
 			},
-			expectedMetadata: &graveler.RepositoryMetadata{LastImportTimestamp: now},
+			expectedMetadata: graveler.RepositoryMetadata{key: "success"},
 		},
 		{
 			name: "failed_metadata_update_due_to_changes",
-			f: func(metadata *graveler.RepositoryMetadata) (*graveler.RepositoryMetadata, error) {
+			f: func(metadata graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
 				m := graveler.RepoMetadata{
-					LastImportTimestamp: timestamppb.New(now.Add(1 * time.Hour)),
+					Metadata: graveler.RepositoryMetadata{
+						key: "failed",
+					},
 				}
 				_ = kv.SetMsg(ctx, store, graveler.RepoPartition(repository), []byte(graveler.RepoMetadataPath()), &m)
-				metadata.LastImportTimestamp = time.Now().Add(-2 * time.Hour)
+				metadata[key] = "not_expected"
 				return metadata, nil
 			},
 			err:              kv.ErrPredicateFailed,
-			expectedMetadata: &graveler.RepositoryMetadata{LastImportTimestamp: now.Add(1 * time.Hour)},
+			expectedMetadata: graveler.RepositoryMetadata{key: "failed"},
 		},
 		{
 			name: "failed_update_on_validation",
-			f: func(metadata *graveler.RepositoryMetadata) (*graveler.RepositoryMetadata, error) {
+			f: func(metadata graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
 				return nil, graveler.ErrInvalid
 			},
 			err:              graveler.ErrInvalid,
-			expectedMetadata: &graveler.RepositoryMetadata{LastImportTimestamp: now.Add(1 * time.Hour)},
+			expectedMetadata: graveler.RepositoryMetadata{key: "failed"},
 		},
 	}
 	for _, tt := range tests {

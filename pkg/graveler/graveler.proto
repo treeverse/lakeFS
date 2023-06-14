@@ -84,5 +84,5 @@ message ImportStatusData {
 }
 
 message RepoMetadata {
-  google.protobuf.Timestamp last_import_timestamp = 1;
+  map<string, string> metadata = 1;
 }

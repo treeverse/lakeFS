@@ -252,9 +252,9 @@ type Repository struct {
 	InstanceUID string
 }
 
-type RepositoryMetadata struct {
-	LastImportTimestamp time.Time
-}
+type RepositoryMetadata map[string]string
+
+const MetadataKeyLastImportTimeStamp = ".lakefs.last.import.timestamp"
 
 func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {
 	return Repository{
@@ -432,7 +432,7 @@ type GarbageCollectionRunMetadata struct {
 	AddressLocation string
 }
 
-type RepoMetadataUpdateFunc func(metadata *RepositoryMetadata) (*RepositoryMetadata, error)
+type RepoMetadataUpdateFunc func(metadata RepositoryMetadata) (RepositoryMetadata, error)
 
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
@@ -478,7 +478,7 @@ type VersionController interface {
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
 	// GetRepositoryMetadata returns repository user metadata
-	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (*RepositoryMetadata, error)
+	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
 
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error)
@@ -761,7 +761,7 @@ type RefManager interface {
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
 
 	// GetRepositoryMetadata gets repository user metadata
-	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (*RepositoryMetadata, error)
+	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
 
 	// SetRepositoryMetadata updates repository user metadata using the updateFunc
 	SetRepositoryMetadata(ctx context.Context, repository *RepositoryRecord, updateFunc RepoMetadataUpdateFunc) error
@@ -1064,7 +1064,7 @@ func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID Repository
 	return g.RefManager.DeleteRepository(ctx, repositoryID)
 }
 
-func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (*RepositoryMetadata, error) {
+func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error) {
 	return g.RefManager.GetRepositoryMetadata(ctx, repositoryID)
 }
 
@@ -2678,8 +2678,8 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 			Error("Post-commit hook failed")
 	}
 
-	if err = g.retryRepoMetadataUpdate(ctx, repository, func(metadata *RepositoryMetadata) (*RepositoryMetadata, error) {
-		metadata.LastImportTimestamp = commit.CreationDate
+	if err = g.retryRepoMetadataUpdate(ctx, repository, func(metadata RepositoryMetadata) (RepositoryMetadata, error) {
+		metadata[MetadataKeyLastImportTimeStamp] = commit.CreationDate.String()
 		return metadata, nil
 	}); err != nil {
 		g.log(ctx).WithField("repository_id", repository.RepositoryID).WithError(err).Error("Failed to update import metadata")
