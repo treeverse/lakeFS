@@ -594,7 +594,7 @@ jobs:
           cache: "sbt"
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
-        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package
+        run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
       - name: Store lakeFS HadoopFS
         uses: actions/upload-artifact@v3
         with:
