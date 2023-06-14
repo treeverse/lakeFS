@@ -17,24 +17,12 @@ jobs:
           repository: treeverse/lakeFS
           path: lakeFS
 
-      - name: list folder
-        run: |
-          pwd 
-          echo $GITHUB_WORKSPACE
-          ls -l
-
       - name: Checkout Published Docs
         uses: actions/checkout@v2
         with:
           repository: treeverse/docs-lakeFS
           path: docs-lakeFS
 
-      - name: list folder
-        run: |
-          pwd 
-          echo $GITHUB_WORKSPACE
-          ls -l
-  
       - name: Setup Ruby    
         uses: ruby/setup-ruby@v1
         with:
@@ -51,7 +39,7 @@ jobs:
           diff --brief --recursive docs-lakeFS lakeFS/docs/_site | \
                   grep -v --extended-regexp 'Only in docs-lakeFS: v?\d+(\.\d+)?' | \
                   grep -v -e ": .git" -e ": versions.json" -e ": CNAME" > diffs.txt
-          diffs=$(wc -l diffs.txt| tr -d '[:space:]')
+          diffs=$(wc -l < diffs.txt | tr -d '[:space:]')
           if [ "$diffs" -ne 0 ]; then
             echo "Docs published on docs.lakefs.io don't match docs generated from source"
             cat diffs.txt
