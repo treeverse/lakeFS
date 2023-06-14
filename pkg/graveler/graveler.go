@@ -29,8 +29,9 @@ const (
 	// BranchWriteMaxTries is the number of times to repeat the set operation if the staging token changed
 	BranchWriteMaxTries = 3
 
-	RepoMetadataUpdateMaxInterval = 5 * time.Second
-	RepoMetadataUpdateMaxTries    = 10
+	RepoMetadataUpdateMaxInterval    = 5 * time.Second
+	RepoMetadataUpdateMaxElapsedTime = 15 * time.Second
+	RepoMetadataUpdateRandomFactor   = 0.5
 )
 
 // Basic Types
@@ -2553,12 +2554,14 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *RepositoryRecord, f RepoMetadataUpdateFunc) error {
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = RepoMetadataUpdateMaxInterval
+	bo.MaxElapsedTime = RepoMetadataUpdateMaxElapsedTime
+	bo.RandomizationFactor = RepoMetadataUpdateRandomFactor
 	logger := g.log(ctx).WithField("repository_id", repository.RepositoryID)
 
 	try := 1
 	err := backoff.Retry(func() error {
 		err := g.RefManager.SetRepositoryMetadata(ctx, repository, f)
-		if errors.Is(err, kv.ErrPredicateFailed) && try < RepoMetadataUpdateMaxTries {
+		if errors.Is(err, kv.ErrPredicateFailed) {
 			logger.WithField("try", try).
 				Info("Retrying update repo metadata")
 			try += 1
@@ -2569,7 +2572,7 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 		}
 		return nil
 	}, bo)
-	if err != nil && try >= RepoMetadataUpdateMaxTries {
+	if errors.Is(err, kv.ErrPredicateFailed) {
 		return fmt.Errorf("update repo metadata: %w", ErrTooManyTries)
 	}
 	return err
