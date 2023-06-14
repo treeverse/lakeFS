@@ -225,7 +225,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
 
 
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {
-  const fpath = `${path ? path : ""}${file.path.replace(/\\/, '/').replace(/^\//, '')}`;
+  const fpath = `${path ? path : ""}${file.path.replace(/\\/g, '/').replace(/^\//g, '')}`;
   if (config.pre_sign_support_ui) {
     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
     const { status, etag } = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress)
@@ -240,7 +240,7 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
 };
 
 const destinationPath = (path, file) => {
-  return `${path ? path : ""}${file.path.replace(/\\/, '/').replace(/^\//, '')}`;
+  return `${path ? path : ""}${file.path.replace(/\\/g, '/').replace(/^\//g, '')}`;
 };
 
 const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }) => {
