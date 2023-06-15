@@ -163,7 +163,7 @@ implement this logic yourself.
 
 Instead, make updates to the desired data assets on a branch and then utilize a lakeFS merge to atomically expose the data to downstream consumers.
 
-To learn more about atomic cross-collection updates, check out [this video](https://www.youtube.com/watch?v=9OsjUvk5UJU) which describes the concept in more detail, along with [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/notebooks/write-audit-publish/wap-lakefs.ipynb) in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+To learn more about atomic cross-collection updates, check out [this video](https://www.youtube.com/watch?v=9OsjUvk5UJU) which describes the concept in more detail, along with [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/write-audit-publish/wap-lakefs.ipynb) in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
 
 
