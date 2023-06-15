@@ -228,7 +228,7 @@ func TestManager_ListRepositories(t *testing.T) {
 }
 
 func TestManager_DeleteRepository(t *testing.T) {
-	r, _ := testRefManager(t)
+	r, store := testRefManager(t)
 	ctx := context.Background()
 	repoID := graveler.RepositoryID("example-repo")
 
@@ -271,6 +271,16 @@ func TestManager_DeleteRepository(t *testing.T) {
 		if !errors.Is(err, graveler.ErrRepositoryNotFound) {
 			t.Fatalf("expected ErrRepositoryNotFound, got: %v", err)
 		}
+
+		// Verify no keys on repo partition
+		itr := kv.NewPartitionIterator(ctx, store, (&graveler.RepoMetadata{}).ProtoReflect().Type(), graveler.RepoPartition(repository), 10)
+		defer itr.Close()
+		for itr.Next() {
+			entry := itr.Entry()
+			t.Fatalf("partition expected empty: %s", string(entry.Key))
+		}
+		// Check itr.Next() not false on an error
+		require.NoError(t, itr.Err())
 
 		// Create after delete
 		_, err = r.CreateRepository(ctx, repoID, graveler.Repository{
@@ -1248,4 +1258,91 @@ func TestManager_DeleteExpiredImports(t *testing.T) {
 	}
 	require.NoError(t, it.Err())
 	require.Equal(t, 2, count)
+}
+
+func TestManager_GetRepositoryMetadata(t *testing.T) {
+	ctx := context.Background()
+	r, _ := testRefManager(t)
+	const (
+		repoID = "repo1"
+	)
+	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	t.Run("get_on_non_existing_repo", func(t *testing.T) {
+		_, err := r.GetRepositoryMetadata(ctx, "not_exist")
+		require.ErrorIs(t, err, graveler.ErrNotFound)
+	})
+
+	t.Run("basic", func(t *testing.T) {
+		_, err = r.GetRepositoryMetadata(ctx, repository.RepositoryID)
+		require.ErrorIs(t, err, kv.ErrNotFound)
+	})
+}
+
+func TestManager_SetRepositoryMetadata(t *testing.T) {
+	ctx := context.Background()
+	r, store := testRefManager(t)
+	const (
+		repoID = "repo1"
+		key    = "test_key"
+	)
+	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+	tests := []struct {
+		name             string
+		f                graveler.RepoMetadataUpdateFunc
+		err              error
+		expectedMetadata graveler.RepositoryMetadata
+	}{
+		{
+			name: "success_branch_update",
+			f: func(metadata graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
+				metadata[key] = "success"
+				return metadata, nil
+			},
+			expectedMetadata: graveler.RepositoryMetadata{key: "success"},
+		},
+		{
+			name: "failed_metadata_update_due_to_changes",
+			f: func(metadata graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
+				m := graveler.RepoMetadata{
+					Metadata: graveler.RepositoryMetadata{
+						key: "failed",
+					},
+				}
+				_ = kv.SetMsg(ctx, store, graveler.RepoPartition(repository), []byte(graveler.RepoMetadataPath()), &m)
+				metadata[key] = "not_expected"
+				return metadata, nil
+			},
+			err:              kv.ErrPredicateFailed,
+			expectedMetadata: graveler.RepositoryMetadata{key: "failed"},
+		},
+		{
+			name: "failed_update_on_validation",
+			f: func(metadata graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
+				return nil, graveler.ErrInvalid
+			},
+			err:              graveler.ErrInvalid,
+			expectedMetadata: graveler.RepositoryMetadata{key: "failed"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err = r.SetRepositoryMetadata(ctx, repository, tt.f)
+			require.ErrorIs(t, err, tt.err)
+
+			metadata, err := r.GetRepositoryMetadata(ctx, repository.RepositoryID)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedMetadata, metadata)
+		})
+	}
 }
