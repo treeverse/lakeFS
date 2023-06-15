@@ -1189,6 +1189,9 @@ jobs:
       COSMOSDB_CONTAINER_PREFIX: ${{ github.run_number }}
 
     steps:
+      - name: test
+        run: az -h
+          
       - name: Azure log-in
         uses: azure/login@v1
         with:
