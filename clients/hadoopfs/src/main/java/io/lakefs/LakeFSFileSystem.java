@@ -162,7 +162,7 @@ public class LakeFSFileSystem extends FileSystem {
             Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
             String storageNamespace = repository.getStorageNamespace();
             URI storageURI = URI.create(storageNamespace);
-            Path physicalPath = new Path(physicalAddressTranslator.translate(storageURI));
+            Path physicalPath = physicalAddressTranslator.translate(storageNamespace);
             fsForConfig = physicalPath.getFileSystem(conf);
         } catch (ApiException | URISyntaxException | IOException e) {
             failedFSForConfig = true;

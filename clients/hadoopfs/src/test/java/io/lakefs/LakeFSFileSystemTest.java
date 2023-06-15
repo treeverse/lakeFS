@@ -167,16 +167,13 @@ public abstract class LakeFSFileSystemTest {
         when(repositoriesApi.getRepository("repo"))
             .thenReturn(new Repository().storageNamespace(s3Url("/repo-base")));
 
-        fs.initializeWithClientFactory(new URI("lakefs://repo/main/file.txt"), conf,
-                                       new LakeFSFileSystem.ClientFactory() {
-                public LakeFSClient newClient() { return lfsClient; }
-            });
+        fs.initializeWithClientFactory(new URI("lakefs://repo/main/file.txt"), conf, () -> lfsClient);
     }
 
     /**
      * @return all pathnames under s3Prefix that start with prefix.  (Obvious not scalable!)
      */
-    protected List<String> getS3FilesByPrefix(String prefix) throws IOException {
+    protected List<String> getS3FilesByPrefix(String prefix) {
         final int maxKeys = 1500;
 
         ListObjectsRequest req = new ListObjectsRequest()
@@ -192,7 +189,7 @@ public abstract class LakeFSFileSystemTest {
     }
 
     @Test
-    public void getUri() throws URISyntaxException, IOException {
+    public void getUri() {
         URI u = fs.getUri();
         Assert.assertNotNull(u);
     }
@@ -215,7 +212,7 @@ public abstract class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testGetFileStatus_NoFile() throws ApiException, IOException {
+    public void testGetFileStatus_NoFile() throws ApiException {
         Path noFilePath = new Path("lakefs://repo/main/no.file");
 
         when(objectsApi.statObject("repo", "main", "no.file", false, false))
@@ -274,7 +271,7 @@ public abstract class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testExists_ExistsAsDirectoryInSecondList() throws ApiException, IOException {
+    public void testExists_ExistsAsDirectoryInSecondList() {
         // TODO(ariels)
     }
 
@@ -288,12 +285,12 @@ public abstract class LakeFSFileSystemTest {
     }
 
     @Test
-    public void testExists_NotExistsPrefixWithNoSlash() throws ApiException, IOException {
+    public void testExists_NotExistsPrefixWithNoSlash() {
         // TODO(ariels)
     }
 
     @Test
-    public void testExists_NotExistsPrefixWithNoSlashTwoLists() throws ApiException, IOException {
+    public void testExists_NotExistsPrefixWithNoSlashTwoLists() {
         // TODO(ariels)
     }
 
@@ -560,9 +557,9 @@ public abstract class LakeFSFileSystemTest {
         do {
             when(objectsApi.statObject("repo", "main", testPath.toString(), false, false))
                     .thenThrow(noSuchFile);
-            when(objectsApi.statObject("repo", "main", testPath.toString()+"/", false, false))
+            when(objectsApi.statObject("repo", "main", testPath+"/", false, false))
                     .thenThrow(noSuchFile);
-            when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(false), eq(""), any(), eq(""), eq(testPath.toString()+"/")))
+            when(objectsApi.listObjects(eq("repo"), eq("main"), eq(false), eq(false), eq(""), any(), eq(""), eq(testPath+"/")))
                     .thenReturn(new ObjectStatsList().results(Collections.emptyList()).pagination(new Pagination().hasMore(false)));
             testPath = testPath.getParent();
         } while(testPath != null && !testPath.isRoot());
@@ -609,6 +606,33 @@ public abstract class LakeFSFileSystemTest {
         }
     }
 
+    @Test
+    public void testOpenWithInvalidUriChars() throws IOException, ApiException {
+        String contents = "The quick brown fox jumps over the lazy dog.";
+        byte[] contentsBytes = contents.getBytes();
+        int readBufferSize = 5;
+
+        String[] keys = {
+                "/repo-base/with space/open",
+                "/repo-base/wi:th$cha&rs#/%op;e?n",
+                "/repo-base/עכשיו/בעברית/open",
+                "/repo-base/\uD83E\uDD2F/imoji/open",
+        };
+        for (String key : keys) {
+            // Write physical file to S3.
+            ObjectMetadata s3Metadata = new ObjectMetadata();
+            s3Metadata.setContentLength(contentsBytes.length);
+            s3Client.putObject(new PutObjectRequest(s3Bucket, key, new ByteArrayInputStream(contentsBytes), s3Metadata));
+
+            Path p = new Path("lakefs://repo/main/read.me");
+            mockStatObject("repo", "main", "read.me", key, (long) contentsBytes.length);
+            try (InputStream in = fs.open(p, readBufferSize)) {
+                String actual = IOUtils.toString(in);
+                Assert.assertEquals(contents, actual);
+            }
+        }
+    }
+    
     @Test(expected = FileNotFoundException.class)
     public void testOpen_NotExists() throws IOException, ApiException {
         Path p = new Path("lakefs://repo/main/doesNotExi.st");
