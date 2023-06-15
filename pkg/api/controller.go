@@ -1519,26 +1519,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
-	if swag.BoolValue(params.Bare) {
-		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
-		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx,
-			body.Name,
-			body.StorageNamespace,
-			defaultBranch)
-		if c.handleAPIError(ctx, w, r, err) {
-			return
-		}
-		response := Repository{
-			CreationDate:     repo.CreationDate.Unix(),
-			DefaultBranch:    repo.DefaultBranch,
-			Id:               repo.Name,
-			StorageNamespace: repo.StorageNamespace,
-		}
-		writeResponse(w, r, http.StatusCreated, response)
-		return
-	}
-
 	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
 	if err != nil {
 		var (
@@ -1566,6 +1546,23 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			WithField("reason", reason).
 			Warn("Could not access storage namespace")
 		writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
+		return
+	}
+
+	if swag.BoolValue(params.Bare) {
+		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
+		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		response := Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, r, http.StatusCreated, response)
 		return
 	}
 
@@ -1610,6 +1607,11 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		dummyKey  = "dummy"
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
 	)
+
+	storagePrefixRegex := regexp.MustCompile(c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex)
+	if !storagePrefixRegex.MatchString(storageNamespace) {
+		return block.ErrInvalidNamespace
+	}
 
 	obj := block.ObjectPointer{
 		StorageNamespace: storageNamespace,

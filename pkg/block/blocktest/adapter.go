@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -17,6 +18,18 @@ import (
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
+type NamespaceTestParams struct {
+	Name      string
+	Namespace string
+	Success   bool
+}
+
+var namespaceTestCases []NamespaceTestParams
+
+func SetupNamespaceTest(cases []NamespaceTestParams) {
+	namespaceTestCases = cases
+}
+
 func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	t.Helper()
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
@@ -26,6 +39,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
+	t.Run("Adapter_Namespace", func(t *testing.T) { testAdapterNamespace(t, adapter) })
 }
 
 func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
@@ -395,6 +409,17 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 					require.Equal(t, path.Join(prefix, fmt.Sprintf("test_file_%d", j)), results[j])
 				}
 			}
+		})
+	}
+}
+
+func testAdapterNamespace(t *testing.T, adapter block.Adapter) {
+	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
+	require.NoError(t, err)
+
+	for _, tt := range namespaceTestCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			require.Equal(t, tt.Success, expr.MatchString(tt.Namespace))
 		})
 	}
 }

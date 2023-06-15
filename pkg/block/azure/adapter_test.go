@@ -10,6 +10,39 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
+var namespaceTestParams = []blocktest.NamespaceTestParams{
+	{
+		Name:      "valid_https",
+		Namespace: "https://test.blob.core.windows.net/container1/repo1",
+		Success:   true,
+	},
+	{
+		Name:      "valid_http",
+		Namespace: "http://test.blob.core.windows.net/container1/repo1",
+		Success:   true,
+	},
+	{
+		Name:      "invalid_subdomain",
+		Namespace: "https://test.adls.core.windows.net/container1/repo1",
+		Success:   false,
+	},
+	{
+		Name:      "partial",
+		Namespace: "https://test.adls.core.windows.n",
+		Success:   false,
+	},
+	{
+		Name:      "s3",
+		Namespace: "s3://test/adls/core/windows/net",
+		Success:   false,
+	},
+	{
+		Name:      "invalid_string",
+		Namespace: "this is a bad string",
+		Success:   false,
+	},
+}
+
 func TestAzureAdapter(t *testing.T) {
 	basePath, err := url.JoinPath(blockURL, containerName)
 	require.NoError(t, err)
@@ -25,5 +58,6 @@ func TestAzureAdapter(t *testing.T) {
 	})
 	require.NoError(t, err, "create new adapter")
 
+	blocktest.SetupNamespaceTest(namespaceTestParams)
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
