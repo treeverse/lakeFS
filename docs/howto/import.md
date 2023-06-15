@@ -90,18 +90,6 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 <div markdown="1" id="azure-storage">
 See [Azure deployment](../deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
-#### Azure Data Lake Gen2
-
-lakeFS requires a hint in the import source URL to understand that the provided storage account is ADLS Gen2
-
-```
-   For source account URL:
-      https://<my-account>.core.windows.net/path/to/import/
-
-   Please add the *adls* subdomain to the URL as follows:
-      https://<my-account>.adls.core.windows.net/path/to/import/
-```
-
 </div>
 <div markdown="1" id="gcs">
 No specific prerequisites

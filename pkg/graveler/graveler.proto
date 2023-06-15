@@ -82,3 +82,7 @@ message ImportStatusData {
   CommitData commit = 6;
   string error = 7;
 }
+
+message RepoMetadata {
+  map<string, string> metadata = 1;
+}
