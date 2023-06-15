@@ -1189,9 +1189,6 @@ jobs:
       COSMOSDB_CONTAINER_PREFIX: ${{ github.run_number }}
 
     steps:
-      - name: test
-        run: az version
-          
       - name: Azure log-in
         uses: azure/login@v1
         with:
@@ -1224,7 +1221,7 @@ jobs:
           ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/
 
       - name: cleanup cosmos db container
-        if: ${{ failure() }}
+        if: always()
         continue-on-error: true
         run: |
           echo "Delete database container: ${{ steps.unique.outputs.cosmos_db_container }}"
