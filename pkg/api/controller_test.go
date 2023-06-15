@@ -1132,7 +1132,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 			}, api.CreateRepositoryJSONRequestBody{
 				DefaultBranch:    api.StringPtr("main"),
 				Name:             repoName,
-				StorageNamespace: onBlock(deps, "foo-bucket-1"),
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
 			})
 		verifyResponseOK(t, createResp, err)
 
@@ -1154,7 +1154,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 		createResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    api.StringPtr("main"),
 			Name:             repoName,
-			StorageNamespace: onBlock(deps, "foo-bucket-1"),
+			StorageNamespace: onBlock(deps, "foo-bucket-3"),
 		})
 		verifyResponseOK(t, createResp, err)
 
