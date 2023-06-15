@@ -1608,7 +1608,11 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
 	)
 
-	storagePrefixRegex := regexp.MustCompile(c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex)
+	validRegex := c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex
+	storagePrefixRegex, err := regexp.Compile(validRegex)
+	if err != nil {
+		return fmt.Errorf("failed to compile validity regex %s: %w", validRegex, block.ErrInvalidNamespace)
+	}
 	if !storagePrefixRegex.MatchString(storageNamespace) {
 		return block.ErrInvalidNamespace
 	}
@@ -1619,18 +1623,18 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		Identifier:       dummyKey,
 	}
 	objLen := int64(len(dummyData))
-	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
+	if _, err = c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
 			storageNamespace, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
 
-	if err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
+	if err = c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
 		return err
 	}
 
-	_, err := c.BlockAdapter.Get(ctx, obj, objLen)
+	_, err = c.BlockAdapter.Get(ctx, obj, objLen)
 	return err
 }
 
