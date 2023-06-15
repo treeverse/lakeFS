@@ -132,9 +132,10 @@ func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesIn
 				deleteRepositoryResponse, err := client.DeleteRepositoryWithResponse(ctx, repo.Id)
 				if err != nil {
 					logger.Warnf("failed to delete repository: %s. err: %s", repo.Id, err.Error())
+					continue
 				}
 				if deleteRepositoryResponse.StatusCode() != http.StatusNoContent {
-					logger.Warnf("unexpected status code when trying to delete repository: %s, status code: %d", repo.Id, deleteRepositoryResponse.StatusCode())
+					logger.Warnf("unexpected status code when trying to delete repository: %s, status code: %s", repo.Id, deleteRepositoryResponse.Status())
 				}
 			}
 		}
