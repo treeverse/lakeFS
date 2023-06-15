@@ -392,6 +392,16 @@ func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error
 	return c.Store.DeleteRepository(ctx, repositoryID)
 }
 
+func (c *Catalog) GetRepositoryMetadata(ctx context.Context, repository string) (graveler.RepositoryMetadata, error) {
+	repositoryID := graveler.RepositoryID(repository)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return nil, err
+	}
+	return c.Store.GetRepositoryMetadata(ctx, repositoryID)
+}
+
 // ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
 // In this case pass the last repository name as 'after' on the next call to ListRepositories
 func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {

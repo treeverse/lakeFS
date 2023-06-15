@@ -944,7 +944,7 @@ func TestController_CommitHandler(t *testing.T) {
 	})
 }
 
-func TestController_CreateRepository(t *testing.T) {
+func TestController_CreateRepositoryHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1101,6 +1101,70 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 				t.Fatalf("unexpected error getting other repo: %s", err)
 			}
 		}
+	})
+}
+
+func TestController_GetRepositoryMetadataHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("get repo metadata empty", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		createResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, "foo-bucket-1"),
+		})
+		verifyResponseOK(t, createResp, err)
+
+		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON200)
+		require.Nil(t, resp.JSON200.AdditionalProperties)
+	})
+
+	t.Run("get metadata bare repo", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		bareRepo := true
+		createResp, err := clt.CreateRepositoryWithResponse(ctx,
+			&api.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, api.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    api.StringPtr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
+			})
+		verifyResponseOK(t, createResp, err)
+
+		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON200)
+		require.Nil(t, resp.JSON200.AdditionalProperties)
+	})
+
+	t.Run("get repository metadata not exist", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+	})
+
+	t.Run("get repo metadata user unauthorized", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		createResp, err := clt.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    api.StringPtr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, "foo-bucket-3"),
+		})
+		verifyResponseOK(t, createResp, err)
+
+		// create a user
+		creds := createUserWithDefaultGroup(t, clt)
+		// create a client with the user
+		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
+		resp, err := regClt.GetRepositoryMetadataWithResponse(ctx, repoName)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401)
 	})
 }
 
@@ -1486,7 +1550,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	})
 }
 
-func TestController_DiffRefs(t *testing.T) {
+func TestController_DiffRefsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
@@ -1575,7 +1639,7 @@ func writeMultipart(fieldName, filename, content string) (string, io.Reader) {
 	return mpw.FormDataContentType(), &buf
 }
 
-func TestController_UploadObject(t *testing.T) {
+func TestController_UploadObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 

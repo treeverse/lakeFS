@@ -1279,8 +1279,9 @@ func TestManager_GetRepositoryMetadata(t *testing.T) {
 	})
 
 	t.Run("basic", func(t *testing.T) {
-		_, err = r.GetRepositoryMetadata(ctx, repository.RepositoryID)
-		require.ErrorIs(t, err, kv.ErrNotFound)
+		metadata, err := r.GetRepositoryMetadata(ctx, repository.RepositoryID)
+		require.NoError(t, err)
+		require.Nil(t, metadata)
 	})
 }
 

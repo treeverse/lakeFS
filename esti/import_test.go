@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 const (
@@ -325,6 +326,18 @@ func TestImportNew(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
 		require.Nil(t, statusResp.JSON200.Error)
+
+		// Check import metadata was created on repository
+		metadataResp, err := client.GetRepositoryMetadataWithResponse(ctx, repoName)
+		require.NoError(t, err)
+		require.NotNil(t, metadataResp.JSON200)
+
+		repoMetadata := metadataResp.JSON200.AdditionalProperties
+		require.NotNil(t, repoMetadata)
+		importMetadata, ok := repoMetadata[graveler.MetadataKeyLastImportTimeStamp]
+		require.True(t, ok)
+		require.Equal(t, strconv.FormatInt(statusResp.JSON200.Commit.CreationDate, 10), importMetadata)
+
 	})
 
 	t.Run("parent", func(t *testing.T) {

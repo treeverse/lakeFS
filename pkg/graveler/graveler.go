@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -2682,7 +2683,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 	}
 
 	if err = g.retryRepoMetadataUpdate(ctx, repository, func(metadata RepositoryMetadata) (RepositoryMetadata, error) {
-		metadata[MetadataKeyLastImportTimeStamp] = commit.CreationDate.String()
+		metadata[MetadataKeyLastImportTimeStamp] = strconv.FormatInt(commit.CreationDate.Unix(), 10)
 		return metadata, nil
 	}); err != nil {
 		g.log(ctx).WithField("repository_id", repository.RepositoryID).WithError(err).Error("Failed to update import metadata")
