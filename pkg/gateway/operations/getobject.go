@@ -88,6 +88,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			Identifier:       entry.PhysicalAddress,
 		}, entry.Size)
 	} else {
+		w.WriteHeader(http.StatusPartialContent)
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
 		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,

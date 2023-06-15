@@ -43,6 +43,22 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 		return
 	}
 
+	// range query
+	var rng httputil.Range
+	var rngErr error
+	// range query
+	rangeSpec := req.Header.Get("Range")
+	if len(rangeSpec) > 0 {
+		rng, rngErr = httputil.ParseRange(rangeSpec, entry.Size)
+		if rngErr != nil {
+			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
+		}
+	}
+	if rangeSpec != "" && rngErr == nil {
+		w.WriteHeader(http.StatusPartialContent)
+		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+	}
+
 	o.SetHeader(w, "Accept-Ranges", "bytes")
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
