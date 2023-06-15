@@ -1189,6 +1189,11 @@ jobs:
       COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
 
     steps:
+      - name: Azure log-in
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
       - name: Check-out code
         uses: actions/checkout@v3
 
@@ -1216,10 +1221,6 @@ jobs:
           ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/
 
       - name: cleanup cosmos db container
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
         if: ${{ failure() }}
         continue-on-error: true
         run: |
