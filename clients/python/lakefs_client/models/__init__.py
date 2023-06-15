@@ -80,6 +80,7 @@ from lakefs_client.model.refs_dump import RefsDump
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_list import RepositoryList
+from lakefs_client.model.repository_metadata import RepositoryMetadata
 from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation
 from lakefs_client.model.setup import Setup

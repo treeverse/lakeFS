@@ -1803,6 +1803,46 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /repositories/{repository}/metadata:
+    get:
+      operationId: getRepositoryMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryMetadata'
+          description: repository metadata
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get repository metadata
+      tags:
+      - repositories
+      x-accepts: application/json
   /otf/diffs:
     get:
       operationId: getOtfDiffs
@@ -5778,6 +5818,10 @@ components:
       - default_branch
       - id
       - storage_namespace
+      type: object
+    RepositoryMetadata:
+      additionalProperties:
+        type: string
       type: object
     RepositoryList:
       example:

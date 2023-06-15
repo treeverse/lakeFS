@@ -184,6 +184,11 @@ components:
           type: string
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
 
+    RepositoryMetadata:
+      type: object
+      additionalProperties:
+        type: string
+
     RepositoryList:
       type: object
       required:
@@ -2402,6 +2407,32 @@ paths:
       responses:
         204:
           description: repository deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/metadata:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getRepositoryMetadata
+      summary: get repository metadata
+      responses:
+        200:
+          description: repository metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryMetadata"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
