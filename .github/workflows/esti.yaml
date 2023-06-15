@@ -1199,7 +1199,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "cosmos_db_container=${{ COSMOSDB_CONTAINER_PREFIX }}-$RANDOM" >> $GITHUB_OUTPUT
+        run: echo "cosmos_db_container=${{ env.COSMOSDB_CONTAINER_PREFIX }}-$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
