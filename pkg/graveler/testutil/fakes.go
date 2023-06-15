@@ -878,3 +878,13 @@ func (p ProtectedBranchesManagerFake) IsBlocked(_ context.Context, _ *graveler.R
 	}
 	return false, nil
 }
+
+func (m *RefsFake) GetRepositoryMetadata(_ context.Context, _ graveler.RepositoryID) (graveler.RepositoryMetadata, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *RefsFake) SetRepositoryMetadata(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.RepoMetadataUpdateFunc) error {
+	// TODO implement me
+	panic("implement me")
+}

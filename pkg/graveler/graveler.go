@@ -28,6 +28,10 @@ const (
 
 	// BranchWriteMaxTries is the number of times to repeat the set operation if the staging token changed
 	BranchWriteMaxTries = 3
+
+	RepoMetadataUpdateMaxInterval    = 5 * time.Second
+	RepoMetadataUpdateMaxElapsedTime = 15 * time.Second
+	RepoMetadataUpdateRandomFactor   = 0.5
 )
 
 // Basic Types
@@ -237,9 +241,9 @@ type Metadata map[string]string
 
 // Repository represents repository metadata
 type Repository struct {
-	StorageNamespace StorageNamespace `db:"storage_namespace"`
-	CreationDate     time.Time        `db:"creation_date"`
-	DefaultBranchID  BranchID         `db:"default_branch"`
+	StorageNamespace StorageNamespace
+	CreationDate     time.Time
+	DefaultBranchID  BranchID
 	// RepositoryState represents the state of the repository, only ACTIVE repository is considered a valid one.
 	// other states represent in invalid temporary or terminal state
 	State RepositoryState
@@ -248,6 +252,10 @@ type Repository struct {
 	// to this specific instantiation of repo with the given ID
 	InstanceUID string
 }
+
+type RepositoryMetadata map[string]string
+
+const MetadataKeyLastImportTimeStamp = ".lakefs.last.import.timestamp"
 
 func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {
 	return Repository{
@@ -425,6 +433,8 @@ type GarbageCollectionRunMetadata struct {
 	AddressLocation string
 }
 
+type RepoMetadataUpdateFunc func(metadata RepositoryMetadata) (RepositoryMetadata, error)
+
 type KeyValueStore interface {
 	// Get returns value from repository / reference by key, nil value is a valid value for tombstone
 	// returns error if value does not exist
@@ -467,6 +477,9 @@ type VersionController interface {
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+
+	// GetRepositoryMetadata returns repository user metadata
+	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
 
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error)
@@ -539,6 +552,8 @@ type VersionController interface {
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
+
+	// Import Creates a merge-commit using source MetaRangeID into destination branch with a src-wins merge strategy
 	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
@@ -745,6 +760,12 @@ type RefManager interface {
 
 	// DeleteRepository deletes the repository
 	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+
+	// GetRepositoryMetadata gets repository user metadata
+	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
+
+	// SetRepositoryMetadata updates repository user metadata using the updateFunc
+	SetRepositoryMetadata(ctx context.Context, repository *RepositoryRecord, updateFunc RepoMetadataUpdateFunc) error
 
 	// ParseRef returns parsed 'ref' information as RawRef
 	ParseRef(ref Ref) (RawRef, error)
@@ -1040,6 +1061,14 @@ func (g *Graveler) ListRepositories(ctx context.Context) (RepositoryIterator, er
 	return g.RefManager.ListRepositories(ctx)
 }
 
+func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
+	return g.RefManager.DeleteRepository(ctx, repositoryID)
+}
+
+func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error) {
+	return g.RefManager.GetRepositoryMetadata(ctx, repositoryID)
+}
+
 func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error) {
 	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
 }
@@ -1073,10 +1102,6 @@ func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *Repository
 
 func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error) {
 	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace, it, nil)
-}
-
-func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
-	return g.RefManager.DeleteRepository(ctx, repositoryID)
 }
 
 func (g *Graveler) GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error) {
@@ -2526,6 +2551,33 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	return commitID, nil
 }
 
+func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *RepositoryRecord, f RepoMetadataUpdateFunc) error {
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = RepoMetadataUpdateMaxInterval
+	bo.MaxElapsedTime = RepoMetadataUpdateMaxElapsedTime
+	bo.RandomizationFactor = RepoMetadataUpdateRandomFactor
+	logger := g.log(ctx).WithField("repository_id", repository.RepositoryID)
+
+	try := 1
+	err := backoff.Retry(func() error {
+		err := g.RefManager.SetRepositoryMetadata(ctx, repository, f)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			logger.WithField("try", try).
+				Info("Retrying update repo metadata")
+			try += 1
+			return err
+		}
+		if err != nil {
+			return backoff.Permanent(err)
+		}
+		return nil
+	}, bo)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		return fmt.Errorf("update repo metadata: %w", ErrTooManyTries)
+	}
+	return err
+}
+
 func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error) {
 	var (
 		preRunID string
@@ -2628,6 +2680,14 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 			WithField("pre_run_id", preRunID).
 			Error("Post-commit hook failed")
 	}
+
+	if err = g.retryRepoMetadataUpdate(ctx, repository, func(metadata RepositoryMetadata) (RepositoryMetadata, error) {
+		metadata[MetadataKeyLastImportTimeStamp] = commit.CreationDate.String()
+		return metadata, nil
+	}); err != nil {
+		g.log(ctx).WithField("repository_id", repository.RepositoryID).WithError(err).Error("Failed to update import metadata")
+	}
+
 	return commitID, nil
 }
 
