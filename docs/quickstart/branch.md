@@ -27,8 +27,8 @@ Now that lakectl is configured, we can use it to create the branch. Run the foll
 ```bash
 docker exec lakefs \
     lakectl branch create \
-	    lakefs://quickstart/denmark-lakes \
-		--source lakefs://quickstart/main
+            lakefs://quickstart/denmark-lakes \
+		    --source lakefs://quickstart/main
 ```
 
 You should get a confirmation message like this:
@@ -40,41 +40,24 @@ created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8
 
 ## Transforming the Data
 
-Now we'll make a change to the data. lakeFS has several native clients, as well as an S3-compatible endpoint. This means that anything that can use S3 will work with lakeFS. Pretty neat. We're going to use DuckDB which is embedded within the web interface of lakeFS.
+Now we'll make a change to the data. lakeFS has several native clients, as well as an [S3-compatible endpoint](https://docs.lakefs.io/understand/architecture.html#s3-gateway). This means that anything that can use S3 will work with lakeFS. Pretty neat. 
 
-### Setting up DuckDB
+We're going to use DuckDB which is embedded within the web interface of lakeFS. 
 
 From the lakeFS **Objects** page select the `lakes.parquet` file to open the DuckDB editor: 
 
 <img src="/assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
-Delete the query text from the editor, as we're going to use it now to run our own commands on DuckDB. 
-
-The first thing to do is configure the S3 connection so that DuckDB can access lakeFS, as well as tell DuckDB to report back how many rows are changed by the query we'll soon be executing. Enter the following text in the DuckDB editor: 
-
-```sql
-SET s3_url_style='path';
-SET s3_region='us-east-1';
-SET s3_use_ssl=false;
-SET s3_endpoint='localhost:8000';
-SET s3_access_key_id='YOUR-ACCESS-KEY-ID';
-SET s3_secret_access_key='YOUR-SECRET-ACCESS-KEY';
-```
-
-Replace the values for authentication with your own. Click on **Execute**
-
-<img src="/assets/img/quickstart/duckdb-editor-01.png" alt="The DuckDB editor pane with a series of SET commands" class="quickstart"/>
-
-You'll see the message "No Rows Returned", which is as expected. 
-
-Now we'll load the lakes data into a DuckDB table so that we can manipulate it. Replace the previous text in the DuckDB editor with this: 
+To start with, we'll load the lakes data into a DuckDB table so that we can manipulate it. Replace the previous text in the DuckDB editor with this: 
 
 ```sql
 CREATE OR REPLACE TABLE lakes AS 
-    SELECT * FROM read_parquet('lakefs://quickstart/denmark-lakes/lakes.parquet');
+    SELECT * FROM READ_PARQUET('lakefs://quickstart/denmark-lakes/lakes.parquet');
 ```
 
-You'll see a row count of 100,000 to confirm that the DuckDB table has been created Just to check that it's the same we saw before we're run the same query: 
+You'll see a row count of 100,000 to confirm that the DuckDB table has been created. 
+
+Just to check that it's the same data that we saw before we'll run the same query. Note that we are querying a DuckDB table (`lakes`), rather than using a function to query a parquet file directly. 
 
 ```sql
 SELECT   country, COUNT(*)
@@ -111,12 +94,13 @@ DESC LIMIT 5;
 
 ## Write the Data back to lakeFS
 
-The changes so far have only been to DuckDB's copy of the data. Let's now push it back to lakeFS. Note the S3 path is different this time as we're writing it to the `denmark-lakes` branch, not `main`: 
+The changes so far have only been to DuckDB's copy of the data. Let's now push it back to lakeFS. Note the path is different this time as we're writing it to the `denmark-lakes` branch, not `main`: 
 
 ```sql
-COPY lakes TO 'lakefs://quickstart/denmark-lakes/lakes.parquet' 
-    (FORMAT 'PARQUET', ALLOW_OVERWRITE TRUE);
+COPY lakes TO 'lakefs://quickstart/denmark-lakes/lakes.parquet'
 ```
+
+<img src="/assets/img/quickstart/duckdb-editor-05.png" alt="The DuckDB editor pane writing data back to the denmark-lakes branch" class="quickstart"/>
 
 ## Verify that the Data's Changed on the Branch
 
@@ -132,22 +116,16 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-```
-┌─────────┬──────────────┐
-│ Country │ count_star() │
-│ varchar │    int64     │
-├─────────┼──────────────┤
-│ Denmark │         1677 │
-└─────────┴──────────────┘
-```
+<img src="/assets/img/quickstart/duckdb-editor-06.png" alt="The DuckDB editor pane show the parquet file on denmak-lakes branch has been changed" class="quickstart"/>
+
 
 ## What about the data in `main`?
 
-So we've changed the data in our `denmark-lakes` branch, deleting swathes of the dataset. What's this done to our original data in the `main` branch? Absolutely nothing! See for yourself by returning to the lakeFS object view and re-running the same query:
+So we've changed the data in our `denmark-lakes` branch, deleting swathes of the dataset. What's this done to our original data in the `main` branch? Absolutely nothing! See for yourself by running the same query as above, but against the `main` branch:
 
 ```sql
 SELECT   country, COUNT(*)
-FROM     read_parquet('lakefs://quickstart/main/lakes.parquet')
+FROM     READ_PARQUET('lakefs://quickstart/main/lakes.parquet')
 GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
