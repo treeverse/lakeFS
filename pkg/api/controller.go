@@ -1514,13 +1514,34 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
+	if err := c.validateStorageNamespace(body.StorageNamespace); err != nil {
+		writeError(w, r, http.StatusBadRequest, err)
+		return
+	}
+
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
 
-	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
-	if err != nil {
+	if swag.BoolValue(params.Bare) {
+		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
+		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		response := Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, r, http.StatusCreated, response)
+		return
+	}
+
+	if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 		var (
 			reason string
 			retErr error
@@ -1546,23 +1567,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			WithField("reason", reason).
 			Warn("Could not access storage namespace")
 		writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
-		return
-	}
-
-	if swag.BoolValue(params.Bare) {
-		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
-		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
-		if c.handleAPIError(ctx, w, r, err) {
-			return
-		}
-		response := Repository{
-			CreationDate:     repo.CreationDate.Unix(),
-			DefaultBranch:    repo.DefaultBranch,
-			Id:               repo.Name,
-			StorageNamespace: repo.StorageNamespace,
-		}
-		writeResponse(w, r, http.StatusCreated, response)
 		return
 	}
 
@@ -1602,20 +1606,23 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
-	const (
-		dummyKey  = "dummy"
-		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
-	)
-
+func (c *Controller) validateStorageNamespace(storageNamespace string) error {
 	validRegex := c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex
 	storagePrefixRegex, err := regexp.Compile(validRegex)
 	if err != nil {
 		return fmt.Errorf("failed to compile validity regex %s: %w", validRegex, block.ErrInvalidNamespace)
 	}
 	if !storagePrefixRegex.MatchString(storageNamespace) {
-		return block.ErrInvalidNamespace
+		return fmt.Errorf("failed to match required regex %s: %w", validRegex, block.ErrInvalidNamespace)
 	}
+	return nil
+}
+
+func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
+	const (
+		dummyKey  = "dummy"
+		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
+	)
 
 	obj := block.ObjectPointer{
 		StorageNamespace: storageNamespace,
@@ -1623,18 +1630,18 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		Identifier:       dummyKey,
 	}
 	objLen := int64(len(dummyData))
-	if _, err = c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
+	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
 			storageNamespace, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
 
-	if err = c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
+	if err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
 		return err
 	}
 
-	_, err = c.BlockAdapter.Get(ctx, obj, objLen)
+	_, err := c.BlockAdapter.Get(ctx, obj, objLen)
 	return err
 }
 
