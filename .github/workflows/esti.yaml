@@ -1190,7 +1190,7 @@ jobs:
 
     steps:
       - name: test
-        run: az -h
+        run: az version
           
       - name: Azure log-in
         uses: azure/login@v1
