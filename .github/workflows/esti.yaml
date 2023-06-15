@@ -1193,7 +1193,7 @@ jobs:
         run: az version
           
       - name: Azure log-in
-        uses: azure/login@v1
+        uses: Azure/actions/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
         
