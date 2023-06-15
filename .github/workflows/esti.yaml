@@ -1184,17 +1184,13 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      
       COSMOSDB_DATABASE: esti-db
       COSMOSDB_ACCOUNT: esti-e2e-tests
       COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
+
     steps:
       - name: Check-out code
         uses: actions/checkout@v3
-
-      - uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Generate uniquifying value
         id: unique
@@ -1220,6 +1216,10 @@ jobs:
           ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/
 
       - name: cleanup cosmos db container
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
         if: ${{ failure() }}
         continue-on-error: true
         run: |
