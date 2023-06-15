@@ -2,7 +2,6 @@ package io.lakefs.storage;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
@@ -42,14 +41,12 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
         StagingApi staging = lfsClient.getStagingApi();
         StagingLocation stagingLocation = staging.getPhysicalAddress(objectLocation.getRepository(),
                 objectLocation.getRef(), objectLocation.getPath(), false);
-        URI physicalUri;
+        Path physicalPath;
         try {
-            physicalUri = physicalAddressTranslator.translate(
-                    new URI(Objects.requireNonNull(stagingLocation.getPhysicalAddress())));
+            physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stagingLocation.getPhysicalAddress()));
         } catch (URISyntaxException e) {
             throw new IOException("Failed to parse object phystical address", e);
         }
-        Path physicalPath = new Path(physicalUri.toString());
         FileSystem physicalFs = physicalPath.getFileSystem(conf);
         OutputStream physicalOut;
         if (params != null) {
@@ -60,25 +57,23 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
         }
         MetadataClient metadataClient = new MetadataClient(physicalFs);
         LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation);
-        LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(physicalUri, metadataClient, physicalOut, linker);
+        LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(physicalPath.toUri(), metadataClient, physicalOut, linker);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
     }
-
+    
     @Override
     public FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize)
             throws ApiException, IOException {
         ObjectsApi objects = lfsClient.getObjectsApi();
         ObjectStats stats = objects.statObject(objectLocation.getRepository(),
                 objectLocation.getRef(), objectLocation.getPath(), false, false);
-        URI physicalUri;
+        Path physicalPath;
         try {
-            physicalUri = physicalAddressTranslator
-                    .translate(new URI(Objects.requireNonNull(stats.getPhysicalAddress())));
+            physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stats.getPhysicalAddress()));
         } catch (URISyntaxException e) {
-            throw new IOException("Failed to parse object phystical address", e);
+            throw new IOException("Failed to parse object physical address", e);
         }
-        Path physicalPath = new Path(physicalUri.toString());
         FileSystem physicalFs = physicalPath.getFileSystem(conf);
         return physicalFs.open(physicalPath, bufSize);
     }
