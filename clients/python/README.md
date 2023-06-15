@@ -208,6 +208,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**delete_repository**](docs/RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
 *RepositoriesApi* | [**get_branch_protection_rules**](docs/RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
 *RepositoriesApi* | [**get_repository**](docs/RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
+*RepositoriesApi* | [**get_repository_metadata**](docs/RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**list_repositories**](docs/RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
 *RetentionApi* | [**delete_garbage_collection_rules**](docs/RetentionApi.md#delete_garbage_collection_rules) | **DELETE** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**get_garbage_collection_rules**](docs/RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
@@ -299,6 +300,7 @@ Class | Method | HTTP request | Description
  - [Repository](docs/Repository.md)
  - [RepositoryCreation](docs/RepositoryCreation.md)
  - [RepositoryList](docs/RepositoryList.md)
+ - [RepositoryMetadata](docs/RepositoryMetadata.md)
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)

@@ -85,6 +85,7 @@ docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryList.md
+docs/RepositoryMetadata.md
 docs/ResetCreation.md
 docs/RetentionApi.md
 docs/RevertCreation.md
@@ -206,6 +207,7 @@ lakefs_client/model/refs_dump.py
 lakefs_client/model/repository.py
 lakefs_client/model/repository_creation.py
 lakefs_client/model/repository_list.py
+lakefs_client/model/repository_metadata.py
 lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
 lakefs_client/model/setup.py
@@ -318,6 +320,7 @@ test/test_repositories_api.py
 test/test_repository.py
 test/test_repository_creation.py
 test/test_repository_list.py
+test/test_repository_metadata.py
 test/test_reset_creation.py
 test/test_retention_api.py
 test/test_revert_creation.py

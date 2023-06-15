@@ -314,6 +314,9 @@ func (m *Manager) GetRepositoryMetadata(ctx context.Context, repositoryID gravel
 	}
 
 	metadata, _, err := m.getRepositoryMetadata(ctx, repo)
+	if errors.Is(err, kv.ErrNotFound) { // Return nil map if not exists
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}

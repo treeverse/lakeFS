@@ -1683,6 +1683,24 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 	}
 }
 
+func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadRepositoryAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "get_repo_metadata", r, repository, "", "")
+	metadata, err := c.Catalog.GetRepositoryMetadata(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusOK, RepositoryMetadata{AdditionalProperties: metadata})
+}
+
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params ListRepositoryRunsParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
