@@ -400,7 +400,7 @@ func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
 	const operation = "Query"
 	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
-		return nil, fmt.Errorf("query: %w ", handleClientError(operation, err))
+		return nil, fmt.Errorf("query: %w", handleClientError(operation, err))
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
 
