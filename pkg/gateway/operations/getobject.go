@@ -68,7 +68,6 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	amzMetaWriteHeaders(w, entry.Metadata)
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 	// range query
-	var expected int64
 	var data io.ReadCloser
 	var rng httputil.Range
 	// range query
@@ -82,34 +81,42 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 				return
 			}
 		}
+		// by here, we have a range we can use.
 	}
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
-		expected = entry.Size
+		o.SetHeader(w, "Content-Type", entry.ContentType)
+		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
 		data, err = o.BlockStore.Get(req.Context(), block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
 			Identifier:       entry.PhysicalAddress,
 		}, entry.Size)
+		if err != nil {
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
 	} else {
-		w.WriteHeader(http.StatusPartialContent)
-		expected = rng.Size() // both range ends are inclusive
+		o.SetHeader(w, "Content-Type", entry.ContentType)
+		o.SetHeader(w, "X-AMZ-Content-Range", "yes")
+		contentRange := fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)
+		o.SetHeader(w, "Content-Range", contentRange)
+		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", rng.Size()))
 		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
 			Identifier:       entry.PhysicalAddress,
 		}, rng.StartOffset, rng.EndOffset)
-		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+		if err != nil {
+			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		w.WriteHeader(http.StatusPartialContent)
 	}
-	if err != nil {
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-		return
-	}
+
 	defer func() {
 		_ = data.Close()
 	}()
-	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", expected))
-	o.SetHeader(w, "Content-Type", entry.ContentType)
 	_, err = io.Copy(w, data)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write response body for object")
