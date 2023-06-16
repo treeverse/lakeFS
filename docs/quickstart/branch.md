@@ -116,7 +116,7 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-<img src="/assets/img/quickstart/duckdb-editor-06.png" alt="The DuckDB editor pane show the parquet file on denmak-lakes branch has been changed" class="quickstart"/>
+<img src="/assets/img/quickstart/duckdb-editor-06.png" alt="The DuckDB editor pane show the parquet file on denmark-lakes branch has been changed" class="quickstart"/>
 
 
 ## What about the data in `main`?
