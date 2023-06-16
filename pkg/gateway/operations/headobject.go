@@ -44,6 +44,7 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 	}
 
 	// range query
+	var expected int64
 	var rng httputil.Range
 	var rngErr error
 	// range query
@@ -56,13 +57,16 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 	}
 	if rangeSpec != "" && rngErr == nil {
 		w.WriteHeader(http.StatusPartialContent)
+		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
 		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
+	} else {
+		expected = entry.Size
 	}
 
 	o.SetHeader(w, "Accept-Ranges", "bytes")
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
-	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
+	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", expected))
 	o.SetHeader(w, "Content-Type", entry.ContentType)
 	amzMetaWriteHeaders(w, entry.Metadata)
 }
