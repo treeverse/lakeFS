@@ -97,7 +97,7 @@ DESC LIMIT 5;
 The changes so far have only been to DuckDB's copy of the data. Let's now push it back to lakeFS. Note the path is different this time as we're writing it to the `denmark-lakes` branch, not `main`: 
 
 ```sql
-COPY lakes TO 'lakefs://quickstart/denmark-lakes/lakes.parquet'
+COPY lakes TO 'lakefs://quickstart/denmark-lakes/lakes.parquet';
 ```
 
 <img src="/assets/img/quickstart/duckdb-editor-05.png" alt="The DuckDB editor pane writing data back to the denmark-lakes branch" class="quickstart"/>
