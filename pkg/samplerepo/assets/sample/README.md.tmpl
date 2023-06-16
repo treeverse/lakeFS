@@ -165,7 +165,7 @@ To start with, we'll load the lakes data into a DuckDB table so that we can mani
 
 ```sql
 CREATE OR REPLACE TABLE lakes AS 
-    SELECT * FROM READ_PARQUET('lakefs://quickstart/denmark-lakes/lakes.parquet');
+    SELECT * FROM READ_PARQUET('lakefs:/{{.RepoName}}denmark-lakes/lakes.parquet');
 ```
 
 You'll see a row count of 100,000 to confirm that the DuckDB table has been created. 
