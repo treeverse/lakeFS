@@ -77,6 +77,10 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		rng, err = httputil.ParseRange(rangeSpec, entry.Size)
 		if err != nil {
 			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
+			if errors.Is(err, httputil.ErrUnsatisfiableRange) {
+				_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidRange))
+				return
+			}
 		}
 	}
 	if rangeSpec == "" || err != nil {
@@ -89,7 +93,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		}, entry.Size)
 	} else {
 		w.WriteHeader(http.StatusPartialContent)
-		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
+		expected = rng.Size() // both range ends are inclusive
 		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),

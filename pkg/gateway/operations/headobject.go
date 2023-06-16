@@ -53,11 +53,15 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 		rng, rngErr = httputil.ParseRange(rangeSpec, entry.Size)
 		if rngErr != nil {
 			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
+			if errors.Is(rngErr, httputil.ErrUnsatisfiableRange) {
+				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+				return
+			}
 		}
 	}
 	if rangeSpec != "" && rngErr == nil {
+		expected = rng.Size()
 		w.WriteHeader(http.StatusPartialContent)
-		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
 		o.SetHeader(w, "Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	} else {
 		expected = entry.Size
