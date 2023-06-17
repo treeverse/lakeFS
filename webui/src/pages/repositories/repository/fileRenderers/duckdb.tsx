@@ -43,7 +43,7 @@ async function getDuckDB(): Promise<duckdb.AsyncDuckDB> {
 // taken from @duckdb/duckdb-wasm/dist/types/src/bindings/tokens.d.ts
 // which, unfortunately, we cannot import.
 const DUCKDB_STRING_CONSTANT = 2;
-const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])$/;
+const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
 
 // returns a mapping of `lakefs://..` URIs to their `s3://...` equivalent
 async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
@@ -94,16 +94,7 @@ export async function runDuckDBQuery(sql: string):  Promise<arrow.Table<any>> {
         // remove registrations
         await Promise.all(fileNames.map(fileName => db.dropFile(fileName)))
     } finally {
-        await closeDuckDBConnection(conn)
-    }
-    return result
-}
-
-async function closeDuckDBConnection(conn: AsyncDuckDBConnection | null) {
-    if (conn !== null) {
         await conn.close()
     }
-    const db = await getDuckDB()
-    await db.flushFiles()
-    await db.dropFiles()
+    return result
 }
