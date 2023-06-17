@@ -125,7 +125,30 @@ func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 	}
 }
 
-func SetOutputFormat(format string) {
+type OutputFormatOptions struct {
+	CallerPrettyfier func(*runtime.Frame) (function string, file string)
+}
+
+type OutputFormatOptionFunc func(options *OutputFormatOptions)
+
+// WithOutputFormatCallerPrettyfier allows overriding the default caller prettyfier function
+func WithOutputFormatCallerPrettyfier(callerPrettyfier func(*runtime.Frame) (function string, file string)) func(options *OutputFormatOptions) {
+	return func(options *OutputFormatOptions) {
+		options.CallerPrettyfier = callerPrettyfier
+	}
+}
+
+func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
+	// setup options
+	var options OutputFormatOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	if options.CallerPrettyfier == nil {
+		options.CallerPrettyfier = logCallerTrimmer
+	}
+
+	// setup formatter
 	var formatter logrus.Formatter
 	switch strings.ToLower(format) {
 	case "text":
@@ -134,11 +157,11 @@ func SetOutputFormat(format string) {
 			DisableLevelTruncation: true,
 			PadLevelText:           true,
 			QuoteEmptyFields:       true,
-			CallerPrettyfier:       logCallerTrimmer,
+			CallerPrettyfier:       options.CallerPrettyfier,
 		}
 	case "json":
 		formatter = &logrus.JSONFormatter{
-			CallerPrettyfier: logCallerTrimmer,
+			CallerPrettyfier: options.CallerPrettyfier,
 			PrettyPrint:      false,
 		}
 	default:
