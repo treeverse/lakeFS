@@ -19,6 +19,7 @@ type Range struct {
 func (r Range) String() string {
 	return fmt.Sprintf("start=%d, end=%d (total=%d)", r.StartOffset, r.EndOffset, r.EndOffset-r.StartOffset+1)
 }
+
 func (r Range) Size() int64 {
 	return r.EndOffset - r.StartOffset + 1
 }
@@ -48,10 +49,9 @@ func ParseRange(spec string, length int64) (Range, error) {
 		if err != nil {
 			return r, ErrBadRange
 		}
+		r.StartOffset = length - endOffset
 		if length-endOffset < 0 {
 			r.StartOffset = 0
-		} else {
-			r.StartOffset = length - endOffset
 		}
 		r.EndOffset = length - 1
 		return r, nil

@@ -61,9 +61,9 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
-
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
+	o.SetHeader(w, "Content-Type", entry.ContentType)
 	o.SetHeader(w, "Accept-Ranges", "bytes")
 	amzMetaWriteHeaders(w, entry.Metadata)
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
@@ -97,8 +97,6 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			return
 		}
 	} else {
-		o.SetHeader(w, "Content-Type", entry.ContentType)
-		o.SetHeader(w, "X-AMZ-Content-Range", "yes")
 		contentRange := fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)
 		o.SetHeader(w, "Content-Range", contentRange)
 		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", rng.Size()))

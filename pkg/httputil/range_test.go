@@ -39,14 +39,8 @@ func TestParseRange(t *testing.T) {
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("%s_length_%d", c.Spec, c.Length), func(t *testing.T) {
 			r, err := httputil.ParseRange(c.Spec, int64(c.Length))
-			if c.ExpectedError != nil && err == nil {
-				t.Fatalf("epxected error: %s, got nil!", c.ExpectedError)
-			}
-			if c.ExpectedError == nil && err != nil {
-				t.Fatalf("unepxected error: %s!", err)
-			}
-			if c.ExpectedError != nil && err != nil && !errors.Is(err, c.ExpectedError) {
-				t.Fatalf("epxected error: %s, got %s!", c.ExpectedError, err)
+			if !errors.Is(err, c.ExpectedError) {
+				t.Fatalf("epxected error: %v, got %v!", c.ExpectedError, err)
 			}
 			if err != nil {
 				return
