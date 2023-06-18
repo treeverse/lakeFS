@@ -2,6 +2,17 @@
 
 ## UNRELEASED
 
+## v0.104.0
+
+:new: What's new:
+- UI: Support uploading multiple files and directories (#6074)
+
+:bug: Bugs fixed:
+- Delta Diff fails on certain operations (#6065)
+- Fix: s3 gateway returning 200 instead of 206 for range requests (#6101)
+- DuckDB: handle line breaks after a string constant (#6109)
+- Add relative ./ path support for MD images (#6057)
+
 ## v0.103.0
 
 :new: What's new:
