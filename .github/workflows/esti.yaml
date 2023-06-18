@@ -1224,7 +1224,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
-          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }}
+          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
 
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
