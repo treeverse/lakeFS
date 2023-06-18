@@ -2,6 +2,20 @@
 
 ## UNRELEASED
 
+## v0.103.1
+
+:new: What's new:
+- Add relative ./ path support for MD images (#6057)
+- UI: Support uploading multiple files and directories (#6074)
+- UI: show summary of uploaded files (#6079)
+
+:bug: Bugs fixed:
+- Docs: fix lakefs_object and invalid sql statements (#6072)
+- Delta Diff fails on certain operations (#6065)
+- Fix: URI parse with whitespace (#6080)
+- Fix: s3 gateway returning 200 instead of 206 for range requests (#6101)
+- DuckDB: handle line breaks after a string constant (#6109)
+
 ## v0.103.0
 
 :new: What's new:
