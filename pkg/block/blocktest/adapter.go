@@ -310,8 +310,8 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 		{"read_suffix", len(part1), len(part1 + part2), part2, false},
 		{"read_prefix", 0, len(part1) - 1, part1, false},
 		{"read_middle", 8, len(part1) + 6, "the first part this is", false},
-		// {"end_smaller_than_start", 10, 1, "", false},  // TODO (niro): To be determined
-		//{"negative_position", -1, len(part1), "", true}, // S3 and Azure not aligned
+		// {"end_smaller_than_start", 10, 1, "", false}, // TODO (niro): To be determined
+		// {"negative_position", -1, len(part1), "", true}, // S3 and Azure not aligned
 		{"one_byte", 1, 1, string(part1[1]), false},
 		{"out_of_bounds", 0, len(part1+part2) + 10, part1 + part2, false},
 	}

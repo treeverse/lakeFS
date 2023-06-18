@@ -25,16 +25,16 @@ var (
 	pool     *dockertest.Pool
 )
 
-func newClient(port string) *minio.Client {
+func newClient(port string) (*minio.Client, error) {
 	creds := credentials.NewStaticV4(minioTestAccessKeyID, minioTestSecretAccessKey, "")
 
 	client, err := minio.New(fmt.Sprintf("%s:%s", minioTestEndpoint, port), &minio.Options{
 		Creds: creds,
 	})
 	if err != nil {
-		log.Fatalf("minio.New: %s", err)
+		return nil, err
 	}
-	return client
+	return client, nil
 }
 
 func TestMain(m *testing.M) {
@@ -73,12 +73,19 @@ func TestMain(m *testing.M) {
 		panic("could not expire minio container: " + err.Error())
 	}
 
-	// Create test bucket
-	client := newClient(resource.GetPort("9000/tcp"))
+	// Create test client and bucket
+	client, err := newClient(resource.GetPort("9000/tcp"))
+	if err != nil {
+		log.Fatalf("create client: %s", err)
+	}
+	blockURL = client.EndpointURL().String()
+
 	err = client.MakeBucket(context.Background(), bucketName, minio.MakeBucketOptions{
 		Region: "us-east-1",
 	})
-	blockURL = client.EndpointURL().String()
+	if err != nil {
+		log.Fatalf("create bucket: %s", err)
+	}
 
 	code := m.Run()
 	closer()
