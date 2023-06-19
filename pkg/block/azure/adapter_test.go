@@ -2,6 +2,7 @@ package azure_test
 
 import (
 	"net/url"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,8 +25,24 @@ func TestAzureAdapter(t *testing.T) {
 		TestEndpointURL:  blockURL,
 	})
 	require.NoError(t, err, "create new adapter")
+	blocktest.AdapterTest(t, adapter, localPath, externalPath)
+}
 
-	namespaceTestParams := []blocktest.NamespaceTestParams{
+func TestAdapterNamespace(t *testing.T) {
+	adapter, err := azure.NewAdapter(params.Azure{
+		StorageAccount:   accountName,
+		StorageAccessKey: accountKey,
+		TestEndpointURL:  blockURL,
+	})
+
+	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
+	require.NoError(t, err)
+
+	tests := []struct {
+		Name      string
+		Namespace string
+		Success   bool
+	}{
 		{
 			Name:      "valid_https",
 			Namespace: "https://test.blob.core.windows.net/container1/repo1",
@@ -57,6 +74,9 @@ func TestAzureAdapter(t *testing.T) {
 			Success:   false,
 		},
 	}
-	blocktest.SetupNamespaceTest(namespaceTestParams)
-	blocktest.AdapterTest(t, adapter, localPath, externalPath)
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			require.Equal(t, tt.Success, expr.MatchString(tt.Namespace))
+		})
+	}
 }
