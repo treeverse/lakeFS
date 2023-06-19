@@ -1,6 +1,7 @@
 package blocktest
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -13,12 +14,12 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
-	t.Helper()
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
 	t.Run("Adapter_Remove", func(t *testing.T) { testAdapterRemove(t, adapter, storageNamespace) })
@@ -79,7 +80,7 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 
-	require.NoError(t, adapter.Put(ctx, src, 0, strings.NewReader(contents), block.PutOpts{}))
+	require.NoError(t, adapter.Put(ctx, src, int64(len(contents)), strings.NewReader(contents), block.PutOpts{}))
 
 	require.NoError(t, adapter.Copy(ctx, src, dst))
 	reader, err := adapter.Get(ctx, dst, 0)
@@ -138,7 +139,7 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 					Identifier:       tt.name + "/" + p,
 					IdentifierType:   block.IdentifierTypeRelative,
 				}
-				require.NoError(t, adapter.Put(ctx, obj, 0, strings.NewReader(content), block.PutOpts{}))
+				require.NoError(t, adapter.Put(ctx, obj, int64(len(content)), strings.NewReader(content), block.PutOpts{}))
 			}
 
 			// test Remove
@@ -187,18 +188,31 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 	return tree
 }
 
-func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
-	// TODO niro: S3 requires minimal object size for multipart upload. Check if S3 emulator supports smaller files when enabling S3 adapter unit tests
-	ctx := context.Background()
-	cases := []struct {
-		name     string
-		path     string
-		partData []string
-	}{
-		{"simple", "abc", []string{"one ", "two ", "three"}},
-		{"nested", "foo/bar", []string{"one ", "two ", "three"}},
+func createMultipartFile() ([][]byte, []byte) {
+	const (
+		multipartNumberOfParts = 3
+		multipartPartSize      = 5 * 1024 * 1024
+	)
+	parts := make([][]byte, multipartNumberOfParts)
+	var partsConcat []byte
+	for i := 0; i < multipartNumberOfParts; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize + i)
+		partsConcat = append(partsConcat, parts[i]...)
 	}
+	return parts, partsConcat
+}
 
+func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	parts, full := createMultipartFile()
+
+	cases := []struct {
+		name string
+		path string
+	}{
+		{"simple", "abc"},
+		{"nested", "foo/bar"},
+	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			obj := block.ObjectPointer{
@@ -208,15 +222,17 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 			}
 			resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 			require.NoError(t, err)
-			parts := make([]block.MultipartPart, len(c.partData))
-			for partNumber, content := range c.partData {
-				partResp, err := adapter.UploadPart(ctx, obj, 0, strings.NewReader(content), resp.UploadID, partNumber)
+
+			multiParts := make([]block.MultipartPart, len(parts))
+			for i, content := range parts {
+				partNumber := i + 1
+				partResp, err := adapter.UploadPart(ctx, obj, int64(len(content)), bytes.NewReader(content), resp.UploadID, partNumber)
 				require.NoError(t, err)
-				parts[partNumber].PartNumber = partNumber + 1
-				parts[partNumber].ETag = partResp.ETag
+				multiParts[i].PartNumber = partNumber
+				multiParts[i].ETag = partResp.ETag
 			}
 			_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
-				Part: parts,
+				Part: multiParts,
 			})
 			require.NoError(t, err)
 
@@ -226,8 +242,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 			got, err := io.ReadAll(reader)
 			require.NoError(t, err)
 
-			expected := strings.Join(c.partData, "")
-			require.Equal(t, expected, string(got))
+			require.Equal(t, full, got)
 		})
 	}
 }
@@ -240,14 +255,14 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 		StorageNamespace: storageNamespace,
 		Identifier:       contents,
 		IdentifierType:   block.IdentifierTypeRelative,
-	}, 0, strings.NewReader(contents), block.PutOpts{})
+	}, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
 	require.NoError(t, err)
 
 	err = adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       "nested/and/" + contents,
 		IdentifierType:   block.IdentifierTypeRelative,
-	}, 0, strings.NewReader(contents), block.PutOpts{})
+	}, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
 	require.NoError(t, err)
 
 	cases := []struct {
@@ -282,7 +297,7 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 		StorageNamespace: storageNamespace,
 		Identifier:       "test_file",
 		IdentifierType:   block.IdentifierTypeRelative,
-	}, 0, strings.NewReader(part1+part2), block.PutOpts{})
+	}, int64(len(part1+part2)), strings.NewReader(part1+part2), block.PutOpts{})
 	require.NoError(t, err)
 
 	cases := []struct {
@@ -295,8 +310,9 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 		{"read_suffix", len(part1), len(part1 + part2), part2, false},
 		{"read_prefix", 0, len(part1) - 1, part1, false},
 		{"read_middle", 8, len(part1) + 6, "the first part this is", false},
-		// {"end_smaller_than_start", 10, 1, "", false},  // TODO (niro): To be determined
-		{"negative_position", -1, len(part1), "", true},
+		// {"end_smaller_than_start", 10, 1, "", false}, // TODO (niro): To be determined
+		// {"negative_position", -1, len(part1), "", true}, // S3 and Azure not aligned
+		{"one_byte", 1, 1, string(part1[1]), false},
 		{"out_of_bounds", 0, len(part1+part2) + 10, part1 + part2, false},
 	}
 	for _, tt := range cases {
@@ -330,7 +346,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 				StorageNamespace: storageNamespace,
 				Identifier:       fmt.Sprintf("%s/folder_%d/test_file_%d", testPrefix, filesAndFolders-i-1, filesAndFolders-j-1),
 				IdentifierType:   block.IdentifierTypeRelative,
-			}, 0, strings.NewReader(contents), block.PutOpts{})
+			}, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
 			require.NoError(t, err)
 		}
 	}
@@ -339,7 +355,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		StorageNamespace: storageNamespace,
 		Identifier:       fmt.Sprintf("%s/folder_0.txt", testPrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
-	}, 0, strings.NewReader(contents), block.PutOpts{})
+	}, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
 	require.NoError(t, err)
 
 	cases := []struct {
