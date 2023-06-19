@@ -325,7 +325,7 @@ func (l *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, erro
 }
 
 func (l *Adapter) GetRange(_ context.Context, obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
-	if start < 0 || end <= 0 {
+	if start < 0 || end < start {
 		return nil, block.ErrBadIndex
 	}
 	p, err := l.extractParamsFromObj(obj)
