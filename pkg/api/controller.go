@@ -1514,6 +1514,11 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
+	if err := c.validateStorageNamespace(body.StorageNamespace); err != nil {
+		writeError(w, r, http.StatusBadRequest, err)
+		return
+	}
+
 	defaultBranch := StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
@@ -1522,10 +1527,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx,
-			body.Name,
-			body.StorageNamespace,
-			defaultBranch)
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -1539,8 +1541,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	err := c.ensureStorageNamespace(ctx, body.StorageNamespace)
-	if err != nil {
+	if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 		var (
 			reason string
 			retErr error
@@ -1603,6 +1604,18 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		StorageNamespace: newRepo.StorageNamespace,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
+}
+
+func (c *Controller) validateStorageNamespace(storageNamespace string) error {
+	validRegex := c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex
+	storagePrefixRegex, err := regexp.Compile(validRegex)
+	if err != nil {
+		return fmt.Errorf("failed to compile validity regex %s: %w", validRegex, block.ErrInvalidNamespace)
+	}
+	if !storagePrefixRegex.MatchString(storageNamespace) {
+		return fmt.Errorf("failed to match required regex %s: %w", validRegex, block.ErrInvalidNamespace)
+	}
+	return nil
 }
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {

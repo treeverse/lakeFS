@@ -9,4 +9,5 @@ var (
 	ErrBadIndex              = errors.New("bad index")
 	ErrForbidden             = errors.New("forbidden")
 	ErrInvalidAddress        = errors.New("invalid address")
+	ErrInvalidNamespace      = errors.New("invalid namespace")
 )
