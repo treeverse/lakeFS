@@ -27,14 +27,7 @@ var (
 
 func newClient(port string) (*minio.Client, error) {
 	creds := credentials.NewStaticV4(minioTestAccessKeyID, minioTestSecretAccessKey, "")
-
-	client, err := minio.New(fmt.Sprintf("%s:%s", minioTestEndpoint, port), &minio.Options{
-		Creds: creds,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
+	return minio.New(fmt.Sprintf("%s:%s", minioTestEndpoint, port), &minio.Options{Creds: creds})
 }
 
 func TestMain(m *testing.M) {
