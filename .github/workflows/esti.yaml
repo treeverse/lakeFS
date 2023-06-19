@@ -1184,7 +1184,15 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      COSMOSDB_DATABASE: esti-db
+      COSMOSDB_ACCOUNT: esti-e2e-tests
+
     steps:
+      - name: Azure log-in
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
       - name: Check-out code
         uses: actions/checkout@v3
 
@@ -1200,8 +1208,8 @@ jobs:
         env:
           DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: cosmosdb
-          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://esti-e2e-tests.documents.azure.com"
-          LAKEFS_DATABASE_COSMOSDB_DATABASE: esti-db
+          LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
+          LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
           LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
           LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
           LAKEFS_BLOCKSTORE_TYPE: azure
@@ -1210,6 +1218,13 @@ jobs:
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/
+
+      - name: cleanup cosmos db container
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
+          az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
 
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
