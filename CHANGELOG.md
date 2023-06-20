@@ -12,6 +12,7 @@
 - Fix: s3 gateway returning 200 instead of 206 for range requests (#6101)
 - DuckDB: handle line breaks after a string constant (#6109)
 - Add relative ./ path support for MD images (#6057)
+- Fix pre-signed URL UI config default and property name - Azure and GCS (#6073)
 
 ## v0.103.0
 
