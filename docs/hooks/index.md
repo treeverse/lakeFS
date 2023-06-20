@@ -8,6 +8,7 @@ nav_order: 29
 redirect_from:
   - /reference/hooks.html
   - /hooks.html
+  - /hooks/overview.html
 ---
 
 # lakeFS Hooks

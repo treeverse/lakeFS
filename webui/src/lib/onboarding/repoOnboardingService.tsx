@@ -176,7 +176,7 @@ export const getRepoOnboardingSteps = (
       "Create simple hooks to validate new data meets certain requirements: schema validation, metadata registration, and more.",
     cta: "Configure",
     onClick: () =>
-      window.open("https://docs.lakefs.io/hooks/overview.html", "_blank"),
+      window.open("https://docs.lakefs.io/hooks/", "_blank"),
     showStep: () => true,
     isCompleted: async () => {
       try {
