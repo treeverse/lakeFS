@@ -34,7 +34,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
 
     return (
         <Row>
-            <Col md={{offset: 5, span: 2}}>
+            <Col md={{offset: 4, span: 4}}>
                 <Card className="login-widget">
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
