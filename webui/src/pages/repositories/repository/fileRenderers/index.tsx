@@ -138,6 +138,9 @@ export function guessType(contentType: string | null, fileExtension: string | nu
             return FileType.PDF
         case 'txt':
         case 'text':
+        case 'yaml':
+        case 'yml':
+        case 'json':
             return FileType.TEXT
     }
     if (guessLanguage(fileExtension, contentType))
