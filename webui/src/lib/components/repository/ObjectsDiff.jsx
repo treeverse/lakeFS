@@ -8,7 +8,7 @@ import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "csv", "tsv"];
+const supportedReadableFormats = ["txt", "csv", "tsv", "text"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const readable = readableObject(path);
