@@ -83,7 +83,7 @@ manual][databricks-delta-sharing]:
    ```json
    {
      "shareCredentialsVersion": 1,
-     "endpoint": "https://ORG_ID.REGION.lakefscloud./service/delta-sharing/v1",
+     "endpoint": "https://ORG_ID.REGION.lakefscloud.io/service/delta-sharing/v1",
      "bearerToken": "GENERATED TOKEN",
      "expirationTime": "2030-01-01T00:00:00.0Z"
    }
