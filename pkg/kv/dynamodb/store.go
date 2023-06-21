@@ -208,7 +208,6 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		return nil, kv.ErrMissingKey
 	}
 
-	start := time.Now()
 	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
@@ -216,7 +215,6 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	})
 	const operation = "GetItem"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return nil, fmt.Errorf("get item: %w", handleClientError(operation, err))
 	}
@@ -295,10 +293,8 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		}
 	}
 
-	start := time.Now()
 	resp, err := s.svc.PutItemWithContext(ctx, input)
 	const operation = "PutItem"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
 			return kv.ErrPredicateFailed
@@ -319,14 +315,12 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		return kv.ErrMissingKey
 	}
 
-	start := time.Now()
 	resp, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
 		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	})
 	const operation = "DeleteItem"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return fmt.Errorf("delete item: %w", handleClientError(operation, err))
 	}
@@ -395,10 +389,8 @@ func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
 		queryInput.SetLimit(limit)
 	}
 
-	start := time.Now()
 	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
 	const operation = "Query"
-	dynamoRequestDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 	if err != nil {
 		return nil, fmt.Errorf("query: %w", handleClientError(operation, err))
 	}
@@ -510,11 +502,6 @@ func handleClientError(operation string, err error) error {
 	var reqErr awserr.Error
 	if errors.As(err, &reqErr) && errors.Is(reqErr.OrigErr(), context.Canceled) {
 		err = reqErr.OrigErr()
-	}
-
-	// count non cancellation errors
-	if !errors.Is(err, context.Canceled) {
-		dynamoFailures.WithLabelValues(operation).Inc()
 	}
 	return err
 }
