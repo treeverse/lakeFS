@@ -116,3 +116,44 @@ Results in:
 ```
 
 ### Migrate to lakeFS Catalog
+
+Migrating existing Iceberg tables into lakeFS is possible. 
+Currently, the migration process would require incremental copy from original table into lakeFS. 
+Depending on the catalog type the steps my change but the general steps are: 
+1. Create a new lakeFS repository `lakectl repo create lakefs://example-repo <base storage path>`
+2. Initiate a spark session that can interact with the source iceberg table and the target lakeFS catalog. 
+
+Example of Hadoop + S3 session and lakeFS catalog with [per-bucket config](https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/s3-per-bucket-configs.html): 
+
+```java
+SparkConf conf = new SparkConf();
+conf.set("spark.hadoop.fs.s3a.path.style.access", "true");
+
+// set hadoop on S3 config (source tables we want to copy) for spark
+conf.set("spark.sql.catalog.hadoop_prod", "org.apache.iceberg.spark.SparkCatalog");
+conf.set("spark.sql.catalog.hadoop_prod.type", "hadoop");
+conf.set("spark.sql.catalog.hadoop_prod.warehouse", "s3a://my-bucket/warehouse/hadoop/");
+conf.set("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
+conf.set("spark.hadoop.fs.s3a.bucket.my-bucket.access.key", "<AWS_ACCESS_KEY>");
+conf.set("spark.hadoop.fs.s3a.bucket.my-bucket.secret.key", "<AWS_SECRET_KEY>");
+
+// set lakeFS config (target catalog and repository)
+conf.set("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog");
+conf.set("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog");
+conf.set("spark.sql.catalog.lakefs.warehouse", "lakefs://example-repo");
+conf.set("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
+conf.set("spark.hadoop.fs.s3a.bucket.example-repo.access.key", "<LAKEFS_ACCESS_KEY>");
+conf.set("spark.hadoop.fs.s3a.bucket.example-repo.secret.key", "<LAKEFS_SECRET_KEY>");
+conf.set("spark.hadoop.fs.s3a.bucket.example-repo.endpoint"  , "<LAKEFS_ENDPOINT>");
+```
+
+3. Create Schema in lakeFS and copy the data 
+
+Example of copy with spark-sql: 
+
+```SQL
+-- Create Iceberg Schema in lakeFS
+CREATE SCHEMA IF NOT EXISTS <lakefs-catalog>.<branch>.<db>
+-- Create new iceberg table in lakeFS from the source table (pre-lakeFS)
+CREATE TABLE IF NOT EXISTS <lakefs-catalog>.<branch>.<db> USING iceberg AS SELECT * FROM <iceberg-original-table>
+```
