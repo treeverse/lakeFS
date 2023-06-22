@@ -58,7 +58,7 @@ var branchProtectAddCmd = &cobra.Command{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Println("Branch protection rule added successfully")
+		fmt.Printf("Branch protection rule added to '%s' repository.\n", u.Repository)
 	},
 }
 
@@ -76,7 +76,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Println("Branch protection rule deleted successfully")
+		fmt.Printf("Branch protection rule deleted to '%s' repository.\n", u.Repository)
 	},
 }
 
