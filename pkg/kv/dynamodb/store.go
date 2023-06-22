@@ -117,7 +117,6 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
-	const operation = "DescribeTable"
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
 			return false, nil
