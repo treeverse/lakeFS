@@ -1,19 +1,31 @@
 ---
 layout: default
-title: Iceberg
+title: Apache Iceberg
 description: How to integrate lakeFS with Apache Iceberg
 parent: Integrations
 nav_order: 10000 # last! TODO: put this near the top once we fully support Iceberg :)
 has_children: false
 ---
 
-# Using lakeFS with Iceberg
+# Using lakeFS with Apache Iceberg
 
-## lakeFS Icerberg Catalog
+{% include toc_2-3.html %}
 
-lakeFS enriches your Iceberg tables with Git capabilities: create a branch and make your changes in isolation, without affecting other team members.
+lakeFS provides its own implementation of the `SparkCatalog`, which handles the writing of the Iceberg data to lakeFS as well as reading from it and branching. Using straightforward table identifiers you can switch between branches when reading and writing data: 
 
-### Install
+```sql
+SELECT * FROM catalog.ref.db.table
+```
+
+## Setup
+
+<div class="tabs">
+  <ul>
+    <li><a href="#maven">Maven</a></li>
+    <li><a href="#pyspark">PySpark</a></li>
+  </ul>
+  <div markdown="1" id="maven">
+
 
 Use the following Maven dependency to install the lakeFS custom catalog:
 
@@ -25,135 +37,125 @@ Use the following Maven dependency to install the lakeFS custom catalog:
 </dependency>
 ```
 
-### Configure
+</div>
+<div markdown="1" id="pyspark">
+  Include the `lakefs-iceberg` jar in your package list along with Iceberg. For example: 
 
-Here is how to configure the lakeFS custom catalog in Spark:
-```scala
-conf.set("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog");
-conf.set("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog");
-conf.set("spark.sql.catalog.lakefs.warehouse", "lakefs://<LAKEFS_REPO>");
-conf.set("spark.sql.catalog.lakefs.uri", "<LAKEFS_ENDPOINT>")
-```
+```python
+.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.0.1")
+```  
+</div>
+</div>
 
-You will also need to configure the S3A Hadoop FileSystem to interact with lakeFS:
-```scala
-conf.set("fs.s3a.access.key", "<LAKEFS_ACCESS_KEY>")
-conf.set("fs.s3a.secret.key", "<LAKEFS_SECRET_KEY>")
-conf.set("fs.s3a.endpoint", "<LAKEFS_ENDPOINT>")
-conf.set("fs.s3a.path.style.access", "true")
-```
+## Configure
 
-### Table refernce
+1. Set up the Spark SQL catalog: 
 
-To reference the iceberg table in lakeFS you'll need to specify lakeFS branch you are working on:
-```sql
-CREATE TABLE catalog_name.lakefs_branch.table_name (id int, data string);
-```
+    ```python
+    .config("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog") \
+    .config("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog") \
+    .config("spark.sql.catalog.lakefs.warehouse", f"lakefs://{repo_name}") \
+    .config("spark.sql.catalog.lakefs.uri", lakefsEndPoint) \
+    ```
 
-### Create a table
+2. Optionally, you can set the `lakeFS` catalog to be the default one, which means that you don't need to include the prefix when referencing tables. 
 
-To create a table on your main branch, use the following syntax:
+    ```python
+    .config("spark.sql.defaultCatalog", "lakefs") \
+    ```
 
-```sql
-CREATE TABLE lakefs.main.table1 (id int, data string);
-```
+3. Configure the S3A Hadoop FileSystem for lakeFS. 
 
-### Create a branch
+    ```python
+    .config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+    .config("spark.hadoop.fs.s3a.endpoint", lakefsEndPoint) \
+    .config("spark.hadoop.fs.s3a.access.key", lakefsAccessKey) \
+    .config("spark.hadoop.fs.s3a.secret.key", lakefsSecretKey) \
+    .config("spark.hadoop.fs.s3a.path.style.access", "true") \
+    ```
 
-We can now commit the creation of the table to the main branch:
+## Using Iceberg tables with lakeFS
 
-```
-lakectl commit lakefs://example-repo/main -m "my first iceberg commit"
-```
+When referencing tables you need to ensure that they have a database specified (as you would anyway), and then a lakeFS [reference](/understand/model.html#ref-expressions) prefix. 
 
-Then, create a branch:
+A reference is one of: 
 
-```
-lakectl branch create lakefs://example-repo/dev -s lakefs://example-repo/main
-```
+* Branch
+* Tag
+* Expression (for example, `main~17` means _17 commits before main_)
 
-### Make changes on the branch
+_If you have not set your default catalog then you need to include this as a prefix to the lakeFS reference._
 
-We can now make changes on the branch:
+Here are some examples: 
 
-```sql
-INSERT INTO lakefs.dev.table1 VALUES (3, 'data3');
-```
+* The table `db.table1` on the `main` branch of lakeFS: 
 
-### Query the table
+    ```sql
+    SELECT * FROM main.db.table1;
+    ```
 
-If we query the table on the branch, we will see the data we inserted:
+* The table `db.table1` on the `dev` branch of lakeFS: 
 
-```sql
-SELECT * FROM lakefs.dev.table1;
-```
+    ```sql
+    SELECT * FROM dev.db.table1;
+    ```
 
-Results in:
-```
-+----+------+
-| id | data |
-+----+------+
-| 1  | data1|
-| 2  | data2|
-| 3  | data3|
-+----+------+
-```
+* The table `db.table1` on the `dev` branch of lakeFS, configured through the Spark SQL catalog `foo`: 
 
-However, if we query the table on the main branch, we will not see the new changes:
+    ```sql
+    SELECT * FROM foo.dev.db.table1;
+    ```
 
-```sql
-SELECT * FROM lakefs.main.table1;
-```
+* One commit previous to the table `db.table1` on the `dev` branch of lakeFS
 
-Results in:
-```
-+----+------+
-| id | data |
-+----+------+
-| 1  | data1|
-| 2  | data2|
-+----+------+
-```
+    ```sql
+    SELECT * FROM `dev~1`.db.table1;
+    ```
 
-### Migrate to lakeFS Catalog
+* Only committed data on the table `db.table1` on the `dev` branch of lakeFS
 
-Migrating existing Iceberg tables into lakeFS is possible. 
-Currently, the migration process would require incremental copy from original table into lakeFS. 
-Depending on the catalog type the steps my change but the general steps are: 
+    ```sql
+    SELECT * FROM `dev@`.db.table1;
+    ```
+
+## Migrating an existing Iceberg Table to lakeFS Catalog
+
+This is done through an incremental copy from the original table into lakeFS. 
+
 1. Create a new lakeFS repository `lakectl repo create lakefs://example-repo <base storage path>`
 2. Initiate a spark session that can interact with the source iceberg table and the target lakeFS catalog. 
 
-Example of Hadoop + S3 session and lakeFS catalog with [per-bucket config](https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/s3-per-bucket-configs.html): 
+    Here's an example of Hadoop and S3 session and lakeFS catalog with [per-bucket config](https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/s3-per-bucket-configs.html): 
 
-```java
-SparkConf conf = new SparkConf();
-conf.set("spark.hadoop.fs.s3a.path.style.access", "true");
+    ```java
+    SparkConf conf = new SparkConf();
+    conf.set("spark.hadoop.fs.s3a.path.style.access", "true");
 
-// set hadoop on S3 config (source tables we want to copy) for spark
-conf.set("spark.sql.catalog.hadoop_prod", "org.apache.iceberg.spark.SparkCatalog");
-conf.set("spark.sql.catalog.hadoop_prod.type", "hadoop");
-conf.set("spark.sql.catalog.hadoop_prod.warehouse", "s3a://my-bucket/warehouse/hadoop/");
-conf.set("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
-conf.set("spark.hadoop.fs.s3a.bucket.my-bucket.access.key", "<AWS_ACCESS_KEY>");
-conf.set("spark.hadoop.fs.s3a.bucket.my-bucket.secret.key", "<AWS_SECRET_KEY>");
+    // set hadoop on S3 config (source tables we want to copy) for spark
+    conf.set("spark.sql.catalog.hadoop_prod", "org.apache.iceberg.spark.SparkCatalog");
+    conf.set("spark.sql.catalog.hadoop_prod.type", "hadoop");
+    conf.set("spark.sql.catalog.hadoop_prod.warehouse", "s3a://my-bucket/warehouse/hadoop/");
+    conf.set("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
+    conf.set("spark.hadoop.fs.s3a.bucket.my-bucket.access.key", "<AWS_ACCESS_KEY>");
+    conf.set("spark.hadoop.fs.s3a.bucket.my-bucket.secret.key", "<AWS_SECRET_KEY>");
 
-// set lakeFS config (target catalog and repository)
-conf.set("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog");
-conf.set("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog");
-conf.set("spark.sql.catalog.lakefs.warehouse", "lakefs://example-repo");
-conf.set("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
-conf.set("spark.hadoop.fs.s3a.bucket.example-repo.access.key", "<LAKEFS_ACCESS_KEY>");
-conf.set("spark.hadoop.fs.s3a.bucket.example-repo.secret.key", "<LAKEFS_SECRET_KEY>");
-conf.set("spark.hadoop.fs.s3a.bucket.example-repo.endpoint"  , "<LAKEFS_ENDPOINT>");
-```
+    // set lakeFS config (target catalog and repository)
+    conf.set("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog");
+    conf.set("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog");
+    conf.set("spark.sql.catalog.lakefs.warehouse", "lakefs://example-repo");
+    conf.set("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
+    conf.set("spark.hadoop.fs.s3a.bucket.example-repo.access.key", "<LAKEFS_ACCESS_KEY>");
+    conf.set("spark.hadoop.fs.s3a.bucket.example-repo.secret.key", "<LAKEFS_SECRET_KEY>");
+    conf.set("spark.hadoop.fs.s3a.bucket.example-repo.endpoint"  , "<LAKEFS_ENDPOINT>");
+    ```
 
 3. Create Schema in lakeFS and copy the data 
 
-Example of copy with spark-sql: 
+    Example of copy with spark-sql: 
 
-```SQL
--- Create Iceberg Schema in lakeFS
-CREATE SCHEMA IF NOT EXISTS <lakefs-catalog>.<branch>.<db>
--- Create new iceberg table in lakeFS from the source table (pre-lakeFS)
-CREATE TABLE IF NOT EXISTS <lakefs-catalog>.<branch>.<db> USING iceberg AS SELECT * FROM <iceberg-original-table>
-```
+    ```SQL
+    -- Create Iceberg Schema in lakeFS
+    CREATE SCHEMA IF NOT EXISTS <lakefs-catalog>.<branch>.<db>
+    -- Create new iceberg table in lakeFS from the source table (pre-lakeFS)
+    CREATE TABLE IF NOT EXISTS <lakefs-catalog>.<branch>.<db> USING iceberg AS SELECT * FROM <iceberg-original-table>
+    ```
