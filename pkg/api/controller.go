@@ -1731,9 +1731,9 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	branch := StringValue(params.Branch)
+	branchName := StringValue(params.Branch)
 	commitID := StringValue(params.Commit)
-	runsIter, err := c.Actions.ListRunResults(ctx, repository, branch, commitID, paginationAfter(params.After))
+	runsIter, err := c.Actions.ListRunResults(ctx, repository, branchName, commitID, paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3064,6 +3064,8 @@ func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
+	c.LogAction(ctx, "delete_branch_protection_rule", r, repository, "", "")
+
 	err := c.Catalog.DeleteBranchProtectionRule(ctx, repository, body.Pattern)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3097,6 +3099,8 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 		return
 	}
 	ctx := r.Context()
+	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
+
 	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
 	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
 	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)

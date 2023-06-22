@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -57,6 +58,7 @@ var branchProtectAddCmd = &cobra.Command{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		fmt.Println("Branch protection rule added successfully")
 	},
 }
 
@@ -74,6 +76,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		fmt.Println("Branch protection rule deleted successfully")
 	},
 }
 

@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	ErrRuleAlreadyExists = errors.New("branch protection rule already exists")
-	ErrRuleNotExists     = errors.New("branch protection rule does not exist")
+	ErrRuleAlreadyExists = fmt.Errorf("branch protection rule already exists: %w", graveler.ErrNotUnique)
+	ErrRuleNotExists     = fmt.Errorf("branch protection rule does not exist: %w", graveler.ErrNotFound)
 )
 
 type ProtectionManager struct {
