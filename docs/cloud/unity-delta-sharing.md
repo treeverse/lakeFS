@@ -1,4 +1,12 @@
-# Unity Delta Sharing [private preview]: User Manual
+---
+layout: default
+title: Unity Delta Sharing
+parent: lakeFS Cloud
+description: The lakeFS Delta Sharing service lets you export DeltaLake and HMS-style tables stored on lakeFS over the Delta Sharing protocol. This is particularly useful with DataBricks Unity.
+has_children: false
+---
+
+# Unity Delta Sharing
 
 ## Introduction
 
@@ -107,20 +115,20 @@ Go to "Data >> Delta Sharing" on the DataBricks environment.  Once Treeverse
 have configured lakeFS Delta Sharing on your account with your config URL,
 the "lakefs-cloud" provider should appear under "Shared with me".
 
-![lakeFS-Cloud provider appearing on DataBricks Delta Sharing / Shared with me](./unity-delta-sharing-provider.png)
+![lakeFS-Cloud provider appearing on DataBricks Delta Sharing / Shared with me](/assets/img/unity-delta-sharing-provider.png)
 
 Click the provider to see its shares.
 
-![lakeFS-Cloud provider, showing share and "create catalog"](./unity-delta-sharing-shares.png)
+![lakeFS-Cloud provider, showing share and "create catalog"](/assets/img/unity-delta-sharing-shares.png)
 
 You can now create a catalog from these shares.
-![lakeFS-Cloud provider, create catalog from share](./unity-delta-sharing-create-catalog.png)
+![lakeFS-Cloud provider, create catalog from share](/assets/img/unity-delta-sharing-create-catalog.png)
 
 And you can see schemas for each of the branches that you configured in the
 share.  Here branch name `dev_experiment1` matches the pattern `dev_*` that
 we defined in the configuration object `lakefs-delta-sharing.yaml`, so it
 appears as a schema.  ![lakeFS-Cloud provider, every configured branch is a
-schema](./unity-delta-sharing-schema-per-branch.png)
+schema](/assets/img/unity-delta-sharing-schema-per-branch.png)
 
 At this point you have configured Delta Sharing on lakeFS, and DataBricks to
 communicate with lakeFS delta sharing.  No further Treeverse involvement is
