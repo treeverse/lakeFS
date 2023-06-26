@@ -18,9 +18,9 @@ _The quickstart uses Docker to bring up the lakeFS container, pre-populate it wi
 Launch the lakeFS container:
 
 ```bash
-docker run --name lakefs \
-           --rm --publish 8000:8000 \
-           treeverse/lakefs:latest-duckdb \
+docker run --name lakefs --pull always \
+             --rm --publish 8000:8000 \
+             treeverse/lakefs:latest \
              run --local-settings
 ```
 
@@ -50,4 +50,4 @@ You're now ready to dive into lakeFS!
 
 You will see the sample repository created and the quickstart guide within it. You can follow along there, or here - it's the same :) 
 
-<img width="75%" src="/assets/img/quickstart/quickstart-repo.png" alt="The quickstart sample repo in lakeFS" class="quickstart"/>
+<img width="75%" src="/assets/img/quickstart/quickstart-repo.gif" alt="The quickstart sample repo in lakeFS" class="quickstart"/>
