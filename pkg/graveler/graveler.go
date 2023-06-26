@@ -26,7 +26,7 @@ var kvRetriesCounter = promauto.NewCounterVec(
 		Name: "graveler_kv_retries",
 		Help: "Number of retries performed by Graveler to update value.",
 	},
-	[]string{"operation", "repository"},
+	[]string{"operation"},
 )
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -source=graveler.go -destination=mock/graveler.go -package=mock
@@ -1194,8 +1194,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecor
 		return nil, fmt.Errorf("reference '%s': %w", ref, ErrDereferenceCommitWithStaging)
 	}
 
-	retries, err := g.prepareForCommitIDUpdate(ctx, repository, branchID)
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "update_branch")
+	err = g.prepareForCommitIDUpdate(ctx, repository, branchID, "update_branch")
 	if err != nil {
 		return nil, err
 	}
@@ -1232,7 +1231,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecor
 // monitorRetries reports the number of retries of operation while updating
 // branchID of repository.
 func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID RepositoryID, branchID BranchID, operation string) {
-	kvRetriesCounter.WithLabelValues(operation, string(repositoryID)).Add(float64(retries))
+	kvRetriesCounter.WithLabelValues(operation).Add(float64(retries))
 	l := g.log(ctx).WithFields(logging.Fields{
 		"retries":    retries,
 		"repository": repositoryID,
@@ -1250,7 +1249,7 @@ func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID
 // a new staging token. It is best to use it before changing the branch HEAD
 // as a preparation for deleting the staging area.  See issue #3771 for more
 // information on the algorithm used.
-func (g *Graveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (int, error) {
+func (g *Graveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, operation string) error {
 	return g.retryBranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
 		empty, err := g.isStagingEmpty(ctx, repository, currBranch)
 		if err != nil {
@@ -1263,7 +1262,7 @@ func (g *Graveler) prepareForCommitIDUpdate(ctx context.Context, repository *Rep
 		currBranch.SealedTokens = append([]StagingToken{currBranch.StagingToken}, currBranch.SealedTokens...)
 		currBranch.StagingToken = GenerateStagingToken(repository.RepositoryID, branchID)
 		return currBranch, nil
-	})
+	}, operation)
 }
 
 func (g *Graveler) GetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (*Branch, error) {
@@ -1613,7 +1612,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
-	retries, err := g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
 		if !options.IfAbsent {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
@@ -1631,8 +1630,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 			}
 			return nil, ErrSkipValueUpdate
 		})
-	})
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "set")
+	}, "set")
 	return err
 }
 
@@ -1640,8 +1638,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 // if the staging token changes during the write.  It never backs off.  It
 // returns the number of times it tried -- between 1 and options.MaxTries.
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
-	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error,
-) (int, error) {
+	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string) error {
 	if options.MaxTries == 0 {
 		options.MaxTries = BranchWriteMaxTries
 	}
@@ -1650,19 +1647,27 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 		err         error
 		branchPreOp *Branch
 	)
+	defer func() {
+		retries := try
+		if retries > options.MaxTries {
+			retries = options.MaxTries
+		}
+		g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, operation)
+	}()
+
 	for try = 1; try <= options.MaxTries; try++ {
 		branchPreOp, err = g.GetBranch(ctx, repository, branchID)
 		if err != nil {
-			return try, err
+			return err
 		}
 		if err = stagingOperation(branchPreOp); err != nil {
-			return try, err
+			return err
 		}
 
 		// Re-check the token.
 		branchPostOp, err := g.GetBranch(ctx, repository, branchID)
 		if err != nil {
-			return try, err
+			return err
 		}
 		if branchPreOp.StagingToken == branchPostOp.StagingToken {
 			break
@@ -1673,12 +1678,12 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 			"try":               try,
 			"branch_token_pre":  branchPreOp.StagingToken,
 			"branch_token_post": branchPostOp.StagingToken,
-		}).Debug("Retrying Set")
+		}).Trace("Retrying Set")
 	}
 	if try > options.MaxTries {
-		return options.MaxTries, fmt.Errorf("safe branch write: %w (last failure %s)", ErrTooManyTries, err)
+		return fmt.Errorf("safe branch write: %w (last failure %s)", ErrTooManyTries, err)
 	}
-	return options.MaxTries, nil
+	return nil
 }
 
 func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key) error {
@@ -1691,11 +1696,10 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
-	retries, err := g.safeBranchWrite(ctx, log, repository, branchID,
+	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
 			return g.deleteUnsafe(ctx, repository, branch, key, nil)
-		})
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "delete")
+		}, "delete")
 	return err
 }
 
@@ -1715,7 +1719,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 
 	var m *multierror.Error
 	log := g.log(ctx).WithField("operation", "delete_keys")
-	retries, err := g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 		for _, key := range keys {
 			err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
@@ -1724,8 +1728,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 			}
 		}
 		return m.ErrorOrNil()
-	})
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "delete_batch")
+	}, "delete_keys")
 	return err
 }
 
@@ -1898,7 +1901,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		return "", err
 	}
 
-	retries, err := g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		// fill commit information - use for pre-commit and after adding the commit information used by commit
 		commit = NewCommit()
 
@@ -1973,8 +1976,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		branch.CommitID = newCommitID
 		branch.SealedTokens = make([]StagingToken, 0)
 		return branch, nil
-	})
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "commit")
+	}, "commit")
 	if err != nil {
 		return "", err
 	}
@@ -2007,11 +2009,12 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 // to BranchUpdateMaxTries times, and never sleeps than for more than
 // BranchUpdateMaxInterval.  It returns the number of times it tried --
 // between 1 and BranchUpdateMaxTries.
-func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc) (int, error) {
+func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc, operation string) error {
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = BranchUpdateMaxInterval
 
 	tries := 0
+	defer g.monitorRetries(ctx, tries, repository.RepositoryID, branchID, operation)
 	err := backoff.Retry(func() error {
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
 		tries += 1
@@ -2028,9 +2031,9 @@ func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *Repository
 		return nil
 	}, bo)
 	if errors.Is(err, kv.ErrPredicateFailed) && tries >= BranchUpdateMaxTries {
-		return tries, fmt.Errorf("update branch: %w (last %s)", ErrTooManyTries, err)
+		return fmt.Errorf("update branch: %w (last %s)", ErrTooManyTries, err)
 	}
-	return tries, err
+	return err
 }
 
 func validateCommitParent(ctx context.Context, repository *RepositoryRecord, commit Commit, manager RefManager) (CommitID, error) {
@@ -2328,8 +2331,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		parentNumber--
 	}
 
-	retries, err := g.prepareForCommitIDUpdate(ctx, repository, branchID)
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "revert")
+	err = g.prepareForCommitIDUpdate(ctx, repository, branchID, "revert")
 	if err != nil {
 		return "", err
 	}
@@ -2409,8 +2411,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 	}
 	pn--
 
-	retries, err := g.prepareForCommitIDUpdate(ctx, repository, branchID)
-	g.monitorRetries(ctx, retries, repository.RepositoryID, branchID, "cherrypick")
+	err = g.prepareForCommitIDUpdate(ctx, repository, branchID, "cherrypick")
 	if err != nil {
 		return "", err
 	}
@@ -2485,8 +2486,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	)
 
 	storageNamespace := repository.StorageNamespace
-	retries, err := g.prepareForCommitIDUpdate(ctx, repository, destination)
-	g.monitorRetries(ctx, retries, repository.RepositoryID, destination, "merge")
+	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "merge")
 	if err != nil {
 		return "", err
 	}
@@ -2495,7 +2495,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	// No retries on any failure during the merge. If the branch changed, it's either that commit is in progress, commit occurred,
 	// or some other branch changing operation. If commit is in-progress, then staging area wasn't empty after we checked so not retrying is ok.
 	// If another commit/merge succeeded, then the user should decide whether to retry the merge.
-	retries, err = g.retryBranchUpdate(ctx, repository, destination, func(branch *Branch) (*Branch, error) {
+	err = g.retryBranchUpdate(ctx, repository, destination, func(branch *Branch) (*Branch, error) {
 		empty, err := g.isSealedEmpty(ctx, repository, branch)
 		if err != nil {
 			return nil, fmt.Errorf("check if staging empty: %w", err)
@@ -2574,8 +2574,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		branch.SealedTokens = []StagingToken{}
 		branch.CommitID = commitID
 		return branch, nil
-	})
-	g.monitorRetries(ctx, retries, repository.RepositoryID, destination, "merge")
+	}, "merge")
 	if err != nil {
 		return "", fmt.Errorf("update branch %s: %w", destination, err)
 	}
@@ -2639,8 +2638,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 	)
 
 	storageNamespace := repository.StorageNamespace
-	retries, err := g.prepareForCommitIDUpdate(ctx, repository, destination)
-	g.monitorRetries(ctx, retries, repository.RepositoryID, destination, "import")
+	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
 	if err != nil {
 		return "", err
 	}
@@ -2649,7 +2647,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 	// No retries on any failure during the merge. If the branch changed, it's either that commit is in progress, commit occurred,
 	// or some other branch changing operation. If commit is in-progress, then staging area wasn't empty after we checked so not retrying is ok.
 	// If another commit/merge succeeded, then the user should decide whether to retry the merge.
-	retries, err = g.retryBranchUpdate(ctx, repository, destination, func(branch *Branch) (*Branch, error) {
+	err = g.retryBranchUpdate(ctx, repository, destination, func(branch *Branch) (*Branch, error) {
 		empty, err := g.isSealedEmpty(ctx, repository, branch)
 		if err != nil {
 			return nil, fmt.Errorf("is staging empty %s: %w", destination, err)
@@ -2711,8 +2709,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 		branch.SealedTokens = []StagingToken{}
 		branch.CommitID = commitID
 		return branch, nil
-	})
-	g.monitorRetries(ctx, retries, repository.RepositoryID, destination, "import")
+	}, "import")
 	if err != nil {
 		return "", fmt.Errorf("update branch %s: %w", destination, err)
 	}
