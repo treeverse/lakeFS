@@ -12,7 +12,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "kv_request_duration_seconds",
 			Help:    "request durations for the kv Store",
-			Buckets: []float64{0.01, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2.5, 5, 10},
+			Buckets: []float64{0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 		},
 		[]string{"type", "operation"})
 
