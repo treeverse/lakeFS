@@ -39,8 +39,8 @@ As above, we'll use `lakectl` to do this too. The syntax just requires us to spe
 
 ```bash
 docker exec lakefs \
-    lakectl merge \
-	    lakefs://quickstart/denmark-lakes \
+	lakectl merge \
+		lakefs://quickstart/denmark-lakes \
 		lakefs://quickstart/main
 ```
 
