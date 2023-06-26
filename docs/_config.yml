@@ -26,8 +26,8 @@ aux_links:
     - 'https://github.com/treeverse/lakeFS'
 
 buttons:
-  'Get Started':
-      - '/quickstart'
+  'Join us on Slack':
+    - 'https://lakefs.io/slack'
 
 # FOOTER
 # use "footer_content" for simple footer
