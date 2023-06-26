@@ -43,7 +43,6 @@ UI_BUILD_DIR=$(UI_DIR)/dist
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
-DOCKER_WITH_DUCKDB_TAG=$(DOCKER_TAG)-duckdb
 VERSION=dev
 export VERSION
 
@@ -195,7 +194,6 @@ system-tests: # Run system tests locally
 
 build-docker: build ## Build Docker image file (Docker required)
 	$(DOCKER) buildx build --target lakefs-plugins -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
-	$(DOCKER) buildx build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_WITH_DUCKDB_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
