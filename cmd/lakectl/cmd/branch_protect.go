@@ -76,7 +76,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("Branch protection rule deleted to '%s' repository.\n", u.Repository)
+		fmt.Printf("Branch protection rule deleted from '%s' repository.\n", u.Repository)
 	},
 }
 
