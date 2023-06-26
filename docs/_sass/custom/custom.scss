@@ -22,6 +22,8 @@
 }
 
 $white: #ffffff;
+$french-rose: #f24886;
+$maroon: #b62d55;
 $pale-grey: #f1f9f9;
 $light-blue-grey: #def1f1;
 $info-blue: #3498db;
@@ -323,11 +325,12 @@ body {
 						margin: 0 0 0 20px;
 						padding: 18px;
 						border-radius: 6px;
-						background-color: $teal-green;
-						border: 2px solid $teal-green;
+						background-color: $french-rose;
+						border: 2px solid $french-rose;
 						&:hover {
-							background-color: $white;
-							color: $teal-green;
+                            background-color: $maroon;
+                            border: 2px solid $maroon;
+                            color: $white;
 						}
 					}
 				}
