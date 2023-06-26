@@ -5343,6 +5343,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
         default:
           content:
             application/json:
