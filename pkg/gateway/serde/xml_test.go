@@ -11,7 +11,7 @@ import (
 
 func TestTimestamp(t *testing.T) {
 	var ts int64 = 1000197960
-	expected := "2001-09-11T08:46:00.000Z"
+	expected := "2001-09-11T08:46:00Z"
 	got := serde.Timestamp(time.Unix(ts, 0))
 	if !strings.EqualFold(got, expected) {
 		t.Fatalf("expected %s, got %s for ts = %d", expected, got, ts)
