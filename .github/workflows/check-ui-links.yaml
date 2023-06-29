@@ -58,9 +58,22 @@ jobs:
           if grep "Errors per input" /tmp/lychee/results.md; then
             echo "## 🙀 Links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            sed 's/^.*docs\/_site//g' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
 
-            for a in 
+            # sed 's/^.*docs\/_site//g' 
+
+            sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
+
+            echo "## Broken links found" >> $GITHUB_STEP_SUMMARY
+            while IFS= read -r line; do
+              if [[ $line =~ .*docs/_site(.*)\].* ]]; then
+                  search_phrase="${BASH_REMATCH[1]}"
+                  matching_files=$(grep -lr "$search_phrase" "webui/src")
+                  echo "🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`"
+                  echo
+              fi
+            done < /tmp/lychee/results.md        
+            
+            cat $GITHUB_STEP_SUMMARY
 
             exit 1
           else
