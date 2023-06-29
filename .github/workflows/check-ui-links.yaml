@@ -55,10 +55,13 @@ jobs:
 
       - name: Check Lychee output
         run: |
-          if grep "Errors per input" /tmp/lychee.md; then
+          if grep "Errors per input" /tmp/lychee/results.md; then
             echo "## 🙀 Links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            sed 's/^.*docs\/_site//g' /tmp/lychee.md >> $GITHUB_STEP_SUMMARY
+            sed 's/^.*docs\/_site//g' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
+
+            for a in 
+
             exit 1
           else
             echo "## ✅ All links found in the lakeFS UI are working" > $GITHUB_STEP_SUMMARY
