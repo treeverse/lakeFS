@@ -32,18 +32,10 @@ jobs:
         id: get-links
         working-directory: /
         run: |
-          function search_links_in_files() {
-              local folder_path="webui/src"
-              find "$folder_path" -type f ! -name "*.js" -print0 | while IFS= read -r -d '' file; do
-                grep -Eo 'href="([^"]*)"' "$file" | cut -d'"' -f2 | while IFS= read -r link; do
-                  # echo "$link\tis linked to from\t$file"
-                  echo $link
-                done
-              done
-          }
-
           escaped_pwd=$(pwd | sed 's/[\/&]/\\&/g')
-          search_links_in_files | \
+
+          find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
+            cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
             sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/_site/" > /tmp/links_to_check.txt
 
