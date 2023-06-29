@@ -54,6 +54,7 @@ jobs:
         #   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Check Lychee output
+        shell: bash
         run: |
           if grep "Errors per input" /tmp/lychee/results.md; then
             echo "## 🙀 Links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
