@@ -30,9 +30,11 @@ jobs:
 
       - name: Get links to check
         id: get-links
-        working-directory: /
         run: |
           escaped_pwd=$(pwd | sed 's/[\/&]/\\&/g')
+          echo $pwd
+          echo $escaped_pwd
+          ls -l 
 
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
