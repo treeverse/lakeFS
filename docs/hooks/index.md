@@ -35,7 +35,7 @@ lakeFS supports three types of hook:
 1. Notifying downstream consumers:
    Running a post-merge hook to trigger an Airflow DAG or to send a Webhook to an API, notifying it of the change that happened
 
-For more examples and configuration samples, check out the [examples](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) on the lakeFS repository.
+For step-by-step examples of hooks in action check out the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
 ## Supported Events
 

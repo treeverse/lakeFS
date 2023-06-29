@@ -24,6 +24,8 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 
 ## Example Lua Hooks
 
+For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository. You'll also find step-by-step examples of hooks in action in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+
 ### Display information about an event
 
 This example will print out a JSON representation of the event that occurred:
