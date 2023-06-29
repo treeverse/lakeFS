@@ -6,7 +6,6 @@ on:
       - master
 
 jobs:
-  # This job name kept short because it's used in the preview URL
   preview:
     name: Check links from UI
     runs-on: ubuntu-20.04
@@ -19,7 +18,7 @@ jobs:
         with:
           working-directory: docs
           ruby-version: '2.7'
-          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true 
 
       - name: Build latest
         working-directory: docs
@@ -47,8 +46,6 @@ jobs:
           jobSummary: false
           format: markdown
           output: /tmp/lychee/results.md
-        # env:
-        #   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Check Lychee output
         run: |
