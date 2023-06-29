@@ -54,25 +54,21 @@ jobs:
         #   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Check Lychee output
-        shell: bash
         run: |
           if grep "Errors per input" /tmp/lychee/results.md; then
             echo "## 🙀 Links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
-            # sed 's/^.*docs\/_site//g' 
-
-            sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
-
-            echo "## Broken links found" >> $GITHUB_STEP_SUMMARY
             while IFS= read -r line; do
               if [[ $line =~ .*docs/_site(.*)\].* ]]; then
                   search_phrase="${BASH_REMATCH[1]}"
                   matching_files=$(grep -lr "$search_phrase" "webui/src")
-                  echo "🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`"
-                  echo
+                  echo "* 🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`" >> $GITHUB_STEP_SUMMARY
               fi
             done < /tmp/lychee/results.md        
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
             
             cat $GITHUB_STEP_SUMMARY
 
