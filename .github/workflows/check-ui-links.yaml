@@ -2,9 +2,9 @@ name: Check links from the UI
 
 on:
   pull_request:
-    paths:
-      - "webui/**"
-      - "docs/**"
+    # paths:
+    #   - "webui/**"
+    #   - "docs/**"
     branches:
       - master
 
