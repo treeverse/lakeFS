@@ -46,8 +46,21 @@ jobs:
         uses: lycheeverse/lychee-action@v1.7.0
         with:
           args: /tmp/links_to_check.txt
-          fail: true
-          jobSummary: true
+          fail: false
+          jobSummary: false
           format: markdown
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          output: /tmp/lychee/results.md
+        # env:
+        #   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Check Lychee output
+        run: |
+          if grep "Errors per input" /tmp/lychee.md; then
+            echo "## 🙀 Links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            sed 's/^.*docs\/_site//g' /tmp/lychee.md >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "## ✅ All links found in the lakeFS UI are working" > $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
