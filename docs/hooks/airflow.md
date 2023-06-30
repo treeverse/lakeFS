@@ -1,11 +1,9 @@
 ---
 layout: default
-title: Airflow
-parent: Hooks
+title: Airflow Hooks
+parent: Actions and Hooks
 grand_parent: Reference
 description: Airflow Hooks Reference
-nav_order: 30
-redirect_from: []
 ---
 
 # Airflow Hooks

@@ -88,6 +88,17 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 </div>
 </div>
 
+<div class="row">
+<div class="col step-num">
+<img src="/assets/img/quickstart/quickstart-step-06.png" width=100 alt="step 6"/>
+</div>
+<div class="col">
+<h3>
+<a href="actions-and-hooks.html">Actions</a>
+</h3>
+<p>Use Actions to trigger code when an event occurs</p>
+</div>
+</div>
 
 {: .note}
 You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
