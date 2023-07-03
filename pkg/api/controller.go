@@ -115,6 +115,7 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 
 	continuationToken := StringValue(body.ContinuationToken)
 	mark, err := decodeGCUncommittedMark(continuationToken)
+	c.Logger.Info("demo")
 	if err != nil {
 		c.Logger.WithError(err).
 			WithFields(logging.Fields{"repository": repository, "continuation_token": continuationToken}).
@@ -4825,4 +4826,5 @@ func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (*string, error) {
 
 	token := base64.StdEncoding.EncodeToString(raw)
 	return &token, nil
+
 }
