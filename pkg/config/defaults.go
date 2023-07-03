@@ -78,7 +78,7 @@ func setDefaults(local bool) {
 	viper.SetDefault("blockstore.gs.disable_pre_signed_ui", true)
 
 	viper.SetDefault("stats.enabled", true)
-	viper.SetDefault("stats.address", "https://stats.treeverse.io")
+	viper.SetDefault("stats.address", "https://stats.lakefs.io")
 	viper.SetDefault("stats.flush_interval", 30*time.Second)
 	viper.SetDefault("stats.flush_size", 100)
 
