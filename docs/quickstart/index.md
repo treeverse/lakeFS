@@ -90,7 +90,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-06.png" width=100 alt="step 6"/>
+<img src="/assets/img/quickstart/quickstart-step-06.png" alt="step 6"/>
 </div>
 <div class="col">
 <h3>
