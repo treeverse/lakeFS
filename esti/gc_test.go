@@ -184,7 +184,7 @@ func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bo
 		"--conf", "spark.hadoop.lakefs.gc.address.num_partitions=16")
 	return &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
-		localJar:        metaclientJarPath,
+		localJar:        metaClientJarPath,
 		entryPoint:      "io.treeverse.clients.GarbageCollector",
 		extraSubmitArgs: extraSubmitArgs,
 		programArgs:     []string{repo, "us-east-1"},
