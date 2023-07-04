@@ -289,6 +289,10 @@ func TestMain(m *testing.M) {
 	azureStorageAccount = viper.GetString("azure_storage_account")
 	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 
+	if *testsToSkip != "" {
+		testsToSkipRegex = regexp.MustCompile(*testsToSkip)
+	}
+
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {
 		logger.
@@ -304,15 +308,12 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	server, err := startWebhookServer()
+	var err error
+	server, err = startWebhookServer()
 	if err != nil {
 		logger.WithError(err).Fatal("start webhook server")
 	}
 	defer func() { _ = server.s.Close() }()
-
-	if *testsToSkip != "" {
-		testsToSkipRegex = regexp.MustCompile(*testsToSkip)
-	}
 
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
