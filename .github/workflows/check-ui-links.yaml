@@ -1,0 +1,75 @@
+name: Check links from the UI
+
+on:
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: '0 1 * * *' # once a day at 1 am
+    
+jobs:
+  preview:
+    name: Check links from UI
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: docs
+          ruby-version: '2.7'
+          bundler-cache: true 
+
+      - name: Build latest
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml -d _site/ --verbose
+
+      - name: Get links to check
+        id: get-links
+        run: |
+          escaped_pwd=$(pwd | sed 's/[\/&]/\\&/g')
+          echo $pwd
+          echo $escaped_pwd
+          ls -l 
+
+          find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
+            cut -d'"' -f2 | \
+            grep -v -e "^/" -e "^#" | \
+            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/_site/" > /tmp/links_to_check.txt
+
+      - name: Check links
+        id: lychee
+        uses: lycheeverse/lychee-action@v1.7.0
+        with:
+          args: /tmp/links_to_check.txt
+          fail: false
+          jobSummary: false
+          format: markdown
+          output: /tmp/lychee/results.md
+
+      - name: Check Lychee output
+        run: |
+          if grep "Errors per input" /tmp/lychee/results.md; then
+            echo "## 🙀 Outbuond links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            while IFS= read -r line; do
+              if [[ $line =~ .*docs/_site(.*)\].* ]]; then
+                  search_phrase="${BASH_REMATCH[1]}"
+                  matching_files=$(grep -lr "$search_phrase" "webui/src")
+                  echo "* 🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`" >> $GITHUB_STEP_SUMMARY
+              fi
+            done < /tmp/lychee/results.md        
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
+            
+            cat $GITHUB_STEP_SUMMARY
+
+            exit 1
+          else
+            echo "## ✅ All outbound links found in the lakeFS UI are working" > $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
