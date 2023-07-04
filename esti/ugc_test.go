@@ -65,7 +65,7 @@ func TestUncommittedGC(t *testing.T) {
 
 	submitConfig := &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
-		localJar:        metaclientJarPath,
+		localJar:        metaClientJarPath,
 		entryPoint:      "io.treeverse.gc.UncommittedGarbageCollector",
 		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
 		programArgs:     []string{uncommittedGCRepoName, "us-east-1"},
