@@ -165,7 +165,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
             {content}
             <div>
                 {/* eslint-disable-next-line react/jsx-no-target-blank */}
-                Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/setup/hooks.html" target="_blank">Learn more.</a>
+                Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/hooks.html" target="_blank">Learn more.</a>
             </div>
         </div>
     )
