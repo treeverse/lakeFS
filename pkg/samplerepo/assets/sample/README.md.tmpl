@@ -452,7 +452,7 @@ We're going to enforce a rule that when a commit is made to any branch that begi
 
 To do this we'll create an _action_. In lakeFS, an action specifies one or more events that will trigger it, and references one or more _hooks_ to run when triggered. Actions are YAML files written to lakeFS under the `_lakefs_actions/` folder of the lakeFS repository.
 
-_Hooks_ can be either a Lua script that lakeFS will execute itself, an external web hook, or an Airflow DAG. In the example here we're using a Lua hook.
+_Hooks_ can be either a Lua script that lakeFS will execute itself, an external web hook, or an Airflow DAG. In this example, we're using a Lua hook.
 
 ## Configuring the Action
 
