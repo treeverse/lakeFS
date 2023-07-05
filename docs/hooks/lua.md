@@ -1,11 +1,9 @@
 ---
 layout: default
-title: Lua
-parent: Hooks
+title: Lua Hooks
+parent: Actions and Hooks
 grand_parent: Reference
 description: Lua Hooks reference 
-nav_order: 10
-redirect_from: []
 ---
 
 
