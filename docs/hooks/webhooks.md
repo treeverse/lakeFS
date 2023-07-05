@@ -1,11 +1,9 @@
 ---
 layout: default
 title: Webhooks
-parent: Hooks
+parent: Actions and Hooks
 grand_parent: Reference
 description: Webhooks reference
-nav_order: 20
-redirect_from: []
 ---
 
 # Webhooks

@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Hooks
-description: Overview of lakeFS hooks
+title: Actions and Hooks
+description: Overview of lakeFS Actions and Hooks
 has_children: true  
 has_toc: false
 nav_order: 29
@@ -11,13 +11,13 @@ redirect_from:
   - /hooks/overview.html
 ---
 
-# lakeFS Hooks
+# Actions and Hooks in lakeFS
 
 {% include toc.html %}
 
 Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when [predefined events](#supported-events) occur.
 
-lakeFS supports three types of hook: 
+An _Action_ defines one or more _Hooks_ to execute. lakeFS supports three types of hook: 
 
 1. [Lua](./lua.html) - uses an embedded Lua VM
 1. [Webhook](./webhooks.html) - makes REST call to external URL and waits for response

@@ -5,6 +5,7 @@ description: Learn more about lakeFS here with links to resources including quic
 parent: ⭐ Quickstart ⭐
 nav_order: 99
 has_children: false
+previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
 ---
 
 # Learn more about lakeFS
