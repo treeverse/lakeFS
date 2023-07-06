@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch: {}
 
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
