@@ -170,10 +170,12 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val ranges = scala.collection.mutable.Set[Range]()
     commitIDs.foreach(commitID => {
       val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
-          val rangesReader: SSTableReader[RangeData] =
-      SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
-      ranges ++= (read(rangesReader).map(rd => new Range(new String(rd.id), rd.message.estimatedSize)))
-    })    
+      val rangesReader: SSTableReader[RangeData] =
+        SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
+      ranges ++= (read(rangesReader).map(rd =>
+        new Range(new String(rd.id), rd.message.estimatedSize)
+      ))
+    })
     val res = ranges.map(r =>
       new GravelerSplit(
         new Path(apiClient.getRangeURL(repoName, r.id)),

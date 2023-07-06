@@ -108,7 +108,7 @@ object LakeFSContext {
 
     val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, params.repoName)
-    conf.setStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY, params.commitIDs.toArray:_*)
+    conf.setStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY, params.commitIDs.toArray: _*)
     conf.set(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY, params.storageNamespace)
     if (StringUtils.isBlank(conf.get(LAKEFS_CONF_API_URL_KEY))) {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_URL_KEY must not be empty")
