@@ -149,12 +149,14 @@ abstract class LakeFSBaseInputFormat extends InputFormat[Array[Byte], WithIdenti
     new EntryRecordReader(Entry.messageCompanion)
   }
 }
+private class Range(val id: String, val estimatedSize: Long)
+
 class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
   import LakeFSInputFormat._
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
-    val commitID = conf.get(LAKEFS_CONF_JOB_COMMIT_ID_KEY)
+    val commitIDs = conf.getStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY)
     val apiClient = ApiClient.get(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
@@ -165,15 +167,18 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
         conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, "input_format")
       )
     )
-    val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
-    val rangesReader: SSTableReader[RangeData] =
+    val ranges = scala.collection.mutable.Set[Range]()
+    commitIDs.foreach(commitID => {
+      val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
+          val rangesReader: SSTableReader[RangeData] =
       SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
-    val ranges = read(rangesReader)
+      ranges ++= (read(rangesReader).map(rd => new Range(new String(rd.id), rd.message.estimatedSize)))
+    })    
     val res = ranges.map(r =>
       new GravelerSplit(
-        new Path(apiClient.getRangeURL(repoName, new String(r.id))),
+        new Path(apiClient.getRangeURL(repoName, r.id)),
         new String(r.id),
-        r.message.estimatedSize,
+        r.estimatedSize,
         true
       )
         // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
@@ -182,7 +187,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     )
     logger.debug(s"Returning ${res.size} splits")
     res
-  }.asJava
+  }.toList.asJava
 }
 
 class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
