@@ -107,11 +107,9 @@ var setupCmd = &cobra.Command{
 
 func setupLakeFS(ctx context.Context, cfg *config.Config, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string) (*model.Credential, error) {
 	initialized, err := metadataManager.IsInitialized(ctx)
-	if err != nil {
+	if err != nil || initialized {
+		// return on error or if already initialized
 		return nil, err
-	}
-	if initialized {
-		return nil, nil
 	}
 	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
 	if err != nil {

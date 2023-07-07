@@ -182,12 +182,10 @@ func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.T
 	return nil
 }
 
+// SetupAdminUser setup base groups, policies and create admin user
 func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
-	now := time.Now()
-
-	// TODO(barak): Make sure one setup is done
-
 	// Set up the basic groups and policies
+	now := time.Now()
 	err := SetupBaseGroups(ctx, authService, cfg, now)
 	if err != nil {
 		return nil, err
@@ -197,10 +195,8 @@ func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.C
 }
 
 func AddAdminUser(ctx context.Context, authService auth.Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
-	const adminGroupName = "Admins"
-
-	// verify admin group exists
-	_, err := authService.GetGroup(ctx, adminGroupName)
+	// verify the admin group exists
+	_, err := authService.GetGroup(ctx, AdminsGroup)
 	if err != nil {
 		return nil, fmt.Errorf("admin group - %w", err)
 	}
@@ -211,7 +207,7 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
-	err = authService.AddUserToGroup(ctx, user.Username, adminGroupName)
+	err = authService.AddUserToGroup(ctx, user.Username, AdminsGroup)
 	if err != nil {
 		return nil, fmt.Errorf("add user to group - %w", err)
 	}

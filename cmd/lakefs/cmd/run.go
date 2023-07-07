@@ -190,9 +190,12 @@ var runCmd = &cobra.Command{
 
 		// initial setup if needed, do not fail on error
 		if cfg.Setup.UserName != "" && cfg.Setup.AccessKeyID.SecureValue() != "" && cfg.Setup.SecretAccessKey.SecureValue() != "" {
-			_, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Setup.UserName, cfg.Setup.AccessKeyID.SecureValue(), cfg.Setup.SecretAccessKey.SecureValue())
+			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Setup.UserName, cfg.Setup.AccessKeyID.SecureValue(), cfg.Setup.SecretAccessKey.SecureValue())
 			if err != nil {
-				logger.WithError(err).Warn("Failed to run initial setup")
+				logger.WithError(err).WithField("admin", cfg.Setup.UserName).Fatal("Failed to initial setup environment")
+			}
+			if setupCreds != nil {
+				logger.WithField("admin", cfg.Setup.UserName).Info("Initial setup completed successfully")
 			}
 		}
 
