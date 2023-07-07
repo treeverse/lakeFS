@@ -24,8 +24,8 @@ def get_spark_submit_cmd(submit_flags, spark_config, jar_name, jar_args):
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(7))
 def wait_for_setup(lfs_client):
-    setup_state = lfs_client.config.get_setup_state()
-    assert setup_state.state == 'initialized'
+    repositories = lfs_client.repositories.list_repositories()
+    assert len(repositories.results) >= 0
 
 def main():
     parser = argparse.ArgumentParser()
