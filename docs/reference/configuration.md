@@ -204,6 +204,9 @@ This reference uses `.` to denote the nesting of values.
 * `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
 * `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
 * `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
+* `setup.user_name` `(string : )` - Admin username used to setup lakeFS on startup. Limited to working only with local database. The initial admin `setup.access_key_id` and `setup.secret_access_key` are required for the setup. 
+* `setup.access_key_id` `(string : )` - Admin's initial access key id (used once in the initial setup process)
+* `setup.secret_access_key` `(string : )` - Admin's initial secret access key (used once in the initial setup process)
 
 {: .ref-list }
 
