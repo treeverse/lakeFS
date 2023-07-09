@@ -42,7 +42,7 @@ object LakeFSJobParams {
 class LakeFSJobParams private (
     val repoName: String = "",
     val storageNamespace: String = "",
-    val commitIDs: Iterable[String] = null,
+    val commitIDs: Iterable[String] = Iterable.empty,
     val sourceName: String = ""
 ) {
   if (StringUtils.isEmpty(repoName) == StringUtils.isEmpty(storageNamespace)) {
@@ -103,12 +103,13 @@ object LakeFSContext {
       params: LakeFSJobParams
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
     val inputFormatClass =
-      if (params.commitIDs != null && params.commitIDs.nonEmpty) classOf[LakeFSCommitInputFormat]
+      if (params.commitIDs.nonEmpty) classOf[LakeFSCommitInputFormat]
       else classOf[LakeFSAllRangesInputFormat]
 
     val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, params.repoName)
     conf.setStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY, params.commitIDs.toArray: _*)
+
     conf.set(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY, params.storageNamespace)
     if (StringUtils.isBlank(conf.get(LAKEFS_CONF_API_URL_KEY))) {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_URL_KEY must not be empty")
