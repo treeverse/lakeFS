@@ -191,14 +191,14 @@ var runCmd = &cobra.Command{
 		// initial setup - support only when a local database is configured.
 		// local database lock will make sure that only one instance will run the setup.
 		if kvParams.Type == local.DriverName &&
-			cfg.Setup.UserName != "" && cfg.Setup.AccessKeyID.SecureValue() != "" && cfg.Setup.SecretAccessKey.SecureValue() != "" {
-			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Setup.UserName,
-				cfg.Setup.AccessKeyID.SecureValue(), cfg.Setup.SecretAccessKey.SecureValue())
+			cfg.Installation.UserName != "" && cfg.Installation.AccessKeyID.SecureValue() != "" && cfg.Installation.SecretAccessKey.SecureValue() != "" {
+			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Installation.UserName,
+				cfg.Installation.AccessKeyID.SecureValue(), cfg.Installation.SecretAccessKey.SecureValue())
 			if err != nil {
-				logger.WithError(err).WithField("admin", cfg.Setup.UserName).Fatal("Failed to initial setup environment")
+				logger.WithError(err).WithField("admin", cfg.Installation.UserName).Fatal("Failed to initial setup environment")
 			}
 			if setupCreds != nil {
-				logger.WithField("admin", cfg.Setup.UserName).Info("Initial setup completed successfully")
+				logger.WithField("admin", cfg.Installation.UserName).Info("Initial setup completed successfully")
 			}
 		}
 
