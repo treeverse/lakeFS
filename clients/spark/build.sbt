@@ -148,6 +148,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     // scalacheck-1.15 is last version to support Scala 2.11 :-(
     "org.scalatestplus" %% "scalacheck-1-15" % "3.2.3.0" % "test",
     "org.scalatestplus" %% "mockito-4-2" % "3.2.11.0" % "test",
+    "org.mockito" % "mockito-all" % "1.10.19" % "test",
     "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
     "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",

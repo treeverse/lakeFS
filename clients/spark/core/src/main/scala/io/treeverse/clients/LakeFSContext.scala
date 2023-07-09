@@ -16,7 +16,7 @@ object LakeFSJobParams {
   /** Use these parameters to list all entries for a specific commit in a repository.
    */
   def forCommit(repoName: String, commitID: String, sourceName: String = ""): LakeFSJobParams = {
-    new LakeFSJobParams(repoName = repoName, commitID = commitID, sourceName = sourceName)
+    new LakeFSJobParams(repoName = repoName, commitIDs = Seq(commitID), sourceName = sourceName)
   }
 
   /** Use these parameters to list all entries for in all ranges found in the storage namespace.
@@ -36,13 +36,13 @@ object LakeFSJobParams {
 
 /** @param repoName the repository to list entries for. Mutually exclusive with `storageNamespace`.
  *  @param storageNamespace the storage namespace to list entries from. Mutually exclusive with `repoName`.
- *  @param commitID the commit to list entries for. If empty, list all entries in the repository.
+ *  @param commitIDs the commits to list entries for. If empty, list all entries in the repository.
  *  @param sourceName a string describing the application using the client. Will be sent as part of the X-Lakefs-Client header.
  */
 class LakeFSJobParams private (
     val repoName: String = "",
     val storageNamespace: String = "",
-    val commitID: String = "",
+    val commitIDs: Iterable[String] = Iterable.empty,
     val sourceName: String = ""
 ) {
   if (StringUtils.isEmpty(repoName) == StringUtils.isEmpty(storageNamespace)) {
@@ -58,7 +58,7 @@ object LakeFSContext {
   val LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY = "lakefs.api.read.timeout_seconds"
   val LAKEFS_CONF_JOB_REPO_NAME_KEY = "lakefs.job.repo_name"
   val LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY = "lakefs.job.storage_namespace"
-  val LAKEFS_CONF_JOB_COMMIT_ID_KEY = "lakefs.job.commit_id"
+  val LAKEFS_CONF_JOB_COMMIT_IDS_KEY = "lakefs.job.commit_ids"
   val LAKEFS_CONF_JOB_SOURCE_NAME_KEY = "lakefs.job.source_name"
 
   val LAKEFS_CONF_GC_NUM_COMMIT_PARTITIONS = "lakefs.gc.commit.num_partitions"
@@ -103,12 +103,13 @@ object LakeFSContext {
       params: LakeFSJobParams
   ): RDD[(Array[Byte], WithIdentifier[Entry])] = {
     val inputFormatClass =
-      if (StringUtils.isNotBlank(params.commitID)) classOf[LakeFSCommitInputFormat]
+      if (params.commitIDs.nonEmpty) classOf[LakeFSCommitInputFormat]
       else classOf[LakeFSAllRangesInputFormat]
 
     val conf = new Configuration(sc.hadoopConfiguration)
     conf.set(LAKEFS_CONF_JOB_REPO_NAME_KEY, params.repoName)
-    conf.set(LAKEFS_CONF_JOB_COMMIT_ID_KEY, params.commitID)
+    conf.setStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY, params.commitIDs.toArray: _*)
+
     conf.set(LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY, params.storageNamespace)
     if (StringUtils.isBlank(conf.get(LAKEFS_CONF_API_URL_KEY))) {
       throw new InvalidJobConfException(s"$LAKEFS_CONF_API_URL_KEY must not be empty")

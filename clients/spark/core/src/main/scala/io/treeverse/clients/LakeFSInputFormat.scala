@@ -2,7 +2,6 @@ package io.treeverse.clients
 
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.lakefs.catalog.Entry
-import io.treeverse.lakefs.graveler.committed.RangeData
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.Writable
@@ -81,7 +80,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
   private var sstableReader: SSTableReader[Proto] = _
   var localFile: java.io.File = _
-  var it: SSTableIterator[Proto] = _
+  var it: Iterator[Item[Proto]] = _
   var item: Item[Proto] = _
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
@@ -142,6 +141,9 @@ object LakeFSInputFormat {
 }
 
 abstract class LakeFSBaseInputFormat extends InputFormat[Array[Byte], WithIdentifier[Entry]] {
+  var apiClientGetter = ApiClient.get _
+  var metarangeReaderGetter = SSTableReader.forMetaRange _
+
   override def createRecordReader(
       split: InputSplit,
       context: TaskAttemptContext
@@ -149,13 +151,23 @@ abstract class LakeFSBaseInputFormat extends InputFormat[Array[Byte], WithIdenti
     new EntryRecordReader(Entry.messageCompanion)
   }
 }
+private class Range(val id: String, val estimatedSize: Long) {
+  override def hashCode(): Int = {
+    id.hashCode()
+  }
+
+  override def equals(other: Any): Boolean = {
+    id.equals(other.asInstanceOf[Range].id)
+  }
+}
+
 class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
   import LakeFSInputFormat._
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
-    val commitID = conf.get(LAKEFS_CONF_JOB_COMMIT_ID_KEY)
-    val apiClient = ApiClient.get(
+    val commitIDs = conf.getStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY)
+    val apiClient = apiClientGetter(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
@@ -165,15 +177,18 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
         conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, "input_format")
       )
     )
-    val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
-    val rangesReader: SSTableReader[RangeData] =
-      SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
-    val ranges = read(rangesReader)
+    val ranges = commitIDs
+      .flatMap(commitID => {
+        val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
+        val rangesReader = metarangeReaderGetter(job.getConfiguration, metaRangeURL, true)
+        read(rangesReader).map(rd => new Range(new String(rd.id), rd.message.estimatedSize))
+      })
+      .toSet
     val res = ranges.map(r =>
       new GravelerSplit(
-        new Path(apiClient.getRangeURL(repoName, new String(r.id))),
+        new Path(apiClient.getRangeURL(repoName, r.id)),
         new String(r.id),
-        r.message.estimatedSize,
+        r.estimatedSize,
         true
       )
         // Scala / JRE not strong enough to handle List<FileSplit> as List<InputSplit>;
@@ -182,7 +197,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     )
     logger.debug(s"Returning ${res.size} splits")
     res
-  }.asJava
+  }.toList.asJava
 }
 
 class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
@@ -199,7 +214,7 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
         "Must specify exactly one of LAKEFS_CONF_JOB_REPO_NAME_KEY or LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY"
       )
     }
-    val apiClient = ApiClient.get(
+    val apiClient = apiClientGetter(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
