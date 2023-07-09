@@ -182,10 +182,10 @@ func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.T
 	return nil
 }
 
+// SetupAdminUser setup base groups, policies and create admin user
 func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
-	now := time.Now()
-
 	// Set up the basic groups and policies
+	now := time.Now()
 	err := SetupBaseGroups(ctx, authService, cfg, now)
 	if err != nil {
 		return nil, err
@@ -195,10 +195,8 @@ func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.C
 }
 
 func AddAdminUser(ctx context.Context, authService auth.Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
-	const adminGroupName = "Admins"
-
-	// verify admin group exists
-	_, err := authService.GetGroup(ctx, adminGroupName)
+	// verify the admin group exists
+	_, err := authService.GetGroup(ctx, AdminsGroup)
 	if err != nil {
 		return nil, fmt.Errorf("admin group - %w", err)
 	}
@@ -209,7 +207,7 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
-	err = authService.AddUserToGroup(ctx, user.Username, adminGroupName)
+	err = authService.AddUserToGroup(ctx, user.Username, AdminsGroup)
 	if err != nil {
 		return nil, fmt.Errorf("add user to group - %w", err)
 	}
@@ -235,14 +233,17 @@ func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *
 }
 
 func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
-	adminUser := &model.SuperuserConfiguration{User: model.User{
-		CreatedAt: time.Now(),
-		Username:  username,
-	}}
+	adminUser := &model.SuperuserConfiguration{
+		User: model.User{
+			CreatedAt: time.Now(),
+			Username:  username,
+		},
+	}
 	if accessKeyID != nil && secretAccessKey != nil {
 		adminUser.AccessKeyID = *accessKeyID
 		adminUser.SecretAccessKey = *secretAccessKey
 	}
+
 	// create first admin user
 	cred, err := SetupAdminUser(ctx, authService, cfg, adminUser)
 	if err != nil {

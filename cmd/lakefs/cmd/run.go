@@ -35,7 +35,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
-	_ "github.com/treeverse/lakefs/pkg/kv/local"
+	"github.com/treeverse/lakefs/pkg/kv/local"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
@@ -187,6 +187,20 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failed to schedule cleanup jobs")
 		}
 		deleteScheduler.StartAsync()
+
+		// initial setup - support only when a local database is configured.
+		// local database lock will make sure that only one instance will run the setup.
+		if kvParams.Type == local.DriverName &&
+			cfg.Installation.UserName != "" && cfg.Installation.AccessKeyID.SecureValue() != "" && cfg.Installation.SecretAccessKey.SecureValue() != "" {
+			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Installation.UserName,
+				cfg.Installation.AccessKeyID.SecureValue(), cfg.Installation.SecretAccessKey.SecureValue())
+			if err != nil {
+				logger.WithError(err).WithField("admin", cfg.Installation.UserName).Fatal("Failed to initial setup environment")
+			}
+			if setupCreds != nil {
+				logger.WithField("admin", cfg.Installation.UserName).Info("Initial setup completed successfully")
+			}
+		}
 
 		templater := templater.NewService(templates.Content, cfg, authService)
 
