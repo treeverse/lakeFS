@@ -81,7 +81,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
   private var sstableReader: SSTableReader[Proto] = _
   var localFile: java.io.File = _
-  var it: SSTableIterator[Proto] = _
+  var it: Iterator[Item[Proto]] = _
   var item: Item[Proto] = _
   var rangeID: String = ""
   override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
@@ -142,6 +142,9 @@ object LakeFSInputFormat {
 }
 
 abstract class LakeFSBaseInputFormat extends InputFormat[Array[Byte], WithIdentifier[Entry]] {
+  var apiClientGetter = ApiClient.get _
+  var metarangeReaderGetter = SSTableReader.forMetaRange _
+
   override def createRecordReader(
       split: InputSplit,
       context: TaskAttemptContext
@@ -149,7 +152,15 @@ abstract class LakeFSBaseInputFormat extends InputFormat[Array[Byte], WithIdenti
     new EntryRecordReader(Entry.messageCompanion)
   }
 }
-private class Range(val id: String, val estimatedSize: Long)
+private class Range(val id: String, val estimatedSize: Long) {
+  override def hashCode(): Int = {
+    id.hashCode()
+  }
+
+  override def equals(other: Any): Boolean = {
+    id.equals(other.asInstanceOf[Range].id)
+  }
+}
 
 class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
   import LakeFSInputFormat._
@@ -157,7 +168,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val conf = job.getConfiguration
     val repoName = conf.get(LAKEFS_CONF_JOB_REPO_NAME_KEY)
     val commitIDs = conf.getStrings(LAKEFS_CONF_JOB_COMMIT_IDS_KEY)
-    val apiClient = ApiClient.get(
+    val apiClient = apiClientGetter(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
@@ -167,11 +178,11 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
         conf.get(LAKEFS_CONF_JOB_SOURCE_NAME_KEY, "input_format")
       )
     )
-    val ranges = scala.collection.mutable.Set[Range]()
+    val ranges = scala.collection.mutable.HashSet[Range]()
     commitIDs.foreach(commitID => {
       val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
       val rangesReader: SSTableReader[RangeData] =
-        SSTableReader.forMetaRange(job.getConfiguration, metaRangeURL)
+        metarangeReaderGetter(job.getConfiguration, metaRangeURL, true)
       ranges ++= (read(rangesReader).map(rd =>
         new Range(new String(rd.id), rd.message.estimatedSize)
       ))
@@ -206,7 +217,7 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
         "Must specify exactly one of LAKEFS_CONF_JOB_REPO_NAME_KEY or LAKEFS_CONF_JOB_STORAGE_NAMESPACE_KEY"
       )
     }
-    val apiClient = ApiClient.get(
+    val apiClient = apiClientGetter(
       APIConfigurations(
         conf.get(LAKEFS_CONF_API_URL_KEY),
         conf.get(LAKEFS_CONF_API_ACCESS_KEY_KEY),
