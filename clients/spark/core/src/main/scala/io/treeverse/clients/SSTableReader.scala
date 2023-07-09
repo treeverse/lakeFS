@@ -120,7 +120,7 @@ class SSTableReader[Proto <: GeneratedMessage with scalapb.Message[Proto]] priva
     BlockParser.readProperties(reader, footer).map(kv => new String(kv._1.toArray) -> kv._2)
   }
 
-  def newIterator(): SSTableIterator[Proto] = {
+  def newIterator(): Iterator[Item[Proto]] = {
     val it = BlockParser.entryIterator(reader)
     new SSTableIterator(it, this, companion)
   }
