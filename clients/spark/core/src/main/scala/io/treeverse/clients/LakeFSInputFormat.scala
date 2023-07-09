@@ -2,7 +2,6 @@ package io.treeverse.clients
 
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.lakefs.catalog.Entry
-import io.treeverse.lakefs.graveler.committed.RangeData
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.Writable
