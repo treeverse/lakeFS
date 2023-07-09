@@ -335,7 +335,10 @@ type Config struct {
 		Enabled bool `mapstructure:"enabled"`
 	} `mapstructure:"email_subscription"`
 	Installation struct {
-		FixedID string `mapstructure:"fixed_id"`
+		FixedID         string       `mapstructure:"fixed_id"`
+		UserName        string       `mapstructure:"user_name"`
+		AccessKeyID     SecureString `mapstructure:"access_key_id"`
+		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
 	} `mapstructure:"installation"`
 	Security struct {
 		CheckLatestVersion      bool          `mapstructure:"check_latest_version"`

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -78,19 +79,13 @@ var setupCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), metadataManager, cloudMetadataProvider)
 
-		initialized, err := metadataManager.IsInitialized(ctx)
+		credentials, err := setupLakeFS(ctx, cfg, metadataManager, authService, userName, accessKeyID, secretAccessKey)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
 		}
-		if initialized {
+		if credentials == nil {
 			fmt.Printf("Setup is already complete.\n")
-			os.Exit(1)
-		}
-
-		credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
-		if err != nil {
-			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)
 		}
 
@@ -108,6 +103,19 @@ var setupCmd = &cobra.Command{
 
 		cancelFn()
 	},
+}
+
+func setupLakeFS(ctx context.Context, cfg *config.Config, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string) (*model.Credential, error) {
+	initialized, err := metadataManager.IsInitialized(ctx)
+	if err != nil || initialized {
+		// return on error or if already initialized
+		return nil, err
+	}
+	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
+	if err != nil {
+		return nil, fmt.Errorf("create initial admin user: %w", err)
+	}
+	return credentials, nil
 }
 
 const internalErrorCode = 2
