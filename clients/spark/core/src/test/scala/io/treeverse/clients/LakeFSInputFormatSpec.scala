@@ -52,10 +52,14 @@ class LakeFSInputFormatSpec
     })
     Mockito
       .when(mockClient.getRangeURL(mockito.Matchers.eq(repoName), mockito.Matchers.anyString()))
-      .thenAnswer(i => "s3a://bucket/" + i.getArguments()(1).asInstanceOf[String])
+      .thenAnswer((i: mockito.invocation.InvocationOnMock) =>
+        "s3a://bucket/" + i.getArguments()(1).asInstanceOf[String]
+      )
     Mockito
       .when(mockClient.getMetaRangeURL(mockito.Matchers.eq(repoName), mockito.Matchers.anyString))
-      .thenAnswer(i => i.getArguments()(1).asInstanceOf[String].replace("c", "mr"))
+      .thenAnswer((i: mockito.invocation.InvocationOnMock) =>
+        i.getArguments()(1).asInstanceOf[String].replace("c", "mr")
+      )
     val inputFormat = new LakeFSCommitInputFormat()
     inputFormat.apiClientGetter = (APIConfigurations) => mockClient
     inputFormat.metarangeReaderGetter = (Configuration, metaRangeURL: String, Boolean) => {
