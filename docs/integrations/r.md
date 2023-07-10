@@ -11,7 +11,7 @@ has_children: false
 
 R is a powerful language used widely in data science. lakeFS interfaces with R in two ways: 
 
-*  To **read and write data in lakeFS** use standard S3 tools such as the `aws.s3` library. lakeFS has a [S3 gateway](https://docs.lakefs.io/understand/architecture.html#s3-gateway) which presents a lakeFS repository as an S3 bucket.
+* To **read and write data in lakeFS** use standard S3 tools such as the `aws.s3` library. lakeFS has a [S3 gateway](https://docs.lakefs.io/understand/architecture.html#s3-gateway) which presents a lakeFS repository as an S3 bucket.
 * For working with **lakeFS operations such as branches and commits** use the [API](https://docs.lakefs.io/reference/api.html) for which can be accessed from R using the `httr` library. 
 
 _To see examples of R in action with lakeFS please visit the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples/) repository and the [sample](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/R.ipynb) [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/R-weather.ipynb)_.
