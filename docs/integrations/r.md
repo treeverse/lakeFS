@@ -11,7 +11,7 @@ has_children: false
 
 R is a powerful language used widely in data science. lakeFS interfaces with R in two ways: 
 
-* To **read and write data in lakeFS** use standard S3 tools such as the `aws.s3` library. lakeFS has a [S3 gateway](https://docs.lakefs.io/understand/architecture.html#s3-gateway) which presents a lakeFS repository as an S3 bucket.
+* To **read and write data in lakeFS** use standard S3 tools such as the `aws.s3` library. lakeFS has a [S3 gateway](https://docs.lakefs.io/understand/architecture.html#s3-gateway) which presents a lakeFS repository as an S3 bucket. 
 * For working with **lakeFS operations such as branches and commits** use the [API](https://docs.lakefs.io/reference/api.html) for which can be accessed from R using the `httr` library. 
 
 _To see examples of R in action with lakeFS please visit the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples/) repository and the [sample](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/R.ipynb) [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/R-weather.ipynb)_.
@@ -30,7 +30,7 @@ install.packages(c("aws.s3"))
 
 ### Configuration 
 
-The [R S3 client documentation](https://github.com/cloudyr/aws.s3/blob/master/man/s3HTTP.Rd) includes full details of the configuration options available. A good approach for using it with lakeFS set the endpoint and authentication details as environment variables: 
+The [R S3 client documentation](https://cloud.r-project.org/web/packages/aws.s3/aws.s3.pdf) includes full details of the configuration options available. A good approach for using it with lakeFS set the endpoint and authentication details as environment variables: 
 
 ```r
 Sys.setenv("AWS_ACCESS_KEY_ID" = "AKIAIOSFODNN7EXAMPLE",
@@ -38,12 +38,14 @@ Sys.setenv("AWS_ACCESS_KEY_ID" = "AKIAIOSFODNN7EXAMPLE",
            "AWS_S3_ENDPOINT" = "lakefs.mycorp.com:8000")
 ```
 
+_Note: it is generally best practice to set these environment variables outside of the R script; it is done so here for convenience of the example._
+
 In conjunction with this you must also specify `region` and `use_https` _in each call of an `aws.s3` function_ as these cannot be set globally. For example: 
 
 ```r
 bucketlist(
-    region="",
-    use_https="false"
+    region = "",
+    use_https = "false"
     )
 ```
 
@@ -56,8 +58,8 @@ The S3 gateway exposes a repository as a bucket, and so using the `aws.s3` funct
 
 ```r
 bucketlist(
-    region="",
-    use_https="false"
+    region = "",
+    use_https = "false"
     )
 ```
 
@@ -72,8 +74,8 @@ branch <- "development"
 s3saveRDS(x=my_df, 
           bucket = repo_name, 
           object = paste0(branch,"/my_df.R"), 
-          region="",
-          use_https="false")
+          region = "",
+          use_https = "false")
 ```
 
 You can also upload local files to lakeFS using R and the `put_object` function: 
@@ -86,8 +88,8 @@ local_file <- "/tmp/never.gonna"
 put_object(file = local_file, 
            bucket = repo_name, 
            object = paste0(branch,"/give/you/up"),
-           region="",
-           use_https=useHTTPS)
+           region = "",
+           use_https = "false")
 ```
 
 ### Reading from lakeFS with R
@@ -100,9 +102,22 @@ branch <- "development"
 
 my_df <- s3readRDS(bucket = repo_name, 
                    object = paste0(branch,"/my_data.R"),
-                   region="",
-                   use_https=useHTTPS)
+                   region = "",
+                   use_https = "false")
 ```
+
+### Listing Objects
+
+In general you should always specify a branch prefix when listing objects. Here's an example to list the `main` branch in the `quickstart` repository: 
+
+```R
+get_bucket_df(bucket="quickstart",
+              prefix="main/",
+              region="",
+              use_https=FALSE)
+```
+
+When listing objects in lakeFS there is a special case which is the repository/bucket level. When you list at this level you will get the branches returned as folders. These are not listed recursively, unless you list something under the branch. To understand more about this please refer to [#5441](https://github.com/treeverse/lakeFS/issues/5441)
 
 ## Performing lakeFS Operations using the lakeFS API from R
 
@@ -124,10 +139,10 @@ r=GET(url=paste0(lakefs_api_url,"/config/version"),
       authenticate(lakefsAccessKey, lakefsSecretKey))
 ```
 
-The returned object `r` can be inspected to determine the outcome of the operation. Here is some example R code to demonstrate the idea: 
+The returned object `r` can be inspected to determine the outcome of the operation by comparing it to the status codes specified in the API. Here is some example R code to demonstrate the idea: 
 
 ```r
-if (r$status_code <400) {
+if (r$status_code == 200) {
     print(paste0("✅lakeFS credentials and connectivity verified. ℹ️lakeFS version ",content(r)$version))   
 } else {
     print("🛑 failed to get lakeFS version")
