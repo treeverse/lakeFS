@@ -151,7 +151,7 @@ body=list(name=repo_name,
 # Call the API
 r=POST(url=paste0(lakefs_api_url,"/repositories"), 
         authenticate(lakefsAccessKey, lakefsSecretKey),
-        body=body, encode="json" )
+        body=body, encode="json")
 ```
 
 ### Commit Data
