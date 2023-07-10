@@ -45,7 +45,7 @@ In conjunction with this you must also specify `region` and `use_https` _in each
 ```r
 bucketlist(
     region = "",
-    use_https = "FALSE"
+    use_https = FALSE
     )
 ```
 
@@ -59,7 +59,7 @@ The S3 gateway exposes a repository as a bucket, and so using the `aws.s3` funct
 ```r
 bucketlist(
     region = "",
-    use_https = "FALSE"
+    use_https = FALSE
     )
 ```
 
@@ -75,7 +75,7 @@ s3saveRDS(x=my_df,
           bucket = repo_name, 
           object = paste0(branch,"/my_df.R"), 
           region = "",
-          use_https = "FALSE")
+          use_https = FALSE)
 ```
 
 You can also upload local files to lakeFS using R and the `put_object` function: 
@@ -89,7 +89,7 @@ put_object(file = local_file,
            bucket = repo_name, 
            object = paste0(branch,"/give/you/up"),
            region = "",
-           use_https = "FALSE")
+           use_https = FALSE)
 ```
 
 ### Reading from lakeFS with R
@@ -103,7 +103,7 @@ branch <- "development"
 my_df <- s3readRDS(bucket = repo_name, 
                    object = paste0(branch,"/my_data.R"),
                    region = "",
-                   use_https = "FALSE")
+                   use_https = FALSE)
 ```
 
 ### Listing Objects
@@ -111,10 +111,10 @@ my_df <- s3readRDS(bucket = repo_name,
 In general you should always specify a branch prefix when listing objects. Here's an example to list the `main` branch in the `quickstart` repository: 
 
 ```R
-get_bucket_df(bucket="quickstart",
-              prefix="main/",
-              region="",
-              use_https=FALSE)
+get_bucket_df(bucket = "quickstart",
+              prefix = "main/",
+              region = "",
+              use_https = FALSE)
 ```
 
 When listing objects in lakeFS there is a special case which is the repository/bucket level. When you list at this level you will get the branches returned as folders. These are not listed recursively, unless you list something under the branch. To understand more about this please refer to [#5441](https://github.com/treeverse/lakeFS/issues/5441)
@@ -131,11 +131,11 @@ This is a useful API call to establish connectivity and test authentication.
 
 ```r
 library(httr)
-lakefs_api_url<- "lakefs.mycorp.com:8000/api/v1"
-lakefsAccessKey <- 'AKIAIOSFODNN7EXAMPLE'
-lakefsSecretKey <- 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+lakefs_api_url <- "lakefs.mycorp.com:8000/api/v1"
+lakefsAccessKey <- "AKIAIOSFODNN7EXAMPLE"
+lakefsSecretKey <- "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
-r=GET(url=paste0(lakefs_api_url,"/config/version"), 
+r=GET(url=paste0(lakefs_api_url, "/config/version"), 
       authenticate(lakefsAccessKey, lakefsSecretKey))
 ```
 
@@ -154,9 +154,9 @@ if (r$status_code == 200) {
 
 ```r
 library(httr)
-lakefs_api_url<- "lakefs.mycorp.com:8000/api/v1"
-lakefsAccessKey <- 'AKIAIOSFODNN7EXAMPLE'
-lakefsSecretKey <- 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+lakefs_api_url <- "lakefs.mycorp.com:8000/api/v1"
+lakefsAccessKey <- "AKIAIOSFODNN7EXAMPLE"
+lakefsSecretKey <- "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 repo_name <- "my_new_repo"
 
 # Define the payload
@@ -164,7 +164,7 @@ body=list(name=repo_name,
           storage_namespace="s3://example-bucket/foo")
 
 # Call the API
-r=POST(url=paste0(lakefs_api_url,"/repositories"), 
+r=POST(url=paste0(lakefs_api_url, "/repositories"), 
         authenticate(lakefsAccessKey, lakefsSecretKey),
         body=body, encode="json")
 ```
@@ -173,9 +173,9 @@ r=POST(url=paste0(lakefs_api_url,"/repositories"),
 
 ```r
 library(httr)
-lakefs_api_url<- "lakefs.mycorp.com:8000/api/v1"
-lakefsAccessKey <- 'AKIAIOSFODNN7EXAMPLE'
-lakefsSecretKey <- 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+lakefs_api_url <- "lakefs.mycorp.com:8000/api/v1"
+lakefsAccessKey <- "AKIAIOSFODNN7EXAMPLE"
+lakefsSecretKey <- "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 repo_name <- "my_new_repo"
 branch <- "example"
 
@@ -186,7 +186,7 @@ body=list(message="add some data and charts",
               author="rmoff"))
 
 # Call the API
-r=POST(url=paste0(lakefs_api_url,"/repositories/",repo_name,"/branches/",branch,"/commits"), 
+r=POST(url=paste0(lakefs_api_url, "/repositories/", repo_name, "/branches/", branch, "/commits"), 
        authenticate(lakefsAccessKey, lakefsSecretKey),
-       body=body, encode="json" )
+       body=body, encode="json")
 ```
