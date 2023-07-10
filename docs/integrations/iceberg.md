@@ -33,7 +33,7 @@ Use the following Maven dependency to install the lakeFS custom catalog:
 <dependency>
   <groupId>io.lakefs</groupId>
   <artifactId>lakefs-iceberg</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
 </dependency>
 ```
 
@@ -42,7 +42,7 @@ Use the following Maven dependency to install the lakeFS custom catalog:
   Include the `lakefs-iceberg` jar in your package list along with Iceberg. For example: 
 
 ```python
-.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.1")
+.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.2")
 ```  
 </div>
 </div>
@@ -55,7 +55,6 @@ Use the following Maven dependency to install the lakeFS custom catalog:
     .config("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog") \
     .config("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog") \
     .config("spark.sql.catalog.lakefs.warehouse", f"lakefs://{repo_name}") \
-    .config("spark.sql.catalog.lakefs.uri", lakefsEndPoint) \
     ```
 
 2. Optionally, you can set the `lakeFS` catalog to be the default one, which means that you don't need to include the prefix when referencing tables. 
