@@ -50,7 +50,7 @@ bucketlist(
 ```
 
 * `region` should always be empty
-* `use_https` should be set to `true` or `false` depending on whether your lakeFS endpoint uses HTTPS.
+* `use_https` should be set to `TRUE` or `FALSE` depending on whether your lakeFS endpoint uses HTTPS.
 
 ### Listing repositories
 
