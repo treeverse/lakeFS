@@ -22,7 +22,7 @@ _To see examples of R in action with lakeFS please visit the [lakeFS-samples](ht
 
 Working with data stored in lakeFS from R is the same as you would with an S3 bucket, via the [S3 Gateway that lakeFS provides](https://docs.lakefs.io/understand/architecture.html#s3-gateway).
 
-You can use any library that interfaces with S3. In this example we'll use the [aws.s3](https://github.com/cloudyr/aws.s3/tree/master) library.
+You can use any library that interfaces with S3. In this example we'll use the [aws.s3](https://github.com/cloudyr/aws.s3) library.
 
 ```r
 install.packages(c("aws.s3"))
