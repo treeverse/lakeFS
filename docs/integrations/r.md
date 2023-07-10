@@ -45,7 +45,7 @@ In conjunction with this you must also specify `region` and `use_https` _in each
 ```r
 bucketlist(
     region = "",
-    use_https = "false"
+    use_https = "FALSE"
     )
 ```
 
@@ -59,7 +59,7 @@ The S3 gateway exposes a repository as a bucket, and so using the `aws.s3` funct
 ```r
 bucketlist(
     region = "",
-    use_https = "false"
+    use_https = "FALSE"
     )
 ```
 
@@ -75,7 +75,7 @@ s3saveRDS(x=my_df,
           bucket = repo_name, 
           object = paste0(branch,"/my_df.R"), 
           region = "",
-          use_https = "false")
+          use_https = "FALSE")
 ```
 
 You can also upload local files to lakeFS using R and the `put_object` function: 
@@ -89,7 +89,7 @@ put_object(file = local_file,
            bucket = repo_name, 
            object = paste0(branch,"/give/you/up"),
            region = "",
-           use_https = "false")
+           use_https = "FALSE")
 ```
 
 ### Reading from lakeFS with R
@@ -103,7 +103,7 @@ branch <- "development"
 my_df <- s3readRDS(bucket = repo_name, 
                    object = paste0(branch,"/my_data.R"),
                    region = "",
-                   use_https = "false")
+                   use_https = "FALSE")
 ```
 
 ### Listing Objects
