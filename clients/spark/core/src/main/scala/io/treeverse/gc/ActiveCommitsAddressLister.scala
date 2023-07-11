@@ -29,3 +29,14 @@ class ActiveCommitsAddressLister(val apiClient: ApiClient, val repoName: String)
                        )
   }
 }
+
+object ActiveCommitsAddressLister {
+  def main(args: Array[String]): Unit = {
+    // val apiClient = new ApiClient("http://localhost:8000/api/v1", "lakefs", "secret")
+    // val repoName = "lakefs"
+    // val lister = new ActiveCommitsAddressLister(apiClient, repoName)
+    // val spark = SparkSession.builder().appName("ActiveCommitsAddressLister").getOrCreate()
+    // val df = lister.listCommittedAddresses(spark, "", "")
+    // df.show()
+  }
+}
