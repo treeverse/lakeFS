@@ -2530,6 +2530,10 @@ func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, ns, it interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, ns, it)
 }
 
+func (mr *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+	return "", nil
+}
+
 // MockStagingManager is a mock of StagingManager interface.
 type MockStagingManager struct {
 	ctrl     *gomock.Controller
@@ -2969,8 +2973,4 @@ func (m *MockProtectedBranchesManager) IsBlocked(ctx context.Context, repository
 func (mr *MockProtectedBranchesManagerMockRecorder) IsBlocked(ctx, repository, branchID, action interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBlocked", reflect.TypeOf((*MockProtectedBranchesManager)(nil).IsBlocked), ctx, repository, branchID, action)
-}
-
-func (mr *MockProtectedBranchesManagerMockRecorder) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID) (graveler.MetaRangeID, error) {
-	return "", nil
 }
