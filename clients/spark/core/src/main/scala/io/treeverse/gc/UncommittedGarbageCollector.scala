@@ -179,7 +179,7 @@ object UncommittedGarbageCollector {
         val clientStorageNamespace =
           apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
         val committedLister =
-          if (experimentalUnifiedGC) new ActiveCommitsAddressLister(apiClient, repo)
+          if (experimentalUnifiedGC) new ActiveCommitsAddressLister(apiClient, repo, storageType)
           else new NaiveCommittedAddressLister()
         val committedDF =
           committedLister.listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)

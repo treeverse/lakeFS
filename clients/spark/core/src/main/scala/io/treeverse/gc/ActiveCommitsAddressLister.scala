@@ -5,9 +5,13 @@ import org.apache.spark.sql.DataFrame
 import io.treeverse.clients.ApiClient
 import io.treeverse.clients.LakeFSContext
 import io.treeverse.clients.LakeFSJobParams
+import java.net.URI
 
-class ActiveCommitsAddressLister(val apiClient: ApiClient, val repoName: String)
-    extends CommittedAddressLister {
+class ActiveCommitsAddressLister(
+    val apiClient: ApiClient,
+    val repoName: String,
+    val storageType: String
+) extends CommittedAddressLister {
 
   override def listCommittedAddresses(
       spark: SparkSession,
@@ -16,27 +20,23 @@ class ActiveCommitsAddressLister(val apiClient: ApiClient, val repoName: String)
   ): DataFrame = {
 
     val prepareResult = apiClient.prepareGarbageCollectionCommits(repoName, "")
+    val gcCommitsLocation =
+      ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType)
     var commitsDF = spark.read
       .option("header", value = true)
       .option("inferSchema", value = true)
-      .csv(prepareResult.getGcCommitsLocation)
+      .csv(gcCommitsLocation.toString)
     commitsDF = commitsDF.filter(commitsDF("expired") === false).select("commit_id")
-    LakeFSContext.newDF(spark,
-                        LakeFSJobParams.forCommits(repoName,
-                                                   commitsDF.collect().map(_.getString(0)),
-                                                   "experimental-unified-gc"
-                                                  )
-                       )
-  }
-}
+    val df = LakeFSContext.newDF(spark,
+                                 LakeFSJobParams.forCommits(repoName,
+                                                            commitsDF.collect().map(_.getString(0)),
+                                                            "experimental-unified-gc"
+                                                           )
+                                )
+    val normalizedClientStorageNamespace =
+      if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
+      else clientStorageNamespace + "/"
 
-object ActiveCommitsAddressLister {
-  def main(args: Array[String]): Unit = {
-    // val apiClient = new ApiClient("http://localhost:8000/api/v1", "lakefs", "secret")
-    // val repoName = "lakefs"
-    // val lister = new ActiveCommitsAddressLister(apiClient, repoName)
-    // val spark = SparkSession.builder().appName("ActiveCommitsAddressLister").getOrCreate()
-    // val df = lister.listCommittedAddresses(spark, "", "")
-    // df.show()
+    filterAddresses(spark, df, normalizedClientStorageNamespace)
   }
 }
