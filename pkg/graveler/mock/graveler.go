@@ -2970,3 +2970,7 @@ func (mr *MockProtectedBranchesManagerMockRecorder) IsBlocked(ctx, repository, b
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBlocked", reflect.TypeOf((*MockProtectedBranchesManager)(nil).IsBlocked), ctx, repository, branchID, action)
 }
+
+func (mr *MockProtectedBranchesManagerMockRecorder) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+	return "", nil
+}

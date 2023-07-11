@@ -293,3 +293,7 @@ func (c *committedManager) GetRangeIDByKey(ctx context.Context, ns graveler.Stor
 	}
 	return graveler.RangeID(r.ID), nil
 }
+
+func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+	return "", nil
+}

@@ -118,6 +118,10 @@ func (c *CommittedFake) GetRange(_ context.Context, _ graveler.StorageNamespace,
 	return graveler.RangeAddress(fmt.Sprintf("fake://prefix/%s(range)", rangeID)), nil
 }
 
+func (c *CommittedFake) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+	return "", nil
+}
+
 // Backwards compatibility for test pre-KV
 const defaultKey = "key"
 
