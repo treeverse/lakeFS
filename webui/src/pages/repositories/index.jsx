@@ -174,9 +174,9 @@ const RepositoriesPage = () => {
     const createRepo = async (repo, presentRepo = true) => {
         try {
             setCreatingRepo(true);
+            setCreateRepoError(null);
             await repositories.create(repo);
             setRefresh(!refresh);
-            setCreateRepoError(null);
             if (presentRepo) {
                 router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: repo.name}});
             }
