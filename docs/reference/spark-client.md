@@ -23,21 +23,9 @@ Start Spark Shell / PySpark with the `--packages` flag:
 
 <div class="tabs">
   <ul>
-    <li><a href="#packages-2">Spark 2.x</a></li>
 	<li><a href="#packages-3-hadoop2">Spark 3.x</a></li>
 	<li><a href="#packages-3-hadoop3">Spark 3.x on Hadoop 3.x</a></li>
   </ul>
-  <div markdown="1" id="packages-2">
-  This client is compiled for Spark 2.4.7 and tested with it, but can work for higher versions.
-
-  ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-247_2.11:0.8.1
-  ```
-  
-  Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-247/0.8.1/lakefs-spark-client-247-assembly-0.8.1.jar`
-  </div>
-
   <div markdown="1" id="packages-3-hadoop2">
   This client is compiled for Spark 3.0.1 with Hadoop 2 and tested with it, but can work for
   higher versions.
