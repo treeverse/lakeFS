@@ -26,6 +26,7 @@ You can use any library that interfaces with S3. In this example we'll use the [
 
 ```r
 install.packages(c("aws.s3"))
+library(aws.s3)
 ```
 
 ### Configuration 
@@ -118,6 +119,48 @@ get_bucket_df(bucket = "quickstart",
 ```
 
 When listing objects in lakeFS there is a special case which is the repository/bucket level. When you list at this level you will get the branches returned as folders. These are not listed recursively, unless you list something under the branch. To understand more about this please refer to [#5441](https://github.com/treeverse/lakeFS/issues/5441)
+
+### Working with Arrow
+
+Arrow's [R library](https://arrow.apache.org/docs/r/index.html) includes [powerful support](https://arrow.apache.org/docs/r/index.html#what-can-the-arrow-package-do) for data analysis, including reading and writing multiple file formats including Parquet, Arrow, CSV, and JSON. It has functionality for [connecting to S3](https://arrow.apache.org/docs/r/articles/fs.html), and thus integrates perfectly with lakeFS. 
+
+To start with install and load the library
+
+```r
+install.packages("arrow")
+library(arrow)
+```
+
+Then create an S3FileSystem object to connect to your lakeFS instance
+
+```r
+lakefs <- S3FileSystem$create(
+    endpoint_override = "lakefs.mycorp.com:8000",
+    scheme = "http"
+    access_key = "AKIAIOSFODNN7EXAMPLE", 
+    secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", 
+    region = "",
+)
+```
+
+From here you can list the contents of a particular lakeFS repository and branch
+
+```r
+lakefs$ls(path = "quickstart/main")
+```
+
+To read a Parquet from lakeFS with R use the `read_parquet` function
+
+```r
+lakes <- read_parquet(lakefs$path("quickstart/main/lakes.parquet"))
+```
+
+Writing a file follows a similar pattern. Here is rewriting the same file as above but in Arrow format
+
+```r
+write_feather(x = lakes,
+              sink = lakefs$path("quickstart/main/lakes.arrow"))
+```
 
 ## Performing lakeFS Operations using the lakeFS API from R
 
