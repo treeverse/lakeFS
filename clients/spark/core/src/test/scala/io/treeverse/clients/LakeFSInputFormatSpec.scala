@@ -74,7 +74,9 @@ class LakeFSInputFormatSpec
         .when(conf.getStrings(LakeFSContext.LAKEFS_CONF_JOB_COMMIT_IDS_KEY))
         .thenReturn(Array("c2"))
       val splits = inputFormat.getSplits(context)
-      splits.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(Set("r1", "r3"))
+      splits.asScala.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(
+        Set("r1", "r3")
+      )
     }
 
     it("should return ranges combined from 2 commits") {
@@ -82,7 +84,7 @@ class LakeFSInputFormatSpec
         .when(conf.getStrings(LakeFSContext.LAKEFS_CONF_JOB_COMMIT_IDS_KEY))
         .thenReturn(Array("c1", "c2"))
       val splits = inputFormat.getSplits(context)
-      splits.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(
+      splits.asScala.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(
         Set("r1", "r2", "r3")
       )
     }
@@ -92,7 +94,7 @@ class LakeFSInputFormatSpec
         .when(conf.getStrings(LakeFSContext.LAKEFS_CONF_JOB_COMMIT_IDS_KEY))
         .thenReturn(Array("c1", "c2", "c3"))
       val splits = inputFormat.getSplits(context)
-      splits.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(
+      splits.asScala.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(
         Set("r1", "r2", "r3", "r4", "r5")
       )
     }

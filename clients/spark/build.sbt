@@ -1,10 +1,9 @@
 import build.BuildType
 
 lazy val baseName = "lakefs-spark"
-
 lazy val projectVersion = "0.8.2"
-ThisBuild / isSnapshot := false
 
+ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
 def settingsToCompileIn(dir: String, flavour: String = "") = {
@@ -29,11 +28,8 @@ def generateCoreProject(buildType: BuildType) =
   Project(s"${baseName}-client-${buildType.name}", file(s"core"))
     .settings(
       sharedSettings,
-      if (buildType.hadoopFlavour == "hadoop2") {
-        hadoop2ShadingSettings
-      } else {
-        hadoop3ShadingSettings
-      },
+      if (buildType.hadoopFlavour == "hadoop2") hadoop2ShadingSettings
+      else hadoop3ShadingSettings,
       s3UploadSettings,
       settingsToCompileIn("core", buildType.hadoopFlavour),
       semanticdbEnabled := true, // enable SemanticDB
@@ -100,7 +96,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
-    "org.json4s" %% "json4s-native" % "4.0.6",
+    "org.json4s" %% "json4s-native" % "3.6.12",
     "org.rogach" %% "scallop" % "4.0.3",
     "com.azure" % "azure-core" % "1.10.0",
     "com.azure" % "azure-storage-blob" % "12.9.0",
