@@ -38,7 +38,7 @@ def generateCoreProject(buildType: BuildType) =
       settingsToCompileIn("core", buildType.hadoopFlavour),
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
-      scalacOptions ++= Seq("-Ywarn-unused-import", "-deprecation"),
+      scalacOptions += "-Ywarn-unused-import",
       Compile / PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
