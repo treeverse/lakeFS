@@ -184,7 +184,7 @@ lakeFS is also available as a fully-managed hosted service on [lakeFS Cloud](htt
 
 Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
 
-Or using [Homebrew](https://brew.sh/)
+Or using [Homebrew](https://brew.sh/) for Linux/macOS:
 
 ```sh
 # add repository
