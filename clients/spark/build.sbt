@@ -83,14 +83,7 @@ lazy val spark3Type =
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3",
-                "3.1.2",
-                "0.10.11",
-                "3.2.1",
-                "hadoop3",
-                "hadoop3-2.0.1"
-               )
-
+  new BuildType("312-hadoop3", "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
 
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
@@ -103,7 +96,6 @@ lazy val root =
 def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
   Seq(
     "io.lakefs" % "api-client" % "0.91.0",
-    "commons-codec" % "commons-codec" % "1.15",
     "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
     "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
@@ -125,23 +117,18 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     // is quite stable.  Take the version documented in DataBricks
     // Runtime 7.6, and note that it changes in 8.3 :-(
     "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
-    "org.scalactic" %% "scalactic" % "3.2.9",
     "dev.failsafe" % "failsafe" % "3.2.4",
     "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
     "xerces" % "xercesImpl" % "2.12.2" % "test",
-    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-    // scalacheck-1.15 is last version to support Scala 2.11 :-(
-    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.3.0" % "test",
-    "org.scalatestplus" %% "mockito-4-2" % "3.2.11.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+    "org.scalatestplus" %% "scalacheck-1-17" % "3.2.16.0" % "test",
+    "org.scalatestplus" %% "mockito-4-11" % "3.2.16.0" % "test",
     "org.mockito" % "mockito-all" % "1.10.19" % "test",
     "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
-    "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
     // Test with an up-to-date fasterxml.
-    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
-    "com.storm-enroute" %% "scalameter" % "0.18" % "test"
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test"
   )
 }
 
