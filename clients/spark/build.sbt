@@ -2,17 +2,10 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 
-lazy val projectVersion = "0.8.1"
+lazy val projectVersion = "0.8.2"
 ThisBuild / isSnapshot := false
 
-// Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
-// change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
-// support other ways of changing emitted Scala binary versions using the same compiler.
-
-// SO https://stackoverflow.com/a/60177627/192263 hints that we cannot use 2.11 here before
-// this version
-lazy val scala211Version = "2.11.12"
-lazy val scala212Version = "2.12.12"
+ThisBuild / scalaVersion := "2.12.12"
 
 def settingsToCompileIn(dir: String, flavour: String = "") = {
   lazy val allSettings = Seq(
@@ -43,7 +36,6 @@ def generateCoreProject(buildType: BuildType) =
       },
       s3UploadSettings,
       settingsToCompileIn("core", buildType.hadoopFlavour),
-      scalaVersion := buildType.scalaVersion,
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
       scalacOptions += "-Ywarn-unused-import",
@@ -74,7 +66,6 @@ def generateExamplesProject(buildType: BuildType) =
     .settings(
       sharedSettings,
       settingsToCompileIn("examples", buildType.hadoopFlavour),
-      scalaVersion := buildType.scalaVersion,
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
       scalacOptions += "-Ywarn-unused-import",
@@ -87,15 +78,12 @@ def generateExamplesProject(buildType: BuildType) =
       run / fork := false // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
-lazy val spark2Type =
-  new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2", "hadoop2-2.0.1")
 lazy val spark3Type =
-  new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2", "hadoop2-2.0.1")
+  new BuildType("301", "3.0.1", "0.10.11", "2.7.7", "hadoop2", "hadoop2-2.0.1")
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
   new BuildType("312-hadoop3",
-                scala212Version,
                 "3.1.2",
                 "0.10.11",
                 "3.2.1",
@@ -103,15 +91,14 @@ lazy val spark312Type =
                 "hadoop3-2.0.1"
                )
 
-lazy val core2 = generateCoreProject(spark2Type)
+
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
-lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
 lazy val root =
-  (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
+  (project in file(".")).aggregate(core3, core312, examples3, examples312)
 
 def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
   Seq(
