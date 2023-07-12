@@ -17,18 +17,23 @@ redirect_from:
 
 # Using lakeFS with Spark
 
-## Ways to use lakeFS with Spark
+There are several ways to use lakeFS with Spark:
 
 * [The S3-compatible API](#use-the-s3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
 * [The lakeFS FileSystem](#use-the-lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
    * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode-beta): Best of both worlds, but still in beta. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 
-{: .pb-5 }
+See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
+{: .note }
 
-## Use the S3-compatible API
+{% include toc.html %}
 
-lakeFS has an S3-compatible endpoint. Simply point Spark to this endpoint to get started quickly.
+## S3-compatible API
+
+lakeFS has an S3-compatible endpoint which you can point Spark at to get started quickly.
+
 You will access your data using S3-style URIs, e.g. `s3a://example-repo/example-branch/example-table`.
+
 You can use the S3-compatible API regardless of where your data is hosted.
 
 ### Configuration
@@ -388,7 +393,7 @@ spark.hadoop.fs.lakefs.endpoint=â€˜https://example-org.us-east-1.lakefscloud.ioâ
 
 For more details about [Mounting cloud object storage on Databricks](https://docs.databricks.com/dbfs/mounts.html).
 
-## Use the lakeFS Hadoop FileSystem
+## lakeFS Hadoop FileSystem
 
 If you're using lakeFS on top of S3, this mode will enhance your application's performance.
 In this mode, Spark will read and write objects directly from S3, reducing the load on the lakeFS server.
@@ -595,7 +600,7 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-### Hadoop FileSystem in Presigned mode <sup>BETA</sup>
+## Hadoop FileSystem in Presigned mode <sup>BETA</sup>
 
 _Available starting version 0.1.13 of the FileSystem_
 
@@ -686,7 +691,5 @@ spark.hadoop.fs.lakefs.access.key AKIAlakefs12345EXAMPLE
 spark.hadoop.fs.lakefs.secret.key abc/lakefs/1234567bPxRfiCYEXAMPLEKEY
 spark.hadoop.fs.lakefs.endpoint https://example-org.us-east-1.lakefscloud.io/api/v1
 ```
-
-## Case Study: SimilarWeb
-
-See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
+</div>
+</div>
