@@ -11,29 +11,6 @@ trait CommittedAddressLister {
       storageNamespace: String,
       clientStorageNamespace: String
   ): DataFrame
-}
-
-class NaiveCommittedAddressLister extends CommittedAddressLister {
-
-  override def listCommittedAddresses(
-      spark: SparkSession,
-      storageNamespace: String,
-      clientStorageNamespace: String
-  ): DataFrame = {
-    val normalizedStorageNamespace =
-      if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace + "/"
-    val params = LakeFSJobParams.forStorageNamespace(
-      normalizedStorageNamespace,
-      UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
-    )
-    val df = LakeFSContext.newDF(spark, params)
-
-    val normalizedClientStorageNamespace =
-      if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
-      else clientStorageNamespace + "/"
-
-    filterAddresses(spark, df, normalizedClientStorageNamespace)
-  }
 
   def filterAddresses(
       spark: SparkSession,
@@ -76,5 +53,27 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
     addressesDF
       .repartition(addressesDF.col("address"))
       .distinct()
+  }
+}
+
+class NaiveCommittedAddressLister extends CommittedAddressLister {
+  override def listCommittedAddresses(
+      spark: SparkSession,
+      storageNamespace: String,
+      clientStorageNamespace: String
+  ): DataFrame = {
+    val normalizedStorageNamespace =
+      if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace + "/"
+    val params = LakeFSJobParams.forStorageNamespace(
+      normalizedStorageNamespace,
+      UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
+    )
+    val df = LakeFSContext.newDF(spark, params)
+
+    val normalizedClientStorageNamespace =
+      if (clientStorageNamespace.endsWith("/")) clientStorageNamespace
+      else clientStorageNamespace + "/"
+
+    filterAddresses(spark, df, normalizedClientStorageNamespace)
   }
 }
