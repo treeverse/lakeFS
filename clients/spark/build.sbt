@@ -102,7 +102,6 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
     "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
-    "org.scalaj" %% "scalaj-http" % "2.4.2",
     "org.json4s" %% "json4s-native" % "3.5.5",
     "com.google.guava" % "guava" % "16.0.1",
     "com.google.guava" % "failureaccess" % "1.0.1",
@@ -118,8 +117,6 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     // Runtime 7.6, and note that it changes in 8.3 :-(
     "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
     "dev.failsafe" % "failsafe" % "3.2.4",
-    "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
-    // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
     "xerces" % "xercesImpl" % "2.12.2" % "test",
     "org.scalatest" %% "scalatest" % "3.2.16" % "test",
@@ -127,8 +124,11 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.scalatestplus" %% "mockito-4-11" % "3.2.16.0" % "test",
     "org.mockito" % "mockito-all" % "1.10.19" % "test",
     "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
+    "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
+    "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
     // Test with an up-to-date fasterxml.
-    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test"
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
+    "com.storm-enroute" %% "scalameter" % "0.18" % "test"
   )
 }
 
