@@ -14,7 +14,7 @@ import org.json4s.native.JsonMethods._
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.util.Date
-import scala.collection.JavaConversions.asScalaIterator
+import scala.collection.JavaConverters._
 
 object UncommittedGarbageCollector {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
@@ -244,7 +244,7 @@ object UncommittedGarbageCollector {
       val bulkRemover =
         BulkRemoverFactory(storageClient, storageNamespace)
       val chunkSize = bulkRemover.getMaxBulkSize()
-      val chunk = it.take(chunkSize).toSeq
+      val chunk = it.asScala.take(chunkSize).toSeq
       bulkRemover.deleteObjects(chunk, storageNamespace)
     }
   }

@@ -9,7 +9,7 @@ import org.mockito.Mockito
 import org.scalatest.funspec._
 import org.scalatest.matchers.should._
 import org.scalatestplus.mockito.MockitoSugar
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 import scala.collection.mutable
 import org.scalatest.OneInstancePerTest

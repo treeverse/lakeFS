@@ -38,7 +38,7 @@ def generateCoreProject(buildType: BuildType) =
       settingsToCompileIn("core", buildType.hadoopFlavour),
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
-      scalacOptions += "-Ywarn-unused-import",
+      scalacOptions ++= Seq("-Ywarn-unused-import", "-deprecation"),
       Compile / PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
@@ -84,7 +84,6 @@ lazy val spark3Type =
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
   new BuildType("312-hadoop3", "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
-
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
@@ -101,10 +100,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
-    "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
-    "org.json4s" %% "json4s-native" % "3.5.5",
-    "com.google.guava" % "guava" % "16.0.1",
-    "com.google.guava" % "failureaccess" % "1.0.1",
+    "org.json4s" %% "json4s-native" % "4.0.6",
     "org.rogach" %% "scallop" % "4.0.3",
     "com.azure" % "azure-core" % "1.10.0",
     "com.azure" % "azure-storage-blob" % "12.9.0",
@@ -118,7 +114,6 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
     "dev.failsafe" % "failsafe" % "3.2.4",
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
-    "xerces" % "xercesImpl" % "2.12.2" % "test",
     "org.scalatest" %% "scalatest" % "3.2.16" % "test",
     "org.scalatestplus" %% "scalacheck-1-17" % "3.2.16.0" % "test",
     "org.scalatestplus" %% "mockito-4-11" % "3.2.16.0" % "test",
