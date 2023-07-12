@@ -15,13 +15,14 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 # Deploy lakeFS on AWS
 
-
-⏰ Expected deployment time: 25 min
+These instructions are for a self-managed deployment of lakeFS on AWS.<br/> 
+For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud/).
 {: .note }
 
 {% include toc.html %}
 
-{% include_relative includes/prerequisites.md %}
+⏰ Expected deployment time: 25 min
+{: .note }
 
 ## Grant lakeFS permissions to DynamoDB
 
