@@ -8,7 +8,7 @@ nav_order: 40
 ---
 
 
-# lakeFS Spark Client Reference
+# lakeFS Spark Metadata Client
 
 Utilize the power of Spark to interact with the metadata on lakeFS. Possible use cases include:
 
@@ -18,6 +18,9 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 * Bulk operations on the underlying storage.
 
 ## Getting Started
+
+We are removing support for Spark 2 in the lakeFS metadata client.
+{: .note }
 
 Start Spark Shell / PySpark with the `--packages` flag:
 
