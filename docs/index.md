@@ -184,6 +184,16 @@ lakeFS is also available as a fully-managed hosted service on [lakeFS Cloud](htt
 
 Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
 
+Or using [Homebrew](https://brew.sh/) for Linux/macOS:
+
+```sh
+# add repository
+brew tap treeverse/lakefs
+
+# installing lakefs/lakectl
+brew install lakefs
+```
+
 ### Docker Images
 
 The official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="_blank" }

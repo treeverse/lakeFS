@@ -38,6 +38,13 @@ relevant Go files.
 
 [Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
 
+Or using [Homebrew](https://brew.sh/) for Linux/macOS:
+
+` + "```" + `sh
+brew tap treeverse/lakefs
+brew install lakefs
+` + "```" + `
+
 ### Configuring credentials and API endpoint
 
 Once you've installed the lakectl command, run:
