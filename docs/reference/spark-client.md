@@ -19,7 +19,7 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 
 ## Getting Started
 
-We are removing support for Spark 2 in the lakeFS metadata client.
+Please note that Spark 2 is no longer supported with the lakeFS metadata client.
 {: .note }
 
 Start Spark Shell / PySpark with the `--packages` flag:
