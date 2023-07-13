@@ -175,8 +175,14 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          changesTreeMessage= ""}) => {
     const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
     const isDeltaDiffEnabled = useAPI(() => otfUtils.isDeltaLakeDiffEnabled(), []);
+    const compareTipStorageKey = "show_compare_tip";
+    const [showCompareTip, setShowCompareTip] = useState(window.localStorage.getItem(compareTipStorageKey) !== "false");
+    const closeAndRememberCompareTip = useCallback(() => {
+        window.localStorage.setItem(compareTipStorageKey, "false");
+        setShowCompareTip(false);
+    });
 
-    if(isDeltaDiffEnabled.loading) {
+    if (isDeltaDiffEnabled.loading) {
         return <Loading />
     }
     if (results.length === 0) {
@@ -197,8 +203,9 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                           }}>
                                     <ArrowLeftIcon/> Back to object comparison
                                   </Button>
-                                : <div className="mr-1 mb-2"><Alert variant={"info"}><InfoIcon/> You can use lakeFS to
-                                    compare Delta Lake tables. <a href="https://docs.lakefs.io/integrations/delta.html">Learn more.</a> </Alert></div>
+                                : <div className="mr-1 mb-2">{showCompareTip && <Alert onClose={closeAndRememberCompareTip} dismissible variant={"info"}>
+                                    <InfoIcon/> You can use lakeFS to compare Delta Lake tables. <a href="https://docs.lakefs.io/integrations/delta.html">Learn more.</a></Alert>}
+                                  </div>
                     }
                     <div>{changesTreeMessage}</div>
                     <Card>
