@@ -22,7 +22,7 @@ defaults:
   - scope:
       path: ""
     values:
-      image: /assets/img/docs_logo.png
+      image: https://treeverse-lakefs-preview-pr-6202.surge.sh/integrations/assets/img/docs_logo.png
 
 repository: treeverse/lakeFS
 
