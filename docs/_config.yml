@@ -1,8 +1,7 @@
 title: lakeFS Documentation
 tagline: Open Source Data Version Control for Data Lakes and Data Lakehouses
-baseurl: "/"
-url: "https://docs.lakefs.io"
-image: "/assets/img/lakefs-logo-with-text.png"
+baseurl: '/'
+image: '/assets/img/lakefs-logo-with-text.png'
 logo: '/assets/logo.svg'
 logo_link: 'https://lakefs.io'
 
