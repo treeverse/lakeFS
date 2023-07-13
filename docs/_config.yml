@@ -85,7 +85,7 @@ exclude:
   - CNAME
   - README.md
 
-baseurl:
+baseurl: 'https://docs.lakefs.io'
 
 kramdown:
   parse_block_html: true
