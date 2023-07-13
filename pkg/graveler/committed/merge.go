@@ -229,7 +229,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.NextRange()
 		m.haveDest = m.dest.NextRange()
 
-	case bytes.Equal(sourceRange.MinKey, destRange.MinKey) && bytes.Equal(sourceRange.MaxKey, destRange.MaxKey): // same bounds
+	case sameBoundRanges(sourceRange, destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return err
@@ -250,7 +250,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 			m.haveDest = m.dest.Next()
 		}
 
-	case bytes.Compare(sourceRange.MaxKey, destRange.MinKey) < 0: // source before dest
+	case range1BeforeRange2(sourceRange, destRange): // source before dest
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -271,7 +271,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
+	case range1BeforeRange2(destRange, sourceRange): // dest before source
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -444,11 +444,11 @@ func (m *merger) merge() error {
 		destValue, destRange := m.dest.Value()
 		var err error
 		switch {
-		case sourceValue == nil && destValue == nil:
+		case rangesDidntStartProcessing(sourceValue, destValue):
 			err = m.handleBothRanges(sourceRange, destRange)
-		case destValue == nil && sourceValue != nil:
+		case !isRangeInProgress(destValue) && isRangeInProgress(sourceValue):
 			err = m.handleDestRangeSourceKey(destRange, sourceValue)
-		case sourceValue == nil && destValue != nil:
+		case !isRangeInProgress(sourceValue) && isRangeInProgress(destValue):
 			err = m.handleSourceRangeDestKey(sourceRange, destValue)
 		default:
 			err = m.handleBothKeys(sourceValue, destValue)
@@ -491,4 +491,29 @@ func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source It
 		strategy: strategy,
 	}
 	return m.merge()
+}
+
+// rangesDidntStartProcessing indicates that all given ranges values represent ranges are about to be processed (not yet
+// started)
+func rangesDidntStartProcessing(values ...*graveler.ValueRecord) bool {
+	for _, val := range values {
+		if isRangeInProgress(val) {
+			return false
+		}
+	}
+	return true
+}
+
+// isRangeInProgress checks if the given range value, which represent the examined range entry, is not nil, which
+// indicates that the range is in the middle of processing
+func isRangeInProgress(rangeValue *graveler.ValueRecord) bool {
+	return rangeValue != nil
+}
+
+func sameBoundRanges(range1, range2 *Range) bool {
+	return bytes.Equal(range1.MinKey, range2.MinKey) && bytes.Equal(range1.MaxKey, range2.MaxKey)
+}
+
+func range1BeforeRange2(range1, range2 *Range) bool {
+	return bytes.Compare(range1.MaxKey, range2.MinKey) < 0
 }
