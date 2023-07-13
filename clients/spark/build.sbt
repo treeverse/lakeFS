@@ -1,7 +1,7 @@
 import build.BuildType
 
 lazy val baseName = "lakefs-spark"
-lazy val projectVersion = "0.8.2"
+lazy val projectVersion = "0.9.0"
 
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
