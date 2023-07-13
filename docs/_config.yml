@@ -91,3 +91,10 @@ kramdown:
   parse_block_html: true
 
 enable_copy_code_button: false
+
+# metadata for jekyll-seo-tag
+title: lakeFS Documentation
+tagline: Open Source Data Version Control for Data Lakes and Data Lakehouses
+twitter:
+  username: lakeFS
+  card: summary
