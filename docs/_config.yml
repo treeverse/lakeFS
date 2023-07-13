@@ -1,3 +1,30 @@
+title: lakeFS Documentation
+tagline: Open Source Data Version Control for Data Lakes and Data Lakehouses
+baseurl: "/"
+url: "https://docs.lakefs.io"
+image: "/assets/img/lakefs-logo-with-text.png"
+logo: '/assets/logo.svg'
+logo_link: 'https://lakefs.io'
+
+
+twitter:
+  username: lakeFS
+  card: summary
+github_username: treeverse
+social:
+  name: lakeFS
+  links:
+    - https://www.linkedin.com/company/treeverse/
+    - https://twitter.com/lakeFS
+    - https://github.com/treeverse/lakeFS
+    - https://data-folks.masto.host/@lakeFS
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/img/docs_logo.png
+
 repository: treeverse/lakeFS
 
 # Enable or disable the site search
@@ -6,13 +33,7 @@ search_enabled: true
 # Enable support for hyphenated search words:
 search_tokenizer_separator: /[\s/]+/
 
-
-logo: '/assets/logo.svg'
-logo_link: 'https://lakefs.io'
-
 remote_theme: pmarsceill/just-the-docs@v0.5.0
-
-
 
 # Aux links for the upper right navigation
 aux_links:
@@ -72,8 +93,6 @@ footer_bottom_links:
   'Privacy Policy':
     - 'https://lakefs.io/privacy-policy/'
 
-image: '/assets/img/shared-image.png'
-
 plugins:
   - jekyll-redirect-from
   - jekyll-seo-tag
@@ -85,16 +104,7 @@ exclude:
   - CNAME
   - README.md
 
-baseurl:
-
 kramdown:
   parse_block_html: true
 
 enable_copy_code_button: false
-
-# metadata for jekyll-seo-tag
-title: lakeFS Documentation
-tagline: Open Source Data Version Control for Data Lakes and Data Lakehouses
-twitter:
-  username: lakeFS
-  card: summary
