@@ -11,7 +11,8 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 # Deploy lakeFS on Azure
 
-⏰ Expected deployment time: 25 min
+These instructions are for a self-managed deployment of lakeFS on Azure. <br/> 
+For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud/).
 {: .note }
 
 lakeFS has several dependencies for which you need to select and configure a technology or interface: 
@@ -20,11 +21,10 @@ lakeFS has several dependencies for which you need to select and configure a tec
 
 This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository. 
 
-
-
 {% include toc.html %}
 
-{% include_relative includes/prerequisites.md %}
+⏰ Expected deployment time: 25 min
+{: .note }
 
 ## 1. Object Storage
 

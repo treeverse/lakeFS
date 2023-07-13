@@ -12,5 +12,5 @@ redirect_from:
 
 # Deploy and setup lakeFS
 
-Note: Optionally, for a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
+For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }

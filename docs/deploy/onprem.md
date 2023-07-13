@@ -14,12 +14,13 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 # On-Premises deployment
 
-⏰ Expected deployment time: 25 min
+For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
 
 {% include toc.html %}
 
-{% include_relative includes/prerequisites.md %}
+⏰ Expected deployment time: 25 min
+{: .note }
 
 ## Prerequisites
 
