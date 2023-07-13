@@ -1,18 +1,10 @@
 import build.BuildType
 
 lazy val baseName = "lakefs-spark"
+lazy val projectVersion = "0.9.0"
 
-lazy val projectVersion = "0.8.1"
 ThisBuild / isSnapshot := false
-
-// Spark versions 2.4.7 and 3.0.1 use different Scala versions.  Changing this is a deep
-// change, so key the Spark distinction by the Scala distinction.  sbt doesn't appear to
-// support other ways of changing emitted Scala binary versions using the same compiler.
-
-// SO https://stackoverflow.com/a/60177627/192263 hints that we cannot use 2.11 here before
-// this version
-lazy val scala211Version = "2.11.12"
-lazy val scala212Version = "2.12.12"
+ThisBuild / scalaVersion := "2.12.12"
 
 def settingsToCompileIn(dir: String, flavour: String = "") = {
   lazy val allSettings = Seq(
@@ -36,14 +28,10 @@ def generateCoreProject(buildType: BuildType) =
   Project(s"${baseName}-client-${buildType.name}", file(s"core"))
     .settings(
       sharedSettings,
-      if (buildType.hadoopFlavour == "hadoop2") {
-        hadoop2ShadingSettings
-      } else {
-        hadoop3ShadingSettings
-      },
+      if (buildType.hadoopFlavour == "hadoop2") hadoop2ShadingSettings
+      else hadoop3ShadingSettings,
       s3UploadSettings,
       settingsToCompileIn("core", buildType.hadoopFlavour),
-      scalaVersion := buildType.scalaVersion,
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
       scalacOptions += "-Ywarn-unused-import",
@@ -74,7 +62,6 @@ def generateExamplesProject(buildType: BuildType) =
     .settings(
       sharedSettings,
       settingsToCompileIn("examples", buildType.hadoopFlavour),
-      scalaVersion := buildType.scalaVersion,
       semanticdbEnabled := true, // enable SemanticDB
       semanticdbVersion := scalafixSemanticdb.revision,
       scalacOptions += "-Ywarn-unused-import",
@@ -87,46 +74,29 @@ def generateExamplesProject(buildType: BuildType) =
       run / fork := false // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
-lazy val spark2Type =
-  new BuildType("247", scala211Version, "2.4.7", "0.9.8", "2.7.7", "hadoop2", "hadoop2-2.0.1")
 lazy val spark3Type =
-  new BuildType("301", scala212Version, "3.0.1", "0.10.11", "2.7.7", "hadoop2", "hadoop2-2.0.1")
+  new BuildType("301", "3.0.1", "0.10.11", "2.7.7", "hadoop2", "hadoop2-2.0.1")
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3",
-                scala212Version,
-                "3.1.2",
-                "0.10.11",
-                "3.2.1",
-                "hadoop3",
-                "hadoop3-2.0.1"
-               )
-
-lazy val core2 = generateCoreProject(spark2Type)
+  new BuildType("312-hadoop3", "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
-lazy val examples2 = generateExamplesProject(spark2Type).dependsOn(core2)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
 lazy val root =
-  (project in file(".")).aggregate(core2, core3, core312, examples2, examples3, examples312)
+  (project in file(".")).aggregate(core3, core312, examples3, examples312)
 
 def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
   Seq(
     "io.lakefs" % "api-client" % "0.91.0",
-    "commons-codec" % "commons-codec" % "1.15",
     "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
     "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
-    "com.google.cloud.bigdataoss" % "gcs-connector" % buildType.gcpConnectorVersion,
-    "org.scalaj" %% "scalaj-http" % "2.4.2",
-    "org.json4s" %% "json4s-native" % "3.5.5",
-    "com.google.guava" % "guava" % "16.0.1",
-    "com.google.guava" % "failureaccess" % "1.0.1",
+    "org.json4s" %% "json4s-native" % "3.6.12",
     "org.rogach" %% "scallop" % "4.0.3",
     "com.azure" % "azure-core" % "1.10.0",
     "com.azure" % "azure-storage-blob" % "12.9.0",
@@ -138,16 +108,11 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     // is quite stable.  Take the version documented in DataBricks
     // Runtime 7.6, and note that it changes in 8.3 :-(
     "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
-    "org.scalactic" %% "scalactic" % "3.2.9",
     "dev.failsafe" % "failsafe" % "3.2.4",
-    "org.apache.hadoop" % "hadoop-distcp" % buildType.hadoopVersion,
-    // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
-    "xerces" % "xercesImpl" % "2.12.2" % "test",
-    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-    // scalacheck-1.15 is last version to support Scala 2.11 :-(
-    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.3.0" % "test",
-    "org.scalatestplus" %% "mockito-4-2" % "3.2.11.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+    "org.scalatestplus" %% "scalacheck-1-17" % "3.2.16.0" % "test",
+    "org.scalatestplus" %% "mockito-4-11" % "3.2.16.0" % "test",
     "org.mockito" % "mockito-all" % "1.10.19" % "test",
     "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
     "com.lihaoyi" %% "upickle" % "1.4.0" % "test",

@@ -167,7 +167,7 @@ class GarbageCollector(val rangeGetter: RangeGetter) extends Serializable {
       val all = collection.mutable.Set[(String, Boolean)]()
       it.foreach({
         case (rangeID, expire) => {
-          all ++= getOwnedAddresses(rangeID).map((x) => (x, expire))
+          all ++= getOwnedAddresses(rangeID).map((_, expire))
         }
       })
       all.iterator

@@ -61,7 +61,7 @@ object BulkRemoverFactory {
       storageNamespace: String,
       client: StorageClients.S3
   ) extends BulkRemover {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
 
     private val uri = new URI(storageNamespace)
     private val bucket = uri.getHost
@@ -87,7 +87,9 @@ object BulkRemoverFactory {
           // TODO(ariels): Metric!
           val errors = mde.getErrors();
           println(s"deleteObjects: Partial failure: ${errors.size} errors: ${errors}")
-          errors.foreach((de) => println(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}"))
+          errors.asScala.foreach((de) =>
+            println(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}")
+          )
           mde.getDeletedObjects.asScala.map(_.getKey)
         }
         case e: Exception => {
