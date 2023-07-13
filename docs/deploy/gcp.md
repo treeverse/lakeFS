@@ -11,12 +11,14 @@ next:  ["Import data into your installation", "../howto/import.html"]
 
 # Deploy lakeFS on GCP
 
-⏰ Expected deployment time: 25 min
+These instructions are for a self-managed deployment of lakeFS on GCP. <br/> 
+For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud/).
 {: .note }
 
 {% include toc.html %}
 
-{% include_relative includes/prerequisites.md %}
+⏰ Expected deployment time: 25 min
+{: .note }
 
 ## Create a Database
 

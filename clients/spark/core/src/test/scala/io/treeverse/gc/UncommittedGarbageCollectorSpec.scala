@@ -315,14 +315,15 @@ class UncommittedGarbageCollectorSpec
       val markID = "markID"
 
       it("should succeed mark & sweep") {
-        UncommittedGarbageCollector.validateRunModeConfigs(true, true, "")
+        UncommittedGarbageCollector.validateRunModeConfigs(true, true, false, "")
       }
       it("should succeed when sweep with mark ID") {
-        UncommittedGarbageCollector.validateRunModeConfigs(false, true, markID)
+        UncommittedGarbageCollector.validateRunModeConfigs(false, true, false, markID)
       }
       it("should fail when no options provided") {
         try {
           UncommittedGarbageCollector.validateRunModeConfigs(false,
+                                                             false,
                                                              false,
                                                              markID
                                                             ) // Should throw an exception
@@ -341,6 +342,7 @@ class UncommittedGarbageCollectorSpec
           try {
             UncommittedGarbageCollector.validateRunModeConfigs(true,
                                                                sweepVal,
+                                                               false,
                                                                markID
                                                               ) // Should throw an exception
             // Fail test if no exception was thrown
@@ -356,6 +358,7 @@ class UncommittedGarbageCollectorSpec
         try {
           UncommittedGarbageCollector.validateRunModeConfigs(false,
                                                              true,
+                                                             false,
                                                              ""
                                                             ) // Should throw an exception
           // Fail test if no exception was thrown
