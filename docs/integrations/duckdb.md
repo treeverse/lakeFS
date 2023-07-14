@@ -74,7 +74,7 @@ USING SAMPLE reservoir(50000 ROWS) REPEATABLE (100);
 COPY sampled_population TO 's3://example-repo/main/data/population/sample.parquet'; -- actual write happens here
 ```
 
-## Using DuckDB in the lakeFS Web Interface
+## Using DuckDB in the lakeFS web UI
 
 The lakeFS web UI includes DuckDB in the Object viewer page. 
 
