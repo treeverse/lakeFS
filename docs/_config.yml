@@ -1,7 +1,6 @@
 title: lakeFS Documentation
 tagline: Open Source Data Version Control for Data Lakes and Data Lakehouses
-baseurl: ""
-url: "https://docs.lakefs.io"
+baseurl:
 image: "/assets/img/lakefs-logo-with-text.png"
 
 # Logo in top-left of page
@@ -20,6 +19,14 @@ social:
     - https://twitter.com/lakeFS
     - https://github.com/treeverse/lakeFS
     - https://data-folks.masto.host/@lakeFS
+
+# Add an image with absolute path to each page by default 
+# so that Twitter cards work
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: https://docs.lakefs.io/assets/img/404-illustration.png
 
 # general config
 repository: treeverse/lakeFS
@@ -40,18 +47,12 @@ exclude:
 kramdown:
   parse_block_html: true
 
+enable_copy_code_button: false
+
 # Site search
 search_enabled: true
 # Enable support for hyphenated search words:
 search_tokenizer_separator: /[\s/]+/
-
-# Add an image with absolute path to each page by default 
-# so that Twitter cards work
-defaults:
-  - scope:
-      path: ""
-    values:
-      image: https://docs.lakefs.io/assets/img/404-illustration.png
 
 # Custom links, buttons, etc
 # Aux links for the upper right navigation
