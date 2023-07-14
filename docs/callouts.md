@@ -128,14 +128,14 @@ Callouts support multiple lines and/or paragraphs of content:
 {: .note }
 > A multi-paragraph block
 >
-> with a custom title and <br/>
+> with <br/>
 > linebreaks
 ```
 
 {: .note }
 > A multi-paragraph block
 >
-> with a custom title and <br/>
+> with <br/>
 > linebreaks
 
 
