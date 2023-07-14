@@ -19,7 +19,7 @@ redirect_from:
 
 There are several ways to use lakeFS with Spark:
 
-* [The S3-compatible API](#S3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
+* [The S3-compatible API](#s3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
 * [The lakeFS FileSystem](#lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
    * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode-beta): Best of both worlds, but still in beta. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 
