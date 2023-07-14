@@ -68,7 +68,7 @@ This allows configuration-as-code inside lakeFS, where Action files are declarat
 
 An **Action** is a list of Hooks with the same trigger configuration, i.e. an event will trigger all Hooks under an Action or none at all.
 The Hooks under an Action are ordered and so is their execution.
-Before each hook execution the `if` boolean expression is evaluated. The expression can use `success()` which evaluate to true in case of no error was occured while running the hoook's actions. It can also use `failure()` which evaluate to true when previous step failed - can be used to report failures.
+Before each hook execution the `if` boolean expression is evaluated. The expression can use `success()` which evaluate to true in case of no error was occurred while running the hook's actions. It can also use `failure()` which evaluate to true when previous step failed - can be used to report failures.
 By default, when `if` is empty or omitted, the step will run only if no error occurred (same as evaluate of success function).
 
 ### Hook
