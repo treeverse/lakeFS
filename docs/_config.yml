@@ -83,7 +83,6 @@ exclude:
   - quickstart/includes
   - vendor
   - CNAME
-  - README.md
 
 baseurl:
 
@@ -91,3 +90,15 @@ kramdown:
   parse_block_html: true
 
 enable_copy_code_button: false
+
+# just-the-docs callouts
+callouts:
+  note:
+    color: blue
+  warning:
+    title: ⚠️ Warning ⚠️
+    color: red
+  tip:
+    color: green
+  fubar:
+    color: purple
