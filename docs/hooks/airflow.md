@@ -13,9 +13,11 @@ description: Airflow Hooks Reference
 Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST API](https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/post_dag_run).
 The hook run succeeds if the DAG was triggered, and fails otherwise.
 
-## Action file Airflow hook properties
+## Action File Airflow Hook Properties
 
-| Property      | Description                                                     | Data Type                                                                                 | Example                 | Required | Env Vars Support |
+_See the [Action configuration](./index.md#action-file) for overall configuration schema and details._
+
+| Property      | Description                                                     | Data Type                                                                                 | Example                 | Required | Environment Variables Supported |
 |---------------|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------|----------|------------------|
 | url           | The URL of the Airflow instance                                 | String                                                                                    | `http://localhost:8080` | true     | no               |
 | dag_id        | The DAG to trigger                                              | String                                                                                    | `example_dag`           | true     | no               |
