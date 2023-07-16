@@ -4,7 +4,7 @@
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
 		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
-	<a href="https://github.com/treeverse/lakeFS/actions?query=branch%3Amaster+workflow%3ATest">
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/test.yaml?query=branch%3Amaster">
 		<img src="https://github.com/treeverse/lakeFS/workflows/Test/badge.svg?branch=master" alt="Go tests status" /></a>
 	<a href="https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++" >
 		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
