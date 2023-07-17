@@ -54,7 +54,7 @@ The Hooks under an Action are ordered and so is their execution.
 
 Before each hook execution the `if` boolean expression is evaluated. The expression can use the functions `success()` and `failure()`, which return true if the hook's actions succeeded or failed, respectively.
 
-By default, when `if` is empty or omitted, the step will run only if no error occurred (same as evaluate of success function).
+By default, when `if` is empty or omitted, the step will run only if no error occurred (the same as `success()`).
 
 #### Action File schema
 
