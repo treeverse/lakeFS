@@ -188,7 +188,7 @@ func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bo
 	return &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaClientJarPath,
-		entryPoint:      "io.treeverse.clients.UncommittedGarbageCollector",
+		entryPoint:      "io.treeverse.gc.UncommittedGarbageCollector",
 		extraSubmitArgs: extraSubmitArgs,
 		programArgs:     []string{repo, "us-east-1"},
 		logSource:       fmt.Sprintf("gc-%s", repo),
