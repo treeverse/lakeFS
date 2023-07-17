@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"errors"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/block"
@@ -42,7 +43,7 @@ type WalkerFactory interface {
 	GetWalker(ctx context.Context, opts store.WalkerOptions) (*store.WalkerWrapper, error)
 }
 
-func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, sourceType ImportPathType, destination, after, continuationToken string) (*walkEntryIterator, error) {
+func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, sourceType graveler.ImportPathType, destination, after, continuationToken string) (*walkEntryIterator, error) {
 	prepend := destination
 	if prepend != "" && !strings.HasSuffix(prepend, "/") {
 		prepend += "/"
@@ -67,7 +68,7 @@ func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, sour
 				return ErrItClosed
 			}
 			p := prepend + e.RelativeKey
-			if sourceType == ImportPathTypeObject {
+			if sourceType == graveler.ImportPathTypeObject {
 				p = destination
 			}
 			record := objectStoreEntryToEntryRecord(e, p)

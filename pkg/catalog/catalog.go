@@ -161,24 +161,11 @@ const (
 	workersMaxDrainDuration  = 5 * time.Second
 )
 
-type ImportPathType string
-
-const (
-	ImportPathTypePrefix = "common_prefix"
-	ImportPathTypeObject = "object"
-)
-
-type ImportPath struct {
-	Path        string
-	Destination string
-	Type        ImportPathType
-}
-
-func GetImportPathType(t string) (ImportPathType, error) {
+func GetImportPathType(t string) (graveler.ImportPathType, error) {
 	switch t {
-	case ImportPathTypePrefix,
-		ImportPathTypeObject:
-		return ImportPathType(t), nil
+	case graveler.ImportPathTypePrefix,
+		graveler.ImportPathTypeObject:
+		return graveler.ImportPathType(t), nil
 	default:
 		return "", fmt.Errorf("invalid import type: %w", graveler.ErrInvalidValue)
 	}
@@ -191,7 +178,7 @@ type ImportCommit struct {
 }
 
 type ImportRequest struct {
-	Paths  []ImportPath
+	Paths  []graveler.ImportPath
 	Commit ImportCommit
 }
 
@@ -1880,7 +1867,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		Committer: params.Commit.Committer,
 		Message:   params.Commit.CommitMessage,
 		Metadata:  map[string]string(params.Commit.Metadata),
-	})
+	}, params.Paths)
 	if err != nil {
 		importError := fmt.Errorf("merge import: %w", err)
 		importManager.SetError(importError)
@@ -1991,7 +1978,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
+	it, err := NewWalkEntryIterator(ctx, walker, graveler.ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}

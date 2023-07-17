@@ -614,7 +614,7 @@ func (mr *MockVersionControllerMockRecorder) GetTag(ctx, repository, tagID inter
 }
 
 // Import mocks base method.
-func (m *MockVersionController) Import(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+func (m *MockVersionController) Import(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams, importPaths []graveler.ImportPath) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Import", ctx, repository, destination, source, commitParams)
 	ret0, _ := ret[0].(graveler.CommitID)
@@ -2530,7 +2530,7 @@ func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, ns, it interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, ns, it)
 }
 
-func (mr *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID) (graveler.MetaRangeID, error) {
+func (mr *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, importPaths []graveler.ImportPath) (graveler.MetaRangeID, error) {
 	return "", nil
 }
 

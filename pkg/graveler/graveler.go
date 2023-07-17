@@ -565,7 +565,7 @@ type VersionController interface {
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
 
 	// Import Creates a merge-commit using source MetaRangeID into destination branch with a src-wins merge strategy
-	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error)
+	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, importPaths []ImportPath) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error)
@@ -915,8 +915,8 @@ type CommittedManager interface {
 
 	// Import applies changes from 'source' to 'destination' and returns the ID of the new metarange.
 	// This is similar to the Merge operation, but it will override existing prefixes in the destination
-	// if they also exist in the source.
-	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID) (MetaRangeID, error)
+	// if they also exist in the provided import paths.
+	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID, importPaths []ImportPath) (MetaRangeID, error)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -2635,7 +2635,30 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 	return err
 }
 
-func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error) {
+type ImportPathType string
+
+const (
+	ImportPathTypePrefix = "common_prefix"
+	ImportPathTypeObject = "object"
+)
+
+func GetImportPathType(t string) (ImportPathType, error) {
+	switch t {
+	case ImportPathTypePrefix,
+		ImportPathTypeObject:
+		return ImportPathType(t), nil
+	default:
+		return "", fmt.Errorf("invalid import type: %w", ErrInvalidValue)
+	}
+}
+
+type ImportPath struct {
+	Path        string
+	Destination string
+	Type        ImportPathType
+}
+
+func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, importPaths []ImportPath) (CommitID, error) {
 	var (
 		preRunID string
 		commit   Commit
