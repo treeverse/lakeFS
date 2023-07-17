@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -160,17 +161,15 @@ var testCases = []testCase{
 	},
 }
 
-func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bool) *sparkSubmitConfig {
+func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bool, runID string) *sparkSubmitConfig {
 	extraSubmitArgs := make([]string, 0)
 	if !doMark {
 		extraSubmitArgs = append(extraSubmitArgs,
 			"--conf", "spark.hadoop.lakefs.gc.do_mark=false",
-			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
+			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=%s", runID))
 	}
 	if !doSweep {
-		extraSubmitArgs = append(extraSubmitArgs,
-			"--conf", "spark.hadoop.lakefs.gc.do_sweep=false",
-			"--conf", fmt.Sprintf("spark.hadoop.lakefs.gc.mark_id=marker-%s", repo))
+		extraSubmitArgs = append(extraSubmitArgs, "--conf", "spark.hadoop.lakefs.gc.do_sweep=false")
 	}
 	if blockstoreType == block.BlockstoreTypeAzure {
 		extraSubmitArgs = append(extraSubmitArgs,
@@ -209,15 +208,22 @@ func TestCommittedGC(t *testing.T) {
 			repo := committedGCRepoName + tst.id
 
 			if tst.testMode == sweepOnlyMode || tst.testMode == markOnlyMode {
-				submitConfig := newSubmitConfig(repo, blockstoreType, true, false)
+				submitConfig := newSubmitConfig(repo, blockstoreType, true, false, "")
 				testutil.MustDo(t, "run GC with do_sweep=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == sweepOnlyMode {
-				submitConfig := newSubmitConfig(repo, blockstoreType, false, true)
+				objects, _ := listRepositoryUnderlyingStorage(t, ctx, repo)
+				runID := ""
+				for _, obj := range objects {
+					if strings.Contains(obj.Key, "/_lakefs/retention/gc/uncommitted/") {
+						runID = strings.Split(strings.Split(obj.Key, "/_lakefs/retention/gc/uncommitted/")[1], "/")[0]
+					}
+				}
+				submitConfig := newSubmitConfig(repo, blockstoreType, false, true, runID)
 				testutil.MustDo(t, "run GC with do_mark=false", runSparkSubmit(submitConfig))
 			}
 			if tst.testMode == fullGCMode {
-				submitConfig := newSubmitConfig(repo, blockstoreType, true, true)
+				submitConfig := newSubmitConfig(repo, blockstoreType, true, true, "")
 				testutil.MustDo(t, "run GC", runSparkSubmit(submitConfig))
 			}
 			validateGCJob(t, ctx, &tst, fileExistingRef)
