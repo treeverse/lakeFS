@@ -19,8 +19,8 @@ redirect_from:
 
 There are several ways to use lakeFS with Spark:
 
-* [The S3-compatible API](#use-the-s3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
-* [The lakeFS FileSystem](#use-the-lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
+* [The S3-compatible API](#s3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
+* [The lakeFS FileSystem](#lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
    * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode-beta): Best of both worlds, but still in beta. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 
 See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
