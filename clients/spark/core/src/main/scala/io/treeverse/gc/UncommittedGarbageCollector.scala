@@ -81,6 +81,7 @@ object UncommittedGarbageCollector {
   def validateRunModeConfigs(
       shouldMark: Boolean,
       shouldSweep: Boolean,
+      experimentalUnifiedGC: Boolean,
       markID: String
   ): Unit = {
     if (!shouldMark && !shouldSweep) {
@@ -95,6 +96,11 @@ object UncommittedGarbageCollector {
     }
     if (shouldMark && markID.nonEmpty) {
       throw new ParameterValidationException("Can't provide mark ID for mark mode. Exiting...")
+    }
+    if (experimentalUnifiedGC && (!shouldMark || shouldSweep)) {
+      throw new ParameterValidationException(
+        "Unified GC is an experimental feature and can only be used in mark-only mode. Exiting..."
+      )
     }
   }
 
@@ -122,10 +128,11 @@ object UncommittedGarbageCollector {
 
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
     val experimentalUnifiedGC = hc.getBoolean(LAKEFS_CONF_GC_EXPERIMENTAL_UNIFIED_GC, false)
-    var shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
+    // Unified GC does not support sweep mode: it only marks objects for deletion
+    var shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true) && !experimentalUnifiedGC
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
-    validateRunModeConfigs(shouldMark, shouldSweep, markID)
+    validateRunModeConfigs(shouldMark, shouldSweep, experimentalUnifiedGC, markID)
     val apiConf =
       APIConfigurations(apiURL,
                         accessKey,
