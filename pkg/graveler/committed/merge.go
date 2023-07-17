@@ -321,11 +321,10 @@ func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *gr
 
 // handleBothKeys handles the case where both source and dest iterators are inside range
 func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
-	c := bytes.Compare(sourceValue.Key, destValue.Key)
 	switch {
-	case c < 0: // source before dest
+	case isValue1BeforeValue2(sourceValue, destValue): // source before dest
 		return m.sourceBeforeDest(sourceValue)
-	case c > 0: // dest before source
+	case isValue1BeforeValue2(destValue, sourceValue): // dest before source
 		return m.destBeforeSource(destValue)
 
 	default: // identical keys
@@ -516,4 +515,8 @@ func sameBoundRanges(range1, range2 *Range) bool {
 
 func range1BeforeRange2(range1, range2 *Range) bool {
 	return bytes.Compare(range1.MaxKey, range2.MinKey) < 0
+}
+
+func isValue1BeforeValue2(v1, v2 *graveler.ValueRecord) bool {
+	return bytes.Compare(v1.Key, v2.Key) < 0
 }
