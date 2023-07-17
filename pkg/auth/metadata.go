@@ -212,18 +212,18 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
-// DockerFileExists For testing purposes
-var DockerFileExists = "/.dockerenv"
+// DockeEnvExists For testing purposes
+var DockeEnvExists = "/.dockerenv"
 
 func getInstrumentation(metadata map[string]string) {
 	_, k8s := os.LookupEnv("KUBERNETES_SERVICE_HOST")
 	metadata["is_k8s"] = strconv.FormatBool(k8s)
 
 	_, statErr := func() (os.FileInfo, error) {
-		if DockerFileExists == "" {
+		if DockeEnvExists == "" {
 			return nil, nil
 		}
-		return os.Stat(DockerFileExists)
+		return os.Stat(DockeEnvExists)
 	}()
 	metadata["is_docker"] = strconv.FormatBool(statErr == nil)
 

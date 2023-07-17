@@ -36,7 +36,7 @@ func TestInstrumentation(t *testing.T) {
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationRun, false, false)
 
 	// Add docker env file
-	auth.DockerFileExists = ""
+	auth.DockeEnvExists = ""
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationRun, false, true)
 
 	// Add quickstart env var with right value
