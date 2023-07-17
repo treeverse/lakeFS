@@ -23,10 +23,8 @@ const (
 	FeatureUpdatesKeyName  = "feature_updates"
 	SecurityUpdatesKeyName = "security_updates"
 
-	InstrumentationK8          = "Kubernetes"
 	InstrumentationSamplesRepo = "SamplesRepo"
 	InstrumentationQuickstart  = "Quickstart"
-	InstrumentationDocker      = "Docker"
 	InstrumentationRun         = "Run"
 )
 
@@ -214,25 +212,31 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
-// For testing purposes
-var StatFunc = os.Stat
+// DockerFileExists For testing purposes
+var DockerFileExists = "/.dockerenv"
 
-func getInstrumentation() string {
+func getInstrumentation(metadata map[string]string) {
 	_, k8s := os.LookupEnv("KUBERNETES_SERVICE_HOST")
+	metadata["is_k8s"] = strconv.FormatBool(k8s)
+
+	_, statErr := func() (os.FileInfo, error) {
+		if DockerFileExists == "" {
+			return nil, nil
+		}
+		return os.Stat(DockerFileExists)
+	}()
+	metadata["is_docker"] = strconv.FormatBool(statErr == nil)
+
 	lakefsAccessKeyID := os.Getenv("LAKEFS_ACCESS_KEY_ID")
 	quickstart, _ := strconv.ParseBool(os.Getenv("QUICKSTART"))
-	_, statErr := StatFunc("/.dockerenv")
+
 	switch {
-	case k8s:
-		return InstrumentationK8
 	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
-		return InstrumentationSamplesRepo
+		metadata["instrumentation"] = InstrumentationSamplesRepo
 	case quickstart:
-		return InstrumentationQuickstart
-	case statErr == nil:
-		return InstrumentationDocker
+		metadata["instrumentation"] = InstrumentationQuickstart
 	default:
-		return InstrumentationRun
+		metadata["instrumentation"] = InstrumentationRun
 	}
 }
 
@@ -243,7 +247,8 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
-	metadata["instrumentation"] = getInstrumentation()
+	getInstrumentation(metadata)
+
 	err := m.writeMetadata(ctx, metadata)
 	if err != nil {
 		return nil, err
