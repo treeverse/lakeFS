@@ -64,12 +64,13 @@ func TestUncommittedGC(t *testing.T) {
 	}()
 
 	submitConfig := &sparkSubmitConfig{
-		sparkVersion:    sparkImageTag,
-		localJar:        metaClientJarPath,
-		entryPoint:      "io.treeverse.gc.UncommittedGarbageCollector",
-		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
-		programArgs:     []string{uncommittedGCRepoName, "us-east-1"},
-		logSource:       "ugc",
+		sparkVersion: sparkImageTag,
+		localJar:     metaClientJarPath,
+		entryPoint:   "io.treeverse.gc.UncommittedGarbageCollector",
+		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1",
+			"--conf", "spark.hadoop.lakefs.gc.experimental.unified_gc=true"},
+		programArgs: []string{uncommittedGCRepoName, "us-east-1"},
+		logSource:   "ugc",
 	}
 	testutil.MustDo(t, "run uncommitted GC", runSparkSubmit(submitConfig))
 	done <- true
