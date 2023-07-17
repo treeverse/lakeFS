@@ -1,3 +1,12 @@
+---
+layout: default
+title: lakeFS Documentation
+description: How to contribute to the lakeFS Documentation, including style guide
+parent: Contributing
+nav_order: 1
+has_children: false
+---
+
 # lakeFS Documentation
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
@@ -9,6 +18,7 @@ Please see [the contributing guide](contributing.md) for details on contributing
 Customizing the lakeFS docs site should follow the following guidelines: [Just The Docs Customization](https://just-the-docs.github.io/just-the-docs/docs/customization/) and style-guide.
 
 ## lakeFS Style Guide:
+
 * Don't use unnecessary tech jargon or vague/wordy constructions - keep it friendly, not condescending.
 * Be inclusive and welcoming - use gender-neutral words and pronouns when talking about abstract people like users and developers.
 * Replace complex expressions with simpler ones.
@@ -34,6 +44,10 @@ By default the page's Table of Contents will include only H2 headings. If you wa
 ```
 
 Both of these snippets invoke `{:toc}` which is [used by Kramdown](https://kramdown.gettalong.org/converter/html.html#toc) (the Markdown processor that Jekyll uses) to insert a table of contents from the headings present in the markdown. 
+
+## Callouts
+
+Multiple callout types are available. Please review [this page](./callouts.html) for details.
 
 ## Test your changes locally
 

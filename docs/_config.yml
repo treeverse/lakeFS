@@ -42,7 +42,6 @@ exclude:
   - quickstart/includes
   - vendor
   - CNAME
-  - README.md
 
 kramdown:
   parse_block_html: true
@@ -109,3 +108,15 @@ footer_bottom_links:
     - "https://lakefs.io/terms-of-use/"
   "Privacy Policy":
     - "https://lakefs.io/privacy-policy/"
+
+# just-the-docs callouts
+callouts:
+  note:
+    color: blue
+  warning:
+    title: ⚠️ Warning ⚠️
+    color: red
+  tip:
+    color: green
+  fubar:
+    color: purple    
