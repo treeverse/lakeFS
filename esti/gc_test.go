@@ -181,11 +181,14 @@ func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bo
 	extraSubmitArgs = append(extraSubmitArgs,
 		"--conf", "spark.hadoop.lakefs.gc.commit.num_partitions=1",
 		"--conf", "spark.hadoop.lakefs.gc.range.num_partitions=8",
-		"--conf", "spark.hadoop.lakefs.gc.address.num_partitions=16")
+		"--conf", "spark.hadoop.lakefs.gc.address.num_partitions=16",
+		"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1",
+		"--conf", "spark.hadoop.lakefs.gc.experimental.unified_gc=true",
+	)
 	return &sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaClientJarPath,
-		entryPoint:      "io.treeverse.clients.GarbageCollector",
+		entryPoint:      "io.treeverse.clients.UncommittedGarbageCollector",
 		extraSubmitArgs: extraSubmitArgs,
 		programArgs:     []string{repo, "us-east-1"},
 		logSource:       fmt.Sprintf("gc-%s", repo),
