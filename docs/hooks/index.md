@@ -52,7 +52,7 @@ An **Action** is a list of Hooks with the same trigger configuration, i.e. an ev
 
 The Hooks under an Action are ordered and so is their execution.
 
-Before each hook execution the `if` boolean expression is evaluated. The expression can use `success()` which evaluate to true in case of no error was occurred while running the hook's actions. It can also use `failure()` which evaluate to true when previous step failed - can be used to report failures.
+Before each hook execution the `if` boolean expression is evaluated. The expression can use the functions `success()` and `failure()`, which return true if the hook's actions succeeded or failed, respectively.
 
 By default, when `if` is empty or omitted, the step will run only if no error occurred (same as evaluate of success function).
 
