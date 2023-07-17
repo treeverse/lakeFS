@@ -37,7 +37,7 @@ You can spin up a standalone sandbox instance of lakeFS using Docker:
 docker run --pull always \
 		   --name lakefs \
 		   -p 8000:8000 \
-		   treeverse/lakefs:latest \
+		   treeverse/lakefs:quickstart \
 		   run --local-settings
 ```
 

@@ -95,7 +95,10 @@ RUN apk add netcat-openbsd
 
 WORKDIR /app
 COPY ./scripts/wait-for ./
-ENV PATH /app:$PATH
+
+ARG QUICKSTART=false
+ENV PATH=/app:$PATH QUICKSTART=${QUICKSTART}
+
 COPY --from=build /build/lakefs /build/lakectl ./
 COPY --from=build-delta-diff-plugin /delta-diff/target/release/delta_diff ./
 

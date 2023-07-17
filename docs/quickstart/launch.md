@@ -20,7 +20,7 @@ Launch the lakeFS container:
 ```bash
 docker run --name lakefs --pull always \
              --rm --publish 8000:8000 \
-             treeverse/lakefs:latest \
+             treeverse/lakefs:quickstart \
              run --local-settings
 ```
 

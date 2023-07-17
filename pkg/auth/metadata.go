@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +22,12 @@ const (
 	EmailKeyName           = "encoded_user_email"
 	FeatureUpdatesKeyName  = "feature_updates"
 	SecurityUpdatesKeyName = "security_updates"
+
+	InstrumentationK8          = "Kubernetes"
+	InstrumentationSamplesRepo = "SamplesRepo"
+	InstrumentationQuickstart  = "Quickstart"
+	InstrumentationDocker      = "Docker"
+	InstrumentationRun         = "Run"
 )
 
 type SetupStateName string
@@ -206,6 +214,28 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
+// For testing purposes
+var StatFunc = os.Stat
+
+func getInstrumentation() string {
+	_, k8s := os.LookupEnv("KUBERNETES_SERVICE_HOST")
+	lakefsAccessKeyID := os.Getenv("LAKEFS_ACCESS_KEY_ID")
+	quickstart, _ := strconv.ParseBool(os.Getenv("QUICKSTART"))
+	_, statErr := StatFunc("/.dockerenv")
+	switch {
+	case k8s:
+		return InstrumentationK8
+	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
+		return InstrumentationSamplesRepo
+	case quickstart:
+		return InstrumentationQuickstart
+	case statErr == nil:
+		return InstrumentationDocker
+	default:
+		return InstrumentationRun
+	}
+}
+
 func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
@@ -213,6 +243,7 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
+	metadata["instrumentation"] = getInstrumentation()
 	err := m.writeMetadata(ctx, metadata)
 	if err != nil {
 		return nil, err
