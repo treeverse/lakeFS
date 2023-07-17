@@ -60,7 +60,7 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 
 | Property           | Description                                               | Data Type  | Required | Default Value                                                           |
 |--------------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
-| `name               `| Identifes the Action file                                  | String     | false    | Action ilename                                    |
+| `name               `| Identifes the Action file                                  | String     | false    | Action filename                                    |
 | `on                 `| List of events that will trigger the hooks                | List       | true     |                                                                         |
 | `on<event>.branches `| Glob pattern list of branches that triggers the hooks     | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
 | `hooks              `| List of hooks to be executed                              | List       | true     |                                                                         |
