@@ -1,78 +1,37 @@
+title: lakeFS Documentation
+tagline: Open Source Data Version Control for Data Lakes and Data Lakehouses
+baseurl:
+image: "/assets/img/lakefs-logo-with-text.png"
+
+# Logo in top-left of page
+logo: "/assets/logo.svg"
+logo_link: "https://lakefs.io"
+
+# jekyll-seo-tag config
+twitter:
+  username: lakeFS
+  card: summary
+github_username: treeverse
+social:
+  name: lakeFS
+  links:
+    - https://www.linkedin.com/company/treeverse/
+    - https://twitter.com/lakeFS
+    - https://github.com/treeverse/lakeFS
+    - https://data-folks.masto.host/@lakeFS
+
+# Add an image with absolute path to each page by default 
+# so that Twitter cards work
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: https://docs.lakefs.io/assets/img/lakefs-logo-with-text.png
+
+# general config
 repository: treeverse/lakeFS
 
-# Enable or disable the site search
-# Supports true (default) or false
-search_enabled: true
-# Enable support for hyphenated search words:
-search_tokenizer_separator: /[\s/]+/
-
-
-logo: '/assets/logo.svg'
-logo_link: 'https://lakefs.io'
-
 remote_theme: pmarsceill/just-the-docs@v0.5.0
-
-
-
-# Aux links for the upper right navigation
-aux_links:
-  'Docs':
-    - 'https://docs.lakefs.io/'
-  'Blog':
-    - 'https://lakefs.io/blog/'
-  'Community':
-    - 'https://lakefs.io/community/'
-  'GitHub':
-    - 'https://github.com/treeverse/lakeFS'
-
-buttons:
-  'Join us on Slack':
-    - 'https://lakefs.io/slack'
-
-# FOOTER
-# use "footer_content" for simple footer
-# footer_content: 'Copyright &copy; 2020 Treeverse Labs LTD.'
-footer:
-  'img-bottom':
-    - '/assets/by-treeverse.png'
-  'img-bottom-link':
-    - 'https://www.treeverse.io/'
-
-footer_links:
-  'Docs':
-    - 'https://docs.lakefs.io/'
-  'Blog':
-    - 'https://lakefs.io/blog/'
-  'GitHub':
-    - 'https://github.com/treeverse/lakeFS'
-  'Community':
-    - 'https://lakefs.io/community/'
-  'lakeFS Cloud':
-      - 'https://lakefs.io/cloud-registration/'
-  'Contact':
-    - 'https://lakefs.io/contact-us/'
-
-footer_social:
-  'youtube':
-    - 'https://lakefs.io/youtube'
-  'linkedin':
-    - 'https://www.linkedin.com/company/treeverse'
-  'github':
-    - 'https://github.com/treeverse/lakeFS'
-  'twitter':
-    - 'https://twitter.com/lakeFS'
-  'mastodon':
-    - 'https://data-folks.masto.host/@lakeFS'
-  'slack':
-    - 'https://lakefs.io/slack'
-
-footer_bottom_links:
-  'Terms of use':
-    - 'https://lakefs.io/terms-of-use/'
-  'Privacy Policy':
-    - 'https://lakefs.io/privacy-policy/'
-
-image: '/assets/img/shared-image.png'
 
 plugins:
   - jekyll-redirect-from
@@ -85,9 +44,68 @@ exclude:
   - CNAME
   - README.md
 
-baseurl:
-
 kramdown:
   parse_block_html: true
 
 enable_copy_code_button: false
+
+# Site search
+search_enabled: true
+# Enable support for hyphenated search words:
+search_tokenizer_separator: /[\s/]+/
+
+# Custom links, buttons, etc
+# Aux links for the upper right navigation
+aux_links:
+  "Docs":
+    - "https://docs.lakefs.io/"
+  "Blog":
+    - "https://lakefs.io/blog/"
+  "Community":
+    - "https://lakefs.io/community/"
+  "GitHub":
+    - "https://github.com/treeverse/lakeFS"
+
+buttons:
+  "Join us on Slack":
+    - "https://lakefs.io/slack"
+
+footer:
+  "img-bottom":
+    - "/assets/by-treeverse.png"
+  "img-bottom-link":
+    - "https://www.treeverse.io/"
+
+footer_links:
+  "Docs":
+    - "https://docs.lakefs.io/"
+  "Blog":
+    - "https://lakefs.io/blog/"
+  "GitHub":
+    - "https://github.com/treeverse/lakeFS"
+  "Community":
+    - "https://lakefs.io/community/"
+  "lakeFS Cloud":
+      - "https://lakefs.io/cloud-registration/"
+  "Contact":
+    - "https://lakefs.io/contact-us/"
+
+footer_social:
+  "youtube":
+    - "https://lakefs.io/youtube"
+  "linkedin":
+    - "https://www.linkedin.com/company/treeverse"
+  "github":
+    - "https://github.com/treeverse/lakeFS"
+  "twitter":
+    - "https://twitter.com/lakeFS"
+  "mastodon":
+    - "https://data-folks.masto.host/@lakeFS"
+  "slack":
+    - "https://lakefs.io/slack"
+
+footer_bottom_links:
+  "Terms of use":
+    - "https://lakefs.io/terms-of-use/"
+  "Privacy Policy":
+    - "https://lakefs.io/privacy-policy/"
