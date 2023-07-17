@@ -2192,19 +2192,18 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body Im
 	if body.Commit.Metadata != nil {
 		metadata = body.Commit.Metadata.AdditionalProperties
 	}
-	paths := make([]catalog.ImportPath, 0, len(body.Paths))
+	paths := make([]graveler.ImportPath, 0, len(body.Paths))
 	for _, p := range body.Paths {
 		pathType, err := catalog.GetImportPathType(p.Type)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
-		paths = append(paths, catalog.ImportPath{
+		paths = append(paths, graveler.ImportPath{
 			Destination: p.Destination,
 			Path:        p.Path,
 			Type:        pathType,
 		})
 	}
-
 	committer := user.Username
 	importID, err := c.Catalog.Import(r.Context(), repository, branch, catalog.ImportRequest{
 		Paths: paths,
