@@ -84,7 +84,7 @@ Using this you can query objects in lakeFS directly using a `lakefs` path:
 
     lakefs://<repository>/<branch>/object/path/foo.parquet
 
-The DuckDB query editor is provided by [DuckDB WASM](https://github.com/duckdb/duckdb-wasm). It will be used to render and provide querying capabilities for any objects of the following types:
+The DuckDB query editor is provided by [DuckDB WASM](https://github.com/duckdb/duckdb-wasm). It renders and provides querying capabilities for any objects of the following types:
 
 * Parquet
 * CSV
