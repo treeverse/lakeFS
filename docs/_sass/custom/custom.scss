@@ -974,6 +974,7 @@ div.highlighter-rouge{
 	}
 	position: sticky;
 	top: 180px;
+	z-index: 9999;
 	.feedback-buttons {
 		position: absolute;
 		right: 70px;
