@@ -66,7 +66,7 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 | `hooks              `| List of hooks to be executed                              | List       | true     |                                                                         |
 | `hook.id            `| ID of the hook, must be unique within the action.         | String     | true     |                                                                         |
 | `hook.type          `| Type of the hook ([types](#hook-types))                   | String     | true     |                                                                         |
-| `hook.description   `| Optional description for the hook                         | String     | false    |                                                                         |
+| `hook.description   `| Description for the hook                                  | String     | false    |                                                                         |
 | `hook.if            `| Expression that will be evaluated before execute the hook | String     | false    | No value is the same as evaluate `success()`                            |
 | `hook.properties    `| Hook's specific configuration, see [Lua](./lua.md#action-file-lua-hook-properties), [WebHook](./webhooks.md#action-file-webhook-properties), and [Airflow](./airflow.md#action-file-airflow-hook-properties) for details                             | Dictionary | true     |                                                                         |
 
@@ -85,18 +85,18 @@ hooks:
     type: webhook
     description: checking no temporary files found
     properties:
-      url: "https://your.domain.io/webhook?notmp=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+      url: "https://example.com/webhook?notmp=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
   - id: no_freeze
     type: webhook
     description: check production is not in dev freeze
     properties:
-      url: "https://your.domain.io/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+      url: "https://example.com/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
   - id: alert
     type: webhook
     if: failure()
     description: notify alert system when check failed
     properties:
-       url: "https://your.domain.io/alert"
+       url: "https://example.com/alert"
        query_params:
           title: good files webhook failed
   - id: notification
@@ -104,7 +104,7 @@ hooks:
     if: true
     description: notify that will always run - no matter if one of the previous steps failed
     properties:
-       url: "https://your.domain.io/notification"
+       url: "https://example.com/notification"
        query_params:
           title: good files completed
 ```
