@@ -34,7 +34,7 @@ For step-by-step examples of hooks in action check out the [lakeFS Quickstart](/
 An _Action_ defines one or more _Hooks_ to execute. lakeFS supports three types of hook: 
 
 1. [Lua](./lua.html) - uses an embedded Lua VM
-1. [Webhook](./webhooks.html) - makes REST call to external URL and waits for response
+1. [Webhook](./webhooks.html) - makes a REST call to an external URL and waits for response
 1. [Airflow](./airflow.html) - triggers a DAG in Airflow
 
 ## Configuration
