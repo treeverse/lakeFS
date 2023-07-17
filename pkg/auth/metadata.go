@@ -215,29 +215,29 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 // DockeEnvExists For testing purposes
 var DockeEnvExists = "/.dockerenv"
 
-func getInstrumentation(metadata map[string]string) {
+func inK8sMetadata() string {
 	_, k8s := os.LookupEnv("KUBERNETES_SERVICE_HOST")
-	metadata["is_k8s"] = strconv.FormatBool(k8s)
+	return strconv.FormatBool(k8s)
+}
 
-	_, statErr := func() (os.FileInfo, error) {
-		if DockeEnvExists == "" {
-			return nil, nil
-		}
-		return os.Stat(DockeEnvExists)
-	}()
-	metadata["is_docker"] = strconv.FormatBool(statErr == nil)
-
-	lakefsAccessKeyID := os.Getenv("LAKEFS_ACCESS_KEY_ID")
-	quickstart, _ := strconv.ParseBool(os.Getenv("QUICKSTART"))
-
-	switch {
-	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
-		metadata["instrumentation"] = InstrumentationSamplesRepo
-	case quickstart:
-		metadata["instrumentation"] = InstrumentationQuickstart
-	default:
-		metadata["instrumentation"] = InstrumentationRun
+func inDockerMetadata() string {
+	var err error
+	if DockeEnvExists != "" {
+		_, err = os.Stat(DockeEnvExists)
 	}
+	return strconv.FormatBool(err == nil)
+}
+
+func getInstrumentationMetadata() string {
+	lakefsAccessKeyID := os.Getenv("LAKEFS_ACCESS_KEY_ID")
+	if strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES") {
+		return InstrumentationSamplesRepo
+	}
+	quickstart, _ := strconv.ParseBool(os.Getenv("QUICKSTART"))
+	if quickstart {
+		return InstrumentationQuickstart
+	}
+	return InstrumentationRun
 }
 
 func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
@@ -247,7 +247,9 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
-	getInstrumentation(metadata)
+	metadata["is_k8s"] = inK8sMetadata()
+	metadata["is_docker"] = inDockerMetadata()
+	metadata["instrumentation"] = getInstrumentationMetadata()
 
 	err := m.writeMetadata(ctx, metadata)
 	if err != nil {
