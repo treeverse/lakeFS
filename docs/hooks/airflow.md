@@ -19,13 +19,13 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 
 | Property      | Description                                                     | Data Type                                                                                 | Example                 | Required | Environment Variables Supported |
 |---------------|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------|----------|------------------|
-| url           | The URL of the Airflow instance                                 | String                                                                                    | `http://localhost:8080` | true     | no               |
-| dag_id        | The DAG to trigger                                              | String                                                                                    | `example_dag`           | true     | no               |
-| username      | The name of the Airflow user performing the request             | String                                                                                    | `admin`                 | true     | no               |
-| password      | The password of the Airflow user performing the request         | String                                                                                    | `admin`                 | true     | yes              |
-| dag_conf      | DAG run configuration that will be passed as is                 | JSON                                                                                      |                         | false    | no               |
-| wait_for_dag  | Wait for DAG run to complete and reflect state (default: false) | Boolean                                                                                   |                         | false    | no               |
-| timeout       | Time to wait for the DAG run to complete (default: 1m)          | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) |                         | false    | no               |
+| url           | The URL of the Airflow instance                                 | String                                                                                    | `http://localhost:8080` | yes      | no               |
+| dag_id        | The DAG to trigger                                              | String                                                                                    | `example_dag`           | yes      | no               |
+| username      | The name of the Airflow user performing the request             | String                                                                                    | `admin`                 | yes      | no               |
+| password      | The password of the Airflow user performing the request         | String                                                                                    | `admin`                 | yes      | yes              |
+| dag_conf      | DAG run configuration that will be passed as is                 | JSON                                                                                      |                         | no       | no               |
+| wait_for_dag  | Wait for DAG run to complete and reflect state (default: false) | Boolean                                                                                   |                         | no       | no               |
+| timeout       | Time to wait for the DAG run to complete (default: 1m)          | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) |                         | no       | no               |
 
 Example:
 ```yaml

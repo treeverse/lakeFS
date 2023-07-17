@@ -58,16 +58,16 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 
 #### Action File schema
 
-| Property           | Description                                               | Data Type  | Required | Default Value                                                           |
-|--------------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
-| `name               `| Identifes the Action file                                  | String     | false    | Action filename                                    |
-| `on                 `| List of events that will trigger the hooks                | List       | true     |                                                                         |
-| `on<event>.branches `| Glob pattern list of branches that triggers the hooks     | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
-| `hooks              `| List of hooks to be executed                              | List       | true     |                                                                         |
-| `hook.id            `| ID of the hook, must be unique within the action.         | String     | true     |                                                                         |
-| `hook.type          `| Type of the hook ([types](#hook-types))                   | String     | true     |                                                                         |
-| `hook.description   `| Description for the hook                                  | String     | false    |                                                                         |
-| `hook.if            `| Expression that will be evaluated before execute the hook | String     | false    | No value is the same as evaluate `success()`                            |
+| Property             | Description                                               | Data Type  | Required | Default Value                                                           |
+|----------------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
+| `name               `| Identifes the Action file                                 | String     | no       | Action filename                                    |
+| `on                 `| List of events that will trigger the hooks                | List       | yes      |                                                                         |
+| `on<event>.branches `| Glob pattern list of branches that triggers the hooks     | List       | no       | **Not applicable to Tag events.** If empty, Action runs on all branches |
+| `hooks              `| List of hooks to be executed                              | List       | yes      |                                                                         |
+| `hook.id            `| ID of the hook, must be unique within the action.         | String     | yes      |                                                                         |
+| `hook.type          `| Type of the hook ([types](#hook-types))                   | String     | yes      |                                                                         |
+| `hook.description   `| Description for the hook                                  | String     | no       |                                                                         |
+| `hook.if            `| Expression that will be evaluated before execute the hook | String     | no       | No value is the same as evaluate `success()`                            |
 | `hook.properties    `| Hook's specific configuration, see [Lua](./lua.md#action-file-lua-hook-properties), [WebHook](./webhooks.md#action-file-webhook-properties), and [Airflow](./airflow.md#action-file-airflow-hook-properties) for details                             | Dictionary | true     |                                                                         |
 
 #### Example Action File
