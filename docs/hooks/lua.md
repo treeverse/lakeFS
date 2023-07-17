@@ -28,7 +28,7 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 |--------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
 | `args`       | One or more arguments to pass to the hook                 | Dictionary     | false    |                                                                         |
 | `script`     | An inline Lua script                                      | String     | either this or `script_file` must be specified    |                                                                         |
-| `script_file`| The lakeFS path to a Lua script                           | String     | either this or `script_file` must be specified    |                                                                         |
+| `script_file`| The lakeFS path to a Lua script                           | String     | either this or `script` must be specified    |                                                                         |
 
 
 ## Example Lua Hooks
