@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -40,11 +41,11 @@ func TestInstrumentation(t *testing.T) {
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationRun, false, true)
 
 	// Add sample repo env var
-	require.NoError(t, os.Setenv("LAKEFS_ACCESS_KEY_ID", "LKFSSAMPLES"))
+	viper.Set("installation.access_key_id", "LKFSSAMPLES")
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationSamplesRepo, false, true)
 
 	// Add quickstart env var with right value
-	require.NoError(t, os.Setenv("LAKEFS_ACCESS_KEY_ID", "QUICKSTART"))
+	viper.Set("installation.access_key_id", "QUICKSTART")
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, false, true)
 
 	// Add K8s env var
