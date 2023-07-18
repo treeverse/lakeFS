@@ -109,7 +109,8 @@ object GarbageCollector {
       region: String,
       repo: String,
       uncommittedOnly: Boolean = false,
-      sourceName: String = UNIFIED_GC_SOURCE_NAME
+      sourceName: String = UNIFIED_GC_SOURCE_NAME,
+      outputPrefix: String = "unified"
   ): Unit = {
     var runID = ""
     var firstSlice = ""
@@ -201,7 +202,7 @@ object GarbageCollector {
           addressesToDelete
         } else {
           println("deleting marked addresses from mark ID: " + markID)
-          readMarkedAddresses(storageNamespace, markID)
+          readMarkedAddresses(storageNamespace, markID, outputPrefix)
         }
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
@@ -223,7 +224,8 @@ object GarbageCollector {
           startTime,
           cutoffTime.toInstant,
           success,
-          addressesToDelete
+          addressesToDelete,
+          outputPrefix
         )
       }
 
@@ -263,9 +265,10 @@ object GarbageCollector {
       startTime: java.time.Instant,
       cutoffTime: java.time.Instant,
       success: Boolean,
-      expiredAddresses: DataFrame
+      expiredAddresses: DataFrame,
+      outputPrefix: String
   ): Unit = {
-    val reportDst = formatRunPath(storageNamespace, runID)
+    val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
     println(s"Report for mark_id=$runID path=$reportDst")
 
     expiredAddresses.write.parquet(s"$reportDst/deleted")
@@ -283,12 +286,22 @@ object GarbageCollector {
     println(s"Report summary=$summary")
   }
 
-  private def formatRunPath(storageNamespace: String, runID: String): String = {
-    s"${storageNamespace}_lakefs/retention/gc/unified/$runID"
+  private def formatRunPath(
+      storageNamespace: String,
+      runID: String,
+      outputPrefix: String
+  ): String = {
+    s"${storageNamespace}_lakefs/retention/gc/${outputPrefix}/$runID"
   }
 
-  def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val reportPath = new Path(formatRunPath(storageNamespace, markID) + "/summary.json")
+  def readMarkedAddresses(
+      storageNamespace: String,
+      markID: String,
+      outputPrefix: String
+  ): DataFrame = {
+    val reportPath = new Path(
+      formatRunPath(storageNamespace, markID, outputPrefix) + "/summary.json"
+    )
     val fs = reportPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
     if (!fs.exists(reportPath)) {
       throw new FailedRunException(s"Mark ID ($markID) does not exist")
@@ -297,7 +310,7 @@ object GarbageCollector {
     if (!markedRunSummary.first.getAs[Boolean]("success")) {
       throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
-      val deletedPath = new Path(formatRunPath(storageNamespace, markID) + "/deleted")
+      val deletedPath = new Path(formatRunPath(storageNamespace, markID, outputPrefix) + "/deleted")
       if (!fs.exists(deletedPath)) {
         println(s"Mark ID ($markID) does not contain deleted files")
         spark.emptyDataFrame.withColumn("address", lit(""))
