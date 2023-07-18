@@ -2,8 +2,9 @@ package committed
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
 type rangeValue struct {
