@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"os"
 	"path"
 	"strings"
@@ -62,34 +63,34 @@ func validateQuickstartEnv(cfg *config.Config) {
 	fmt.Printf("Secret Access Key: %s\n", config.DefaultQuickstartSecretKey)
 }
 
-func useConfig(cfg string) bool {
-	res, err := rootCmd.PersistentFlags().GetBool(cfg)
+func useConfig(flagName string) bool {
+	res, err := rootCmd.PersistentFlags().GetBool(flagName)
 	if err != nil {
-		fmt.Printf("%s: %s\n", cfg, err)
+		fmt.Printf("%s: %s\n", flagName, err)
 		os.Exit(1)
 	}
 	if res {
-		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", cfg))
+		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", flagName))
 	}
 	return res
 }
 
 func newConfig() (*config.Config, error) {
-	quickStart := useConfig(config.QuickstartConfiguration)
-
-	switch {
-	case quickStart:
-		cfg, err := config.NewConfig(config.QuickstartConfiguration)
-		if err != nil {
-			return nil, err
-		}
-		validateQuickstartEnv(cfg)
-		return cfg, nil
-	case useConfig(config.UseLocalConfiguration):
-		return config.NewConfig(config.UseLocalConfiguration)
-	default:
-		return config.NewConfig("")
+	name := ""
+	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
+	if idx := slices.IndexFunc(configurations, func(f string) bool { return useConfig(f) }); idx != -1 {
+		name = configurations[idx]
 	}
+
+	cfg, err := config.NewConfig(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if name == config.QuickstartConfiguration {
+		validateQuickstartEnv(cfg)
+	}
+	return cfg, nil
 }
 
 func loadConfig() *config.Config {

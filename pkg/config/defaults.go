@@ -18,15 +18,15 @@ const (
 
 //nolint:gomnd
 func setDefaults(cfgType string) {
-	switch {
-	case cfgType == QuickstartConfiguration:
+	switch cfgType {
+	case QuickstartConfiguration:
 		viper.SetDefault("installation.user_name", DefaultQuickstartUsername)
 		viper.SetDefault("installation.access_key_id", DefaultQuickstartKeyID)
 		viper.SetDefault("installation.secret_access_key", DefaultQuickstartSecretKey)
 		viper.SetDefault("database.type", "local")
 		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
 		viper.SetDefault(BlockstoreTypeKey, "local")
-	case cfgType == UseLocalConfiguration:
+	case UseLocalConfiguration:
 		viper.SetDefault("database.type", "local")
 		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
 		viper.SetDefault(BlockstoreTypeKey, "local")
