@@ -112,7 +112,7 @@ footer_bottom_links:
 # just-the-docs callouts
 callouts:
   note:
-    color: blue
+    color: teal-green
   warning:
     title: ⚠️ Warning ⚠️
     color: red
