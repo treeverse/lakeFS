@@ -616,16 +616,16 @@ func (mr *MockVersionControllerMockRecorder) GetTag(ctx, repository, tagID inter
 // Import mocks base method.
 func (m *MockVersionController) Import(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams, importPaths []graveler.ImportPath) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Import", ctx, repository, destination, source, commitParams)
+	ret := m.ctrl.Call(m, "Import", ctx, repository, destination, source, commitParams, importPaths)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Import indicates an expected call of Import.
-func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination, source, commitParams interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination, source, commitParams, importPaths interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), ctx, repository, destination, source, commitParams)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), ctx, repository, destination, source, commitParams, importPaths)
 }
 
 // IsLinkAddressExpired mocks base method.
@@ -2455,6 +2455,21 @@ func (mr *MockCommittedManagerMockRecorder) GetRangeIDByKey(ctx, ns, id, key int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeIDByKey", reflect.TypeOf((*MockCommittedManager)(nil).GetRangeIDByKey), ctx, ns, id, key)
 }
 
+// Import mocks base method.
+func (m *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, importPaths []graveler.ImportPath) (graveler.MetaRangeID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Import", ctx, ns, destination, source, importPaths)
+	ret0, _ := ret[0].(graveler.MetaRangeID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Import indicates an expected call of Import.
+func (mr *MockCommittedManagerMockRecorder) Import(ctx, ns, destination, source, importPaths interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockCommittedManager)(nil).Import), ctx, ns, destination, source, importPaths)
+}
+
 // List mocks base method.
 func (m *MockCommittedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
 	m.ctrl.T.Helper()
@@ -2528,10 +2543,6 @@ func (m *MockCommittedManager) WriteRange(ctx context.Context, ns graveler.Stora
 func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, ns, it interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, ns, it)
-}
-
-func (mr *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, importPaths []graveler.ImportPath) (graveler.MetaRangeID, error) {
-	return "", nil
 }
 
 // MockStagingManager is a mock of StagingManager interface.
