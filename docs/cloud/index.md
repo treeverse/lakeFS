@@ -54,7 +54,7 @@ flowchart TD
 Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
 ### Azure
-Please follow [these instructions](./setup-azure.md) to onboard to lakeFS Cloud on Azure.
+Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
 ### GCP
 Please [contact us](mailto:support@treeverse.io) for onboarding insructions.
