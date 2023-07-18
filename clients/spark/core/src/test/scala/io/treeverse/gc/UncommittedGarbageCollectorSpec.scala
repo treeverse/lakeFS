@@ -75,15 +75,15 @@ class UncommittedGarbageCollectorSpec
       it("should return nothing") {
         withSparkSession(_ => {
           var dataDF =
-            GarbageCollector.listObjects(dir.toString, new Date())
+            GarbageCollection.listObjects(dir.toString, new Date())
           dataDF.count() should be(0)
 
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
 
-          dataDF = GarbageCollector.listObjects(dir.toString, new Date())
+          dataDF = GarbageCollection.listObjects(dir.toString, new Date())
           dataDF.count() should be(0)
-          GarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -93,12 +93,12 @@ class UncommittedGarbageCollectorSpec
           val data = createSliceData(dir.resolve(""))
 
           val dataDF =
-            GarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
+            GarbageCollection.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
           dataDF.count() should be(10)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
           assertDSEqual(actual, expected)
-          GarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -108,7 +108,7 @@ class UncommittedGarbageCollectorSpec
           val data = createData("data")
 
           val dataDF =
-            GarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
+            GarbageCollection.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
           dataDF.count() should be(100)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
@@ -122,7 +122,7 @@ class UncommittedGarbageCollectorSpec
           val data = createSliceData(dir.resolve("")) ::: createData("data")
 
           val dataDF =
-            GarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
+            GarbageCollection.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
           dataDF.count() should be(110)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
@@ -136,9 +136,9 @@ class UncommittedGarbageCollectorSpec
           createData("data")
 
           val dataDF =
-            GarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), -1))
+            GarbageCollection.listObjects(dir.toString, DateUtils.addHours(new Date(), -1))
           dataDF.count() should be(0)
-          GarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -150,9 +150,9 @@ class UncommittedGarbageCollectorSpec
           new File(dataDir, legacyPath).createNewFile()
 
           val dataDF =
-            GarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
+            GarbageCollection.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
           dataDF.count() should be(1)
-          GarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -164,9 +164,9 @@ class UncommittedGarbageCollectorSpec
           new File(dataDir, filename).createNewFile()
 
           val dataDF =
-            GarbageCollector.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
+            GarbageCollection.listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
           dataDF.count() should be(1)
-          GarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -188,14 +188,14 @@ class UncommittedGarbageCollectorSpec
           slice.mkdir()
           new File(slice, filename).createNewFile()
 
-          val dataDF = GarbageCollector
+          val dataDF = GarbageCollection
             .listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
             .sort("address")
           dataDF.count() should be(3)
           dataDF.select("address").head.getString(0) should be(
             s"data/$legacyPath/$filename"
           )
-          GarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
+          GarbageCollection.getFirstSlice(dataDF, repo) should be(regularSlice)
         })
       }
     }
@@ -210,15 +210,15 @@ class UncommittedGarbageCollectorSpec
           val success = true
           val df = Seq("file1", "file2").toDF("address")
 
-          GarbageCollector.writeReports(dir.toString + "/",
-                                        runID,
-                                        firstSlice,
-                                        startTime,
-                                        startTime,
-                                        success,
-                                        df,
-                                        "uncommitted"
-                                       )
+          GarbageCollection.writeReports(dir.toString + "/",
+                                         runID,
+                                         firstSlice,
+                                         startTime,
+                                         startTime,
+                                         success,
+                                         df,
+                                         "uncommitted"
+                                        )
 
           val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID)
           val summaryPath = dir.resolve(rootPath.resolve("summary.json"))
@@ -244,19 +244,19 @@ class UncommittedGarbageCollectorSpec
           val runPath =
             dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
           runPath.toFile.mkdirs()
-          GarbageCollector.writeJsonSummary(runPath.toString,
-                                            runID,
-                                            "",
-                                            java.time.Clock.systemUTC.instant(),
-                                            java.time.Clock.systemUTC.instant(),
-                                            false,
-                                            0
-                                           )
+          GarbageCollection.writeJsonSummary(runPath.toString,
+                                             runID,
+                                             "",
+                                             java.time.Clock.systemUTC.instant(),
+                                             java.time.Clock.systemUTC.instant(),
+                                             false,
+                                             0
+                                            )
           try {
-            GarbageCollector.readMarkedAddresses(dir.toString + "/",
-                                                 runID,
-                                                 "uncommitted"
-                                                ) // Should throw an exception
+            GarbageCollection.readMarkedAddresses(dir.toString + "/",
+                                                  runID,
+                                                  "uncommitted"
+                                                 ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")
           } catch {
@@ -272,16 +272,16 @@ class UncommittedGarbageCollectorSpec
           val runPath =
             dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
           runPath.toFile.mkdirs()
-          GarbageCollector.writeJsonSummary(runPath.toString,
-                                            runID,
-                                            "",
-                                            java.time.Clock.systemUTC.instant(),
-                                            java.time.Clock.systemUTC.instant(),
-                                            true,
-                                            0
-                                           )
+          GarbageCollection.writeJsonSummary(runPath.toString,
+                                             runID,
+                                             "",
+                                             java.time.Clock.systemUTC.instant(),
+                                             java.time.Clock.systemUTC.instant(),
+                                             true,
+                                             0
+                                            )
 
-          val df = GarbageCollector.readMarkedAddresses(dir.toString + "/", runID, "uncommitted")
+          val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID, "uncommitted")
           df.isEmpty should be(true)
         })
       }
@@ -289,10 +289,10 @@ class UncommittedGarbageCollectorSpec
         withSparkSession(_ => {
           val runID = "not-exist"
           try {
-            GarbageCollector.readMarkedAddresses(dir.toString + "/",
-                                                 runID,
-                                                 "uncommitted"
-                                                ) // Should throw an exception
+            GarbageCollection.readMarkedAddresses(dir.toString + "/",
+                                                  runID,
+                                                  "uncommitted"
+                                                 ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")
           } catch {
@@ -307,14 +307,17 @@ class UncommittedGarbageCollectorSpec
       val markID = "markID"
 
       it("should succeed mark & sweep") {
-        GarbageCollector.validateRunModeConfigs(true, true, "")
+        GarbageCollection.validateRunModeConfigs(true, true, "")
       }
       it("should succeed when sweep with mark ID") {
-        GarbageCollector.validateRunModeConfigs(false, true, markID)
+        GarbageCollection.validateRunModeConfigs(false, true, markID)
       }
       it("should fail when no options provided") {
         try {
-          GarbageCollector.validateRunModeConfigs(false, false, markID) // Should throw an exception
+          GarbageCollection.validateRunModeConfigs(false,
+                                                   false,
+                                                   markID
+                                                  ) // Should throw an exception
           // Fail test if no exception was thrown
           throw new Exception("test failed")
         } catch {
@@ -328,10 +331,10 @@ class UncommittedGarbageCollectorSpec
       it("should fail when mark with mark ID") {
         for (sweepVal <- Seq(true, false)) {
           try {
-            GarbageCollector.validateRunModeConfigs(true,
-                                                    sweepVal,
-                                                    markID
-                                                   ) // Should throw an exception
+            GarbageCollection.validateRunModeConfigs(true,
+                                                     sweepVal,
+                                                     markID
+                                                    ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")
           } catch {
@@ -343,7 +346,7 @@ class UncommittedGarbageCollectorSpec
       }
       it("should fail when sweep with no mark ID") {
         try {
-          GarbageCollector.validateRunModeConfigs(false, true, "") // Should throw an exception
+          GarbageCollection.validateRunModeConfigs(false, true, "") // Should throw an exception
           // Fail test if no exception was thrown
           throw new Exception("test failed")
         } catch {

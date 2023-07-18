@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import scala.collection.JavaConverters._
 
-object GarbageCollector {
+object GarbageCollection {
   final val UNIFIED_GC_SOURCE_NAME = "unified_gc"
   private final val DATA_PREFIX = "data/"
 
