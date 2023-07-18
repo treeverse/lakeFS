@@ -3,8 +3,9 @@ package catalog
 import (
 	"context"
 	"errors"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/graveler"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
