@@ -52,7 +52,7 @@ func validateQuickstartEnv(cfg *config.Config) {
 		os.Exit(1)
 	}
 	accessKey := "AKIAIOSFOLQUICKSTART"
-	secretKey := "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	secretKey := "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
 	cfg.Installation.UserName = "quickstart"
 	cfg.Installation.AccessKeyID = config.SecureString(accessKey)
 	cfg.Installation.SecretAccessKey = config.SecureString(secretKey)
