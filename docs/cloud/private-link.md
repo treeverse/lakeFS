@@ -25,7 +25,6 @@ At the moment, we support Private-Link with **AWS** and **Azure**. If you are lo
     <li><a href="#azure">Azure</a></li>
   </ul> 
   <div markdown="1" id="aws">
-
 ## Access Methods
 
 There are two types of Private Link implementation:
@@ -84,7 +83,6 @@ That's it on your end! Now, we'll need the **service name** you've just created 
  </div>
 
 <div markdown="1" id="azure">
-
 [Azure Private Link](https://learn.microsoft.com/en-us/azure/private-link/private-link-overview) enables secure access to Azure services from a private endpoint within your virtual network.
 By using Azure Private Link with lakeFS, you can securely access lakeFS services without exposing traffic to the public internet.
 In this manual, we will guide you through the steps to enable Azure Private Link to your lakeFS instance.
