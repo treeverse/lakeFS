@@ -15,7 +15,6 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import scala.collection.JavaConverters._
-import org.apache.hadoop.conf.Configuration
 
 object GarbageCollector {
   final val UNIFIED_GC_SOURCE_NAME = "unified_gc"
@@ -106,7 +105,12 @@ object GarbageCollector {
     run(region, repo)
   }
 
-  def run(region: String, repo: String, uncommittedOnly: Boolean = false): Unit = {
+  def run(
+      region: String,
+      repo: String,
+      uncommittedOnly: Boolean = false,
+      sourceName: String = UNIFIED_GC_SOURCE_NAME
+  ): Unit = {
     var runID = ""
     var firstSlice = ""
     var success = false
@@ -134,13 +138,7 @@ object GarbageCollector {
 
     validateRunModeConfigs(shouldMark, shouldSweep, markID)
     val apiConf =
-      APIConfigurations(apiURL,
-                        accessKey,
-                        secretKey,
-                        connectionTimeout,
-                        readTimeout,
-                        GarbageCollector.UNIFIED_GC_SOURCE_NAME
-                       )
+      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, sourceName)
     val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
     var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
