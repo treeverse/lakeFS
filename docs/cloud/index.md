@@ -4,6 +4,7 @@ title: lakeFS Cloud
 description: This section includes lakeFS Cloud documentation
 nav_order: 80
 has_children: true
+redirect_from: "/cloud.html"
 has_toc: false
 ---
 
@@ -49,10 +50,7 @@ flowchart TD
 
 ## Setting up lakeFS Cloud
 
-### AWS
-Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
-
-### Azure
+### AWS / Azure
 Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
 ### GCP
