@@ -100,15 +100,3 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:${{ steps.version.outputs.tag }}
             treeverse/lakefs:latest
-            
-      - name: Build and push lakefs quickstart
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          target: lakefs-plugins
-          push: true
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
-          build-args: |
-            VERSION=${{ steps.version.outputs.tag }}
-            QUICKSTART=true
-          tags: treeverse/lakefs:quickstart

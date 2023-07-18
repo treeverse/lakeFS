@@ -35,7 +35,10 @@ var (
 
 // UseLocalConfiguration set to true will add defaults that enable a lakeFS run
 // without any other configuration like DB or blockstore.
-const UseLocalConfiguration = "local-settings"
+const (
+	UseLocalConfiguration   = "local-settings"
+	QuickStartConfiguration = "quickstart"
+)
 
 type OIDC struct {
 	// configure how users are handled on the lakeFS side:

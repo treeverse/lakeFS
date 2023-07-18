@@ -495,7 +495,7 @@ func printWelcome(w io.Writer) {
 const localWarningBanner = `
 WARNING!
 
-Using %s.  This is suitable only for testing! It is NOT SUPPORTED for production.
+Using %s. This is suitable only for testing! It is NOT SUPPORTED for production.
 `
 
 func printLocalWarning(w io.Writer, msg string) {

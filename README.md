@@ -37,8 +37,8 @@ You can spin up a standalone sandbox instance of lakeFS using Docker:
 docker run --pull always \
 		   --name lakefs \
 		   -p 8000:8000 \
-		   treeverse/lakefs:quickstart \
-		   run --local-settings
+		   treeverse/lakefs:latest \
+		   run --quickstart
 ```
 
 Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.

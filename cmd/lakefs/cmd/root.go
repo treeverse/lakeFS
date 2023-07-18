@@ -11,7 +11,9 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -41,26 +43,50 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakefs.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().Bool(config.UseLocalConfiguration, false, "Use lakeFS local default configuration")
+	rootCmd.PersistentFlags().Bool(config.QuickStartConfiguration, false, "Use lakeFS quickstart configuration")
 }
 
-func useLocal() bool {
-	res, err := rootCmd.PersistentFlags().GetBool(config.UseLocalConfiguration)
+func validateQuickstartEnv(cfg *config.Config) {
+	if cfg.Database.Type != local.DriverName || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
+		fmt.Printf("quickstart mode can only run with local settings\n")
+		os.Exit(1)
+	}
+	accessKey := "AKIAIOSFOLQUICKSTART"
+	secretKey := "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	cfg.Installation.UserName = "quickstart"
+	cfg.Installation.AccessKeyID = config.SecureString(accessKey)
+	cfg.Installation.SecretAccessKey = config.SecureString(secretKey)
+	fmt.Printf("Access Key ID    : %s \n", accessKey)
+	fmt.Printf("Secret Access Key: %s \n", secretKey)
+}
+
+func useConfig(cfg string) bool {
+	res, err := rootCmd.PersistentFlags().GetBool(cfg)
 	if err != nil {
-		fmt.Printf("%s: %s\n", config.UseLocalConfiguration, err)
+		fmt.Printf("%s: %s\n", cfg, err)
 		os.Exit(1)
 	}
 	if res {
-		printLocalWarning(os.Stderr, "local parameters configuration")
+		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", cfg))
 	}
 	return res
 }
 
 func newConfig() (*config.Config, error) {
-	if useLocal() {
-		return config.NewLocalConfig()
-	}
+	quickStart := useConfig(config.QuickStartConfiguration)
 
-	return config.NewConfig()
+	if useConfig(config.UseLocalConfiguration) || quickStart {
+		cfg, err := config.NewLocalConfig()
+		if err != nil {
+			return nil, err
+		}
+		if quickStart {
+			validateQuickstartEnv(cfg)
+		}
+		return cfg, err
+	} else {
+		return config.NewConfig()
+	}
 }
 
 func loadConfig() *config.Config {

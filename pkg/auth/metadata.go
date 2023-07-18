@@ -230,14 +230,14 @@ func inDockerMetadata() string {
 
 func getInstrumentationMetadata() string {
 	lakefsAccessKeyID := os.Getenv("LAKEFS_ACCESS_KEY_ID")
-	if strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES") {
+	switch {
+	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
 		return InstrumentationSamplesRepo
-	}
-	quickstart, _ := strconv.ParseBool(os.Getenv("QUICKSTART"))
-	if quickstart {
+	case strings.HasSuffix(lakefsAccessKeyID, "QUICKSTART"):
 		return InstrumentationQuickstart
+	default:
+		return InstrumentationRun
 	}
-	return InstrumentationRun
 }
 
 func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {

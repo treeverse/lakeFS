@@ -20,31 +20,25 @@ Launch the lakeFS container:
 ```bash
 docker run --name lakefs --pull always \
              --rm --publish 8000:8000 \
-             treeverse/lakefs:quickstart \
-             run --local-settings
+             treeverse/lakefs:latest \
+             run --quickstart
 ```
 
-After a few moments you should see the lakeFS container ready to use: 
+Quickstart mode includes initial setup and lakeFS is ready for use!
+The lakeFS quickstart credentials are:
 
 ```
-[…]
-│
-│ If you're running lakeFS locally for the first time,
-│     complete the setup process at http://127.0.0.1:8000/setup
-│
-[…]
-
+│     Access Key ID    : "AKIAIOSFOLQUICKSTART"
+│     Secret Access Key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 ```
 
 You're now ready to dive into lakeFS! 
 
-1. Open lakeFS's web interface at [http://127.0.0.1:8000/](http://127.0.0.1:8000/), enter your email address, and then click **Setup**.
+1. Open lakeFS's web interface at [http://127.0.0.1:8000/](http://127.0.0.1:8000/), enter your email address, and then click **Go to Login**.
 
-2. Make a note of the Access Key ID and Secret Access Key and click on **Go To Login**. 
+2. Login with the quickstart credentials. 
 
-3. Login with the credentials that you've just created. 
-
-4. You'll notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
+3. You'll notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
 
     <img width="75%" src="/assets/img/quickstart/empty-repo-list.png" alt="Empty lakeFS Repository list" class="quickstart"/>
 

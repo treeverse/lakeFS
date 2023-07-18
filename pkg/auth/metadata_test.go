@@ -39,15 +39,15 @@ func TestInstrumentation(t *testing.T) {
 	auth.DockeEnvExists = ""
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationRun, false, true)
 
-	// Add quickstart env var with right value
-	require.NoError(t, os.Setenv("QUICKSTART", "true"))
-	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, false, true)
-
 	// Add sample repo env var
 	require.NoError(t, os.Setenv("LAKEFS_ACCESS_KEY_ID", "LKFSSAMPLES"))
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationSamplesRepo, false, true)
 
+	// Add quickstart env var with right value
+	require.NoError(t, os.Setenv("LAKEFS_ACCESS_KEY_ID", "QUICKSTART"))
+	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, false, true)
+
 	// Add K8s env var
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", ""))
-	validateInstrumentation(t, ctx, mgr, auth.InstrumentationSamplesRepo, true, true)
+	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, true, true)
 }
