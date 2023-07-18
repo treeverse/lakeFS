@@ -43,7 +43,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakefs.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().Bool(config.UseLocalConfiguration, false, "Use lakeFS local default configuration")
-	rootCmd.PersistentFlags().Bool(config.QuickStartConfiguration, false, "Use lakeFS quickstart configuration")
+	rootCmd.PersistentFlags().Bool(config.QuickstartConfiguration, false, "Use lakeFS quickstart configuration")
 }
 
 func validateQuickstartEnv(cfg *config.Config) {
@@ -51,13 +51,15 @@ func validateQuickstartEnv(cfg *config.Config) {
 		fmt.Printf("quickstart mode can only run with local settings\n")
 		os.Exit(1)
 	}
-	accessKey := "AKIAIOSFOLQUICKSTART"
-	secretKey := "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
-	cfg.Installation.UserName = "quickstart"
-	cfg.Installation.AccessKeyID = config.SecureString(accessKey)
-	cfg.Installation.SecretAccessKey = config.SecureString(secretKey)
-	fmt.Printf("Access Key ID    : %s \n", accessKey)
-	fmt.Printf("Secret Access Key: %s \n", secretKey)
+
+	if cfg.Installation.UserName != config.DefaultQuickstartUsername ||
+		cfg.Installation.AccessKeyID != config.DefaultQuickstartKeyID ||
+		cfg.Installation.SecretAccessKey != config.DefaultQuickstartSecretKey {
+		fmt.Printf("installation parameters must not be changed in quickstart mode\n")
+		os.Exit(1)
+	}
+	fmt.Printf("Access Key ID    : %s\n", config.DefaultQuickstartKeyID)
+	fmt.Printf("Secret Access Key: %s\n", config.DefaultQuickstartSecretKey)
 }
 
 func useConfig(cfg string) bool {
@@ -73,19 +75,20 @@ func useConfig(cfg string) bool {
 }
 
 func newConfig() (*config.Config, error) {
-	quickStart := useConfig(config.QuickStartConfiguration)
+	quickStart := useConfig(config.QuickstartConfiguration)
 
-	if useConfig(config.UseLocalConfiguration) || quickStart {
-		cfg, err := config.NewLocalConfig()
+	switch {
+	case quickStart:
+		return config.NewConfig(config.QuickstartConfiguration)
+	case useConfig(config.UseLocalConfiguration):
+		cfg, err := config.NewConfig(config.UseLocalConfiguration)
 		if err != nil {
 			return nil, err
 		}
-		if quickStart {
-			validateQuickstartEnv(cfg)
-		}
-		return cfg, err
-	} else {
-		return config.NewConfig()
+		validateQuickstartEnv(cfg)
+		return cfg, nil
+	default:
+		return config.NewConfig("")
 	}
 }
 

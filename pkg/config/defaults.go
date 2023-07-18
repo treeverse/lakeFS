@@ -11,11 +11,22 @@ const (
 	DefaultLoggingLevel         = "INFO"
 	DefaultLoggingAuditLogLevel = "DEBUG"
 	BlockstoreTypeKey           = "blockstore.type"
+	DefaultQuickstartUsername   = "quickstart"
+	DefaultQuickstartKeyID      = "AKIAIOSFOLQUICKSTART"
+	DefaultQuickstartSecretKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 )
 
 //nolint:gomnd
-func setDefaults(local bool) {
-	if local {
+func setDefaults(cfgType string) {
+	switch {
+	case cfgType == QuickstartConfiguration:
+		viper.SetDefault("installation.user_name", DefaultQuickstartUsername)
+		viper.SetDefault("installation.access_key_id", DefaultQuickstartKeyID)
+		viper.SetDefault("installation.secret_access_key", DefaultQuickstartSecretKey)
+		viper.SetDefault("database.type", "local")
+		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
+		viper.SetDefault(BlockstoreTypeKey, "local")
+	case cfgType == UseLocalConfiguration:
 		viper.SetDefault("database.type", "local")
 		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
 		viper.SetDefault(BlockstoreTypeKey, "local")
