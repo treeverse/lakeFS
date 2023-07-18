@@ -13,7 +13,7 @@ const (
 	BlockstoreTypeKey           = "blockstore.type"
 	DefaultQuickstartUsername   = "quickstart"
 	DefaultQuickstartKeyID      = "AKIAIOSFOLQUICKSTART"
-	DefaultQuickstartSecretKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	DefaultQuickstartSecretKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
 )
 
 //nolint:gomnd
