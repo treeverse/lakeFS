@@ -33,7 +33,7 @@ func TestInstrumentation(t *testing.T) {
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationRun, false, false)
 
 	// Add quickstart env var with wrong value
-	require.NoError(t, os.Setenv("QUICKSTART", "fff"))
+	viper.Set("installation.access_key_id", "SOMEKEY")
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationRun, false, false)
 
 	// Add docker env file
