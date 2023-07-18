@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"os"
 	"path"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/exp/slices"
 )
 
 var cfgFile string
@@ -78,7 +78,7 @@ func useConfig(flagName string) bool {
 func newConfig() (*config.Config, error) {
 	name := ""
 	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
-	if idx := slices.IndexFunc(configurations, func(f string) bool { return useConfig(f) }); idx != -1 {
+	if idx := slices.IndexFunc(configurations, useConfig); idx != -1 {
 		name = configurations[idx]
 	}
 
