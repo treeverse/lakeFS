@@ -79,14 +79,14 @@ func newConfig() (*config.Config, error) {
 
 	switch {
 	case quickStart:
-		return config.NewConfig(config.QuickstartConfiguration)
-	case useConfig(config.UseLocalConfiguration):
-		cfg, err := config.NewConfig(config.UseLocalConfiguration)
+		cfg, err := config.NewConfig(config.QuickstartConfiguration)
 		if err != nil {
 			return nil, err
 		}
 		validateQuickstartEnv(cfg)
 		return cfg, nil
+	case useConfig(config.UseLocalConfiguration):
+		return config.NewConfig(config.UseLocalConfiguration)
 	default:
 		return config.NewConfig("")
 	}
