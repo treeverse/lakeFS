@@ -77,12 +77,13 @@ func (ipi *ImportPathsIterator) updatePath() {
 	for ipi.paths[ipi.position].Destination < string(ipi.currentRangeValue.vr.Key) &&
 		!strings.HasPrefix(string(ipi.currentRangeValue.vr.Key), ipi.paths[ipi.position].Destination) {
 		p := ipi.position + 1
-		if p >= len(ipi.paths) { // No more comparable paths
+		switch {
+		case p >= len(ipi.paths): // No more comparable paths
 			ipi.position = done
 			break
-		} else if ipi.head || (!ipi.head && ipi.paths[p].Destination <= string(ipi.currentRangeValue.r.MaxKey)) {
+		case ipi.head || (!ipi.head && ipi.paths[p].Destination <= string(ipi.currentRangeValue.r.MaxKey)):
 			ipi.position = p
-		} else {
+		default:
 			break
 		}
 	}

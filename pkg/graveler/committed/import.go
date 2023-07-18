@@ -45,25 +45,9 @@ func importByPaths(ctx context.Context, destRangeIter, sourceRangeIter Iterator,
 			}
 			destImportPathsIter.next()
 		default: // Source and destination ranges OR destination range and path intersect
-			// The dest range's prefix was imported- skip to the next range:
-			if destImportPathsIter.isCurrentRangeBoundedByPath() {
-				destImportPathsIter.nextRange()
-			} else if !isValue1BeforeValue2(destValue, sourceValue) { // Source value <= Dest value
-				if err := sourceImportPathsIter.writeRecordAndProgress(); err != nil {
-					return err
-				}
-				// Source value == Dest value, progress dest iter as well:
-				if bytes.Equal(sourceValue.Key, destValue.Key) {
-					destImportPathsIter.next()
-				}
-			} else { // Dest value < Source value
-				if !destImportPathsIter.isCurrentPathIncludedInValueRecord() { // Non-imported path
-					if err := destImportPathsIter.writeRecordAndProgress(); err != nil {
-						return err
-					}
-				} else { // Imported path
-					destImportPathsIter.next()
-				}
+			err := handleIntersection(sourceImportPathsIter, destImportPathsIter, sourceValue, destValue)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -74,6 +58,31 @@ func importByPaths(ctx context.Context, destRangeIter, sourceRangeIter Iterator,
 	} else if destImportPathsIter.hasNext {
 		if err := completeDestImportIteratorRun(destImportPathsIter); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func handleIntersection(sourceImportPathsIter, destImportPathsIter ImportPathsIterator, sourceValue, destValue *graveler.ValueRecord) error {
+	switch {
+	// The dest range's prefix was imported- skip to the next range:
+	case destImportPathsIter.isCurrentRangeBoundedByPath():
+		destImportPathsIter.nextRange()
+	case !isValue1BeforeValue2(destValue, sourceValue): // Source value <= Dest value
+		if err := sourceImportPathsIter.writeRecordAndProgress(); err != nil {
+			return err
+		}
+		// Source value == Dest value, progress dest iter as well:
+		if bytes.Equal(sourceValue.Key, destValue.Key) {
+			destImportPathsIter.next()
+		}
+	default: // Dest value < Source value
+		if !destImportPathsIter.isCurrentPathIncludedInValueRecord() { // Non-imported path
+			if err := destImportPathsIter.writeRecordAndProgress(); err != nil {
+				return err
+			}
+		} else { // Imported path
+			destImportPathsIter.next()
 		}
 	}
 	return nil
