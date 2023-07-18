@@ -216,7 +216,8 @@ class UncommittedGarbageCollectorSpec
                                         startTime,
                                         startTime,
                                         success,
-                                        df
+                                        df,
+                                        "uncommitted"
                                        )
 
           val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID)
@@ -253,7 +254,8 @@ class UncommittedGarbageCollectorSpec
                                            )
           try {
             GarbageCollector.readMarkedAddresses(dir.toString + "/",
-                                                 runID
+                                                 runID,
+                                                 "uncommitted"
                                                 ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")
@@ -279,7 +281,7 @@ class UncommittedGarbageCollectorSpec
                                             0
                                            )
 
-          val df = GarbageCollector.readMarkedAddresses(dir.toString + "/", runID)
+          val df = GarbageCollector.readMarkedAddresses(dir.toString + "/", runID, "uncommitted")
           df.isEmpty should be(true)
         })
       }
@@ -288,7 +290,8 @@ class UncommittedGarbageCollectorSpec
           val runID = "not-exist"
           try {
             GarbageCollector.readMarkedAddresses(dir.toString + "/",
-                                                 runID
+                                                 runID,
+                                                 "uncommitted"
                                                 ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")

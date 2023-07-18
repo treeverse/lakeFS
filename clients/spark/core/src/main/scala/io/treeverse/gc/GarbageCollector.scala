@@ -110,7 +110,8 @@ object GarbageCollector {
       repo: String,
       uncommittedOnly: Boolean = false,
       sourceName: String = UNIFIED_GC_SOURCE_NAME,
-      outputPrefix: String = "unified"
+      outputPrefix: String =
+        "unified" // TODO (johnnyaug): remove this parameter when we remove old GC
   ): Unit = {
     var runID = ""
     var firstSlice = ""
