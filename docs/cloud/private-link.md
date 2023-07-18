@@ -17,7 +17,7 @@ Private Link enables lakeFS Cloud to interact with your infrastructure using pri
 
 ## Supported Vendors
 
-At the moment, we support Private-Link with AWS and Azure. If you are looking for Private Link for GCP please [contact us](mailto:support@treeverse.io).
+At the moment, we support Private-Link with **AWS** and **Azure**. If you are looking for Private Link for GCP please [contact us](mailto:support@treeverse.io).
 
 <div class="tabs">
   <ul>

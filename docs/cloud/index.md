@@ -4,7 +4,6 @@ title: lakeFS Cloud
 description: This section includes lakeFS Cloud documentation
 nav_order: 80
 has_children: true
-redirect_from: "/cloud.html"
 has_toc: false
 ---
 
