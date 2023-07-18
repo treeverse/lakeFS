@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"github.com/spf13/viper"
 	"os"
 	"runtime"
 	"strconv"
@@ -229,7 +230,7 @@ func inDockerMetadata() string {
 }
 
 func getInstrumentationMetadata() string {
-	lakefsAccessKeyID := os.Getenv("LAKEFS_ACCESS_KEY_ID")
+	lakefsAccessKeyID := viper.GetString("installation.access_key_id")
 	switch {
 	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
 		return InstrumentationSamplesRepo
