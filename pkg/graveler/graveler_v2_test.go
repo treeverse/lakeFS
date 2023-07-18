@@ -646,7 +646,7 @@ func TestGravelerImport(t *testing.T) {
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 		test.RefManager.EXPECT().SetRepositoryMetadata(ctx, repository, gomock.Any())
 
-		val, err := test.Sut.Import(ctx, repository, branch1ID, commit2.MetaRangeID, graveler.CommitParams{Metadata: graveler.Metadata{}})
+		val, err := test.Sut.Import(ctx, repository, branch1ID, commit2.MetaRangeID, graveler.CommitParams{Metadata: graveler.Metadata{}}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, val)
 		require.Equal(t, commit4ID, graveler.CommitID(val.Ref()))
