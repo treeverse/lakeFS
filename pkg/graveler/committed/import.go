@@ -96,12 +96,16 @@ func completeSourceImportIteratorRun(sourceImportPathsIter ImportPathsIterator) 
 func completeDestImportIteratorRun(destImportPathsIter ImportPathsIterator) error {
 	for destImportPathsIter.hasNext {
 		switch {
+		// If the current examined path is not included in the range, and we're at the beginning of the range,
+		// write the range.
 		case !destImportPathsIter.isCurrentPathIncludedInRange() && destImportPathsIter.head:
 			if err := destImportPathsIter.writeRangeAndProgress(); err != nil {
 				return err
 			}
+		// If the current range is bound by the prefix, continue to the next range
 		case destImportPathsIter.isCurrentRangeBoundedByPath():
 			destImportPathsIter.nextRange()
+		// If the current examined path is not included in the current value record, write the value record.
 		case !destImportPathsIter.isCurrentPathIncludedInValueRecord():
 			if err := destImportPathsIter.writeRecordAndProgress(); err != nil {
 				return err
