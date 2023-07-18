@@ -308,7 +308,7 @@ func TestImportNew(t *testing.T) {
 		paths := []api.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPath,
-			Type:        catalog.ImportPathTypePrefix,
+			Type:        graveler.ImportPathTypePrefix,
 		}}
 		importID := testImportNew(t, ctx, repoName, branch, paths, nil)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
@@ -352,7 +352,7 @@ func TestImportNew(t *testing.T) {
 		paths := []api.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPathParent,
-			Type:        catalog.ImportPathTypePrefix,
+			Type:        graveler.ImportPathTypePrefix,
 		}}
 		_ = testImportNew(t, ctx, repoName, branch, paths, &metadata)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", branch, importFilesToCheck, expectedContentLength)
@@ -368,13 +368,13 @@ func TestImportNew(t *testing.T) {
 			paths = append(paths, api.ImportLocation{
 				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
-				Type:        catalog.ImportPathTypePrefix,
+				Type:        graveler.ImportPathTypePrefix,
 			})
 		}
 		paths = append(paths, api.ImportLocation{
 			Destination: importTargetPrefix + "nested",
 			Path:        importPath + "nested/",
-			Type:        catalog.ImportPathTypePrefix,
+			Type:        graveler.ImportPathTypePrefix,
 		})
 
 		_ = testImportNew(t, ctx, repoName, branch, paths, &metadata)
@@ -391,7 +391,7 @@ func TestImportNew(t *testing.T) {
 			paths = append(paths, api.ImportLocation{
 				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
-				Type:        catalog.ImportPathTypePrefix,
+				Type:        graveler.ImportPathTypePrefix,
 			})
 		}
 		for _, p := range importFilesToCheck {
@@ -399,7 +399,7 @@ func TestImportNew(t *testing.T) {
 				paths = append(paths, api.ImportLocation{
 					Destination: importTargetPrefix + p,
 					Path:        importPath + p,
-					Type:        catalog.ImportPathTypeObject,
+					Type:        graveler.ImportPathTypeObject,
 				})
 			}
 		}
@@ -480,7 +480,7 @@ func TestImportCancel(t *testing.T) {
 		Paths: []api.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPath,
-			Type:        catalog.ImportPathTypePrefix,
+			Type:        graveler.ImportPathTypePrefix,
 		}},
 	})
 	require.NoError(t, err)
