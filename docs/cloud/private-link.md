@@ -21,8 +21,8 @@ At the moment, we support Private-Link with AWS and Azure. If you are looking fo
 
 <div class="tabs">
   <ul>
-    <li><a href="#okta">AWS</a></li>
-    <li><a href="#adfs">Azure</a></li>
+    <li><a href="#aws">AWS</a></li>
+    <li><a href="#azure">Azure</a></li>
   </ul> 
   <div markdown="1" id="AWS">
 

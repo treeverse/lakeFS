@@ -57,4 +57,4 @@ Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.clo
 Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
 ### GCP
-Please [contact us](mailto:support@treeverse.io) for onboarding insructions.
+Please [contact us](mailto:support@treeverse.io) for onboarding instructions.

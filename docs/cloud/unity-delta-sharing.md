@@ -128,7 +128,7 @@ And you can see schemas for each of the branches that you configured in the
 share.  Here branch name `dev_experiment1` matches the pattern `dev_*` that
 we defined in the configuration object `lakefs-delta-sharing.yaml`, so it
 appears as a schema.  ![lakeFS-Cloud provider, every configured branch is a
-schema](/assets/img/unity-delta-sharing-schema-per-branch.png)
+schema](../assets/img/unity-delta-sharing-schema-per-branch.png)
 
 At this point you have configured Delta Sharing on lakeFS, and DataBricks to
 communicate with lakeFS delta sharing.  No further Treeverse involvement is
