@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"text/template"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -355,6 +357,29 @@ var runCmd = &cobra.Command{
 			}
 		}()
 
+		isQuickstart, err := cmd.Flags().GetBool(config.QuickstartConfiguration)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to get command flag %s: %v\n", config.QuickstartConfiguration, err)
+			os.Exit(1)
+		}
+
+		data := bannerData{
+			LocalSetup: localBanner,
+		}
+		if isQuickstart {
+			data.LocalSetup = ""
+			data.Quickstart = quickStartBanner
+		}
+		templ := template.New("banner")
+		var buf bytes.Buffer
+		t := template.Must(templ.Parse(runBannerTmpl))
+		err = t.Execute(&buf, data)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed formatting banner: %v\n", err)
+			os.Exit(1)
+		}
+		_, _ = fmt.Fprintf(os.Stderr, "lakeFS %s - Up and running (^C to shutdown)...\n", version.Version)
+		printWelcome(os.Stderr, buf.String())
 		gracefulShutdown(ctx, server)
 	},
 }
@@ -461,7 +486,7 @@ func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, 
 	}
 }
 
-const runBanner = `
+const runBannerTmpl = `
 
      ██╗      █████╗ ██╗  ██╗███████╗███████╗███████╗
      ██║     ██╔══██╗██║ ██╔╝██╔════╝██╔════╝██╔════╝
@@ -469,12 +494,8 @@ const runBanner = `
      ██║     ██╔══██║██╔═██╗ ██╔══╝  ██╔══╝  ╚════██║
      ███████╗██║  ██║██║  ██╗███████╗██║     ███████║
      ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝
-
-│
-│ If you're running lakeFS locally for the first time,
-│     complete the setup process at http://127.0.0.1:8000/setup
-│
-
+{{ .LocalSetup }}
+{{ .Quickstart }}
 │
 │ For more information on how to use lakeFS,
 │     check out the docs at https://docs.lakefs.io/quickstart/
@@ -487,8 +508,29 @@ const runBanner = `
 
 `
 
-func printWelcome(w io.Writer) {
-	_, _ = fmt.Fprint(w, runBanner)
+const localBanner = `
+│
+│ If you're running lakeFS locally for the first time,
+│     complete the setup process at http://127.0.0.1:8000/setup
+│`
+
+var quickStartBanner = fmt.Sprintf(`
+│
+│ lakeFS running in quickstart mode. 
+│     Login at http://127.0.0.1:8000/
+│
+│     Access Key ID    : %s 
+│     Secret Access Key: %s
+│
+`, config.DefaultQuickstartKeyID, config.DefaultQuickstartSecretKey)
+
+type bannerData struct {
+	LocalSetup string
+	Quickstart string
+}
+
+func printWelcome(w io.Writer, banner string) {
+	_, _ = fmt.Fprint(w, banner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
 }
 
@@ -503,8 +545,6 @@ func printLocalWarning(w io.Writer, msg string) {
 }
 
 func gracefulShutdown(ctx context.Context, services ...Shutter) {
-	_, _ = fmt.Fprintf(os.Stderr, "lakeFS %s - Up and running (^C to shutdown)...\n", version.Version)
-	printWelcome(os.Stderr)
 	<-ctx.Done()
 
 	_, _ = fmt.Fprintf(os.Stderr, "Shutting down...\n")
