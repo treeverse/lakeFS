@@ -48,8 +48,9 @@ Example GC rules for a repository:
 }
 ```
 
-In the above example, objects are retained for 14 days after deletion by default. However, if they are present in the branch `main`, they are retained for 21 days.
-Objects present in the `dev` branch (but not in any other branch) are retained for 7 days after they are deleted.
+In the above example, objects will be retained for 14 days after deletion by default.
+However, if present in the branch `main`, objects will be retained for 21 days.
+Objects present _only_ in the `dev` branch will be retained for 7 days after they are deleted.
 
 ## Configuring retention rules
 
