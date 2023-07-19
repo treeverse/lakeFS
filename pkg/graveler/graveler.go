@@ -299,6 +299,10 @@ func (v *ValueRecord) IsTombstone() bool {
 	return v.Value == nil
 }
 
+func (v *ValueRecord) IsBefore(o *ValueRecord) bool {
+	return bytes.Compare(v.Key, o.Key) < 0
+}
+
 func (cp CommitParents) Identity() []byte {
 	commits := make([]string, len(cp))
 	for i, v := range cp {
