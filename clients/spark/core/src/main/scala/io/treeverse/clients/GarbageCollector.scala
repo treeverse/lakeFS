@@ -307,6 +307,7 @@ object GarbageCollector {
   }
 
   def main(args: Array[String]) = {
+    println("This class is deprecated. Please use io.treeverse.gc.GarbageCollector instead.")
     val hc = spark.sparkContext.hadoopConfiguration
 
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)

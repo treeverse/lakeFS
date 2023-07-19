@@ -304,7 +304,7 @@ class GarbageCollectionSpec
       val markID = "markID"
 
       it("should succeed mark & sweep") {
-        GarbageCollection.validateRunModeConfigs(true, true, false, "")
+        GarbageCollection.validateRunModeConfigs(true, true, "")
       }
       it("should succeed when sweep with mark ID") {
         GarbageCollection.validateRunModeConfigs(false, true, false, markID)
@@ -312,7 +312,6 @@ class GarbageCollectionSpec
       it("should fail when no options provided") {
         try {
           GarbageCollection.validateRunModeConfigs(false,
-                                                   false,
                                                    false,
                                                    markID
                                                   ) // Should throw an exception
@@ -331,7 +330,6 @@ class GarbageCollectionSpec
           try {
             GarbageCollection.validateRunModeConfigs(true,
                                                      sweepVal,
-                                                     false,
                                                      markID
                                                     ) // Should throw an exception
             // Fail test if no exception was thrown
@@ -345,11 +343,7 @@ class GarbageCollectionSpec
       }
       it("should fail when sweep with no mark ID") {
         try {
-          GarbageCollection.validateRunModeConfigs(false,
-                                                   true,
-                                                   false,
-                                                   ""
-                                                  ) // Should throw an exception
+          GarbageCollection.validateRunModeConfigs(false, true, "") // Should throw an exception
           // Fail test if no exception was thrown
           throw new Exception("test failed")
         } catch {
