@@ -2,6 +2,7 @@ package committed
 
 import (
 	"bytes"
+
 	"google.golang.org/protobuf/proto"
 )
 
