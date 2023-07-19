@@ -87,7 +87,7 @@ lakectl gc set-config lakefs://example-repo -f example_repo_gc_rules.json
 From the lakeFS web UI:
 
 1. Navigate to the main page of your repository.
-2. Go to _Settings_ -> _Retention_.
+2. Go to _Settings_ -> _Garbage Collection_.
 3. Click _Edit policy_ and paste your GC rule into the text box as a JSON.
 4. Save your changes.
 
