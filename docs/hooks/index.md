@@ -15,15 +15,7 @@ redirect_from:
 
 {% include toc.html %}
 
-Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when [predefined events](#supported-events) occur.
-
-An _Action_ defines one or more _Hooks_ to execute. lakeFS supports three types of hook: 
-
-1. [Lua](./lua.html) - uses an embedded Lua VM
-1. [Webhook](./webhooks.html) - makes REST call to external URL and waits for response
-1. [Airflow](./airflow.html) - triggers a DAG in Airflow
-
-## Example use cases
+Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when [predefined events](#supported-events) occur. There are numerous uses for Actions, including: 
 
 1. Format Validator:
    A webhook that checks new files to ensure they are of a set of allowed data formats.
@@ -35,7 +27,104 @@ An _Action_ defines one or more _Hooks_ to execute. lakeFS supports three types 
 1. Notifying downstream consumers:
    Running a post-merge hook to trigger an Airflow DAG or to send a Webhook to an API, notifying it of the change that happened
 
-For step-by-step examples of hooks in action check out the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+For step-by-step examples of hooks in action check out the [lakeFS Quickstart](/quickstart/actions-and-hooks.html) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+
+## Overview
+
+An _action_ defines one or more _hooks_ to execute. lakeFS supports three types of hook: 
+
+1. [Lua](./lua.html) - uses an embedded Lua VM
+1. [Webhook](./webhooks.html) - makes a REST call to an external URL
+1. [Airflow](./airflow.html) - triggers a DAG in Airflow
+
+"Before" hooks must run successfully before their action. If the hook fails, it aborts the action. Lua hooks and Webhooks are synchronous, and lakeFS waits for them to run to completion. Airflow hooks are asynchronous: lakeFS stops waiting as soon as Airflow accepts triggering the DAG.
+
+## Configuration
+
+There are two parts to configuration an Action: 
+
+1. Create an Action file and upload it to the lakeFS repository
+2. Configure the hook(s) that you specified in the Action file. How these are configured will depend on the type of hook. 
+
+### Action files
+
+An **Action** is a list of Hooks with the same trigger configuration, i.e. an event will trigger all Hooks under an Action or none at all.
+
+The Hooks under an Action are ordered and so is their execution.
+
+Before each hook execution the `if` boolean expression is evaluated. The expression can use the functions `success()` and `failure()`, which return true if the hook's actions succeeded or failed, respectively.
+
+By default, when `if` is empty or omitted, the step will run only if no error occurred (the same as `success()`).
+
+#### Action File schema
+
+| Property             | Description                                               | Data Type  | Required | Default Value                                                           |
+|----------------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
+| `name               `| Identifes the Action file                                 | String     | no       | Action filename                                    |
+| `on                 `| List of events that will trigger the hooks                | List       | yes      |                                                                         |
+| `on<event>.branches `| Glob pattern list of branches that triggers the hooks     | List       | no       | **Not applicable to Tag events.** If empty, Action runs on all branches |
+| `hooks              `| List of hooks to be executed                              | List       | yes      |                                                                         |
+| `hook.id            `| ID of the hook, must be unique within the action.         | String     | yes      |                                                                         |
+| `hook.type          `| Type of the hook ([types](#hook-types))                   | String     | yes      |                                                                         |
+| `hook.description   `| Description for the hook                                  | String     | no       |                                                                         |
+| `hook.if            `| Expression that will be evaluated before execute the hook | String     | no       | No value is the same as evaluate `success()`                            |
+| `hook.properties    `| Hook's specific configuration, see [Lua](./lua.md#action-file-lua-hook-properties), [WebHook](./webhooks.md#action-file-webhook-properties), and [Airflow](./airflow.md#action-file-airflow-hook-properties) for details                             | Dictionary | true     |                                                                         |
+
+#### Example Action File
+
+```yaml
+name: Good files check
+description: set of checks to verify that branch is good
+on:
+  pre-commit:
+  pre-merge:
+    branches:
+      - main
+hooks:
+  - id: no_temp
+    type: webhook
+    description: checking no temporary files found
+    properties:
+      url: "https://example.com/webhook?notmp=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+  - id: no_freeze
+    type: webhook
+    description: check production is not in dev freeze
+    properties:
+      url: "https://example.com/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+  - id: alert
+    type: webhook
+    if: failure()
+    description: notify alert system when check failed
+    properties:
+       url: "https://example.com/alert"
+       query_params:
+          title: good files webhook failed
+  - id: notification
+    type: webhook
+    if: true
+    description: notify that will always run - no matter if one of the previous steps failed
+    properties:
+       url: "https://example.com/notification"
+       query_params:
+          title: good files completed
+```
+
+**Note:** lakeFS will validate action files only when an **Event** has occurred. <br/>
+Use `lakectl actions validate <path>` to validate your action files locally.
+{: .note }
+
+
+### Uploading Action files
+
+Action files should be uploaded with the prefix `_lakefs_actions/` to the lakeFS repository.
+When an actionable event (see Supported Events above) takes place, lakeFS will read all files with prefix `_lakefs_actions/`
+in the repository branch where the action occurred.
+A failure to parse an Action file will result with a failing Run.
+
+For example, lakeFS will search and execute all the matching Action files with the prefix `lakefs://example-repo/feature-1/_lakefs_actions/` on:
+1. Commit to `feature-1` branch on `example-repo` repository.
+1. Merge to `main` branch from `feature-1` branch on `repo1` repository.
+
 
 ## Supported Events
 
@@ -61,81 +150,7 @@ Hook failures under any Action of a `post-*` event will not revert the operation
 Hooks are managed by Action files that are written to a prefix in the lakeFS repository.
 This allows configuration-as-code inside lakeFS, where Action files are declarative and written in YAML.
 
-
-## Terminology
-
-### Action
-
-An **Action** is a list of Hooks with the same trigger configuration, i.e. an event will trigger all Hooks under an Action or none at all.
-The Hooks under an Action are ordered and so is their execution.
-Before each hook execution the `if` boolean expression is evaluated. The expression can use `success()` which evaluate to true in case of no error was occured while running the hoook's actions. It can also use `failure()` which evaluate to true when previous step failed - can be used to report failures.
-By default, when `if` is empty or omitted, the step will run only if no error occurred (same as evaluate of success function).
-
-### Hook
-
-A **Hook** is the basic building block of an Action.
-The failure of a single Hook will stop the execution of the containing Action and fail the Run.
-
-### Action file
-
-Schema of the Action file:
-
-| Property           | Description                                               | Data Type  | Required | Default Value                                                           |
-|--------------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
-| name               | Identify the Action file                                  | String     | false    | If missing, filename is used instead                                    |
-| on                 | List of events that will trigger the hooks                | List       | true     |                                                                         |
-| on<event>.branches | Glob pattern list of branches that triggers the hooks     | List       | false    | **Not applicable to Tag events.** If empty, Action runs on all branches |
-| hooks              | List of hooks to be executed                              | List       | true     |                                                                         |
-| hook.id            | ID of the hook, must be unique within the action.         | String     | true     |                                                                         |
-| hook.type          | Type of the hook ([types](#hook-types))                   | String     | true     |                                                                         |
-| hook.description   | Optional description for the hook                         | String     | false    |                                                                         |
-| hook.if            | Expression that will be evaluated before execute the hook | String     | false    | No value is the same as evaluate `success()`                            |
-| hook.properties    | Hook's specific configuration                             | Dictionary | true     |                                                                         |
-
-Example:
-
-```yaml
-name: Good files check
-description: set of checks to verify that branch is good
-on:
-  pre-commit:
-  pre-merge:
-    branches:
-      - main
-hooks:
-  - id: no_temp
-    type: webhook
-    description: checking no temporary files found
-    properties:
-      url: "https://your.domain.io/webhook?notmp=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
-  - id: no_freeze
-    type: webhook
-    description: check production is not in dev freeze
-    properties:
-      url: "https://your.domain.io/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
-  - id: alert
-    type: webhook
-    if: failure()
-    description: notify alert system when check failed
-    properties:
-       url: "https://your.domain.io/alert"
-       query_params:
-          title: good files webhook failed
-  - id: notification
-    type: webhook
-    if: true
-    description: notify that will always run - no matter if one of the previous steps failed
-    properties:
-       url: "https://your.domain.io/notification"
-       query_params:
-          title: good files completed
-```
-
-**Note:** lakeFS will validate action files only when an **Event** has occurred. <br/>
-Use `lakectl actions validate <path>` to validate your action files locally.
-{: .note }
-
-### Run
+## Runs API & CLI
 
 A **Run** is an instantiation of the repository's Action files when the triggering event occurs.
 For example, if your repository contains a pre-commit hook, every commit would generate a Run for that specific commit.
@@ -143,25 +158,11 @@ For example, if your repository contains a pre-commit hook, every commit would g
 lakeFS will fetch, parse and filter the repository Action files and start to execute the Hooks under each Action.
 All executed Hooks (each with `hook_run_id`) exist in the context of that Run (`run_id`).
 
----
-## Uploading Action files
-
-Action files should be uploaded with the prefix `_lakefs_actions/` to the lakeFS repository.
-When an actionable event (see Supported Events above) takes place, lakeFS will read all files with prefix `_lakefs_actions/`
-in the repository branch where the action occurred.
-A failure to parse an Action file will result with a failing Run.
-
-For example, lakeFS will search and execute all the matching Action files with the prefix `lakefs://example-repo/feature-1/_lakefs_actions/` on:
-1. Commit to `feature-1` branch on `example-repo` repository.
-1. Merge to `main` branch from `feature-1` branch on `repo1` repository.
-
-## Runs API & CLI
-
 The [lakeFS API](../reference/api.html) and [lakectl](../reference/cli.html#lakectl-actions) expose the results of executions per repository, branch, commit, and specific Action.
 The endpoint also allows to download the execution log of any executed Hook under each Run for observability.
 
 
-### Result Files
+## Result Files
 
 The metadata section of lakeFS repository with each Run contains two types of files:
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific Hook run.
