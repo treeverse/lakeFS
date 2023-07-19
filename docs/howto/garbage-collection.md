@@ -1,42 +1,41 @@
 ---
 layout: default
-title: (deprecated) Committed Objects
+title: Garbage Collection
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 10
+nav_order: 1
 has_children: false
+redirect_from:
+  - /reference/garbage-collection.html
+  - /howto/garbage-collection-index.html
 ---
 
-# Garbage Collection: committed objects
+[lakeFS Cloud](https://lakefs.cloud) users enjoy a managed garbage collection service, and do not need to run this Spark program.
+{: .tip }
 
-{: .warning-title }
-> Deprecation notice
->
-> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./garbage-collection.md).
+# Garbage Collection
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
-However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
+However, sometimes you may want to remove the objects from the underlying storage completely.
 Reasons for this include cost-reduction and privacy policies.
 
-Garbage collection rules in lakeFS define for how long to retain objects after they have been deleted.
-lakeFS provides a Spark program to hard-delete objects whose retention period has ended according to the GC rules.
-
-This program does not remove any commits: you will still be able to use commits containing hard-deleted objects,
-but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status. 
-{: .note}
-
-[lakeFS Cloud](https://lakefs.cloud) users enjoy a managed Garbage Collection service, and do not need to run this Spark program.
-{: .note }
+The garbage collection job is a Spark program that removes the following from the underlying storage:
+1. _Uncommitted objects_ that are no longer accessible
+   * For example, objects deleted before ever being committed.
+2. _Committed objects_ that are considered expired according to retention rules you define.
 
 {% include toc.html %}
 
-## Understanding Garbage Collection
+## Understanding retention rules
+
+{: .note }
+Without retention rules, only inaccessible uncommitted objects will be removed by the job.
 
 For every branch, the GC job retains deleted objects for the number of days defined for the branch.
 In the absence of a branch-specific rule, the default rule for the repository is used.
 If an object is present in more than one branch ancestry, it's retained according to the rule with the largest number of days between those branches.
-That is, it's hard-deleted only after the retention period has ended for all relevant branches.
+That is, it's removed only after the retention period has ended for all relevant branches.
 
 Example GC rules for a repository:
 ```json
@@ -52,9 +51,9 @@ Example GC rules for a repository:
 In the above example, objects are retained for 14 days after deletion by default. However, if they are present in the branch `main`, they are retained for 21 days.
 Objects present in the `dev` branch (but not in any other branch) are retained for 7 days after they are deleted.
 
-## Configuring GC rules
+## Configuring retention rules
 
-To define garbage collection rules, either use the `lakectl` command or the lakeFS web UI:
+To define retention rules, either use the `lakectl` command or the lakeFS web UI:
 
 <div class="tabs">
   <ul>
@@ -96,9 +95,8 @@ From the lakeFS web UI:
 </div>
 
 ## Running the GC job
- 
+
 To run the job, use the following `spark-submit` command (or using your preferred method of running Spark programs).
-The job will hard-delete objects that were deleted and whose retention period has ended according to the GC rules.
 
 <div class="tabs">
   <ul>
@@ -109,7 +107,7 @@ The job will hard-delete objects that were deleted and whose retention period ha
   </ul>
   <div markdown="1" id="aws-option">
   ```bash
-spark-submit --class io.treeverse.clients.GarbageCollector \
+spark-submit --class io.treeverse.gc.GarbageCollection \
   --packages org.apache.hadoop:hadoop-aws:2.7.7 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -122,7 +120,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   </div>
   <div markdown="1" id="aws-301-option">
   ```bash
-spark-submit --class io.treeverse.clients.GarbageCollector \
+spark-submit --class io.treeverse.gc.GarbageCollection \
   --packages org.apache.hadoop:hadoop-aws:2.7.7 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -136,10 +134,10 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
 
   <div markdown="1" id="azure-option">
 
-   If you want to access your storage using the account key:
+If you want to access your storage using the account key:
 
   ```bash
-spark-submit --class io.treeverse.clients.GarbageCollector \
+spark-submit --class io.treeverse.gc.GarbageCollection \
   --packages org.apache.hadoop:hadoop-aws:3.2.1 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -149,10 +147,10 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   example-repo
   ```
 
-   Or, if you want to access your storage using an Azure service principal:
+Or, if you want to access your storage using an Azure service principal:
 
   ```bash
-spark-submit --class io.treeverse.clients.GarbageCollector \
+spark-submit --class io.treeverse.gc.GarbageCollection \
   --packages org.apache.hadoop:hadoop-aws:3.2.1 \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -179,7 +177,7 @@ We have [concrete plans](https://github.com/treeverse/lakeFS/issues/3626) to ext
 {: .note .note-warning }
 
 ```bash
-spark-submit --class io.treeverse.clients.GarbageCollector \
+spark-submit --class  io.treeverse.gc.GarbageCollection \
   --jars https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar \
   -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
@@ -198,110 +196,58 @@ This program will not delete anything.
 Instead, it will find all the objects that are safe to delete and save a list containing all their keys, in Parquet format.
 The list will then be found under the path:
 ```
-gs://<STORAGE_NAMESPACE>/_lakefs/logs/gc/expired_addresses/
+gs://<STORAGE_NAMESPACE>/_lakefs/retention/gc/unified/<RUN_ID>/deleted/
 ```
 
-Note that this is a path in your Google Storage bucket, and not in your lakeFS repository.
-For example, if your repository's underlying storage is `gs://example-bucket/example-path`, you will find the list in:
-```
-gs://example-bucket/example-path/_lakefs/logs/gc/expired_addresses/dt=<TIMESTAMP>/
-```
+Note that this is a path in your Google Storage bucket, and not in your lakeFS repository. 
+It is now safe to remove the objects that appear in this list directly from the storage.
 
-You can now delete the objects appearing in the list from your Google Storage bucket.
 </div>
 </div>
 
-You will find the list of objects hard-deleted by the job in the storage
-namespace of the repository. It is saved in Parquet format under `_lakefs/logs/gc/deleted_objects`.
+You will find the list of objects removed by the job in the storage
+namespace of the repository. It is saved in Parquet format under `_lakefs/retention/gc/unified/<RUN_ID>/deleted/`.
 
-### GC job options
+### Mark and Sweep stages
 
-By default, GC first creates a list of expired objects according to your retention rules and then hard-deletes those objects. 
-However, you can use GC options to break the GC job down into two stages: 
-1. Mark stage: GC will mark the expired objects to hard-delete, **without** deleting them. 
-2. Sweep stage: GC will hard-delete objects marked by a previous mark-only GC run. 
+You can break the job into two stages:
+* _Mark_: find objects to remove, without actually removing them.
+* _Sweep_: remove the objects.
 
-By breaking GC into these stages, you can pause and create a backup of the objects that GC is about to sweep and later 
-restore them. You can use the [GC backup and restore](#backup-and-restore) utility to do that.   
+#### Mark-only mode
 
-#### Mark only mode 
-
-To make GC run the mark stage only, add the following properties to your spark-submit command:
+To make GC run the mark stage only, add the following to your spark-submit command:
 ```properties
 spark.hadoop.lakefs.gc.do_sweep=false
-spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with your own identification string. This MARK_ID will enable you to start a sweep (actual deletion) run later
 ```
-Running in mark only mode, GC will write the addresses of the expired objects to delete to the following location: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/` as a parquet.
 
-**Notes:** 
-* Mark only mode is only available from v0.4.0 of lakeFS Spark client.
-* The `spark.hadoop.lakefs.debug.gc.no_delete` property has been deprecated with v0.4.0.
+In mark-only mode, GC will write the keys of the expired objects under: `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/unified/<MARK_ID>/`.
+_MARK_ID_ is generated by the job. You can find it in the driver's output:
 
-#### Sweep only mode
+```
+Report for mark_id=gmc6523jatlleurvdm30 path=s3a://example-bucket/_lakefs/retention/gc/unified/gmc6523jatlleurvdm30
+```
+
+#### Sweep-only mode
 
 To make GC run the sweep stage only, add the following properties to your spark-submit command:
 ```properties
 spark.hadoop.lakefs.gc.do_mark=false
-spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you used on a previous mark-only run
+spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you obtained from a previous mark-only run
 ```
-Running in sweep only mode, GC will hard-delete the expired objects marked by a mark-only run and listed in: `STORAGE_NAMESPACE/_lakefs/retention/gc/addresses/mark_id=<MARK_ID>/`.
-
-**Note:** Mark only mode is only available from v0.4.0 of lakeFS Spark client.
 
 ## Considerations
 
-1. In order for an object to be hard-deleted, it must be deleted from all branches.
+1. In order for an object to be removed, it must not exist on the HEAD of any branch.
    You should remove stale branches to prevent them from retaining old objects.
    For example, consider a branch that has been merged to `main` and has become stale.
-   An object which is later deleted from `main` will always be present in the stale branch, preventing it from being hard-deleted.
+   An object which is later deleted from `main` will always be present in the stale branch, preventing it from being removed.
 
 1. lakeFS will never delete objects outside your repository's storage namespace.
-   In particular, objects that were imported using `lakectl ingest` or the UI import wizard will not be affected by GC jobs.
+   In particular, objects that were imported using `lakectl import` or the UI import wizard will not be affected by GC jobs.
 
-1. In cases where deleted objects are brought back to life while a GC job is running, said objects may or may not be
-   deleted. Such actions include:
-   1. Reverting a commit in which a file was deleted.
-   1. Branching out from an old commit.
-   1. Expanding the retention period of a branch.
-   1. Creating a branch from an existing branch, where the new branch has a longer retention period.
+1. In cases where deleted objects are brought back to life while a GC job is running (for example, by reverting a commit), 
+   the objects may or may not be deleted.
 
-## Backup and restore 
-
-GC was created to hard-delete objects from your underlying objects store according to your retention rules. However, when you start
-using the feature you may want to first gain confidence in the decisions GC makes. The GC backup and restore utility helps you do that. 
-
-**Use-cases:**
-* Backup: copy expired objects from your repository's storage namespace to an external location before running GC in [sweep only mode](#sweep-only-mode).  
-* Restore: copy objects that were hard-deleted by GC from an external location you used for saving your backup into your repository's storage namespace.
-
-Follow [rclone documentation](https://rclone.org/docs/) to configure remote access to the underlying storage used by lakeFS.
-Replace `LAKEFS_STORAGE_NAMESPACE` with remote:bucket/path which points to the lakeFS repository storage namespace.
-The `BACKUP_STORAGE_LOCATION` attribute points to a storage location outside your lakeFS storage namespace into which you want to save the backup.
-
-### Backup command
-
-```shell
-rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
-  rclone -P --no-traverse --files-from - copy <LAKEFS_STORAGE_NAMESPACE> <BACKUP_STORAGE_LOCATION>
-```
-
-### Restore command
-
-```shell
-rclone --include "*.txt" cat "<LAKEFS_STORAGE_NAMESPACE>/_lakefs/retention/gc/addresses.text/mark_id=<MARK_ID>/" | \
-  rclone -P --no-traverse --files-from - copy <BACKUP_STORAGE_LOCATION> <LAKEFS_STORAGE_NAMESPACE>
-```
-
-### Example
-
-The following of commands used to backup/resource a configured remote 'azure' (Azure blob storage) to access example repository storage namespace `https://lakefs.blob.core.windows.net/repo/example/`:
-
-```shell
-# Backup
-rclone --include "*.txt" cat "azure://repo/example/_lakefs/retention/gc/addresses.text/mark_id=a64d1885-6202-431f-a0a3-8832e4a5865a/" | \
-  rclone -P --no-traverse --files-from - copy azure://repo/example/ azure://backup/repo-example/
-
-# Restore
-rclone --include "*.txt" cat "azure://tal/azure-br/_lakefs/retention/gc/addresses.text/mark_id=a64d1885-6202-431f-a0a3-8832e4a5865a/" | \
-  rclone -P --no-traverse --files-from - copy azure://backup/repo-example/ azure://repo/example/
-```
+1. Garbage collection does not remove any commits: you will still be able to use commits containing removed objects,
+   but trying to read these objects from lakeFS will result in a `410 Gone` HTTP status.

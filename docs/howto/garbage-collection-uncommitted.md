@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Uncommitted Objects
+title: (deprecated) Uncommitted Objects
 description: Clean up uncommitted objects that are no longer needed.
 parent: Garbage Collection
 grand_parent: How-To
@@ -8,11 +8,12 @@ nav_order: 20
 has_children: false
 ---
 
-# Garbage collection: uncommitted objects <sup>BETA</sup>
+# Garbage collection: uncommitted objects
 
-Note: Uncommitted GC is in Beta mode. Users should read this manual carefully and
-take precautions before applying the actual delete ("sweep"), like copying the marked objects.
-{: .note }
+{: .warning-title }
+> Deprecation notice
+>
+> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./garbage-collection.md).
 
 Deletion of objects that were never committed was always a difficulty for lakeFS, see
 [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details. Examples for
