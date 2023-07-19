@@ -20,6 +20,17 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 
 {% include toc.html %}
 
+## Action File Lua Hook Properties
+
+_See the [Action configuration](./index.md#action-file) for overall configuration schema and details._
+
+| Property     | Description                                               | Data Type  | Required | Default Value                                                           |
+|--------------|-----------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
+| `args`       | One or more arguments to pass to the hook                 | Dictionary     | false    |                                                                         |
+| `script`     | An inline Lua script                                      | String     | either this or `script_file` must be specified    |                                                                         |
+| `script_file`| The lakeFS path to a Lua script                           | String     | either this or `script` must be specified    |                                                                         |
+
+
 ## Example Lua Hooks
 
 For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository. You'll also find step-by-step examples of hooks in action in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).

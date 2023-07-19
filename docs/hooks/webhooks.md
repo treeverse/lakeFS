@@ -18,7 +18,9 @@ under the same Action. For `pre-*` hooks, the triggering operation will also be 
 Moreover, the branch is locked during the execution of `pre-*` hooks, so the webhook server cannot perform any write operations on the branch (like uploading or commits).
 {: .note }
 
-## Action file Webhook properties
+## Action File Webhook properties
+
+_See the [Action configuration](./index.md#action-file) for overall configuration schema and details._
 
 | Property     | Description                                            | Data Type                                                                                 | Required | Default Value | Env Vars Support |
 |--------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------|----------|---------------|------------------|
