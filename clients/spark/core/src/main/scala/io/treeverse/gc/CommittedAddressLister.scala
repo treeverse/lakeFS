@@ -66,7 +66,7 @@ class NaiveCommittedAddressLister extends CommittedAddressLister {
       if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace + "/"
     val params = LakeFSJobParams.forStorageNamespace(
       normalizedStorageNamespace,
-      UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
+      GarbageCollection.UNCOMMITTED_GC_SOURCE_NAME
     )
     val df = LakeFSContext.newDF(spark, params)
 

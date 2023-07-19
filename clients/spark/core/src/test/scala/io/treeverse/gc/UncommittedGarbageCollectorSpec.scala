@@ -75,15 +75,15 @@ class UncommittedGarbageCollectorSpec
       it("should return nothing") {
         withSparkSession(_ => {
           var dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString, new Date())
+            GarbageCollection.listObjects(dir.toString, new Date())
           dataDF.count() should be(0)
 
           val dataDir = new File(dir.toFile, "data")
           dataDir.mkdir()
 
-          dataDF = UncommittedGarbageCollector.listObjects(dir.toString, new Date())
+          dataDF = GarbageCollection.listObjects(dir.toString, new Date())
           dataDF.count() should be(0)
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -92,14 +92,14 @@ class UncommittedGarbageCollectorSpec
           import spark.implicits._
           val data = createSliceData(dir.resolve(""))
 
-          val dataDF = UncommittedGarbageCollector.listObjects(dir.toString,
+          val dataDF = GarbageCollection.listObjects(dir.toString,
                                                                DateUtils.addHours(new Date(), +1)
                                                               )
           dataDF.count() should be(10)
           val actual = dataDF.select("address").map(_.getString(0)).collect.toSeq.toDS()
           val expected = data.toDS()
           assertDSEqual(actual, expected)
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -109,7 +109,7 @@ class UncommittedGarbageCollectorSpec
           val data = createData("data")
 
           val dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString,
+            GarbageCollection.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
           dataDF.count() should be(100)
@@ -125,7 +125,7 @@ class UncommittedGarbageCollectorSpec
           val data = createSliceData(dir.resolve("")) ::: createData("data")
 
           val dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString,
+            GarbageCollection.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
           dataDF.count() should be(110)
@@ -141,11 +141,11 @@ class UncommittedGarbageCollectorSpec
           createData("data")
 
           val dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString,
+            GarbageCollection.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), -1)
                                                    )
           dataDF.count() should be(0)
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -157,11 +157,11 @@ class UncommittedGarbageCollectorSpec
           new File(dataDir, legacyPath).createNewFile()
 
           val dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString,
+            GarbageCollection.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
           dataDF.count() should be(1)
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -173,11 +173,11 @@ class UncommittedGarbageCollectorSpec
           new File(dataDir, filename).createNewFile()
 
           val dataDF =
-            UncommittedGarbageCollector.listObjects(dir.toString,
+            GarbageCollection.listObjects(dir.toString,
                                                     DateUtils.addHours(new Date(), +1)
                                                    )
           dataDF.count() should be(1)
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be("")
+          GarbageCollection.getFirstSlice(dataDF, repo) should be("")
         })
       }
 
@@ -199,14 +199,14 @@ class UncommittedGarbageCollectorSpec
           slice.mkdir()
           new File(slice, filename).createNewFile()
 
-          val dataDF = UncommittedGarbageCollector
+          val dataDF = GarbageCollection
             .listObjects(dir.toString, DateUtils.addHours(new Date(), +1))
             .sort("address")
           dataDF.count() should be(3)
           dataDF.select("address").head.getString(0) should be(
             s"data/$legacyPath/$filename"
           )
-          UncommittedGarbageCollector.getFirstSlice(dataDF, repo) should be(regularSlice)
+          GarbageCollection.getFirstSlice(dataDF, repo) should be(regularSlice)
         })
       }
     }
@@ -221,7 +221,7 @@ class UncommittedGarbageCollectorSpec
           val success = true
           val df = Seq("file1", "file2").toDF("address")
 
-          UncommittedGarbageCollector.writeReports(dir.toString + "/",
+          GarbageCollection.writeReports(dir.toString + "/",
                                                    runID,
                                                    firstSlice,
                                                    startTime,
@@ -254,7 +254,7 @@ class UncommittedGarbageCollectorSpec
           val runPath =
             dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
           runPath.toFile.mkdirs()
-          UncommittedGarbageCollector.writeJsonSummary(runPath.toString,
+          GarbageCollection.writeJsonSummary(runPath.toString,
                                                        runID,
                                                        "",
                                                        java.time.Clock.systemUTC.instant(),
@@ -263,7 +263,7 @@ class UncommittedGarbageCollectorSpec
                                                        0
                                                       )
           try {
-            UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/",
+            GarbageCollection.readMarkedAddresses(dir.toString + "/",
                                                             runID
                                                            ) // Should throw an exception
             // Fail test if no exception was thrown
@@ -281,7 +281,7 @@ class UncommittedGarbageCollectorSpec
           val runPath =
             dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
           runPath.toFile.mkdirs()
-          UncommittedGarbageCollector.writeJsonSummary(runPath.toString,
+          GarbageCollection.writeJsonSummary(runPath.toString,
                                                        runID,
                                                        "",
                                                        java.time.Clock.systemUTC.instant(),
@@ -290,7 +290,7 @@ class UncommittedGarbageCollectorSpec
                                                        0
                                                       )
 
-          val df = UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/", runID)
+          val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID)
           df.isEmpty should be(true)
         })
       }
@@ -298,7 +298,7 @@ class UncommittedGarbageCollectorSpec
         withSparkSession(_ => {
           val runID = "not-exist"
           try {
-            UncommittedGarbageCollector.readMarkedAddresses(dir.toString + "/",
+            GarbageCollection.readMarkedAddresses(dir.toString + "/",
                                                             runID
                                                            ) // Should throw an exception
             // Fail test if no exception was thrown
@@ -315,14 +315,14 @@ class UncommittedGarbageCollectorSpec
       val markID = "markID"
 
       it("should succeed mark & sweep") {
-        UncommittedGarbageCollector.validateRunModeConfigs(true, true, false, "")
+        GarbageCollection.validateRunModeConfigs(true, true, false, "")
       }
       it("should succeed when sweep with mark ID") {
-        UncommittedGarbageCollector.validateRunModeConfigs(false, true, false, markID)
+        GarbageCollection.validateRunModeConfigs(false, true, false, markID)
       }
       it("should fail when no options provided") {
         try {
-          UncommittedGarbageCollector.validateRunModeConfigs(false,
+          GarbageCollection.validateRunModeConfigs(false,
                                                              false,
                                                              false,
                                                              markID
@@ -340,7 +340,7 @@ class UncommittedGarbageCollectorSpec
       it("should fail when mark with mark ID") {
         for (sweepVal <- Seq(true, false)) {
           try {
-            UncommittedGarbageCollector.validateRunModeConfigs(true,
+            GarbageCollection.validateRunModeConfigs(true,
                                                                sweepVal,
                                                                false,
                                                                markID
@@ -356,7 +356,7 @@ class UncommittedGarbageCollectorSpec
       }
       it("should fail when sweep with no mark ID") {
         try {
-          UncommittedGarbageCollector.validateRunModeConfigs(false,
+          GarbageCollection.validateRunModeConfigs(false,
                                                              true,
                                                              false,
                                                              ""
