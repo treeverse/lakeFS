@@ -113,6 +113,7 @@ footer_bottom_links:
 callouts:
   note:
     color: teal-green
+    opacity: 1
   warning:
     title: ⚠️ Warning ⚠️
     color: red
