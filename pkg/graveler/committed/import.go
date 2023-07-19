@@ -25,16 +25,16 @@ func importByPaths(ctx context.Context, destRangeIter, sourceRangeIter Iterator,
 			return ctx.Err()
 		default:
 		}
-		sourceValue, sourceRange := sourceImportPathsIter.getValueAndRange()
-		destValue, destRange := destImportPathsIter.getValueAndRange()
+		sourceRange, isSourceHead := sourceImportPathsIter.getRange()
+		destRange, isDestHead := destImportPathsIter.getRange()
 		switch {
 		// Source range before dest range- write it (since it's imported):
-		case range1BeforeRange2(sourceRange, destRange) && sourceImportPathsIter.head:
+		case range1BeforeRange2(sourceRange, destRange) && isSourceHead:
 			if err := sourceImportPathsIter.writeRangeAndProgress(); err != nil {
 				return err
 			}
 		// Dest range before the compared path, and at the beginning of the range:
-		case destImportPathsIter.isRangeSmallerThanPath() && destImportPathsIter.head:
+		case destImportPathsIter.isRangeSmallerThanPath() && isDestHead:
 			if err := destImportPathsIter.writeRangeAndProgress(); err != nil {
 				return err
 			}
@@ -43,9 +43,9 @@ func importByPaths(ctx context.Context, destRangeIter, sourceRangeIter Iterator,
 			if err := sourceImportPathsIter.writeRangeAndProgress(); err != nil {
 				return err
 			}
-			destImportPathsIter.next()
+			destImportPathsIter.nextRange()
 		default: // Source and destination ranges OR destination range and path intersect
-			err := handleIntersection(sourceImportPathsIter, destImportPathsIter, sourceValue, destValue)
+			err := handleIntersection(sourceImportPathsIter, destImportPathsIter)
 			if err != nil {
 				return err
 			}
@@ -63,11 +63,18 @@ func importByPaths(ctx context.Context, destRangeIter, sourceRangeIter Iterator,
 	return nil
 }
 
-func handleIntersection(sourceImportPathsIter, destImportPathsIter ImportPathsIterator, sourceValue, destValue *graveler.ValueRecord) error {
-	switch {
+func handleIntersection(sourceImportPathsIter, destImportPathsIter ImportPathsIterator) error {
 	// The dest range's prefix was imported- skip to the next range:
-	case destImportPathsIter.isCurrentRangeBoundedByPath():
+	if destImportPathsIter.isCurrentRangeBoundedByPath() {
 		destImportPathsIter.nextRange()
+		return nil
+	}
+	sourceValue, err := sourceImportPathsIter.getValue()
+	destValue, err := destImportPathsIter.getValue()
+	if err != nil {
+		return err
+	}
+	switch {
 	case !isValue1BeforeValue2(destValue, sourceValue): // Source value <= Dest value
 		if err := sourceImportPathsIter.writeRecordAndProgress(); err != nil {
 			return err
@@ -91,7 +98,8 @@ func handleIntersection(sourceImportPathsIter, destImportPathsIter ImportPathsIt
 func completeSourceImportIteratorRun(sourceImportPathsIter ImportPathsIterator) error {
 	for sourceImportPathsIter.hasNext {
 		var err error = nil
-		if sourceImportPathsIter.head {
+		_, isSourceHead := sourceImportPathsIter.getRange()
+		if isSourceHead {
 			err = sourceImportPathsIter.writeRangeAndProgress()
 		} else {
 			err = sourceImportPathsIter.writeRecordAndProgress()
@@ -105,8 +113,9 @@ func completeSourceImportIteratorRun(sourceImportPathsIter ImportPathsIterator) 
 
 func completeDestImportIteratorRun(destImportPathsIter ImportPathsIterator) error {
 	for destImportPathsIter.hasNext {
+		_, isDestHead := destImportPathsIter.getRange()
 		switch {
-		case !destImportPathsIter.isCurrentPathIncludedInRange() && destImportPathsIter.head:
+		case !destImportPathsIter.isCurrentPathIncludedInRange() && isDestHead:
 			if err := destImportPathsIter.writeRangeAndProgress(); err != nil {
 				return err
 			}

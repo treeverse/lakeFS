@@ -1,6 +1,7 @@
 package committed
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,6 +15,8 @@ type rangeValue struct {
 
 const done = -1
 
+var noValueErr = errors.New("no value in range")
+
 type ImportPathsIterator struct {
 	position          int // current path position in the slice or -1 if no paths left
 	paths             []graveler.ImportPath
@@ -21,7 +24,6 @@ type ImportPathsIterator struct {
 	currentRangeValue rangeValue
 	writer            MetaRangeWriter
 	hasNext           bool
-	head              bool
 }
 
 func newImportPathsIterator(paths []graveler.ImportPath, rangeIterator Iterator, writer MetaRangeWriter) ImportPathsIterator {
@@ -38,12 +40,6 @@ func (ipi *ImportPathsIterator) next() bool {
 		return false
 	}
 	vr, r := ipi.rangeIterator.Value()
-	ipi.head = vr == nil && r != nil
-	if ipi.head { // Head of a new range
-		// Progress to the first record in the range
-		ipi.hasNext = ipi.rangeIterator.Next()
-		vr, r = ipi.rangeIterator.Value()
-	}
 	ipi.currentRangeValue = rangeValue{
 		r,
 		vr,
@@ -63,7 +59,6 @@ func (ipi *ImportPathsIterator) nextRange() bool {
 		r,
 		vr,
 	}
-	ipi.head = true
 	ipi.updatePath()
 	return true
 }
@@ -72,6 +67,7 @@ func (ipi *ImportPathsIterator) updatePath() {
 	if ipi.position == done {
 		return
 	}
+	head := ipi.currentRangeValue.vr == nil && ipi.currentRangeValue.r != nil
 	// If the position is smaller or doesn't have the prefix of the current key, get the next prefix.
 	// At the end of this function we'll have either a path that is a prefix of the current key, or bigger than the key
 	for ipi.paths[ipi.position].Destination < string(ipi.currentRangeValue.vr.Key) &&
@@ -81,7 +77,7 @@ func (ipi *ImportPathsIterator) updatePath() {
 		case p >= len(ipi.paths): // No more comparable paths
 			ipi.position = done
 			break
-		case ipi.head || (!ipi.head && ipi.paths[p].Destination <= string(ipi.currentRangeValue.r.MaxKey)):
+		case head || (!head && ipi.paths[p].Destination <= string(ipi.currentRangeValue.r.MaxKey)):
 			ipi.position = p
 		default:
 			break
@@ -94,10 +90,6 @@ func (ipi *ImportPathsIterator) getPath() *graveler.ImportPath {
 		return nil
 	}
 	return &ipi.paths[ipi.position]
-}
-
-func (ipi *ImportPathsIterator) getValueAndRange() (*graveler.ValueRecord, *Range) {
-	return ipi.currentRangeValue.vr, ipi.currentRangeValue.r
 }
 
 // isCurrentRangeBoundedByPath returns true if both the range's max and min keys have the current path as their prefix
@@ -151,9 +143,33 @@ func (ipi *ImportPathsIterator) writeRangeAndProgress() error {
 }
 
 func (ipi *ImportPathsIterator) writeRecordAndProgress() error {
+	head := ipi.currentRangeValue.vr == nil
+	if head && !ipi.next() {
+		return fmt.Errorf("write record: no records left")
+	}
 	if err := ipi.writer.WriteRecord(*ipi.currentRangeValue.vr); err != nil {
 		return fmt.Errorf("write record: %w", err)
 	}
 	ipi.next()
 	return nil
+}
+
+// getRange returns the current range and a boolean that signals if this is the head of the range.
+func (ipi *ImportPathsIterator) getRange() (*Range, bool) {
+	vr, r := ipi.currentRangeValue.vr, ipi.currentRangeValue.r
+	head := vr == nil && r != nil
+	return r, head
+}
+
+func (ipi *ImportPathsIterator) getValue() (*graveler.ValueRecord, error) {
+	switch ipi.currentRangeValue.vr {
+	case nil:
+		if ipi.next() {
+			return ipi.currentRangeValue.vr, nil
+		} else {
+			return nil, noValueErr
+		}
+	default:
+		return ipi.currentRangeValue.vr, nil
+	}
 }
