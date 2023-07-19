@@ -2,9 +2,10 @@ package catalog_test
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"net/url"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/graveler"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
