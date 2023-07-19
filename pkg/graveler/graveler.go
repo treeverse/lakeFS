@@ -299,6 +299,10 @@ func (v *ValueRecord) IsTombstone() bool {
 	return v.Value == nil
 }
 
+func (v *ValueRecord) IsBefore(o *ValueRecord) bool {
+	return bytes.Compare(v.Key, o.Key) < 0
+}
+
 func (cp CommitParents) Identity() []byte {
 	commits := make([]string, len(cp))
 	for i, v := range cp {
@@ -913,9 +917,7 @@ type CommittedManager interface {
 	// GetRangeIDByKey returns the RangeID that contains the given key.
 	GetRangeIDByKey(ctx context.Context, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
 
-	// Import applies changes from 'source' to 'destination' and returns the ID of the new metarange.
-	// This is similar to the Merge operation, but it will override existing prefixes in the destination
-	// if they also exist in the provided import paths.
+	// Import sync changes from 'source' to 'destination' and returns the ID of the new metarange.
 	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID, importPaths []ImportPath) (MetaRangeID, error)
 }
 

@@ -229,7 +229,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.NextRange()
 		m.haveDest = m.dest.NextRange()
 
-	case sameBoundRanges(sourceRange, destRange):
+	case sourceRange.SameBounds(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return err
@@ -250,7 +250,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 			m.haveDest = m.dest.Next()
 		}
 
-	case range1BeforeRange2(sourceRange, destRange): // source before dest
+	case sourceRange.IsBefore(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -271,7 +271,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case range1BeforeRange2(destRange, sourceRange): // dest before source
+	case destRange.IsBefore(sourceRange):
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -322,9 +322,9 @@ func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *gr
 // handleBothKeys handles the case where both source and dest iterators are inside range
 func (m *merger) handleBothKeys(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	switch {
-	case isValue1BeforeValue2(sourceValue, destValue): // source before dest
+	case sourceValue.IsBefore(destValue):
 		return m.sourceBeforeDest(sourceValue)
-	case isValue1BeforeValue2(destValue, sourceValue): // dest before source
+	case destValue.IsBefore(sourceValue):
 		return m.destBeforeSource(destValue)
 
 	default: // identical keys
@@ -507,16 +507,4 @@ func rangesDidntStartProcessing(values ...*graveler.ValueRecord) bool {
 // indicates that the range is in the middle of processing
 func isRangeInProgress(rangeValue *graveler.ValueRecord) bool {
 	return rangeValue != nil
-}
-
-func sameBoundRanges(range1, range2 *Range) bool {
-	return bytes.Equal(range1.MinKey, range2.MinKey) && bytes.Equal(range1.MaxKey, range2.MaxKey)
-}
-
-func range1BeforeRange2(range1, range2 *Range) bool {
-	return bytes.Compare(range1.MaxKey, range2.MinKey) < 0
-}
-
-func isValue1BeforeValue2(v1, v2 *graveler.ValueRecord) bool {
-	return bytes.Compare(v1.Key, v2.Key) < 0
 }
