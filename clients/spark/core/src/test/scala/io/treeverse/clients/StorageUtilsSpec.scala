@@ -31,13 +31,10 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   private val US_WEST_2 = "us-west-2"
   private val BUCKET_NAME = "bucket"
 
-  def startServer() {
-    server.start()
-    clientConfiguration = generateS3ClientConfigurations(server.url("/"))
-  }
-
   before {
     server = new MockWebServer
+    server.start()
+    clientConfiguration = generateS3ClientConfigurations(server.url("/"))
   }
 
   after {
@@ -49,7 +46,6 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   describe("createAndValidateS3Client") {
     it("should create a client after a successful validation") {
       server.enqueue(new MockResponse().setResponseCode(200))
-      startServer
       val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
         clientConfiguration,
         Some(credentialsProvider),
@@ -69,7 +65,6 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
 
     it("should create the S3 client successfully with US STANDARD region validation") {
       server.enqueue(new MockResponse().setBody("successful validation response"))
-      startServer
       val initializedClient: AmazonS3 = initializeClient()
 
       server.getRequestCount should equal(1)
@@ -88,7 +83,6 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
           .setBody(generateGetBucketLocationResponseWithRegion(US_WEST_2))
           .setResponseCode(HttpStatus.SC_OK)
       )
-      startServer
       val initializedClient: AmazonS3 = initializeClient()
 
       server.getRequestCount should equal(2)
@@ -107,7 +101,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
         new MockResponse()
           .setResponseCode(HttpStatus.SC_NOT_FOUND)
       )
-      startServer
+
       assertThrows[SdkClientException] {
         initializeClient()
       }
