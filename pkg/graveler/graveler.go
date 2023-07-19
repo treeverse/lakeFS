@@ -917,9 +917,7 @@ type CommittedManager interface {
 	// GetRangeIDByKey returns the RangeID that contains the given key.
 	GetRangeIDByKey(ctx context.Context, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
 
-	// Import applies changes from 'source' to 'destination' and returns the ID of the new metarange.
-	// This is similar to the Merge operation, but it will override existing prefixes in the destination
-	// if they also exist in the provided import paths.
+	// Import sync changes from 'source' to 'destination' and returns the ID of the new metarange.
 	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID, importPaths []ImportPath) (MetaRangeID, error)
 }
 
