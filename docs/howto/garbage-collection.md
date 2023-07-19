@@ -21,21 +21,23 @@ However, sometimes you may want to remove the objects from the underlying storag
 Reasons for this include cost-reduction and privacy policies.
 
 The garbage collection job is a Spark program that removes the following from the underlying storage:
-1. _Uncommitted objects_ that are no longer accessible
+1. _Committed objects_ that have been deleted (or replaced) in lakeFS, and are considered expired according to [rules you define](#understanding-garbage-collection-rules).
+2. _Uncommitted objects_ that are no longer accessible
    * For example, objects deleted before ever being committed.
-2. _Committed objects_ that are considered expired according to retention rules you define.
 
 {% include toc.html %}
 
-## Understanding retention rules
+## Understanding garbage collection rules
 
 {: .note }
-Without retention rules, only inaccessible uncommitted objects will be removed by the job.
+These rules only apply to objects that have been _committed_ at some point.
+Without retention rules, only inaccessible _uncommitted_ objects will be removed by the job.
 
+Garbage collection rules determine for how long an object is kept in the storage after it is _deleted_ (or replaced) in lakeFS.
 For every branch, the GC job retains deleted objects for the number of days defined for the branch.
 In the absence of a branch-specific rule, the default rule for the repository is used.
-If an object is present in more than one branch ancestry, it's retained according to the rule with the largest number of days between those branches.
-That is, it's removed only after the retention period has ended for all relevant branches.
+If an object is present in more than one branch ancestry, it is removed only after the retention period has ended for
+all relevant branches.
 
 Example GC rules for a repository:
 ```json
@@ -52,7 +54,7 @@ In the above example, objects will be retained for 14 days after deletion by def
 However, if present in the branch `main`, objects will be retained for 21 days.
 Objects present _only_ in the `dev` branch will be retained for 7 days after they are deleted.
 
-## Configuring retention rules
+## Configuring garbage collection rules
 
 To define retention rules, either use the `lakectl` command or the lakeFS web UI:
 
