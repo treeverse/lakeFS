@@ -24,19 +24,27 @@ docker run --name lakefs --pull always \
              run --quickstart
 ```
 
-Quickstart mode includes initial setup and lakeFS is ready for use!
-The lakeFS quickstart credentials are:
+After a few moments you should see the lakeFS container ready to use: 
 
 ```
-│     Access Key ID    : "AKIAIOSFOLQUICKSTART"
-│     Secret Access Key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+│
+│ lakeFS running in quickstart mode.
+│     Login at http://127.0.0.1:8000/
+│
+│     Access Key ID    : AKIAIOSFOLQUICKSTART
+│     Secret Access Key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+│
 ```
+
 
 You're now ready to dive into lakeFS! 
 
-1. Open lakeFS's web interface at [http://127.0.0.1:8000/](http://127.0.0.1:8000/), enter your email address, and then click **Go to Login**.
+1. Open lakeFS's web interface at [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 2. Login with the quickstart credentials. 
+
+    * Access Key ID: `AKIAIOSFOLQUICKSTART`
+    * Secret Access Key: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
 
 3. You'll notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
 
