@@ -110,6 +110,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.xerial.snappy" % "snappy-java" % "1.1.8.4",
     "dev.failsafe" % "failsafe" % "3.2.4",
     "com.squareup.okhttp3" % "mockwebserver" % "4.10.0" % "test",
+    "xerces" % "xercesImpl" % "2.12.2" % "test",
     "org.scalatest" %% "scalatest" % "3.2.16" % "test",
     "org.scalatestplus" %% "scalacheck-1-17" % "3.2.16.0" % "test",
     "org.scalatestplus" %% "mockito-4-11" % "3.2.16.0" % "test",
