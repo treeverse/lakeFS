@@ -24,44 +24,35 @@ Enjoyed the quickstart and want to try out lakeFS against your own data? Here's 
     <li><a href="#on-azure-blob">Azure Blob Storage</a></li>
     <li><a href="#on-google-gcs">Google Cloud Storage</a></li>
     <li><a href="#on-minio">MinIO</a></li>
-  </ul> 
+  </ul>
   <div markdown="1" id="on-aws-s3">
-
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
 
    ```bash
 docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='s3' \
-   -e AWS_ACCESS_KEY_ID='YourAccessKeyValue' \
-   -e AWS_SECRET_ACCESS_KEY='YourSecretKeyValue' \
-   treeverse/lakefs run --local-settings
+   -e LAKEFS_BLOCKSTORE_TYPE=s3 \
+   -e AWS_ACCESS_KEY_ID=<YourAccessKeyValue> \
+   -e AWS_SECRET_ACCESS_KEY=<YourSecretKeyValue> \
+treeverse/lakefs run --local-settings
    ```
 
   </div>
   <div markdown="1" id="on-azure-blob">
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
-
    ```bash
 docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='azure' \
-   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT='YourAzureStorageAccountName' \
-   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY='YourAzureStorageAccessKey' \
+   -e LAKEFS_BLOCKSTORE_TYPE=azure \
+   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT=<YourAzureStorageAccountName> \
+   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY=<YourAzureStorageAccessKey> \
    treeverse/lakefs run --local-settings
    ```
 
   </div>
   <div markdown="1" id="on-google-gcs">
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
-
    ```bash
 docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='gs' \
-   -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON='YourGoogleServiceAccountKeyJSON' \
+   -e LAKEFS_BLOCKSTORE_TYPE=gs \
+   -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON=<YourGoogleServiceAccountKeyJSON> \
    treeverse/lakefs run --local-settings
    ```
 where you will replace ```YourGoogleServiceAccountKeyJSON``` with JSON string that contains your Google service account key.
@@ -71,8 +62,8 @@ If you want to use the JSON file that contains your Google service account key i
    ```bash
 docker run --pull always -p 8000:8000 \
    -v $PWD:/myfiles \
-   -e LAKEFS_BLOCKSTORE_TYPE='gs' \
-   -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE='/myfiles/YourGoogleServiceAccountKey.json' \
+   -e LAKEFS_BLOCKSTORE_TYPE=gs \
+   -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE=/myfiles/YourGoogleServiceAccountKey.json \
    treeverse/lakefs run --local-settings
    ```
 This command will mount your present working directory (PWD) within the container and will read the JSON file from your PWD.
@@ -82,19 +73,24 @@ This command will mount your present working directory (PWD) within the containe
 
 To use lakeFS with MinIO (or other S3-compatible object storage), use the following example:
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
-
    ```bash
 docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='s3' \
-   -e LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE='true' \
-   -e LAKEFS_BLOCKSTORE_S3_ENDPOINT='http://<minio_endpoint>' \
-   -e LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION='false' \
-   -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID='<minio_access_key>' \
-   -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY='<minio_secret_key>' \
+   -e LAKEFS_BLOCKSTORE_TYPE=s3 \
+   -e LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true \
+   -e LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://<minio_endpoint> \
+   -e LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION=false \
+   -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=<minio_access_key> \
+   -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=<minio_secret_key> \
    treeverse/lakefs run --local-settings
    ```
+
+  </div>
+  <div class="ui-tabs-panel">
+
+>Notes:
+1. Multi line commands are in unix syntax. For windows - please edit commands before execution
+2. Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
+{: .note-small .note-info }
 
   </div>
 </div>

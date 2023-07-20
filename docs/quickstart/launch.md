@@ -18,10 +18,7 @@ _The quickstart uses Docker to bring up the lakeFS container, pre-populate it wi
 Launch the lakeFS container:
 
 ```bash
-docker run --name lakefs --pull always \
-             --rm --publish 8000:8000 \
-             treeverse/lakefs:latest \
-             run --local-settings
+docker run --name lakefs --pull always --rm --publish 8000:8000 treeverse/lakefs:latest run --local-settings
 ```
 
 After a few moments you should see the lakeFS container ready to use: 

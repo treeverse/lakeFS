@@ -25,10 +25,7 @@ Follow the prompts to enter the credentials that you got in the first step. Leav
 Now that lakectl is configured, we can use it to create the branch. Run the following:
 
 ```bash
-docker exec lakefs \
-    lakectl branch create \
-            lakefs://quickstart/denmark-lakes \
-		    --source lakefs://quickstart/main
+docker exec lakefs lakectl branch create lakefs://quickstart/denmark-lakes --source lakefs://quickstart/main
 ```
 
 You should get a confirmation message like this:

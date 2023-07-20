@@ -17,10 +17,7 @@ The good news for them (you) is that lakeFS can revert changes made, similar to 
 From your terminal window run `lakectl` with the `revert` command:
 
 ```bash
-docker exec -it lakefs \
-    lakectl branch revert \
-	    lakefs://quickstart/main \
-	    main --parent-number 1 --yes
+docker exec -it lakefs lakectl branch revert lakefs://quickstart/main main --parent-number 1 --yes
 ```
 You should see a confirmation of a successful rollback:
 ```

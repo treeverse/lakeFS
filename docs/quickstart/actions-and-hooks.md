@@ -27,10 +27,7 @@ _Hooks_ can be either a [Lua](/hooks/lua.html) script that lakeFS will execute i
 1. In lakeFS create a new branch called `add_action`. You can do this through the UI or with `lakectl`: 
 
     ```bash
-    docker exec lakefs \
-        lakectl branch create \
-                lakefs://quickstart/add_action \
-                        --source lakefs://quickstart/main
+    docker exec lakefs lakectl branch create lakefs://quickstart/add_action --source lakefs://quickstart/main
     ```
 
 1. Open up your favorite text editor (or emacs), and paste the following YAML: 
@@ -80,10 +77,7 @@ _Hooks_ can be either a [Lua](/hooks/lua.html) script that lakeFS will execute i
 1. Upload the `check_commit_metadata.yml` file to the `add_action` branch under `_lakefs_actions/`. As above, you can use the UI (make sure you select the correct branch when you do), or with `lakectl`:
 
     ```bash
-    docker exec lakefs \
-        lakectl fs upload \
-            lakefs://quickstart/add_action/_lakefs_actions/check_commit_metadata.yml \
-            --source /tmp/check_commit_metadata.yml
+    docker exec lakefs lakectl fs upload lakefs://quickstart/add_action/_lakefs_actions/check_commit_metadata.yml --source /tmp/check_commit_metadata.yml
     ```
 
 1. Go to the **Uncommitted Changes** tab in the UI, and make sure that you see the new file in the path shown: 

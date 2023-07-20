@@ -225,6 +225,14 @@ body {
 		background-color: #ffffff; color: #279890;
 	}
 
+	.note-small {
+		background-color: $whitegrey;
+		border-left: 4px solid $aqua-marine;
+		border-radius: 0px 2px 2px 0px;
+		padding: 4px 10px;
+		font-size: medium;
+	}
+	
 	.note {
 		background-color: $whitegrey;
 		border-left: 4px solid $aqua-marine;
