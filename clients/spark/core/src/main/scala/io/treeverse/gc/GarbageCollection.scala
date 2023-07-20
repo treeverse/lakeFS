@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import scala.collection.JavaConverters._
 
-object UncommittedGarbageCollector {
+object GarbageCollection {
   final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
   private final val DATA_PREFIX = "data/"
 
@@ -139,7 +139,7 @@ object UncommittedGarbageCollector {
                         secretKey,
                         connectionTimeout,
                         readTimeout,
-                        UncommittedGarbageCollector.UNCOMMITTED_GC_SOURCE_NAME
+                        GarbageCollection.UNCOMMITTED_GC_SOURCE_NAME
                        )
     val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
