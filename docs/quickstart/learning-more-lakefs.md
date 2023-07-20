@@ -28,7 +28,7 @@ Enjoyed the quickstart and want to try out lakeFS against your own data? Here's 
   <div markdown="1" id="on-aws-s3">
 
 Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
+{: .note }
 
    ```bash
 docker run --pull always -p 8000:8000 \
@@ -42,7 +42,7 @@ docker run --pull always -p 8000:8000 \
   <div markdown="1" id="on-azure-blob">
 
 Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
+{: .note }
 
    ```bash
 docker run --pull always -p 8000:8000 \
@@ -56,7 +56,7 @@ docker run --pull always -p 8000:8000 \
   <div markdown="1" id="on-google-gcs">
 
 Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
+{: .note }
 
    ```bash
 docker run --pull always -p 8000:8000 \
@@ -83,7 +83,7 @@ This command will mount your present working directory (PWD) within the containe
 To use lakeFS with MinIO (or other S3-compatible object storage), use the following example:
 
 Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
-{: .note .note-info }
+{: .note }
 
    ```bash
 docker run --pull always -p 8000:8000 \
