@@ -1,4 +1,4 @@
-package cmd
+package utils
 
 import (
 	"fmt"
@@ -67,7 +67,7 @@ func (d *deleteOnClose) Close() error {
 // (non-POSIX, notably WINs).
 func OpenByPath(path string) io.ReadSeekCloser {
 	if path == StdinFileName {
-		if !isSeekable(os.Stdin) {
+		if !IsSeekable(os.Stdin) {
 			temp, err := os.CreateTemp("", "lakectl-stdin")
 			if err != nil {
 				DieErr(fmt.Errorf("create temporary file to buffer stdin: %w", err))
@@ -143,4 +143,10 @@ func MustDuration(v time.Duration, err error) time.Duration {
 		DieErr(err)
 	}
 	return v
+}
+
+// IsSeekable returns true if f.Seek appears to work.
+func IsSeekable(f io.Seeker) bool {
+	_, err := f.Seek(0, io.SeekCurrent)
+	return err == nil // a little naive, but probably good enough for its purpose
 }

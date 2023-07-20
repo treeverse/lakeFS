@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -34,28 +35,28 @@ var mergeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseRefURI("source ref", args[0])
-		destinationRef := MustParseRefURI("destination ref", args[1])
-		strategy := MustString(cmd.Flags().GetString("strategy"))
-		Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
+		sourceRef := utils.MustParseRefURI("source ref", args[0])
+		destinationRef := utils.MustParseRefURI("destination ref", args[1])
+		strategy := utils.MustString(cmd.Flags().GetString("strategy"))
+		utils.Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
-			Die("both references must belong to the same repository", 1)
+			utils.Die("both references must belong to the same repository", 1)
 		}
 
 		if strategy != "dest-wins" && strategy != "source-wins" && strategy != "" {
-			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
+			utils.Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
 
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
 		if resp != nil && resp.JSON409 != nil {
-			Die("Conflict found.", 1)
+			utils.Die("Conflict found.", 1)
 		}
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
-		Write(mergeCreateTemplate, struct {
+		utils.Write(mergeCreateTemplate, struct {
 			Merge  FromTo
 			Result *api.MergeResult
 		}{

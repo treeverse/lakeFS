@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
@@ -65,7 +66,7 @@ var dbtCreateBranchSchema = &cobra.Command{
 		if !skipViews {
 			err := ValidateGenerateSchemaMacro(projectRoot, macrosDirName, generateSchemaName, schemaEnvVarName)
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 		}
 
@@ -92,7 +93,7 @@ func retrieveSchema(projectRoot string) string {
 	schemaOutput, err := DBTDebug(projectRoot, schemaRegex, ExecuteCommand)
 	if err != nil {
 		fmt.Println(schemaOutput)
-		DieErr(err)
+		utils.DieErr(err)
 	}
 	fmt.Println("dbt debug succeeded with schemaOutput:", schemaOutput)
 	return schemaOutput
@@ -101,7 +102,7 @@ func retrieveSchema(projectRoot string) string {
 func handleBranchCreation(ctx context.Context, schema, branchName string, metastoreClient metastore.Client) {
 	sourceRepo, sourceBranch, err := ExtractRepoAndBranchFromDBName(ctx, schema, metastoreClient)
 	if err != nil {
-		DieFmt(`Given schema has no source branch associated with it %s`, err)
+		utils.DieFmt(`Given schema has no source branch associated with it %s`, err)
 	}
 	CreateBranch(ctx, sourceRepo, sourceBranch, branchName)
 }
@@ -113,23 +114,23 @@ func copySchemaWithDbtTables(ctx context.Context, continueOnError, continueOnSch
 	case err == nil:
 		fmt.Printf("schema %s created\n", toSchema)
 	case !errors.Is(err, mserrors.ErrSchemaExists):
-		DieErr(err)
+		utils.DieErr(err)
 	case continueOnSchemaExists:
 		fmt.Printf("schema %s already exists, proceeding with existing schema\n", toSchema)
 	default:
-		DieFmt("Schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
+		utils.DieFmt("Schema %s exists, change schema or use %s flag", toSchema, continueOnSchemaFlag)
 	}
 
 	models := getDBTTables(projectRoot)
 	if err := copyModels(ctx, models, continueOnError, fromSchema, toSchema, branchName, dbfsLocation, client); err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 }
 
 func createViews(projectRoot, toSchema string) {
 	output, err := DBTRun(projectRoot, toSchema, schemaEnvVarName, []string{"config.materialized:view"}, ExecuteCommand)
 	if err != nil {
-		DieFmt("Failed creating views with err: %v\nOutput:\n%s", err, output)
+		utils.DieFmt("Failed creating views with err: %v\nOutput:\n%s", err, output)
 	}
 	fmt.Println("views created")
 }
@@ -156,7 +157,7 @@ func copyModels(ctx context.Context, models []DBTResource, continueOnError bool,
 func getDBTTables(projectRoot string) []DBTResource {
 	resources, err := DBTLsToJSON(projectRoot, resourceType, materializedSelection, ExecuteCommand)
 	if err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 	return resources
 }
@@ -169,12 +170,12 @@ var dbtGenerateSchemaMacro = &cobra.Command{
 		projectRoot, _ := cmd.Flags().GetString("project-root")
 
 		if !pathExists(path.Join(projectRoot, macrosDirName)) {
-			DieFmt("The project-root should contain the macro directory")
+			utils.DieFmt("The project-root should contain the macro directory")
 		}
 
 		macroPath := path.Join(projectRoot, macrosDirName, generateSchemaName)
 		if pathExists(macroPath) {
-			DieFmt("%s already exists, add lakeFS schema generation manually", macroPath)
+			utils.DieFmt("%s already exists, add lakeFS schema generation manually", macroPath)
 		}
 		const generateSchemaData = `
 generate_schema_name.sql 
@@ -189,7 +190,7 @@ generate_schema_name.sql
 		//nolint:gosec
 		err := os.WriteFile(macroPath, []byte(generateSchemaData), 0o644) //nolint: gomnd
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		fmt.Printf("macro created in path %s\n", macroPath)
 	},
@@ -201,7 +202,7 @@ func pathExists(path string) bool {
 		if os.IsNotExist(err) {
 			return false
 		}
-		DieErr(err)
+		utils.DieErr(err)
 	}
 	return true
 }

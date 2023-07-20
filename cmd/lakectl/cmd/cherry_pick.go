@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -25,18 +26,18 @@ var cherryPick = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		ref := MustParseRefURI("ref", args[0])
-		branch := MustParseBranchURI("branch", args[1])
-		Fmt("Branch: %s\n", branch.String())
+		ref := utils.MustParseRefURI("ref", args[0])
+		branch := utils.MustParseBranchURI("branch", args[1])
+		utils.Fmt("Branch: %s\n", branch.String())
 
 		if branch.Repository != ref.Repository {
-			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
+			utils.Die("Repository mismatch for destination branch and cherry-pick ref", 1)
 		}
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
 		if hasParentNumber {
 			if parentNumber <= 0 {
-				Die("parent number must be positive, if specified", 1)
+				utils.Die("parent number must be positive, if specified", 1)
 			}
 		} else {
 			parentNumber = 1
@@ -47,9 +48,9 @@ var cherryPick = &cobra.Command{
 			Ref:          ref.Ref,
 			ParentNumber: &parentNumber,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
-		Write(commitCreateTemplate, struct {
+		utils.Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
 		}{Branch: branch, Commit: resp.JSON201})

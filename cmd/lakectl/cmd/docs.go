@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 )
 
 // language=markdown
@@ -164,23 +165,23 @@ var docsCmd = &cobra.Command{
 		if len(args) == 1 {
 			f, err := os.Create(args[0])
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 			writer = f
 			defer func() {
 				err := f.Close()
 				if err != nil {
-					DieErr(err)
+					utils.DieErr(err)
 				}
 			}()
 		}
 		_, err := writer.WriteString(cliReferenceHeader)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		err = genMarkdownForCmd(rootCmd, writer)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }

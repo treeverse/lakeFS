@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -30,17 +31,17 @@ var branchListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		u := MustParseRepoURI("repository", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		after := utils.MustString(cmd.Flags().GetString("after"))
+		u := utils.MustParseRepoURI("repository", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		refs := resp.JSON200.Results
@@ -50,7 +51,7 @@ var branchListCmd = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Branch", "Commit ID"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Branch", "Commit ID"}, &pagination, amount)
 	},
 }
 
@@ -61,24 +62,24 @@ var branchCreateCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseBranchURI("branch", args[0])
+		u := utils.MustParseBranchURI("branch", args[0])
 		client := getClient()
 		sourceRawURI, _ := cmd.Flags().GetString("source")
-		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, baseURI)
+		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, utils.BaseURI)
 		if err != nil {
-			DieFmt("failed to parse source URI: %s", err)
+			utils.DieFmt("failed to parse source URI: %s", err)
 		}
-		Fmt("Source ref: %s\n", sourceURI.String())
+		utils.Fmt("Source ref: %s\n", sourceURI.String())
 		if sourceURI.Repository != u.Repository {
-			Die("source branch must be in the same repository", 1)
+			utils.Die("source branch must be in the same repository", 1)
 		}
 
 		resp, err := client.CreateBranchWithResponse(cmd.Context(), u.Repository, api.CreateBranchJSONRequestBody{
 			Name:   u.Ref,
 			Source: sourceURI.Ref,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		Fmt("created branch '%s' %s\n", u.Ref, string(resp.Body))
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.Fmt("created branch '%s' %s\n", u.Ref, string(resp.Body))
 	},
 }
 
@@ -89,15 +90,15 @@ var branchDeleteCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
+		confirmation, err := utils.Confirm(cmd.Flags(), "Are you sure you want to delete branch")
 		if err != nil || !confirmation {
-			Die("Delete branch aborted", 1)
+			utils.Die("Delete branch aborted", 1)
 		}
 		client := getClient()
-		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		u := utils.MustParseBranchURI("branch", args[0])
+		utils.Fmt("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -115,17 +116,17 @@ var branchRevertCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		u := utils.MustParseBranchURI("branch", args[0])
+		utils.Fmt("Branch: %s\n", u.String())
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
 		if hasParentNumber && parentNumber <= 0 {
-			Die("parent number must be non-negative, if specified", 1)
+			utils.Die("parent number must be non-negative, if specified", 1)
 		}
 		commits := strings.Join(args[1:], " ")
-		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commits %s", commits))
+		confirmation, err := utils.Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commits %s", commits))
 		if err != nil || !confirmation {
-			Die("Revert aborted", 1)
+			utils.Die("Revert aborted", 1)
 		}
 		clt := getClient()
 		for i := 1; i < len(args); i++ {
@@ -134,8 +135,8 @@ var branchRevertCmd = &cobra.Command{
 				ParentNumber: parentNumber,
 				Ref:          commitRef,
 			})
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-			Fmt("commit %s successfully reverted\n", commitRef)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+			utils.Fmt("commit %s successfully reverted\n", commitRef)
 		}
 	},
 }
@@ -153,15 +154,15 @@ var branchResetCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		u := utils.MustParseBranchURI("branch", args[0])
+		utils.Fmt("Branch: %s\n", u.String())
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		object, err := cmd.Flags().GetString("object")
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
 		var reset api.ResetCreation
@@ -186,13 +187,13 @@ var branchResetCmd = &cobra.Command{
 			}
 		}
 
-		confirmation, err := Confirm(cmd.Flags(), confirmationMsg)
+		confirmation, err := utils.Confirm(cmd.Flags(), confirmationMsg)
 		if err != nil || !confirmation {
-			Die("Reset aborted", 1)
+			utils.Die("Reset aborted", 1)
 			return
 		}
 		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -204,15 +205,15 @@ var branchShowCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		u := utils.MustParseBranchURI("branch", args[0])
+		utils.Fmt("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		branch := resp.JSON200
-		Fmt("Commit ID: %s\n", branch.CommitId)
+		utils.Fmt("Commit ID: %s\n", branch.CommitId)
 	},
 }
 
@@ -226,7 +227,7 @@ func init() {
 	branchCmd.AddCommand(branchResetCmd)
 	branchCmd.AddCommand(branchRevertCmd)
 
-	branchListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
+	branchListCmd.Flags().Int("amount", utils.DefaultAmountArgumentValue, "number of results to return")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
@@ -238,7 +239,7 @@ func init() {
 
 	branchRevertCmd.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.")
 
-	AssignAutoConfirmFlag(branchResetCmd.Flags())
-	AssignAutoConfirmFlag(branchRevertCmd.Flags())
-	AssignAutoConfirmFlag(branchDeleteCmd.Flags())
+	utils.AssignAutoConfirmFlag(branchResetCmd.Flags())
+	utils.AssignAutoConfirmFlag(branchRevertCmd.Flags())
+	utils.AssignAutoConfirmFlag(branchDeleteCmd.Flags())
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -57,20 +58,20 @@ var fsStatCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
-		preSign := MustBool(cmd.Flags().GetBool("pre-sign"))
+		pathURI := utils.MustParsePathURI("path", args[0])
+		preSign := utils.MustBool(cmd.Flags().GetBool("pre-sign"))
 		client := getClient()
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path:         *pathURI.Path,
 			Presign:      swag.Bool(preSign),
 			UserMetadata: swag.Bool(true),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
-		Write(fsStatTemplate, resp.JSON200)
+		utils.Write(fsStatTemplate, resp.JSON200)
 	},
 }
 
@@ -86,19 +87,19 @@ var fsListCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := utils.MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non-recursive)
 		var trimPrefix string
-		if idx := strings.LastIndex(prefix, PathDelimiter); idx != -1 {
+		if idx := strings.LastIndex(prefix, utils.PathDelimiter); idx != -1 {
 			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
 		var paramsDelimiter api.PaginationDelimiter
 		if !recursive {
-			paramsDelimiter = PathDelimiter
+			paramsDelimiter = utils.PathDelimiter
 		}
 		var from string
 		for {
@@ -109,9 +110,9 @@ var fsListCmd = &cobra.Command{
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 
 			results := resp.JSON200.Results
@@ -123,7 +124,7 @@ var fsListCmd = &cobra.Command{
 				}
 			}
 
-			Write(fsLsTemplate, results)
+			utils.Write(fsLsTemplate, results)
 			pagination := resp.JSON200.Pagination
 			if !pagination.HasMore {
 				break
@@ -139,10 +140,10 @@ var fsCatCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := utils.MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		direct := MustBool(flagSet.GetBool("direct"))
-		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
+		direct := utils.MustBool(flagSet.GetBool("direct"))
+		preSignMode := utils.MustBool(flagSet.GetBool("pre-sign"))
 		transport := transportMethodFromFlags(direct, preSignMode)
 
 		var err error
@@ -157,27 +158,27 @@ var fsCatCmd = &cobra.Command{
 				Path:    *pathURI.Path,
 				Presign: preSign,
 			})
-			DieOnHTTPError(resp)
+			utils.DieOnHTTPError(resp)
 			body = resp.Body
 		}
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
 		defer func() {
 			if err := body.Close(); err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 		}()
 		_, err = io.Copy(os.Stdout, body)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }
 
 func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method transportMethod) (*api.ObjectStats, error) {
-	fp := OpenByPath(sourcePathname)
+	fp := utils.OpenByPath(sourcePathname)
 	defer func() {
 		_ = fp.Close()
 	}()
@@ -247,25 +248,25 @@ var fsUploadCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := utils.MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		source := MustString(flagSet.GetString("source"))
-		recursive := MustBool(flagSet.GetBool("recursive"))
-		direct := MustBool(flagSet.GetBool("direct"))
-		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
-		contentType := MustString(flagSet.GetString("content-type"))
+		source := utils.MustString(flagSet.GetString("source"))
+		recursive := utils.MustBool(flagSet.GetBool("recursive"))
+		direct := utils.MustBool(flagSet.GetBool("direct"))
+		preSignMode := utils.MustBool(flagSet.GetBool("pre-sign"))
+		contentType := utils.MustString(flagSet.GetString("content-type"))
 
 		ctx := cmd.Context()
 		transport := transportMethodFromFlags(direct, preSignMode)
 		if !recursive {
 			if pathURI.GetPath() == "" {
-				Die("target path is not a valid URI", 1)
+				utils.Die("target path is not a valid URI", 1)
 			}
 			stat, err := upload(ctx, client, source, pathURI, contentType, transport)
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
-			Write(fsStatTemplate, stat)
+			utils.Write(fsStatTemplate, stat)
 			return
 		}
 
@@ -296,16 +297,16 @@ var fsUploadCmd = &cobra.Command{
 			return nil
 		})
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
-		Write(fsRecursiveTemplate, totals)
+		utils.Write(fsRecursiveTemplate, totals)
 	},
 }
 
 func transportMethodFromFlags(direct bool, preSign bool) transportMethod {
 	switch {
 	case direct && preSign:
-		Die("Can't enable both direct and pre-sign", 1)
+		utils.Die("Can't enable both direct and pre-sign", 1)
 	case direct:
 		return transportMethodDirect
 	case preSign:
@@ -322,7 +323,7 @@ var fsStageCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := utils.MustParsePathURI("path", args[0])
 		flags := cmd.Flags()
 		size, _ := flags.GetInt64("size")
 		mtimeSeconds, _ := flags.GetInt64("mtime")
@@ -353,12 +354,12 @@ var fsStageCmd = &cobra.Command{
 		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StageObjectParams{
 			Path: *pathURI.Path,
 		}, api.StageObjectJSONRequestBody(obj))
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
-		Write(fsStatTemplate, resp.JSON201)
+		utils.Write(fsStatTemplate, resp.JSON201)
 	},
 }
 
@@ -378,7 +379,7 @@ func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 		Path: *pathURI.Path,
 	})
 
-	return RetrieveError(resp, err)
+	return utils.RetrieveError(resp, err)
 }
 
 var fsRmCmd = &cobra.Command{
@@ -388,14 +389,14 @@ var fsRmCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
-		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
-		pathURI := MustParsePathURI("path", args[0])
+		concurrency := utils.MustInt(cmd.Flags().GetInt("concurrency"))
+		pathURI := utils.MustParsePathURI("path", args[0])
 		client := getClient()
 		if !recursive {
 			// Delete single object in the main thread
 			err := deleteObject(cmd.Context(), client, pathURI)
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 			return
 		}
@@ -430,9 +431,9 @@ var fsRmCmd = &cobra.Command{
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 
 			results := resp.JSON200.Results
@@ -473,16 +474,16 @@ var fsDownloadCmd = &cobra.Command{
 	Short: "Download object(s) from a given repository path",
 	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := utils.MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		direct := MustBool(flagSet.GetBool("direct"))
-		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
-		recursive := MustBool(flagSet.GetBool("recursive"))
-		parallel := MustInt(flagSet.GetInt("parallel"))
+		direct := utils.MustBool(flagSet.GetBool("direct"))
+		preSignMode := utils.MustBool(flagSet.GetBool("pre-sign"))
+		recursive := utils.MustBool(flagSet.GetBool("recursive"))
+		parallel := utils.MustInt(flagSet.GetInt("parallel"))
 		transport := transportMethodFromFlags(direct, preSignMode)
 
 		if parallel < 1 {
-			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallel)
+			utils.DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallel)
 		}
 
 		// optional destination directory
@@ -563,7 +564,7 @@ func listRecursiveHelper(ctx context.Context, client *api.ClientWithResponses, r
 			After:  api.PaginationAfterPtr(from),
 		}
 		resp, err := client.ListObjectsWithResponse(ctx, repo, ref, params)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		for _, p := range resp.JSON200.Results {
 			ch <- p.Path
 		}

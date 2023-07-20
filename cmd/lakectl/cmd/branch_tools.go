@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
@@ -34,8 +35,8 @@ func CreateBranch(ctx context.Context, repository, sourceBranch, destinationBran
 		Name:   destinationBranch,
 		Source: sourceBranch,
 	})
-	DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-	Write(branchCreatedTemplate, struct {
+	utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+	utils.Write(branchCreatedTemplate, struct {
 		Branch string
 		Resp   string
 	}{

@@ -14,6 +14,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -66,10 +67,10 @@ var bisectStartCmd = &cobra.Command{
 	Short: "Start a bisect session",
 	Args:  cobra.ExactArgs(bisectStartCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		badURI := MustParseRefURI("bad", args[0])
-		goodURI := MustParseRefURI("good", args[1])
+		badURI := utils.MustParseRefURI("bad", args[0])
+		goodURI := utils.MustParseRefURI("good", args[1])
 		if goodURI.Repository != badURI.Repository {
-			Die("Two references doesn't use the same repository", 1)
+			utils.Die("Two references doesn't use the same repository", 1)
 		}
 		repository := goodURI.Repository
 
@@ -78,9 +79,9 @@ var bisectStartCmd = &cobra.Command{
 		ctx := cmd.Context()
 		// check repository exists
 		repoResponse, err := client.GetRepositoryWithResponse(ctx, repository)
-		DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
 		if repoResponse.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		state := &Bisect{
 			Created:    time.Now().UTC(),
@@ -90,10 +91,10 @@ var bisectStartCmd = &cobra.Command{
 		}
 		// resolve commits
 		if err := state.Update(ctx, client); err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		if err := state.Save(); err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		state.PrintStatus()
 	},
@@ -101,7 +102,7 @@ var bisectStartCmd = &cobra.Command{
 
 func resolveCommitOrDie(ctx context.Context, client api.ClientWithResponsesInterface, repository, ref string) string {
 	response, err := client.GetCommitWithResponse(ctx, repository, ref)
-	DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusOK)
+	utils.DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusOK)
 	return response.JSON200.Id
 }
 
@@ -136,10 +137,10 @@ var bisectResetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := BisectRemove()
 		if os.IsNotExist(err) {
-			Die("No active bisect session", 1)
+			utils.Die("No active bisect session", 1)
 		}
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		fmt.Println("Cleared bisect session")
 	},
@@ -160,10 +161,10 @@ func bisectCmdSelect(bisectSelect BisectSelect) {
 	var state Bisect
 	err := state.Load()
 	if os.IsNotExist(err) {
-		Die(`You need to start by "bisect start"`, 1)
+		utils.Die(`You need to start by "bisect start"`, 1)
 	}
 	if err := state.SaveSelect(bisectSelect); err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 	state.PrintStatus()
 }
@@ -187,7 +188,7 @@ var bisectRunCmd = &cobra.Command{
 		var state Bisect
 		err := state.Load()
 		if os.IsNotExist(err) {
-			Die(`You need to start by "bisect start"`, 1)
+			utils.Die(`You need to start by "bisect start"`, 1)
 		}
 		ctx := cmd.Context()
 		for len(state.Commits) > 1 {
@@ -205,7 +206,7 @@ var bisectRunCmd = &cobra.Command{
 				fmt.Printf("-- GOOD [%s] %s\n", commit.Id, commit.Message)
 			}
 			if err := state.SaveSelect(bisectSelect); err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 		}
 		state.PrintStatus()
@@ -249,7 +250,7 @@ var bisectLogCmd = &cobra.Command{
 		var state Bisect
 		err := state.Load()
 		if os.IsNotExist(err) {
-			Die(`You need to start by "bisect start"`, 1)
+			utils.Die(`You need to start by "bisect start"`, 1)
 		}
 		state.PrintStatus()
 	},
@@ -263,13 +264,13 @@ var bisectViewCmd = &cobra.Command{
 		var state Bisect
 		err := state.Load()
 		if os.IsNotExist(err) {
-			Die(`You need to start by "bisect start"`, 1)
+			utils.Die(`You need to start by "bisect start"`, 1)
 		}
 		if len(state.Commits) == 0 {
 			state.PrintStatus()
 			return
 		}
-		Write(bisectCommitTemplate, state.Commits)
+		utils.Write(bisectCommitTemplate, state.Commits)
 	},
 }
 
@@ -323,9 +324,9 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 	var commits []*api.Commit
 	for {
 		logResponse, err := client.LogCommitsWithResponse(ctx, b.Repository, b.BadCommit, params)
-		DieOnErrorOrUnexpectedStatusCode(logResponse, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(logResponse, err, http.StatusOK)
 		if logResponse.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		results := logResponse.JSON200.Results
 		for i := range results {
@@ -354,7 +355,7 @@ func (b *Bisect) SaveSelect(sel BisectSelect) error {
 	case BisectSelectBad:
 		b.Commits = b.Commits[h:]
 	default:
-		DieFmt("Unknown bisect select - %d", sel)
+		utils.DieFmt("Unknown bisect select - %d", sel)
 	}
 	return b.Save()
 }

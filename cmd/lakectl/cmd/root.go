@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	config_types "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -50,13 +50,12 @@ var (
 	cfgFile string
 	cfg     *config.Config
 
-	// baseURI default value is set by the environment variable LAKECTL_BASE_URI and
-	// override by flag 'base-url'. The baseURI is used as a prefix when we parse lakefs address (repo, ref or path).
+	// BaseURI default value is set by the environment variable LAKECTL_BASE_URI and
+	// override by flag 'base-url'. The BaseURI is used as a prefix when we parse lakefs address (repo, ref or path).
 	// The prefix is used only when the address we parse is not a full address (starts with 'lakefs://' scheme).
 	// Examples:
 	//   `--base-uri lakefs:// repo1` will resolve to repository `lakefs://repo1`
 	//   `--base-uri lakefs://repo1 /main/file.md` will resolve to path `lakefs://repo1/main/file.md`
-	baseURI string
 
 	// logLevel logging level (default is off)
 	logLevel string
@@ -75,8 +74,8 @@ var rootCmd = &cobra.Command{
 		logging.SetLevel(logLevel)
 		logging.SetOutputFormat(logFormat)
 		logging.SetOutputs(logOutputs, 0, 0)
-		if noColorRequested {
-			DisableColors()
+		if utils.NoColorRequested {
+			utils.DisableColors()
 		}
 		if cmd == configCmd {
 			return
@@ -91,12 +90,12 @@ var rootCmd = &cobra.Command{
 		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
 			if cfgFile != "" {
 				// specific message in case the file isn't found
-				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+				utils.DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
 			}
 			// if the config file wasn't provided, try to run using the default values + env vars
 		} else if cfg.Err() != nil {
 			// other errors while reading the config file
-			DieFmt("error reading configuration file: %v", cfg.Err())
+			utils.DieFmt("error reading configuration file: %v", cfg.Err())
 		}
 
 		err := viper.UnmarshalExact(&cfg.Values, viper.DecodeHook(
@@ -104,14 +103,14 @@ var rootCmd = &cobra.Command{
 				config_types.DecodeOnlyString,
 				mapstructure.StringToTimeDurationHookFunc())))
 		if err != nil {
-			DieFmt("error unmarshal configuration: %v", err)
+			utils.DieFmt("error unmarshal configuration: %v", err)
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if !MustBool(cmd.Flags().GetBool("version")) {
+		if !utils.MustBool(cmd.Flags().GetBool("version")) {
 			if err := cmd.Help(); err != nil {
-				WriteIfVerbose("failed showing help {{ . }}", err)
+				utils.WriteIfVerbose("failed showing help {{ . }}", err)
 			}
 			return
 		}
@@ -124,9 +123,9 @@ var rootCmd = &cobra.Command{
 
 		resp, err := client.GetLakeFSVersionWithResponse(cmd.Context())
 		if err != nil {
-			WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
+			utils.WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
 		} else if resp.JSON200 == nil {
-			WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
+			utils.WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
 		} else {
 			lakefsVersion := resp.JSON200
 			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
@@ -141,11 +140,11 @@ var rootCmd = &cobra.Command{
 		ghReleases := version.NewGithubReleases(version.GithubRepoOwner, version.GithubRepoName)
 		latestVer, err := ghReleases.FetchLatestVersion()
 		if err != nil {
-			WriteIfVerbose(getLatestVersionErrorTemplate, err)
+			utils.WriteIfVerbose(getLatestVersionErrorTemplate, err)
 		} else {
 			latest, err := version.CheckLatestVersion(latestVer)
 			if err != nil {
-				WriteIfVerbose("failed parsing {{ . }}", err)
+				utils.WriteIfVerbose("failed parsing {{ . }}", err)
 			} else if latest.Outdated {
 				info.LakectlLatestVersion = latest.LatestVersion
 				if info.UpgradeURL == "" {
@@ -154,7 +153,7 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		Write(versionTemplate, info)
+		utils.Write(versionTemplate, info)
 	},
 }
 
@@ -173,13 +172,13 @@ func getClient() *api.ClientWithResponses {
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 
 	serverEndpoint := cfg.Values.Server.EndpointURL
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 	// if no uri to api is set in configuration - set the default
 	if u.Path == "" || u.Path == "/" {
@@ -196,15 +195,9 @@ func getClient() *api.ClientWithResponses {
 		}),
 	)
 	if err != nil {
-		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
+		utils.Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
-}
-
-// isSeekable returns true if f.Seek appears to work.
-func isSeekable(f io.Seeker) bool {
-	_, err := f.Seek(0, io.SeekCurrent)
-	return err == nil // a little naive, but probably good enough for its purpose
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -212,7 +205,7 @@ func isSeekable(f io.Seeker) bool {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 }
 
@@ -223,12 +216,12 @@ func init() {
 	// will be global for your application.
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
-	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
-	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
+	rootCmd.PersistentFlags().BoolVar(&utils.NoColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
+	rootCmd.PersistentFlags().StringVarP(&utils.BaseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
-	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
+	rootCmd.PersistentFlags().BoolVar(&utils.VerboseMode, "verbose", false, "run in verbose mode")
 	rootCmd.Flags().BoolP("version", "v", false, "version for lakectl")
 }
 
@@ -241,7 +234,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
 		// Search config in home directory with name ".lakefs" (without extension).

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -48,8 +49,8 @@ Example configuration file:
 	Example: "lakectl gc set-config <repository uri> -f config.json",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
-		filename := MustString(cmd.Flags().GetString(filenameFlagName))
+		u := utils.MustParseRepoURI("repository", args[0])
+		filename := utils.MustString(cmd.Flags().GetString(filenameFlagName))
 		var reader io.ReadCloser
 		var err error
 		if filename == "-" {
@@ -57,7 +58,7 @@ Example configuration file:
 		} else {
 			reader, err = os.Open(filename)
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 			defer func() {
 				_ = reader.Close()
@@ -66,11 +67,11 @@ Example configuration file:
 		var body api.SetGarbageCollectionRulesJSONRequestBody
 		err = json.NewDecoder(reader).Decode(&body)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		client := getClient()
 		resp, err := client.SetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository, body)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -81,10 +82,10 @@ var gcDeleteConfigCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(gcSetConfigCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := utils.MustParseRepoURI("repository", args[0])
 		client := getClient()
 		resp, err := client.DeleteGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -95,18 +96,18 @@ var gcGetConfigCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(gcSetConfigCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
-		isJSON := MustBool(cmd.Flags().GetBool(jsonFlagName))
+		u := utils.MustParseRepoURI("repository", args[0])
+		isJSON := utils.MustBool(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		if isJSON {
-			Write("{{ . | json }}", resp.JSON200)
+			utils.Write("{{ . | json }}", resp.JSON200)
 		} else {
-			Write(gcRulesTemplate, resp.JSON200)
+			utils.Write(gcRulesTemplate, resp.JSON200)
 		}
 	},
 }

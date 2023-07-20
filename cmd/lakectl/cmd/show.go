@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -20,28 +21,28 @@ var showCommitCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		commitURI := MustParseRefURI("ref uri", args[0])
-		showMetaRangeID := MustBool(cmd.Flags().GetBool("show-meta-range-id"))
+		commitURI := utils.MustParseRefURI("ref uri", args[0])
+		showMetaRangeID := utils.MustBool(cmd.Flags().GetBool("show-meta-range-id"))
 
 		ctx := cmd.Context()
 		client := getClient()
 		resp, err := client.GetCommitWithResponse(ctx, commitURI.Repository, commitURI.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		commit := resp.JSON200
 		commits := struct {
 			Commits         []*api.Commit
-			Pagination      *Pagination
+			Pagination      *utils.Pagination
 			ShowMetaRangeID bool
 		}{
 			Commits:         []*api.Commit{commit},
 			ShowMetaRangeID: showMetaRangeID,
 		}
 
-		Write(commitsTemplate, commits)
+		utils.Write(commitsTemplate, commits)
 	},
 }
 

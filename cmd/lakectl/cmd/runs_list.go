@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -19,13 +20,13 @@ var runsListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		commit := MustString(cmd.Flags().GetString("commit"))
-		branch := MustString(cmd.Flags().GetString("branch"))
-		u := MustParseRepoURI("repository", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		after := utils.MustString(cmd.Flags().GetString("after"))
+		commit := utils.MustString(cmd.Flags().GetString("commit"))
+		branch := utils.MustString(cmd.Flags().GetString("branch"))
+		u := utils.MustParseRepoURI("repository", args[0])
 		if commit != "" && branch != "" {
-			Die("Can't specify 'commit' and 'branch'", 1)
+			utils.Die("Can't specify 'commit' and 'branch'", 1)
 		}
 
 		client := getClient()
@@ -47,9 +48,9 @@ var runsListCmd = &cobra.Command{
 			Branch: optionalBranch,
 			Commit: optionalCommit,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		results := resp.JSON200.Results
@@ -68,10 +69,10 @@ var runsListCmd = &cobra.Command{
 
 		pagination := resp.JSON200.Pagination
 		data := struct {
-			ActionsRunsTable *Table
-			Pagination       *Pagination
+			ActionsRunsTable *utils.Table
+			Pagination       *utils.Pagination
 		}{
-			ActionsRunsTable: &Table{
+			ActionsRunsTable: &utils.Table{
 				Headers: []interface{}{
 					"Run ID",
 					"Event",
@@ -85,21 +86,21 @@ var runsListCmd = &cobra.Command{
 			},
 		}
 		if pagination.HasMore {
-			data.Pagination = &Pagination{
+			data.Pagination = &utils.Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
 			}
 		}
 
-		Write(actionsRunsListTemplate, data)
+		utils.Write(actionsRunsListTemplate, data)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(runsListCmd)
-	runsListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
+	runsListCmd.Flags().Int("amount", utils.DefaultAmountArgumentValue, "number of results to return")
 	runsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	runsListCmd.Flags().String("branch", "", "show results for specific branch")
 	runsListCmd.Flags().String("commit", "", "show results for specific commit ID")

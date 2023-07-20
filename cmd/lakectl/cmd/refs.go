@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -27,10 +28,10 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 	Hidden:  true,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", repoURI.String())
+		repoURI := utils.MustParseRepoURI("repository", args[0])
+		utils.Fmt("Repository: %s\n", repoURI.String())
 		manifestFileName, _ := cmd.Flags().GetString("manifest")
-		fp := OpenByPath(manifestFileName)
+		fp := utils.OpenByPath(manifestFileName)
 		defer func() {
 			_ = fp.Close()
 		}()
@@ -38,18 +39,18 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		// read and parse the JSON
 		data, err := io.ReadAll(fp)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		var manifest api.RefsDump
 		err = json.Unmarshal(data, &manifest)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		// execute the restore operation
 		client := getClient()
 		resp, err := client.RestoreRefsWithResponse(cmd.Context(), repoURI.Repository, api.RestoreRefsJSONRequestBody(manifest))
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		Write(refsRestoreSuccess, nil)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.Write(refsRestoreSuccess, nil)
 	},
 }
 
@@ -60,15 +61,15 @@ var refsDumpCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := MustParseRepoURI("repository", args[0])
+		repoURI := utils.MustParseRepoURI("repository", args[0])
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
-		Write(metadataDumpTemplate, struct {
+		utils.Write(metadataDumpTemplate, struct {
 			Response interface{}
 		}{resp.JSON201})
 	},

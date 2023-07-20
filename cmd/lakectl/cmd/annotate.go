@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -28,20 +29,20 @@ var annotateCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := utils.MustParsePathURI("path", args[0])
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		firstParent, _ := cmd.Flags().GetBool("first-parent")
 		client := getClient()
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		var listObjectsDelimiter api.PaginationDelimiter
 		if !recursive {
-			listObjectsDelimiter = PathDelimiter
+			listObjectsDelimiter = utils.PathDelimiter
 		}
 		var from string
 		limit := true
@@ -52,9 +53,9 @@ var annotateCmd = &cobra.Command{
 				Delimiter: &listObjectsDelimiter,
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
-			DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(listObjectsResp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &api.LogCommitsParams{
@@ -68,9 +69,9 @@ var annotateCmd = &cobra.Command{
 					logCommitsParams.Prefixes = &[]string{obj.Path}
 				}
 				logCommitsResp, err := client.LogCommitsWithResponse(context, pathURI.Repository, pathURI.Ref, logCommitsParams)
-				DieOnErrorOrUnexpectedStatusCode(logCommitsResp, err, http.StatusOK)
+				utils.DieOnErrorOrUnexpectedStatusCode(logCommitsResp, err, http.StatusOK)
 				if resp.JSON200 == nil {
-					Die("Bad response from server", 1)
+					utils.Die("Bad response from server", 1)
 				}
 				data := objectCommitData{
 					Object: obj.Path,
@@ -79,7 +80,7 @@ var annotateCmd = &cobra.Command{
 					data.Commit = logCommitsResp.JSON200.Results[0]
 					data.CommitMessage = splitOnNewLine(stringTrimLen(logCommitsResp.JSON200.Results[0].Message, annotateMessageSize))
 				}
-				Write(annotateTemplate, data)
+				utils.Write(annotateTemplate, data)
 			}
 			pagination := listObjectsResp.JSON200.Pagination
 			if !pagination.HasMore {

@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/cmdutils"
 )
@@ -18,18 +19,18 @@ var actionsValidateCmd = &cobra.Command{
 	Args:    cmdutils.ValidationChain(cobra.ExactArgs(actionsValidateRequiredArgs)),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := args[0]
-		reader := OpenByPath(file)
+		reader := utils.OpenByPath(file)
 		defer func() { _ = reader.Close() }()
 
 		bytes, err := io.ReadAll(reader)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
 		if _, err := actions.ParseAction(bytes); err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
-		Fmt("File validated successfully: '%s'\n", file)
+		utils.Fmt("File validated successfully: '%s'\n", file)
 	},
 }
 

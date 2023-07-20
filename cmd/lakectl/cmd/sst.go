@@ -9,6 +9,7 @@ import (
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -18,7 +19,7 @@ import (
 
 func readStdin() (pebblesst.ReadableFile, error) {
 	// test if stdin is seekable
-	if isSeekable(os.Stdin) {
+	if utils.IsSeekable(os.Stdin) {
 		return os.Stdin, nil
 	}
 	// not seekable - read it into a temp file
@@ -64,7 +65,7 @@ func getIterFromFile(filePath string) (committed.ValueIterator, map[string]strin
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil
 }
 
-func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*utils.Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -92,13 +93,13 @@ func formatEntryRangeSSTable(iter committed.ValueIterator, amount int) (*Table, 
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &utils.Table{
 		Headers: []interface{}{"path", "identity", "size", "etag", "last_modified", "address", "metadata"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*utils.Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -119,13 +120,13 @@ func formatBranchRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &utils.Table{
 		Headers: []interface{}{"branch ID", "commit ID"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*utils.Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -146,13 +147,13 @@ func formatTagsRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &utils.Table{
 		Headers: []interface{}{"tag ID", "commit ID"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*utils.Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -200,13 +201,13 @@ func formatCommitRangeSSTable(iter committed.ValueIterator, amount int) (*Table,
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &utils.Table{
 		Headers: []interface{}{"commit ID", "committer", "message", "creation date", "metadata", "parents", "metarange ID", "version", "generation"},
 		Rows:    rows,
 	}, nil
 }
 
-func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType string) (*Table, error) {
+func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType string) (*utils.Table, error) {
 	switch entityType {
 	case graveler.EntityTypeBranch:
 		return formatBranchRangeSSTable(iter, amount)
@@ -219,7 +220,7 @@ func formatRangeSSTable(iter committed.ValueIterator, amount int, entityType str
 	}
 }
 
-func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, error) {
+func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*utils.Table, error) {
 	rows := make([][]interface{}, 0)
 	for iter.Next() {
 		if amount != -1 && len(rows)+1 > amount {
@@ -245,7 +246,7 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	return &Table{
+	return &utils.Table{
 		Headers: []interface{}{"range_id", "min_key", "max_key", "count", "estimated_size"},
 		Rows:    rows,
 	}, nil
@@ -262,32 +263,32 @@ var sstCmd = &cobra.Command{
 		filePath, _ := cmd.Flags().GetString("file")
 		iter, props, err := getIterFromFile(filePath)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		defer iter.Close()
 
 		// get props
 		typ, ok := props[committed.MetadataTypeKey]
 		if !ok {
-			DieFmt("could not determine sstable file type")
+			utils.DieFmt("could not determine sstable file type")
 		}
 
-		var table *Table
+		var table *utils.Table
 		switch typ {
 		case committed.MetadataMetarangesType:
 			table, err = formatMetaRangeSSTable(iter, amount)
 		case committed.MetadataRangesType:
 			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
 		default:
-			DieFmt("unknown sstable file type: %s", typ)
+			utils.DieFmt("unknown sstable file type: %s", typ)
 		}
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
 		// write to stdout
-		Write(sstCatTemplate, struct {
-			Table *Table
+		utils.Write(sstCatTemplate, struct {
+			Table *utils.Table
 		}{table})
 	},
 }

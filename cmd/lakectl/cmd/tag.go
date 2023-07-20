@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -23,10 +24,10 @@ var tagListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		after := utils.MustString(cmd.Flags().GetString("after"))
 
-		u := MustParseRepoURI("repository", args[0])
+		u := utils.MustParseRepoURI("repository", args[0])
 
 		ctx := cmd.Context()
 		client := getClient()
@@ -34,9 +35,9 @@ var tagListCmd = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		refs := resp.JSON200.Results
@@ -46,23 +47,23 @@ var tagListCmd = &cobra.Command{
 		}
 
 		tmplArgs := struct {
-			TagTable   *Table
-			Pagination *Pagination
+			TagTable   *utils.Table
+			Pagination *utils.Pagination
 		}{
-			TagTable: &Table{
+			TagTable: &utils.Table{
 				Headers: []interface{}{"Tag", "Commit ID"},
 				Rows:    rows,
 			},
 		}
 		pagination := resp.JSON200.Pagination
 		if pagination.HasMore {
-			tmplArgs.Pagination = &Pagination{
+			tmplArgs.Pagination = &utils.Pagination{
 				Amount:  amount,
 				HasNext: true,
 				After:   pagination.NextOffset,
 			}
 		}
-		PrintTable(rows, []interface{}{"Tag", "Commit ID"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Tag", "Commit ID"}, &pagination, amount)
 	},
 }
 
@@ -78,29 +79,29 @@ var tagCreateCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := MustParseRefURI("tag uri", args[0])
-		commitURI := MustParseRefURI("commit uri", args[1])
-		Fmt("Tag ref: %s\n", tagURI.String())
+		tagURI := utils.MustParseRefURI("tag uri", args[0])
+		commitURI := utils.MustParseRefURI("commit uri", args[1])
+		utils.Fmt("Tag ref: %s\n", tagURI.String())
 
 		client := getClient()
 		ctx := cmd.Context()
 		force, _ := cmd.Flags().GetBool("force")
 
 		if tagURI.Repository != commitURI.Repository {
-			Die("both references must belong to the same repository", 1)
+			utils.Die("both references must belong to the same repository", 1)
 		}
 
 		if force {
 			// checking validity of the commitRef before deleting the old one
 			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitURI.Ref)
-			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
 			if res.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 
 			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
-				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+				utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
 		}
 
@@ -108,13 +109,13 @@ var tagCreateCmd = &cobra.Command{
 			Id:  tagURI.Ref,
 			Ref: commitURI.Ref,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		commitID := *resp.JSON201
-		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
+		utils.Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
 	},
 }
 
@@ -124,17 +125,17 @@ var tagDeleteCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete tag")
+		confirmation, err := utils.Confirm(cmd.Flags(), "Are you sure you want to delete tag")
 		if err != nil || !confirmation {
-			Die("Delete tag aborted", 1)
+			utils.Die("Delete tag aborted", 1)
 		}
 		client := getClient()
-		u := MustParseRefURI("tag", args[0])
-		Fmt("Tag ref: %s\n", u.String())
+		u := utils.MustParseRefURI("tag", args[0])
+		utils.Fmt("Tag ref: %s\n", u.String())
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
@@ -145,16 +146,16 @@ var tagShowCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRefURI("tag", args[0])
-		Fmt("Tag ref: %s\n", u.String())
+		u := utils.MustParseRefURI("tag", args[0])
+		utils.Fmt("Tag ref: %s\n", u.String())
 
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
-		Fmt("%s %s\n", resp.JSON200.Id, resp.JSON200.CommitId)
+		utils.Fmt("%s %s\n", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }
 
@@ -166,6 +167,6 @@ func init() {
 	tagCmd.AddCommand(tagCreateCmd, tagDeleteCmd, tagListCmd, tagShowCmd)
 
 	flags := tagListCmd.Flags()
-	flags.Int("amount", defaultAmountArgumentValue, "number of results to return")
+	flags.Int("amount", utils.DefaultAmountArgumentValue, "number of results to return")
 	flags.String("after", "", "show results after this value (used for pagination)")
 }

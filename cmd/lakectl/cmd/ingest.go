@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
@@ -28,9 +29,9 @@ func stageWorker(ctx context.Context, client api.ClientWithResponsesInterface, w
 	defer wg.Done()
 	for req := range requests {
 		resp, err := client.StageObjectWithResponse(ctx, req.repository, req.branch, req.params, req.body)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		responses <- resp
 	}
@@ -42,13 +43,13 @@ var ingestCmd = &cobra.Command{
 	Short:      "Ingest objects from an external source into a lakeFS branch (without actually copying them)",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		verbose := MustBool(cmd.Flags().GetBool("verbose"))
-		dryRun := MustBool(cmd.Flags().GetBool("dry-run"))
-		s3EndpointURL := MustString(cmd.Flags().GetString("s3-endpoint-url"))
-		from := MustString(cmd.Flags().GetString("from"))
-		to := MustString(cmd.Flags().GetString("to"))
-		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
-		lakefsURI := MustParsePathURI("to", to)
+		verbose := utils.MustBool(cmd.Flags().GetBool("verbose"))
+		dryRun := utils.MustBool(cmd.Flags().GetBool("dry-run"))
+		s3EndpointURL := utils.MustString(cmd.Flags().GetString("s3-endpoint-url"))
+		from := utils.MustString(cmd.Flags().GetString("from"))
+		to := utils.MustString(cmd.Flags().GetString("to"))
+		concurrency := utils.MustInt(cmd.Flags().GetInt("concurrency"))
+		lakefsURI := utils.MustParsePathURI("to", to)
 
 		// initialize worker pool
 		client := getClient()
@@ -69,8 +70,8 @@ var ingestCmd = &cobra.Command{
 		if lakefsURI.Path != nil {
 			path = *lakefsURI.Path
 		}
-		if len(path) > 0 && !strings.HasSuffix(path, PathDelimiter) {
-			path += PathDelimiter // append a path delimiter (slash) if not passed by the user, and it's not an empty path in lakeFS
+		if len(path) > 0 && !strings.HasSuffix(path, utils.PathDelimiter) {
+			path += utils.PathDelimiter // append a path delimiter (slash) if not passed by the user, and it's not an empty path in lakeFS
 		}
 		go func() {
 			walker, err := store.NewFactory(nil).GetWalker(ctx, store.WalkerOptions{
@@ -79,11 +80,11 @@ var ingestCmd = &cobra.Command{
 				SkipOutOfOrder: false,
 			})
 			if err != nil {
-				DieFmt("error creating object-store walker: %v", err)
+				utils.DieFmt("error creating object-store walker: %v", err)
 			}
 			err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 				if dryRun {
-					Fmt("%s\n", e)
+					utils.Fmt("%s\n", e)
 					return nil
 				}
 				// iterate entries and feed our pool
@@ -105,7 +106,7 @@ var ingestCmd = &cobra.Command{
 				return nil
 			})
 			if err != nil {
-				DieFmt("error walking object store: %v", err)
+				utils.DieFmt("error walking object store: %v", err)
 			}
 			close(requests)  // we're done feeding work!
 			wg.Wait()        // until all responses have been written
@@ -118,23 +119,23 @@ var ingestCmd = &cobra.Command{
 			summary.Bytes += api.Int64Value(response.JSON201.SizeBytes)
 
 			if verbose {
-				Write("Staged "+fsStatTemplate+"\n", response.JSON201)
+				utils.Write("Staged "+fsStatTemplate+"\n", response.JSON201)
 				continue
 			}
 
 			// If not verbose, at least update no more than once a second
 			if time.Since(elapsed) > time.Second {
-				Write("Staged {{ .Objects | green }} objects so far...\r", summary)
+				utils.Write("Staged {{ .Objects | green }} objects so far...\r", summary)
 				elapsed = time.Now()
 			}
 
 		}
 		if !verbose {
-			Fmt("\n")
+			utils.Fmt("\n")
 		}
 
 		// print summary
-		Write(ingestSummaryTemplate, summary)
+		utils.Write(ingestSummaryTemplate, summary)
 	},
 }
 

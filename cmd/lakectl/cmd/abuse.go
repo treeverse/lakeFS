@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
@@ -24,7 +25,7 @@ var abuseCmd = &cobra.Command{
 }
 
 func readLines(path string) (lines []string, err error) {
-	reader := OpenByPath(path)
+	reader := utils.OpenByPath(path)
 	defer func() {
 		if closeErr := reader.Close(); closeErr != nil {
 			if err == nil {
@@ -52,18 +53,18 @@ var abuseRandomReadsCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
-		fromFile := MustString(cmd.Flags().GetString("from-file"))
+		u := utils.MustParseRefURI("source ref", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := utils.MustInt(cmd.Flags().GetInt("parallelism"))
+		fromFile := utils.MustString(cmd.Flags().GetString("from-file"))
 
-		Fmt("Source ref: %s\n", u.String())
+		utils.Fmt("Source ref: %s\n", u.String())
 		// read the input file
 		keys, err := readLines(fromFile)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
-		Fmt("read a total of %d keys from key file\n", len(keys))
+		utils.Fmt("read a total of %d keys from key file\n", len(keys))
 
 		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
@@ -104,13 +105,13 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
-		key := MustString(cmd.Flags().GetString("key"))
+		u := utils.MustParseRefURI("source ref", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := utils.MustInt(cmd.Flags().GetInt("parallelism"))
+		key := utils.MustString(cmd.Flags().GetString("key"))
 
-		Fmt("Source ref: %s\n", u.String())
-		Fmt("Object key: %s\n", key)
+		utils.Fmt("Source ref: %s\n", u.String())
+		utils.Fmt("Object key: %s\n", key)
 
 		generator := stress.NewGenerator("get-and-link", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
@@ -172,12 +173,12 @@ var abuseRandomWritesCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source branch", args[0])
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
-		prefix := MustString(cmd.Flags().GetString("prefix"))
+		u := utils.MustParseRefURI("source branch", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := utils.MustInt(cmd.Flags().GetInt("parallelism"))
+		prefix := utils.MustString(cmd.Flags().GetString("prefix"))
 
-		Fmt("Source branch: %s\n", u.String())
+		utils.Fmt("Source branch: %s\n", u.String())
 		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
@@ -190,9 +191,9 @@ var abuseRandomWritesCmd = &cobra.Command{
 
 		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		repo := resp.JSON200
@@ -233,11 +234,11 @@ var abuseCommitCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		gapDuration := MustDuration(cmd.Flags().GetDuration("gap"))
+		u := utils.MustParseRefURI("source ref", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		gapDuration := utils.MustDuration(cmd.Flags().GetDuration("gap"))
 
-		Fmt("Source branch: %s\n", u.String())
+		utils.Fmt("Source branch: %s\n", u.String())
 		generator := stress.NewGenerator("commit", 1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
@@ -251,9 +252,9 @@ var abuseCommitCmd = &cobra.Command{
 		// generate randomly selected keys as input
 		client := getClient()
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		// execute the things!
@@ -288,15 +289,15 @@ var abuseCreateBranchesCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
-		cleanOnly := MustBool(cmd.Flags().GetBool("clean-only"))
-		branchPrefix := MustString(cmd.Flags().GetString("branch-prefix"))
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
+		u := utils.MustParseRefURI("source ref", args[0])
+		cleanOnly := utils.MustBool(cmd.Flags().GetBool("clean-only"))
+		branchPrefix := utils.MustString(cmd.Flags().GetString("branch-prefix"))
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := utils.MustInt(cmd.Flags().GetInt("parallelism"))
 
 		client := getClient()
 
-		Fmt("Source ref: %s\n", u.String())
+		utils.Fmt("Source ref: %s\n", u.String())
 		deleteGen := stress.NewGenerator("delete branch", parallelism)
 
 		const paginationAmount = 1000
@@ -308,9 +309,9 @@ var abuseCreateBranchesCmd = &cobra.Command{
 					After:  &currentOffset,
 					Amount: &amount,
 				})
-				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+				utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 				if resp.JSON200 == nil {
-					Die("Bad response from server", 1)
+					utils.Die("Bad response from server", 1)
 				}
 
 				for _, ref := range resp.JSON200.Results {
@@ -381,10 +382,10 @@ var abuseListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		parallelism := MustInt(cmd.Flags().GetInt("parallelism"))
-		prefix := MustString(cmd.Flags().GetString("prefix"))
+		u := utils.MustParseRefURI("source ref", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		parallelism := utils.MustInt(cmd.Flags().GetInt("parallelism"))
+		prefix := utils.MustString(cmd.Flags().GetString("prefix"))
 
 		generator := stress.NewGenerator("list", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 

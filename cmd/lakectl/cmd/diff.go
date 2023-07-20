@@ -8,6 +8,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -53,18 +54,18 @@ var diffCmd = &cobra.Command{
 		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseRefURI("ref", args[0])
-			Fmt("Ref: %s\n", branchURI.String())
+			branchURI := utils.MustParseRefURI("ref", args[0])
+			utils.Fmt("Ref: %s\n", branchURI.String())
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}
 
 		twoWay, _ := cmd.Flags().GetBool(twoWayFlagName)
-		leftRefURI := MustParseRefURI("left ref", args[0])
-		rightRefURI := MustParseRefURI("right ref", args[1])
-		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		leftRefURI := utils.MustParseRefURI("left ref", args[0])
+		rightRefURI := utils.MustParseRefURI("right ref", args[1])
+		utils.Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
 		if leftRefURI.Repository != rightRefURI.Repository {
-			Die("both references must belong to the same repository", 1)
+			utils.Die("both references must belong to the same repository", 1)
 		}
 		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoWay)
 	},
@@ -90,9 +91,9 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(int(pageSize)),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		for _, line := range resp.JSON200.Results {
@@ -121,9 +122,9 @@ func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface,
 			Amount: api.PaginationAmountPtr(amount),
 			Type:   diffType,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		for _, line := range resp.JSON200.Results {

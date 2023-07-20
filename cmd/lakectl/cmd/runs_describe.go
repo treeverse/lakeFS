@@ -6,6 +6,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
@@ -25,12 +26,12 @@ var runsDescribeCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(runsShowRequiredArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		u := MustParseRepoURI("repository", args[0])
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		after := utils.MustString(cmd.Flags().GetString("after"))
+		u := utils.MustParseRepoURI("repository", args[0])
 		pagination := api.Pagination{HasMore: true}
 
-		Fmt("Repository: %s\n", u.String())
+		utils.Fmt("Repository: %s\n", u.String())
 		runID := args[1]
 
 		client := getClient()
@@ -38,44 +39,44 @@ var runsDescribeCmd = &cobra.Command{
 
 		// run result information
 		runsRes, err := client.GetRunWithResponse(ctx, u.Repository, runID)
-		DieOnErrorOrUnexpectedStatusCode(runsRes, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(runsRes, err, http.StatusOK)
 		if runsRes.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		runResult := runsRes.JSON200
-		Write(actionRunResultTemplate, convertRunResultTable(runResult))
+		utils.Write(actionRunResultTemplate, convertRunResultTable(runResult))
 		for pagination.HasMore {
 			amountForPagination := amount
 			if amountForPagination <= 0 {
-				amountForPagination = internalPageSize
+				amountForPagination = utils.InternalPageSize
 			}
 			// iterator over hooks - print information and output
 			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
 				After:  api.PaginationAfterPtr(after),
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
-			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
 			if runHooksRes.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
 				Hooks      []api.HookRun
-				HooksTable []*Table
+				HooksTable []*utils.Table
 				HookLog    func(hookRunID string) (string, error)
-				Pagination *Pagination
+				Pagination *utils.Pagination
 			}{
 				Hooks:      runHooksRes.JSON200.Results,
 				HooksTable: convertHookResultsTables(runHooksRes.JSON200.Results),
 				HookLog:    makeHookLog(ctx, client, u.Repository, runID),
-				Pagination: &Pagination{
+				Pagination: &utils.Pagination{
 					Amount:  amount,
 					HasNext: pagination.HasMore,
 					After:   pagination.NextOffset,
 				},
 			}
-			Write(actionTaskResultTemplate, data)
+			utils.Write(actionTaskResultTemplate, data)
 			after = pagination.NextOffset
 			if amount != 0 {
 				// user request only one page
@@ -98,14 +99,14 @@ func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, r
 	}
 }
 
-func convertRunResultTable(r *api.ActionRun) *Table {
+func convertRunResultTable(r *api.ActionRun) *utils.Table {
 	runID := text.FgYellow.Sprint(r.RunId)
 	statusColor := text.FgRed
 	if r.Status == "completed" {
 		statusColor = text.FgGreen
 	}
 	status := statusColor.Sprint(r.Status)
-	return &Table{
+	return &utils.Table{
 		Headers: []interface{}{"Run ID", "Event", "Branch", "Start Time", "End Time", "Commit ID", "Status"},
 		Rows: [][]interface{}{
 			{runID, r.EventType, r.Branch, r.StartTime, r.EndTime, r.CommitId, status},
@@ -113,8 +114,8 @@ func convertRunResultTable(r *api.ActionRun) *Table {
 	}
 }
 
-func convertHookResultsTables(results []api.HookRun) []*Table {
-	tables := make([]*Table, len(results))
+func convertHookResultsTables(results []api.HookRun) []*utils.Table {
+	tables := make([]*utils.Table, len(results))
 	for i, r := range results {
 		hookRunID := text.FgYellow.Sprint(r.HookRunId)
 		statusColor := text.FgRed
@@ -127,7 +128,7 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 			statusColor = text.FgRed
 		}
 		status := statusColor.Sprint(r.Status)
-		tables[i] = &Table{
+		tables[i] = &utils.Table{
 			Headers: []interface{}{"Hook Run ID", "Hook ID", "Start Time", "End Time", "Action", "Status"},
 			Rows: [][]interface{}{
 				{hookRunID, r.HookId, r.StartTime, r.EndTime, r.Action, status},

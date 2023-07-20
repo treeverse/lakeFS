@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -66,9 +67,9 @@ var authUsersList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		users := resp.JSON200.Results
@@ -79,7 +80,7 @@ var authUsersList = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"User ID", "Creation Date"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"User ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -93,12 +94,12 @@ var authUsersCreate = &cobra.Command{
 		resp, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
 			Id: id,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		user := resp.JSON201
-		Write(userCreatedTemplate, user)
+		utils.Write(userCreatedTemplate, user)
 	},
 }
 
@@ -110,8 +111,8 @@ var authUsersDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		Fmt("User deleted successfully\n")
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.Fmt("User deleted successfully\n")
 	},
 }
 
@@ -134,9 +135,9 @@ var authUsersGroupsList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		groups := resp.JSON200.Results
@@ -147,7 +148,7 @@ var authUsersGroupsList = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -173,9 +174,9 @@ var authUsersPoliciesList = &cobra.Command{
 			Amount:    api.PaginationAmountPtr(amount),
 			Effective: &effective,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		policies := resp.JSON200.Results
@@ -188,7 +189,7 @@ var authUsersPoliciesList = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
 	},
 }
 
@@ -200,8 +201,8 @@ var authUsersPoliciesAttach = &cobra.Command{
 		policy, _ := cmd.Flags().GetString("policy")
 		clt := getClient()
 		resp, err := clt.AttachPolicyToUserWithResponse(cmd.Context(), id, policy)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		Fmt("Policy attached successfully\n")
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.Fmt("Policy attached successfully\n")
 	},
 }
 
@@ -214,9 +215,9 @@ var authUsersPoliciesDetach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
-		Fmt("Policy detached successfully\n")
+		utils.Fmt("Policy detached successfully\n")
 	},
 }
 
@@ -234,21 +235,21 @@ var authUsersCredentialsCreate = &cobra.Command{
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 			id = resp.JSON200.User.Id
 		}
 
 		resp, err := clt.CreateCredentialsWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		credentials := resp.JSON201
-		Write(credentialsCreatedTemplate, credentials)
+		utils.Write(credentialsCreatedTemplate, credentials)
 	},
 }
 
@@ -262,16 +263,16 @@ var authUsersCredentialsDelete = &cobra.Command{
 
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 			id = resp.JSON200.User.Id
 		}
 		resp, err := clt.DeleteCredentialsWithResponse(cmd.Context(), id, accessKeyID)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
-		Fmt("Credentials deleted successfully\n")
+		utils.Fmt("Credentials deleted successfully\n")
 	},
 }
 
@@ -286,9 +287,9 @@ var authUsersCredentialsList = &cobra.Command{
 		clt := getClient()
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 			id = resp.JSON200.User.Id
 		}
@@ -297,9 +298,9 @@ var authUsersCredentialsList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		credentials := resp.JSON200.Results
@@ -309,7 +310,7 @@ var authUsersCredentialsList = &cobra.Command{
 			rows[i] = []interface{}{c.AccessKeyId, ts}
 		}
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, &pagination, amount)
 	},
 }
 
@@ -332,9 +333,9 @@ var authGroupsList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		groups := resp.JSON200.Results
@@ -345,7 +346,7 @@ var authGroupsList = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -359,12 +360,12 @@ var authGroupsCreate = &cobra.Command{
 		resp, err := clt.CreateGroupWithResponse(cmd.Context(), api.CreateGroupJSONRequestBody{
 			Id: id,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		group := resp.JSON201
-		Write(groupCreatedTemplate, group)
+		utils.Write(groupCreatedTemplate, group)
 	},
 }
 
@@ -376,8 +377,8 @@ var authGroupsDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		Fmt("Group deleted successfully\n")
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.Fmt("Group deleted successfully\n")
 	},
 }
 
@@ -400,9 +401,9 @@ var authGroupsListMembers = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		users := resp.JSON200.Results
@@ -412,7 +413,7 @@ var authGroupsListMembers = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"User ID"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"User ID"}, &pagination, amount)
 	},
 }
 
@@ -425,8 +426,8 @@ var authGroupsAddMember = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.AddGroupMembershipWithResponse(cmd.Context(), id, user)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		Fmt("User successfully added\n")
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.Fmt("User successfully added\n")
 	},
 }
 
@@ -439,8 +440,8 @@ var authGroupsRemoveMember = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		Fmt("User successfully removed\n")
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.Fmt("User successfully removed\n")
 	},
 }
 
@@ -464,9 +465,9 @@ var authGroupsPoliciesList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		policies := resp.JSON200.Results
@@ -479,7 +480,7 @@ var authGroupsPoliciesList = &cobra.Command{
 		}
 
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, &pagination, amount)
 	},
 }
 
@@ -492,9 +493,9 @@ var authGroupsPoliciesAttach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
-		Fmt("Policy attached successfully\n")
+		utils.Fmt("Policy attached successfully\n")
 	},
 }
 
@@ -507,9 +508,9 @@ var authGroupsPoliciesDetach = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
-		Fmt("Policy detached successfully\n")
+		utils.Fmt("Policy detached successfully\n")
 	},
 }
 
@@ -532,9 +533,9 @@ var authPoliciesList = &cobra.Command{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		policies := resp.JSON200.Results
@@ -544,7 +545,7 @@ var authPoliciesList = &cobra.Command{
 			rows[i] = []interface{}{policy.Id, ts}
 		}
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, &pagination, amount)
 	},
 }
 
@@ -563,7 +564,7 @@ var authPoliciesCreate = &cobra.Command{
 		} else {
 			fp, err = os.Open(document)
 			if err != nil {
-				DieFmt("could not open policy document: %v", err)
+				utils.DieFmt("could not open policy document: %v", err)
 			}
 			defer func() {
 				_ = fp.Close()
@@ -573,19 +574,19 @@ var authPoliciesCreate = &cobra.Command{
 		var doc StatementDoc
 		err = json.NewDecoder(fp).Decode(&doc)
 		if err != nil {
-			DieFmt("could not parse statement JSON document: %v", err)
+			utils.DieFmt("could not parse statement JSON document: %v", err)
 		}
 		resp, err := clt.CreatePolicyWithResponse(cmd.Context(), api.CreatePolicyJSONRequestBody{
 			Id:        id,
 			Statement: doc.Statement,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		createdPolicy := resp.JSON201
-		Write(policyCreatedTemplate, struct {
+		utils.Write(policyCreatedTemplate, struct {
 			ID           string
 			CreationDate int64
 			StatementDoc StatementDoc
@@ -609,13 +610,13 @@ var authPoliciesShow = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		policy := *resp.JSON200
-		Write(policyDetailsTemplate, struct {
+		utils.Write(policyDetailsTemplate, struct {
 			ID           string
 			CreationDate int64
 			StatementDoc StatementDoc
@@ -635,8 +636,8 @@ var authPoliciesDelete = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		Fmt("Policy deleted successfully\n")
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.Fmt("Policy deleted successfully\n")
 	},
 }
 
@@ -654,9 +655,9 @@ var aclGroupACLGet = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.GetGroupACLWithResponse(cmd.Context(), id)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
-		Write(permissionTemplate, struct{ Group, Permission string }{id, resp.JSON200.Permission})
+		utils.Write(permissionTemplate, struct{ Group, Permission string }{id, resp.JSON200.Permission})
 	},
 }
 
@@ -675,13 +676,13 @@ var aclGroupACLSet = &cobra.Command{
 		}
 
 		resp, err := clt.SetGroupACL(cmd.Context(), id, acl)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 	},
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
 	cmd.Flags().SortFlags = false
-	cmd.Flags().Int("amount", defaultAmountArgumentValue, "how many results to return")
+	cmd.Flags().Int("amount", utils.DefaultAmountArgumentValue, "how many results to return")
 	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
 

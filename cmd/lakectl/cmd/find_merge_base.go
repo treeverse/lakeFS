@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -33,20 +34,20 @@ var findMergeBaseCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseRefURI("source ref", args[0])
-		destinationRef := MustParseRefURI("destination ref", args[1])
-		Fmt("Source: %s\nDestination: %s\n", sourceRef, destinationRef)
+		sourceRef := utils.MustParseRefURI("source ref", args[0])
+		destinationRef := utils.MustParseRefURI("destination ref", args[1])
+		utils.Fmt("Source: %s\nDestination: %s\n", sourceRef, destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
-			Die("both references must belong to the same repository", 1)
+			utils.Die("both references must belong to the same repository", 1)
 		}
 
 		resp, err := client.FindMergeBaseWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
-		Write(findMergeBaseTemplate, struct {
+		utils.Write(findMergeBaseTemplate, struct {
 			Merge  FromToBase
 			Result *api.FindMergeBaseResult
 		}{

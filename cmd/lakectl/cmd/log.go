@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -72,21 +73,21 @@ var logCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		limit := MustBool(cmd.Flags().GetBool("limit"))
-		dot := MustBool(cmd.Flags().GetBool("dot"))
-		firstParent := MustBool(cmd.Flags().GetBool("first-parent"))
-		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
-		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		after := utils.MustString(cmd.Flags().GetString("after"))
+		limit := utils.MustBool(cmd.Flags().GetBool("limit"))
+		dot := utils.MustBool(cmd.Flags().GetBool("dot"))
+		firstParent := utils.MustBool(cmd.Flags().GetBool("first-parent"))
+		objectsList := utils.MustSliceNonEmptyString("objects", utils.MustStringSlice(cmd.Flags().GetStringSlice("objects")))
+		prefixesList := utils.MustSliceNonEmptyString("prefixes", utils.MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
 
 		pagination := api.Pagination{HasMore: true}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
 		client := getClient()
-		branchURI := MustParseRefURI("branch", args[0])
+		branchURI := utils.MustParseRefURI("branch", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {
-			amountForPagination = internalPageSize
+			amountForPagination = utils.InternalPageSize
 		}
 		logCommitsParams := &api.LogCommitsParams{
 			After:       api.PaginationAfterPtr(after),
@@ -111,20 +112,20 @@ var logCmd = &cobra.Command{
 
 		for pagination.HasMore {
 			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
-			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				Die("Bad response from server", 1)
+				utils.Die("Bad response from server", 1)
 			}
 			pagination = resp.JSON200.Pagination
 			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
 			data := struct {
 				Commits         []api.Commit
-				Pagination      *Pagination
+				Pagination      *utils.Pagination
 				ShowMetaRangeID bool
 			}{
 				Commits:         resp.JSON200.Results,
 				ShowMetaRangeID: showMetaRangeID,
-				Pagination: &Pagination{
+				Pagination: &utils.Pagination{
 					Amount:  amount,
 					HasNext: pagination.HasMore,
 					After:   pagination.NextOffset,
@@ -134,7 +135,7 @@ var logCmd = &cobra.Command{
 			if dot {
 				graph.Write(data.Commits)
 			} else {
-				Write(commitsTemplate, data)
+				utils.Write(commitsTemplate, data)
 			}
 
 			if amount != 0 {

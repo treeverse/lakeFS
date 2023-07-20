@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -27,17 +28,17 @@ var repoListCmd = &cobra.Command{
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
+		amount := utils.MustInt(cmd.Flags().GetInt("amount"))
+		after := utils.MustString(cmd.Flags().GetString("after"))
 		clt := getClient()
 
 		resp, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		repos := resp.JSON200.Results
 		rows := make([][]interface{}, len(repos))
@@ -46,7 +47,7 @@ var repoListCmd = &cobra.Command{
 			rows[i] = []interface{}{repo.Id, ts, repo.DefaultBranch, repo.StorageNamespace}
 		}
 		pagination := resp.JSON200.Pagination
-		PrintTable(rows, []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"}, &pagination, amount)
+		utils.PrintTable(rows, []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"}, &pagination, amount)
 	},
 }
 
@@ -60,11 +61,11 @@ var repoCreateCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", u.String())
+		u := utils.MustParseRepoURI("repository", args[0])
+		utils.Fmt("Repository: %s\n", u.String())
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&api.CreateRepositoryParams{},
@@ -73,12 +74,12 @@ var repoCreateCmd = &cobra.Command{
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 			})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+		utils.Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
@@ -94,11 +95,11 @@ var repoCreateBareCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", u.String())
+		u := utils.MustParseRepoURI("repository", args[0])
+		utils.Fmt("Repository: %s\n", u.String())
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		bareRepo := true
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
@@ -108,12 +109,12 @@ var repoCreateBareCmd = &cobra.Command{
 			Name:             u.Repository,
 			StorageNamespace: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+		utils.Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
@@ -127,15 +128,15 @@ var repoDeleteCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", u.String())
-		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
+		u := utils.MustParseRepoURI("repository", args[0])
+		utils.Fmt("Repository: %s\n", u.String())
+		confirmation, err := utils.Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {
-			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
+			utils.DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
 		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		Fmt("Repository '%s' deleted\n", u.Repository)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.Fmt("Repository '%s' deleted\n", u.Repository)
 	},
 }
 
@@ -147,12 +148,12 @@ func init() {
 	repoCmd.AddCommand(repoCreateBareCmd)
 	repoCmd.AddCommand(repoDeleteCmd)
 
-	repoListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
+	repoListCmd.Flags().Int("amount", utils.DefaultAmountArgumentValue, "number of results to return")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
 
 	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
 
-	AssignAutoConfirmFlag(repoDeleteCmd.Flags())
+	utils.AssignAutoConfirmFlag(repoDeleteCmd.Flags())
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -38,15 +39,15 @@ var commitCmd = &cobra.Command{
 		// validate message
 		kvPairs, err := getKV(cmd, metaFlagName)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
-		message := MustString(cmd.Flags().GetString(messageFlagName))
-		emptyMessageBool := MustBool(cmd.Flags().GetBool(allowEmptyMessageFlagName))
-		date := MustInt64(cmd.Flags().GetInt64(dateFlagName))
+		message := utils.MustString(cmd.Flags().GetString(messageFlagName))
+		emptyMessageBool := utils.MustBool(cmd.Flags().GetBool(allowEmptyMessageFlagName))
+		date := utils.MustInt64(cmd.Flags().GetInt64(dateFlagName))
 
 		if strings.TrimSpace(message) == "" && !emptyMessageBool {
-			DieFmt(fmtErrEmptyMessage)
+			utils.DieFmt(fmtErrEmptyMessage)
 		}
 
 		datePtr := &date
@@ -54,8 +55,8 @@ var commitCmd = &cobra.Command{
 			datePtr = nil
 		}
 
-		branchURI := MustParseRefURI("branch", args[0])
-		Fmt("Branch: %s\n", branchURI.String())
+		branchURI := utils.MustParseRefURI("branch", args[0])
+		utils.Fmt("Branch: %s\n", branchURI.String())
 
 		// do commit
 		metadata := api.CommitCreation_Metadata{
@@ -67,13 +68,13 @@ var commitCmd = &cobra.Command{
 			Metadata: &metadata,
 			Date:     datePtr,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 
 		commit := resp.JSON201
-		Write(commitCreateTemplate, struct {
+		utils.Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
 		}{Branch: branchURI, Commit: commit})
@@ -106,7 +107,7 @@ func init() {
 
 	commitCmd.Flags().Int64(dateFlagName, -1, "create commit with a custom unix epoch date in seconds")
 	if err := commitCmd.Flags().MarkHidden(dateFlagName); err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 
 	commitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 )
 
 // configCmd represents the config command
@@ -21,7 +22,7 @@ var configCmd = &cobra.Command{
 			// Find home directory.
 			home, err := homedir.Dir()
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 			// Setup default config file
 			viper.SetConfigFile(filepath.Join(home, ".lakectl.yaml"))
@@ -44,7 +45,7 @@ var configCmd = &cobra.Command{
 			question.Prompt.Default = viper.GetString(question.Key)
 			val, err := question.Prompt.Run()
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 			viper.Set(question.Key, val)
 		}
@@ -54,7 +55,7 @@ var configCmd = &cobra.Command{
 			err = viper.WriteConfig()
 		}
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }

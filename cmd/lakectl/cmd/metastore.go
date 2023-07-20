@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/metastore"
@@ -61,7 +62,7 @@ var metastoreCopyCmd = &cobra.Command{
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
 		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }
@@ -96,7 +97,7 @@ var metastoreCopySchemaCmd = &cobra.Command{
 		fmt.Printf("copy %s -> %s\n", fromDB, toDB)
 		err := metastore.CopyDB(cmd.Context(), fromClient, toClient, fromDB, toDB, toBranch, dbfsLocation)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }
@@ -112,12 +113,12 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 		}
 		hiveClient, err := hive.NewMSClient(hiveAddress, false, cfg.GetHiveDBLocationURI())
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		deferFunc := func() {
 			err := hiveClient.Close()
 			if err != nil {
-				DieErr(err)
+				utils.DieErr(err)
 			}
 		}
 		return hiveClient, deferFunc
@@ -125,12 +126,12 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 	case "glue":
 		client, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID(), cfg.GetGlueDBLocationURI())
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		return client, func() {}
 
 	default:
-		Die("unknown type, expected hive or glue got: "+msType, 1)
+		utils.Die("unknown type, expected hive or glue got: "+msType, 1)
 	}
 	return nil, nil
 }
@@ -151,7 +152,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
 
 		if fromAddress == toAddress {
-			Die("from-address must be different than to-address", 1)
+			utils.Die("from-address must be different than to-address", 1)
 		}
 
 		fromClient, deferFunc := getMetastoreClient(fromClientType, fromAddress)
@@ -162,7 +163,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
 		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }
@@ -187,7 +188,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
 		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
 		if fromAddress == toAddress {
-			Die("from-address must be different than to-address", 1)
+			utils.Die("from-address must be different than to-address", 1)
 		}
 
 		fromClient, deferFunc := getMetastoreClient(fromClientType, fromAddress)
@@ -198,7 +199,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 		fmt.Printf("import %s -> %s\n", fromAddress, toAddress)
 		err := metastore.ImportAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, repo, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }
@@ -228,7 +229,7 @@ var metastoreDiffCmd = &cobra.Command{
 		}
 		diff, err := metastore.GetDiff(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable)
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 		fmt.Printf("%s.%s <--> %s.%s\n", fromDB, fromTable, toDB, toTable)
 		if len(diff.ColumnsDiff) == 0 {
@@ -285,17 +286,17 @@ var createSymlinkCmd = &cobra.Command{
 
 		resp, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		location := resp.JSON201.Location
 
 		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 	},
 }

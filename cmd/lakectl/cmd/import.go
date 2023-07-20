@@ -12,6 +12,7 @@ import (
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -28,14 +29,14 @@ var importCmd = &cobra.Command{
 	Short: "Import data from external source to a destination branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
-		noProgress := MustBool(flags.GetBool("no-progress"))
-		from := MustString(flags.GetString("from"))
-		to := MustString(flags.GetString("to"))
-		toURI := MustParsePathURI("to", to)
-		message := MustString(flags.GetString("message"))
+		noProgress := utils.MustBool(flags.GetBool("no-progress"))
+		from := utils.MustString(flags.GetString("from"))
+		to := utils.MustString(flags.GetString("to"))
+		toURI := utils.MustParsePathURI("to", to)
+		message := utils.MustString(flags.GetString("message"))
 		metadata, err := getKV(cmd, "meta")
 		if err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		}
 
 		ctx := cmd.Context()
@@ -44,9 +45,9 @@ var importCmd = &cobra.Command{
 
 		// verify target branch exists before we try to create and import into the associated imported branch
 		if err, ok := branchExists(ctx, client, toURI.Repository, toURI.Ref); err != nil {
-			DieErr(err)
+			utils.DieErr(err)
 		} else if !ok {
-			DieFmt("Target branch '%s', does not exists!", toURI.Ref)
+			utils.DieFmt("Target branch '%s', does not exists!", toURI.Ref)
 		}
 
 		// setup progress bar - based on `progressbar.Default` defaults + control visibility
@@ -68,9 +69,9 @@ var importCmd = &cobra.Command{
 		}
 
 		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, body)
-		DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
+		utils.DieOnErrorOrUnexpectedStatusCode(importResp, err, http.StatusAccepted)
 		if importResp.JSON202 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		importID := importResp.JSON202.Id
 		// Handle interrupts
@@ -91,26 +92,26 @@ var importCmd = &cobra.Command{
 		for {
 			select {
 			case <-sigCtx.Done():
-				Fmt("\nCanceling import\n")
+				utils.Fmt("\nCanceling import\n")
 				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
-				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-				Die("Import Canceled", 1)
+				utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+				utils.Die("Import Canceled", 1)
 			case <-ticker.C:
 				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
-				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
+				utils.DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
 				status := statusResp.JSON200
 				if status == nil {
-					Die("Bad response from server", 1)
+					utils.Die("Bad response from server", 1)
 				}
 				if status.Error != nil {
-					DieFmt("Import failed: %s", status.Error.Message)
+					utils.DieFmt("Import failed: %s", status.Error.Message)
 				}
 				_ = bar.Set64(*status.IngestedObjects)
 				if updatedAt == status.UpdateTime {
 					updateFailures += 1
 				}
 				if updateFailures >= maxUpdateFailures {
-					DieFmt("Import status did not update for %s - abandon", maxUpdateFailures*statusPollInterval)
+					utils.DieFmt("Import status did not update for %s - abandon", maxUpdateFailures*statusPollInterval)
 				}
 				updatedAt = status.UpdateTime
 			}
@@ -121,7 +122,7 @@ var importCmd = &cobra.Command{
 		}
 		_ = bar.Clear()
 
-		Write(importSummaryTemplate, struct {
+		utils.Write(importSummaryTemplate, struct {
 			Objects     int64
 			MetaRangeID string
 			Branch      string
@@ -163,20 +164,20 @@ func newImportProgressBar(visible bool) *progressbar.ProgressBar {
 
 func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientWithResponses, source string) {
 	storageConfResp, err := client.GetStorageConfigWithResponse(ctx)
-	DieOnErrorOrUnexpectedStatusCode(storageConfResp, err, http.StatusOK)
+	utils.DieOnErrorOrUnexpectedStatusCode(storageConfResp, err, http.StatusOK)
 	storageConfig := storageConfResp.JSON200
 	if storageConfig == nil {
-		Die("Bad response from server", 1)
+		utils.Die("Bad response from server", 1)
 	}
 	if storageConfig.BlockstoreNamespaceValidityRegex == "" {
 		return
 	}
 	matched, err := regexp.MatchString(storageConfig.BlockstoreNamespaceValidityRegex, source)
 	if err != nil {
-		DieErr(err)
+		utils.DieErr(err)
 	}
 	if !matched {
-		DieFmt("import source '%s' doesn't match current configured storage '%s'", source, storageConfig.BlockstoreType)
+		utils.DieFmt("import source '%s' doesn't match current configured storage '%s'", source, storageConfig.BlockstoreType)
 	}
 }
 
@@ -191,7 +192,7 @@ func branchExists(ctx context.Context, client *api.ClientWithResponses, reposito
 	if resp.JSON404 != nil {
 		return nil, false
 	}
-	return RetrieveError(resp, err), false
+	return utils.RetrieveError(resp, err), false
 }
 
 //nolint:gochecknoinits,gomnd

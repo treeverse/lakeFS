@@ -1,4 +1,4 @@
-package cmd
+package utils
 
 import (
 	"bytes"
@@ -26,8 +26,9 @@ import (
 
 var (
 	isTerminal       = true
-	noColorRequested = false
-	verboseMode      = false
+	NoColorRequested = false
+	VerboseMode      = false
+	BaseURI          string
 )
 
 // ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
@@ -46,8 +47,8 @@ const (
 )
 
 const (
-	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
-	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+	InternalPageSize           = 1000 // when retrieving all records, use this page size under the hood
+	DefaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
 )
 
 const resourceListTemplate = `{{.Table | table -}}
@@ -177,7 +178,7 @@ func Write(tpl string, data interface{}) {
 }
 
 func WriteIfVerbose(tpl string, data interface{}) {
-	if verboseMode {
+	if VerboseMode {
 		WriteTo(tpl, data, os.Stdout)
 	}
 }
@@ -288,7 +289,7 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 }
 
 func MustParseRepoURI(name, s string) *uri.URI {
-	u, err := uri.ParseWithBaseURI(s, baseURI)
+	u, err := uri.ParseWithBaseURI(s, BaseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
 	}
@@ -299,7 +300,7 @@ func MustParseRepoURI(name, s string) *uri.URI {
 }
 
 func MustParseRefURI(name, s string) *uri.URI {
-	u, err := uri.ParseWithBaseURI(s, baseURI)
+	u, err := uri.ParseWithBaseURI(s, BaseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
 	}
@@ -310,7 +311,7 @@ func MustParseRefURI(name, s string) *uri.URI {
 }
 
 func MustParseBranchURI(name, s string) *uri.URI {
-	u, err := uri.ParseWithBaseURI(s, baseURI)
+	u, err := uri.ParseWithBaseURI(s, BaseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
 	}
@@ -321,7 +322,7 @@ func MustParseBranchURI(name, s string) *uri.URI {
 }
 
 func MustParsePathURI(name, s string) *uri.URI {
-	u, err := uri.ParseWithBaseURI(s, baseURI)
+	u, err := uri.ParseWithBaseURI(s, BaseURI)
 	if err != nil {
 		DieFmt("Invalid '%s': %s", name, err)
 	}

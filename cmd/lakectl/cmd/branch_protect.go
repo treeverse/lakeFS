@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd/utils"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -27,17 +28,17 @@ var branchProtectListCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := utils.MustParseRepoURI("repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
+			utils.Die("Bad response from server", 1)
 		}
 		patterns := make([][]interface{}, len(*resp.JSON200))
 		for i, rule := range *resp.JSON200 {
 			patterns[i] = []interface{}{rule.Pattern}
 		}
-		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &api.Pagination{
+		utils.PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &api.Pagination{
 			HasMore: false,
 			Results: len(patterns),
 		}, len(patterns))
@@ -53,11 +54,11 @@ var branchProtectAddCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := utils.MustParseRepoURI("repository", args[0])
 		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.CreateBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		fmt.Printf("Branch protection rule added to '%s' repository.\n", u.Repository)
 	},
 }
@@ -71,11 +72,11 @@ var branchProtectDeleteCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := utils.MustParseRepoURI("repository", args[0])
 		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+		utils.DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		fmt.Printf("Branch protection rule deleted from '%s' repository.\n", u.Repository)
 	},
 }
