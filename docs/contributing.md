@@ -13,7 +13,7 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 Please read through this document before submitting any issues or pull requests to ensure that we have all the necessary information to effectively respond to your bug report or contribution.
 
 *Don't know where to start?* Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
-{: .note .note-info }
+{: .note }
 
 ## Getting Started
 
@@ -88,7 +88,7 @@ make checks-validator
 ```
 
 You will need GNU diff to run this. On the macOS it can be installed with `brew install diffutils`
-{: .note .note-info }
+{: .note }
 
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
 
@@ -99,7 +99,7 @@ make system-tests
 ```
 
 Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this documentation](https://github.com/treeverse/lakeFS/blob/master/esti/docs/README.md).
-{: .note .note-info }
+{: .note }
 
 ## Submitting a pull request
 

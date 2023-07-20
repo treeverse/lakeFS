@@ -225,28 +225,6 @@ body {
 		background-color: #ffffff; color: #279890;
 	}
 
-	.note {
-		background-color: $whitegrey;
-		border-left: 4px solid $aqua-marine;
-		border-radius: 0px 2px 2px 0px;
-		padding: 8px 20px;
-	}
-	.note-info {
-		border-left: none;
-		color: $black;
-	    background-color: $aqua-marine;
-
-		a {
-			color: $black;
-			font-weight: 500;
-		}
-
-		code {
-			color: $black;
-		}
-	}
-
-
 	.main-content {
 		h1,
 		h2,
@@ -1050,12 +1028,6 @@ img.quickstart {
 	border-width: thin;
 	border-color: black;
 	border-style: ridge;
-}
-
-.note {
-	a:not([class]) {
-		text-decoration-color: inherit;
-	}
 }
 
 .breadcrumb-nav { margin-top: 1rem; } 
