@@ -307,7 +307,7 @@ class GarbageCollectionSpec
         GarbageCollection.validateRunModeConfigs(true, true, "")
       }
       it("should succeed when sweep with mark ID") {
-        GarbageCollection.validateRunModeConfigs(false, true, false, markID)
+        GarbageCollection.validateRunModeConfigs(false, true, markID)
       }
       it("should fail when no options provided") {
         try {

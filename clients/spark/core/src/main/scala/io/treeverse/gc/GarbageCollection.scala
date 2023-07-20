@@ -267,7 +267,7 @@ object GarbageCollection {
       cutoffTime: java.time.Instant,
       success: Boolean,
       expiredAddresses: DataFrame,
-      outputPrefix: String
+      outputPrefix: String = "unified"
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
     println(s"Report for mark_id=$runID path=$reportDst")
@@ -298,7 +298,7 @@ object GarbageCollection {
   def readMarkedAddresses(
       storageNamespace: String,
       markID: String,
-      outputPrefix: String
+      outputPrefix: String = "unified"
   ): DataFrame = {
     val reportPath = new Path(
       formatRunPath(storageNamespace, markID, outputPrefix) + "/summary.json"
