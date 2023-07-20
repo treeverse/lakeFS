@@ -219,7 +219,7 @@ class GarbageCollectionSpec
                                          df
                                         )
 
-          val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID)
+          val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "unified", runID)
           val summaryPath = dir.resolve(rootPath.resolve("summary.json"))
           val summary = ujson.read(os.read(os.Path(summaryPath)))
 
@@ -241,7 +241,9 @@ class GarbageCollectionSpec
         withSparkSession(_ => {
           val runID = "failed-run"
           val runPath =
-            dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
+            dir.resolve(
+              java.nio.file.Paths.get("_lakefs", "retention", "gc", "output_prefix", runID)
+            )
           runPath.toFile.mkdirs()
           GarbageCollection.writeJsonSummary(runPath.toString,
                                              runID,
@@ -253,7 +255,8 @@ class GarbageCollectionSpec
                                             )
           try {
             GarbageCollection.readMarkedAddresses(dir.toString + "/",
-                                                  runID
+                                                  runID,
+                                                  "output_prefix"
                                                  ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")
@@ -268,7 +271,9 @@ class GarbageCollectionSpec
         withSparkSession(_ => {
           val runID = "no-deleted"
           val runPath =
-            dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
+            dir.resolve(
+              java.nio.file.Paths.get("_lakefs", "retention", "gc", "output_prefix", runID)
+            )
           runPath.toFile.mkdirs()
           GarbageCollection.writeJsonSummary(runPath.toString,
                                              runID,
@@ -279,7 +284,7 @@ class GarbageCollectionSpec
                                              0
                                             )
 
-          val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID)
+          val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID, "output_prefix")
           df.isEmpty should be(true)
         })
       }
