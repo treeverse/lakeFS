@@ -183,6 +183,9 @@ func TestUnifiedGC(t *testing.T) {
 		if err != nil {
 			t.Fatalf("http request to presigned url: %s", err)
 		}
+		println(file)
+		println(presignedURLs[file])
+		println(r.StatusCode)
 		if r.StatusCode > 299 && r.StatusCode != 404 {
 			t.Fatalf("unexpected status code in http request: %d", r.StatusCode)
 		}
