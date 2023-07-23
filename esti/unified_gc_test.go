@@ -110,7 +110,6 @@ func TestUnifiedGC(t *testing.T) {
 			key:    "file_4",
 			branch: "main",
 		},
-
 		{
 			key:    "file_7",
 			branch: "dev",
