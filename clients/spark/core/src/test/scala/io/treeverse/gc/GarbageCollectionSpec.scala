@@ -219,7 +219,7 @@ class GarbageCollectionSpec
                                          df
                                         )
 
-          val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID)
+          val rootPath = java.nio.file.Paths.get("_lakefs", "retention", "gc", "unified", runID)
           val summaryPath = dir.resolve(rootPath.resolve("summary.json"))
           val summary = ujson.read(os.read(os.Path(summaryPath)))
 
@@ -241,7 +241,9 @@ class GarbageCollectionSpec
         withSparkSession(_ => {
           val runID = "failed-run"
           val runPath =
-            dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
+            dir.resolve(
+              java.nio.file.Paths.get("_lakefs", "retention", "gc", "output_prefix", runID)
+            )
           runPath.toFile.mkdirs()
           GarbageCollection.writeJsonSummary(runPath.toString,
                                              runID,
@@ -253,7 +255,8 @@ class GarbageCollectionSpec
                                             )
           try {
             GarbageCollection.readMarkedAddresses(dir.toString + "/",
-                                                  runID
+                                                  runID,
+                                                  "output_prefix"
                                                  ) // Should throw an exception
             // Fail test if no exception was thrown
             throw new Exception("test failed")
@@ -268,7 +271,9 @@ class GarbageCollectionSpec
         withSparkSession(_ => {
           val runID = "no-deleted"
           val runPath =
-            dir.resolve(java.nio.file.Paths.get("_lakefs", "retention", "gc", "uncommitted", runID))
+            dir.resolve(
+              java.nio.file.Paths.get("_lakefs", "retention", "gc", "output_prefix", runID)
+            )
           runPath.toFile.mkdirs()
           GarbageCollection.writeJsonSummary(runPath.toString,
                                              runID,
@@ -279,7 +284,7 @@ class GarbageCollectionSpec
                                              0
                                             )
 
-          val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID)
+          val df = GarbageCollection.readMarkedAddresses(dir.toString + "/", runID, "output_prefix")
           df.isEmpty should be(true)
         })
       }
@@ -304,15 +309,14 @@ class GarbageCollectionSpec
       val markID = "markID"
 
       it("should succeed mark & sweep") {
-        GarbageCollection.validateRunModeConfigs(true, true, false, "")
+        GarbageCollection.validateRunModeConfigs(true, true, "")
       }
       it("should succeed when sweep with mark ID") {
-        GarbageCollection.validateRunModeConfigs(false, true, false, markID)
+        GarbageCollection.validateRunModeConfigs(false, true, markID)
       }
       it("should fail when no options provided") {
         try {
           GarbageCollection.validateRunModeConfigs(false,
-                                                   false,
                                                    false,
                                                    markID
                                                   ) // Should throw an exception
@@ -331,7 +335,6 @@ class GarbageCollectionSpec
           try {
             GarbageCollection.validateRunModeConfigs(true,
                                                      sweepVal,
-                                                     false,
                                                      markID
                                                     ) // Should throw an exception
             // Fail test if no exception was thrown
@@ -345,11 +348,7 @@ class GarbageCollectionSpec
       }
       it("should fail when sweep with no mark ID") {
         try {
-          GarbageCollection.validateRunModeConfigs(false,
-                                                   true,
-                                                   false,
-                                                   ""
-                                                  ) // Should throw an exception
+          GarbageCollection.validateRunModeConfigs(false, true, "") // Should throw an exception
           // Fail test if no exception was thrown
           throw new Exception("test failed")
         } catch {
