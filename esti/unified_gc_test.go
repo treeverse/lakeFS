@@ -153,7 +153,7 @@ func TestUnifiedGC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("delete dev2 branch: %s", err)
 	}
-	_, err = client.ResetBranchWithResponse(ctx, RepoName, "dev", api.ResetBranchJSONRequestBody{})
+	_, err = client.ResetBranchWithResponse(ctx, RepoName, "dev", api.ResetBranchJSONRequestBody{Type: "reset"})
 	if err != nil {
 		t.Fatalf("reset dev branch: %s", err)
 	}
