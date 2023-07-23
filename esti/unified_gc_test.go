@@ -189,7 +189,7 @@ func TestUnifiedGC(t *testing.T) {
 		if r.StatusCode > 200 && r.StatusCode <= 299 && !expected {
 			t.Fatalf("didn't expect %s to exist, but it did", file)
 		}
-		if r.StatusCode == 404 && !expected {
+		if r.StatusCode == 404 && expected {
 			t.Fatalf("expected %s to exist, but it didn't", file)
 		}
 	}
