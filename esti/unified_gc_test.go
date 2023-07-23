@@ -155,11 +155,12 @@ func TestUnifiedGC(t *testing.T) {
 		t.Fatalf("reset dev branch: %s", err)
 	}
 	err = runSparkSubmit(&sparkSubmitConfig{
-		sparkVersion: sparkImageTag,
-		localJar:     metaClientJarPath,
-		entryPoint:   "io.treeverse.gc.GarbageCollection",
-		programArgs:  []string{"repo1", "us-east-1"},
-		logSource:    fmt.Sprintf("gc-%s", "repo1"),
+		sparkVersion:    sparkImageTag,
+		localJar:        metaClientJarPath,
+		entryPoint:      "io.treeverse.gc.GarbageCollection",
+		programArgs:     []string{"repo1", "us-east-1"},
+		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
+		logSource:       fmt.Sprintf("gc-%s", "repo1"),
 	})
 	if err != nil {
 		t.Fatalf("run gc job: %s", err)
