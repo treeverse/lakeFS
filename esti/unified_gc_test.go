@@ -13,20 +13,17 @@ type objectEvent struct {
 	key           string
 	branch        string
 	commitDaysAgo int // if set to -1, do not commit
-	eventType     eventType
 }
 
-type eventType int
+type expectedResult struct {
+	key    string
+	branch string
+	exists bool
+}
 
-const (
-	eventTypeCreate eventType = iota
-	eventTypeDelete
-)
-
-func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent) {
-	if e.eventType == eventTypeCreate {
+func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent, isCreate bool) {
+	if isCreate {
 		_, _ = uploadFileRandomData(ctx, t, repo, e.branch, e.key, false)
-
 	} else {
 		_, err := client.DeleteObjectWithResponse(ctx, repo, e.branch, &api.DeleteObjectParams{Path: e.key})
 		if err != nil {
@@ -51,61 +48,51 @@ func TestUnifiedGC(t *testing.T) {
 			key:           "file_1",
 			branch:        "main",
 			commitDaysAgo: 14,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_2",
 			branch:        "main",
 			commitDaysAgo: 14,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_3",
 			branch:        "main",
 			commitDaysAgo: -1,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_4",
 			branch:        "main",
 			commitDaysAgo: -1,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_5",
 			branch:        "dev",
 			commitDaysAgo: 14,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_6",
 			branch:        "dev",
 			commitDaysAgo: 14,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_7",
 			branch:        "dev",
 			commitDaysAgo: -1,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_8",
 			branch:        "dev2",
 			commitDaysAgo: 14,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_9",
 			branch:        "dev2",
 			commitDaysAgo: 14,
-			eventType:     eventTypeCreate,
 		},
 		{
 			key:           "file_10",
 			branch:        "dev2",
 			commitDaysAgo: -1,
-			eventType:     eventTypeCreate,
 		},
 	}
 	deleteEvents := []objectEvent{
@@ -113,51 +100,44 @@ func TestUnifiedGC(t *testing.T) {
 			key:           "file_2",
 			branch:        "main",
 			commitDaysAgo: 12,
-			eventType:     eventTypeDelete,
 		},
 		{
 			key:           "file_1",
 			branch:        "main",
 			commitDaysAgo: 8,
-			eventType:     eventTypeDelete,
 		},
 		{
 			key:           "file_5",
 			branch:        "dev",
 			commitDaysAgo: 8,
-			eventType:     eventTypeDelete,
 		},
 		{
 			key:           "file_9",
 			branch:        "dev2",
 			commitDaysAgo: 8,
-			eventType:     eventTypeDelete,
 		},
 		{
 			key:           "file_8",
 			branch:        "dev2",
 			commitDaysAgo: 6,
-			eventType:     eventTypeDelete,
 		},
 		{
 			key:           "file_6",
 			branch:        "dev",
 			commitDaysAgo: 4,
-			eventType:     eventTypeDelete,
 		},
 		{
 			key:           "file_4",
 			branch:        "dev",
 			commitDaysAgo: -1,
-			eventType:     eventTypeDelete,
 		},
 	}
 
 	for _, e := range createEvents {
-		doObjectEvent(t, ctx, "repo1", e)
+		doObjectEvent(t, ctx, "repo1", e, true)
 	}
 	for _, e := range deleteEvents {
-		doObjectEvent(t, ctx, "repo1", e)
+		doObjectEvent(t, ctx, "repo1", e, false)
 	}
 
 	_, err := client.DeleteBranchWithResponse(ctx, "repo1", "dev2")
@@ -178,7 +158,26 @@ func TestUnifiedGC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run gc job: %s", err)
 	}
-
+	expectedResults := []expectedResult{{
+		key:    "file_1",
+		branch: "main",
+		exists: true,
+	},
+		{
+			key:    "file_2",
+			branch: "main",
+			exists: true,
+		}}
+	for _, expected := range expectedResults {
+		res, _ := client.GetObjectWithResponse(ctx, "repo1", expected.branch, &api.GetObjectParams{Path: expected.key})
+		fileExists := res.StatusCode() == 200
+		if fileExists && !expected.exists {
+			t.Fatalf("didn't expect %s to exist, but it did", expected.key)
+		}
+		if !fileExists && expected.exists {
+			t.Fatalf("expected file %s, but it didn't exist", expected.key)
+		}
+	}
 }
 
 func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
@@ -199,14 +198,4 @@ func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
 		t.Fatalf("Set GC rules %s", err)
 	}
 
-	res, _ := client.GetObjectWithResponse(ctx, repo, "main", &api.GetObjectParams{Path: "file_1"})
-	fileExists := res.StatusCode() == 200
-	if !fileExists {
-		t.Fatalf("expected file_1 but it doesn't exist")
-	}
-	res, _ = client.GetObjectWithResponse(ctx, repo, "main", &api.GetObjectParams{Path: "file_2"})
-	fileExists = res.StatusCode() == 200
-	if fileExists {
-		t.Fatalf("file_2 exists but not expected")
-	}
 }
