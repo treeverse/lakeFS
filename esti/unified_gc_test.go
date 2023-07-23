@@ -123,7 +123,7 @@ func TestUnifiedGC(t *testing.T) {
 	uncommittedDeleteEvents := []objectEvent{
 		{
 			key:           "file_4",
-			branch:        "dev",
+			branch:        "main",
 			commitDaysAgo: -1,
 		},
 	}
