@@ -17,13 +17,13 @@ import java.util.Date
 import scala.collection.JavaConverters._
 
 object GarbageCollection {
-  final val UNCOMMITTED_GC_SOURCE_NAME = "uncommitted_gc"
+  final val UNIFIED_GC_SOURCE_NAME = "unified_gc"
   private final val DATA_PREFIX = "data/"
 
   lazy val spark: SparkSession =
     SparkSession
       .builder()
-      .appName("UncommittedGarbageCollector")
+      .appName("GarbageCollection")
       .getOrCreate()
 
   // exclude list of old data location
@@ -81,7 +81,6 @@ object GarbageCollection {
   def validateRunModeConfigs(
       shouldMark: Boolean,
       shouldSweep: Boolean,
-      experimentalUnifiedGC: Boolean,
       markID: String
   ): Unit = {
     if (!shouldMark && !shouldSweep) {
@@ -97,19 +96,27 @@ object GarbageCollection {
     if (shouldMark && markID.nonEmpty) {
       throw new ParameterValidationException("Can't provide mark ID for mark mode. Exiting...")
     }
-    if (experimentalUnifiedGC && (!shouldMark || shouldSweep)) {
-      throw new ParameterValidationException(
-        "Unified GC is an experimental feature and can only be used in mark-only mode. Exiting..."
-      )
-    }
   }
 
   def main(args: Array[String]): Unit = {
+    val hc = spark.sparkContext.hadoopConfiguration
+    val region = if (args.length == 2) args(1) else null
+    val repo = args(0)
+    run(region, repo)
+  }
+
+  def run(
+      region: String,
+      repo: String,
+      uncommittedOnly: Boolean = false,
+      sourceName: String = UNIFIED_GC_SOURCE_NAME,
+      outputPrefix: String =
+        "unified" // TODO (johnnyaug): remove this parameter when we remove old GC
+  ): Unit = {
     var runID = ""
     var firstSlice = ""
     var success = false
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
-    val repo = args(0)
     val hc = spark.sparkContext.hadoopConfiguration
     val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
     val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
@@ -127,20 +134,13 @@ object GarbageCollection {
     val startTime = java.time.Clock.systemUTC.instant()
 
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
-    val experimentalUnifiedGC = hc.getBoolean(LAKEFS_CONF_GC_EXPERIMENTAL_UNIFIED_GC, false)
     // Unified GC does not support sweep mode: it only marks objects for deletion
-    var shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true) && !experimentalUnifiedGC
+    var shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
-    validateRunModeConfigs(shouldMark, shouldSweep, experimentalUnifiedGC, markID)
+    validateRunModeConfigs(shouldMark, shouldSweep, markID)
     val apiConf =
-      APIConfigurations(apiURL,
-                        accessKey,
-                        secretKey,
-                        connectionTimeout,
-                        readTimeout,
-                        GarbageCollection.UNCOMMITTED_GC_SOURCE_NAME
-                       )
+      APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, sourceName)
     val apiClient = ApiClient.get(apiConf)
     val storageType = apiClient.getBlockstoreType()
     var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
@@ -180,8 +180,8 @@ object GarbageCollection {
         val clientStorageNamespace =
           apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
         val committedLister =
-          if (experimentalUnifiedGC) new ActiveCommitsAddressLister(apiClient, repo, storageType)
-          else new NaiveCommittedAddressLister()
+          if (uncommittedOnly) new NaiveCommittedAddressLister()
+          else new ActiveCommitsAddressLister(apiClient, repo, storageType)
         val committedDF =
           committedLister.listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 
@@ -203,11 +203,10 @@ object GarbageCollection {
           addressesToDelete
         } else {
           println("deleting marked addresses from mark ID: " + markID)
-          readMarkedAddresses(storageNamespace, markID)
+          readMarkedAddresses(storageNamespace, markID, outputPrefix)
         }
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
-        val region = getRegion(args)
         val hcValues = spark.sparkContext.broadcast(
           HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
         )
@@ -226,7 +225,8 @@ object GarbageCollection {
           startTime,
           cutoffTime.toInstant,
           success,
-          addressesToDelete
+          addressesToDelete,
+          outputPrefix
         )
       }
 
@@ -266,9 +266,10 @@ object GarbageCollection {
       startTime: java.time.Instant,
       cutoffTime: java.time.Instant,
       success: Boolean,
-      expiredAddresses: DataFrame
+      expiredAddresses: DataFrame,
+      outputPrefix: String = "unified"
   ): Unit = {
-    val reportDst = formatRunPath(storageNamespace, runID)
+    val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
     println(s"Report for mark_id=$runID path=$reportDst")
 
     expiredAddresses.write.parquet(s"$reportDst/deleted")
@@ -286,12 +287,22 @@ object GarbageCollection {
     println(s"Report summary=$summary")
   }
 
-  private def formatRunPath(storageNamespace: String, runID: String): String = {
-    s"${storageNamespace}_lakefs/retention/gc/uncommitted/$runID"
+  private def formatRunPath(
+      storageNamespace: String,
+      runID: String,
+      outputPrefix: String
+  ): String = {
+    s"${storageNamespace}_lakefs/retention/gc/${outputPrefix}/$runID"
   }
 
-  def readMarkedAddresses(storageNamespace: String, markID: String): DataFrame = {
-    val reportPath = new Path(formatRunPath(storageNamespace, markID) + "/summary.json")
+  def readMarkedAddresses(
+      storageNamespace: String,
+      markID: String,
+      outputPrefix: String = "unified"
+  ): DataFrame = {
+    val reportPath = new Path(
+      formatRunPath(storageNamespace, markID, outputPrefix) + "/summary.json"
+    )
     val fs = reportPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
     if (!fs.exists(reportPath)) {
       throw new FailedRunException(s"Mark ID ($markID) does not exist")
@@ -300,7 +311,7 @@ object GarbageCollection {
     if (!markedRunSummary.first.getAs[Boolean]("success")) {
       throw new FailedRunException(s"Provided mark ($markID) is of a failed run")
     } else {
-      val deletedPath = new Path(formatRunPath(storageNamespace, markID) + "/deleted")
+      val deletedPath = new Path(formatRunPath(storageNamespace, markID, outputPrefix) + "/deleted")
       if (!fs.exists(deletedPath)) {
         println(s"Mark ID ($markID) does not contain deleted files")
         spark.emptyDataFrame.withColumn("address", lit(""))
