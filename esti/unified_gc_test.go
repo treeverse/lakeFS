@@ -3,9 +3,11 @@ package esti
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
@@ -21,9 +23,18 @@ type expectedResult struct {
 	exists bool
 }
 
-func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent, isCreate bool) {
+func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent, isCreate bool) string {
+	var presignedURL string
 	if isCreate {
 		_, _ = uploadFileRandomData(ctx, t, repo, e.branch, e.key, false)
+		res, err := client.StatObjectWithResponse(ctx, repo, e.branch, &api.StatObjectParams{
+			Path:    e.key,
+			Presign: swag.Bool(true),
+		})
+		if err != nil {
+			t.Fatalf("stats object after upload: %s", err)
+		}
+		presignedURL = res.JSON200.PhysicalAddress
 	} else {
 		_, err := client.DeleteObjectWithResponse(ctx, repo, e.branch, &api.DeleteObjectParams{Path: e.key})
 		if err != nil {
@@ -37,7 +48,7 @@ func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent
 			t.Fatalf("Commit event: %s", err)
 		}
 	}
-
+	return presignedURL
 }
 func TestUnifiedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
@@ -132,9 +143,10 @@ func TestUnifiedGC(t *testing.T) {
 			commitDaysAgo: -1,
 		},
 	}
-
+	presignedURLs := map[string]string{}
 	for _, e := range createEvents {
-		doObjectEvent(t, ctx, "repo1", e, true)
+		presignedURL := doObjectEvent(t, ctx, "repo1", e, true)
+		presignedURLs[e.key] = presignedURL
 	}
 	for _, e := range deleteEvents {
 		doObjectEvent(t, ctx, "repo1", e, false)
@@ -158,24 +170,31 @@ func TestUnifiedGC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run gc job: %s", err)
 	}
-	expectedResults := []expectedResult{{
-		key:    "file_1",
-		branch: "main",
-		exists: true,
-	},
+	expectedResults := []expectedResult{
+		{
+			key:    "file_1",
+			branch: "main",
+			exists: true,
+		},
 		{
 			key:    "file_2",
 			branch: "main",
-			exists: true,
-		}}
+			exists: false,
+		},
+	}
 	for _, expected := range expectedResults {
-		res, _ := client.GetObjectWithResponse(ctx, "repo1", expected.branch, &api.GetObjectParams{Path: expected.key})
-		fileExists := res.StatusCode() == 200
-		if fileExists && !expected.exists {
+		r, err := http.Get(presignedURLs[expected.key])
+		if err != nil {
+			t.Fatalf("http request to presigned url: %s", err)
+		}
+		if r.StatusCode > 299 && r.StatusCode != 404 {
+			t.Fatalf("unexpected status code in http request: %d", r.StatusCode)
+		}
+		if r.StatusCode > 200 && r.StatusCode <= 299 && !expected.exists {
 			t.Fatalf("didn't expect %s to exist, but it did", expected.key)
 		}
-		if !fileExists && expected.exists {
-			t.Fatalf("expected file %s, but it didn't exist", expected.key)
+		if r.StatusCode == 404 && !expected.exists {
+			t.Fatalf("expected %s to exist, but it didn't", expected.key)
 		}
 	}
 }
@@ -190,12 +209,10 @@ func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
 	if err != nil {
 		t.Fatalf("Create new branch %s", err)
 	}
-
 	_, err = client.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{Branches: []api.GarbageCollectionRule{
 		{BranchId: "main", RetentionDays: 10}, {BranchId: "dev", RetentionDays: 7}, {BranchId: "dev", RetentionDays: 7},
 	}, DefaultRetentionDays: 7})
 	if err != nil {
 		t.Fatalf("Set GC rules %s", err)
 	}
-
 }
