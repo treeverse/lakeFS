@@ -17,12 +17,6 @@ type objectEvent struct {
 	commitDaysAgo int // if set to -1, do not commit
 }
 
-type expectedResult struct {
-	key    string
-	branch string
-	exists bool
-}
-
 func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent, isCreate bool) string {
 	var presignedURL string
 	if isCreate {
@@ -170,31 +164,32 @@ func TestUnifiedGC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run gc job: %s", err)
 	}
-	expectedResults := []expectedResult{
-		{
-			key:    "file_1",
-			branch: "main",
-			exists: true,
-		},
-		{
-			key:    "file_2",
-			branch: "main",
-			exists: false,
-		},
+	expectedExisting := map[string]bool{
+		"file_1":  true,
+		"file_2":  false,
+		"file_3":  true,
+		"file_4":  false,
+		"file_5":  false,
+		"file_6":  true,
+		"file_7":  false,
+		"file_8":  true,
+		"file_9":  false,
+		"file_10": false,
 	}
-	for _, expected := range expectedResults {
-		r, err := http.Get(presignedURLs[expected.key])
+
+	for file, expected := range expectedExisting {
+		r, err := http.Get(presignedURLs[file])
 		if err != nil {
 			t.Fatalf("http request to presigned url: %s", err)
 		}
 		if r.StatusCode > 299 && r.StatusCode != 404 {
 			t.Fatalf("unexpected status code in http request: %d", r.StatusCode)
 		}
-		if r.StatusCode > 200 && r.StatusCode <= 299 && !expected.exists {
-			t.Fatalf("didn't expect %s to exist, but it did", expected.key)
+		if r.StatusCode > 200 && r.StatusCode <= 299 && !expected {
+			t.Fatalf("didn't expect %s to exist, but it did", file)
 		}
-		if r.StatusCode == 404 && !expected.exists {
-			t.Fatalf("expected %s to exist, but it didn't", expected.key)
+		if r.StatusCode == 404 && !expected {
+			t.Fatalf("expected %s to exist, but it didn't", file)
 		}
 	}
 }
