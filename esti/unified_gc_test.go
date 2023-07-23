@@ -11,96 +11,65 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
+const RepoName = "repo1"
+
 type objectEvent struct {
 	key           string
 	branch        string
 	commitDaysAgo int // if set to -1, do not commit
 }
 
-func doObjectEvent(t *testing.T, ctx context.Context, repo string, e objectEvent, isCreate bool) string {
-	var presignedURL string
-	if isCreate {
-		_, _ = uploadFileRandomData(ctx, t, repo, e.branch, e.key, false)
-		res, err := client.StatObjectWithResponse(ctx, repo, e.branch, &api.StatObjectParams{
-			Path:    e.key,
-			Presign: swag.Bool(true),
-		})
-		if err != nil {
-			t.Fatalf("stats object after upload: %s", err)
-		}
-		presignedURL = res.JSON200.PhysicalAddress
-	} else {
-		_, err := client.DeleteObjectWithResponse(ctx, repo, e.branch, &api.DeleteObjectParams{Path: e.key})
-		if err != nil {
-			t.Fatalf("delete file %s: %s", e.key, err)
-		}
+func createObject(t *testing.T, ctx context.Context, branch string, key string) string {
+	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key, false)
+	res, err := client.StatObjectWithResponse(ctx, RepoName, branch, &api.StatObjectParams{
+		Path:    key,
+		Presign: swag.Bool(true),
+	})
+	if err != nil {
+		t.Fatalf("stats object after upload: %s", err)
 	}
-	if e.commitDaysAgo > -1 {
-		commitTimeSeconds := time.Now().AddDate(0, 0, -e.commitDaysAgo).Unix()
-		_, err := client.CommitWithResponse(ctx, repo, e.branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
-		if err != nil {
-			t.Fatalf("Commit event: %s", err)
-		}
-	}
-	return presignedURL
+	return res.JSON200.PhysicalAddress
 }
+
+func commitBranch(t *testing.T, ctx context.Context, branch string, daysAgo int) {
+	commitTimeSeconds := time.Now().AddDate(0, 0, -daysAgo).Unix()
+	_, err := client.CommitWithResponse(ctx, RepoName, branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
+	if err != nil {
+		t.Fatalf("Commit event: %s", err)
+	}
+}
+
 func TestUnifiedGC(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	ctx := context.Background()
 	prepareForUnifiedGC(t, ctx)
-	createEvents := []objectEvent{
+	committedCreateEvents := []objectEvent{
 		{
-			key:           "file_1",
-			branch:        "main",
-			commitDaysAgo: 14,
+			key:    "file_1",
+			branch: "main",
 		},
 		{
-			key:           "file_2",
-			branch:        "main",
-			commitDaysAgo: 14,
+			key:    "file_2",
+			branch: "main",
 		},
 		{
-			key:           "file_3",
-			branch:        "main",
-			commitDaysAgo: -1,
+			key:    "file_5",
+			branch: "dev",
 		},
 		{
-			key:           "file_4",
-			branch:        "main",
-			commitDaysAgo: -1,
+			key:    "file_6",
+			branch: "dev",
 		},
 		{
-			key:           "file_5",
-			branch:        "dev",
-			commitDaysAgo: 14,
+			key:    "file_8",
+			branch: "dev2",
 		},
 		{
-			key:           "file_6",
-			branch:        "dev",
-			commitDaysAgo: 14,
-		},
-		{
-			key:           "file_7",
-			branch:        "dev",
-			commitDaysAgo: -1,
-		},
-		{
-			key:           "file_8",
-			branch:        "dev2",
-			commitDaysAgo: 14,
-		},
-		{
-			key:           "file_9",
-			branch:        "dev2",
-			commitDaysAgo: 14,
-		},
-		{
-			key:           "file_10",
-			branch:        "dev2",
-			commitDaysAgo: -1,
+			key:    "file_9",
+			branch: "dev2",
 		},
 	}
-	deleteEvents := []objectEvent{
+	committedDeleteEvents := []objectEvent{
 		{
 			key:           "file_2",
 			branch:        "main",
@@ -131,6 +100,27 @@ func TestUnifiedGC(t *testing.T) {
 			branch:        "dev",
 			commitDaysAgo: 4,
 		},
+	}
+	uncommittedCreateEvents := []objectEvent{
+		{
+			key:    "file_3",
+			branch: "main",
+		},
+		{
+			key:    "file_4",
+			branch: "main",
+		},
+
+		{
+			key:    "file_7",
+			branch: "dev",
+		},
+		{
+			key:    "file_10",
+			branch: "dev2",
+		},
+	}
+	uncommittedDeleteEvents := []objectEvent{
 		{
 			key:           "file_4",
 			branch:        "dev",
@@ -138,19 +128,32 @@ func TestUnifiedGC(t *testing.T) {
 		},
 	}
 	presignedURLs := map[string]string{}
-	for _, e := range createEvents {
-		presignedURL := doObjectEvent(t, ctx, "repo1", e, true)
-		presignedURLs[e.key] = presignedURL
+	for _, e := range committedCreateEvents {
+		presignedURLs[e.key] = createObject(t, ctx, e.branch, e.key)
+		commitBranch(t, ctx, e.branch, 14) // creations are always committed 14 days ago for this test
 	}
-	for _, e := range deleteEvents {
-		doObjectEvent(t, ctx, "repo1", e, false)
+	for _, e := range committedDeleteEvents {
+		_, err := client.DeleteObjectWithResponse(ctx, RepoName, e.branch, &api.DeleteObjectParams{Path: e.key})
+		if err != nil {
+			t.Fatalf("delete file %s: %s", e.key, err)
+		}
+		commitBranch(t, ctx, e.branch, e.commitDaysAgo)
+	}
+	for _, e := range uncommittedCreateEvents {
+		presignedURLs[e.key] = createObject(t, ctx, e.branch, e.key)
+	}
+	for _, e := range uncommittedDeleteEvents {
+		_, err := client.DeleteObjectWithResponse(ctx, RepoName, e.branch, &api.DeleteObjectParams{Path: e.key})
+		if err != nil {
+			t.Fatalf("delete file %s: %s", e.key, err)
+		}
 	}
 
-	_, err := client.DeleteBranchWithResponse(ctx, "repo1", "dev2")
+	_, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2")
 	if err != nil {
 		t.Fatalf("delete dev2 branch: %s", err)
 	}
-	_, err = client.ResetBranchWithResponse(ctx, "repo1", "dev", api.ResetBranchJSONRequestBody{})
+	_, err = client.ResetBranchWithResponse(ctx, RepoName, "dev", api.ResetBranchJSONRequestBody{})
 	if err != nil {
 		t.Fatalf("reset dev branch: %s", err)
 	}
@@ -158,9 +161,9 @@ func TestUnifiedGC(t *testing.T) {
 		sparkVersion:    sparkImageTag,
 		localJar:        metaClientJarPath,
 		entryPoint:      "io.treeverse.gc.GarbageCollection",
-		programArgs:     []string{"repo1", "us-east-1"},
+		programArgs:     []string{RepoName, "us-east-1"},
 		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
-		logSource:       fmt.Sprintf("gc-%s", "repo1"),
+		logSource:       fmt.Sprintf("gc-%s", RepoName),
 	})
 	if err != nil {
 		t.Fatalf("run gc job: %s", err)
@@ -189,7 +192,7 @@ func TestUnifiedGC(t *testing.T) {
 		if r.StatusCode > 299 && r.StatusCode != 404 {
 			t.Fatalf("unexpected status code in http request: %d", r.StatusCode)
 		}
-		if r.StatusCode > 200 && r.StatusCode <= 299 && !expected {
+		if r.StatusCode >= 200 && r.StatusCode <= 299 && !expected {
 			t.Fatalf("didn't expect %s to exist, but it did", file)
 		}
 		if r.StatusCode == 404 && expected {
@@ -199,7 +202,7 @@ func TestUnifiedGC(t *testing.T) {
 }
 
 func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
-	repo := createRepositoryByName(ctx, t, "repo1")
+	repo := createRepositoryByName(ctx, t, RepoName)
 	_, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev", Source: mainBranch})
 	if err != nil {
 		t.Fatalf("Create new branch %s", err)
