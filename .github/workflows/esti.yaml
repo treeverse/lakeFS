@@ -267,7 +267,7 @@ jobs:
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
-          key: metadata-client-hadoop3-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client--hadoop3-${{ hashFiles('./clients/spark/**') }}
 
       - name: GC test
         run: |
