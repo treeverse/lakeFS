@@ -13,7 +13,7 @@ redirect_from: /using/dremio.html
 interactive queries directly on cloud data lake storage, including S3 and lakeFS.
 
 ## Configuration
-Starting from version 3.2.3, Dremio supports Minio as an [experimental S3-compatible plugin](https://docs.dremio.com/data-sources/s3.html#configuring-s3-for-minio).
+Starting from version 3.2.3, Dremio supports Minio as an [experimental S3-compatible plugin](https://docs.dremio.com/current/sonar/data-sources/object/s3/#configuring-s3-for-minio).
 Similarly, you can connect lakeFS with Dremio.
 
 Suppose you already have both lakeFS and Dremio deployed, and want to use Dremio to query your data in the lakeFS repositories.
