@@ -22,6 +22,7 @@ type objectEvent struct {
 }
 
 func gcTestCreateObject(t *testing.T, ctx context.Context, branch string, key string) string {
+	t.Helper()
 	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key, false)
 	res, err := client.StatObjectWithResponse(ctx, RepoName, branch, &api.StatObjectParams{
 		Path:    key,
@@ -32,12 +33,14 @@ func gcTestCreateObject(t *testing.T, ctx context.Context, branch string, key st
 	return res.JSON200.PhysicalAddress
 }
 func gcTestDeleteObject(t *testing.T, ctx context.Context, branch string, key string) {
+	t.Helper()
 	res, err := client.DeleteObjectWithResponse(ctx, RepoName, branch, &api.DeleteObjectParams{Path: key})
 	testutil.MustDo(t, fmt.Sprintf("Delete %s", key), err)
 	require.Falsef(t, res.StatusCode() > 299, "Unexpected status code %d in delete object", res.StatusCode())
 }
 
 func gcTestCommit(t *testing.T, ctx context.Context, branch string, daysAgo int) {
+	t.Helper()
 	commitTimeSeconds := time.Now().AddDate(0, 0, -daysAgo).Unix()
 	res, err := client.CommitWithResponse(ctx, RepoName, branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
 	testutil.MustDo(t, fmt.Sprintf("Commit branch %s", branch), err)
