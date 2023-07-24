@@ -79,7 +79,7 @@ func (ipi *PrefixIterator) Next() bool {
 			if !ipi.hasNext {
 				return false
 			}
-			vr, r = ipi.updateValue()
+			vr, _ = ipi.updateValue()
 			ipi.updatePath()
 		}
 	}
