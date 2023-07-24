@@ -48,7 +48,7 @@ func TestResolveRawRef(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		previous = cid
-		ts.Add(time.Minute)
+		ts = ts.Add(time.Minute)
 	}
 
 	iter, err := r.Log(ctx, repository, previous, false)
@@ -69,25 +69,25 @@ func TestResolveRawRef(t *testing.T) {
 	}
 	//  commit log:
 	commitLog := []graveler.CommitID{
-		"6ededfa12763c5eeb6ce48e5d5d505c33383e4a7e599f55764c0753cb196e244",
-		"a8fcc52c74a09642e0f3ec5997f49ce4f7c73d6c74c03c13143b7fe19a3f156b",
-		"1e471f2170d8f99e093186f7e9195ec340d5f4560df234dd1201dd749fd71f8f",
-		"7217e786dab7c42985c3268b680ff1ac5b45c3ee83d8578b5e63b3f1079ce753",
-		"d0a251a277ac1bc977a0e35efad1284ab69eeb3635165661d4cf62ed9b9029f5",
-		"59f72f2fbc8291857d5b6788ad2a698121d0f2735df41c3bf582c3193f44f148",
-		"a5ee924bba14751f3573caf52a50a44bb5909e658d5017f323c8d826b74cfc6a",
-		"b99c85a0dfbd5caf950d1874c8968ceeb4773c53d088ef9358bd7d3b175f5c4b",
-		"d02cdab99549019edf83ebc2c33a6fd65052a113845c11158fdedae3f5855bcb",
-		"3bf45fcce06016398758d69046b7492a99a1c60f281b0695761c8d1b18c68106",
-		"474cc3b19124b04a230ff743aee56d91f4c275c3b6ae18b8d2abb90a236c7fa2",
-		"41f8200d4edd82befe47514dc79c3eb11f79e3b8e6e31e7b73de459a88b20975",
-		"d706a40d808c819a4e15a8f9c733c243c3a159f701355952fd92375c575fc1f2",
-		"d6f64d7d9d379ba8878d5f867a0dd0cd01f93c50152e7c2e03d783bb3801d31a",
-		"085d9c8a83aedc8c2e6c160fe98a00b2470a0432fc75c7372324e2c72bded7df",
-		"8ac7ccae8718d49bc38a7a50ef05e0ac698aa5f05daac00dff8f7c94373013e6",
-		"967889b77f6ada86683cdbbbba6e5542f760974f9dbfeb7813337e9455aafa50",
-		"d58c3e63162be1cc8f902277cd3515bc2faf226a1a2048e9f0f2c7fc544c94c7",
-		"8ad89e3856f90f3af080747f487363eeaff42cafa4ab0536d2a985d0ae362089",
+		"de85cde9a3871433ed0afad67d6505aef3b3a779223916be237b44bbdc1b65ed",
+		"abd533122a68be2fe2fea4a6a5c48229560acb98331754f87d69d93fade7a497",
+		"f5d6eb69609e31016f8c89c983a0b59ee4daca07434c89ecabf927a265feb497",
+		"5376fcefd52e7a49ea24d88af06fd3f600210abd3c9fc52fadbcc2ba36b05588",
+		"0cb1b3655d48b0b068951fac1cfc276ca01623000b7aabc53f16076a8c91725d",
+		"74f7a8402e808b8f621a4f46c2138fbf51f242273f24982d235fe3ab67db4e3b",
+		"c2b8083b2ec9d30a9e6d09d4d0938ff48a67ad7bedd532ebf17808f5f199f0b0",
+		"6564419ee5290a114a353dc1bc0c4828f46eaeddfde2d6e1b9612fbf1098203d",
+		"2f9ac33733f0a0b284d97194711b3b46de9b4ff723545d0a95951668a34cff04",
+		"1c6977726cabb5549f1ff9c8ab7ee7672033c8b5b47427b4099f26103e7fb4bc",
+		"155a755e8956eebdb31d20dace8b8fd7e8eaa4f84a58f1af701757f9a8bddc4c",
+		"504956bd68f17e1a2fec4fc9e2ada276a885236dcc730d9dc99187a4bbe73900",
+		"5ed05bd6c8ee3e1fd4d1009b19c5d74b0ef918d5e2c597a4d7d88ba36f4075d2",
+		"eb0751d2da465e3f78e90b328630c360085fa8f129351379fa3b8a0ad3fc4424",
+		"daf38e9d2a32b43a07a0768e8223d06d2f3122fcf600b2eabde613c077508c73",
+		"4f4cc1feb893ed337608cff0962bc1bcde08d3bde9752b1309eea692d87c4470",
+		"b12888687d6d3956fd40767f2697f4a3cdf7230e3b86ce63711200e420041b59",
+		"2c910787d475900509fef33de2c20700baf33dae8c0abdd6ad416e73b651ab24",
+		"c634a9bdf2d2e4d819cadaeb62a0b43ced0b0398aa513ac3cf218b4dca05dcd7",
 		"fac53a04432b2e6e7185f3ac8314a874c556b2557adf3aa8d5b1df985cf96566",
 	}
 
@@ -213,7 +213,7 @@ func TestResolveRawRef(t *testing.T) {
 		},
 		{
 			Name:        "commit_prefix_ambiguous",
-			Ref:         graveler.Ref("a"),
+			Ref:         graveler.Ref("5"),
 			ExpectedErr: graveler.ErrNotFound,
 		},
 		{
@@ -248,14 +248,14 @@ func TestResolveRawRef(t *testing.T) {
 			rawRef, err := r.ParseRef(cas.Ref)
 			if err != nil {
 				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
-					t.Fatalf("unexpected error while parse '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
+					t.Fatalf("unexpected error while parse '%s': %v, expected: %v", cas.Ref, err, cas.ExpectedErr)
 				}
 				return
 			}
 			resolvedRef, err := r.ResolveRawRef(ctx, repository, rawRef)
 			if err != nil {
 				if cas.ExpectedErr == nil || !errors.Is(err, cas.ExpectedErr) {
-					t.Fatalf("unexpected error while resolve '%s': %v, expected: %s", cas.Ref, err, cas.ExpectedErr)
+					t.Fatalf("unexpected error while resolve '%s': %v, expected: %v", cas.Ref, err, cas.ExpectedErr)
 				}
 				return
 			}
