@@ -3,13 +3,16 @@ title: Documentation
 description: How to contribute to the lakeFS Documentation, including style guide
 parent: The lakeFS Project
 has_children: true
+has_toc: false
 ---
 
 # lakeFS Documentation
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide](/project/contributing.md) for details on contributing to lakeFS in general. 
+Please see [the contributing guide](/project/contributing.html) for details on contributing to lakeFS in general. 
+
+{% include toc.html %}
 
 📝  Notice! lakeFS documentation is written using Markdown.  Make sure to familiarize yourself with the [Markdown Guide](https://www.markdownguide.org/basic-syntax/#heading-best-practices).
 
@@ -56,7 +59,7 @@ Both of these snippets invoke `{:toc}` which is [used by Kramdown](https://kramd
 
 ## Callouts
 
-Multiple callout types are available. Please review [this page](./project/docs/callouts.html) for details.
+Multiple callout types are available. Please review [this page](./callouts.html) for details.
 
 ## Test your changes locally
 
