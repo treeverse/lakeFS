@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Committed GC Internals
+title: "Internals: Committed GC"
 description: How Garbage Collection in lakeFS works
 parent: Garbage Collection
 grand_parent: How-To
