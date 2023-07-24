@@ -124,12 +124,12 @@ require (
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/s2a-go v0.1.3 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
-	github.com/junk1tm/musttag v0.5.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.4 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
@@ -177,7 +177,6 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
@@ -288,7 +287,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.7 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polyfloyd/go-errorlint v1.4.3 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
