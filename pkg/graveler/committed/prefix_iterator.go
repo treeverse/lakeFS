@@ -1,6 +1,7 @@
 package committed
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -111,6 +112,9 @@ func (ipi *PrefixIterator) NextRange() bool {
 }
 
 func NewPrefixIterator(prefixes []graveler.Prefix, rangeIterator Iterator) *PrefixIterator {
+	sort.Slice(prefixes, func(i, j int) bool {
+		return prefixes[i] < prefixes[j]
+	})
 	return &PrefixIterator{prefixes: prefixes, position: 0, rangeIterator: rangeIterator}
 }
 
