@@ -103,7 +103,7 @@ func (ipi *PrefixIterator) NextRange() bool {
 			return false
 		}
 		ipi.updateValue()
-		ipi.position = ipi.position + 1
+		ipi.position++
 		if ipi.position >= len(ipi.prefixes) {
 			ipi.position = done
 		}
