@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -229,7 +228,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.NextRange()
 		m.haveDest = m.dest.NextRange()
 
-	case bytes.Equal(sourceRange.MinKey, destRange.MinKey) && bytes.Equal(sourceRange.MaxKey, destRange.MaxKey): // same bounds
+	case sourceRange.EqualBounds(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return err
@@ -250,7 +249,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 			m.haveDest = m.dest.Next()
 		}
 
-	case bytes.Compare(sourceRange.MaxKey, destRange.MinKey) < 0: // source before dest
+	case sourceRange.BeforeRange(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -271,7 +270,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
+	case destRange.BeforeRange(sourceRange) && (m.strategy != graveler.MergeStrategyImport || m.validImport()):
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -370,7 +369,8 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 		return m.sourceBeforeDest(sourceValue)
 	}
 
-	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 { // dest range before source
+	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 &&
+		(m.strategy != graveler.MergeStrategyImport || m.validImport()) { // dest range before source
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -478,6 +478,14 @@ func (m *merger) merge() error {
 		}
 	}
 	return nil
+}
+
+func (m *merger) validImport() bool {
+	pi, ok := m.dest.(ImportIterator)
+	if ok && pi.IsCurrentPathIncludedInRange() {
+		return false
+	}
+	return true
 }
 
 func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
