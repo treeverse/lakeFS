@@ -106,11 +106,7 @@ func (ipi *PrefixIterator) NextRange() bool {
 		if ipi.position >= len(ipi.prefixes) {
 			ipi.position = done
 		}
-		//ipi.updatePath()
 	}
-	// Problem: if the range contains the prefix, yet not bounded by it, it will be returned. This is fine, unless
-	// this range comes before the source range. This will trigger the "write dest before source scenario" which will be
-	// incorrect since we still need to go over the range and ignore all prefixes in it.
 	return true
 }
 
