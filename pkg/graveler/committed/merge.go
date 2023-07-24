@@ -270,7 +270,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case destRange.BeforeRange(sourceRange) && (m.strategy != graveler.MergeStrategyImport || m.validImport()):
+	case destRange.BeforeRange(sourceRange) && (m.strategy != graveler.MergeStrategyImport || m.validImportRange()):
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -370,7 +370,7 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 	}
 
 	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 &&
-		(m.strategy != graveler.MergeStrategyImport || m.validImport()) { // dest range before source
+		(m.strategy != graveler.MergeStrategyImport || m.validImportRange()) { // dest range before source
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -480,7 +480,7 @@ func (m *merger) merge() error {
 	return nil
 }
 
-func (m *merger) validImport() bool {
+func (m *merger) validImportRange() bool {
 	pi, ok := m.dest.(ImportIterator)
 	if ok && pi.IsCurrentPathIncludedInRange() {
 		return false
