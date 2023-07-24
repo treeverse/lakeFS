@@ -34,11 +34,11 @@ Start Spark Shell / PySpark with the `--packages` flag:
   higher versions.
 
   ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.8.1
+  spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.9.0
   ```
   
   Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.8.1/lakefs-spark-client-301-assembly-0.8.1.jar`
+  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.9.0/lakefs-spark-client-301-assembly-0.9.0.jar`
   </div> 
 
   <div markdown="1" id="packages-3-hadoop3">
@@ -46,11 +46,11 @@ Start Spark Shell / PySpark with the `--packages` flag:
   versions and higher Hadoop versions.
   
   ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-312-hadoop3-assembly_2.12:0.8.1
+  spark-shell --packages io.lakefs:lakefs-spark-client-312-hadoop3-assembly_2.12:0.9.0
   ```
 
   Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.8.1/lakefs-spark-client-312-hadoop3-assembly-0.8.1.jar`
+  `s3://treeverse-clients-us-east/lakefs-spark-client-312-hadoop3/0.9.0/lakefs-spark-client-312-hadoop3-assembly-0.9.0.jar`
   </div>
 
 ## Configuration
