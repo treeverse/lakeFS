@@ -4,11 +4,13 @@ title: Actions and Hooks
 description: Overview of lakeFS Actions and Hooks
 has_children: true  
 has_toc: false
-nav_order: 29
+parent: How-To
 redirect_from:
   - /reference/hooks.html
   - /hooks.html
   - /hooks/overview.html
+  - /hooks/index.html
+  - /hooks/
 ---
 
 # Actions and Hooks in lakeFS

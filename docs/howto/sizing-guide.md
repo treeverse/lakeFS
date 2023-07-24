@@ -3,7 +3,6 @@ layout: default
 title: Sizing Guide
 parent: How-To
 description: This section provides a detailed sizing guide for deploying lakeFS.
-nav_order: 10000  # always last
 has_children: false
 redirect_from:
     - /architecture/sizing-guide.html

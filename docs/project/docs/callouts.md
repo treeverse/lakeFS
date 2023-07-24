@@ -1,9 +1,9 @@
 ---
 layout: default
-title: lakeFS Documentation - Callouts
+title: Callouts
 description: Using and Customising Callouts in lakeFS Documentation
-parent: Contributing
-nav_order: 10
+parent: Documentation
+grand_parent: The lakeFS Project
 has_children: false
 ---
 

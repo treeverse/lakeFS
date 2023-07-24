@@ -1,9 +1,8 @@
 ---
 layout: default
-title: Exporting Data
+title: Export Data
 description: Use the lakeFS Spark client or RClone inside Docker to export a lakeFS commit to the object store.
 parent: How-To
-nav_order: 40
 has_children: false
 redirect_from: 
   - /reference/export.html

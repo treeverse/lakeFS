@@ -3,8 +3,10 @@ layout: default
 title: CI/CD for Data Lakes
 description: In this tutorial, we will explore how to use lakeFS to build a CI/CD pipeline for data lakes.
 parent: Use Cases
-nav_order: 50
+grand_parent: Understanding lakeFS
 has_children: false
+redirect_from:
+   - /use_cases/cicd_for_data.html
 ---
 
 # CI/CD for Data

@@ -1,12 +1,13 @@
 ---
 layout: default
 title: GCP
-parent: Deploy and Setup lakeFS
+grand_parent: How-To
+parent: Install lakeFS
 description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
-nav_order: 40
 redirect_from:
    - /setup/storage/gcs.html 
-next:  ["Import data into your installation", "../howto/import.html"]
+   - /deploy/gcs.html 
+next:  ["Import data into your installation", "/howto/import.html"]
 ---
 
 # Deploy lakeFS on GCP

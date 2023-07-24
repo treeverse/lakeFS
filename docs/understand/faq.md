@@ -1,15 +1,15 @@
 ---
 layout: default
 title: FAQ
-description: Have a question about lakeFS? Find our what others where asking in this FAQ.
-nav_order: 110
+parent: Understanding lakeFS
+description: Have a question about lakeFS? Check out this list of Frequently Asked Questions
 has_children: false
 ---
 
-# FAQ
+# lakeFS Frequently Asked Questions (FAQ)
 
 ### 1. Is lakeFS open-source?
-lakeFS is completely free, open-source, and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap](https://docs.lakefs.io/understand/roadmap.html) and a [Slack channel](https://lakefs.io/slack) for open discussions.
+lakeFS is completely free, open-source, and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap](/understand/roadmap.html) and a [Slack channel](https://lakefs.io/slack) for open discussions.
 
 ### 2. How does lakeFS data versioning work?
 lakeFS uses a copy-on-write mechanism to avoid data duplication. For example, creating a new branch is a metadata-only operation: no objects are actually copied. Only when an object changes does lakeFS create another [version of the data](https://lakefs.io/data-versioning/) in the storage. For more information, see [Versioning internals](./understand/how/versioning-internals.md).
@@ -29,7 +29,7 @@ The data we gather is limited to the following:
 1. Periodic aggregated action counters (e.g. how many "get_object" operations occurred).
 
 ### 5. How is lakeFS different from Delta Lake / Hudi / Iceberg?
-Delta Lake, Hudi, and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using Git-like operations. Read our [comparison](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/) for a more detailed comparison. 
+Delta Lake, Apache Hudi, and Apache Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using Git-like operations. Read our [comparison](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/) for a more detailed comparison. 
 
 ### 6. What inspired the lakeFS logo?
 The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a species of salamander, also known as the Mexican Lake Monster or the Peter Pan of the animal kingdom. It's a magical creature, living in a lake - just like us! :)

@@ -3,7 +3,6 @@ layout: default
 title: Protect Branches
 description: Branch protection rules prevent direct changes from being applied to your important branches.
 parent: How-To
-nav_order: 60
 has_children: false
 redirect_from: 
   - /reference/protected_branches.html
