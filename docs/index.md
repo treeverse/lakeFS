@@ -171,9 +171,9 @@ To learn more about atomic cross-collection updates, check out [this video](http
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
-With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](/understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
-👉🏻 [Read more](/use_cases/cicd_for_data.html)
+👉🏻 [Read more](/understanding/use_cases/cicd_for_data.html)
 
 ## Downloads
 

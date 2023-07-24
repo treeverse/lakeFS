@@ -12,7 +12,7 @@ has_toc: false
 [lakeFS Cloud](https://lakefs.cloud) is a fully-managed lakeFS solution provided by Treeverse, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
 	
 ## lakeFS Cloud Features
-* [Role-Based Access Control](../reference/rbac.md)
+* [Role-Based Access Control](/reference/rbac.md)
 * [Auditing](./auditing.md)
 * [Single-Sign-On](./sso.md) (including support for SAML, OIDC, AD FS, Okta, and Azure AD)
 * [Managed Garbage Collection](./managed-gc.md)

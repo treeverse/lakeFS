@@ -145,7 +145,7 @@ lakeFS stores metadata in a database for its versioning engine. This is done via
 1. Create a new container in the database and select type 
    `partitionKey` as the Partition key (case sensitive). 
 1. Pass the endpoint, database name and container name to lakeFS as 
-   described in the [configuration guide](../reference/configuration.md#example--azure-blob-storage).
+   described in the [configuration guide](/reference/configuration.md#example--azure-blob-storage).
    You can either pass the CosmosDB's account read-write key to lakeFS, or 
    use a managed identity to authenticate to CosmosDB, as described 
    [earlier](#identity-based-credentials).
@@ -204,7 +204,7 @@ Connect to your VM instance using SSH:
      type: azure
      azure:
    ```
-1. [Download the binary](../index.md#downloads) to the VM.
+1. [Download the binary](/index.md#downloads) to the VM.
 1. Run the `lakefs` binary:
   
    ```sh
@@ -233,7 +233,7 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+See the [reference](/reference/configuration.md#using-environment-variables) for a complete list of environment variables.
 
 
 </div>
@@ -283,8 +283,8 @@ To configure a load balancer to direct requests to the lakeFS servers you can us
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
 💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](../understand/architecture.md#s3-gateway) or 
-a simple PUT request using the [OpenAPI Server](../understand/architecture.md#openapi-server).
+Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](/understand/architecture.md#s3-gateway) or 
+a simple PUT request using the [OpenAPI Server](/understand/architecture.md#openapi-server).
 Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 {: .note }
 

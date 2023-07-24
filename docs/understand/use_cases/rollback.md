@@ -15,7 +15,7 @@ redirect_from:
 
 A rollback operation is used to to fix critical data errors immediately.
 
-What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
+What is a critical data error? Think of a situation where erroneous or misformatted data causes a significant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
 Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors.
 
@@ -47,7 +47,7 @@ Say a situation occurs where one of the syncs had bad data and is causing downst
 
 Step 1: Copy the `commit_id` associated with the commit we want to revert. As the screenshot above shows, you can use the _Copy ID to Clipboard_ button to do this.
 
-Step 2: Run the revert command using [lakectl](../reference/cli.md), the lakeFS CLI. In this example, the command will be as follows:
+Step 2: Run the revert command using [lakectl](/reference/cli.md), the lakeFS CLI. In this example, the command will be as follows:
 
 ```bash
 lakectl branch revert lakefs://example/main 9666d7c9daf37b3ba6964e733d08596ace2ec2c7bc3a4023ad8e80737a6c3e9d

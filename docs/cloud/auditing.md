@@ -15,7 +15,7 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> Auditing is only available for [lakeFS Cloud](../cloud/).
+> Auditing is only available for [lakeFS Cloud](/cloud/).
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 

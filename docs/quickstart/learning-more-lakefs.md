@@ -101,7 +101,7 @@ docker run --pull always -p 8000:8000 \
 
 ## Deploying lakeFS
 
-Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](/deploy/onprem.html) (including on [Kubernetes](/deploy/onprem.html#k8s)) or on [AWS](/deploy/aws.html), [Azure](/deploy/azure.html), or [GCP](/deploy/gcp.html). 
+Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](/howto/deploy/onprem.html) (including on [Kubernetes](/howto/deploy/onprem.html#k8s)) or on [AWS](/howto/deploy/aws.html), [Azure](/howto/deploy/azure.html), or [GCP](/howto/deploy/gcp.html). 
 
 Alternatively you might want to have a look at [lakeFS Cloud](https://lakefs.cloud/) which provides a fully-managed, SOC-2 compliant, lakeFS service. 
 
