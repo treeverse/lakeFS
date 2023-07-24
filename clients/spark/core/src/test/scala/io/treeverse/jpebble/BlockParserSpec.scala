@@ -304,7 +304,7 @@ class CountedIteratorSpec extends AnyFunSpec with Matchers {
 
 class GolangContainerSpec extends AnyFunSpec with ForAllTestContainer {
   override val container: GenericContainer = GenericContainer(
-    "golang:1.16.2-alpine",
+    "golang:1.20.6-alpine",
     classpathResourceMapping = Seq(
       FileSystemBind("parser-test/sst_files_generator.go", "/local/sst_files_generator.go", BindMode.READ_WRITE),
       FileSystemBind("parser-test/go.mod", "/local/go.mod", BindMode.READ_WRITE),

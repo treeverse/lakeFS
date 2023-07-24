@@ -37,7 +37,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   esti:
-    image: "golang:1.19.2-alpine3.16"
+    image: "golang:1.20.6-alpine3.18"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io

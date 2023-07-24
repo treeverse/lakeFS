@@ -16,7 +16,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.2
+          go-version: "1.20.6"
         id: go
       - name: Generate code
         env:
@@ -37,7 +37,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.2
+          go-version: "1.20.6"
         id: go
       # No way to share code between workflows :-( If you change this, find and change the
       # same code wherever "Find Go module and build caches" appears!
