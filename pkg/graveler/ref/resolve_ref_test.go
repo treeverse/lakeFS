@@ -48,7 +48,7 @@ func TestResolveRawRef(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		previous = cid
-		ts.Add(time.Minute)
+		ts = ts.Add(time.Minute)
 	}
 
 	iter, err := r.Log(ctx, repository, previous, false)
