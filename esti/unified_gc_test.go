@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 const RepoName = "repo1"
@@ -19,24 +21,27 @@ type objectEvent struct {
 	commitDaysAgo int // if set to -1, do not commit
 }
 
-func createObject(t *testing.T, ctx context.Context, branch string, key string) string {
+func gcTestCreateObject(t *testing.T, ctx context.Context, branch string, key string) string {
 	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key, false)
 	res, err := client.StatObjectWithResponse(ctx, RepoName, branch, &api.StatObjectParams{
 		Path:    key,
 		Presign: swag.Bool(true),
 	})
-	if err != nil {
-		t.Fatalf("stats object after upload: %s", err)
-	}
+	testutil.MustDo(t, fmt.Sprintf("Stats object %s after upload", key), err)
+	require.Falsef(t, res.StatusCode() != 200, "Unexpected status code %d in stats object after upload", res.StatusCode())
 	return res.JSON200.PhysicalAddress
 }
+func gcTestDeleteObject(t *testing.T, ctx context.Context, branch string, key string) {
+	res, err := client.DeleteObjectWithResponse(ctx, RepoName, branch, &api.DeleteObjectParams{Path: key})
+	testutil.MustDo(t, fmt.Sprintf("Delete %s", key), err)
+	require.Falsef(t, res.StatusCode() > 299, "Unexpected status code %d in delete object", res.StatusCode())
+}
 
-func commitBranch(t *testing.T, ctx context.Context, branch string, daysAgo int) {
+func gcTestCommit(t *testing.T, ctx context.Context, branch string, daysAgo int) {
 	commitTimeSeconds := time.Now().AddDate(0, 0, -daysAgo).Unix()
-	_, err := client.CommitWithResponse(ctx, RepoName, branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
-	if err != nil {
-		t.Fatalf("Commit event: %s", err)
-	}
+	res, err := client.CommitWithResponse(ctx, RepoName, branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
+	testutil.MustDo(t, fmt.Sprintf("Commit branch %s", branch), err)
+	require.Falsef(t, res.StatusCode() > 299, "Unexpected status code %d in commit", res.StatusCode())
 }
 
 func TestUnifiedGC(t *testing.T) {
@@ -128,34 +133,25 @@ func TestUnifiedGC(t *testing.T) {
 	}
 	presignedURLs := map[string]string{}
 	for _, e := range committedCreateEvents {
-		presignedURLs[e.key] = createObject(t, ctx, e.branch, e.key)
-		commitBranch(t, ctx, e.branch, 14) // creations are always committed 14 days ago for this test
+		presignedURLs[e.key] = gcTestCreateObject(t, ctx, e.branch, e.key)
+		gcTestCommit(t, ctx, e.branch, 14) // creations are always committed 14 days ago for this test
 	}
 	for _, e := range committedDeleteEvents {
-		_, err := client.DeleteObjectWithResponse(ctx, RepoName, e.branch, &api.DeleteObjectParams{Path: e.key})
-		if err != nil {
-			t.Fatalf("delete file %s: %s", e.key, err)
-		}
-		commitBranch(t, ctx, e.branch, e.commitDaysAgo)
+		gcTestDeleteObject(t, ctx, e.branch, e.key)
+		gcTestCommit(t, ctx, e.branch, e.commitDaysAgo)
 	}
 	for _, e := range uncommittedCreateEvents {
-		presignedURLs[e.key] = createObject(t, ctx, e.branch, e.key)
+		presignedURLs[e.key] = gcTestCreateObject(t, ctx, e.branch, e.key)
 	}
 	for _, e := range uncommittedDeleteEvents {
-		_, err := client.DeleteObjectWithResponse(ctx, RepoName, e.branch, &api.DeleteObjectParams{Path: e.key})
-		if err != nil {
-			t.Fatalf("delete file %s: %s", e.key, err)
-		}
+		gcTestDeleteObject(t, ctx, e.branch, e.key)
 	}
-
-	_, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2")
-	if err != nil {
-		t.Fatalf("delete dev2 branch: %s", err)
-	}
-	_, err = client.ResetBranchWithResponse(ctx, RepoName, "dev", api.ResetBranchJSONRequestBody{Type: "reset"})
-	if err != nil {
-		t.Fatalf("reset dev branch: %s", err)
-	}
+	deleteRes, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2")
+	testutil.MustDo(t, "Delete dev2 branch", err)
+	require.Falsef(t, deleteRes.StatusCode() > 299, "Unexpected status code %d in delete branch dev2", deleteRes.StatusCode())
+	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", api.ResetBranchJSONRequestBody{Type: "reset"})
+	require.Falsef(t, revertRes.StatusCode() > 299, "Unexpected status code %d in revert branch dev", revertRes.StatusCode())
+	testutil.MustDo(t, "Revert changes in dev branch", err)
 	err = runSparkSubmit(&sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaClientJarPath,
@@ -164,9 +160,7 @@ func TestUnifiedGC(t *testing.T) {
 		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
 		logSource:       fmt.Sprintf("gc-%s", RepoName),
 	})
-	if err != nil {
-		t.Fatalf("run gc job: %s", err)
-	}
+	testutil.MustDo(t, "Run GC job", err)
 	expectedExisting := map[string]bool{
 		"file_1":  true,
 		"file_2":  false,
@@ -182,38 +176,30 @@ func TestUnifiedGC(t *testing.T) {
 
 	for file, expected := range expectedExisting {
 		r, err := http.Get(presignedURLs[file])
-		if err != nil {
-			t.Fatalf("http request to presigned url: %s", err)
-		}
-		println(file)
-		println(presignedURLs[file])
-		println(r.StatusCode)
+		testutil.MustDo(t, "Http request to presigned url", err)
 		if r.StatusCode > 299 && r.StatusCode != 404 {
-			t.Fatalf("unexpected status code in http request: %d", r.StatusCode)
+			t.Fatalf("Unexpected status code in http request: %d", r.StatusCode)
 		}
 		if r.StatusCode >= 200 && r.StatusCode <= 299 && !expected {
-			t.Fatalf("didn't expect %s to exist, but it did", file)
+			t.Fatalf("Didn't expect %s to exist, but it did", file)
 		}
 		if r.StatusCode == 404 && expected {
-			t.Fatalf("expected %s to exist, but it didn't", file)
+			t.Fatalf("Expected %s to exist, but it didn't", file)
 		}
 	}
 }
 
 func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
 	repo := createRepositoryByName(ctx, t, RepoName)
-	_, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev", Source: mainBranch})
-	if err != nil {
-		t.Fatalf("Create new branch %s", err)
-	}
-	_, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev2", Source: mainBranch})
-	if err != nil {
-		t.Fatalf("Create new branch %s", err)
-	}
-	_, err = client.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{Branches: []api.GarbageCollectionRule{
+	createBranchRes, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev", Source: mainBranch})
+	testutil.MustDo(t, "Create branch dev", err)
+	require.False(t, createBranchRes.StatusCode() > 299, "Create branch dev")
+	createBranchRes, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev2", Source: mainBranch})
+	testutil.MustDo(t, "Create branch dev2", err)
+	require.False(t, createBranchRes.StatusCode() > 299, "Create branch dev2")
+	setGCRulesRes, err := client.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{Branches: []api.GarbageCollectionRule{
 		{BranchId: "main", RetentionDays: 10}, {BranchId: "dev", RetentionDays: 7}, {BranchId: "dev", RetentionDays: 7},
 	}, DefaultRetentionDays: 7})
-	if err != nil {
-		t.Fatalf("Set GC rules %s", err)
-	}
+	testutil.MustDo(t, "Set gc rules", err)
+	require.False(t, setGCRulesRes.StatusCode() > 299, "Set gc rules")
 }
