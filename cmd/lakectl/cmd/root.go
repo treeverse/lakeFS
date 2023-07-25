@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,10 +59,16 @@ var (
 
 	// logLevel logging level (default is off)
 	logLevel string
-	// logFormat logging format
+	// logFormat logging output format
 	logFormat string
 	// logOutputs logging outputs
 	logOutputs []string
+
+	// noColorRequested is set to true when the user requests no color output
+	noColorRequested = false
+
+	// verboseMode is set to true when the user requests verbose output
+	verboseMode = false
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -198,12 +203,6 @@ func getClient() *api.ClientWithResponses {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
-}
-
-// isSeekable returns true if f.Seek appears to work.
-func isSeekable(f io.Seeker) bool {
-	_, err := f.Seek(0, io.SeekCurrent)
-	return err == nil // a little naive, but probably good enough for its purpose
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

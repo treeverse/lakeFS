@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
@@ -57,49 +56,32 @@ var catSstCmd = &cobra.Command{
 	},
 }
 
-func readStdin() (pebblesst.ReadableFile, error) {
-	// test if stdin is seekable
-	if isSeekable(os.Stdin) {
-		return os.Stdin, nil
-	}
-	// not seekable - read it into a temp file
-	fh, err := os.CreateTemp("", "cat-sst-*")
-	if err != nil {
-		return nil, fmt.Errorf("error creating tempfile: %w", err)
-	}
-	_, err = io.Copy(fh, os.Stdin)
-	if err != nil {
-		return nil, fmt.Errorf("error copying from stdin to tempfile: %w", err)
-	}
-	err = os.Remove(fh.Name())
-	if err != nil {
-		return nil, fmt.Errorf("could not unlink temp file %s: %w", fh.Name(), err)
-	}
-	return fh, nil
-}
-
 func getIterFromFile(filePath string) (committed.ValueIterator, map[string]string, error) {
-	var file pebblesst.ReadableFile
-	var err error
-	// read from stdin (file has to be seekable/stat-able so we have this weird wrapper
-	if filePath == "-" {
-		file, err = readStdin()
-	} else {
-		file, err = os.Open(filePath)
-	}
+	// read from stdin (file has to be seekable/stat-able, so we have this weird wrapper
+	file, err := OpenByPath(filePath)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer func() { _ = file.Close() }()
+
+	// read all content
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// read file descriptor
-	reader, err := pebblesst.NewReader(file, pebblesst.ReaderOptions{})
+	reader, err := pebblesst.NewMemReader(content, pebblesst.ReaderOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// create an iterator over the whole thing
 	iter, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// wrap it in a Graveler iterator
 	dummyDeref := func() error { return nil }
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil

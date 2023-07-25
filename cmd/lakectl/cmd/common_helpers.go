@@ -7,29 +7,24 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	os "os"
 	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/pflag"
-
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/pflag"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
 )
 
-var (
-	isTerminal       = true
-	noColorRequested = false
-	verboseMode      = false
-)
+var isTerminal = true
 
 const (
 	PathDelimiter = "/"
@@ -375,35 +370,36 @@ func (d *deleteOnClose) Close() error {
 // OpenByPath returns a reader from the given path. If path is "-", it consumes Stdin and
 // opens a readable copy that is either deleted (POSIX) or will delete itself on close
 // (non-POSIX, notably WINs).
-func OpenByPath(path string) io.ReadSeekCloser {
-	if path == StdinFileName {
-		if !isSeekable(os.Stdin) {
-			temp, err := os.CreateTemp("", "lakectl-stdin")
-			if err != nil {
-				DieErr(fmt.Errorf("create temporary file to buffer stdin: %w", err))
-			}
-			if _, err = io.Copy(temp, os.Stdin); err != nil {
-				DieErr(fmt.Errorf("copy stdin to temporary file: %w", err))
-			}
-			if _, err = temp.Seek(0, io.SeekStart); err != nil {
-				DieErr(fmt.Errorf("rewind temporary copied file: %w", err))
-			}
-			// Try to delete the file.  This will fail on Windows, we shall try to
-			// delete on close anyway.
-			if os.Remove(temp.Name()) != nil {
-				return &deleteOnClose{temp}
-			}
-			return temp
-		}
-		return &nopCloser{os.Stdin}
+func OpenByPath(path string) (io.ReadSeekCloser, error) {
+	if path != StdinFileName {
+		return os.Open(path)
 	}
-	fp, err := os.Open(path)
+
+	// check if stdin is seekable
+	_, err := os.Stdin.Seek(0, io.SeekCurrent)
+	if err == nil {
+		return &nopCloser{ReadSeekCloser: os.Stdin}, nil
+	}
+
+	temp, err := os.CreateTemp("", "lakectl-stdin")
 	if err != nil {
-		DieErr(err)
+		return nil, fmt.Errorf("create temporary file to buffer stdin: %w", err)
 	}
-	return fp
+	if _, err = io.Copy(temp, os.Stdin); err != nil {
+		return nil, fmt.Errorf("copy stdin to temporary file: %w", err)
+	}
+	if _, err = temp.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("rewind temporary copied file: %w", err)
+	}
+	// Try to delete the file.  This will fail on Windows, we shall try to
+	// delete on close anyway.
+	if os.Remove(temp.Name()) != nil {
+		return &deleteOnClose{File: temp}, nil
+	}
+	return temp, nil
 }
 
+// Must return the call value or die with err if err is not nil
 func Must[T any](v T, err error) T {
 	if err != nil {
 		DieErr(err)
