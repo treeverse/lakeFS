@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Upgrade lakeFS
-description: A guide to upgrading lakeFS to the latest version.
+description: How to upgrade lakeFS to the latest version.
 grand_parent: How-To
 parent: Install lakeFS
 has_children: false

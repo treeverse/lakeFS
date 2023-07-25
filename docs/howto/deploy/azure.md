@@ -3,7 +3,7 @@ layout: default
 title: Azure
 grand_parent: How-To
 parent: Install lakeFS
-description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Microsoft Azure
+description: How to deploy and set up a production-suitable lakeFS environment on Microsoft Azure
 redirect_from:
    - /setup/storage/blob.html 
    - /deploy/azure.html 
@@ -12,13 +12,14 @@ next:  ["Import data into your installation", "/howto/import.html"]
 
 # Deploy lakeFS on Azure
 
-These instructions are for a self-managed deployment of lakeFS on Azure. <br/> 
-For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud/).
-{: .note }
+{: .tip }
+> The instructions given here are for a self-managed deployment of lakeFS on Azure. 
+> 
+> For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-lakeFS has several dependencies for which you need to select and configure a technology or interface: 
+When you deploy lakeFS on Azure these are the options available to use: 
 
-![](./deploy-on-azure.excalidraw.png)
+![](/assets/img/deploy/deploy-on-azure.excalidraw.png)
 
 This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository. 
 
