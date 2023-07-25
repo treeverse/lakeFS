@@ -15,7 +15,7 @@ redirect:
 {: .warning-title }
 > Deprecation notice
 >
-> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./garbage-collection.md).
+> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./index.html).
 
 
 ## What gets collected
@@ -67,7 +67,7 @@ Some objects will _not_ be collected regardless of configured GC rules:
 * Any object that is accessible from any branch's HEAD.
 * Objects stored outside the repository's [storage namespace]({{ site.baseurl }}/understand/glossary.md#storage-namespace).
   For example, objects imported using the lakeFS import UI are not collected.
-* Uncommitted objects, see [Uncommitted Garbage Collection](./garbage-collection-uncommitted.md),
+* Uncommitted objects, see [Uncommitted Garbage Collection](./uncommitted.html),
 
 ## Performance
 
