@@ -108,8 +108,7 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if !MustBool(cmd.Flags().GetBool("version")) {
+		if !Must(cmd.Flags().GetBool("version")) {
 			if err := cmd.Help(); err != nil {
 				WriteIfVerbose("failed showing help {{ . }}", err)
 			}

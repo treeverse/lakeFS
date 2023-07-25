@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -45,6 +46,9 @@ func (d *dotWriter) End() {
 	_, _ = fmt.Fprint(d.w, "\n}\n")
 }
 
+// ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
+var ErrInvalidValueInList = errors.New("empty string in list")
+
 func (d *dotWriter) Write(commits []api.Commit) {
 	repoID := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
@@ -72,13 +76,15 @@ var logCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		limit := MustBool(cmd.Flags().GetBool("limit"))
-		dot := MustBool(cmd.Flags().GetBool("dot"))
-		firstParent := MustBool(cmd.Flags().GetBool("first-parent"))
-		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
-		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
+		limit := Must(cmd.Flags().GetBool("limit"))
+		dot := Must(cmd.Flags().GetBool("dot"))
+		firstParent := Must(cmd.Flags().GetBool("first-parent"))
+		objects := Must(cmd.Flags().GetStringSlice("objects"))
+		objectsList := MustSliceNonEmptyString("objects", objects)
+		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
+		prefixesList := MustSliceNonEmptyString("prefixes", prefixes)
 
 		pagination := api.Pagination{HasMore: true}
 		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
@@ -147,6 +153,15 @@ var logCmd = &cobra.Command{
 			graph.End()
 		}
 	},
+}
+
+func MustSliceNonEmptyString(list string, v []string) []string {
+	for _, s := range v {
+		if s == "" {
+			DieErr(fmt.Errorf("error in %s list: %w", list, ErrInvalidValueInList))
+		}
+	}
+	return v
 }
 
 //nolint:gochecknoinits

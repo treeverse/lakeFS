@@ -28,11 +28,11 @@ var importCmd = &cobra.Command{
 	Short: "Import data from external source to a destination branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
-		noProgress := MustBool(flags.GetBool("no-progress"))
-		from := MustString(flags.GetString("from"))
-		to := MustString(flags.GetString("to"))
+		noProgress := Must(flags.GetBool("no-progress"))
+		from := Must(flags.GetString("from"))
+		to := Must(flags.GetString("to"))
 		toURI := MustParsePathURI("to", to)
-		message := MustString(flags.GetString("message"))
+		message := Must(flags.GetString("message"))
 		metadata, err := getKV(cmd, "meta")
 		if err != nil {
 			DieErr(err)
@@ -91,7 +91,7 @@ var importCmd = &cobra.Command{
 		for {
 			select {
 			case <-sigCtx.Done():
-				Fmt("\nCanceling import\n")
+				fmt.Printf("\nCanceling import\n")
 				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 				Die("Import Canceled", 1)

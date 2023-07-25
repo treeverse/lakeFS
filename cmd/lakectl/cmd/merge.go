@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -36,8 +37,8 @@ var mergeCmd = &cobra.Command{
 		client := getClient()
 		sourceRef := MustParseRefURI("source ref", args[0])
 		destinationRef := MustParseRefURI("destination ref", args[1])
-		strategy := MustString(cmd.Flags().GetString("strategy"))
-		Fmt("Source: %s\nDestination: %s\n", sourceRef.String(), destinationRef)
+		strategy := Must(cmd.Flags().GetString("strategy"))
+		fmt.Printf("Source: %s\nDestination: %s\n", []interface{}{sourceRef.String(), destinationRef}...)
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}

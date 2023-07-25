@@ -16,6 +16,47 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const sstCatTemplate = `{{ .Table | table }}`
+
+var catSstCmd = &cobra.Command{
+	Use:    "cat-sst <sst-file>",
+	Short:  "Explore lakeFS .sst files",
+	Hidden: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		amount, _ := cmd.Flags().GetInt("amount")
+		filePath, _ := cmd.Flags().GetString("file")
+		iter, props, err := getIterFromFile(filePath)
+		if err != nil {
+			DieErr(err)
+		}
+		defer iter.Close()
+
+		// get props
+		typ, ok := props[committed.MetadataTypeKey]
+		if !ok {
+			DieFmt("could not determine sstable file type")
+		}
+
+		var table *Table
+		switch typ {
+		case committed.MetadataMetarangesType:
+			table, err = formatMetaRangeSSTable(iter, amount)
+		case committed.MetadataRangesType:
+			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
+		default:
+			DieFmt("unknown sstable file type: %s", typ)
+		}
+		if err != nil {
+			DieErr(err)
+		}
+
+		// write to stdout
+		Write(sstCatTemplate, struct {
+			Table *Table
+		}{table})
+	},
+}
+
 func readStdin() (pebblesst.ReadableFile, error) {
 	// test if stdin is seekable
 	if isSeekable(os.Stdin) {
@@ -251,52 +292,11 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 	}, nil
 }
 
-var sstCatTemplate = `{{ .Table | table }}`
-
-var sstCmd = &cobra.Command{
-	Use:    "cat-sst <sst-file>",
-	Short:  "Explore lakeFS .sst files",
-	Hidden: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		filePath, _ := cmd.Flags().GetString("file")
-		iter, props, err := getIterFromFile(filePath)
-		if err != nil {
-			DieErr(err)
-		}
-		defer iter.Close()
-
-		// get props
-		typ, ok := props[committed.MetadataTypeKey]
-		if !ok {
-			DieFmt("could not determine sstable file type")
-		}
-
-		var table *Table
-		switch typ {
-		case committed.MetadataMetarangesType:
-			table, err = formatMetaRangeSSTable(iter, amount)
-		case committed.MetadataRangesType:
-			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
-		default:
-			DieFmt("unknown sstable file type: %s", typ)
-		}
-		if err != nil {
-			DieErr(err)
-		}
-
-		// write to stdout
-		Write(sstCatTemplate, struct {
-			Table *Table
-		}{table})
-	},
-}
-
 //nolint:gochecknoinits
 func init() {
-	sstCmd.Flags().Int("amount", -1, "how many records to return, or -1 for all records")
-	sstCmd.Flags().StringP("file", "f", "", "path to an sstable file, or \"-\" for stdin")
-	_ = sstCmd.MarkFlagRequired("file")
+	catSstCmd.Flags().Int("amount", -1, "how many records to return, or -1 for all records")
+	catSstCmd.Flags().StringP("file", "f", "", "path to an sstable file, or \"-\" for stdin")
+	_ = catSstCmd.MarkFlagRequired("file")
 
-	rootCmd.AddCommand(sstCmd)
+	rootCmd.AddCommand(catSstCmd)
 }

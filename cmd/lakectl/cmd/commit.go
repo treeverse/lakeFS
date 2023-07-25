@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -41,9 +42,9 @@ var commitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		message := MustString(cmd.Flags().GetString(messageFlagName))
-		emptyMessageBool := MustBool(cmd.Flags().GetBool(allowEmptyMessageFlagName))
-		date := MustInt64(cmd.Flags().GetInt64(dateFlagName))
+		message := Must(cmd.Flags().GetString(messageFlagName))
+		emptyMessageBool := Must(cmd.Flags().GetBool(allowEmptyMessageFlagName))
+		date := Must(cmd.Flags().GetInt64(dateFlagName))
 
 		if strings.TrimSpace(message) == "" && !emptyMessageBool {
 			DieFmt(fmtErrEmptyMessage)
@@ -55,7 +56,7 @@ var commitCmd = &cobra.Command{
 		}
 
 		branchURI := MustParseRefURI("branch", args[0])
-		Fmt("Branch: %s\n", branchURI.String())
+		fmt.Printf("Branch: %s\n", []interface{}{branchURI.String()}...)
 
 		// do commit
 		metadata := api.CommitCreation_Metadata{

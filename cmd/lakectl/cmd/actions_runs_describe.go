@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -17,7 +18,7 @@ const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{
 
 const runsShowRequiredArgs = 2
 
-var runsDescribeCmd = &cobra.Command{
+var actionsRunsDescribeCmd = &cobra.Command{
 	Use:               "describe",
 	Short:             "Describe run results",
 	Long:              `Show information about the run and all the hooks that were executed as part of the run`,
@@ -25,12 +26,12 @@ var runsDescribeCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(runsShowRequiredArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 		u := MustParseRepoURI("repository", args[0])
 		pagination := api.Pagination{HasMore: true}
 
-		Fmt("Repository: %s\n", u.String())
+		fmt.Printf("Repository: %s\n", []interface{}{u.String()}...)
 		runID := args[1]
 
 		client := getClient()
@@ -139,7 +140,8 @@ func convertHookResultsTables(results []api.HookRun) []*Table {
 
 //nolint:gochecknoinits
 func init() {
-	actionsRunsCmd.AddCommand(runsDescribeCmd)
-	runsDescribeCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
-	runsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	actionsRunsDescribeCmd.Flags().Int("amount", 0, "number of results to return. By default, all results are returned.")
+	actionsRunsDescribeCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+
+	actionsRunsCmd.AddCommand(actionsRunsDescribeCmd)
 }

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/pflag"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -29,11 +30,6 @@ var (
 	noColorRequested = false
 	verboseMode      = false
 )
-
-// ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
-var ErrInvalidValueInList = errors.New("empty string in list")
-
-var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
 
 const (
 	PathDelimiter = "/"
@@ -182,13 +178,14 @@ func WriteIfVerbose(tpl string, data interface{}) {
 	}
 }
 
-func Die(err string, code int) {
-	WriteTo(DeathMessage, struct{ Error string }{err}, os.Stderr)
+func Die(errMsg string, code int) {
+	WriteTo(DeathMessage, struct{ Error string }{Error: errMsg}, os.Stderr)
 	os.Exit(code)
 }
 
 func DieFmt(msg string, args ...interface{}) {
-	Die(fmt.Sprintf(msg, args...), 1)
+	errMsg := fmt.Sprintf(msg, args...)
+	Die(errMsg, 1)
 }
 
 type APIError interface {
@@ -213,10 +210,6 @@ func DieErr(err error) {
 		WriteTo(DeathMessage, ErrData{Error: err.Error()}, os.Stderr)
 	}
 	os.Exit(1)
-}
-
-type StatusCoder interface {
-	StatusCode() int
 }
 
 func RetrieveError(response interface{}, err error) error {
@@ -260,10 +253,6 @@ func DieOnHTTPError(httpResponse *http.Response) {
 	if err != nil {
 		DieErr(err)
 	}
-}
-
-func Fmt(msg string, args ...interface{}) {
-	fmt.Printf(msg, args...)
 }
 
 func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
@@ -331,15 +320,93 @@ func MustParsePathURI(name, s string) *uri.URI {
 	return u
 }
 
-func IsValidAccessKeyID(accessKeyID string) bool {
-	return accessKeyRegexp.MatchString(accessKeyID)
+const (
+	AutoConfirmFlagName     = "yes"
+	AutoConfigFlagShortName = "y"
+	AutoConfirmFlagHelp     = "Automatically say yes to all confirmations"
+
+	StdinFileName = "-"
+)
+
+func AssignAutoConfirmFlag(flags *pflag.FlagSet) {
+	flags.BoolP(AutoConfirmFlagName, AutoConfigFlagShortName, false, AutoConfirmFlagHelp)
 }
 
-func IsValidSecretAccessKey(secretAccessKey string) bool {
-	return IsBase64(secretAccessKey) && len(secretAccessKey) == 40
+func Confirm(flags *pflag.FlagSet, question string) (bool, error) {
+	yes, err := flags.GetBool(AutoConfirmFlagName)
+	if err == nil && yes {
+		// got auto confirm flag
+		return true, nil
+	}
+	prm := promptui.Prompt{
+		Label:     question,
+		IsConfirm: true,
+	}
+	_, err = prm.Run()
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-func IsBase64(s string) bool {
-	_, err := base64.StdEncoding.DecodeString(s)
-	return err == nil
+// nopCloser wraps a ReadSeekCloser to ignore calls to Close().  It is io.NopCloser (or
+// ioutils.NopCloser) for Seeks.
+type nopCloser struct {
+	io.ReadSeekCloser
+}
+
+func (nc *nopCloser) Close() error {
+	return nil
+}
+
+// deleteOnClose wraps a File to be a ReadSeekCloser that deletes itself when closed.
+type deleteOnClose struct {
+	*os.File
+}
+
+func (d *deleteOnClose) Close() error {
+	if err := os.Remove(d.Name()); err != nil {
+		_ = d.File.Close() // "Only" file descriptor leak if close fails (but data might stay).
+		return fmt.Errorf("delete on close: %w", err)
+	}
+	return d.File.Close()
+}
+
+// OpenByPath returns a reader from the given path. If path is "-", it consumes Stdin and
+// opens a readable copy that is either deleted (POSIX) or will delete itself on close
+// (non-POSIX, notably WINs).
+func OpenByPath(path string) io.ReadSeekCloser {
+	if path == StdinFileName {
+		if !isSeekable(os.Stdin) {
+			temp, err := os.CreateTemp("", "lakectl-stdin")
+			if err != nil {
+				DieErr(fmt.Errorf("create temporary file to buffer stdin: %w", err))
+			}
+			if _, err = io.Copy(temp, os.Stdin); err != nil {
+				DieErr(fmt.Errorf("copy stdin to temporary file: %w", err))
+			}
+			if _, err = temp.Seek(0, io.SeekStart); err != nil {
+				DieErr(fmt.Errorf("rewind temporary copied file: %w", err))
+			}
+			// Try to delete the file.  This will fail on Windows, we shall try to
+			// delete on close anyway.
+			if os.Remove(temp.Name()) != nil {
+				return &deleteOnClose{temp}
+			}
+			return temp
+		}
+		return &nopCloser{os.Stdin}
+	}
+	fp, err := os.Open(path)
+	if err != nil {
+		DieErr(err)
+	}
+	return fp
+}
+
+func Must[T any](v T, err error) T {
+	if err != nil {
+		DieErr(err)
+	}
+	return v
 }
