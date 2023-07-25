@@ -4,8 +4,10 @@ title: (deprecated) Uncommitted Objects
 description: Clean up uncommitted objects that are no longer needed.
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 20
+nav_order: 99
 has_children: false
+redirect:
+    - /howto/garbage-collection-uncommitted.html
 ---
 
 # Garbage collection: uncommitted objects

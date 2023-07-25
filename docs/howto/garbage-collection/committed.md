@@ -4,8 +4,10 @@ title: (deprecated) Committed Objects
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 10
+nav_order: 1980
 has_children: false
+redirect:
+    - /howto/garbage-collection-committed.html
 ---
 
 # Garbage Collection: committed objects
