@@ -10,11 +10,10 @@ redirect_from:
 ---
 # Sizing guide
 
-
-{% include toc.html %}
-
 Note: For a scalable managed lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
+
+{% include toc.html %}
 
 ## System Requirements
 

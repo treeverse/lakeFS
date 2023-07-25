@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Import data
+title: Import Data
 description: Import existing data into a lakeFS repository
 parent: How-To
 has_children: false
