@@ -48,9 +48,8 @@ var authUsersCredentialsList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	addPaginationFlags(authUsersCredentialsList)
-
 	authUsersCredentialsList.Flags().String("id", "", "Username (email for password-based users, default: current user)")
+	addPaginationFlags(authUsersCredentialsList)
 
 	authUsersCredentials.AddCommand(authUsersCredentialsList)
 }

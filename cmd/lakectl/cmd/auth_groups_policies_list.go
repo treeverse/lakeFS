@@ -44,10 +44,9 @@ var authGroupsPoliciesList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	addPaginationFlags(authGroupsPoliciesList)
-
 	authGroupsPoliciesList.Flags().String("id", "", "Group identifier")
 	_ = authGroupsPoliciesList.MarkFlagRequired("id")
+	addPaginationFlags(authGroupsPoliciesList)
 
 	authGroupsPoliciesCmd.AddCommand(authGroupsPoliciesList)
 }

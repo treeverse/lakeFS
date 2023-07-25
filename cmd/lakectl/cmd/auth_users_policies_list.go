@@ -46,12 +46,11 @@ var authUsersPoliciesList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	addPaginationFlags(authUsersPoliciesList)
-
 	authUsersPoliciesList.Flags().Bool("effective", false,
 		"List all distinct policies attached to the user, including by group memberships")
 	authUsersPoliciesList.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersPoliciesList.MarkFlagRequired("id")
+	addPaginationFlags(authUsersPoliciesList)
 
 	authUsersPolicies.AddCommand(authUsersPoliciesList)
 }

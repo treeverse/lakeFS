@@ -41,10 +41,9 @@ var authUsersGroupsList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	addPaginationFlags(authUsersGroupsList)
-
 	authUsersGroupsList.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersGroupsList.MarkFlagRequired("id")
+	addPaginationFlags(authUsersGroupsList)
 
 	authUsersGroups.AddCommand(authUsersGroupsList)
 }
