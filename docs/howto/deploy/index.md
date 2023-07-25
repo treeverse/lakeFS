@@ -20,7 +20,6 @@ redirect_from:
 > 
 > For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-
 lakeFS has several dependencies for which you need to select and configure a technology or interface. 
 
 * Object Store
