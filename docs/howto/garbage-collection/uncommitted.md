@@ -95,7 +95,7 @@ The uncommitted GC will not clean:
 
 ## Uncommitted GC job options
 
-Similar to the [committed GC option](./garbage-collection-committed.md#gc-job-options).
+Similar to the [committed GC option](./committed.html#gc-job-options).
 
 ## Limitations
 
