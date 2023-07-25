@@ -142,7 +142,7 @@ const GCPolicy = ({repo}) => {
         <div>
             {/* eslint-disable-next-line react/jsx-no-target-blank */}
             This policy determines for how long objects are kept in the storage after they are deleted in lakeFS. <a
-            href="https://docs.lakefs.io/reference/garbage-collection.html" target="_blank">Learn more.</a>
+            href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank">Learn more.</a>
         </div>
         <div className={"mt-3"}>
             {content}
