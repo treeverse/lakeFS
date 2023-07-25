@@ -83,7 +83,7 @@ docs/assets/js/swagger.yml: api/swagger.yml
 docs: docs/assets/js/swagger.yml
 
 docs-serve: ### Serve local docs
-	cd docs; bundle exec jekyll serve
+	cd docs; bundle exec jekyll serve --livereload
 
 docs-serve-docker: ### Serve local docs from Docker
 	docker run --rm \
