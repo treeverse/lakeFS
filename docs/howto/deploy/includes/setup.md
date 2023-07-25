@@ -2,7 +2,7 @@
 
 When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
-1. open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
+1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
    
    <img src="/assets/img/setup.png" alt="Create user">
