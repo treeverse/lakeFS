@@ -30,7 +30,7 @@ Reverting a previous commit using `lakectl branch revert` is **allowed** on a pr
 
 ## Managing branch protection rules
 
-This section explains how to use the lakeFS UI to manage rules. You can also use the [command line]({{ site.baseurl }}/reference/cli.md#lakectl-branch-protect).
+This section explains how to use the lakeFS UI to manage rules. You can also use the [command line]({{ site.baseurl }}/reference/cli.md#lakectl-branch-protect) and [API]({{ site.baseurl }}/reference/api.md)..
 
 ### Reaching the branch protection rules page 
 

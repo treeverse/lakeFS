@@ -58,7 +58,7 @@ aws s3 --profile lakefs \
   ls s3://example-repo/main/example-directory
 ```
 
-You can use an [alias](aws_cli.md#adding-an-alias) to make it shorter and more convenient.
+You can use an [alias](aws_cli.html#adding-an-alias) to make it shorter and more convenient.
 
 ## Examples
 
