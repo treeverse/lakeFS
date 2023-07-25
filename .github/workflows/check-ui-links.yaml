@@ -52,7 +52,7 @@ jobs:
       - name: Check Lychee output
         run: |
           if grep "Errors per input" /tmp/lychee/results.md; then
-            echo "## 🙀 Outbuond links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
+            echo "## 🙀 Outbound links found in the lakeFS UI that are broken" > $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
             while IFS= read -r line; do
