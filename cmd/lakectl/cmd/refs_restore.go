@@ -28,7 +28,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		repoURI := MustParseRepoURI("repository", args[0])
 		fmt.Printf("Repository: %s\n", []interface{}{repoURI.String()}...)
 		manifestFileName, _ := cmd.Flags().GetString("manifest")
-		fp := OpenByPath(manifestFileName)
+		fp := Must(OpenByPath(manifestFileName))
 		defer func() {
 			_ = fp.Close()
 		}()

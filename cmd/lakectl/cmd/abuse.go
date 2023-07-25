@@ -19,7 +19,7 @@ var abuseCmd = &cobra.Command{
 }
 
 func readLines(path string) (lines []string, err error) {
-	reader := OpenByPath(path)
+	reader := Must(OpenByPath(path))
 	defer func() {
 		if closeErr := reader.Close(); closeErr != nil {
 			if err == nil {

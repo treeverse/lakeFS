@@ -86,7 +86,7 @@ var fsUploadCmd = &cobra.Command{
 }
 
 func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method transportMethod) (*api.ObjectStats, error) {
-	fp := OpenByPath(sourcePathname)
+	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
