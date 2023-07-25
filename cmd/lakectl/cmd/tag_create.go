@@ -62,6 +62,7 @@ var tagCreateCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	tagCreateCmd.Flags().BoolP("force", "f", false, "override the tag if it exists")
 	tagCmd.AddCommand(tagCreateCmd)

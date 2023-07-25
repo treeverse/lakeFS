@@ -16,7 +16,7 @@ var authUsersDelete = &cobra.Command{
 
 		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("User deleted successfully\n", []interface{}{}...)
+		fmt.Printf("User deleted successfully\n")
 	},
 }
 

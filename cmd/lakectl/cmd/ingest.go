@@ -131,7 +131,7 @@ var ingestCmd = &cobra.Command{
 
 		}
 		if !verbose {
-			fmt.Printf("\n", []interface{}{}...)
+			fmt.Println()
 		}
 
 		// print summary

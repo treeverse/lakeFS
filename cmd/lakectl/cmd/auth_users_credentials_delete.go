@@ -26,7 +26,7 @@ var authUsersCredentialsDelete = &cobra.Command{
 		resp, err := clt.DeleteCredentialsWithResponse(cmd.Context(), id, accessKeyID)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
-		fmt.Printf("Credentials deleted successfully\n", []interface{}{}...)
+		fmt.Printf("Credentials deleted successfully\n")
 	},
 }
 

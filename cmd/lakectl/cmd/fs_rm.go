@@ -111,9 +111,11 @@ func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, 
 	return RetrieveError(resp, err)
 }
 
+//nolint:gochecknoinits
 func init() {
+	const defaultConcurrency = 50
 	fsRmCmd.Flags().BoolP("recursive", "r", false, "recursively delete all objects under the specified path")
-	fsRmCmd.Flags().IntP("concurrency", "C", 50, "max concurrent single delete operations to send to the lakeFS server")
+	fsRmCmd.Flags().IntP("concurrency", "C", defaultConcurrency, "max concurrent single delete operations to send to the lakeFS server")
 
 	fsCmd.AddCommand(fsRmCmd)
 }

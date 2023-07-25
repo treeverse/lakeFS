@@ -16,7 +16,7 @@ var authUsersPoliciesAttach = &cobra.Command{
 		clt := getClient()
 		resp, err := clt.AttachPolicyToUserWithResponse(cmd.Context(), id, policy)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		fmt.Printf("Policy attached successfully\n", []interface{}{}...)
+		fmt.Printf("Policy attached successfully\n")
 	},
 }
 

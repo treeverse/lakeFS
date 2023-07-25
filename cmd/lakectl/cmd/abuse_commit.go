@@ -72,7 +72,10 @@ var abuseCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	abuseCmd.AddCommand(abuseCommitCmd)
+	const defaultGap = 2 * time.Second
+
 	abuseCommitCmd.Flags().Int("amount", abuseDefaultParallelism, "amount of commits to do")
-	abuseCommitCmd.Flags().Duration("gap", 2*time.Second, "duration to wait between commits")
+	abuseCommitCmd.Flags().Duration("gap", defaultGap, "duration to wait between commits")
+
+	abuseCmd.AddCommand(abuseCommitCmd)
 }

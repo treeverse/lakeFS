@@ -17,7 +17,7 @@ var authGroupsRemoveMember = &cobra.Command{
 
 		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("User successfully removed\n", []interface{}{}...)
+		fmt.Printf("User successfully removed\n")
 	},
 }
 

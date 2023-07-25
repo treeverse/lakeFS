@@ -18,7 +18,7 @@ var authGroupsPoliciesDetach = &cobra.Command{
 		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 
-		fmt.Printf("Policy detached successfully\n", []interface{}{}...)
+		fmt.Printf("Policy detached successfully\n")
 	},
 }
 

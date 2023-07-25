@@ -46,6 +46,7 @@ var metastoreCreateSymlinkCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	_ = metastoreCreateSymlinkCmd.Flags().String("repo", "", "lakeFS repository name")
 	_ = metastoreCreateSymlinkCmd.MarkFlagRequired("repo")

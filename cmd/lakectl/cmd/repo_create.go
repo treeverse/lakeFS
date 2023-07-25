@@ -46,6 +46,7 @@ var repoCreateCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
 

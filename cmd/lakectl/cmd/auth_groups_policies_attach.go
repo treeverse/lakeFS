@@ -18,7 +18,7 @@ var authGroupsPoliciesAttach = &cobra.Command{
 		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
-		fmt.Printf("Policy attached successfully\n", []interface{}{}...)
+		fmt.Printf("Policy attached successfully\n")
 	},
 }
 

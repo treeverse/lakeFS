@@ -16,7 +16,7 @@ var authPoliciesDelete = &cobra.Command{
 
 		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("Policy deleted successfully\n", []interface{}{}...)
+		fmt.Printf("Policy deleted successfully\n")
 	},
 }
 

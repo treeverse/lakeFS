@@ -17,7 +17,7 @@ var authGroupsAddMember = &cobra.Command{
 
 		resp, err := clt.AddGroupMembershipWithResponse(cmd.Context(), id, user)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		fmt.Printf("User successfully added\n", []interface{}{}...)
+		fmt.Printf("User successfully added\n")
 	},
 }
 

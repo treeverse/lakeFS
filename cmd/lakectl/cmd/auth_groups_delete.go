@@ -16,7 +16,7 @@ var authGroupsDeleteCmd = &cobra.Command{
 
 		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("Group deleted successfully\n", []interface{}{}...)
+		fmt.Printf("Group deleted successfully\n")
 	},
 }
 
