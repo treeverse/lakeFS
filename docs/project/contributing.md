@@ -4,6 +4,8 @@ title: Contributing to lakeFS
 description: lakeFS community welcomes your contribution. To make the process as seamless as possible, we recommend reading this contribution guide first.
 parent: The lakeFS Project
 has_children: false
+redirect_from:
+   - /contributing.html
 ---
 
 # Contributing to lakeFS
