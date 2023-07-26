@@ -12,7 +12,7 @@ redirect_from:
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide](/project/contributing.html) for details on contributing to lakeFS in general. 
+Please see [the contributing guide](../../project/contributing.html) for details on contributing to lakeFS in general. 
 
 {% include toc.html %}
 

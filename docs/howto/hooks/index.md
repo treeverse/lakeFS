@@ -25,11 +25,11 @@ Like other version control systems, lakeFS allows you to configure _Actions_ to 
    A webhook that reads new Parquet and ORC files to ensure they don't contain a block list of column names (or name prefixes).
    This is useful for avoiding accidental PII exposure.
 1. Integration with external systems:
-   Post-merge and post-commit hooks could be used to export metadata about the change to another system. A common example is exporting `symlink.txt` files that allow e.g. [AWS Athena](/integrations/athena.html) to read data from lakeFS.
+   Post-merge and post-commit hooks could be used to export metadata about the change to another system. A common example is exporting `symlink.txt` files that allow e.g. [AWS Athena](../../integrations/athena.html) to read data from lakeFS.
 1. Notifying downstream consumers:
    Running a post-merge hook to trigger an Airflow DAG or to send a Webhook to an API, notifying it of the change that happened
 
-For step-by-step examples of hooks in action check out the [lakeFS Quickstart](/quickstart/actions-and-hooks.html) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+For step-by-step examples of hooks in action check out the [lakeFS Quickstart](../../quickstart/actions-and-hooks.html) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
 ## Overview
 
@@ -160,7 +160,7 @@ For example, if your repository contains a pre-commit hook, every commit would g
 lakeFS will fetch, parse and filter the repository Action files and start to execute the Hooks under each Action.
 All executed Hooks (each with `hook_run_id`) exist in the context of that Run (`run_id`).
 
-The [lakeFS API](/reference/api.html) and [lakectl](/reference/cli.html#lakectl-actions) expose the results of executions per repository, branch, commit, and specific Action.
+The [lakeFS API](../../reference/api.html) and [lakectl](../../reference/cli.html#lakectl-actions) expose the results of executions per repository, branch, commit, and specific Action.
 The endpoint also allows to download the execution log of any executed Hook under each Run for observability.
 
 

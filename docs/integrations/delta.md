@@ -14,7 +14,7 @@ has_children: false
 Because lakeFS is format-agnostic, you can save data in Delta format within a lakeFS repository and benefit from the advantages of both technologies.  Specifically:
 
 1. ACID operations can span across many Delta tables.
-2. [CI/CD hooks](/understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
+2. [CI/CD hooks](../understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
 3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
 {% include toc.html %}
@@ -28,8 +28,8 @@ Using lakeFS you can
 For example, comparing branches `dev` and `main`, we can see that the _movies_ table has changed on `dev` since the branches diverged.
 Expanding the delete operation, we learn that all movies with a rating < 4 were deleted from the table on the `dev` branch.
 
-![movies_table_changed.png](/assets/img/delta-diff-table-icon.png)
-![movies_table_operations.png](/assets/img/delta-diff-operations.png)
+![movies_table_changed.png](../assets/img/delta-diff-table-icon.png)
+![movies_table_operations.png](../assets/img/delta-diff-operations.png)
 
 **Note:**
 The diff is available as long as the table history in Delta is retained ([30 days by default](https://docs.databricks.com/delta/history.html#configure-data-retention-for-time-travel)). A delta lake table history is derived from the delta log JSON files.
@@ -42,9 +42,9 @@ To enable the Delta Lake diff feature, you need to install a plugin on the lakeF
 Rename the `delta_diff` binary to `delta` and put it under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
 
 You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
-`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](/reference/configuration.html#plugins) file.
+`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`](../reference/configuration.html#plugins) file.
 
-**Notice**: If you're using the lakeFS [docker image](/howto/deploy/onprem.html#docker), the plugin is installed by default.
+**Notice**: If you're using the lakeFS [docker image](../howto/deploy/onprem.html#docker), the plugin is installed by default.
 
 ## Spark Configuration
 

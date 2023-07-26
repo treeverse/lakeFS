@@ -65,7 +65,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
 }
 ```
 
-💡 You can also use lakeFS with PostgreSQL instead of DynamoDB! See the [configuration reference](/reference/configuration.md) for more information.
+💡 You can also use lakeFS with PostgreSQL instead of DynamoDB! See the [configuration reference](../../reference/configuration.md) for more information.
 {: .note }
 
 ## Run the lakeFS server
@@ -94,7 +94,7 @@ Connect to your EC2 instance using SSH:
    blockstore:
      type: s3
    ```
-1. [Download the binary](/index.md#downloads) to the EC2 instance.
+1. [Download the binary](../../index.md#downloads) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
   
    ```sh
@@ -157,8 +157,8 @@ To configure a load balancer to direct requests to the lakeFS servers you can us
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
 💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3 Gateway](/understand/architecture.md#s3-gateway) or 
-a simple PUT request using the [OpenAPI Server](/understand/architecture.md#openapi-server).
+Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3 Gateway](../../understand/architecture.md#s3-gateway) or 
+a simple PUT request using the [OpenAPI Server](../../understand/architecture.md#openapi-server).
 Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 {: .note }
 
@@ -215,15 +215,15 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
       * Replace `[BUCKET_NAME]`, `[ACCOUNT_ID]` and `[IAM_ROLE]` with values relevant to your environment.
       * `[BUCKET_NAME_AND_PREFIX]` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
-        This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace](/understand/model.md#repository)).
+        This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace](../../understand/model.md#repository)).
       * lakeFS will try to assume the role `[IAM_ROLE]`.
    </div>
    <div markdown="1" id="bucket-policy-minimal">
-   This permission is useful if you are using the [lakeFS Hadoop FileSystem Spark integration](/integrations/spark.md#use-the-lakefs-hadoop-filesystem).
+   This permission is useful if you are using the [lakeFS Hadoop FileSystem Spark integration](../../integrations/spark.md#use-the-lakefs-hadoop-filesystem).
    Since this FileSystem performs many operations directly on the storage, lakeFS requires less permissive permissions, resulting in increased security.
    
    lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, in which metadata
-   is stored ([learn more](/understand/how/versioning-internals.md#constructing-a-consistent-view-of-the-keyspace-ie-a-commit)).  
+   is stored ([learn more](../../understand/how/versioning-internals.md#constructing-a-consistent-view-of-the-keyspace-ie-a-commit)).  
    By setting this policy you'll be able to perform only metadata operations through lakeFS, meaning that you'll **not** be able
    to use lakeFS to upload or download objects. Specifically you won't be able to:
       * Upload objects using the lakeFS GUI

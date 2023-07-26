@@ -26,7 +26,7 @@ The garbage collection process proceeds in three main phases:
   the garbage collection job looks at the HEAD of the branch that many days
   ago; every commit at or since that HEAD must be retained.
 
-  ![mermaid diagram](/assets/img/gc-sample-commits.png)
+  ![mermaid diagram](../assets/img/gc-sample-commits.png)
 
   Continuing the example, branch `main` retains for 21 days and branch `dev`
   for 7. When running GC on 2022-03-31:
@@ -57,7 +57,7 @@ The garbage collection process proceeds in three main phases:
 
 Some objects will _not_ be collected regardless of configured GC rules:
 * Any object that is accessible from any branch's HEAD.
-* Objects stored outside the repository's [storage namespace](/understand/glossary.md#storage-namespace).
+* Objects stored outside the repository's [storage namespace](../understand/glossary.md#storage-namespace).
   For example, objects imported using the lakeFS import UI are not collected.
 * Uncommitted objects, see [Uncommitted Garbage Collection](./garbage-collection-uncommitted.md),
 
