@@ -37,6 +37,6 @@ details>summary {
 	cursor: pointer;
 }
 
-h1, h2, h3 {
-	margin-top: 0.4em;
+.accordion-button:not(.collapsed) {
+	background-color: #fff;
 }
