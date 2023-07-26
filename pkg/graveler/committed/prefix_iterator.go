@@ -12,19 +12,16 @@ type rangeValue struct {
 	vr *graveler.ValueRecord
 }
 
-const done = -1
-
 type ImportIterator interface {
 	IsCurrentRangeBoundedByPath() bool
 	IsCurrentPathIncludedInRange() bool
 }
 
 type PrefixIterator struct {
-	position          int // current path position in the slice or -1 if no prefixes left
-	prefixes          []graveler.Prefix
-	rangeIterator     Iterator
-	currentRangeValue rangeValue
-	hasNext           bool
+	currentPrefixIndex int
+	prefixes           []graveler.Prefix
+	rangeIterator      Iterator
+	currentRangeValue  rangeValue
 }
 
 func (ipi *PrefixIterator) Value() (*graveler.ValueRecord, *Range) {
@@ -51,8 +48,8 @@ func (ipi *PrefixIterator) SeekGE(id graveler.Key) {
 }
 
 func (ipi *PrefixIterator) Next() bool {
-	ipi.hasNext = ipi.rangeIterator.Next()
-	if !ipi.hasNext {
+	hasNext := ipi.rangeIterator.Next()
+	if !hasNext {
 		return false
 	}
 	vr, r := ipi.updateValue()
@@ -63,20 +60,21 @@ func (ipi *PrefixIterator) Next() bool {
 			if ipi.rangeIterator.Err() != nil {
 				return false
 			}
-			ipi.hasNext = ipi.rangeIterator.NextRange()
-			if !ipi.hasNext {
+			hasNext = ipi.rangeIterator.NextRange()
+			if !hasNext {
 				return false
 			}
 			ipi.updateValue()
 			ipi.updatePath()
 		}
 	} else {
-		for vr != nil && ipi.position != done && strings.HasPrefix(vr.Key.String(), string(ipi.prefixes[ipi.position])) {
+		prefixLen := len(ipi.prefixes)
+		for vr != nil && ipi.currentPrefixIndex < prefixLen && strings.HasPrefix(vr.Key.String(), string(ipi.prefixes[ipi.currentPrefixIndex])) {
 			if ipi.rangeIterator.Err() != nil {
 				return false
 			}
-			ipi.hasNext = ipi.rangeIterator.Next()
-			if !ipi.hasNext {
+			hasNext = ipi.rangeIterator.Next()
+			if !hasNext {
 				return false
 			}
 			vr, _ = ipi.updateValue()
@@ -87,8 +85,8 @@ func (ipi *PrefixIterator) Next() bool {
 }
 
 func (ipi *PrefixIterator) NextRange() bool {
-	ipi.hasNext = ipi.rangeIterator.NextRange()
-	if !ipi.hasNext {
+	hasNext := ipi.rangeIterator.NextRange()
+	if !hasNext {
 		return false
 	}
 	ipi.updateValue()
@@ -98,15 +96,12 @@ func (ipi *PrefixIterator) NextRange() bool {
 		if ipi.rangeIterator.Err() != nil {
 			return false
 		}
-		ipi.hasNext = ipi.rangeIterator.NextRange()
-		if !ipi.hasNext {
+		hasNext = ipi.rangeIterator.NextRange()
+		if !hasNext {
 			return false
 		}
 		ipi.updateValue()
-		ipi.position++
-		if ipi.position >= len(ipi.prefixes) {
-			ipi.position = done
-		}
+		ipi.currentPrefixIndex++
 	}
 	return true
 }
@@ -115,11 +110,11 @@ func NewPrefixIterator(prefixes []graveler.Prefix, rangeIterator Iterator) *Pref
 	sort.Slice(prefixes, func(i, j int) bool {
 		return prefixes[i] < prefixes[j]
 	})
-	return &PrefixIterator{prefixes: prefixes, position: 0, rangeIterator: rangeIterator}
+	return &PrefixIterator{prefixes: prefixes, currentPrefixIndex: 0, rangeIterator: rangeIterator}
 }
 
 func (ipi *PrefixIterator) updatePath() {
-	if ipi.position == done {
+	if ipi.currentPrefixIndex >= len(ipi.prefixes) {
 		return
 	}
 	currMinKey := string(ipi.currentRangeValue.r.MinKey)
@@ -128,15 +123,14 @@ func (ipi *PrefixIterator) updatePath() {
 	}
 	// If the position is smaller or doesn't have the prefix of the current key, get the next prefix.
 	// At the end of this function we'll have either a path that is a prefix of the current key, or bigger than the key
-	for string(ipi.prefixes[ipi.position]) < currMinKey &&
-		!strings.HasPrefix(currMinKey, string(ipi.prefixes[ipi.position])) {
-		p := ipi.position + 1
+	for string(ipi.prefixes[ipi.currentPrefixIndex]) < currMinKey &&
+		!strings.HasPrefix(currMinKey, string(ipi.prefixes[ipi.currentPrefixIndex])) {
+		p := ipi.currentPrefixIndex + 1
 		switch {
 		case p >= len(ipi.prefixes): // No more comparable prefixes
-			ipi.position = done
 			return
 		case string(ipi.prefixes[p]) <= string(ipi.currentRangeValue.r.MaxKey):
-			ipi.position = p
+			ipi.currentPrefixIndex = p
 		default:
 			return
 		}
@@ -144,10 +138,10 @@ func (ipi *PrefixIterator) updatePath() {
 }
 
 func (ipi *PrefixIterator) getPrefix() *graveler.Prefix {
-	if ipi.position == done {
+	if ipi.currentPrefixIndex >= len(ipi.prefixes) {
 		return nil
 	}
-	return &ipi.prefixes[ipi.position]
+	return &ipi.prefixes[ipi.currentPrefixIndex]
 }
 
 // IsCurrentRangeBoundedByPath returns true if both the range's max and min keys have the current path as their prefix
@@ -168,7 +162,5 @@ func (ipi *PrefixIterator) IsCurrentPathIncludedInRange() bool {
 		return false
 	}
 	r := ipi.currentRangeValue.r
-	hasPrefix := strings.HasPrefix(string(r.MinKey), string(*p)) || strings.HasPrefix(string(r.MaxKey), string(*p))
-	intersects := strings.Compare(string(*p), string(r.MinKey)) >= 0 && strings.Compare(string(*p), string(r.MaxKey)) <= 0
-	return hasPrefix || intersects
+	return strings.HasPrefix(string(r.MinKey), string(*p)) || strings.Compare(string(*p), string(r.MaxKey)) <= 0
 }
