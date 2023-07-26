@@ -1429,7 +1429,6 @@ func TestGraveler_AddCommit(t *testing.T) {
 	}
 	type args struct {
 		ctx            context.Context
-		repositoryID   graveler.RepositoryID
 		committer      string
 		message        string
 		metadata       graveler.Metadata
