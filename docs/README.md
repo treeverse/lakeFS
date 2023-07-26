@@ -1,1 +1,1 @@
-Please see [project/docs/](project/docs/index.html)
+Please see [project/docs/](project/docs/index.md)
