@@ -63,6 +63,12 @@ Both of these snippets invoke `{:toc}` which is [used by Kramdown](https://kramd
 
 Multiple callout types are available. Please review [this page](./callouts.html) for details.
 
+## Links
+
+Links should be *relative* (`../foo/example.html`) and not *absolute* (`/foo/example.html`). 
+
+This is so that references work within the versioned documentation that [is deployed](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/docs-release.yaml#L26-L45).
+
 ## Test your changes locally
 
 If you have the necessary dependencies installed, you can run Jekyll to build and serve the documentation from your machine using the provided Makefile target: 
