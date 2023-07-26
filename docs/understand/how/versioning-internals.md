@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Versioning Internals
-parent: How it Works
+parent: How lakeFS Works
 grand_parent: Understanding lakeFS
 description: This section explains how versioning works in lakeFS.
 nav_order: 10

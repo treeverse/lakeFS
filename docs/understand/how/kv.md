@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Internal database structure
-parent: How it Works
+parent: How lakeFS Works
 grand_parent: Understanding lakeFS
 description: Brief introduction to lakeFS over KV
 nav_order: 20
