@@ -48,7 +48,7 @@ const resourceListTemplate = `{{.Table | table -}}
 //nolint:gochecknoinits
 func init() {
 	// disable colors if we're not attached to interactive TTY.
-	// when environment variable is set we use it to control interactive mode
+	// when an environment variable is set, we use it to control interactive mode
 	// otherwise we will try to detect based on the standard output
 	interactiveVal := os.Getenv(LakectlInteractive)
 	if interactiveVal != "" {
@@ -367,7 +367,8 @@ func (d *deleteOnClose) Close() error {
 	return d.File.Close()
 }
 
-// OpenByPath returns a reader from the given path. If path is "-", it consumes Stdin and
+// OpenByPath returns a reader from the given path.
+// If the path is "-", it consumes Stdin and
 // opens a readable copy that is either deleted (POSIX) or will delete itself on close
 // (non-POSIX, notably WINs).
 func OpenByPath(path string) (io.ReadSeekCloser, error) {
