@@ -14,7 +14,7 @@ has_children: false
 Because lakeFS is format-agnostic, you can save data in Delta format within a lakeFS repository and benefit from the advantages of both technologies.  Specifically:
 
 1. ACID operations can span across many Delta tables.
-2. [CI/CD hooks](../understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
+2. [CI/CD hooks](../understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
 3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
 {% include toc.html %}

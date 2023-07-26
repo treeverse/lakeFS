@@ -87,7 +87,7 @@ Currently, the Auth service manages its own database of users and credentials an
 
 ### Hooks Engine
 
-The Hooks Engine enables CI/CD for data by triggering user defined [Actions](../understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) that will run during commit/merge. 
+The Hooks Engine enables CI/CD for data by triggering user defined [Actions](../understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) that will run during commit/merge. 
 
 ### UI
 

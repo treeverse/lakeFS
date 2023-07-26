@@ -113,7 +113,7 @@ lakeFS helps you maintain a tidy data lake in several ways, including:
 
 lakeFS makes creating isolated dev/test environments for ETL testing instantaneous, and through its use of copy-on-write, cheap. This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
 
-👉🏻 [Read more](./understanding/use_cases/etl_testing.html)
+👉🏻 [Read more](./understand/use_cases/etl_testing.html)
 
 ### Reproducibility: What Did My Data Look Like at a Point In Time?
 
@@ -133,7 +133,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
     With lakeFS you can create a branch from a commit to debug an issue in isolation.
 
-👉🏻 [Read More](./understanding/use_cases/reproducibility.html)
+👉🏻 [Read More](./understand/use_cases/reproducibility.html)
 
 ### Rollback of Data Changes and Recovery from Data Errors
 
@@ -151,7 +151,7 @@ in deletion or corruption events becomes an instant one-line operation with
 lakeFS: just identify a good historical commit, and then restore to it or
 copy from it.
 
-👉🏻 [Read more](./understanding/use_cases/rollback.html)
+👉🏻 [Read more](./understand/use_cases/rollback.html)
 
 ### Multi-Table Transactions guarantees
 
@@ -171,9 +171,9 @@ To learn more about atomic cross-collection updates, check out [this video](http
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
-With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./understanding/understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./understand/understanding/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
-👉🏻 [Read more](./understanding/understanding/use_cases/cicd_for_data.html)
+👉🏻 [Read more](./understand/understanding/use_cases/cicd_for_data.html)
 
 ## Downloads
 
