@@ -34,11 +34,13 @@ listing with separator `_delta_log/`.  (A simple API change could add a
 
 ### Iceberg Catalog
 
-lakeFS Iceberg support uses a catalog to locate Iceberg files.  This allows
-it to translate schema to refs.  But the lakeFS Iceberg catalog wraps a
-Spark catalog; it does not store any tables itself.  Currently only
-HadoopCatalog is supported, but it is not clear what _other_ catalogs would
-work.
+lakeFS Iceberg support is a catalog that locates Iceberg files.  This allows
+it to translate schema to refs.  lakeFS Iceberg catalog is a Hadoop catalog:
+it supports access through paths.  In a sense, it does not support a true
+catalog concept of "all tables".
+
+Currently only HadoopCatalog is supported, but it is not clear what _other_
+catalogs would work.
 
 ### Delta Sharing server
 
@@ -75,11 +77,12 @@ We currently support these 3 ways of defining tables:
 * Implicitly, by discovering that a given path holds a table.  This is our
   current Delta Lake and Delta-diff support.
 * Externally, by deferring to an external catalog.  This is our metastore
-  support (HMS is the catalog) and our Iceberg support (HadoopCatalog is the
-  catalog).
+  support (HMS is the catalog).  Our Iceberg support _might_ become partly
+  external, if we added support to defer table definitions to some other
+  catalog.
 * Internally, by effectively serving the catalog.  This is our lakeFS Delta
-  Sharing, except that the Delta Sharing protocol does not call this a
-  "catalog".
+  Sharing (the Delta Sharing protocol does not call this a "catalog").  Our
+  Iceberg support is also currently internal.
 
 ### Implicit definitions
 
@@ -119,16 +122,17 @@ limitations:
   to add lakeFS features to all of them.  For instance the HMS protocol is
   Thrift-based and does not support refs-as-schemas.
 
-Current Iceberg support is _almost_ an external definition: the code appears
-to defer to an external catalog.  But in practice only a single catalog is
-supported, precisely for reasons of cost.
+Iceberg support might become an external definition once it supports
+deferring to an external catalog.  It does not yet support wrapping an
+external catalog because of these risks.
 
 #### Possible future features
 
 Support more catalog types.  Each catalog adds implementation effort.
 
 Support catalog wrappers that work with multiple external catalogs.  For
-instance, wrapping additional catalogs under the Iceberg catalog, making it an external definition.
+instance, wrapping additional catalogs under the Iceberg catalog, making it
+an external definition.
 
 ### Internal definition
 
@@ -136,8 +140,10 @@ An internal definition should allow us to support _all_ lakeFS features that
 systems can handle.  Because it reduces external dependencies, it is
 probably the _fastest_ way for us to implement "table" features on top of
 lakeFS -- we have seen this in the lakeFS Delta Sharing server.  The Iceberg
-catalog wrapper is currently effectively internal: we support wrapping only
-a Spark catalog.  Their principal limitations:
+catalog wrapper is currently internal, although it does not even support
+defining tables except via Spark definitions.
+
+Their principal limitations:
 
 * Possibly unacceptable cost to users: If users are deeply invested in
   existing catalogs they may be reluctant or unable to transition to lakeFS
