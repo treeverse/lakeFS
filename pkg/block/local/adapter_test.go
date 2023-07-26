@@ -28,6 +28,7 @@ func TestAdapterNamespace(t *testing.T) {
 	tmpDir := t.TempDir()
 	localPath := path.Join(tmpDir, "lakefs")
 	adapter, err := local.NewAdapter(localPath, local.WithRemoveEmptyDir(false))
+	require.NoError(t, err, "create new adapter")
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
 	require.NoError(t, err)
 
