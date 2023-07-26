@@ -5,6 +5,7 @@ parent: How-To
 description: This section will guide you through deploying and setting up a production lakeFS environment.
 has_children: true
 has_toc: false
+nav_order: 1
 redirect_from:
   - /setup/
   - /setup/storage/index.html

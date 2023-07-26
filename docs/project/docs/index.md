@@ -4,13 +4,15 @@ description: How to contribute to the lakeFS Documentation, including style guid
 parent: The lakeFS Project
 has_children: true
 has_toc: false
+redirect_from:
+   - /README.html
 ---
 
 # lakeFS Documentation
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide](/project/contributing.html) for details on contributing to lakeFS in general. 
+Please see [the contributing guide](../../project/contributing.html) for details on contributing to lakeFS in general. 
 
 {% include toc.html %}
 
@@ -60,6 +62,12 @@ Both of these snippets invoke `{:toc}` which is [used by Kramdown](https://kramd
 ## Callouts
 
 Multiple callout types are available. Please review [this page](./callouts.html) for details.
+
+## Links
+
+Links should be *relative* (`../foo/example.html`) and not *absolute* (`/foo/example.html`). 
+
+This is so that references work within the versioned documentation that [is deployed](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/docs-release.yaml#L26-L45).
 
 ## Test your changes locally
 

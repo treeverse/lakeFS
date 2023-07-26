@@ -1,5 +1,5 @@
 # Build lakeFS
-FROM --platform=$BUILDPLATFORM golang:1.19.2-alpine3.16 AS build
+FROM --platform=$BUILDPLATFORM golang:1.20.6-alpine3.18 AS build
 
 ARG VERSION=dev
 
@@ -28,14 +28,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 
 # Build delta diff binary
-FROM --platform=$BUILDPLATFORM rust:1.68-alpine3.16 AS build-delta-diff-plugin
+FROM --platform=$BUILDPLATFORM rust:1.71-alpine3.18 AS build-delta-diff-plugin
 RUN apk update && apk add build-base pkgconfig openssl-dev alpine-sdk
 RUN cargo new --bin delta-diff
 WORKDIR /delta-diff
 
 # 2. Copy our manifests
-COPY ./pkg/plugins/diff/delta_diff_server/Cargo.lock ./Cargo.lock
-COPY ./pkg/plugins/diff/delta_diff_server/Cargo.toml ./Cargo.toml
+COPY ./pkg/plugins/diff/delta_diff_server/Cargo.lock ./
+COPY ./pkg/plugins/diff/delta_diff_server/Cargo.toml ./
 
 # 3. Build only the dependencies to cache them in this layer
 
@@ -53,8 +53,10 @@ RUN rm ./target/release/deps/delta_diff*
 RUN RUSTFLAGS=-Ctarget-feature=-crt-static cargo build --release
 
 # Just lakectl
-FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakectl
+FROM --platform=$BUILDPLATFORM alpine:3.18 AS lakectl
+
 RUN apk add -U --no-cache ca-certificates
+
 WORKDIR /app
 ENV PATH /app:$PATH
 COPY --from=build /build/lakectl ./
@@ -64,11 +66,9 @@ WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
 
 # lakefs with lakectl
-FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs
+FROM --platform=$BUILDPLATFORM alpine:3.18 AS lakefs
 
-RUN apk add -U --no-cache ca-certificates
-# Be Docker compose friendly (i.e. support wait-for)
-RUN apk add netcat-openbsd
+RUN apk add -U --no-cache ca-certificates netcat-openbsd
 
 WORKDIR /app
 COPY ./scripts/wait-for ./
@@ -86,12 +86,14 @@ ENTRYPOINT ["/app/lakefs"]
 CMD ["run"]
 
 # Include lakefs-plugins
-FROM --platform=$BUILDPLATFORM alpine:3.16.0 AS lakefs-plugins
+FROM --platform=$BUILDPLATFORM alpine:3.18 AS lakefs-plugins
 
-RUN apk add -U --no-cache ca-certificates
-RUN apk add openssl-dev libc6-compat alpine-sdk
-# Be Docker compose friendly (i.e. support wait-for)
-RUN apk add netcat-openbsd
+RUN apk add -U --no-cache \
+    alpine-sdk \
+    ca-certificates \
+    libc6-compat \
+    netcat-openbsd \
+    openssl-dev
 
 WORKDIR /app
 COPY ./scripts/wait-for ./

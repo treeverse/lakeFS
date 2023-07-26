@@ -77,7 +77,7 @@ Connect to your host using SSH:
    ⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
    {: .note }
 
-1. [Download the binary](/index.md#downloads) to the server.
+1. [Download the binary](../../index.md#downloads) to the server.
 
 1. Run the `lakefs` binary:
 
@@ -113,7 +113,7 @@ docker run \
 ⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
 {: .note }
 
-See the [reference](/reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+See the [reference](../../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
 
 
 </div>
@@ -169,8 +169,8 @@ To install lakeFS with Helm:
    By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
    💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-   Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](/understand/architecture.md#s3-gateway) or 
-   a simple PUT request using the [OpenAPI Server](/understand/architecture.md#openapi-server).
+   Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](../../understand/architecture.md#s3-gateway) or 
+   a simple PUT request using the [OpenAPI Server](../../understand/architecture.md#openapi-server).
    Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
    {: .note }
 
@@ -198,7 +198,7 @@ Using the shared storage location, both data and metadata will be stored there.
 
 Using the local blockstore import and allowing lakeFS access to a specific prefix, it is possible to import files from a shared location.
 Import is not enabled by default, as it doesn't assume the local path is shared and there is a security concern about accessing a path outside the specified in the blockstore configuration.
-Enabling is done by `blockstore.local.import_enabled` and `blockstore.local.allowed_external_prefixes` as described in the [configuration reference](/reference/configuration.md).
+Enabling is done by `blockstore.local.import_enabled` and `blockstore.local.allowed_external_prefixes` as described in the [configuration reference](../../reference/configuration.md).
 
 ### Sample configuration using local blockstore
 

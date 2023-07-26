@@ -13,7 +13,7 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> SSO is also available for [lakeFS Enterprise](/enterprise/sso.html). Using the open-source version of lakeFS? Read more on [authentication](/reference/authentication.html). 
+> SSO is also available for [lakeFS Enterprise](../enterprise/sso.html). Using the open-source version of lakeFS? Read more on [authentication](../reference/authentication.html). 
 
 lakeFS Cloud uses Auth0 for authentication and thus support the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
 

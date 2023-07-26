@@ -28,7 +28,7 @@ For high throughput, additional CPUs help scale requests across different cores.
 "Expensive" operations such as large diff or commit operations can take advantage of multiple cores. 
 
 ### Network
-If using the data APIs such as the [S3 Gateway](/understand/architecture.md#s3-gateway), 
+If using the data APIs such as the [S3 Gateway](../understand/architecture.md#s3-gateway), 
 lakeFS will require enough network bandwidth to support the planned concurrent network upload/download operations.
 For most cloud providers, more powerful machines (i.e., more expensive and usually containing more CPU cores) also provide increased network bandwidth.
 
@@ -123,7 +123,7 @@ the amount of changes introduced per commit usually stays relatively stable whil
 This means lakeFS will provide predictable performance:
 committing 100 changes will take roughly the same amount of time whether the resulting commit contains 500 or 500 million objects.
 
-See [Data Model](/understand/how/versioning-internals.md) for more information.
+See [Data Model](../understand/how/versioning-internals.md) for more information.
 
 Scaling throughput depends very much on the amount of CPU cores available to lakeFS.
 In many cases, it's easier to scale lakeFS across a fleet of smaller cloud instances (or containers)
@@ -151,7 +151,7 @@ The PostgreSQL instance that was used is a [db.m6g.2xlarge](https://docs.aws.ama
 The example repository we tested against contains the metadata of a large lakeFS installation,
 where each commit contains **~180,000,000** objects (representing ~7.5 Petabytes of data).
 
-All tests are reproducible using the [lakectl abuse command](/reference/cli.html#lakectl-abuse),
+All tests are reproducible using the [lakectl abuse command](../reference/cli.html#lakectl-abuse),
 so use it to properly size and tune your setup. All tests are accompanied by the relevant `lakectl abuse` command that generated them.
 
 ### Random reads
@@ -522,7 +522,7 @@ Here are a few notable metrics to keep track of when sizing lakeFS:
 
 `api_request_duration_seconds` - Histogram of latency per operation type.
 
-`gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](/understand/architecture.md#s3-gateway) operation.
+`gateway_request_duration_seconds` - Histogram of latency per [S3 Gateway](../understand/architecture.md#s3-gateway) operation.
 
 <div class="tabs">
   <ul>

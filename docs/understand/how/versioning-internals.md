@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Versioning Internals
-parent: How it Works
+parent: How lakeFS Works
 grand_parent: Understanding lakeFS
 description: This section explains how versioning works in lakeFS.
 nav_order: 10
@@ -102,4 +102,4 @@ Both these types of metadata are not only mutable, but also require strong consi
 
 Luckily, this is also much smaller set of metadata compared to the committed metadata.
 
-References and uncommitted metadata are currently stored on a key-value store (See [supported databases](/reference/configuration.md)) for consistency guarantees.
+References and uncommitted metadata are currently stored on a key-value store (See [supported databases](../../reference/configuration.md)) for consistency guarantees.

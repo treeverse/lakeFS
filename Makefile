@@ -15,6 +15,8 @@ CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
+GOLANGCI_LINT_VERSION=v1.53.3
+
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
 endif
@@ -102,11 +104,8 @@ gen-docs: ## Generate CLI docs automatically
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
 
-go-mod-download: ## Download module dependencies
-	$(GOCMD) mod download
-
-go-install: go-mod-download ## Install dependencies
-	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+tools: ## Install tools
+	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
 
@@ -165,8 +164,8 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
-lint: go-install  ## Lint code
-	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
+lint: ## Lint code
+	$(GOCMD) run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run $(GOLANGCI_LINT_FLAGS)
 	npx eslint $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
 
 esti: ## run esti (system testing)
@@ -255,7 +254,7 @@ $(UI_DIR)/node_modules:
 gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
-proto: go-install ## Build proto (Protocol Buffers) files
+proto: tools ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/actions --go_out=pkg/actions --go_opt=paths=source_relative actions.proto
 	$(PROTOC) --proto_path=pkg/auth/model --go_out=pkg/auth/model --go_opt=paths=source_relative model.proto
 	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
