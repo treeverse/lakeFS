@@ -210,6 +210,7 @@ func pathExists(path string) bool {
 func init() {
 	rootCmd.AddCommand(dbtCmd)
 	dbtCmd.AddCommand(dbtCreateBranchSchema)
+	dbtCreateBranchSchema.Flags().String("from-client-type", "", "metastore type [hive, glue]")
 	dbtCreateBranchSchema.Flags().String("branch", "", "requested branch")
 	_ = dbtCreateBranchSchema.MarkFlagRequired("branch")
 	dbtCreateBranchSchema.Flags().String("to-schema", "", "destination schema name [default is branch]")
