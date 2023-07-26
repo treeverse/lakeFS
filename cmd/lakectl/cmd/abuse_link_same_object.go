@@ -24,8 +24,8 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		key := Must(cmd.Flags().GetString("key"))
 
-		fmt.Printf("Source ref: %s\n", []interface{}{u.String()}...)
-		fmt.Printf("Object key: %s\n", []interface{}{key}...)
+		fmt.Printf("Source ref: %s\n", u.String())
+		fmt.Printf("Object key: %s\n", key)
 
 		generator := stress.NewGenerator("get-and-link", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 

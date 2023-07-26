@@ -26,7 +26,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		prefix := Must(cmd.Flags().GetString("prefix"))
 
-		fmt.Printf("Source branch: %s\n", []interface{}{u.String()}...)
+		fmt.Printf("Source branch: %s\n", u.String())
 		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input

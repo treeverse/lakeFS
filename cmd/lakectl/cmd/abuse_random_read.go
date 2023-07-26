@@ -26,13 +26,13 @@ var abuseRandomReadsCmd = &cobra.Command{
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		fromFile := Must(cmd.Flags().GetString("from-file"))
 
-		fmt.Printf("Source ref: %s\n", []interface{}{u.String()}...)
+		fmt.Printf("Source ref: %s\n", u.String())
 		// read the input file
 		keys, err := readLines(fromFile)
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("read a total of %d keys from key file\n", []interface{}{len(keys)}...)
+		fmt.Printf("read a total of %d keys from key file\n", len(keys))
 
 		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
