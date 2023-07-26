@@ -145,7 +145,7 @@ func (ipi *PrefixIterator) getPrefix() *graveler.Prefix {
 	return &ipi.prefixes[ipi.currentPrefixIndex]
 }
 
-// IsCurrentRangeBoundedByPrefix returns true if both the range's max and min keys have the current prefix as their prefix
+// IsCurrentRangeBoundedByPrefix returns true if both the range's max and min keys have the current prefix.
 func (ipi *PrefixIterator) IsCurrentRangeBoundedByPrefix() bool {
 	p := ipi.getPrefix()
 	if p == nil {
