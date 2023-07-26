@@ -32,7 +32,7 @@ connectors to sync data to your S3 buckets by leveraging lakeFS branches and ato
 You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](../understand/data_lifecycle_management) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
-1. Test incoming data for breaking schema changes using [lakeFS hooks](../howto/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+1. Test incoming data for breaking schema changes using [lakeFS hooks](../understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 1. Prevent consumers from reading partial data from connectors which failed half-way through sync.
 1. Experiment with ingested data on a branch before exposing it.
 
