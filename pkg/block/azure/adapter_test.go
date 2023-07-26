@@ -34,6 +34,7 @@ func TestAdapterNamespace(t *testing.T) {
 		StorageAccessKey: accountKey,
 		TestEndpointURL:  blockURL,
 	})
+	require.NoError(t, err, "create new adapter")
 
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
 	require.NoError(t, err)
