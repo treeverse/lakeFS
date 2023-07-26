@@ -163,7 +163,7 @@ var rootCmd = &cobra.Command{
 }
 
 func getClient() *api.ClientWithResponses {
-	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
+	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253

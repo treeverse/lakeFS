@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	os "os"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
