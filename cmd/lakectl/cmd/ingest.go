@@ -42,12 +42,12 @@ var ingestCmd = &cobra.Command{
 	Short:      "Ingest objects from an external source into a lakeFS branch (without actually copying them)",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		verbose := MustBool(cmd.Flags().GetBool("verbose"))
-		dryRun := MustBool(cmd.Flags().GetBool("dry-run"))
-		s3EndpointURL := MustString(cmd.Flags().GetString("s3-endpoint-url"))
-		from := MustString(cmd.Flags().GetString("from"))
-		to := MustString(cmd.Flags().GetString("to"))
-		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
+		verbose := Must(cmd.Flags().GetBool("verbose"))
+		dryRun := Must(cmd.Flags().GetBool("dry-run"))
+		s3EndpointURL := Must(cmd.Flags().GetString("s3-endpoint-url"))
+		from := Must(cmd.Flags().GetString("from"))
+		to := Must(cmd.Flags().GetString("to"))
+		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		lakefsURI := MustParsePathURI("to", to)
 
 		// initialize worker pool

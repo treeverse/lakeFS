@@ -49,7 +49,7 @@ Example configuration file:
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
-		filename := MustString(cmd.Flags().GetString(filenameFlagName))
+		filename := Must(cmd.Flags().GetString(filenameFlagName))
 		var reader io.ReadCloser
 		var err error
 		if filename == "-" {
@@ -96,7 +96,7 @@ var gcGetConfigCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
-		isJSON := MustBool(cmd.Flags().GetBool(jsonFlagName))
+		isJSON := Must(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

@@ -18,7 +18,7 @@ var actionsValidateCmd = &cobra.Command{
 	Args:    cmdutils.ValidationChain(cobra.ExactArgs(actionsValidateRequiredArgs)),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := args[0]
-		reader := OpenByPath(file)
+		reader := Must(OpenByPath(file))
 		defer func() { _ = reader.Close() }()
 
 		bytes, err := io.ReadAll(reader)

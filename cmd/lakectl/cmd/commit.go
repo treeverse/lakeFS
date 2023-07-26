@@ -41,9 +41,9 @@ var commitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		message := MustString(cmd.Flags().GetString(messageFlagName))
-		emptyMessageBool := MustBool(cmd.Flags().GetBool(allowEmptyMessageFlagName))
-		date := MustInt64(cmd.Flags().GetInt64(dateFlagName))
+		message := Must(cmd.Flags().GetString(messageFlagName))
+		emptyMessageBool := Must(cmd.Flags().GetBool(allowEmptyMessageFlagName))
+		date := Must(cmd.Flags().GetInt64(dateFlagName))
 
 		if strings.TrimSpace(message) == "" && !emptyMessageBool {
 			DieFmt(fmtErrEmptyMessage)

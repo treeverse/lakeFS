@@ -21,7 +21,7 @@ var showCommitCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		commitURI := MustParseRefURI("ref uri", args[0])
-		showMetaRangeID := MustBool(cmd.Flags().GetBool("show-meta-range-id"))
+		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 
 		ctx := cmd.Context()
 		client := getClient()

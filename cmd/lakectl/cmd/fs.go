@@ -58,7 +58,7 @@ var fsStatCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
-		preSign := MustBool(cmd.Flags().GetBool("pre-sign"))
+		preSign := Must(cmd.Flags().GetBool("pre-sign"))
 		client := getClient()
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
 			Path:         *pathURI.Path,
@@ -141,8 +141,8 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		direct := MustBool(flagSet.GetBool("direct"))
-		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
+		direct := Must(flagSet.GetBool("direct"))
+		preSignMode := Must(flagSet.GetBool("pre-sign"))
 		transport := transportMethodFromFlags(direct, preSignMode)
 
 		var err error
@@ -177,7 +177,7 @@ var fsCatCmd = &cobra.Command{
 }
 
 func upload(ctx context.Context, client api.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method transportMethod) (*api.ObjectStats, error) {
-	fp := OpenByPath(sourcePathname)
+	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
@@ -249,11 +249,11 @@ var fsUploadCmd = &cobra.Command{
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		source := MustString(flagSet.GetString("source"))
-		recursive := MustBool(flagSet.GetBool("recursive"))
-		direct := MustBool(flagSet.GetBool("direct"))
-		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
-		contentType := MustString(flagSet.GetString("content-type"))
+		source := Must(flagSet.GetString("source"))
+		recursive := Must(flagSet.GetBool("recursive"))
+		direct := Must(flagSet.GetBool("direct"))
+		preSignMode := Must(flagSet.GetBool("pre-sign"))
+		contentType := Must(flagSet.GetString("content-type"))
 
 		ctx := cmd.Context()
 		transport := transportMethodFromFlags(direct, preSignMode)
@@ -388,7 +388,7 @@ var fsRmCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive, _ := cmd.Flags().GetBool("recursive")
-		concurrency := MustInt(cmd.Flags().GetInt("concurrency"))
+		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
 		if !recursive {
@@ -475,10 +475,10 @@ var fsDownloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		direct := MustBool(flagSet.GetBool("direct"))
-		preSignMode := MustBool(flagSet.GetBool("pre-sign"))
-		recursive := MustBool(flagSet.GetBool("recursive"))
-		parallel := MustInt(flagSet.GetInt("parallel"))
+		direct := Must(flagSet.GetBool("direct"))
+		preSignMode := Must(flagSet.GetBool("pre-sign"))
+		recursive := Must(flagSet.GetBool("recursive"))
+		parallel := Must(flagSet.GetInt("parallel"))
 		transport := transportMethodFromFlags(direct, preSignMode)
 
 		if parallel < 1 {

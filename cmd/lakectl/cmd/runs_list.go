@@ -19,10 +19,10 @@ var runsListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		commit := MustString(cmd.Flags().GetString("commit"))
-		branch := MustString(cmd.Flags().GetString("branch"))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
+		commit := Must(cmd.Flags().GetString("commit"))
+		branch := Must(cmd.Flags().GetString("branch"))
 		u := MustParseRepoURI("repository", args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)

@@ -28,11 +28,11 @@ var importCmd = &cobra.Command{
 	Short: "Import data from external source to a destination branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
-		noProgress := MustBool(flags.GetBool("no-progress"))
-		from := MustString(flags.GetString("from"))
-		to := MustString(flags.GetString("to"))
+		noProgress := Must(flags.GetBool("no-progress"))
+		from := Must(flags.GetString("from"))
+		to := Must(flags.GetString("to"))
 		toURI := MustParsePathURI("to", to)
-		message := MustString(flags.GetString("message"))
+		message := Must(flags.GetString("message"))
 		metadata, err := getKV(cmd, "meta")
 		if err != nil {
 			DieErr(err)
