@@ -408,6 +408,6 @@ func Must[T any](v T, err error) T {
 	return v
 }
 
-func Fmt(format string, a ...interface{}) string {
-	return fmt.Sprintf(format, a...)
+func Fmt(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
 }
