@@ -57,8 +57,8 @@ var authUsersList = &cobra.Command{
 	Use:   "list",
 	Short: "List users",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 
 		clt := getClient()
 
@@ -87,7 +87,7 @@ var authUsersCreate = &cobra.Command{
 	Use:   "create",
 	Short: "Create a user",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
@@ -106,7 +106,7 @@ var authUsersDelete = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a user",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.DeleteUserWithResponse(cmd.Context(), id)
@@ -124,9 +124,9 @@ var authUsersGroupsList = &cobra.Command{
 	Use:   "list",
 	Short: "List groups for the given user",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		id := Must(cmd.Flags().GetString("id"))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 
 		clt := getClient()
 
@@ -161,10 +161,10 @@ var authUsersPoliciesList = &cobra.Command{
 	Use:   "list",
 	Short: "List policies for the given user",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-		effective, _ := cmd.Flags().GetBool("effective")
+		id := Must(cmd.Flags().GetString("id"))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
+		effective := Must(cmd.Flags().GetBool("effective"))
 
 		clt := getClient()
 
@@ -196,8 +196,8 @@ var authUsersPoliciesAttach = &cobra.Command{
 	Use:   "attach",
 	Short: "Attach a policy to a user",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		policy, _ := cmd.Flags().GetString("policy")
+		id := Must(cmd.Flags().GetString("id"))
+		policy := Must(cmd.Flags().GetString("policy"))
 		clt := getClient()
 		resp, err := clt.AttachPolicyToUserWithResponse(cmd.Context(), id, policy)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
@@ -209,8 +209,8 @@ var authUsersPoliciesDetach = &cobra.Command{
 	Use:   "detach",
 	Short: "Detach a policy from a user",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		policy, _ := cmd.Flags().GetString("policy")
+		id := Must(cmd.Flags().GetString("id"))
+		policy := Must(cmd.Flags().GetString("policy"))
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromUserWithResponse(cmd.Context(), id, policy)
@@ -229,7 +229,7 @@ var authUsersCredentialsCreate = &cobra.Command{
 	Use:   "create",
 	Short: "Create user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		if id == "" {
@@ -256,8 +256,8 @@ var authUsersCredentialsDelete = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		accessKeyID, _ := cmd.Flags().GetString("access-key-id")
+		id := Must(cmd.Flags().GetString("id"))
+		accessKeyID := Must(cmd.Flags().GetString("access-key-id"))
 		clt := getClient()
 
 		if id == "" {
@@ -279,9 +279,9 @@ var authUsersCredentialsList = &cobra.Command{
 	Use:   "list",
 	Short: "List user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-		id, _ := cmd.Flags().GetString("id")
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
+		id := Must(cmd.Flags().GetString("id"))
 
 		clt := getClient()
 		if id == "" {
@@ -323,8 +323,8 @@ var authGroupsList = &cobra.Command{
 	Use:   "list",
 	Short: "List groups",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 
 		clt := getClient()
 
@@ -353,7 +353,7 @@ var authGroupsCreate = &cobra.Command{
 	Use:   "create",
 	Short: "Create a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.CreateGroupWithResponse(cmd.Context(), api.CreateGroupJSONRequestBody{
@@ -372,7 +372,7 @@ var authGroupsDelete = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupWithResponse(cmd.Context(), id)
@@ -390,9 +390,9 @@ var authGroupsListMembers = &cobra.Command{
 	Use:   "list",
 	Short: "List users in a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		id := Must(cmd.Flags().GetString("id"))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 
 		clt := getClient()
 
@@ -420,8 +420,8 @@ var authGroupsAddMember = &cobra.Command{
 	Use:   "add",
 	Short: "Add a user to a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		user, _ := cmd.Flags().GetString("user")
+		id := Must(cmd.Flags().GetString("id"))
+		user := Must(cmd.Flags().GetString("user"))
 		clt := getClient()
 
 		resp, err := clt.AddGroupMembershipWithResponse(cmd.Context(), id, user)
@@ -434,8 +434,8 @@ var authGroupsRemoveMember = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove a user from a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		user, _ := cmd.Flags().GetString("user")
+		id := Must(cmd.Flags().GetString("id"))
+		user := Must(cmd.Flags().GetString("user"))
 		clt := getClient()
 
 		resp, err := clt.DeleteGroupMembershipWithResponse(cmd.Context(), id, user)
@@ -454,9 +454,9 @@ var authGroupsPoliciesList = &cobra.Command{
 	Use:   "list",
 	Short: "List policies for the given group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		id := Must(cmd.Flags().GetString("id"))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 
 		clt := getClient()
 
@@ -487,8 +487,8 @@ var authGroupsPoliciesAttach = &cobra.Command{
 	Use:   "attach",
 	Short: "Attach a policy to a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		policy, _ := cmd.Flags().GetString("policy")
+		id := Must(cmd.Flags().GetString("id"))
+		policy := Must(cmd.Flags().GetString("policy"))
 		clt := getClient()
 
 		resp, err := clt.AttachPolicyToGroupWithResponse(cmd.Context(), id, policy)
@@ -502,8 +502,8 @@ var authGroupsPoliciesDetach = &cobra.Command{
 	Use:   "detach",
 	Short: "Detach a policy from a group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		policy, _ := cmd.Flags().GetString("policy")
+		id := Must(cmd.Flags().GetString("id"))
+		policy := Must(cmd.Flags().GetString("policy"))
 		clt := getClient()
 
 		resp, err := clt.DetachPolicyFromGroupWithResponse(cmd.Context(), id, policy)
@@ -523,8 +523,8 @@ var authPoliciesList = &cobra.Command{
 	Use:   "list",
 	Short: "List policies",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
 
 		clt := getClient()
 
@@ -552,8 +552,8 @@ var authPoliciesCreate = &cobra.Command{
 	Use:   "create",
 	Short: "Create a policy",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		document, _ := cmd.Flags().GetString("statement-document")
+		id := Must(cmd.Flags().GetString("id"))
+		document := Must(cmd.Flags().GetString("statement-document"))
 		clt := getClient()
 
 		var err error
@@ -605,7 +605,7 @@ var authPoliciesShow = &cobra.Command{
 	Use:   "show",
 	Short: "Show a policy",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
@@ -631,7 +631,7 @@ var authPoliciesDelete = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a policy",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.DeletePolicyWithResponse(cmd.Context(), id)
@@ -650,7 +650,7 @@ var aclGroupACLGet = &cobra.Command{
 	Use:   "get",
 	Short: "Get ACL of group",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
+		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
 		resp, err := clt.GetGroupACLWithResponse(cmd.Context(), id)
@@ -665,8 +665,8 @@ var aclGroupACLSet = &cobra.Command{
 	Short: "Set ACL of group",
 	Long:  `Set ACL of group. permission will be attached to all repositories.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		permission, _ := cmd.Flags().GetString("permission")
+		id := Must(cmd.Flags().GetString("id"))
+		permission := Must(cmd.Flags().GetString("permission"))
 
 		clt := getClient()
 

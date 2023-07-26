@@ -43,15 +43,15 @@ var dbtCreateBranchSchema = &cobra.Command{
 	Short:   "Creates a new schema dedicated for branch and clones all dbt models to new schema",
 	Example: "lakectl dbt create-branch-schema --branch <branch-name>",
 	Run: func(cmd *cobra.Command, args []string) {
-		clientType, _ := cmd.Flags().GetString("from-client-type")
-		branchName, _ := cmd.Flags().GetString("branch")
-		shouldCreateBranch, _ := cmd.Flags().GetBool(createBranchFlag)
-		toSchema, _ := cmd.Flags().GetString("to-schema")
-		projectRoot, _ := cmd.Flags().GetString("project-root")
-		skipViews, _ := cmd.Flags().GetBool("skip-views")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-location")
-		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
-		continueOnSchemaExists, _ := cmd.Flags().GetBool(continueOnSchemaFlag)
+		clientType := Must(cmd.Flags().GetString("from-client-type"))
+		branchName := Must(cmd.Flags().GetString("branch"))
+		shouldCreateBranch := Must(cmd.Flags().GetBool(createBranchFlag))
+		toSchema := Must(cmd.Flags().GetString("to-schema"))
+		projectRoot := Must(cmd.Flags().GetString("project-root"))
+		skipViews := Must(cmd.Flags().GetBool("skip-views"))
+		dbfsLocation := Must(cmd.Flags().GetString("dbfs-location"))
+		continueOnError := Must(cmd.Flags().GetBool("continue-on-error"))
+		continueOnSchemaExists := Must(cmd.Flags().GetBool(continueOnSchemaFlag))
 
 		if strings.TrimSpace(toSchema) == "" {
 			toSchema = branchName
@@ -166,7 +166,7 @@ var dbtGenerateSchemaMacro = &cobra.Command{
 	Short:   "generates the a macro allowing lakectl to run dbt on dynamic schemas",
 	Example: "lakectl dbt generate-schema-macro",
 	Run: func(cmd *cobra.Command, args []string) {
-		projectRoot, _ := cmd.Flags().GetString("project-root")
+		projectRoot := Must(cmd.Flags().GetString("project-root"))
 
 		if !pathExists(path.Join(projectRoot, macrosDirName)) {
 			DieFmt("The project-root should contain the macro directory")

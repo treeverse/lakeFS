@@ -22,8 +22,8 @@ var catSstCmd = &cobra.Command{
 	Short:  "Explore lakeFS .sst files",
 	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		filePath, _ := cmd.Flags().GetString("file")
+		amount := Must(cmd.Flags().GetInt("amount"))
+		filePath := Must(cmd.Flags().GetString("file"))
 		iter, props, err := getIterFromFile(filePath)
 		if err != nil {
 			DieErr(err)

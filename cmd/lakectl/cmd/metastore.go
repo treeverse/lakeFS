@@ -23,16 +23,16 @@ var metastoreCopyCmd = &cobra.Command{
 	Short: "Copy or merge table",
 	Long:  "Copy or merge table. the destination table will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
-		fromDB, _ := cmd.Flags().GetString("from-schema")
-		fromTable, _ := cmd.Flags().GetString("from-table")
-		toClientType, _ := cmd.Flags().GetString("to-client-type")
-		toDB, _ := cmd.Flags().GetString("to-schema")
-		toTable, _ := cmd.Flags().GetString("to-table")
-		toBranch, _ := cmd.Flags().GetString("to-branch")
-		serde, _ := cmd.Flags().GetString("serde")
-		partition, _ := cmd.Flags().GetStringSlice("partition")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
+		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
+		fromDB := Must(cmd.Flags().GetString("from-schema"))
+		fromTable := Must(cmd.Flags().GetString("from-table"))
+		toClientType := Must(cmd.Flags().GetString("to-client-type"))
+		toDB := Must(cmd.Flags().GetString("to-schema"))
+		toTable := Must(cmd.Flags().GetString("to-table"))
+		toBranch := Must(cmd.Flags().GetString("to-branch"))
+		serde := Must(cmd.Flags().GetString("serde"))
+		partition := Must(cmd.Flags().GetStringSlice("partition"))
+		dbfsLocation := Must(cmd.Flags().GetString("dbfs-root"))
 
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
@@ -71,12 +71,12 @@ var metastoreCopySchemaCmd = &cobra.Command{
 	Short: "Copy schema",
 	Long:  "Copy schema (without tables). the destination schema will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
-		fromDB, _ := cmd.Flags().GetString("from-schema")
-		toClientType, _ := cmd.Flags().GetString("to-client-type")
-		toDB, _ := cmd.Flags().GetString("to-schema")
-		toBranch, _ := cmd.Flags().GetString("to-branch")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
+		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
+		fromDB := Must(cmd.Flags().GetString("from-schema"))
+		toClientType := Must(cmd.Flags().GetString("to-client-type"))
+		toDB := Must(cmd.Flags().GetString("to-schema"))
+		toBranch := Must(cmd.Flags().GetString("to-branch"))
+		dbfsLocation := Must(cmd.Flags().GetString("dbfs-root"))
 
 		fromClient, fromClientDeferFunc := getMetastoreClient(fromClientType, "")
 		defer fromClientDeferFunc()
@@ -140,15 +140,15 @@ var metastoreCopyAllCmd = &cobra.Command{
 	Short: "Copy from one metastore to another",
 	Long:  "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
 	Run: func(cmd *cobra.Command, args []string) {
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
-		fromAddress, _ := cmd.Flags().GetString("from-address")
-		toClientType, _ := cmd.Flags().GetString("to-client-type")
-		toAddress, _ := cmd.Flags().GetString("to-address")
-		schemaFilter, _ := cmd.Flags().GetString("schema-filter")
-		tableFilter, _ := cmd.Flags().GetString("table-filter")
-		branch, _ := cmd.Flags().GetString("branch")
-		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
+		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
+		fromAddress := Must(cmd.Flags().GetString("from-address"))
+		toClientType := Must(cmd.Flags().GetString("to-client-type"))
+		toAddress := Must(cmd.Flags().GetString("to-address"))
+		schemaFilter := Must(cmd.Flags().GetString("schema-filter"))
+		tableFilter := Must(cmd.Flags().GetString("table-filter"))
+		branch := Must(cmd.Flags().GetString("branch"))
+		continueOnError := Must(cmd.Flags().GetBool("continue-on-error"))
+		dbfsLocation := Must(cmd.Flags().GetString("dbfs-root"))
 
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
@@ -176,16 +176,16 @@ table with location s3://my-s3-bucket/path/to/table
 will be transformed to location s3://repo-param/bucket-param/path/to/table
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
-		fromAddress, _ := cmd.Flags().GetString("from-address")
-		toClientType, _ := cmd.Flags().GetString("to-client-type")
-		toAddress, _ := cmd.Flags().GetString("to-address")
-		schemaFilter, _ := cmd.Flags().GetString("schema-filter")
-		tableFilter, _ := cmd.Flags().GetString("table-filter")
-		repo, _ := cmd.Flags().GetString("repo")
-		branch, _ := cmd.Flags().GetString("branch")
-		continueOnError, _ := cmd.Flags().GetBool("continue-on-error")
-		dbfsLocation, _ := cmd.Flags().GetString("dbfs-root")
+		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
+		fromAddress := Must(cmd.Flags().GetString("from-address"))
+		toClientType := Must(cmd.Flags().GetString("to-client-type"))
+		toAddress := Must(cmd.Flags().GetString("to-address"))
+		schemaFilter := Must(cmd.Flags().GetString("schema-filter"))
+		tableFilter := Must(cmd.Flags().GetString("table-filter"))
+		repo := Must(cmd.Flags().GetString("repo"))
+		branch := Must(cmd.Flags().GetString("branch"))
+		continueOnError := Must(cmd.Flags().GetBool("continue-on-error"))
+		dbfsLocation := Must(cmd.Flags().GetString("dbfs-root"))
 		if fromAddress == toAddress {
 			Die("from-address must be different than to-address", 1)
 		}
@@ -207,14 +207,14 @@ var metastoreDiffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Show column and partition differences between two tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		toAddress, _ := cmd.Flags().GetString("to-address")
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
-		fromDB, _ := cmd.Flags().GetString("from-schema")
-		fromTable, _ := cmd.Flags().GetString("from-table")
-		toClientType, _ := cmd.Flags().GetString("to-client-type")
-		fromAddress, _ := cmd.Flags().GetString("from-address")
-		toDB, _ := cmd.Flags().GetString("to-schema")
-		toTable, _ := cmd.Flags().GetString("to-table")
+		toAddress := Must(cmd.Flags().GetString("to-address"))
+		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
+		fromDB := Must(cmd.Flags().GetString("from-schema"))
+		fromTable := Must(cmd.Flags().GetString("from-table"))
+		toClientType := Must(cmd.Flags().GetString("to-client-type"))
+		fromAddress := Must(cmd.Flags().GetString("from-address"))
+		toDB := Must(cmd.Flags().GetString("to-schema"))
+		toTable := Must(cmd.Flags().GetString("to-table"))
 
 		fromClient, toClient, fromClientDeferFunc, toClientDeferFunc := getClients(fromClientType, toClientType, fromAddress, toAddress)
 		defer fromClientDeferFunc()
@@ -269,14 +269,14 @@ var createSymlinkCmd = &cobra.Command{
 	Short: "Create symlink table and data",
 	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
 	Run: func(cmd *cobra.Command, args []string) {
-		repo, _ := cmd.Flags().GetString("repo")
-		branch, _ := cmd.Flags().GetString("branch")
-		path, _ := cmd.Flags().GetString("path")
-		fromDB, _ := cmd.Flags().GetString("from-schema")
-		fromTable, _ := cmd.Flags().GetString("from-table")
-		toDB, _ := cmd.Flags().GetString("to-schema")
-		toTable, _ := cmd.Flags().GetString("to-table")
-		fromClientType, _ := cmd.Flags().GetString("from-client-type")
+		repo := Must(cmd.Flags().GetString("repo"))
+		branch := Must(cmd.Flags().GetString("branch"))
+		path := Must(cmd.Flags().GetString("path"))
+		fromDB := Must(cmd.Flags().GetString("from-schema"))
+		fromTable := Must(cmd.Flags().GetString("from-table"))
+		toDB := Must(cmd.Flags().GetString("to-schema"))
+		toTable := Must(cmd.Flags().GetString("to-table"))
+		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
 
 		apiClient := getClient()
 		fromClient, toClient, fromClientDeferFunc, toClientDeferFunc := getClients(fromClientType, "glue", "", "")

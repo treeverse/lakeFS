@@ -87,7 +87,7 @@ var logCmd = &cobra.Command{
 		prefixesList := MustSliceNonEmptyString("prefixes", prefixes)
 
 		pagination := api.Pagination{HasMore: true}
-		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
+		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
 		branchURI := MustParseRefURI("branch", args[0])
 		amountForPagination := amount

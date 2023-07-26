@@ -87,7 +87,7 @@ var fsListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
-		recursive, _ := cmd.Flags().GetBool("recursive")
+		recursive := Must(cmd.Flags().GetBool("recursive"))
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non-recursive)
@@ -387,7 +387,7 @@ var fsRmCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		recursive, _ := cmd.Flags().GetBool("recursive")
+		recursive := Must(cmd.Flags().GetBool("recursive"))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()

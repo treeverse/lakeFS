@@ -84,7 +84,7 @@ var tagCreateCmd = &cobra.Command{
 
 		client := getClient()
 		ctx := cmd.Context()
-		force, _ := cmd.Flags().GetBool("force")
+		force := Must(cmd.Flags().GetBool("force"))
 
 		if tagURI.Repository != commitURI.Repository {
 			Die("both references must belong to the same repository", 1)

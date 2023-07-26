@@ -33,7 +33,7 @@ var cherryPick = &cobra.Command{
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
 		}
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
-		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
+		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
 		if hasParentNumber {
 			if parentNumber <= 0 {
 				Die("parent number must be positive, if specified", 1)

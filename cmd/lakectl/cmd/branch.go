@@ -63,7 +63,7 @@ var branchCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch", args[0])
 		client := getClient()
-		sourceRawURI, _ := cmd.Flags().GetString("source")
+		sourceRawURI := Must(cmd.Flags().GetString("source"))
 		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, baseURI)
 		if err != nil {
 			DieFmt("failed to parse source URI: %s", err)
@@ -118,7 +118,7 @@ var branchRevertCmd = &cobra.Command{
 		u := MustParseBranchURI("branch", args[0])
 		Fmt("Branch: %s\n", u.String())
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
-		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
+		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
 		if hasParentNumber && parentNumber <= 0 {
 			Die("parent number must be non-negative, if specified", 1)
 		}

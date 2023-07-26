@@ -29,7 +29,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 	Run: func(cmd *cobra.Command, args []string) {
 		repoURI := MustParseRepoURI("repository", args[0])
 		Fmt("Repository: %s\n", repoURI.String())
-		manifestFileName, _ := cmd.Flags().GetString("manifest")
+		manifestFileName := Must(cmd.Flags().GetString("manifest"))
 		fp := Must(OpenByPath(manifestFileName))
 		defer func() {
 			_ = fp.Close()
