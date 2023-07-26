@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"golang.org/x/exp/slices"
 )
 
 const commitsTemplate = `{{ range $val := .Commits }}
@@ -46,9 +46,6 @@ func (d *dotWriter) End() {
 	_, _ = fmt.Fprint(d.w, "\n}\n")
 }
 
-// ErrInvalidValueInList is an error returned when a parameter of type list contains an empty string
-var ErrInvalidValueInList = errors.New("empty string in list")
-
 func (d *dotWriter) Write(commits []api.Commit) {
 	repoID := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
@@ -82,9 +79,14 @@ var logCmd = &cobra.Command{
 		dot := Must(cmd.Flags().GetBool("dot"))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		objects := Must(cmd.Flags().GetStringSlice("objects"))
-		objectsList := MustSliceNonEmptyString("objects", objects)
 		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
-		prefixesList := MustSliceNonEmptyString("prefixes", prefixes)
+
+		if slices.Contains(objects, "") {
+			Die("Objects list contains empty string!", 1)
+		}
+		if slices.Contains(prefixes, "") {
+			Die("Prefixes list contains empty string!", 1)
+		}
 
 		pagination := api.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
@@ -100,11 +102,11 @@ var logCmd = &cobra.Command{
 			Limit:       &limit,
 			FirstParent: &firstParent,
 		}
-		if len(objectsList) > 0 {
-			logCommitsParams.Objects = &objectsList
+		if len(objects) > 0 {
+			logCommitsParams.Objects = &objects
 		}
-		if len(prefixesList) > 0 {
-			logCommitsParams.Prefixes = &prefixesList
+		if len(prefixes) > 0 {
+			logCommitsParams.Prefixes = &prefixes
 		}
 
 		graph := &dotWriter{
@@ -153,15 +155,6 @@ var logCmd = &cobra.Command{
 			graph.End()
 		}
 	},
-}
-
-func MustSliceNonEmptyString(list string, v []string) []string {
-	for _, s := range v {
-		if s == "" {
-			DieErr(fmt.Errorf("error in %s list: %w", list, ErrInvalidValueInList))
-		}
-	}
-	return v
 }
 
 //nolint:gochecknoinits
