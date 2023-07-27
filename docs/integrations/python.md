@@ -55,6 +55,11 @@ Optionally, if you get a ```SSL: CERTIFICATE_VERIFY_FAILED``` error message, add
 configuration.verify_ssl = False
 ``` 
 
+Optionally, to enable communication via proxies, simply set the proxy configuration:
+
+```python
+configuration.proxy = <proxy server URL>
+``` 
 
 ### Usage Examples
 
