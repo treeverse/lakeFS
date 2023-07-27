@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Lua Hooks
 parent: Actions and Hooks
 grand_parent: How-To

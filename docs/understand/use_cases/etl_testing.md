@@ -1,5 +1,4 @@
 ---
-layout: default
 title: ETL Testing Environment
 description: In this tutorial, we will explore how to safely run ETL testing using lakeFS to create isolated dev/test data environments to run data pipelines.
 parent: Use Cases

@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Python
 description: Use Python to interact with your objects on lakeFS
 parent: Integrations

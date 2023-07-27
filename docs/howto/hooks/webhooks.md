@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Webhooks
 parent: Actions and Hooks
 grand_parent: How-To

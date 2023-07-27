@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Authentication 
 description: This section covers Authentication of your lakeFS server.
 parent: Reference

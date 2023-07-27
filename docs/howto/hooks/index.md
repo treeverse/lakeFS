@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Actions and Hooks
 description: Overview of lakeFS Actions and Hooks
 has_children: true  

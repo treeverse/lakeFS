@@ -1,5 +1,4 @@
 ---
-layout: default
 title: dbt
 description: This guide covers maintaining environments with dbt and lakeFS.
 parent: Integrations

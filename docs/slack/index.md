@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Slack
 nav_order: 100
 description: Redirect page for lakeFS slack joining url

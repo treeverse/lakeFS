@@ -1,5 +1,4 @@
 ---
-layout: default
 title: lakectl (lakeFS command-line tool)
 description: lakeFS comes with its own native CLI client. Here you can see the complete command reference.
 parent: Reference
