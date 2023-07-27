@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Monitoring using Prometheus
 description: A guide to monitoring your lakeFS Installation with Prometheus.
 parent: Reference

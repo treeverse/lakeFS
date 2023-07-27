@@ -1,5 +1,4 @@
 ---
-layout: default
 title: In Test
 parent: Data Lifecycle Management
 grand_parent: Understanding lakeFS

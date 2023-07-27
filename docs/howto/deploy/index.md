@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Install lakeFS
 parent: How-To
 description: This section will guide you through deploying and setting up a production lakeFS environment.

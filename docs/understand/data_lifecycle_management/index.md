@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Data Lifecycle Management
 description: Learn how lakeFS enables data lifecycle management.
 nav_order: 50

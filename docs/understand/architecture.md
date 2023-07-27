@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Architecture
 parent: Understanding lakeFS
 description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.

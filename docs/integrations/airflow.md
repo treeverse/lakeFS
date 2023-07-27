@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Airflow
 description: Easily build reproducible data pipelines with Airflow and lakeFS using commits, without modifying the code or logic of your job.
 parent: Integrations

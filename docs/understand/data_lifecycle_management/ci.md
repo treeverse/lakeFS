@@ -1,5 +1,4 @@
 ---
-layout: default
 title: During Deployment
 parent: Data Lifecycle Management
 grand_parent: Understanding lakeFS

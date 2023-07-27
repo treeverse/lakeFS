@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Versioning Internals
 parent: How lakeFS Works
 grand_parent: Understanding lakeFS

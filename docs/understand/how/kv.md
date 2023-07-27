@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Internal database structure
 parent: How lakeFS Works
 grand_parent: Understanding lakeFS

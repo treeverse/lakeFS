@@ -1,5 +1,4 @@
 ---
-layout: default
 title: GCP
 grand_parent: How-To
 parent: Install lakeFS
