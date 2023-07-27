@@ -1,9 +1,8 @@
 ---
 layout: default
-title: Presto/Trino
-description: This section explains how you can start using lakeFS with Presto/Trino, an open-source distributed SQL query engine.
+title: Presto / Trino
+description: This section explains how you can start using lakeFS with Presto and Trino, an open-source distributed SQL query engine.
 parent: Integrations
-nav_order: 70
 has_children: false
 redirect_from:
     - /integrations/presto.html
@@ -13,15 +12,16 @@ redirect_from:
 # Using lakeFS with Presto/Trino
 
 [Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engines designed to query large data sets distributed over one or more heterogeneous data sources.
-{: .pb-5 }
 
-{% include toc.html %}
 
 Querying data in lakeFS from Presto/Trino is similar to querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
 
- **Note** 
-In the following examples, we set AWS credentials at runtime for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
- {: .note}
+{% include toc_2-3.html %}
+
+{: .note-title}
+> Credentials
+> 
+> In the following examples, we set AWS credentials at runtime for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
 
 ## Configuration
 
