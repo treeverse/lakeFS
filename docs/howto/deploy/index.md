@@ -41,5 +41,3 @@ Check out our guides below for full deployment details:
 * [Azure](azure.html)
 * [GCP](gcp.html)
 * [On-premises and other cloud providers](onprem.html)
-
-
