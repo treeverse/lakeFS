@@ -80,7 +80,7 @@ timeouts:
   (default 10) to wait longer for lakeFS to accept connections.
 
 ### Using custom code (Notebook/Spark)
-Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page](../reference/spark-client.md).
+Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page]({{ site.baseurl }}/reference/spark-client.md).
 
 The client exposes the `Exporter` object with three export options:
 

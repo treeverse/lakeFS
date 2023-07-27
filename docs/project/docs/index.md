@@ -12,7 +12,7 @@ redirect_from:
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide](../../project/contributing.html) for details on contributing to lakeFS in general. 
+Please see [the contributing guide]({{ site.baseurl }}/project/contributing.html) for details on contributing to lakeFS in general. 
 
 {% include toc.html %}
 
@@ -59,15 +59,19 @@ By default the page's Table of Contents will include only H2 headings. If you wa
 
 Both of these snippets invoke `{:toc}` which is [used by Kramdown](https://kramdown.gettalong.org/converter/html.html#toc) (the Markdown processor that Jekyll uses) to insert a table of contents from the headings present in the markdown. 
 
-## Callouts
+## Callouts 💬
 
 Multiple callout types are available. Please review [this page](./callouts.html) for details.
 
-## Links
+## Links 🔗
 
-Links should be *relative* (`../foo/example.html`) and not *absolute* (`/foo/example.html`). 
+{% raw %}
+Links should use absolute paths in conjunction with `{{ site.baseurl }}`, e.g. `{{ site.baseurl }}/foo/example.md`.
+{% endraw %}
 
 This is so that references work within the versioned documentation that [is deployed](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/docs-release.yaml#L26-L45).
+
+Relative links, unless within the local folder, are discouraged as it can cause additional work when moving pages at a later date. 
 
 ## Test your changes locally
 

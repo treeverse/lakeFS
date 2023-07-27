@@ -8,7 +8,7 @@ redirect_from: /downloads.html
 
 # Welcome to the Lake! 
 
-<img src="/assets/img/waving-axolotl-transparent.gif" width="90"/>
+<img src="{{ site.baseurl }}/assets/img/waving-axolotl-transparent.gif" width="90"/>
 
 
 **lakeFS brings software engineering best practices and applies them to data engineering.** 
@@ -36,7 +36,7 @@ You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/registe
 * It includes configurable garbage collection capabilities.
 * It is proven in production and has an active community.
 
-<img src="/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
+<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
 ## How Does lakeFS Work With Other Tools? 
 
@@ -97,7 +97,7 @@ Incorporating these operations into your data lake pipelines provides the same c
 
 Here's how lakeFS *branches* and *merges* improve the universal process of updating collections with the latest data.
 
-<img src="/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
+<img src="{{ site.baseurl }}/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
 
 1. First, create a new **branch** from `main` to instantly generate a complete "copy" of your production data.
 2. Apply changes or make updates on the isolated branch to understand their impact prior to exposure.

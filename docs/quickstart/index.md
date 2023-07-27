@@ -29,7 +29,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-01.png" alt="step 1"/>
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-01.png" alt="step 1"/>
 </div>
 <div class="col">
 <h3>
@@ -41,7 +41,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-02.png" alt="step 2"/>
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-02.png" alt="step 2"/>
 </div>
 <div class="col">
 <h3>
@@ -53,7 +53,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-03.png" alt="step 3"/>
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-03.png" alt="step 3"/>
 </div>
 <div class="col">
 <h3>
@@ -65,7 +65,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-04.png" alt="step 4"/>
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-04.png" alt="step 4"/>
 </div>
 <div class="col">
 <h3>
@@ -77,7 +77,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-05.png" alt="step 5"/>
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-05.png" alt="step 5"/>
 </div>
 <div class="col">
 <h3>
@@ -90,7 +90,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 <div class="row">
 <div class="col step-num">
-<img src="/assets/img/quickstart/quickstart-step-06.png" alt="step 6"/>
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-06.png" alt="step 6"/>
 </div>
 <div class="col">
 <h3>

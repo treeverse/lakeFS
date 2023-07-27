@@ -24,10 +24,10 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 
 To run import you need the following permissions:
 `fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:ImportCancel`. 
-The first 3 permissions are available by default to users in the default Developers group ([RBAC](../reference/rbac.md)) or the 
-Writers group ([ACL](../reference/access-control-lists.md)). The `Import*` permissions enable the user to import data from any location of the storage 
+The first 3 permissions are available by default to users in the default Developers group ([RBAC]({{ site.baseurl }}/reference/rbac.md)) or the 
+Writers group ([ACL]({{ site.baseurl }}/reference/access-control-lists.md)). The `Import*` permissions enable the user to import data from any location of the storage 
 provider that lakeFS has access to and cancel the operation if needed. 
-Thus, it's only available to users in group Supers ([ACL](../reference/access-control-lists.md)) or SuperUsers([RBAC](../reference/rbac.md)).
+Thus, it's only available to users in group Supers ([ACL]({{ site.baseurl }}/reference/access-control-lists.md)) or SuperUsers([RBAC]({{ site.baseurl }}/reference/rbac.md)).
 RBAC installations can modify policies to add that permission to any group, such as Developers.
 
 
@@ -87,7 +87,7 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 
 </div>
 <div markdown="1" id="azure-storage">
-See [Azure deployment](../howto/deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
+See [Azure deployment]({{ site.baseurl }}/howto/deploy/azure.md#storage-account-credentials) on limitations when using account credentials.
 
 #### Azure Data Lake Gen2
 
@@ -116,7 +116,7 @@ To import using the UI, lakeFS must have permissions to list the objects in the 
 
 1. In your repository's main page, click the _Import_ button to open the import dialog:
 
-   ![img.png](../assets/img/UI-Import-Dialog.png)
+   ![img.png]({{ site.baseurl }}/assets/img/UI-Import-Dialog.png)
 
 2. Under _Import from_, fill in the location on your object store you would like to import from.
 3. Fill in the import destination in lakeFS 
@@ -132,7 +132,7 @@ Once the import is complete, the changes are merged into the destination branch.
 
 ### _lakectl import_
 
-Prerequisite: have [lakectl](../reference/cli.html) installed.
+Prerequisite: have [lakectl]({{ site.baseurl }}/reference/cli.html) installed.
 
 The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to a dedicated branch, with an optional
 flag to merge the changes to `<branch_name>`.
@@ -171,7 +171,7 @@ lakectl import \
 1. Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured to use S3, you cannot import data from Azure.
 2. Import is available for S3, GCP and Azure.
 3. For security reasons, if you are lakeFS on top of your local disk, you need to enable the import feature explicitly. 
-   To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference](../reference/configuration.md)).
+   To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference]({{ site.baseurl }}/reference/configuration.md)).
    Since there are some differences between object-stores and file-systems in the way directories/prefixes are treated, local import is allowed only for directories.
 
 ### Working with imported data
@@ -191,6 +191,6 @@ Another way of getting existing data into a lakeFS repository is by copying it. 
 
 To copy data into lakeFS you can use the following tools:
 
-1. The `lakectl` command line tool - see the [reference](../reference/cli.html#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
-1. Using [rclone](../howto/copying.md#using-rclone)
-1. Using Hadoop's [DistCp](../howto/copying.md#using-distcp)
+1. The `lakectl` command line tool - see the [reference]({{ site.baseurl }}/reference/cli.html#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
+1. Using [rclone]({{ site.baseurl }}/howto/copying.md#using-rclone)
+1. Using Hadoop's [DistCp]({{ site.baseurl }}/howto/copying.md#using-distcp)
