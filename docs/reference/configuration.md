@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Configuration
 description: Configuring lakeFS is done using a YAML configuration file. This reference uses `.` to denote the nesting of values.
 parent: Reference

@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Dremio
 description: This section shows how you can start using lakeFS with Dremio, a next-generation data lake engine.
 parent: Integrations

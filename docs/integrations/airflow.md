@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Apache Airflow
 description: Easily build reproducible data pipelines with Airflow and lakeFS using commits, without modifying the code or logic of your job.
 parent: Integrations
@@ -105,7 +104,7 @@ in the airflow-provider-lakeFS repository shows how to use all of these.
 
 Sometimes an operator might not be supported by airflow-provider-lakeFS yet. You can access lakeFS directly by using:
 
-- SimpleHttpOperator to send [API requests]({{ site.baseurl }}/reference/api.md) to lakeFS. 
+- SimpleHttpOperator to send [API requests]({{ site.baseurl }}/reference/api.html) to lakeFS. 
 - BashOperator with [lakectl]({{ site.baseurl }}/reference/cli.html) commands.
 For example, deleting a branch using BashOperator:
 ```bash

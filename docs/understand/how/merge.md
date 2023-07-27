@@ -1,17 +1,15 @@
 ---
-layout: default
 title: Merge
 description: Using lakeFS, you can merge different commits and references into a branch. The purpose of this document is to explain how to use this feature.
 parent: How lakeFS Works
 grand_parent: Understanding lakeFS
-nav_order: 9999
 has_children: false
 redirect_from:
   - /reference/merge.html
   - /understand/merge.html
 ---
 
-# Merge
+# Merges in lakeFS
 
 The merge operation in lakeFS is similar to Git. It incorporates changes from a _merge source_ (a commit/reference) into a _merge destination_ (a **branch**). 
 
@@ -37,7 +35,7 @@ below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "
 
 ## Merge Strategies
 
-The [API]({{ site.baseurl }}/reference/api.md) and [`lakectl`]({{ site.baseurl }}/reference/cli.md#lakectl-merge) allow passing an optional `strategy` flag with the following values:
+The [API]({{ site.baseurl }}/reference/api.html) and [`lakectl`]({{ site.baseurl }}/reference/cli.md#lakectl-merge) allow passing an optional `strategy` flag with the following values:
 
 ### `source-wins`
 

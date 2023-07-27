@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Garbage Collection
 description: Clean up expired objects using the garbage collection feature in lakeFS.
 parent: Garbage Collection

@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Protect Branches
 description: Branch protection rules prevent direct changes from being applied to your important branches.
 parent: How-To

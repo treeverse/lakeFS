@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Glue / Hive metastore
 description: This section explains how to query data from lakeFS branches in services backed by Glue/Hive Metastore.
 parent: Integrations

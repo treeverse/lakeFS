@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Python
 description: Use Python to interact with your objects on lakeFS
 parent: Integrations
@@ -46,6 +45,18 @@ configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 configuration.host = 'http://localhost:8000'
 
 client = LakeFSClient(configuration)
+``` 
+
+Optionally, if you get a ```SSL: CERTIFICATE_VERIFY_FAILED``` error message, add the following configuration to your client:
+
+```python
+configuration.verify_ssl = False
+``` 
+
+Optionally, to enable communication via proxies, simply set the proxy configuration:
+
+```python
+configuration.proxy = <proxy server URL>
 ``` 
 
 ### Usage Examples
@@ -172,7 +183,7 @@ For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.i
 
 ### Full API reference
 
-For a full reference of the lakeFS API, see [lakeFS API]({{ site.baseurl }}/reference/api.md)
+For a full reference of the lakeFS API, see [lakeFS API]({{ site.baseurl }}/reference/api.html)
 
 ## Using Boto
 

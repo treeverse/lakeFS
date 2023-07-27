@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Callouts
 description: Using and Customising Callouts in lakeFS Documentation
 parent: Documentation

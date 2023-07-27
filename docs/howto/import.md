@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Import data
 description: Import existing data into a lakeFS repository
 parent: How-To

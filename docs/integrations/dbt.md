@@ -1,5 +1,4 @@
 ---
-layout: default
 title: dbt
 description: Integrating dbt and lakeFS
 parent: Integrations

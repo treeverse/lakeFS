@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Presigned URL
 description: Configuring lakeFS to use presigned URLs
 parent: Reference

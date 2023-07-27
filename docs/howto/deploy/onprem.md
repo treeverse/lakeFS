@@ -1,5 +1,4 @@
 ---
-layout: default
 title: On-Premises Deployment of lakeFS
 grand_parent: How-To
 parent: Install lakeFS

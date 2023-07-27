@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Apache Iceberg
 description: How to integrate lakeFS with Apache Iceberg
 parent: Integrations

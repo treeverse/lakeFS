@@ -1,50 +1,36 @@
 ---
-layout: default
 title: Architecture
 parent: Understanding lakeFS
 description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.
-nav_order: 10
 has_children: false
 redirect_from:
     - /architecture/index.html
     - /architecture/overview.html
 ---
-# Architecture Overview
+# lakeFS Architecture
 
-
-{% include toc_2-3.html %}
-
-## Overview
-
-lakeFS is distributed as a single binary encapsulating several logical services:
+lakeFS is distributed as a single binary encapsulating several logical services.
 
 The server itself is stateless, meaning you can easily add more instances to handle a bigger load.
 
-The following underlying object stores (or any S3-compatible store) can be used by lakeFS to store data:
+![Architecture]({{ site.baseurl }}/assets/img/architecture.png)
 
+{% include toc_2-3.html %}
+### Object Storage
+
+lakeFS stores data in object stores. Those supported include: 
+
+- AWS S3
 - Google Cloud Storage
 - Azure Blob Storage
-- AWS S3
 - MinIO
 - Ceph
 
-In additional a Key Value storage is used for storing metadata:
+### Metadata Storage
 
-- [PostgreSQL](https://www.postgresql.org/){:target="_blank"}
-- [DynamoDB](https://aws.amazon.com/dynamodb/){:target="_blank"}
+In additional a Key Value storage is used for storing metadata, with supported databases including PostgreSQL, DynamoDB, and CosmosDB Instructions of how to deploy such database on AWS can be found [here]({{ site.baseurl }}/howto/deploy/aws.md#grant-dynamodb-permissions-to-lakefs).
 
-Instructions of how to deploy such database on AWS can be found [here]({{ site.baseurl }}/howto/deploy/aws.md#grant-dynamodb-permissions-to-lakefs).
-
-Additional information on the data format can be found in [Versioning internals]({{ site.baseurl }}/understand/how/versioning-internals.md).
-
-
-![Architecture]({{ site.baseurl }}/assets/img/architecture.png)
-
-## Ways to deploy lakeFS
-
-lakeFS releases include [binaries](https://github.com/treeverse/lakeFS/releases) for common operating systems, a [containerized option](https://hub.docker.com/r/treeverse/lakefs) or 
-a [Helm chart](https://artifacthub.io/packages/helm/lakefs/lakefs).
-Check out our guides for running lakeFS on [AWS]({{ site.baseurl }}/howto/deploy/aws.md), [GCP]({{ site.baseurl }}/howto/deploy/gcp.md) and [more]({{ site.baseurl }}/howto/deploy).
+Additional information on the data format can be found in [Versioning internals](./how/versioning-internals.md) and [Internal database structure](./how/kv.md)
 
 ### Load Balancing
 
@@ -63,7 +49,7 @@ See the [S3 API Reference]({{ site.baseurl }}/reference/s3.md) section for infor
 
 ### OpenAPI Server
 
-The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) server exposes the full set of lakeFS operations (see [Reference]({{ site.baseurl }}/reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing, and reverting changes to data.
+The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) server exposes the full set of lakeFS operations (see [Reference]({{ site.baseurl }}/reference/api.html)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing, and reverting changes to data.
 
 ### Storage Adapter
 
@@ -75,7 +61,7 @@ See the [roadmap]({{ site.baseurl }}/project/index.md#roadmap) for information o
 ### Graveler
 
 The Graveler handles lakeFS versioning by translating lakeFS addresses to the actual stored objects.
-To learn about the data model used to store lakeFS metadata, see the [data model section]({{ site.baseurl }}/understand/how/versioning-internals.md).
+To learn about the data model used to store lakeFS metadata, see the [versioning internals page]({{ site.baseurl }}/understand/how/versioning-internals.md).
 
 ### Authentication & Authorization Service
 

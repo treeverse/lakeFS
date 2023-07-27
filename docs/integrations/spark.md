@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Apache Spark
 description: Accessing data in lakeFS from Apache Spark works the same as accessing S3 data from Apache Spark.
 parent: Integrations

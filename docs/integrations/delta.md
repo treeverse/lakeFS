@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Delta Lake
 description: This section explains how to use Delta Lake with lakeFS.
 parent: Integrations
