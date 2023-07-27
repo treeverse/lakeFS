@@ -99,23 +99,30 @@ object StorageUtils {
 
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
-
       var client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
-
-      if (!validateClientAndBucketRegionsMatch(client, bucket)) {
-        val bucketRegion = getAWSS3Region(client, bucket)
-        logger.info(
-          s"""Bucket "$bucket" is not in region "$region", discovered it in region "$bucketRegion"""
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+      var bucketRegion =
+        try {
+          getAWSS3Region(client, bucket)
+        } catch {
+          case e: Throwable =>
+            logger.info(f"Could not fetch region for bucket ${bucket}", e)
+            ""
+        }
+      if (bucketRegion == "" && region == "") {
+        throw new IllegalArgumentException(
+          s"""Could not fetch region for bucket "$bucket" and no region was provided"""
         )
-        client = initializeS3Client(configuration,
-                                    credentialsProvider,
-                                    AmazonS3ClientBuilder.standard(),
-                                    endpoint,
-                                    bucketRegion
-                                   )
       }
-      client
+      if (bucketRegion == "") {
+        bucketRegion = region
+      }
+      initializeS3Client(configuration,
+                         credentialsProvider,
+                         awsS3ClientBuilder,
+                         endpoint,
+                         bucketRegion
+                        )
     }
 
     private def initializeS3Client(
@@ -123,38 +130,24 @@ object StorageUtils {
         credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
-        region: String
+        region: String = null
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
-
       val builderWithEndpoint =
         if (endpoint != null)
           builder.withEndpointConfiguration(
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
-        else
+        else if (region != null)
           builder.withRegion(region)
-
+        else
+          builder
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) => builderWithEndpoint.withCredentials(cp)
         case None     => builderWithEndpoint
       }
       builderWithCredentials.build
-    }
-
-    private def validateClientAndBucketRegionsMatch(client: AmazonS3, bucket: String): Boolean = {
-      try {
-        client.headBucket(new HeadBucketRequest(bucket))
-        true
-      } catch {
-        case e: AmazonServiceException =>
-          logger.info("Bucket \"{}\" isn't reachable with error: {}",
-                      bucket: Any,
-                      e.getMessage: Any
-                     )
-          false
-      }
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
