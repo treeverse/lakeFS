@@ -10,6 +10,7 @@ redirect_from:
   - /setup/storage/index.html
   - /setup/create-repo.html
   - /deploy/
+  - /deploy/index.html
 ---
 
 # Deploy and Setup lakeFS

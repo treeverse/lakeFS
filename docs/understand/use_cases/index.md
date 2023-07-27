@@ -7,4 +7,5 @@ nav_order: 30
 has_children: true
 redirect_from:
    - /use_cases/
+   - /use_cases/index.html
 ---

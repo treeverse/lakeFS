@@ -4,6 +4,8 @@ title: FAQ
 parent: Understanding lakeFS
 description: Have a question about lakeFS? Check out this list of Frequently Asked Questions
 has_children: false
+redirect_from: 
+    - /faq.html
 ---
 
 # lakeFS Frequently Asked Questions (FAQ)
