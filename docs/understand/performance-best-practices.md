@@ -39,7 +39,7 @@ In such cases, it can be beneficial to perform only versioning operations on lak
 lakeFS offers multiple ways to do that:
 * The [`lakectl upload --direct`]({{ site.baseurl }}/reference/cli.md#lakectl-fs-upload) command (or [download]({{ site.baseurl }}/reference/cli.md#lakectl-fs-download)).
 * The lakeFS [Hadoop Filesystem]({{ site.baseurl }}/integrations/spark.md#use-the-lakefs-hadoop-filesystem).
-* The [staging API]({{ site.baseurl }}/reference/api.md#objects/stageObject) which can be used to add lakeFS references to objects after having written them to the storage.
+* The [staging API]({{ site.baseurl }}/reference/api.html#objects/stageObject) which can be used to add lakeFS references to objects after having written them to the storage.
 
 Accessing the object store directly is a faster way to interact with your data.
 
