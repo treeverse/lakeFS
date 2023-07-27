@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Airflow Hooks
 parent: Actions and Hooks
 grand_parent: How-To

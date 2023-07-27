@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Presto/Trino
 description: This section explains how you can start using lakeFS with Presto/Trino, an open-source distributed SQL query engine.
 parent: Integrations

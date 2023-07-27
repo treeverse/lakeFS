@@ -1,5 +1,4 @@
 ---
-layout: default
 parent: posts
 has_children: false
 date: 2023-01-31

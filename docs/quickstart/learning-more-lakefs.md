@@ -1,5 +1,4 @@
 ---
-layout: default
 title: 🧑🏻‍🎓 Learn more about lakeFS
 description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more. 
 parent: ⭐ Quickstart ⭐

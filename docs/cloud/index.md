@@ -1,5 +1,4 @@
 ---
-layout: default
 title: lakeFS Cloud
 description: This section includes lakeFS Cloud documentation
 nav_order: 80

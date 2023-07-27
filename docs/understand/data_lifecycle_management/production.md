@@ -1,10 +1,8 @@
 ---
-layout: default
 title: In Production
 parent: Data Lifecycle Management
 grand_parent: Understanding lakeFS
 description: lakeFS helps recover from errors and find root case in production.
-nav_order: 55
 redirect_from:
   - /data_lifecycle_management/production.html
 ---
