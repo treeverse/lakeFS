@@ -49,6 +49,13 @@ configuration.host = 'http://localhost:8000'
 client = LakeFSClient(configuration)
 ``` 
 
+Optionally, if you get a ```SSL: CERTIFICATE_VERIFY_FAILED``` error message, add the following configuration to your client:
+
+```python
+configuration.verify_ssl = False
+``` 
+
+
 ### Usage Examples
 
 Now that you have a client object, you can use it to interact with the API.
