@@ -125,27 +125,24 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
     );
 
     const creationForm = (defaultNamespacePrefix) ? (
-      <Accordion defaultActiveKey={['0']} alwaysOpen>
-          <Accordion.Item eventKey="0">
-              <Accordion.Header>Create A New Repository</Accordion.Header>
-              <Accordion.Body>
-                  {basicSettings}
-              </Accordion.Body>
-          </Accordion.Item>
-          <Accordion.Item eventKey={"1"}>
-              <Accordion.Header>Advanced Settings</Accordion.Header>
-              <Accordion.Body>
-                  {advancedSettings}
-              </Accordion.Body>
-          </Accordion.Item>
-      </Accordion>
+      <>
+        <section className="repository-creation-expanded">
+          {basicSettings}
+        </section>
+        <Accordion className="repository-creation-accordion">
+            <Accordion.Item eventKey={"1"}>
+                <Accordion.Header>Advanced Settings</Accordion.Header>
+                <Accordion.Body>
+                    {advancedSettings}
+                </Accordion.Body>
+            </Accordion.Item>
+        </Accordion>
+      </>
     ) : (
-      <div>
-          <h4>Create A New Repository</h4>
-          <hr/>
+      <section className="repository-creation-expanded">
           {basicSettings}
           {advancedSettings}
-      </div>
+      </section>
     )
 
     return (
@@ -161,6 +158,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
                 sample_data: sampleDataCheckbox.current.checked,
             });
         }}>
+            <h4 className="mb-3">Create A New Repository</h4>
 
             {creationForm}
 
