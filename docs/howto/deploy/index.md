@@ -16,3 +16,7 @@ redirect_from:
 
 For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
+
+lakeFS releases include [binaries](https://github.com/treeverse/lakeFS/releases) for common operating systems, a [containerized option](https://hub.docker.com/r/treeverse/lakefs) or a [Helm chart](https://artifacthub.io/packages/helm/lakefs/lakefs).
+
+Check out our guides for running lakeFS on [AWS]({{ site.baseurl }}/howto/deploy/aws.md), [GCP]({{ site.baseurl }}/howto/deploy/gcp.md) and [more]({{ site.baseurl }}/howto/deploy).

@@ -3,7 +3,6 @@ title: During Deployment
 parent: Data Lifecycle Management
 grand_parent: Understanding lakeFS
 description: lakeFS enables to continuously test newly ingested data to ensure data quality requirements are met
-nav_order: 35
 redirect_from:
   - /data_lifecycle_management/ci.html
 ---

@@ -1,8 +1,7 @@
 ---
-title: Model 
+title: Concepts and  Model 
 description: The lakeFS object model blends the object models of Git and of object stores such as S3. Read this page to learn more.
 parent: Understanding lakeFS
-nav_order: 20
 has_children: false
 redirect_from: 
   - /reference/object-model.html
@@ -10,7 +9,7 @@ redirect_from:
   - /understand/object-model.html
 ---
 
-# Model
+# lakeFS Concepts and Model
 
 {% include toc_2-3.html %}
 
@@ -21,9 +20,9 @@ defines the common concepts of lakeFS.
 
 lakeFS is an interface to manage objects in an object store.
 
-The actual data itself is not stored inside lakeFS directly but in an [underlying object store](#concepts-unique-to-lakefs).
-lakeFS manages pointers and additional metadata about these objects. 
-{: .note }
+{: .tip }
+> The actual data itself is not stored inside lakeFS directly but in an [underlying object store](#concepts-unique-to-lakefs).
+> lakeFS manages pointers and additional metadata about these objects. 
 
 ## Version Control
 
