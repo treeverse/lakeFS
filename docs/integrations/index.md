@@ -15,13 +15,37 @@ You can use lakeFS with a wide range of tools and frameworks.
 lakeFS provides several clients directly, as well as an [S3-compatible gateway](../understand/architecture.md#s3-gateway). This gateway means that if you want to use something with lakeFS, so long as that technology can interface with S3, it can interface with lakeFS. 
 
 See below for detailed instructions for using different technologies with lakeFS. 
-
 <table>
-<tr><td width="25%"><a href="./airbyte.html">Airbyte</a></td> <td width="25%"><a href="./athena.html">Amazon Athena</a></td> <td width="25%"><a href="./sagemaker.html">Amazon SageMaker</a></td> <td width="25%"><a href="./airflow.html">Apache Airflow</a></td></tr>
-<tr><td width="25%"><a href="./hive.html">Apache Hive</a></td> <td width="25%"><a href="./iceberg.html">Apache Iceberg</a></td> <td width="25%"><a href="./kafka.html">Apache Kafka</a></td> <td width="25%"><a href="./spark.html">Apache Spark</a></td></tr>
-<tr><td width="25%"><a href="./aws_cli.html">AWS CLI</a></td> <td width="25%"><a href="./cloudera.html">Cloudera</a></td> <td width="25%"><a href="./dbt.html">dbt</a></td> <td width="25%"><a href="./delta.html">Delta Lake</a></td></tr>
-<tr><td width="25%"><a href="./dremio.html">Dremio</a></td> <td width="25%"><a href="./duckdb.html">DuckDB</a></td> <td width="25%"><a href="./glue_hive_metastore.html">Glue / Hive metastore</a></td> <td width="25%"><a href="./kubeflow.html">Kubeflow</a></td></tr>
-<tr><td width="25%"><a href="./presto_trino.html">Presto / Trino</a></td> <td width="25%"><a href="./python.html">Python</a></td> <td width="25%"><a href="./r.html">R</a></td><td width="25%">&nbsp;</td></tr>
+    <tr>
+        <td width="25%" align=center><a href="./airbyte.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/airbyte.svg" alt="airbyte logo" /><br />Airbyte</a></td>
+        <td width="25%" align=center><a href="./athena.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/athena.svg" alt="athena logo"/><br/>Amazon Athena</a></td>
+        <td width="25%" align=center><a href="./sagemaker.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/sagemaker.svg" alt="sagemaker logo"/><br/>Amazon SageMaker</a></td>
+        <td width="25%" align=center><a href="./airflow.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/airflow.png" alt="airflow logo"/><br/>Apache Airflow</a></td>
+    </tr>
+    <tr>
+        <td width="25%" align=center><a href="./hive.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/apache_hive.svg" alt="apache_hive logo"/><br/>Apache Hive</a></td>
+        <td width="25%" align=center><a href="./iceberg.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/apache_iceberg.png" alt="apache_iceberg logo"/><br/>Apache Iceberg</a></td>
+        <td width="25%" align=center><a href="./kafka.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/apache_kafka.svg" alt="apache_kafka logo"/><br/>Apache Kafka</a></td>
+        <td width="25%" align=center><a href="./spark.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/apache_spark.svg" alt="apache_spark logo"/><br/>Apache Spark</a></td>
+    </tr>
+    <tr>
+        <td width="25%" align=center><a href="./aws_cli.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/cli.svg" alt="cli logo"/><br/>AWS CLI</a></td>
+        <td width="25%" align=center><a href="./cloudera.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/cloudera.png" alt="cloudera logo"/><br/>Cloudera</a></td>
+        <td width="25%" align=center><a href="./dbt.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/dbt.svg" alt="dbt logo"/><br/>dbt</a></td>
+        <td width="25%" align=center><a href="./delta.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/delta-lake.webp" alt="delta lake logo"/><br/>Delta Lake</a></td>
+    </tr>
+    <tr>
+        <td width="25%" align=center><a href="./dremio.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/dremio.svg" alt="dremio logo"/><br/>Dremio</a></td>
+        <td width="25%" align=center><a href="./duckdb.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/duckdb.svg" alt="duckdb logo"/><br/>DuckDB</a></td>
+        <td width="25%" align=center><a href="./glue_hive_metastore.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/glue.svg" alt="glue logo"/><br/>Glue / Hive metastore</a></td>
+        <td width="25%" align=center><a href="./kubeflow.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/kubeflow.svg" alt="kubeflow logo"/><br/>Kubeflow</a></td>
+    </tr>
+    <tr>
+        <td width="25%" align=center><a href="./presto_trino.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/trino_presto.svg" alt="presto and trino logos"/><br/>Presto / Trino</a></td>
+        <td width="25%" align=center><a href="./python.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/python.svg" alt="python logo"/><br/>Python</a></td>
+        <td width="25%" align=center><a href="./r.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/r.svg" alt="r logo"/><br/>R</a></td>
+        <td width="25%" align=center>&nbsp;</td>
+    </tr>
 </table>
 
 {: .tip}
