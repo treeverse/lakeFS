@@ -180,8 +180,11 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
     val ranges = commitIDs
       .flatMap(commitID => {
         val metaRangeURL = apiClient.getMetaRangeURL(repoName, commitID)
-        if (StringUtils.isBlank(metaRangeURL)) None
-        else {
+        if (metaRangeURL == "") {
+          // a commit with no meta range is an empty commit.
+          // this only happens for the first commit in the repository.
+          None
+        } else {
           val rangesReader = metarangeReaderGetter(job.getConfiguration, metaRangeURL, true)
           read(rangesReader).map(rd => new Range(new String(rd.id), rd.message.estimatedSize))
         }
