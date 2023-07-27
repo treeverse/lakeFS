@@ -1,13 +1,28 @@
 ---
 layout: default
-title: Commitment to OSS
+title: The lakeFS Project
 description: lakeFS is an open-source project under the Apache 2.0 license, committed to fostering the open-source space. 
 nav_order: 100
-has_children: false
-redirect_from: /understand/licensing.html
+has_children: true
+has_toc: false
+redirect_from: 
+  - /understand/licensing.html
+  - /licensing.html
+  - /commitment.html
+  - /roadmap.html
 ---
 
-# Our commitment to open source
+# The lakeFS Project
+
+lakeFS provides version control over the data lake and lakehouse, and uses Git-like semantics to create and access those versions. If you know git, you’ll be right at home with lakeFS.
+
+lakeFS is an open-source project under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
+
+The project was created and is supported by Treeverse, a commercial company founded by engineers passionate about providing solutions to the evolving world of data engineering.
+
+{% include toc.html %}
+
+## Our commitment to open source
 
 lakeFS is an open-source project under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
 The project was created and is supported by Treeverse, a commercial company founded by engineers passionate about providing solutions to the evolving world of data engineering.
@@ -43,3 +58,11 @@ The vision behind lakeFS Cloud is to provide a managed data versioning and manag
 As part of our commitment to the open source values of transparency and interoperability, we believe everyone should be able to enjoy these benefits, regardless of whether or not they choose to use the managed offering. 
 
 Because of that, we will not intentionally make it harder to build these features independently on top of the open source solution.
+
+## Roadmap
+
+This is the lakeFS [public roadmap](https://airtable.com/shrOKywSw1zT6sHpM/tblerUHsOniewbfzq). As the project evolves and the community grows, this roadmap might change.
+
+Please share your feedback on the [#dev](https://docs.lakefs.io/slack){: target="_blank" } on Slack or by starting a [GitHub Discussion](https://github.com/treeverse/lakeFS/discussions)!
+
+<iframe class="airtable-embed" src="https://airtable.com/embed/shrOKywSw1zT6sHpM?backgroundColor=green" frameborder="0" onmousewheel="" width="100%" height="800" style="background: transparent; border: 1px solid #ccc;"></iframe>

@@ -3,8 +3,10 @@ layout: default
 title: CI/CD for Data Lakes
 description: In this tutorial, we will explore how to use lakeFS to build a CI/CD pipeline for data lakes.
 parent: Use Cases
-nav_order: 50
+grand_parent: Understanding lakeFS
 has_children: false
+redirect_from:
+   - /use_cases/cicd_for_data.html
 ---
 
 # CI/CD for Data
@@ -69,9 +71,9 @@ In this tutorial, we will show how to use webhooks (python flask webserver) to i
 
 The tutorial provides a lakeFS environment, python flask server, a Jupyter notebook and sample data sets to demonstrate the integration of lakeFS hooks with Apache Spark and Python. It runs on Docker Compose.
 
-To understand how hooks work and how to configure hooks in your production system, refer to the documentation: [Hooks](../use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates). To configure lakeFS hooks with custom quality check rules, refer to the [lakefs-hooks](https://github.com/treeverse/lakeFS-hooks) repository.
+To understand how hooks work and how to configure hooks in your production system, refer to the documentation: [Hooks]({{ site.baseurl }}/understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates). 
 
-![lakeFS hooks - Promotion workflow](../assets/img/promotion_workflow.png)
+![lakeFS hooks - Promotion workflow]({{ site.baseurl }}/assets/img/promotion_workflow.png)
 
 Follow the steps below to try out CI/CD for data lakes.
 

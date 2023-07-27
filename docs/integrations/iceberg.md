@@ -85,7 +85,7 @@ For this reason it is recommended to disable the cache:
 
 ## Using Iceberg tables with lakeFS
 
-When referencing tables you need to ensure that they have a database specified (as you would anyway), and then a lakeFS [reference](/understand/model.html#ref-expressions) prefix. 
+When referencing tables you need to ensure that they have a database specified (as you would anyway), and then a lakeFS [reference]({{ site.baseurl }}/understand/model.html#ref-expressions) prefix. 
 
 A reference is one of: 
 
