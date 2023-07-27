@@ -1,5 +1,4 @@
 ---
-layout: default
 title: AWS
 grand_parent: How-To
 parent: Install lakeFS

@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Install lakeFS
 parent: How-To
 description: This section will guide you through deploying and setting up a production lakeFS environment.
@@ -21,7 +20,6 @@ redirect_from:
 > 
 > For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-## Deployment Overview
 
 lakeFS has several dependencies for which you need to select and configure a technology or interface. 
 
@@ -36,7 +34,13 @@ Which options are available depends on your deployment platform. For example, th
 
 ## Deployment and Setup Details
 
+lakeFS releases include [binaries](https://github.com/treeverse/lakeFS/releases) for common operating systems, a [containerized option](https://hub.docker.com/r/treeverse/lakefs) or a [Helm chart](https://artifacthub.io/packages/helm/lakefs/lakefs).
+
+Check out our guides below for full deployment details: 
+
 * [AWS](aws.html)
 * [Azure](azure.html)
 * [GCP](gcp.html)
 * [On-premises and other cloud providers](onprem.html)
+
+

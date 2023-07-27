@@ -1,5 +1,4 @@
 ---
-layout: default
 title: (deprecated) Uncommitted Objects
 description: Clean up uncommitted objects that are no longer needed.
 parent: Garbage Collection

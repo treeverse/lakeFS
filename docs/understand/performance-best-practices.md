@@ -1,9 +1,7 @@
 ---
-layout: default
 title: Performance Best Practices
 parent: Understanding lakeFS
 description: This section suggests performance best practices to work with lakeFS.
-nav_order: 26
 has_children: false
 --- 
 # Performance Best Practices

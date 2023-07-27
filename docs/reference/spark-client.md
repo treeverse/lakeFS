@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Spark Client
 description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
 parent: Reference

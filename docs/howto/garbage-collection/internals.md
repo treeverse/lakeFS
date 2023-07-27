@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Internals
 description: How Garbage Collection in lakeFS works
 parent: Garbage Collection

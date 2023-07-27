@@ -1,5 +1,4 @@
 ---
-layout: default
 title: (deprecated) Committed Objects
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
 parent: Garbage Collection

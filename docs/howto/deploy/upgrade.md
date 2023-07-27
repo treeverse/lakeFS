@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Upgrade lakeFS
 description: How to upgrade lakeFS to the latest version.
 grand_parent: How-To

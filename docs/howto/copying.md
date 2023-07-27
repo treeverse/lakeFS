@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Copying data to/from lakeFS
 description: 
 parent: How-To
