@@ -78,7 +78,7 @@ COPY sampled_population TO 's3://example-repo/main/data/population/sample.parque
 
 The lakeFS web UI includes DuckDB in the Object viewer page. 
 
-![DuckDB query editor on the lakeFS objects page](/assets/img/duckdb.png)
+![DuckDB query editor on the lakeFS objects page]({{ site.baseurl }}/assets/img/duckdb.png)
 
 Using this you can query objects in lakeFS directly using a `lakefs` path: 
 

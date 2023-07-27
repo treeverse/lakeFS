@@ -1,12 +1,13 @@
 ---
 layout: default
 title: GCP
-parent: Deploy and Setup lakeFS
+grand_parent: How-To
+parent: Install lakeFS
 description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
-nav_order: 40
 redirect_from:
    - /setup/storage/gcs.html 
-next:  ["Import data into your installation", "../howto/import.html"]
+   - /deploy/gcp.html 
+next:  ["Import data into your installation", "/howto/import.html"]
 ---
 
 # Deploy lakeFS on GCP
@@ -63,7 +64,7 @@ If you already have a database, take note of the connection string and skip to t
       #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
    ```
    
-1. [Download the binary](../index.md#downloads) to the GCE instance.
+1. [Download the binary]({{ site.baseurl }}/index.md#downloads) to the GCE instance.
 1. Run the `lakefs` binary on the GCE machine:
    ```bash
    lakefs --config config.yaml run
@@ -87,7 +88,7 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-See the [reference](../reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+See the [reference]({{ site.baseurl }}/reference/configuration.md#using-environment-variables) for a complete list of environment variables.
 
 </div>
 <div markdown="3" id="gke">
@@ -136,8 +137,8 @@ To configure a load balancer to direct requests to the lakeFS servers you can us
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
 💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway](../understand/architecture.md#s3-gateway) or 
-a simple PUT request using the [OpenAPI Server](../understand/architecture.md#openapi-server).
+Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway]({{ site.baseurl }}/understand/architecture.md#s3-gateway) or 
+a simple PUT request using the [OpenAPI Server]({{ site.baseurl }}/understand/architecture.md#openapi-server).
 Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 {: .note }
 

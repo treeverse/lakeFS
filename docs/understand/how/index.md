@@ -1,6 +1,6 @@
 ---
 layout: default
-title: How it Works
+title: How lakeFS Works
 description: This section includes all the details about the lakeFS open source project. 
 parent: Understanding lakeFS
 nav_order: 40

@@ -38,8 +38,8 @@ plugins:
   - jekyll-seo-tag
 
 exclude: 
-  - deploy/includes
-  - quickstart/includes
+  - howto/deploy/includes
+  - README.md
   - vendor
   - CNAME
 

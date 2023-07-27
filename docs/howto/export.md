@@ -1,9 +1,8 @@
 ---
 layout: default
-title: Exporting Data
+title: Export Data
 description: Use the lakeFS Spark client or RClone inside Docker to export a lakeFS commit to the object store.
 parent: How-To
-nav_order: 40
 has_children: false
 redirect_from: 
   - /reference/export.html
@@ -81,7 +80,7 @@ timeouts:
   (default 10) to wait longer for lakeFS to accept connections.
 
 ### Using custom code (Notebook/Spark)
-Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page](../reference/spark-client.md).
+Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page]({{ site.baseurl }}/reference/spark-client.md).
 
 The client exposes the `Exporter` object with three export options:
 
