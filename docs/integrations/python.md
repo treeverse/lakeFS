@@ -54,7 +54,8 @@ For testing SSL endpoints you may wish to use a self-signed certificate.  If you
 configuration.verify_ssl = False
 ```
 
-{: .warning } This setting allows well-known "man-in-the-middle",
+{: .warning }
+This setting allows well-known "man-in-the-middle",
 impersonation, and credential stealing attacks.  Never use this in any
 production setting.
 
