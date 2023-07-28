@@ -48,11 +48,15 @@ configuration.host = 'http://localhost:8000'
 client = LakeFSClient(configuration)
 ``` 
 
-Optionally, if you get a ```SSL: CERTIFICATE_VERIFY_FAILED``` error message, add the following configuration to your client:
+For testing SSL endpoints you may wish to use a self-signed certificate.  If you do this and receive an `SSL: CERTIFICATE_VERIFY_FAILED` error message you might add the following configuration to your client:
 
 ```python
 configuration.verify_ssl = False
-``` 
+```
+
+{: .warning } This setting allows well-known "man-in-the-middle",
+impersonation, and credential stealing attacks.  Never use this in any
+production setting.
 
 Optionally, to enable communication via proxies, simply set the proxy configuration:
 
