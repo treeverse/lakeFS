@@ -9,6 +9,7 @@ redirect_from:
   - /licensing.html
   - /commitment.html
   - /roadmap.html
+  - /understand/roadmap.html
 ---
 
 # The lakeFS Project
