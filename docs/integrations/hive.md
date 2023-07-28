@@ -1,13 +1,13 @@
 ---
-title: Hive
+title: Apache Hive
 description: This section covers how you can start using lakeFS with Apache Hive, a distributed data warehouse system that enables analytics at a massive scale.
 parent: Integrations
-nav_order: 140
 has_children: false
 redirect_from: /using/hive.html
 ---
 
-# Using lakeFS with Hive
+# Using lakeFS with Apache Hive
+
 The [Apache Hive ™](https://hive.apache.org/) data warehouse software facilitates reading, writing, and managing large datasets residing in distributed storage using SQL. Structure can be projected onto data already in storage. A command line tool and JDBC driver are provided to connect users to Hive.
 
 {% include toc.html %}
