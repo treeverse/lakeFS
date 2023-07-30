@@ -72,7 +72,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
     const flattenForm = !defaultNamespacePrefix;
 
     const basicSettings = (
-      <div>
+      <>
           <Form.Group className="mb-3">
               <Form.Text>
                   A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/understand/model.html#repository" target="_blank" rel="noopener noreferrer">Learn more.</a>
@@ -90,11 +90,11 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
           </Form.Group>
 
           {!flattenForm && sampleCheckbox}
-      </div>
+      </>
     )
 
     const advancedSettings = (
-      <div>
+      <>
           <Form.Group controlId="defaultBranch" className="mt-3">
               <FloatingLabel label="Default Branch Name" controlId="defaultBranchNameCtrl">
                   <Form.Control type="text" ref={defaultBranchField} defaultValue={"main"}  placeholder="main" onChange={checkDefaultBranchValidity}/>
@@ -121,7 +121,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
               }
           </Form.Group>
           {flattenForm && sampleCheckbox}
-      </div>
+      </>
     );
 
     const creationForm = (defaultNamespacePrefix) ? (
