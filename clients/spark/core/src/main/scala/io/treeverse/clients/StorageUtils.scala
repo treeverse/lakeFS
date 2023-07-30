@@ -4,7 +4,7 @@ import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
-import com.amazonaws.services.s3.model.{HeadBucketRequest, Region, GetBucketLocationRequest}
+import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
 import org.slf4j.{Logger, LoggerFactory}

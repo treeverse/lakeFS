@@ -1,16 +1,17 @@
 package io.treeverse.clients
 
-import com.amazonaws.auth.{
-  AWSCredentialsProvider,
-  AWSStaticCredentialsProvider,
-  BasicAWSCredentials
-}
-import com.amazonaws.services.s3.model.Region
-import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.Protocol
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.AWSStaticCredentialsProvider
+import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.thirdparty.apache.http.HttpStatus
-import com.amazonaws.{ClientConfiguration, HttpMethod, Protocol, SdkClientException}
 import okhttp3.HttpUrl
-import okhttp3.mockwebserver.{MockResponse, MockWebServer, RecordedRequest}
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
