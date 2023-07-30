@@ -1175,19 +1175,6 @@ jobs:
             docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
 
-      - name: Run lakeFS S3 to use with local API key
-        env:
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_DATABASE_TYPE: postgres
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          ESTI_TEST_DATA_ACCESS: true,false
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-local-api-key/${{ steps.unique.outputs.value }}
-        run: |
-          docker-compose -f esti/ops/docker-compose.yaml down -v
-          docker-compose -f esti/ops/docker-compose.yaml up --quiet-pull --exit-code-from=esti
-
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
     needs: [gen-code, deploy-image]
