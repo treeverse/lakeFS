@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Authentication 
 description: This section covers Authentication of your lakeFS server.
 parent: Reference
@@ -33,7 +32,7 @@ To configure a Remote Authenticator see the [configuration fields](./configurati
 #### LDAP server
 
 **Note**
-This feature is deprecated ([learn more](../posts/security_update.html)). For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
+This feature is deprecated ([learn more]({{ site.baseurl }}/posts/security_update.html)). For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
 {: .note }
 
 Configure lakeFS to authenticate users on an LDAP server. Once configured,
@@ -102,7 +101,7 @@ Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9hY2Nlc3Nfc2VjcmV0X2tleQ==
 To provide API compatibility with Amazon S3, authentication with the S3 Gateway supports both [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html){:target="_blank"} and [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html){:target="_blank"}.
 Clients such as the AWS SDK that implement these authentication methods should work without modification.
 
-See [this example for authenticating with the AWS CLI](../integrations/aws_cli.md).
+See [this example for authenticating with the AWS CLI]({{ site.baseurl }}/integrations/aws_cli.md).
 
 
 ## OIDC support

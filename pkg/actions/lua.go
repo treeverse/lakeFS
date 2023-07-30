@@ -124,13 +124,14 @@ func LuaRun(l *lua.State, code, name string) error {
 	return l.ProtectedCall(0, lua.MultipleReturns, 0)
 }
 
-func DescendArgs(args interface{}) (descended interface{}, err error) {
+func DescendArgs(args interface{}) (interface{}, error) {
+	var err error
 	switch t := args.(type) {
 	case Properties:
 		for k, v := range t {
 			t[k], err = DescendArgs(v)
 			if err != nil {
-				return
+				return nil, err
 			}
 		}
 		return t, nil
@@ -138,7 +139,7 @@ func DescendArgs(args interface{}) (descended interface{}, err error) {
 		for k, v := range t {
 			t[k], err = DescendArgs(v)
 			if err != nil {
-				return
+				return nil, err
 			}
 		}
 		return t, nil

@@ -106,7 +106,7 @@ func (i *Import) Ingest(it *walkEntryIterator) error {
 		i.mu.Unlock()
 	}
 	i.logger.WithField("itr", it).Debug("Ingest finished")
-	return nil
+	return it.Err()
 }
 
 func (i *Import) Status() graveler.ImportStatus {

@@ -1,9 +1,7 @@
 ---
-layout: default
 title: R
 description: How to use lakeFS from R including creating branches, committing changes, and merging.
 parent: Integrations
-nav_order: 60
 has_children: false
 ---
 

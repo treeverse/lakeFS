@@ -1,8 +1,7 @@
 ---
-layout: default
 title: How-To
-description: 
-nav_order: 60
+description: How to perform various tasks in lakeFS
+nav_order: 5
 has_children: true
 ---
 

@@ -1,6 +1,5 @@
 ---
-layout: default
-title: lakeFS
+title: Welcome to lakeFS 👋🏻
 description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
 nav_order: 0
 redirect_from: /downloads.html
@@ -8,7 +7,7 @@ redirect_from: /downloads.html
 
 # Welcome to the Lake! 
 
-<img src="/assets/img/waving-axolotl-transparent.gif" width="90"/>
+<img src="{{ site.baseurl }}/assets/img/waving-axolotl-transparent.gif" width="90"/>
 
 
 **lakeFS brings software engineering best practices and applies them to data engineering.** 
@@ -19,9 +18,9 @@ With lakeFS, you can use concepts on your data lake such as **branch** to create
 
 ## How Do I Get Started? 
 
-**[The hands-on quickstart](/quickstart) guides you through some of core features of lakeFS**. 
+**[The hands-on quickstart](./quickstart) guides you through some of core features of lakeFS**. 
 
-These include [branching](/quickstart/branch.html), [merging](quickstart/commit-and-merge.html), and [rolling back changes](quickstart/rollback.html) to data. 
+These include [branching](./quickstart/branch.html), [merging](quickstart/commit-and-merge.html), and [rolling back changes](quickstart/rollback.html) to data. 
 
 {: .note}
 You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
@@ -36,14 +35,14 @@ You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/registe
 * It includes configurable garbage collection capabilities.
 * It is proven in production and has an active community.
 
-<img src="/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
+<img src="{{ site.baseurl }}/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
 ## How Does lakeFS Work With Other Tools? 
 
 lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS) and any other object storage with an S3 interface. It integrates seamlessly with popular data frameworks such as Spark, Hive Metastore, dbt, Trino, Presto, and many others and includes an S3 compatibility layer.
 
 {: .note}
-For more details and a full list see [the integrations pages](/integrations/).
+For more details and a full list see [the integrations pages](./integrations/).
 
 <p class="center">
     <img src="assets/what_is.png"/>
@@ -97,7 +96,7 @@ Incorporating these operations into your data lake pipelines provides the same c
 
 Here's how lakeFS *branches* and *merges* improve the universal process of updating collections with the latest data.
 
-<img src="/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
+<img src="{{ site.baseurl }}/assets/img/promotion_workflow.png" alt="lakeFS promotion workflow" width="60%" height="60%" />
 
 1. First, create a new **branch** from `main` to instantly generate a complete "copy" of your production data.
 2. Apply changes or make updates on the isolated branch to understand their impact prior to exposure.
@@ -113,7 +112,7 @@ lakeFS helps you maintain a tidy data lake in several ways, including:
 
 lakeFS makes creating isolated dev/test environments for ETL testing instantaneous, and through its use of copy-on-write, cheap. This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
 
-👉🏻 [Read more](/use_cases/etl_testing.html)
+👉🏻 [Read more](./understand/use_cases/etl_testing.html)
 
 ### Reproducibility: What Did My Data Look Like at a Point In Time?
 
@@ -133,7 +132,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
     With lakeFS you can create a branch from a commit to debug an issue in isolation.
 
-👉🏻 [Read More](/use_cases/reproducibility.html)
+👉🏻 [Read More](./understand/use_cases/reproducibility.html)
 
 ### Rollback of Data Changes and Recovery from Data Errors
 
@@ -151,7 +150,7 @@ in deletion or corruption events becomes an instant one-line operation with
 lakeFS: just identify a good historical commit, and then restore to it or
 copy from it.
 
-👉🏻 [Read more](/use_cases/rollback.html)
+👉🏻 [Read more](./understand/use_cases/rollback.html)
 
 ### Multi-Table Transactions guarantees
 
@@ -171,9 +170,9 @@ To learn more about atomic cross-collection updates, check out [this video](http
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
-With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
-👉🏻 [Read more](/use_cases/cicd_for_data.html)
+👉🏻 [Read more](./understand/use_cases/cicd_for_data.html)
 
 ## Downloads
 

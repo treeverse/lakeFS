@@ -1,5 +1,4 @@
 ---
-layout: default
 title: lakeFS Cloud
 description: This section includes lakeFS Cloud documentation
 nav_order: 80
@@ -12,7 +11,7 @@ has_toc: false
 [lakeFS Cloud](https://lakefs.cloud) is a fully-managed lakeFS solution provided by Treeverse, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
 	
 ## lakeFS Cloud Features
-* [Role-Based Access Control](../reference/rbac.md)
+* [Role-Based Access Control]({{ site.baseurl }}/reference/rbac.md)
 * [Auditing](./auditing.md)
 * [Single-Sign-On](./sso.md) (including support for SAML, OIDC, AD FS, Okta, and Azure AD)
 * [Managed Garbage Collection](./managed-gc.md)
@@ -50,11 +49,8 @@ flowchart TD
 
 ## Setting up lakeFS Cloud
 
-### AWS
+### AWS / Azure
 Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.cloud)
 
-### Azure
-Please follow [these instructions](./setup-azure.md) to onboard to lakeFS Cloud on Azure.
-
 ### GCP
-Please [contact us](mailto:support@treeverse.io) for onboarding insructions.
+Please [contact us](mailto:support@treeverse.io) for onboarding instructions.

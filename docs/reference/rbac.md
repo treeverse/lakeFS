@@ -1,5 +1,4 @@
 ---
-layout: default
 title: Role-Based Access Control (RBAC)
 description: This section covers authorization (using RBAC) of your lakeFS server.
 parent: Reference
@@ -20,7 +19,7 @@ lakeFS Enterprise
 
 
 {: .note}
-> RBAC is available on [lakeFS Cloud](../cloud/) and [lakeFS Enterprise](../enterprise/).
+> RBAC is available on [lakeFS Cloud]({{ site.baseurl }}/cloud/) and [lakeFS Enterprise]({{ site.baseurl }}/enterprise/).
 >
 > If you're using the open source version of lakeFS then the [ACL-based authorization mechanism](access-control-lists.html) is an alternative to RBAC.
 
