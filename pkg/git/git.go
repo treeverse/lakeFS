@@ -21,6 +21,10 @@ const (
 )
 
 func git(dir string, args ...string) (string, error) {
+	_, err := exec.LookPath("git") // assume git is in path, otherwise consider as not having git support
+	if err != nil {
+		return "", ErrNoGit
+	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()

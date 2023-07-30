@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/git"
+	"github.com/treeverse/lakefs/pkg/local"
 )
 
 const (
@@ -36,18 +37,22 @@ var localInitCmd = &cobra.Command{
 		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 			DieErr(err)
 		}
-		if IndexExists(localPath) && !force {
+		exists, err := local.IndexExists(localPath)
+		if err != nil {
+			DieErr(err)
+		}
+		if exists && !force {
 			DieFmt("directory '%s' already linked to a lakefs path, run command with --force to overwrite", localPath)
 		}
 
 		// dereference
 		head := resolveCommitOrDie(cmd.Context(), getClient(), remote.Repository, remote.Ref)
-		err = WriteIndex(localPath, remote, head)
+		err = local.WriteIndex(localPath, remote, head)
 		if err != nil {
 			DieErr(err)
 		}
 
-		ignoreFile, err := git.Ignore(localPath, []string{localPath, IndexFileName}, []string{IndexFileName}, IgnoreMarker)
+		ignoreFile, err := git.Ignore(localPath, []string{localPath, local.IndexFileName}, []string{local.IndexFileName}, local.IgnoreMarker)
 		if err == nil {
 			fmt.Println("location added to", ignoreFile)
 		} else if !errors.Is(err, git.ErrNotARepository) {
