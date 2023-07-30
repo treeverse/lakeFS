@@ -29,6 +29,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   private val ENDPOINT = "http://s3.example.net"
   private val US_STANDARD = "US"
   private val US_WEST_2 = "us-west-2"
+  private val AP_SOUTHEAST_1 = "ap-southeast-1"
   private val BUCKET_NAME = "bucket"
 
   before {
@@ -44,8 +45,12 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   }
 
   describe("createAndValidateS3Client") {
-    it("should create a client after a successful validation") {
-      server.enqueue(new MockResponse().setResponseCode(200))
+    it("should create a client after fetching the region") {
+      server.enqueue(
+        new MockResponse()
+          .setBody(generateGetBucketLocationResponseWithRegion(US_WEST_2))
+          .setResponseCode(HttpStatus.SC_OK)
+      )
       val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
         clientConfiguration,
         Some(credentialsProvider),
@@ -60,58 +65,75 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       initializedClient should not be null
       initializedClient.getRegion.toString should equal(US_WEST_2)
       extractBucketFromRecordedRequest(request) should equal(BUCKET_NAME)
-      request.getMethod should equal(HttpMethod.HEAD.toString)
     }
-
-    it("should create the S3 client successfully with US STANDARD region validation") {
-      server.enqueue(new MockResponse().setBody("successful validation response"))
-      val initializedClient: AmazonS3 = initializeClient()
-
-      server.getRequestCount should equal(1)
-
-      val request: RecordedRequest = server.takeRequest()
-      initializedClient should not be null
-      initializedClient.getRegion.name should equal(Region.US_Standard.name())
-      extractBucketFromRecordedRequest(request) should equal(BUCKET_NAME)
-      request.getMethod should equal(HttpMethod.HEAD.toString)
-    }
-
-    it("should get the correct region for the given bucket and create the S3 client successfully") {
-      server.enqueue(new MockResponse().setResponseCode(HttpStatus.SC_FORBIDDEN))
+    it(
+      "should create the client if the provided region is different from the bucket region"
+    ) {
       server.enqueue(
         new MockResponse()
           .setBody(generateGetBucketLocationResponseWithRegion(US_WEST_2))
           .setResponseCode(HttpStatus.SC_OK)
       )
-      val initializedClient: AmazonS3 = initializeClient()
+      val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
+        clientConfiguration,
+        Some(credentialsProvider),
+        awsS3ClientBuilder,
+        ENDPOINT,
+        AP_SOUTHEAST_1,
+        BUCKET_NAME
+      )
 
-      server.getRequestCount should equal(2)
-      val headBucketRequest: RecordedRequest = server.takeRequest()
+      server.getRequestCount should equal(1)
+      val request: RecordedRequest = server.takeRequest()
+      initializedClient should not be null
+      initializedClient.getRegion.toString should equal(US_WEST_2)
+      extractBucketFromRecordedRequest(request) should equal(BUCKET_NAME)
+    }
+    it(
+      "should create the client if the provided region is different from the bucket region (US_STANDARD)"
+    ) {
+      server.enqueue(
+        new MockResponse()
+          .setBody(
+            generateGetBucketLocationResponseWithRegion("")
+          ) // buckets on us-east-1 return an empty string here
+          .setResponseCode(HttpStatus.SC_OK)
+      )
+      val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
+        clientConfiguration,
+        Some(credentialsProvider),
+        awsS3ClientBuilder,
+        ENDPOINT,
+        US_WEST_2,
+        BUCKET_NAME
+      )
+
+      server.getRequestCount should equal(1)
+      val request: RecordedRequest = server.takeRequest()
+      initializedClient should not be null
+      initializedClient.getRegion.toString should be(null)
+      extractBucketFromRecordedRequest(request) should equal(BUCKET_NAME)
+    }
+
+    it("should use provided region is failed to fetch region") {
+      server.enqueue(
+        new MockResponse()
+          .setBody("failed to fetch region")
+          .setResponseCode(HttpStatus.SC_FORBIDDEN)
+      )
+      val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
+        clientConfiguration,
+        Some(credentialsProvider),
+        awsS3ClientBuilder,
+        ENDPOINT,
+        US_WEST_2,
+        BUCKET_NAME
+      )
+      server.getRequestCount should equal(1)
       val getLocationRequest: RecordedRequest = server.takeRequest()
       initializedClient should not be null
       initializedClient.getRegion.toString should equal(US_WEST_2)
-      extractBucketFromRecordedRequest(headBucketRequest) should equal(BUCKET_NAME)
-      headBucketRequest.getMethod should equal(HttpMethod.HEAD.toString)
-      getLocationRequest.getMethod should equal(HttpMethod.GET.toString)
-    }
-
-    it("should fail creating a client due to failed 'getBucketLocation' request") {
-      server.enqueue(new MockResponse().setResponseCode(HttpStatus.SC_FORBIDDEN))
-      server.enqueue(
-        new MockResponse()
-          .setResponseCode(HttpStatus.SC_NOT_FOUND)
-      )
-
-      assertThrows[SdkClientException] {
-        initializeClient()
-      }
-
-      server.getRequestCount should equal(2)
-      val headBucketRequest: RecordedRequest = server.takeRequest()
-      val getLocationRequest: RecordedRequest = server.takeRequest()
-      extractBucketFromRecordedRequest(headBucketRequest) should equal(BUCKET_NAME)
-      headBucketRequest.getMethod should equal(HttpMethod.HEAD.toString)
-      getLocationRequest.getMethod should equal(HttpMethod.GET.toString)
+      extractBucketFromRecordedRequest(getLocationRequest) should equal(BUCKET_NAME)
     }
   }
 

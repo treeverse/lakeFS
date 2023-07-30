@@ -4,12 +4,13 @@ import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
-import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
+import com.amazonaws.services.s3.model.{HeadBucketRequest, Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -151,7 +152,9 @@ object StorageUtils {
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
-      val bucketRegion = client.getBucketLocation(bucket)
+      var request = new GetBucketLocationRequest(bucket)
+      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(15).intValue())
+      val bucketRegion = client.getBucketLocation(request)
       val region = Region.fromValue(bucketRegion)
       // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
       // https://github.com/aws/aws-sdk-java/issues/1470.
