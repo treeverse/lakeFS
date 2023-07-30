@@ -2557,6 +2557,60 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 
 
+### lakectl local
+
+sync local directories with remote lakeFS locations
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for local
+```
+
+
+
+### lakectl local help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type local help [path to command] for full details.
+
+```
+lakectl local help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl local init
+
+set a local directory to sync with a lakeFS ref and path
+
+```
+lakectl local init [directory] <lakeFS path URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for init
+  -y, --yes    Automatically say yes to all confirmations
+```
+
+
+
 ### lakectl log
 
 Show log of commits
