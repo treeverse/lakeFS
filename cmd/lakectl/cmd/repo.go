@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -61,7 +62,7 @@ var repoCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", u.String())
+		fmt.Printf("Repository: %s\n", u)
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
@@ -78,7 +79,7 @@ var repoCreateCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
@@ -95,7 +96,7 @@ var repoCreateBareCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", u.String())
+		fmt.Printf("Repository: %s\n", u)
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
@@ -113,7 +114,7 @@ var repoCreateBareCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
@@ -128,14 +129,14 @@ var repoDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		Fmt("Repository: %s\n", u.String())
+		fmt.Printf("Repository: %s\n", u)
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
 		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		Fmt("Repository '%s' deleted\n", u.Repository)
+		fmt.Printf("Repository '%s' deleted\n", u.Repository)
 	},
 }
 

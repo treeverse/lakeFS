@@ -11,7 +11,7 @@ const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
 {{.Pagination | paginate }}
 `
 
-var runsListCmd = &cobra.Command{
+var actionsRunsListCmd = &cobra.Command{
 	Use:               "list",
 	Short:             "List runs",
 	Long:              `List all runs on a repository optional filter by branch or commit`,
@@ -98,9 +98,9 @@ var runsListCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	actionsRunsCmd.AddCommand(runsListCmd)
-	runsListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
-	runsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
-	runsListCmd.Flags().String("branch", "", "show results for specific branch")
-	runsListCmd.Flags().String("commit", "", "show results for specific commit ID")
+	actionsRunsCmd.AddCommand(actionsRunsListCmd)
+	actionsRunsListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
+	actionsRunsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	actionsRunsListCmd.Flags().String("branch", "", "show results for specific branch")
+	actionsRunsListCmd.Flags().String("commit", "", "show results for specific commit ID")
 }

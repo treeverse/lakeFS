@@ -29,7 +29,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		client := getClient()
 
-		fmt.Printf("Source ref: %s\n", u.String())
+		fmt.Printf("Source ref: %s\n", u)
 		deleteGen := stress.NewGenerator("delete branch", parallelism)
 
 		const paginationAmount = 1000

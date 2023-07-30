@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -83,7 +84,7 @@ var ingestCmd = &cobra.Command{
 			}
 			err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 				if dryRun {
-					Fmt("%s\n", e)
+					fmt.Println(e)
 					return nil
 				}
 				// iterate entries and feed our pool
@@ -130,7 +131,7 @@ var ingestCmd = &cobra.Command{
 
 		}
 		if !verbose {
-			Fmt("\n")
+			fmt.Println()
 		}
 
 		// print summary

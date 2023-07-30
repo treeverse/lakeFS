@@ -407,7 +407,3 @@ func Must[T any](v T, err error) T {
 	}
 	return v
 }
-
-func Fmt(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
-}

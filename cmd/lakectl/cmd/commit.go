@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -55,7 +56,7 @@ var commitCmd = &cobra.Command{
 		}
 
 		branchURI := MustParseRefURI("branch", args[0])
-		Fmt("Branch: %s\n", branchURI.String())
+		fmt.Printf("Branch: %s\n", branchURI)
 
 		// do commit
 		metadata := api.CommitCreation_Metadata{

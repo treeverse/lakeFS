@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -80,7 +81,7 @@ var tagCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag uri", args[0])
 		commitURI := MustParseRefURI("commit uri", args[1])
-		Fmt("Tag ref: %s\n", tagURI.String())
+		fmt.Printf("Tag ref: %s\n", tagURI)
 
 		client := getClient()
 		ctx := cmd.Context()
@@ -114,7 +115,7 @@ var tagCreateCmd = &cobra.Command{
 		}
 
 		commitID := *resp.JSON201
-		Fmt("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
+		fmt.Printf("Created tag '%s' (%s)\n", tagURI.Ref, commitID)
 	},
 }
 
@@ -130,7 +131,7 @@ var tagDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
-		Fmt("Tag ref: %s\n", u.String())
+		fmt.Printf("Tag ref: %s\n", u)
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
@@ -146,7 +147,7 @@ var tagShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
-		Fmt("Tag ref: %s\n", u.String())
+		fmt.Printf("Tag ref: %s\n", u)
 
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
@@ -154,7 +155,7 @@ var tagShowCmd = &cobra.Command{
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		Fmt("%s %s\n", resp.JSON200.Id, resp.JSON200.CommitId)
+		fmt.Printf("%s %s\n", resp.JSON200.Id, resp.JSON200.CommitId)
 	},
 }
 

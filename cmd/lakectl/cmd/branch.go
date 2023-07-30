@@ -68,7 +68,7 @@ var branchCreateCmd = &cobra.Command{
 		if err != nil {
 			DieFmt("failed to parse source URI: %s", err)
 		}
-		Fmt("Source ref: %s\n", sourceURI.String())
+		fmt.Printf("Source ref: %s\n", sourceURI.String())
 		if sourceURI.Repository != u.Repository {
 			Die("source branch must be in the same repository", 1)
 		}
@@ -78,7 +78,7 @@ var branchCreateCmd = &cobra.Command{
 			Source: sourceURI.Ref,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		Fmt("created branch '%s' %s\n", u.Ref, string(resp.Body))
+		fmt.Printf("created branch '%s' %s\n", u.Ref, string(resp.Body))
 	},
 }
 
@@ -95,7 +95,7 @@ var branchDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		fmt.Printf("Branch: %s\n", u.String())
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
@@ -116,7 +116,7 @@ var branchRevertCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		fmt.Printf("Branch: %s\n", u.String())
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
 		if hasParentNumber && parentNumber <= 0 {
@@ -135,7 +135,7 @@ var branchRevertCmd = &cobra.Command{
 				Ref:          commitRef,
 			})
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-			Fmt("commit %s successfully reverted\n", commitRef)
+			fmt.Printf("commit %s successfully reverted\n", commitRef)
 		}
 	},
 }
@@ -154,7 +154,7 @@ var branchResetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		fmt.Printf("Branch: %s\n", u.String())
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {
 			DieErr(err)
@@ -205,14 +205,14 @@ var branchShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseBranchURI("branch", args[0])
-		Fmt("Branch: %s\n", u.String())
+		fmt.Printf("Branch: %s\n", u.String())
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
 		branch := resp.JSON200
-		Fmt("Commit ID: %s\n", branch.CommitId)
+		fmt.Printf("Commit ID: %s\n", branch.CommitId)
 	},
 }
 
