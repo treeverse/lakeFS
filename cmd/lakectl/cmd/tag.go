@@ -131,7 +131,11 @@ var tagDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
+<<<<<<< HEAD
 		fmt.Printf("Tag ref: %s\n", u)
+=======
+		fmt.Printf("Tag ref: %s\n", u.String())
+>>>>>>> 36207c673 (lakectl cmd part 2)
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
@@ -147,7 +151,11 @@ var tagShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
+<<<<<<< HEAD
 		fmt.Printf("Tag ref: %s\n", u)
+=======
+		fmt.Printf("Tag ref: %s\n", u.String())
+>>>>>>> 36207c673 (lakectl cmd part 2)
 
 		ctx := cmd.Context()
 		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)

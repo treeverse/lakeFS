@@ -2028,7 +2028,6 @@ lakectl dbt create-branch-schema --branch <branch-name>
       --continue-on-schema-exists   allow running on existing schema
       --create-branch               create a new branch for the schema
       --dbfs-location string        
-      --from-client-type string     metastore type [hive, glue]
   -h, --help                        help for create-branch-schema
       --project-root string         location of dbt project (default ".")
       --skip-views                  
