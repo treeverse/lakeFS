@@ -1,34 +1,24 @@
 img.quickstart {
-	box-shadow: 3px 3px 1px #ccc;
-	border-width: thin;
-	border-color: black;
-	border-style: ridge;
+	border: 1px solid black;
 	margin-bottom: 0.4em;
 }
 
 details {
-	background-color: bisque;
 	margin-bottom: 0.2em;
-	padding: 0.3em;
+	padding: 0.3rem 0.5rem;
+	border: 1px solid #DFDFDF;
 }
 
 details img {
 	max-width: 100%;
 	height: auto;
-	box-shadow: 3px 3px 1px #ccc;
-	border-width: thin;
-	border-color: black;
-	border-style: ridge;
+	border: 1px solid black;
 	margin-bottom: 0.4em;
 	margin-right: 0.4em;
 }
 
 details>p {
 	padding-left: 0.2em;
-}
-
-details[open] {
-	background-color: rgb(221, 255, 211);
 }
 
 details>summary {
