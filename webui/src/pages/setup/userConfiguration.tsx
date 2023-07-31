@@ -46,7 +46,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                     <Card.Header>User Configuration</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            Please specify the name of the first admin account, or leave it as the default 'admin'.
+                            Please specify the name of the first admin account, or leave it as the default &apos;admin&apos;.
                         </Card.Text>
 
                         <Form onSubmit={submitHandler}>
