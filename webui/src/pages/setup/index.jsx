@@ -25,7 +25,7 @@ const SetupContents = () => {
         }
     }, [error, response]);
 
-    const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, updatesChecked, securityChecked) => {
+    const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, checked) => {
         if (!adminUser) {
             setSetupError("Please enter your admin username.");
             return;
@@ -37,7 +37,7 @@ const SetupContents = () => {
         setDisabled(true);
         try {
             if (currentStep === SETUP_STATE_NOT_INITIALIZED) {
-               await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+               await setup.commPrefs(userEmail, checked, checked);
             }
             const response = await setup.lakeFS(adminUser);
             setSetupError(null);
