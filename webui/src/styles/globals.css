@@ -676,10 +676,22 @@ td.change-summary {
 .object-viewer-pdf {
   margin: 20px;
 }
-
 .object-viewer-pdf object {
   width: 100%;
   height: 600px;
+}
+.object-viewer-markdown {
+  padding: 20px;
+}
+.object-viewer-markdown h2,
+.object-viewer-markdown h3,
+.object-viewer-markdown h4,
+.object-viewer-markdown h5,
+.object-viewer-markdown h6 {
+  padding-bottom: 0.25em;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #DFDFDF;
+  margin-top: 2rem;
 }
 
 .required-field-label {
