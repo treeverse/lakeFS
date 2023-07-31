@@ -25,14 +25,14 @@ func TestIsGitRepository(t *testing.T) {
 		_ = tmpFile.Close()
 	}()
 
-	require.False(t, git.IsGitRepository(tmpFile.Name()))
-	require.False(t, git.IsGitRepository(tmpdir))
+	require.False(t, git.IsRepository(tmpFile.Name()))
+	require.False(t, git.IsRepository(tmpdir))
 
 	// Init git repo on root
 	require.NoError(t, exec.Command("git", "init", "-q", tmpdir).Run())
-	require.False(t, git.IsGitRepository(tmpFile.Name()))
-	require.True(t, git.IsGitRepository(tmpdir))
-	require.True(t, git.IsGitRepository(tmpSubdir))
+	require.False(t, git.IsRepository(tmpFile.Name()))
+	require.True(t, git.IsRepository(tmpdir))
+	require.True(t, git.IsRepository(tmpSubdir))
 }
 
 func TestGetGitRepositoryPath(t *testing.T) {
@@ -47,19 +47,19 @@ func TestGetGitRepositoryPath(t *testing.T) {
 		_ = tmpFile.Close()
 	}()
 
-	_, err = git.GetGitRepositoryPath(tmpdir)
+	_, err = git.GetRepositoryPath(tmpdir)
 	require.ErrorIs(t, err, git.ErrNotARepository)
-	_, err = git.GetGitRepositoryPath(tmpFile.Name())
+	_, err = git.GetRepositoryPath(tmpFile.Name())
 	require.ErrorIs(t, err, git.ErrGitError)
 
 	// Init git repo on root
 	require.NoError(t, exec.Command("git", "init", "-q", tmpdir).Run())
-	gitPath, err := git.GetGitRepositoryPath(tmpdir)
+	gitPath, err := git.GetRepositoryPath(tmpdir)
 	require.NoError(t, err)
 	require.Equal(t, tmpdir, gitPath)
-	_, err = git.GetGitRepositoryPath(tmpFile.Name())
+	_, err = git.GetRepositoryPath(tmpFile.Name())
 	require.ErrorIs(t, err, git.ErrGitError)
-	gitPath, err = git.GetGitRepositoryPath(tmpSubdir)
+	gitPath, err = git.GetRepositoryPath(tmpSubdir)
 	require.NoError(t, err)
 	require.Equal(t, tmpdir, gitPath)
 }
@@ -135,12 +135,13 @@ func TestIgnore(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, ignorePath, result)
 	expected += fmt.Sprintf("%s\n", git.IgnoreFile)
-
 	expected = fmt.Sprintf("# %s\n", marker) + expected
 
+	contents, _ := os.ReadFile(ignorePath)
+	fmt.Println(string(contents))
 	verifyPathTracked(t, []string{})
 
-	contents, err := os.ReadFile(ignorePath)
+	contents, err = os.ReadFile(ignorePath)
 	require.NoError(t, err)
 	require.Equal(t, expected, string(contents))
 }

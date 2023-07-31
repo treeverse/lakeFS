@@ -2,14 +2,16 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/ioutils"
+	"github.com/treeverse/lakefs/pkg/fileutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -18,130 +20,127 @@ const (
 	IgnoreDefaultMode = 0644
 )
 
-func git(dir string, args ...string) (int, string) {
-	stdout := new(strings.Builder)
-	stderr := new(strings.Builder)
+func git(dir string, args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	if err != nil {
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
-			return exitError.ExitCode(), stderr.String()
-		}
-		return -1, err.Error()
-	}
-	return 0, stdout.String()
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }
 
-// IsGitRepository Return true if dir is a path to a directory in a git repository, false otherwise
-func IsGitRepository(dir string) bool {
-	rc, _ := git(dir, "rev-parse", "--is-inside-work-tree")
-	return rc == 0
+// IsRepository Return true if dir is a path to a directory in a git repository, false otherwise
+func IsRepository(dir string) bool {
+	_, err := git(dir, "rev-parse", "--is-inside-work-tree")
+	return err == nil
 }
 
-// GetGitRepositoryPath Returns the git repository root path if dir is a directory inside a git repository, otherwise returns error
-func GetGitRepositoryPath(dir string) (string, error) {
-	rc, out := git(dir, "rev-parse", "--show-toplevel")
-	if rc == 0 {
+// GetRepositoryPath Returns the git repository root path if dir is a directory inside a git repository, otherwise returns error
+func GetRepositoryPath(dir string) (string, error) {
+	out, err := git(dir, "rev-parse", "--show-toplevel")
+	if err == nil {
 		return strings.TrimSpace(out), nil
 	}
-	if strings.Contains(out, ErrNotARepository.Error()) {
+	if strings.Contains(out, "not a git repository") {
 		return "", ErrNotARepository
 	}
-	return "", fmt.Errorf("%w: exit code %d: %s", ErrGitError, rc, out)
+	return "", fmt.Errorf("%s: %w", out, ErrGitError)
 }
 
-// Ignore Modify .ignore file to include a section headed by the marker string and contains the provided paths
-// If section exists, it will append paths to the given section, otherwise writes the sections at the end of the file.
-// File paths must be absolute.
-// Creates the .ignore file if it doesn't exist.
+func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string, error) {
+	var entries []string
+	for _, p := range paths {
+		pathInRepo, err := filepath.Rel(dir, p)
+		if err != nil {
+			return nil, fmt.Errorf("%s :%w", p, err)
+		}
+		isDir, err := fileutil.IsDir(p)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("%s :%w", p, err)
+		}
+		if isDir {
+			pathInRepo = filepath.Join(pathInRepo, "*")
+		}
+		if exclude {
+			pathInRepo = "!" + pathInRepo
+		}
+		entries = append(entries, pathInRepo)
+	}
+	return entries, nil
+}
+
+func updateIgnoreFileSection(contents []byte, marker string, entries []string) []byte {
+	var newContent []byte
+	scanner := bufio.NewScanner(bytes.NewReader(contents))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		newContent = append(newContent, []byte(line+"\n")...)
+		if line == marker {
+			for scanner.Scan() {
+				line = strings.TrimSpace(scanner.Text())
+				if line == "" {
+					break
+				}
+				if !slices.Contains(entries, line) {
+					newContent = append(newContent, []byte(line+"\n")...)
+				}
+			}
+			buffer := strings.Join(entries, "\n") + "\n"
+			newContent = append(newContent, buffer...)
+		}
+	}
+
+	return newContent
+}
+
+// Ignore modify/create .ignore file to include a section headed by the marker string and contains the provided ignore and exclude paths.
+// If section exists, it will append paths to the given section, otherwise writes the section at the end of the file.
+// All file paths must be absolute.
+// dir is a path in the git repository, if a .gitignore file is not found, a new file will be created in the repository root
 func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (string, error) {
-	gitDir, err := GetGitRepositoryPath(dir)
+	gitDir, err := GetRepositoryPath(dir)
 	if err != nil {
 		return "", err
 	}
 
-	var ignoreEntries []string
-
-	for _, p := range ignorePaths {
-		pathInRepo, err := filepath.Rel(gitDir, p)
-		if err != nil {
-			return "", err
-		}
-		if ioutils.IsDir(p) {
-			pathInRepo = filepath.Join(pathInRepo, "*")
-		}
-		ignoreEntries = append(ignoreEntries, pathInRepo)
+	ignoreEntries, err := createEntriesForIgnore(gitDir, ignorePaths, false)
+	if err != nil {
+		return "", err
 	}
-	for _, p := range excludePaths {
-		pathInRepo, err := filepath.Rel(gitDir, p)
-		if err != nil {
-			return "", err
-		}
-		if ioutils.IsDir(p) {
-			pathInRepo = filepath.Join(pathInRepo, "*")
-		}
-		ignoreEntries = append(ignoreEntries, "!"+pathInRepo)
+	excludeEntries, err := createEntriesForIgnore(gitDir, excludePaths, true)
+	if err != nil {
+		return "", err
 	}
+	ignoreEntries = append(ignoreEntries, excludeEntries...)
 
-	ignoreFilePath := filepath.Join(gitDir, IgnoreFile)
-
-	found := false
 	var (
-		mode          os.FileMode = IgnoreDefaultMode
-		ignoreContent []string
+		mode       os.FileMode = IgnoreDefaultMode
+		ignoreFile []byte
 	)
+	ignoreFilePath := filepath.Join(gitDir, IgnoreFile)
 	markerLine := "# " + marker
 	info, err := os.Stat(ignoreFilePath)
 	switch {
 	case err == nil: // ignore file exists
 		mode = info.Mode()
-		ignoreFile, err := os.Open(ignoreFilePath)
+		ignoreFile, err = os.ReadFile(ignoreFilePath)
 		if err != nil {
 			return "", err
 		}
-		fileScanner := bufio.NewScanner(ignoreFile)
-		for fileScanner.Scan() {
-			line := strings.TrimSpace(fileScanner.Text())
-			ignoreContent = append(ignoreContent, line)
-			if line == markerLine {
-				found = true
-				for fileScanner.Scan() {
-					line = strings.TrimSpace(fileScanner.Text())
-					if line == "" {
-						ignoreContent = append(ignoreContent, "")
-						break
-					}
-					if !slices.Contains(ignoreEntries, line) {
-						ignoreContent = append(ignoreContent, line)
-					}
-				}
-				ignoreContent = append(ignoreContent, ignoreEntries...)
-			}
+		idx := bytes.Index(ignoreFile, []byte(markerLine))
+		if idx == -1 {
+			section := markerLine + "\n" + strings.Join(ignoreEntries, "\n") + "\n"
+			ignoreFile = append(ignoreFile, section...)
+		} else { // Update section
+			ignoreFile = updateIgnoreFileSection(ignoreFile, markerLine, ignoreEntries)
 		}
 
-		if !found { // Add the marker and ignore list to the end of the file
-			ignoreContent = append(ignoreContent, "")
-			ignoreContent = append(ignoreContent, markerLine)
-			ignoreContent = append(ignoreContent, ignoreEntries...)
-		}
-
-		err = ignoreFile.Close()
-		if err != nil {
-			return "", err
-		}
 	case !os.IsNotExist(err):
 		return "", err
 	default: // File doesn't exist
-		ignoreContent = append(ignoreContent, markerLine)
-		ignoreContent = append(ignoreContent, ignoreEntries...)
+		section := markerLine + "\n" + strings.Join(ignoreEntries, "\n") + "\n"
+		ignoreFile = append(ignoreFile, []byte(section)...)
 	}
 
-	buffer := strings.Join(ignoreContent, "\n") + "\n"
-	if err = os.WriteFile(ignoreFilePath, []byte(buffer), mode); err != nil {
+	if err = os.WriteFile(ignoreFilePath, ignoreFile, mode); err != nil {
 		return "", err
 	}
 

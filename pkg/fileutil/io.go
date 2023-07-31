@@ -1,12 +1,12 @@
-package ioutils
+package fileutil
 
 import "os"
 
 // IsDir Returns true if p is a directory, otherwise false
-func IsDir(p string) bool {
+func IsDir(p string) (bool, error) {
 	stat, err := os.Stat(p)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return stat.IsDir()
+	return stat.IsDir(), nil
 }

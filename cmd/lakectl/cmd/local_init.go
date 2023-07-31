@@ -8,7 +8,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/git"
-	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -17,44 +16,28 @@ const (
 )
 
 var localInitCmd = &cobra.Command{
-	Use:   "init [directory] <lakeFS path URI>",
-	Short: "set a local directory to sync with a lakeFS ref and path",
+	Use:   "init <path uri> [directory]",
+	Short: "set a local directory to sync with a lakeFS path",
 	Args:  cobra.RangeArgs(initMinArgs, initMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		var remote *uri.URI
+		remote := MustParsePathURI("path", args[0])
 		dir := "."
 		if len(args) == initMaxArgs {
-			dir = args[0]
-			remote = MustParsePathURI("remote ref", args[1])
-		} else {
-			remote = MustParsePathURI("remote ref", args[0])
+			dir = args[1]
 		}
+		flagSet := cmd.Flags()
+		force := MustBool(flagSet.GetBool("force"))
 
 		localPath, err := filepath.Abs(dir)
 		if err != nil {
 			DieErr(err)
 		}
 
-		stat, err := os.Stat(localPath)
-		switch {
-		case errors.Is(err, os.ErrNotExist):
-			if confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Directory '%s' doesn't exist, create", localPath)); err != nil || !confirmation {
-				Die("local init aborted", 1)
-			}
-			if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-				DieFmt("Failed to create dir: %s", localPath)
-			}
-		case err != nil:
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 			DieErr(err)
-		case !stat.IsDir():
-			DieErr(fmt.Errorf("not a directory: %w", os.ErrInvalid))
 		}
-
-		if IndexExists(localPath) {
-			if confirmation, err := Confirm(cmd.Flags(),
-				fmt.Sprintf("Directory '%s' already linked to a lakefs path, do you wish to override the configuration", localPath)); err != nil || !confirmation {
-				Die("local init aborted", 1)
-			}
+		if IndexExists(localPath) && !force {
+			Die(fmt.Sprintf("directory '%s' already linked to a lakefs path, run command with --force to overwrite", localPath), 1)
 		}
 
 		// dereference
@@ -64,20 +47,20 @@ var localInitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		if git.IsGitRepository(localPath) {
-			ignoreFile, err := git.Ignore(localPath, []string{localPath, IndexFileName}, []string{IndexFileName}, IgnoreMarker)
-			if err != nil {
-				DieErr(err)
-			}
-			Fmt("location added to %s\n", ignoreFile)
+		ignoreFile, err := git.Ignore(localPath, []string{localPath, IndexFileName}, []string{IndexFileName}, IgnoreMarker)
+		if err != nil && !errors.Is(err, git.ErrNotARepository) {
+			DieErr(err)
+		} else if err == nil {
+			fmt.Println("location added to", ignoreFile)
 		}
 
-		Fmt("Successfully linked local directory '%s' with remote '%s'\n", localPath, remote.String())
+		fmt.Printf("Successfully linked local directory '%s' with remote '%s'\n", localPath, remote)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	localCmd.AddCommand(localInitCmd)
 	AssignAutoConfirmFlag(localInitCmd.Flags())
+	localInitCmd.Flags().Bool("force", false, "Overwrites if directory already linked to a lakeFS path")
+	localCmd.AddCommand(localInitCmd)
 }

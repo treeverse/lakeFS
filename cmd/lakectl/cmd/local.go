@@ -5,11 +5,14 @@ import (
 )
 
 var localCmd = &cobra.Command{
-	Use:   "local",
-	Short: "sync local directories with remote lakeFS locations",
+	Use: "local",
+	// TODO: Remove BETA when feature complete
+	Short: "BETA: sync local directories with remote lakeFS locations",
 }
 
 //nolint:gochecknoinits
 func init() {
+	// TODO: Remove line when feature complete
+	localCmd.Hidden = true
 	rootCmd.AddCommand(localCmd)
 }
