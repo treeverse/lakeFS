@@ -1,6 +1,5 @@
 package io.treeverse.gc
 
-import io.treeverse.clients.GarbageCollector._
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.clients._
 import org.apache.commons.lang3.time.DateUtils
@@ -348,5 +347,15 @@ object GarbageCollection {
       stream.close()
     }
     summary
+  }
+
+  def getStorageNSForSdkClient(apiClient: ApiClient, repo: String): String = {
+    // The remove operation uses an SDK client to directly access the underlying storage, and therefore does not need
+    // a translated storage namespace that triggers processing by Hadoop FileSystems.
+    var storageNSForSdkClient = apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
+    if (!storageNSForSdkClient.endsWith("/")) {
+      storageNSForSdkClient += "/"
+    }
+    storageNSForSdkClient
   }
 }
