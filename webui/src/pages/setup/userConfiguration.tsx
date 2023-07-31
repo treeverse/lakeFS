@@ -20,7 +20,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
     const [adminUser, setAdminUser] = useState<string>("admin");
-    const [checks, setChecks] = useState<boolean>(true);
+    const [checks, setChecks] = useState<boolean>(false);
 
     const submitHandler = useCallback((e: FormEvent) => {
         onSubmit(adminUser, userEmail, checks);
@@ -46,7 +46,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                     <Card.Header>User Configuration</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            Please specify the name of the first admin account to create, or leave it as the default.
+                            Please specify the name of the first admin account, or leave it as the default 'admin'.
                         </Card.Text>
 
                         <Form onSubmit={submitHandler}>
