@@ -100,7 +100,7 @@ object GarbageCollection {
 
   def main(args: Array[String]): Unit = {
     val hc = spark.sparkContext.hadoopConfiguration
-    val region = if (args.length == 2) args(1) else null
+    val region = if (args.length == 2) args(1) else ""
     val repo = args(0)
     run(region, repo)
   }
