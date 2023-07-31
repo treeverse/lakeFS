@@ -37,6 +37,24 @@ details>summary {
 	cursor: pointer;
 }
 
-h1, h2, h3 {
-	margin-top: 0.4em;
+.repository-creation-accordion .accordion-button,
+.repository-creation-accordion .accordion-button:not(.collapsed) {
+	border: 25px;
+	background-color: #F3F4F5;
+	color: var(--bs-heading-color);
 }
+
+.repository-creation-accordion .accordion-item {
+	margin-top: 15px;
+	background-color: #F3F4F5;
+	border: 0;
+}
+
+.repository-creation-expanded {
+	--bs-accordion-body-padding-x: 1.25rem;
+	--bs-accordion-body-padding-y: 1rem;
+	padding:var(--bs-accordion-body-padding-y) var(--bs-accordion-body-padding-x);
+	background-color: #F3F4F5;
+	border-radius: 0.375rem;
+}
+
