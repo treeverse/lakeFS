@@ -2559,7 +2559,10 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 ### lakectl local
 
-sync local directories with remote lakeFS locations
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+BETA: sync local directories with remote lakeFS locations
 
 #### Options
 {:.no_toc}
@@ -2595,18 +2598,19 @@ lakectl local help [command] [flags]
 
 ### lakectl local init
 
-set a local directory to sync with a lakeFS ref and path
+set a local directory to sync with a lakeFS path
 
 ```
-lakectl local init [directory] <lakeFS path URI> [flags]
+lakectl local init <path uri> [directory] [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help   help for init
-  -y, --yes    Automatically say yes to all confirmations
+      --force   Overwrites if directory already linked to a lakeFS path
+  -h, --help    help for init
+  -y, --yes     Automatically say yes to all confirmations
 ```
 
 
