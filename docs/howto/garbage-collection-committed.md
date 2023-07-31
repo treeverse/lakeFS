@@ -12,7 +12,7 @@ has_children: false
 {: .warning-title }
 > Deprecation notice
 > 
-> This feature will be supported up to version 0.9.1 of the lakeFS metadata client. It will be discontinued in subsequent versions.
+> This feature will be available up to version 0.9.1 of the lakeFS metadata client. It will be discontinued in subsequent versions.
 > Please visit the new [garbage collection documentation](./garbage-collection.md).
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
