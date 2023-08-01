@@ -485,7 +485,7 @@ func (m *merger) validWritingRange(it Iterator) bool {
 	switch it.(type) {
 	case ImportIterator:
 		imIt, _ := it.(ImportIterator)
-		return !imIt.IsCurrentPathIncludedInRange()
+		return !imIt.IsCurrentPrefixIncludedInRange()
 	default:
 		return true
 	}
