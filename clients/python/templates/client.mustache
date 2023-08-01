@@ -3,24 +3,11 @@ import warnings
 from urllib3.util import parse_url, Url
 
 import lakefs_client.apis
-from lakefs_client.api import actions_api
-from lakefs_client.api import auth_api
-from lakefs_client.api import branches_api
-from lakefs_client.api import commits_api
-from lakefs_client.api import config_api
-from lakefs_client.api import experimental_api
-from lakefs_client.api import health_check_api
-from lakefs_client.api import import_api
-from lakefs_client.api import metadata_api
-from lakefs_client.api import objects_api
-from lakefs_client.api import otf_diff_api
-from lakefs_client.api import refs_api
-from lakefs_client.api import repositories_api
-from lakefs_client.api import retention_api
-from lakefs_client.api import staging_api
-from lakefs_client.api import statistics_api
-from lakefs_client.api import tags_api
-from lakefs_client.api import templates_api
+{{#apiInfo}}
+{{#apis}}
+from {{apiPackage}} import {{classFilename}}
+{{/apis}}
+{{/apiInfo}}
 
 
 class _WrappedApiClient(lakefs_client.ApiClient):
@@ -46,24 +33,11 @@ class LakeFSClient:
         configuration = LakeFSClient._ensure_endpoint(configuration)
         self._api = _WrappedApiClient(configuration=configuration, header_name=header_name,
                                           header_value=header_value, cookie=cookie, pool_threads=pool_threads)
-        self.actions_api = actions_api.ActionsApi(self._api)
-        self.auth_api = auth_api.AuthApi(self._api)
-        self.branches_api = branches_api.BranchesApi(self._api)
-        self.commits_api = commits_api.CommitsApi(self._api)
-        self.config_api = config_api.ConfigApi(self._api)
-        self.experimental_api = experimental_api.ExperimentalApi(self._api)
-        self.health_check_api = health_check_api.HealthCheckApi(self._api)
-        self.import_api = import_api.ImportApi(self._api)
-        self.metadata_api = metadata_api.MetadataApi(self._api)
-        self.objects_api = objects_api.ObjectsApi(self._api)
-        self.otf_diff_api = otf_diff_api.OtfDiffApi(self._api)
-        self.refs_api = refs_api.RefsApi(self._api)
-        self.repositories_api = repositories_api.RepositoriesApi(self._api)
-        self.retention_api = retention_api.RetentionApi(self._api)
-        self.staging_api = staging_api.StagingApi(self._api)
-        self.statistics_api = statistics_api.StatisticsApi(self._api)
-        self.tags_api = tags_api.TagsApi(self._api)
-        self.templates_api = templates_api.TemplatesApi(self._api)
+{{#apiInfo}}
+{{#apis}}
+        self.{{classFilename}} = {{classFilename}}.{{{classname}}}(self._api)
+{{/apis}}
+{{/apiInfo}}
 
     @staticmethod
     def _ensure_endpoint(configuration):
