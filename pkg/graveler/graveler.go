@@ -124,8 +124,6 @@ const (
 	MergeStrategyNone MergeStrategy = iota
 	MergeStrategyDest
 	MergeStrategySrc
-	MergeStrategyImport
-
 	MergeStrategyNoneStr     = "default"
 	MergeStrategyDestWinsStr = "dest-wins"
 	MergeStrategySrcWinsStr  = "source-wins"
@@ -902,7 +900,11 @@ type CommittedManager interface {
 	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
 	// returns the ID of the new metarange. This is similar to a git merge operation.
 	// The resulting tree is expected to be immediately addressable.
-	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy, prefixes []Prefix) (MetaRangeID, error)
+	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy) (MetaRangeID, error)
+
+	// Import sync changes from 'source' to 'destination' based on the given prefixes, and returns the ID of the new
+	// metarange.
+	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID, prefixes []Prefix) (MetaRangeID, error)
 
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -2361,7 +2363,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone, nil)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -2443,7 +2445,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, commitRecord.MetaRangeID, parentMetaRangeID, MergeStrategyNone, nil)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, commitRecord.MetaRangeID, parentMetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -2533,7 +2535,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			return nil, ErrInvalidMergeStrategy
 		}
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy, nil)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
@@ -2671,7 +2673,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 			"destination_meta_range": toCommit.MetaRangeID,
 		}).Trace("Import")
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, source, "", MergeStrategyImport, prefixes)
+		metaRangeID, err := g.CommittedManager.Import(ctx, storageNamespace, toCommit.MetaRangeID, source, prefixes)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)

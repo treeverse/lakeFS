@@ -79,7 +79,14 @@ func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, grav
 	return c.DiffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy, _ []graveler.Prefix) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+	if c.Err != nil {
+		return "", c.Err
+	}
+	return c.MetaRangeID, nil
+}
+
+func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID, _ []graveler.Prefix) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}

@@ -312,7 +312,7 @@ func runImportTests(tests importTestCases, t *testing.T) {
 				metaRangeId := graveler.MetaRangeID("import")
 				writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
 				committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
-				_, err := committedManager.Merge(ctx, "ns", destMetaRangeID, sourceMetaRangeID, "", graveler.MergeStrategyImport, tst.prefixes)
+				_, err := committedManager.Import(ctx, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
 				if err != expectedResult.expectedErr {
 					t.Fatal(err)
 				}
