@@ -9,18 +9,16 @@ import (
 	"testing"
 )
 
-type importTestCase struct {
-	sourceRange    *testMetaRange
-	destRange      *testMetaRange
-	prefixes       []graveler.Prefix
-	expectedResult []testRunResult
-}
-
-type importTestCases map[string]importTestCase
-
 func Test_import(t *testing.T) {
-	tests := importTestCases{
-		"source range smaller than dest range": {
+	tests := []struct {
+		name           string
+		sourceRange    *testMetaRange
+		destRange      *testMetaRange
+		prefixes       []graveler.Prefix
+		expectedResult []testRunResult
+	}{
+		{
+			name: "source range smaller than dest range",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
@@ -46,20 +44,23 @@ func Test_import(t *testing.T) {
 			prefixes: []graveler.Prefix{
 				"a",
 			},
-			expectedResult: []testRunResult{{
-				expectedActions: []writeAction{
-					{
-						action: actionTypeWriteRange,
-						rng:    committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
-					},
-					{
-						action: actionTypeWriteRange,
-						rng:    committed.Range{ID: "a/3-a/6", MinKey: committed.Key("a/3"), MaxKey: committed.Key("a/6"), Count: 4, EstimatedSize: 2048},
+			expectedResult: []testRunResult{
+				{
+					expectedActions: []writeAction{
+						{
+							action: actionTypeWriteRange,
+							rng:    committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+						},
+						{
+							action: actionTypeWriteRange,
+							rng:    committed.Range{ID: "a/3-a/6", MinKey: committed.Key("a/3"), MaxKey: committed.Key("a/6"), Count: 4, EstimatedSize: 2048},
+						},
 					},
 				},
-			}},
+			},
 		},
-		"dest range smaller than compared path": {
+		{
+			name: "dest range smaller than compared path",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "b/1-b/2", MinKey: committed.Key("b/1"), MaxKey: committed.Key("b/2"), Count: 2, EstimatedSize: 1024},
@@ -102,7 +103,8 @@ func Test_import(t *testing.T) {
 				},
 			}},
 		},
-		"same range": {
+		{
+			name: "same range",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
@@ -157,7 +159,8 @@ func Test_import(t *testing.T) {
 				},
 			}},
 		},
-		"dest range is bounded by compared path": {
+		{
+			name: "dest range is bounded by compared path",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "a/4-a/8", MinKey: committed.Key("a/4"), MaxKey: committed.Key("a/8"), Count: 5, EstimatedSize: 2560},
@@ -196,7 +199,8 @@ func Test_import(t *testing.T) {
 				},
 			}},
 		},
-		"intersected ranges - multiple prefixes": {
+		{
+			name: "intersected ranges - multiple prefixes",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "a/1-a/4", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/4"), Count: 4, EstimatedSize: 2048},
@@ -279,13 +283,9 @@ func Test_import(t *testing.T) {
 		},
 	}
 
-	runImportTests(tests, t)
-}
-
-func runImportTests(tests importTestCases, t *testing.T) {
-	for name, tst := range tests {
+	for _, tst := range tests {
 		for _, expectedResult := range tst.expectedResult {
-			t.Run(name, func(t *testing.T) {
+			t.Run(tst.name, func(t *testing.T) {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
 				ctx := context.Background()
