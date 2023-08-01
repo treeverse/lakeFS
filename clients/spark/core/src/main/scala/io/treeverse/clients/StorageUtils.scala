@@ -153,15 +153,9 @@ object StorageUtils {
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
       var request = new GetBucketLocationRequest(bucket)
-      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(15).intValue())
+      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(1).intValue())
       val bucketRegion = client.getBucketLocation(request)
-      val region = Region.fromValue(bucketRegion)
-      // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
-      // https://github.com/aws/aws-sdk-java/issues/1470.
-      // "us-east-1" was previously called "US Standard". This resulted in a return value of "US" when
-      // calling `client.getBucketLocation(bucket)`.
-      if (region.equals(Region.US_Standard)) "us-east-1"
-      else region.toString
+      Region.fromValue(bucketRegion).toAWSRegion().getName()
     }
   }
 }
