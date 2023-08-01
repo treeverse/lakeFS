@@ -15,8 +15,11 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import scala.collection.JavaConverters._
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 object GarbageCollection {
+  private final val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   final val UNIFIED_GC_SOURCE_NAME = "unified_gc"
   private final val DATA_PREFIX = "data/"
 
@@ -199,10 +202,10 @@ object GarbageCollection {
       // delete marked addresses
       if (shouldSweep) {
         val markedAddresses = if (shouldMark) {
-          println("deleting marked addresses from run ID: " + runID)
+          logger.info("deleting marked addresses from run ID: " + runID)
           addressesToDelete
         } else {
-          println("deleting marked addresses from mark ID: " + markID)
+          logger.info("deleting marked addresses from mark ID: " + markID)
           readMarkedAddresses(storageNamespace, markID, outputPrefix)
         }
 
@@ -212,6 +215,7 @@ object GarbageCollection {
         )
         val configMapper = new ConfigMapper(hcValues)
         bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
+        logger.info("finished deleting")
       }
 
       // Flow completed successfully - set success to true
@@ -270,7 +274,7 @@ object GarbageCollection {
       outputPrefix: String = "unified"
   ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
-    println(s"Report for mark_id=$runID path=$reportDst")
+    logger.info(s"Report for mark_id=$runID path=$reportDst")
 
     expiredAddresses.write.parquet(s"$reportDst/deleted")
     expiredAddresses.write.text(s"$reportDst/deleted.text")
@@ -284,7 +288,7 @@ object GarbageCollection {
                        success,
                        expiredAddresses.count()
                       )
-    println(s"Report summary=$summary")
+    logger.info(s"Report summary=$summary")
   }
 
   private def formatRunPath(
@@ -313,7 +317,7 @@ object GarbageCollection {
     } else {
       val deletedPath = new Path(formatRunPath(storageNamespace, markID, outputPrefix) + "/deleted")
       if (!fs.exists(deletedPath)) {
-        println(s"Mark ID ($markID) does not contain deleted files")
+        logger.info(s"Mark ID ($markID) does not contain deleted files")
         spark.emptyDataFrame.withColumn("address", lit(""))
       } else {
         spark.read.parquet(deletedPath.toString)

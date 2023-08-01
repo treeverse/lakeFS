@@ -161,6 +161,7 @@ object StorageUtils {
 }
 
 class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
 
   private val clock = java.time.Clock.systemDefaultZone
@@ -174,15 +175,15 @@ class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
     exception match {
       case ce: SdkClientException =>
         if (ce.getMessage contains XML_PARSE_BROKEN) {
-          println(s"Retry $originalRequest @$now: Received non-XML: $ce")
+          logger.info(s"Retry $originalRequest @$now: Received non-XML: $ce")
         } else if (RetryUtils.isThrottlingException(ce)) {
-          println(s"Retry $originalRequest @$now: Throttled: $ce")
+          logger.info(s"Retry $originalRequest @$now: Throttled: $ce")
         } else {
-          println(s"Retry $originalRequest @$now: Other client exception: $ce")
+          logger.info(s"Retry $originalRequest @$now: Other client exception: $ce")
         }
         true
       case e => {
-        println(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
+        logger.info(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
         super.shouldRetry(originalRequest, exception, retriesAttempted)
       }
     }
