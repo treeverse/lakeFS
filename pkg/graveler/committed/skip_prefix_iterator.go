@@ -156,7 +156,8 @@ func (ipi *SkipPrefixIterator) IsCurrentPrefixIncludedInRange() bool {
 		return false
 	}
 	r := ipi.currentRangeValue.r
-	return strings.HasPrefix(string(r.MinKey), string(*p)) || strings.Compare(string(*p), string(r.MaxKey)) <= 0
+	inRange := strings.Compare(string(*p), string(r.MinKey)) >= 0 && strings.Compare(string(*p), string(r.MaxKey)) <= 0
+	return strings.HasPrefix(string(r.MinKey), string(*p)) || inRange
 }
 
 func NewSkipPrefixIterator(prefixes []graveler.Prefix, rangeIterator Iterator) *SkipPrefixIterator {
