@@ -8,7 +8,7 @@ import Row from "react-bootstrap/Row";
 import {AlertError} from "../../lib/components/controls";
 
 interface UserConfigurationProps {
-    onSubmit: (email: string, admin: string, updatesCheck: boolean, securityCheck: boolean) => Promise<void>;
+    onSubmit: (email: string, admin: string, checks: boolean) => Promise<void>;
     setupError: Error;
     disabled: boolean;
 }
@@ -20,13 +20,12 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
     const [adminUser, setAdminUser] = useState<string>("admin");
-    const [updatesCheck, setUpdatesCheck] = useState<boolean>(false);
-    const [securityCheck, setSecurityCheck] = useState<boolean>(false);
+    const [checks, setChecks] = useState<boolean>(false);
 
     const submitHandler = useCallback((e: FormEvent) => {
-        onSubmit(adminUser, userEmail, updatesCheck, securityCheck);
+        onSubmit(adminUser, userEmail, checks);
         e.preventDefault();
-    }, [onSubmit, adminUser, userEmail, updatesCheck, securityCheck]);
+    }, [onSubmit, adminUser, userEmail, checks]);
 
     const handleEmailChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         setUserEmail(e.target.value);
@@ -36,13 +35,9 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
         setAdminUser(e.target.value);
     }, [setAdminUser]);
 
-    const handleUpdatesChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        setUpdatesCheck(e.target.checked);
-    }, [setUpdatesCheck]);
-
-    const handleSecurityChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        setSecurityCheck(e.target.checked);
-    }, [setSecurityCheck]);
+    const handleChecksChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+        setChecks(e.target.checked);
+    }, [setChecks]);
 
     return (
         <Row>
@@ -51,7 +46,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                     <Card.Header>User Configuration</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            Please specify the name of the first admin account to create, or leave it as the default.
+                            Please specify the name of the first admin account, or leave it as the default &apos;admin&apos;.
                         </Card.Text>
 
                         <Form onSubmit={submitHandler}>
@@ -60,20 +55,13 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                             <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" autoFocus/>
                         </Form.Group>
 
-                            <Card.Text>
-                            Please provide your email address, and indicate what optional communications you&apos;d like to receive:
-                            </Card.Text>
                             <Form.Group controlId="user-email" className="mt-4">
                                 <Form.Label>Email <span className="required-field-label">*</span></Form.Label>
                                 <Form.Control type="email" placeholder="name@company.com" value={userEmail}  onChange={handleEmailChange} />
                             </Form.Group>
 
-                            <Form.Group controlId="updates-check" className="mt-4">
-                                <Form.Check type="checkbox" checked={updatesCheck} onChange={handleUpdatesChange} label="I'd like to receive news and feature updates" />
-                            </Form.Group>
-
                             <Form.Group controlId="security-check" className="mt-4 mb-3">
-                                <Form.Check type="checkbox" checked={securityCheck} onChange={handleSecurityChange} label="I'd like to receive security updates (recommended)" />
+                                <Form.Check type="checkbox"  checked={checks} onChange={handleChecksChange} label="I'd like to receive security, product, and feature updates" />
                             </Form.Group>
 
                             {!!setupError && <AlertError error={setupError}/>}

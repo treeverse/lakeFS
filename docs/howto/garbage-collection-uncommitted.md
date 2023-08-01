@@ -11,8 +11,9 @@ has_children: false
 
 {: .warning-title }
 > Deprecation notice
->
-> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./garbage-collection.md).
+> 
+> This feature will be available up to version 0.9.1 of the lakeFS metadata client. It will be discontinued in subsequent versions.
+> Please visit the new [garbage collection documentation](./garbage-collection.md).
 
 Deletion of objects that were never committed was always a difficulty for lakeFS, see
 [#1933](https://github.com/treeverse/lakeFS/issues/1933) for more details. Examples for
