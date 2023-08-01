@@ -133,6 +133,7 @@ lakefs_client/api/tags_api.py
 lakefs_client/api/templates_api.py
 lakefs_client/api_client.py
 lakefs_client/apis/__init__.py
+lakefs_client/client.py
 lakefs_client/configuration.py
 lakefs_client/exceptions.py
 lakefs_client/model/__init__.py
