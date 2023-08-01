@@ -8,8 +8,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/mitchellh/go-homedir"
@@ -60,45 +58,6 @@ type Bisect struct {
 
 const bisectStartCmdArgs = 2
 
-// bisectStartCmd represents the start command
-var bisectStartCmd = &cobra.Command{
-	Use:   "start <bad ref> <good ref>",
-	Short: "Start a bisect session",
-	Args:  cobra.ExactArgs(bisectStartCmdArgs),
-	Run: func(cmd *cobra.Command, args []string) {
-		badURI := MustParseRefURI("bad", args[0])
-		goodURI := MustParseRefURI("good", args[1])
-		if goodURI.Repository != badURI.Repository {
-			Die("Two references doesn't use the same repository", 1)
-		}
-		repository := goodURI.Repository
-
-		// resolve repository and references
-		client := getClient()
-		ctx := cmd.Context()
-		// check repository exists
-		repoResponse, err := client.GetRepositoryWithResponse(ctx, repository)
-		DieOnErrorOrUnexpectedStatusCode(repoResponse, err, http.StatusOK)
-		if repoResponse.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-		state := &Bisect{
-			Created:    time.Now().UTC(),
-			Repository: repoResponse.JSON200.Id,
-			BadCommit:  resolveCommitOrDie(ctx, client, badURI.Repository, badURI.Ref),
-			GoodCommit: resolveCommitOrDie(ctx, client, goodURI.Repository, goodURI.Ref),
-		}
-		// resolve commits
-		if err := state.Update(ctx, client); err != nil {
-			DieErr(err)
-		}
-		if err := state.Save(); err != nil {
-			DieErr(err)
-		}
-		state.PrintStatus()
-	},
-}
-
 func resolveCommitOrDie(ctx context.Context, client api.ClientWithResponsesInterface, repository, ref string) string {
 	response, err := client.GetCommitWithResponse(ctx, repository, ref)
 	DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusOK)
@@ -129,34 +88,7 @@ func (b *Bisect) PrintStatus() {
 	}
 }
 
-// bisectResetCmd represents the reset command
-var bisectResetCmd = &cobra.Command{
-	Use:   "reset",
-	Short: "Clean up the bisection state",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := BisectRemove()
-		if os.IsNotExist(err) {
-			Die("No active bisect session", 1)
-		}
-		if err != nil {
-			DieErr(err)
-		}
-		fmt.Println("Cleared bisect session")
-	},
-}
-
-// bisectBadCmd represents the bad command
-var bisectBadCmd = &cobra.Command{
-	Use:     "bad",
-	Aliases: []string{"new"},
-	Short:   "Set 'bad' commit that is known to contain the bug",
-	Args:    cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		bisectCmdSelect(BisectSelectBad)
-	},
-}
-
-func bisectCmdSelect(bisectSelect BisectSelect) {
+func runBisectSelect(bisectSelect BisectSelect) {
 	var state Bisect
 	err := state.Load()
 	if os.IsNotExist(err) {
@@ -166,111 +98,6 @@ func bisectCmdSelect(bisectSelect BisectSelect) {
 		DieErr(err)
 	}
 	state.PrintStatus()
-}
-
-// bisectGoodCmd represents the good command
-var bisectGoodCmd = &cobra.Command{
-	Use:     "good",
-	Aliases: []string{"old"},
-	Short:   "Set current commit as 'good' commit that is known to be before the bug was introduced",
-	Args:    cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		bisectCmdSelect(BisectSelectGood)
-	},
-}
-
-var bisectRunCmd = &cobra.Command{
-	Use:   "run <command>",
-	Short: "Bisecting based on command status code",
-	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		var state Bisect
-		err := state.Load()
-		if os.IsNotExist(err) {
-			Die(`You need to start by "bisect start"`, 1)
-		}
-		ctx := cmd.Context()
-		for len(state.Commits) > 1 {
-			h := len(state.Commits) >> 1
-			commit := state.Commits[h]
-
-			fmt.Printf("== Commit [%s] %s\n", commit.Id, commit.Message)
-			c := bisectRunCommand(ctx, commit, args[0], args[1:])
-			var bisectSelect BisectSelect
-			if err := c.Run(); err != nil {
-				bisectSelect = BisectSelectBad
-				fmt.Printf("-- BAD [%s] %s\n", commit.Id, commit.Message)
-			} else {
-				bisectSelect = BisectSelectGood
-				fmt.Printf("-- GOOD [%s] %s\n", commit.Id, commit.Message)
-			}
-			if err := state.SaveSelect(bisectSelect); err != nil {
-				DieErr(err)
-			}
-		}
-		state.PrintStatus()
-	},
-}
-
-func bisectRunCommand(ctx context.Context, commit *api.Commit, name string, args []string) *exec.Cmd {
-	// prepare args
-	replacer := strings.NewReplacer(
-		":BISECT_ID:", commit.Id,
-		":BISECT_MESSAGE:", commit.Message,
-		":BISECT_METARANGE_ID:", commit.MetaRangeId,
-		":BISECT_COMMITTER:", commit.Committer,
-	)
-	cmdArgs := make([]string, 0, len(args))
-	for _, arg := range args {
-		cmdArgs = append(cmdArgs, replacer.Replace(arg))
-	}
-
-	// new command
-	runCommand := exec.CommandContext(ctx, name, cmdArgs...)
-
-	// prepare env - add BISECT_* based on commit
-	runCommand.Env = runCommand.Environ()
-	runCommand.Env = append(runCommand.Env, "BISECT_ID="+commit.Id)
-	runCommand.Env = append(runCommand.Env, "BISECT_MESSAGE="+commit.Message)
-	runCommand.Env = append(runCommand.Env, "BISECT_METARANGE_ID="+commit.MetaRangeId)
-	runCommand.Env = append(runCommand.Env, "BISECT_COMMITTER="+commit.Committer)
-
-	// set output to the process output
-	runCommand.Stdout = os.Stdout
-	runCommand.Stderr = os.Stderr
-	return runCommand
-}
-
-// bisectLogCmd represents the log command
-var bisectLogCmd = &cobra.Command{
-	Use:   "log",
-	Short: "Print out the current bisect state",
-	Run: func(cmd *cobra.Command, args []string) {
-		var state Bisect
-		err := state.Load()
-		if os.IsNotExist(err) {
-			Die(`You need to start by "bisect start"`, 1)
-		}
-		state.PrintStatus()
-	},
-}
-
-// bisectViewCmd represents the log command
-var bisectViewCmd = &cobra.Command{
-	Use:   "view",
-	Short: "Current bisect commits",
-	Run: func(cmd *cobra.Command, args []string) {
-		var state Bisect
-		err := state.Load()
-		if os.IsNotExist(err) {
-			Die(`You need to start by "bisect start"`, 1)
-		}
-		if len(state.Commits) == 0 {
-			state.PrintStatus()
-			return
-		}
-		Write(bisectCommitTemplate, state.Commits)
-	},
 }
 
 const bisectFilePath = "~/.lakectl.bisect.json"
@@ -362,12 +189,4 @@ func (b *Bisect) SaveSelect(sel BisectSelect) error {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(bisectCmd)
-
-	bisectCmd.AddCommand(bisectStartCmd)
-	bisectCmd.AddCommand(bisectResetCmd)
-	bisectCmd.AddCommand(bisectBadCmd)
-	bisectCmd.AddCommand(bisectGoodCmd)
-	bisectCmd.AddCommand(bisectRunCmd)
-	bisectCmd.AddCommand(bisectViewCmd)
-	bisectCmd.AddCommand(bisectLogCmd)
 }

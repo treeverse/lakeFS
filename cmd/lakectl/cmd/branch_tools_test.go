@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/cmd/lakectl/cmd"
-
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
 )
