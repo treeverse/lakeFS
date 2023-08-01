@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -27,13 +28,13 @@ var cherryPick = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ref := MustParseRefURI("ref", args[0])
 		branch := MustParseBranchURI("branch", args[1])
-		Fmt("Branch: %s\n", branch.String())
+		fmt.Println("Branch:", branch)
 
 		if branch.Repository != ref.Repository {
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
 		}
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
-		parentNumber, _ := cmd.Flags().GetInt(ParentNumberFlagName)
+		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
 		if hasParentNumber {
 			if parentNumber <= 0 {
 				Die("parent number must be positive, if specified", 1)

@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -18,6 +20,12 @@ type Detailed interface {
 type CredentialsError struct {
 	Message string
 	Details string
+}
+
+var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
+
+func IsValidAccessKeyID(accessKeyID string) bool {
+	return accessKeyRegexp.MatchString(accessKeyID)
 }
 
 func (e *CredentialsError) Error() string { return e.Message }
@@ -154,4 +162,9 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(doctorCmd)
+}
+
+func IsValidSecretAccessKey(secretAccessKey string) bool {
+	_, err := base64.StdEncoding.DecodeString(secretAccessKey)
+	return err == nil && len(secretAccessKey) == 40
 }
