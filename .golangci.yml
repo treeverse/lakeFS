@@ -18,8 +18,7 @@ linters:
     - gofmt
     - goimports
     - gomnd
-    # temporary disable for Fmt until we remove this func
-    #- goprintffuncname
+    - goprintffuncname
     - gosec
     - gosimple
     - govet

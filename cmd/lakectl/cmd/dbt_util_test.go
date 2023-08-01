@@ -22,10 +22,11 @@ type DummyCommandExecutor struct {
 var errDummyCommandFailed = errors.New("boom")
 
 func (dce DummyCommandExecutor) ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
-	sb := strings.Builder{}
+	var sb strings.Builder
 	sb.WriteString(dce.output)
 	if len(cmd.Env) > 0 && dce.envReturn {
-		sb.WriteString(fmt.Sprintf(" %s", cmd.Env[len(cmd.Env)-1]))
+		sb.WriteString(" ")
+		sb.WriteString(cmd.Env[len(cmd.Env)-1])
 	}
 	return []byte(sb.String()), dce.err
 }

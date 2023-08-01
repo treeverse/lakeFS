@@ -91,7 +91,8 @@ var importCmd = &cobra.Command{
 		for {
 			select {
 			case <-sigCtx.Done():
-				Fmt("\nCanceling import\n")
+				fmt.Println()
+				fmt.Println("Canceling import")
 				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 				Die("Import Canceled", 1)
