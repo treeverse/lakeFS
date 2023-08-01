@@ -18,9 +18,9 @@ const (
 // Index defines the structure of the lakefs local reference file
 // consisting of the information linking local directory with lakefs path
 type Index struct {
-	root    string
+	root    string `yaml:"-"`
 	PathURI string `yaml:"src"`
-	Head    string `yaml:"at_head"`
+	AtHead  string `yaml:"at_head"`
 }
 
 func (l *Index) LocalPath() string {
@@ -34,7 +34,7 @@ func (l *Index) GetCurrentURI() (*uri.URI, error) {
 func WriteIndex(path string, remote *uri.URI, atHead string) error {
 	idx := &Index{
 		PathURI: remote.String(),
-		Head:    atHead,
+		AtHead:  atHead,
 	}
 	data, err := yaml.Marshal(idx)
 	if err != nil {

@@ -11,22 +11,22 @@ import (
 )
 
 const (
-	initMinArgs = 1
-	initMaxArgs = 2
+	localInitMinArgs = 1
+	localInitMaxArgs = 2
 )
 
 var localInitCmd = &cobra.Command{
 	Use:   "init <path uri> [directory]",
 	Short: "set a local directory to sync with a lakeFS path",
-	Args:  cobra.RangeArgs(initMinArgs, initMaxArgs),
+	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote := MustParsePathURI("path", args[0])
 		dir := "."
-		if len(args) == initMaxArgs {
+		if len(args) == localInitMaxArgs {
 			dir = args[1]
 		}
 		flagSet := cmd.Flags()
-		force := MustBool(flagSet.GetBool("force"))
+		force := Must(flagSet.GetBool("force"))
 
 		localPath, err := filepath.Abs(dir)
 		if err != nil {

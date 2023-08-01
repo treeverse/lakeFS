@@ -72,7 +72,7 @@ func updateIgnoreFileSection(contents []byte, marker string, entries []string) [
 	scanner := bufio.NewScanner(bytes.NewReader(contents))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		newContent = append(newContent, []byte(line+"\n")...)
+		newContent = append(newContent, []byte(fmt.Sprintln(line))...)
 		if line == marker {
 			for scanner.Scan() {
 				line = strings.TrimSpace(scanner.Text())
@@ -80,10 +80,10 @@ func updateIgnoreFileSection(contents []byte, marker string, entries []string) [
 					break
 				}
 				if !slices.Contains(entries, line) {
-					newContent = append(newContent, []byte(line+"\n")...)
+					newContent = append(newContent, []byte(fmt.Sprintln(line))...)
 				}
 			}
-			buffer := strings.Join(entries, "\n") + "\n"
+			buffer := strings.Join(entries, fmt.Sprintln("")) + fmt.Sprintln("")
 			newContent = append(newContent, buffer...)
 		}
 	}
@@ -127,7 +127,7 @@ func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (stri
 		}
 		idx := bytes.Index(ignoreFile, []byte(markerLine))
 		if idx == -1 {
-			section := markerLine + "\n" + strings.Join(ignoreEntries, "\n") + "\n"
+			section := fmt.Sprintln(markerLine) + strings.Join(ignoreEntries, fmt.Sprintln("")) + fmt.Sprintln("")
 			ignoreFile = append(ignoreFile, section...)
 		} else { // Update section
 			ignoreFile = updateIgnoreFileSection(ignoreFile, markerLine, ignoreEntries)
@@ -136,7 +136,7 @@ func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (stri
 	case !os.IsNotExist(err):
 		return "", err
 	default: // File doesn't exist
-		section := markerLine + "\n" + strings.Join(ignoreEntries, "\n") + "\n"
+		section := fmt.Sprintln(markerLine) + strings.Join(ignoreEntries, fmt.Sprintln("")) + fmt.Sprintln("")
 		ignoreFile = append(ignoreFile, []byte(section)...)
 	}
 
