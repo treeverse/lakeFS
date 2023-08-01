@@ -23,7 +23,7 @@ var branchCreateCmd = &cobra.Command{
 		if err != nil {
 			DieFmt("failed to parse source URI: %s", err)
 		}
-		fmt.Printf("Source ref: %s\n", sourceURI)
+		fmt.Println("Source ref:", sourceURI)
 		if sourceURI.Repository != u.Repository {
 			Die("source branch must be in the same repository", 1)
 		}

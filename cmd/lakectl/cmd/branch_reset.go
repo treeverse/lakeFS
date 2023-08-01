@@ -22,7 +22,7 @@ var branchResetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseBranchURI("branch", args[0])
-		fmt.Printf("Branch: %s\n", u)
+		fmt.Println("Branch:", u)
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {
 			DieErr(err)

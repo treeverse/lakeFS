@@ -38,7 +38,7 @@ generate_schema_name.sql
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("macro created in path %s\n", macroPath)
+		fmt.Println("macro created in path", macroPath)
 	},
 }
 

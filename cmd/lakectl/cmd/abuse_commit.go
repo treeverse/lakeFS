@@ -26,7 +26,7 @@ var abuseCommitCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
 
-		fmt.Printf("Source branch: %s\n", u)
+		fmt.Println("Source branch:", u)
 
 		generator := stress.NewGenerator("commit", 1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 

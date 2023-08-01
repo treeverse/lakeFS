@@ -25,7 +25,7 @@ var repoCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		fmt.Printf("Repository: %s\n", u)
+		fmt.Println("Repository:", u)
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)

@@ -20,7 +20,7 @@ var branchDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := MustParseBranchURI("branch", args[0])
-		fmt.Printf("Branch: %s\n", u)
+		fmt.Println("Branch:", u)
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},

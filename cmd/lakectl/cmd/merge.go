@@ -38,7 +38,8 @@ var mergeCmd = &cobra.Command{
 		sourceRef := MustParseRefURI("source ref", args[0])
 		destinationRef := MustParseRefURI("destination ref", args[1])
 		strategy := Must(cmd.Flags().GetString("strategy"))
-		fmt.Printf("Source: %s\nDestination: %s\n", sourceRef, destinationRef)
+		fmt.Println("Source:", sourceRef)
+		fmt.Println("Destination:", destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}

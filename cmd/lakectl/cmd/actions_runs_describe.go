@@ -31,7 +31,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 		u := MustParseRepoURI("repository", args[0])
 		pagination := api.Pagination{HasMore: true}
 
-		fmt.Printf("Repository: %s\n", u)
+		fmt.Println("Repository:", u)
 		runID := args[1]
 
 		client := getClient()

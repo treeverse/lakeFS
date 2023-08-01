@@ -54,7 +54,7 @@ var diffCmd = &cobra.Command{
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
 			branchURI := MustParseRefURI("ref", args[0])
-			fmt.Printf("Ref: %s\n", branchURI)
+			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}

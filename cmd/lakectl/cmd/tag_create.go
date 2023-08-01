@@ -24,7 +24,7 @@ var tagCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tagURI := MustParseRefURI("tag uri", args[0])
 		commitURI := MustParseRefURI("commit uri", args[1])
-		fmt.Printf("Tag ref: %s\n", tagURI)
+		fmt.Println("Tag ref:", tagURI)
 
 		client := getClient()
 		ctx := cmd.Context()

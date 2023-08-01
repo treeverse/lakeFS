@@ -41,7 +41,7 @@ var metastoreDiffCmd = &cobra.Command{
 		} else {
 			fmt.Println("Columns")
 			for _, column := range diff.ColumnsDiff {
-				fmt.Printf("%s\n", column)
+				fmt.Println(column)
 			}
 		}
 		if len(diff.PartitionDiff) == 0 {
@@ -49,7 +49,7 @@ var metastoreDiffCmd = &cobra.Command{
 		} else {
 			fmt.Println("Partitions")
 			for _, partition := range diff.PartitionDiff {
-				fmt.Printf("%s\n", partition)
+				fmt.Println(partition)
 			}
 		}
 	},

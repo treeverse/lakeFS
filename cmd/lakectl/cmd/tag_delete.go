@@ -19,7 +19,7 @@ var tagDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := MustParseRefURI("tag", args[0])
-		fmt.Printf("Tag ref: %s\n", u)
+		fmt.Println("Tag ref:", u)
 
 		ctx := cmd.Context()
 		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)

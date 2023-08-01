@@ -28,7 +28,7 @@ var cherryPick = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ref := MustParseRefURI("ref", args[0])
 		branch := MustParseBranchURI("branch", args[1])
-		fmt.Printf("Branch: %s\n", branch)
+		fmt.Println("Branch:", branch)
 
 		if branch.Repository != ref.Repository {
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)

@@ -18,7 +18,7 @@ var catHookOutputCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseRepoURI("repository", args[0])
-		fmt.Printf("Repository: %s\n", u)
+		fmt.Println("Repository:", u)
 		runID := args[1]
 		hookRunID := args[2]
 		client := getClient()

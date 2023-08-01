@@ -29,7 +29,7 @@ var branchRevertCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		u := MustParseBranchURI("branch", args[0])
-		fmt.Printf("Branch: %s\n", u)
+		fmt.Println("Branch:", u)
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
 		if hasParentNumber && parentNumber <= 0 {

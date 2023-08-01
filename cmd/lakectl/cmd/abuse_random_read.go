@@ -27,7 +27,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		fromFile := Must(cmd.Flags().GetString("from-file"))
 
-		fmt.Printf("Source ref: %s\n", u)
+		fmt.Println("Source ref:", u)
 		// read the input file
 		keys, err := readLines(fromFile)
 		if err != nil {

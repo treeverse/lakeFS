@@ -16,14 +16,14 @@ var branchShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseBranchURI("branch", args[0])
-		fmt.Printf("Branch: %s\n", u)
+		fmt.Println("Branch:", u)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
 		branch := resp.JSON200
-		fmt.Printf("Commit ID: %s\n", branch.CommitId)
+		fmt.Println("Commit ID:", branch.CommitId)
 	},
 }
 
