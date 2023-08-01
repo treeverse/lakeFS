@@ -54,15 +54,15 @@ var diffCmd = &cobra.Command{
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
 			branchURI := MustParseRefURI("ref", args[0])
-			Fmt("Ref: %s\n", branchURI.String())
+			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}
 
-		twoWay, _ := cmd.Flags().GetBool(twoWayFlagName)
+		twoWay := Must(cmd.Flags().GetBool(twoWayFlagName))
 		leftRefURI := MustParseRefURI("left ref", args[0])
 		rightRefURI := MustParseRefURI("right ref", args[1])
-		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		fmt.Printf("Left ref: %s\nRight ref: %s\n", leftRefURI, rightRefURI)
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
@@ -172,6 +172,7 @@ func FmtDiff(diff api.Diff, withDirection bool) {
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(diffCmd)
 	diffCmd.Flags().Bool(twoWayFlagName, false, "Use two-way diff: show difference between the given refs, regardless of a common ancestor.")
+
+	rootCmd.AddCommand(diffCmd)
 }

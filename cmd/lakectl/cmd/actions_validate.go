@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -18,7 +19,7 @@ var actionsValidateCmd = &cobra.Command{
 	Args:    cmdutils.ValidationChain(cobra.ExactArgs(actionsValidateRequiredArgs)),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := args[0]
-		reader := OpenByPath(file)
+		reader := Must(OpenByPath(file))
 		defer func() { _ = reader.Close() }()
 
 		bytes, err := io.ReadAll(reader)
@@ -29,7 +30,7 @@ var actionsValidateCmd = &cobra.Command{
 		if _, err := actions.ParseAction(bytes); err != nil {
 			DieErr(err)
 		}
-		Fmt("File validated successfully: '%s'\n", file)
+		fmt.Printf("File validated successfully: '%s'\n", file)
 	},
 }
 

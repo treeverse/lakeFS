@@ -12,9 +12,7 @@ import (
 	"strings"
 )
 
-const (
-	resourceJSONKeys = "alias,schema"
-)
+const resourceJSONKeys = "alias,schema"
 
 type DBTResource struct {
 	Schema string `json:"schema"`

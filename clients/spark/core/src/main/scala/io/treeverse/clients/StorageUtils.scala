@@ -153,20 +153,15 @@ object StorageUtils {
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
       var request = new GetBucketLocationRequest(bucket)
-      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(15).intValue())
+      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(1).intValue())
       val bucketRegion = client.getBucketLocation(request)
-      val region = Region.fromValue(bucketRegion)
-      // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
-      // https://github.com/aws/aws-sdk-java/issues/1470.
-      // "us-east-1" was previously called "US Standard". This resulted in a return value of "US" when
-      // calling `client.getBucketLocation(bucket)`.
-      if (region.equals(Region.US_Standard)) "us-east-1"
-      else region.toString
+      Region.fromValue(bucketRegion).toAWSRegion().getName()
     }
   }
 }
 
 class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
 
   private val clock = java.time.Clock.systemDefaultZone
@@ -180,15 +175,15 @@ class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
     exception match {
       case ce: SdkClientException =>
         if (ce.getMessage contains XML_PARSE_BROKEN) {
-          println(s"Retry $originalRequest @$now: Received non-XML: $ce")
+          logger.info(s"Retry $originalRequest @$now: Received non-XML: $ce")
         } else if (RetryUtils.isThrottlingException(ce)) {
-          println(s"Retry $originalRequest @$now: Throttled: $ce")
+          logger.info(s"Retry $originalRequest @$now: Throttled: $ce")
         } else {
-          println(s"Retry $originalRequest @$now: Other client exception: $ce")
+          logger.info(s"Retry $originalRequest @$now: Other client exception: $ce")
         }
         true
       case e => {
-        println(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
+        logger.info(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
         super.shouldRetry(originalRequest, exception, retriesAttempted)
       }
     }
