@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -26,7 +27,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		fromFile := Must(cmd.Flags().GetString("from-file"))
 
-		fmt.Printf("Source ref: %s\n", u.String())
+		fmt.Println("Source ref:", u)
 		// read the input file
 		keys, err := readLines(fromFile)
 		if err != nil {
@@ -64,6 +65,28 @@ var abuseRandomReadsCmd = &cobra.Command{
 			}
 		})
 	},
+}
+
+func readLines(path string) (lines []string, err error) {
+	reader := Must(OpenByPath(path))
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				err = fmt.Errorf("%w, and while closing %s", err, closeErr)
+			}
+		}
+	}()
+	scanner := bufio.NewScanner(reader)
+	lines = make([]string, 0)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err = scanner.Err(); err != nil {
+		return nil, err
+	}
+	return lines, nil
 }
 
 //nolint:gochecknoinits

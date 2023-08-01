@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ var actionsValidateCmd = &cobra.Command{
 		if _, err := actions.ParseAction(bytes); err != nil {
 			DieErr(err)
 		}
-		Fmt("File validated successfully: '%s'\n", file)
+		fmt.Printf("File validated successfully: '%s'\n", file)
 	},
 }
 
