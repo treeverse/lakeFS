@@ -271,7 +271,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case destRange.BeforeRange(sourceRange) && (m.strategy != graveler.MergeStrategyImport || m.validImportRange()):
+	case destRange.BeforeRange(sourceRange) && m.validWritingRange(m.dest):
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -371,7 +371,7 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 	}
 
 	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 &&
-		(m.strategy != graveler.MergeStrategyImport || m.validImportRange()) { // dest range before source
+		m.validWritingRange(m.dest) { // dest range before source
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -481,12 +481,14 @@ func (m *merger) merge() error {
 	return nil
 }
 
-func (m *merger) validImportRange() bool {
-	pi, ok := m.dest.(ImportIterator)
-	if ok && pi.IsCurrentPathIncludedInRange() {
-		return false
+func (m *merger) validWritingRange(it Iterator) bool {
+	switch it.(type) {
+	case ImportIterator:
+		imIt, _ := it.(ImportIterator)
+		return !imIt.IsCurrentPathIncludedInRange()
+	default:
+		return true
 	}
-	return true
 }
 
 func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {

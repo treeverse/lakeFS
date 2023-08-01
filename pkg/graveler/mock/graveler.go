@@ -2455,6 +2455,21 @@ func (mr *MockCommittedManagerMockRecorder) GetRangeIDByKey(ctx, ns, id, key int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeIDByKey", reflect.TypeOf((*MockCommittedManager)(nil).GetRangeIDByKey), ctx, ns, id, key)
 }
 
+// Import mocks base method.
+func (m *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix) (graveler.MetaRangeID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Import", ctx, ns, destination, source, prefixes)
+	ret0, _ := ret[0].(graveler.MetaRangeID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Import indicates an expected call of Import.
+func (mr *MockCommittedManagerMockRecorder) Import(ctx, ns, destination, source, prefixes interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockCommittedManager)(nil).Import), ctx, ns, destination, source, prefixes)
+}
+
 // List mocks base method.
 func (m *MockCommittedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
 	m.ctrl.T.Helper()
@@ -2471,18 +2486,18 @@ func (mr *MockCommittedManagerMockRecorder) List(ctx, ns, rangeID interface{}) *
 }
 
 // Merge mocks base method.
-func (m *MockCommittedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, prefixes []graveler.Prefix) (graveler.MetaRangeID, error) {
+func (m *MockCommittedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Merge", ctx, ns, destination, source, base, strategy, prefixes)
+	ret := m.ctrl.Call(m, "Merge", ctx, ns, destination, source, base, strategy)
 	ret0, _ := ret[0].(graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Merge indicates an expected call of Merge.
-func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, base, strategy, prefixes interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, base, strategy interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockCommittedManager)(nil).Merge), ctx, ns, destination, source, base, strategy, prefixes)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockCommittedManager)(nil).Merge), ctx, ns, destination, source, base, strategy)
 }
 
 // WriteMetaRange mocks base method.
