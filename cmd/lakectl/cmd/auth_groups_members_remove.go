@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var authGroupsRemoveMember = &cobra.Command{
+var authGroupsMembersRemove = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove a user from a group",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -23,10 +23,10 @@ var authGroupsRemoveMember = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	authGroupsRemoveMember.Flags().String("id", "", "Group identifier")
-	authGroupsRemoveMember.Flags().String("user", "", "Username (email for password-based users, default: current user)")
-	_ = authGroupsRemoveMember.MarkFlagRequired("id")
-	_ = authGroupsRemoveMember.MarkFlagRequired("user")
+	authGroupsMembersRemove.Flags().String("id", "", "Group identifier")
+	authGroupsMembersRemove.Flags().String("user", "", "Username (email for password-based users, default: current user)")
+	_ = authGroupsMembersRemove.MarkFlagRequired("id")
+	_ = authGroupsMembersRemove.MarkFlagRequired("user")
 
-	authGroupsMembersCmd.AddCommand(authGroupsRemoveMember)
+	authGroupsMembersCmd.AddCommand(authGroupsMembersRemove)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
-var authGroupsListMembers = &cobra.Command{
+var authGroupsMembersList = &cobra.Command{
 	Use:   "list",
 	Short: "List users in a group",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -39,9 +39,9 @@ var authGroupsListMembers = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	authGroupsListMembers.Flags().String("id", "", "Group identifier")
-	_ = authGroupsListMembers.MarkFlagRequired("id")
-	addPaginationFlags(authGroupsListMembers)
+	authGroupsMembersList.Flags().String("id", "", "Group identifier")
+	_ = authGroupsMembersList.MarkFlagRequired("id")
+	addPaginationFlags(authGroupsMembersList)
 
-	authGroupsMembersCmd.AddCommand(authGroupsListMembers)
+	authGroupsMembersCmd.AddCommand(authGroupsMembersList)
 }
