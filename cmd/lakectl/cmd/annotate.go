@@ -29,8 +29,8 @@ var annotateCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
-		recursive, _ := cmd.Flags().GetBool("recursive")
-		firstParent, _ := cmd.Flags().GetBool("first-parent")
+		recursive := Must(cmd.Flags().GetBool("recursive"))
+		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		client := getClient()
 		pfx := api.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()

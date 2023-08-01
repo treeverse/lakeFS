@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
@@ -16,49 +15,73 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func readStdin() (pebblesst.ReadableFile, error) {
-	// test if stdin is seekable
-	if isSeekable(os.Stdin) {
-		return os.Stdin, nil
-	}
-	// not seekable - read it into a temp file
-	fh, err := os.CreateTemp("", "cat-sst-*")
-	if err != nil {
-		return nil, fmt.Errorf("error creating tempfile: %w", err)
-	}
-	_, err = io.Copy(fh, os.Stdin)
-	if err != nil {
-		return nil, fmt.Errorf("error copying from stdin to tempfile: %w", err)
-	}
-	err = os.Remove(fh.Name())
-	if err != nil {
-		return nil, fmt.Errorf("could not unlink temp file %s: %w", fh.Name(), err)
-	}
-	return fh, nil
+const sstCatTemplate = `{{ .Table | table }}`
+
+var catSstCmd = &cobra.Command{
+	Use:    "cat-sst <sst-file>",
+	Short:  "Explore lakeFS .sst files",
+	Hidden: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		amount := Must(cmd.Flags().GetInt("amount"))
+		filePath := Must(cmd.Flags().GetString("file"))
+		iter, props, err := getIterFromFile(filePath)
+		if err != nil {
+			DieErr(err)
+		}
+		defer iter.Close()
+
+		// get props
+		typ, ok := props[committed.MetadataTypeKey]
+		if !ok {
+			DieFmt("could not determine sstable file type")
+		}
+
+		var table *Table
+		switch typ {
+		case committed.MetadataMetarangesType:
+			table, err = formatMetaRangeSSTable(iter, amount)
+		case committed.MetadataRangesType:
+			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
+		default:
+			DieFmt("unknown sstable file type: %s", typ)
+		}
+		if err != nil {
+			DieErr(err)
+		}
+
+		// write to stdout
+		Write(sstCatTemplate, struct {
+			Table *Table
+		}{table})
+	},
 }
 
 func getIterFromFile(filePath string) (committed.ValueIterator, map[string]string, error) {
-	var file pebblesst.ReadableFile
-	var err error
-	// read from stdin (file has to be seekable/stat-able so we have this weird wrapper
-	if filePath == "-" {
-		file, err = readStdin()
-	} else {
-		file, err = os.Open(filePath)
-	}
+	// read from stdin (file has to be seekable/stat-able, so we have this weird wrapper
+	file, err := OpenByPath(filePath)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer func() { _ = file.Close() }()
+
+	// read all content
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// read file descriptor
-	reader, err := pebblesst.NewReader(file, pebblesst.ReaderOptions{})
+	reader, err := pebblesst.NewMemReader(content, pebblesst.ReaderOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// create an iterator over the whole thing
 	iter, err := reader.NewIter(nil, nil)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// wrap it in a Graveler iterator
 	dummyDeref := func() error { return nil }
 	return sstable.NewIterator(iter, dummyDeref), reader.Properties.UserProperties, nil
@@ -251,52 +274,11 @@ func formatMetaRangeSSTable(iter committed.ValueIterator, amount int) (*Table, e
 	}, nil
 }
 
-var sstCatTemplate = `{{ .Table | table }}`
-
-var sstCmd = &cobra.Command{
-	Use:    "cat-sst <sst-file>",
-	Short:  "Explore lakeFS .sst files",
-	Hidden: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		filePath, _ := cmd.Flags().GetString("file")
-		iter, props, err := getIterFromFile(filePath)
-		if err != nil {
-			DieErr(err)
-		}
-		defer iter.Close()
-
-		// get props
-		typ, ok := props[committed.MetadataTypeKey]
-		if !ok {
-			DieFmt("could not determine sstable file type")
-		}
-
-		var table *Table
-		switch typ {
-		case committed.MetadataMetarangesType:
-			table, err = formatMetaRangeSSTable(iter, amount)
-		case committed.MetadataRangesType:
-			table, err = formatRangeSSTable(iter, amount, props[graveler.EntityTypeKey])
-		default:
-			DieFmt("unknown sstable file type: %s", typ)
-		}
-		if err != nil {
-			DieErr(err)
-		}
-
-		// write to stdout
-		Write(sstCatTemplate, struct {
-			Table *Table
-		}{table})
-	},
-}
-
 //nolint:gochecknoinits
 func init() {
-	sstCmd.Flags().Int("amount", -1, "how many records to return, or -1 for all records")
-	sstCmd.Flags().StringP("file", "f", "", "path to an sstable file, or \"-\" for stdin")
-	_ = sstCmd.MarkFlagRequired("file")
+	catSstCmd.Flags().Int("amount", -1, "how many records to return, or -1 for all records")
+	catSstCmd.Flags().StringP("file", "f", "", "path to an sstable file, or \"-\" for stdin")
+	_ = catSstCmd.MarkFlagRequired("file")
 
-	rootCmd.AddCommand(sstCmd)
+	rootCmd.AddCommand(catSstCmd)
 }
