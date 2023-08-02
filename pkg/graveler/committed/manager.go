@@ -189,8 +189,6 @@ func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamesp
 	defer destIt.Close()
 	mctx := mergeContext{
 		destIt:        destIt,
-		srcIt:         nil,
-		baseIt:        nil,
 		strategy:      graveler.MergeStrategyNone,
 		ns:            ns,
 		destinationID: destination,
@@ -210,9 +208,6 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		return source, nil
 	}
 	mctx := mergeContext{
-		destIt:        nil,
-		srcIt:         nil,
-		baseIt:        nil,
 		strategy:      strategy,
 		ns:            ns,
 		destinationID: destination,
@@ -223,10 +218,14 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 }
 
 type mergeContext struct {
-	destIt, srcIt, baseIt           Iterator
-	strategy                        graveler.MergeStrategy
-	ns                              graveler.StorageNamespace
-	destinationID, sourceID, baseID graveler.MetaRangeID
+	destIt        Iterator
+	srcIt         Iterator
+	baseIt        Iterator
+	strategy      graveler.MergeStrategy
+	ns            graveler.StorageNamespace
+	destinationID graveler.MetaRangeID
+	sourceID      graveler.MetaRangeID
+	baseID        graveler.MetaRangeID
 }
 
 func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (graveler.MetaRangeID, error) {
