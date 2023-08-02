@@ -35,7 +35,7 @@ below, "A", "B" and "C" are possible file contents, "X" is a missing file, and "
 
 ## Merge Strategies
 
-The [API]({{ site.baseurl }}/reference/api.html) and [`lakectl`]({{ site.baseurl }}/reference/cli.md#lakectl-merge) allow passing an optional `strategy` flag with the following values:
+The [API]({% link reference/api.md %}) and [`lakectl`][lakectl-merge] allow passing an optional `strategy` flag with the following values:
 
 ### `source-wins`
 
@@ -63,3 +63,6 @@ The strategy will affect all conflicting objects in the merge if it is set. Curr
 
 As a format-agnostic system, lakeFS currently merges by complete files. Format-specific and
 other user-defined merge strategies for handling conflicts are on the roadmap.
+
+
+[lakectl-merge]:  {% link reference/cli.md %}#lakectl-merge

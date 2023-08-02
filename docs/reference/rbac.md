@@ -19,7 +19,7 @@ lakeFS Enterprise
 
 
 {: .note}
-> RBAC is available on [lakeFS Cloud]({{ site.baseurl }}/cloud/) and [lakeFS Enterprise]({{ site.baseurl }}/enterprise/).
+> RBAC is available on [lakeFS Cloud]({% link cloud/ %}) and [lakeFS Enterprise]({% link enterprise/ %}).
 >
 > If you're using the open source version of lakeFS then the [ACL-based authorization mechanism](access-control-lists.html) is an alternative to RBAC.
 

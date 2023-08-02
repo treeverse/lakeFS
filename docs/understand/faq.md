@@ -10,7 +10,7 @@ redirect_from:
 # lakeFS Frequently Asked Questions (FAQ)
 
 ### 1. Is lakeFS open-source?
-lakeFS is completely free, open-source, and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap]({{ site.baseurl }}/project/index.html#roadmap) and a [Slack channel](https://lakefs.io/slack) for open discussions.
+lakeFS is completely free, open-source, and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap][roadmap] and a [Slack channel](https://lakefs.io/slack) for open discussions.
 
 ### 2. How does lakeFS data versioning work?
 lakeFS uses a copy-on-write mechanism to avoid data duplication. For example, creating a new branch is a metadata-only operation: no objects are actually copied. Only when an object changes does lakeFS create another [version of the data](https://lakefs.io/data-versioning/) in the storage. For more information, see [Versioning internals]({% link understand/how/versioning-internals.md %}).
@@ -42,3 +42,4 @@ The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a spe
 </small>
 
 [config-ref]:  {% link reference/configuration.md %}#reference
+[roadmap]:  {% link project/index.md %}#roadmap
