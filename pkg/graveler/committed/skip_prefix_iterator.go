@@ -48,8 +48,7 @@ func (ipi *SkipPrefixIterator) SeekGE(id graveler.Key) {
 }
 
 func (ipi *SkipPrefixIterator) Next() bool {
-	hasNext := ipi.rangeIterator.Next()
-	if !hasNext {
+	if !ipi.rangeIterator.Next() {
 		return false
 	}
 	vr, r := ipi.updateValue()
@@ -57,11 +56,7 @@ func (ipi *SkipPrefixIterator) Next() bool {
 
 	if vr == nil && r != nil { // head of range
 		for ipi.IsCurrentRangeBoundedByPrefix() {
-			if ipi.rangeIterator.Err() != nil {
-				return false
-			}
-			hasNext = ipi.rangeIterator.NextRange()
-			if !hasNext {
+			if !ipi.rangeIterator.NextRange() {
 				return false
 			}
 			ipi.updateValue()
@@ -70,11 +65,7 @@ func (ipi *SkipPrefixIterator) Next() bool {
 	} else {
 		prefixLen := len(ipi.prefixes)
 		for vr != nil && ipi.currentPrefixIndex < prefixLen && strings.HasPrefix(vr.Key.String(), string(ipi.prefixes[ipi.currentPrefixIndex])) {
-			if ipi.rangeIterator.Err() != nil {
-				return false
-			}
-			hasNext = ipi.rangeIterator.Next()
-			if !hasNext {
+			if !ipi.rangeIterator.Next() {
 				return false
 			}
 			vr, _ = ipi.updateValue()
@@ -85,23 +76,18 @@ func (ipi *SkipPrefixIterator) Next() bool {
 }
 
 func (ipi *SkipPrefixIterator) NextRange() bool {
-	hasNext := ipi.rangeIterator.NextRange()
-	if !hasNext {
+	if !ipi.rangeIterator.NextRange() {
 		return false
 	}
 	ipi.updateValue()
 	ipi.updatePrefix()
 
 	for ipi.IsCurrentRangeBoundedByPrefix() {
-		if ipi.rangeIterator.Err() != nil {
-			return false
-		}
-		hasNext = ipi.rangeIterator.NextRange()
-		if !hasNext {
+		if !ipi.rangeIterator.NextRange() {
 			return false
 		}
 		ipi.updateValue()
-		ipi.currentPrefixIndex++
+		ipi.updatePrefix()
 	}
 	return true
 }
@@ -114,7 +100,7 @@ func (ipi *SkipPrefixIterator) updatePrefix() {
 	if ipi.currentRangeValue.vr != nil {
 		currMinKey = string(ipi.currentRangeValue.vr.Key)
 	}
-	// If the current prefix is smaller or isn't the prefix of the currentMinKey, get the next prefix.
+	// If the current prefix is smaller and isn't the prefix of the currentMinKey, get the next prefix.
 	// By the end of this loop, the examined prefix will either be the prefix of the currentMinKey, or
 	// lexicographically bigger than it.
 	for string(ipi.prefixes[ipi.currentPrefixIndex]) < currMinKey &&
