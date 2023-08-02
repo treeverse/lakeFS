@@ -64,7 +64,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
 }
 ```
 
-💡 You can also use lakeFS with PostgreSQL instead of DynamoDB! See the [configuration reference]({{ site.baseurl }}/reference/configuration.md) for more information.
+💡 You can also use lakeFS with PostgreSQL instead of DynamoDB! See the [configuration reference]({% link reference/configuration.md %}) for more information.
 {: .note }
 
 ## Run the lakeFS server
@@ -93,9 +93,9 @@ Connect to your EC2 instance using SSH:
    blockstore:
      type: s3
    ```
-1. [Download the binary]({{ site.baseurl }}/index.md#downloads) to the EC2 instance.
+1. [Download the binary]({% link index.md %}#downloads}) to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
-  
+
    ```sh
    lakefs --config config.yaml run
    ```
@@ -131,7 +131,7 @@ To install lakeFS with Helm:
    ```
 1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
 
-   The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
+   The `lakefsConfig` parameter is the lakeFS configuration documented [here]({% link reference/configuration.md%}) but without sensitive information.
    Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
    {: .note }
 
