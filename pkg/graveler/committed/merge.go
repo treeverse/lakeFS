@@ -482,10 +482,9 @@ func (m *merger) merge() error {
 }
 
 func (m *merger) validWritingRange(it Iterator) bool {
-	switch it.(type) {
+	switch v := it.(type) {
 	case ImportIterator:
-		imIt, _ := it.(ImportIterator)
-		return !imIt.IsCurrentPrefixIncludedInRange()
+		return !v.IsCurrentPrefixIncludedInRange()
 	default:
 		return true
 	}
