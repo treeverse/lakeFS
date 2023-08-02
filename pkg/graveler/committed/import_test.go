@@ -60,7 +60,7 @@ func Test_import(t *testing.T) {
 			},
 		},
 		{
-			name: "dest range smaller than compared path",
+			name: "dest range smaller than compared prefix",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "b/1-b/2", MinKey: committed.Key("b/1"), MaxKey: committed.Key("b/2"), Count: 2, EstimatedSize: 1024},
@@ -160,7 +160,7 @@ func Test_import(t *testing.T) {
 			}},
 		},
 		{
-			name: "dest range is bounded by compared path",
+			name: "dest range is bounded by compared prefix",
 			sourceRange: newTestMetaRange([]testRange{
 				{
 					rng: committed.Range{ID: "a/4-a/8", MinKey: committed.Key("a/4"), MaxKey: committed.Key("a/8"), Count: 5, EstimatedSize: 2560},
@@ -174,6 +174,58 @@ func Test_import(t *testing.T) {
 					rng: committed.Range{ID: "a/1-a/6", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/6"), Count: 6, EstimatedSize: 3072},
 					records: []testValueRecord{
 						{"a/1", "a1"}, {"a/2", "a2"}, {"a/3", "a3"}, {"a/4", "a4"}, {"a/5", "a5"}, {"a/6", "a6"},
+					},
+				},
+				{
+					rng: committed.Range{ID: "b/1-b/6", MinKey: committed.Key("b/1"), MaxKey: committed.Key("b/6"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{
+						{"b/1", "b1"}, {"b/2", "b2"}, {"b/3", "b3"}, {"b/4", "b4"}, {"b/5", "b5"}, {"b/6", "b6"},
+					},
+				},
+			}),
+			prefixes: []graveler.Prefix{
+				"a",
+			},
+			expectedResult: []testRunResult{{
+				expectedActions: []writeAction{
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "a/4-a/8", MinKey: committed.Key("a/4"), MaxKey: committed.Key("a/8"), Count: 5, EstimatedSize: 2560},
+					},
+					{
+						action: actionTypeWriteRange,
+						rng:    committed.Range{ID: "b/1-b/6", MinKey: committed.Key("b/1"), MaxKey: committed.Key("b/6"), Count: 2, EstimatedSize: 1024},
+					},
+				},
+			}},
+		},
+		{
+			name: "multiple ranges in dest are bounded by compared prefix",
+			sourceRange: newTestMetaRange([]testRange{
+				{
+					rng: committed.Range{ID: "a/4-a/8", MinKey: committed.Key("a/4"), MaxKey: committed.Key("a/8"), Count: 5, EstimatedSize: 2560},
+					records: []testValueRecord{
+						{"a/4", "a4"}, {"a/5", "a5"}, {"a/6", "a6"}, {"a/7", "a7"}, {"a/8", "a8"},
+					},
+				},
+			}),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng: committed.Range{ID: "a/1-a/6", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/6"), Count: 6, EstimatedSize: 3072},
+					records: []testValueRecord{
+						{"a/1", "a1"}, {"a/2", "a2"}, {"a/3", "a3"}, {"a/4", "a4"}, {"a/5", "a5"}, {"a/6", "a6"},
+					},
+				},
+				{
+					rng: committed.Range{ID: "a/11-a/16", MinKey: committed.Key("a/11"), MaxKey: committed.Key("a/16"), Count: 6, EstimatedSize: 3072},
+					records: []testValueRecord{
+						{"a/11", "a11"}, {"a/12", "a12"}, {"a/13", "a13"}, {"a/14", "a14"}, {"a/15", "a15"}, {"a/16", "a16"},
+					},
+				},
+				{
+					rng: committed.Range{ID: "a/21-a/26", MinKey: committed.Key("a/21"), MaxKey: committed.Key("a/26"), Count: 6, EstimatedSize: 3072},
+					records: []testValueRecord{
+						{"a/21", "a21"}, {"a/22", "a22"}, {"a/23", "a23"}, {"a/24", "a24"}, {"a/25", "a25"}, {"a/26", "a26"},
 					},
 				},
 				{
@@ -226,6 +278,12 @@ func Test_import(t *testing.T) {
 					rng: committed.Range{ID: "a/2-a/5", MinKey: committed.Key("a/2"), MaxKey: committed.Key("a/5"), Count: 4, EstimatedSize: 2048},
 					records: []testValueRecord{
 						{"a/2", "a2"}, {"a/3", "a3"}, {"a/4", "a4"}, {"a/5", "a5"},
+					},
+				},
+				{
+					rng: committed.Range{ID: "a/12-a/15", MinKey: committed.Key("a/12"), MaxKey: committed.Key("a/15"), Count: 4, EstimatedSize: 2048},
+					records: []testValueRecord{
+						{"a/12", "a12"}, {"a/13", "a13"}, {"a/14", "a14"}, {"a/15", "a15"},
 					},
 				},
 				{
