@@ -37,7 +37,7 @@ var localInitCmd = &cobra.Command{
 			DieErr(err)
 		}
 		if IndexExists(localPath) && !force {
-			Die(fmt.Sprintf("directory '%s' already linked to a lakefs path, run command with --force to overwrite", localPath), 1)
+			DieFmt("directory '%s' already linked to a lakefs path, run command with --force to overwrite", localPath)
 		}
 
 		// dereference
@@ -48,10 +48,10 @@ var localInitCmd = &cobra.Command{
 		}
 
 		ignoreFile, err := git.Ignore(localPath, []string{localPath, IndexFileName}, []string{IndexFileName}, IgnoreMarker)
-		if err != nil && !errors.Is(err, git.ErrNotARepository) {
-			DieErr(err)
-		} else if err == nil {
+		if err == nil {
 			fmt.Println("location added to", ignoreFile)
+		} else if !errors.Is(err, git.ErrNotARepository) {
+			DieErr(err)
 		}
 
 		fmt.Printf("Successfully linked local directory '%s' with remote '%s'\n", localPath, remote)
