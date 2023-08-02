@@ -187,7 +187,16 @@ func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamesp
 	}
 	destIt = NewSkipPrefixIterator(prefixes, destIt)
 	defer destIt.Close()
-	mctx := newMergeContext(destIt, nil, nil, graveler.MergeStrategyNone, ns, destination, source, "")
+	mctx := mergeContext{
+		destIt:        destIt,
+		srcIt:         nil,
+		baseIt:        nil,
+		strategy:      graveler.MergeStrategyNone,
+		ns:            ns,
+		destinationID: destination,
+		sourceID:      source,
+		baseID:        "",
+	}
 	return c.merge(ctx, mctx)
 }
 
@@ -200,7 +209,16 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		// changes introduced only on source
 		return source, nil
 	}
-	mctx := newMergeContext(nil, nil, nil, strategy, ns, destination, source, base)
+	mctx := mergeContext{
+		destIt:        nil,
+		srcIt:         nil,
+		baseIt:        nil,
+		strategy:      strategy,
+		ns:            ns,
+		destinationID: destination,
+		sourceID:      source,
+		baseID:        base,
+	}
 	return c.merge(ctx, mctx)
 }
 
@@ -209,19 +227,6 @@ type mergeContext struct {
 	strategy                        graveler.MergeStrategy
 	ns                              graveler.StorageNamespace
 	destinationID, sourceID, baseID graveler.MetaRangeID
-}
-
-func newMergeContext(destIt, srcIt, baseIt Iterator, strategy graveler.MergeStrategy, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) mergeContext {
-	return mergeContext{
-		destIt:        destIt,
-		srcIt:         srcIt,
-		baseIt:        baseIt,
-		strategy:      strategy,
-		ns:            ns,
-		destinationID: destination,
-		sourceID:      source,
-		baseID:        base,
-	}
 }
 
 func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (graveler.MetaRangeID, error) {
