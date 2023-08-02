@@ -93,7 +93,7 @@ Connect to your EC2 instance using SSH:
    blockstore:
      type: s3
    ```
-1. [Download the binary][downloads] to the EC2 instance.
+1. [Download the binary][downloads] to run on the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
 
    ```sh
