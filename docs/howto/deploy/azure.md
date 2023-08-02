@@ -203,7 +203,7 @@ Connect to your VM instance using SSH:
      type: azure
      azure:
    ```
-1. [Download the binary]({{ site.baseurl }}/index.md#downloads) to the VM.
+1. [Download the binary][downloads] to run on the VM.
 1. Run the `lakefs` binary:
   
    ```sh
@@ -294,4 +294,5 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
 {% include_relative includes/setup.md %}
 
-[config-reference-azure-block]:  {% link reference/configuration.md %}#example--azure-blob-storage
+[config-reference-azure-block]:  {% link reference/configuration.md %}#example-azure-blob-storage
+[downloads]:  {% link index.md %}#downloads
