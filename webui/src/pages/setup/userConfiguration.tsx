@@ -61,7 +61,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                             </Form.Group>
 
                             <Form.Group controlId="security-check" className="mt-4 mb-3">
-                                <Form.Check type="checkbox"  checked={checks} onChange={handleChecksChange} label="I'd like to receive security, product, and feature updates" />
+                                <Form.Check type="checkbox"  checked={checks} onChange={handleChecksChange} label="I'd like to receive security, product and feature updates" />
                             </Form.Group>
 
                             {!!setupError && <AlertError error={setupError}/>}
