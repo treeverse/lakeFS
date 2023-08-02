@@ -19,7 +19,7 @@ lakeFS uses a copy-on-write mechanism to avoid data duplication. For example, cr
 We are extremely responsive on our Slack channel, and we make sure to prioritize the most pressing issues for the community. For SLA-based support, please contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
 ### 4. Do you collect data from your active installations?
-We collect anonymous usage statistics to understand the patterns of use and to detect product gaps we may have so we can fix them. This is optional and may be turned off by setting `stats.enabled` to `false`. See the [configuration reference]({% link reference/configuration %}#reference) for more details.
+We collect anonymous usage statistics to understand the patterns of use and to detect product gaps we may have so we can fix them. This is optional and may be turned off by setting `stats.enabled` to `false`. See the [configuration reference][config-ref] for more details.
 
 
 The data we gather is limited to the following:
@@ -40,3 +40,5 @@ The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a spe
 <small>
     [copyright](https://en.wikipedia.org/wiki/Axolotl#/media/File:AxolotlBE.jpg)
 </small>
+
+[config-ref]:  {% link reference/configuration.md %}#reference

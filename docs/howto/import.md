@@ -86,7 +86,7 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 
 </div>
 <div markdown="1" id="azure-storage">
-See [Azure deployment]({% link howto/deploy/azure.md %}#storage-account-credentials) on limitations when using account credentials.
+See [Azure deployment][deploy-azure-storage-account-creds] on limitations when using account credentials.
 
 #### Azure Data Lake Gen2
 
@@ -190,6 +190,9 @@ Another way of getting existing data into a lakeFS repository is by copying it. 
 
 To copy data into lakeFS you can use the following tools:
 
-1. The `lakectl` command line tool - see the [reference]({% link reference/cli.md %}#lakectl-fs-upload) to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
+1. The `lakectl` command line tool - see the [reference][lakectl-fs-upload] to learn more about using it to copy local data into lakeFS. Using `lakectl fs upload --recursive` you can upload multiple objects together from a given directory.
 1. Using [rclone](./copying.md#using-rclone)
 1. Using Hadoop's [DistCp](./copying.md#using-distcp)
+
+[deploy-azure-storage-account-creds]:  {% link howto/deploy/azure.md %}#storage-account-credentials
+[lakectl-fs-upload]:  {% link reference/cli.md %}#lakectl-fs-upload

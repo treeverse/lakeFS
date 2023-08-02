@@ -144,7 +144,7 @@ lakeFS stores metadata in a database for its versioning engine. This is done via
 1. Create a new container in the database and select type 
    `partitionKey` as the Partition key (case sensitive). 
 1. Pass the endpoint, database name and container name to lakeFS as 
-   described in the [configuration guide]({% link reference/configuration.md %}#example--azure-blob-storage).
+   described in the [configuration guide][config-reference-azure-block].
    You can either pass the CosmosDB's account read-write key to lakeFS, or 
    use a managed identity to authenticate to CosmosDB, as described 
    [earlier](#identity-based-credentials).
@@ -293,3 +293,5 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
 
 {% include_relative includes/setup.md %}
+
+[config-reference-azure-block]:  {% link reference/configuration.md %}#example--azure-blob-storage

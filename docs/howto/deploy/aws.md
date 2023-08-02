@@ -93,7 +93,7 @@ Connect to your EC2 instance using SSH:
    blockstore:
      type: s3
    ```
-1. [Download the binary]({% link index.md %}#downloads}) to the EC2 instance.
+1. [Download the binary][downloads] to the EC2 instance.
 1. Run the `lakefs` binary on the EC2 instance:
 
    ```sh
@@ -278,3 +278,5 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 ```
 
 {% include_relative includes/setup.md %}
+
+[downloads]:  {% link index.md %}#downloads
