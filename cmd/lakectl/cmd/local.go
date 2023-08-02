@@ -7,7 +7,7 @@ import (
 var localCmd = &cobra.Command{
 	Use: "local",
 	// TODO: Remove BETA when feature complete
-	Short: "BETA: sync local directories with remote lakeFS locations",
+	Short: "BETA: sync local directories with lakeFS paths",
 }
 
 //nolint:gochecknoinits
