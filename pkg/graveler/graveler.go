@@ -124,7 +124,6 @@ const (
 	MergeStrategyNone MergeStrategy = iota
 	MergeStrategyDest
 	MergeStrategySrc
-
 	MergeStrategyNoneStr     = "default"
 	MergeStrategyDestWinsStr = "dest-wins"
 	MergeStrategySrcWinsStr  = "source-wins"
@@ -210,6 +209,9 @@ type RepositoryID string
 
 // Key represents a logical path for a value
 type Key []byte
+
+// Prefix of a given key
+type Prefix string
 
 // Ref could be a commit ID, a branch name, a Tag
 type Ref string
@@ -564,8 +566,9 @@ type VersionController interface {
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
 
-	// Import Creates a merge-commit using source MetaRangeID into destination branch with a src-wins merge strategy
-	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error)
+	// Import creates a merge-commit in the destination branch using the source MetaRangeID, overriding any destination
+	// range keys that have the same prefix as the source range keys.
+	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
 	DiffUncommitted(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (DiffIterator, error)
@@ -899,6 +902,10 @@ type CommittedManager interface {
 	// returns the ID of the new metarange. This is similar to a git merge operation.
 	// The resulting tree is expected to be immediately addressable.
 	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy) (MetaRangeID, error)
+
+	// Import sync changes from 'source' to 'destination'. All the given prefixes are completely overridden on the resulting metarange. Returns the ID of the new
+	// metarange.
+	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID, prefixes []Prefix) (MetaRangeID, error)
 
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
@@ -2630,7 +2637,7 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 	return err
 }
 
-func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams) (CommitID, error) {
+func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix) (CommitID, error) {
 	var (
 		preRunID string
 		commit   Commit
@@ -2667,7 +2674,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 			"destination_meta_range": toCommit.MetaRangeID,
 		}).Trace("Import")
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, source, "", MergeStrategySrc)
+		metaRangeID, err := g.CommittedManager.Import(ctx, storageNamespace, toCommit.MetaRangeID, source, prefixes)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)

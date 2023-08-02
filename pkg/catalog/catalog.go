@@ -1876,11 +1876,15 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		return importError
 	}
 
+	prefixes := make([]graveler.Prefix, 0, len(params.Paths))
+	for _, ip := range params.Paths {
+		prefixes = append(prefixes, graveler.Prefix(ip.Destination))
+	}
 	commitID, err := c.Store.Import(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
 		Committer: params.Commit.Committer,
 		Message:   params.Commit.CommitMessage,
 		Metadata:  map[string]string(params.Commit.Metadata),
-	})
+	}, prefixes)
 	if err != nil {
 		importError := fmt.Errorf("merge import: %w", err)
 		importManager.SetError(importError)

@@ -86,6 +86,13 @@ func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _,
 	return c.MetaRangeID, nil
 }
 
+func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID, _ []graveler.Prefix) (graveler.MetaRangeID, error) {
+	if c.Err != nil {
+		return "", c.Err
+	}
+	return c.MetaRangeID, nil
+}
+
 func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
 		return "", graveler.DiffSummary{}, c.Err
