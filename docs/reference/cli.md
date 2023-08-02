@@ -2558,6 +2558,64 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 
 
+### lakectl local
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+BETA: sync local directories with lakeFS paths
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for local
+```
+
+
+
+### lakectl local help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type local help [path to command] for full details.
+
+```
+lakectl local help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl local init
+
+set a local directory to sync with a lakeFS path
+
+```
+lakectl local init <path uri> [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --force   Overwrites if directory already linked to a lakeFS path
+  -h, --help    help for init
+  -y, --yes     Automatically say yes to all confirmations
+```
+
+
+
 ### lakectl log
 
 Show log of commits
