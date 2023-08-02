@@ -566,7 +566,8 @@ type VersionController interface {
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error)
 
-	// Import Creates a merge-commit using source MetaRangeID into destination branch with a src-wins merge strategy
+	// Import creates a merge-commit in the destination branch using the source MetaRangeID, overriding any destination
+	// range keys that have the same prefix as the source range keys.
 	Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix) (CommitID, error)
 
 	// DiffUncommitted returns iterator to scan the changes made on the branch
