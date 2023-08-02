@@ -108,6 +108,7 @@ func (ipi *SkipPrefixIterator) updatePrefix() {
 		p := ipi.currentPrefixIndex + 1
 		switch {
 		case p >= len(ipi.prefixes): // No more comparable prefixes
+			ipi.currentPrefixIndex = p // Block next call for updatePrefix
 			return
 		case string(ipi.prefixes[p]) <= string(ipi.currentRangeValue.r.MaxKey):
 			ipi.currentPrefixIndex = p
