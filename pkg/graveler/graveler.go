@@ -902,7 +902,7 @@ type CommittedManager interface {
 	// The resulting tree is expected to be immediately addressable.
 	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy) (MetaRangeID, error)
 
-	// Import sync changes from 'source' to 'destination' based on the given prefixes, and returns the ID of the new
+	// Import sync changes from 'source' to 'destination'. All the given prefixes are completely overridden on the resulting metarange. Returns the ID of the new
 	// metarange.
 	Import(ctx context.Context, ns StorageNamespace, destination, source MetaRangeID, prefixes []Prefix) (MetaRangeID, error)
 
