@@ -187,8 +187,8 @@ func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamesp
 	}
 	destIt = NewSkipPrefixIterator(prefixes, destIt)
 	defer destIt.Close()
-	its := iterators{destIt: destIt}
-	return c.merge(ctx, ns, destination, source, "", its, graveler.MergeStrategyNone)
+	mctx := newMergeContext(destIt, nil, nil, graveler.MergeStrategyNone, ns, destination, source, "")
+	return c.merge(ctx, mctx)
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
@@ -200,46 +200,60 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		// changes introduced only on source
 		return source, nil
 	}
-
-	return c.merge(ctx, ns, destination, source, base, iterators{}, strategy)
+	mctx := newMergeContext(nil, nil, nil, strategy, ns, destination, source, base)
+	return c.merge(ctx, mctx)
 }
 
-type iterators struct {
-	destIt Iterator
-	srcIt  Iterator
-	baseIt Iterator
+type mergeContext struct {
+	destIt, srcIt, baseIt           Iterator
+	strategy                        graveler.MergeStrategy
+	ns                              graveler.StorageNamespace
+	destinationID, sourceID, baseID graveler.MetaRangeID
 }
 
-func (c *committedManager) merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, its iterators, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+func newMergeContext(destIt, srcIt, baseIt Iterator, strategy graveler.MergeStrategy, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) mergeContext {
+	return mergeContext{
+		destIt:        destIt,
+		srcIt:         srcIt,
+		baseIt:        baseIt,
+		strategy:      strategy,
+		ns:            ns,
+		destinationID: destination,
+		sourceID:      source,
+		baseID:        base,
+	}
+}
+
+func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (graveler.MetaRangeID, error) {
 	var err error = nil
-	baseIt := its.baseIt
+	baseIt := mctx.baseIt
 	if baseIt == nil {
-		baseIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
+		baseIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, mctx.ns, mctx.baseID)
 		if err != nil {
 			return "", fmt.Errorf("get base iterator: %w", err)
 		}
 		defer baseIt.Close()
 	}
 
-	destIt := its.destIt
+	destIt := mctx.destIt
 	if destIt == nil {
-		destIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
+		destIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, mctx.ns, mctx.destinationID)
 		if err != nil {
 			return "", fmt.Errorf("get destination iterator: %w", err)
 		}
 		defer destIt.Close()
 	}
 
-	srcIt := its.srcIt
+	srcIt := mctx.srcIt
 	if srcIt == nil {
-		srcIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, ns, source)
+		srcIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, mctx.ns, mctx.sourceID)
 		if err != nil {
 			return "", fmt.Errorf("get source iterator: %w", err)
 		}
 		defer srcIt.Close()
 	}
 
-	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
+	mwWriter := c.metaRangeManager.NewWriter(ctx, mctx.ns, nil)
 	defer func() {
 		err = mwWriter.Abort()
 		if err != nil {
@@ -247,16 +261,16 @@ func (c *committedManager) merge(ctx context.Context, ns graveler.StorageNamespa
 		}
 	}()
 
-	err = Merge(ctx, mwWriter, baseIt, srcIt, destIt, strategy)
+	err = Merge(ctx, mwWriter, baseIt, srcIt, destIt, mctx.strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
-			err = fmt.Errorf("merge ns=%s id=%s: %w", ns, destination, err)
+			err = fmt.Errorf("merge ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)
 		}
 		return "", err
 	}
 	newID, err := mwWriter.Close()
 	if newID == nil {
-		return "", fmt.Errorf("close writer ns=%s id=%s: %w", ns, destination, err)
+		return "", fmt.Errorf("close writer ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)
 	}
 	return *newID, err
 }
