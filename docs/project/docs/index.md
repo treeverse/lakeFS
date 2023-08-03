@@ -12,7 +12,7 @@ redirect_from:
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide]({{ site.baseurl }}/project/contributing.html) for details on contributing to lakeFS in general. 
+Please see [the contributing guide]({% link project/contributing.md %}) for details on contributing to lakeFS in general. 
 
 {% include toc.html %}
 
@@ -66,7 +66,16 @@ Multiple callout types are available. Please review [this page](./callouts.html)
 ## Links 🔗
 
 {% raw %}
-Links should use absolute paths in conjunction with `{{ site.baseurl }}`, e.g. `{{ site.baseurl }}/foo/example.md`.
+
+Links should use absolute paths in conjunction with `{% link %}`, e.g. `{%
+link foo/example.md %}`.
+
+Adding a link with an anchor is a bit trickier.  Create a _reference_ `[link
+text][link-reference]` and then define the anchor at the end of the document:
+```markdown
+[link-reference]:  {% link foo.example.md %}#anchor
+```
+
 {% endraw %}
 
 This is so that references work within the versioned documentation that [is deployed](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/docs-release.yaml#L26-L45).

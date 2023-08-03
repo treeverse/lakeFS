@@ -100,4 +100,4 @@ Both these types of metadata are not only mutable, but also require strong consi
 
 Luckily, this is also much smaller set of metadata compared to the committed metadata.
 
-References and uncommitted metadata are currently stored on a key-value store (See [supported databases]({{ site.baseurl }}/reference/configuration.md)) for consistency guarantees.
+References and uncommitted metadata are currently stored on a key-value store (See [supported databases]({% link reference/configuration.md %})) for consistency guarantees.

@@ -47,8 +47,10 @@ Trust is our core value, and security topics are never taken lightly.
 
 Even though this decision was difficult, it was necessary to continue building a solid foundation for our data version control.
 
-We remain [committed]({{ site.baseurl }}/project/index.md#our-commitment-to-open-source) to making lakeFS the best, most scalable, open source version control system for data practitioners, while not compromising on its security.
+We remain [committed][oss] to making lakeFS the best, most scalable, open source version control system for data practitioners, while not compromising on its security.
 
 
 
 _Oz & Einat_
+
+[oss]: {% link project/index.md %}#our-commitment-to-open-source

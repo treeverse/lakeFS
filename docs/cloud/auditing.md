@@ -14,11 +14,11 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> Auditing is only available for [lakeFS Cloud]({{ site.baseurl }}/cloud/).
+> Auditing is only available for [lakeFS Cloud]({% link cloud/index.md %})
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 
-![audit log]({{ site.baseurl }}/assets/img/audit-log.png)
+![audit log]({% link assets/img/audit-log.png %})
 
 This can be useful for several purposes, including: 
 

@@ -16,16 +16,16 @@ connectors to sync data to your S3 buckets by leveraging lakeFS branches and ato
 
 ## Use cases
 
-You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management]({{ site.baseurl }}/understand/data_lifecycle_management) when ingesting data to S3 using lakeFS:
+You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management]({% link understand/data_lifecycle_management/index.md %}) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
-1. Test incoming data for breaking schema changes using [lakeFS hooks]({{ site.baseurl }}/understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+1. Test incoming data for breaking schema changes using [lakeFS hooks][data-quality-gates].
 1. Prevent consumers from reading partial data from connectors which failed half-way through sync.
 1. Experiment with ingested data on a branch before exposing it.
 
 ## S3 Connector
 
-lakeFS exposes an [S3 Gateway]({{ site.baseurl }}/understand/architecture.md#s3-gateway) that enables applications to communicate
+lakeFS exposes an [S3 Gateway][s3-gateway] that enables applications to communicate
 with lakeFS the same way they would with Amazon S3.
 You can use Airbyte's [S3 Connector](https://airbyte.com/connectors/s3) to upload data to lakeFS.
 
@@ -52,3 +52,6 @@ Set the following parameters when creating a new Destination of type S3:
 The UI configuration will look as follows:
 
 ![S3 Destination Connector Configuration]({{ site.baseurl }}/assets/img/airbyte.png)
+
+[data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates
+[s3-gateway]:  {% link understand/architecture.md %}#s3-gateway

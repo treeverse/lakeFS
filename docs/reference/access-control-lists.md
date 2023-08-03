@@ -10,7 +10,7 @@ redirect_from: /reference/access-control-list.html
 # Access Control Lists (ACLs)
 
 {: .note}
-> ACLs were introduced in their current form in v0.98 of lakeFS as part of [changes to the security model]({{ site.baseurl }}/posts/security_update.html#whats-changing) in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+> ACLs were introduced in their current form in v0.98 of lakeFS as part of [changes to the security model][security-changes] in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
 
 
 {% include toc.html %}
@@ -35,7 +35,7 @@ If you are using ACL then the lakeFS configuration element `auth.ui_config.RBAC`
 
 ## Previous versions of ACL in lakeFS
 
-Here's a comparison of the current ACL model against the behavior prior to [the changes introduced]({{ site.baseurl }}/posts/security_update.html#whats-changing) in v0.98.
+Here's a comparison of the current ACL model against the behavior prior to [the changes introduced][security-changes] in v0.98.
 
 | Permission | Allows                                     | Previous Group Name       | Previous Policy Names and Actions                                                                                                                                                                                                                                                                                                                                                | 
 |------------|--------------------------------------------|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -70,3 +70,5 @@ The upgrade will detach every directly attached policy from users
 Note that moving to ACL from RBAC may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).
+
+[security-changes]:  {% link posts/security_update.md %}#whats-changing

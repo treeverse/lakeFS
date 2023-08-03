@@ -9,7 +9,7 @@ has_toc: false
 # lakeFS Enterprise
 
 lakeFS Enterprise is an enterprise-ready lakeFS solution that provides a support SLA and additional features to the open-source version of lakeFS. The additional features are: 
-* [RBAC]({{ site.baseurl }}/reference/rbac.html)
-* [SSO]({{ site.baseurl }}/enterprise/sso.html)
+* [RBAC]({% link reference/rbac.md%})
+* [SSO]({% link enterprise/sso.md%})
 * Support SLA
 
