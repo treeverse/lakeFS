@@ -46,7 +46,7 @@ func GetRepositoryPath(dir string) (string, error) {
 	if strings.Contains(out, "not a git repository") {
 		return "", ErrNotARepository
 	}
-	return "", fmt.Errorf("%s: %w", out, ErrGitError)
+	return "", fmt.Errorf("%s: %w", out, err)
 }
 
 func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string, error) {

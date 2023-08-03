@@ -73,9 +73,10 @@ func ReadIndex(path string) (*Index, error) {
 	if err != nil {
 		return nil, err
 	}
-	idx := &Index{}
+	idx := &Index{
+		root: filepath.Dir(idxPath),
+	}
 	err = yaml.Unmarshal(data, idx)
-	idx.root = filepath.Dir(idxPath)
 	if err != nil {
 		return nil, err
 	}

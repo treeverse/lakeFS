@@ -61,7 +61,7 @@ var localListCmd = &cobra.Command{
 				Headers: []interface{}{
 					"Directory",
 					"Remote URI",
-					"Last synced HEAD",
+					"Synced commit",
 				},
 				Rows: rows,
 			},
