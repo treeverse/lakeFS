@@ -94,6 +94,7 @@ class SetupState(ModelNormal):
         lazy_import()
         return {
             'state': (str,),  # noqa: E501
+            'comm_prefs_done': (bool,),  # noqa: E501
             'login_config': (LoginConfig,),  # noqa: E501
         }
 
@@ -104,6 +105,7 @@ class SetupState(ModelNormal):
 
     attribute_map = {
         'state': 'state',  # noqa: E501
+        'comm_prefs_done': 'comm_prefs_done',  # noqa: E501
         'login_config': 'login_config',  # noqa: E501
     }
 
@@ -149,6 +151,7 @@ class SetupState(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
+            comm_prefs_done (bool): specify if communication preferences were submitted. [optional]  # noqa: E501
             login_config (LoginConfig): [optional]  # noqa: E501
         """
 
@@ -232,6 +235,7 @@ class SetupState(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
+            comm_prefs_done (bool): specify if communication preferences were submitted. [optional]  # noqa: E501
             login_config (LoginConfig): [optional]  # noqa: E501
         """
 

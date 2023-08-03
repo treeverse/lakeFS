@@ -395,7 +395,7 @@ No authorization required
 
 <a name="setupCommPrefs"></a>
 # **setupCommPrefs**
-> NextStep setupCommPrefs(commPrefsInput)
+> setupCommPrefs(commPrefsInput)
 
 setup communications preferences
 
@@ -416,8 +416,7 @@ public class Example {
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     CommPrefsInput commPrefsInput = new CommPrefsInput(); // CommPrefsInput | 
     try {
-      NextStep result = apiInstance.setupCommPrefs(commPrefsInput);
-      System.out.println(result);
+      apiInstance.setupCommPrefs(commPrefsInput);
     } catch (ApiException e) {
       System.err.println("Exception when calling ConfigApi#setupCommPrefs");
       System.err.println("Status code: " + e.getCode());
@@ -437,7 +436,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**NextStep**](NextStep.md)
+null (empty response body)
 
 ### Authorization
 

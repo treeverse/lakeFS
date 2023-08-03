@@ -4045,8 +4045,7 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	savedState, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
+	savedState, err := c.MetadataManager.GetSetupState(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -4059,10 +4058,15 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	} else if savedState == auth.SetupStateNotInitialized {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
-	lc := makeLoginConfig(c.Config)
+
 	response := SetupState{
 		State:       swag.String(state),
-		LoginConfig: lc,
+		LoginConfig: makeLoginConfig(c.Config),
+	}
+
+	// CommPrefsDone is base on existing of CommPrefsSetKeyName in the metadata
+	if commPrefs, err := c.MetadataManager.IsCommPrefsSet(ctx); err == nil {
+		response.CommPrefsDone = swag.Bool(commPrefs)
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -4073,20 +4077,14 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	// check if previous setup completed
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized == auth.SetupStateInitialized {
+	if initialized {
 		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
-		return
-	}
-	if initialized == auth.SetupStateNotInitialized {
-		writeError(w, r, http.StatusPreconditionFailed, "wrong step - must first complete previous steps")
 		return
 	}
 
@@ -4102,6 +4100,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		writeResponse(w, r, http.StatusOK, CredentialsWithSecret{})
 		return
 	}
+
 	var cred *model.Credential
 	if body.Key == nil {
 		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
@@ -4128,57 +4127,30 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body SetupCommPrefsJSONRequestBody) {
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	if initialized == auth.SetupStateInitialized {
-		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
-		return
-	}
-
-	// users should not get here
-	// after this step is done, the browser should navigate the user to the next step
-	// even on refresh or closing the tab and continuing setup in a new tab later
-	// the user should not be posting to this handler
-	if initialized == auth.SetupStateCommPrefsDone {
-		writeError(w, r, http.StatusPreconditionFailed, "wrong step - CommPrefs have already been set")
-		return
-	}
-
-	// this is the "natural" next step in the setup process
-	nextStep := auth.SetupStateCommPrefsDone
-	// if users are managed externally, we can skip the admin user creation step
-	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
-		nextStep = auth.SetupStateInitialized
-	}
-	response := NextStep{
-		NextStep: string(nextStep),
-	}
-
-	if *body.Email == "" {
+	emailAddress := swag.StringValue(body.Email)
+	if emailAddress == "" {
 		writeResponse(w, r, http.StatusBadRequest, "email is required")
 		return
 	}
 
 	// validate email. if the user typed some value into the input, they might have a typo
 	// we assume the intent was to provide a valid email, so we'll return an error
-	if _, err := mail.ParseAddress(*body.Email); err != nil {
+	if _, err := mail.ParseAddress(emailAddress); err != nil {
+		c.Logger.WithError(err).WithField("email", emailAddress).Error("Setup comm prefs, invalid email address")
 		writeError(w, r, http.StatusBadRequest, "invalid email address")
 		return
 	}
 
 	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
 	commPrefs := auth.CommPrefs{
-		UserEmail:       *body.Email,
+		UserEmail:       emailAddress,
 		FeatureUpdates:  body.FeatureUpdates,
 		SecurityUpdates: body.SecurityUpdates,
 	}
 
-	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, &commPrefs)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email", emailAddress).Error("Setup comm prefs, failed to save comm prefs to metadata")
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
@@ -4186,7 +4158,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	// collect comm prefs
 	go c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
 
-	writeResponse(w, r, http.StatusOK, response)
+	writeResponse(w, r, http.StatusOK, nil)
 }
 
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {

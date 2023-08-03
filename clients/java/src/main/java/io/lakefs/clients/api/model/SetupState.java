@@ -83,6 +83,10 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_STATE)
   private StateEnum state;
 
+  public static final String SERIALIZED_NAME_COMM_PREFS_DONE = "comm_prefs_done";
+  @SerializedName(SERIALIZED_NAME_COMM_PREFS_DONE)
+  private Boolean commPrefsDone;
+
   public static final String SERIALIZED_NAME_LOGIN_CONFIG = "login_config";
   @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
   private LoginConfig loginConfig;
@@ -108,6 +112,29 @@ public class SetupState {
 
   public void setState(StateEnum state) {
     this.state = state;
+  }
+
+
+  public SetupState commPrefsDone(Boolean commPrefsDone) {
+    
+    this.commPrefsDone = commPrefsDone;
+    return this;
+  }
+
+   /**
+   * specify if communication preferences were submitted
+   * @return commPrefsDone
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "specify if communication preferences were submitted")
+
+  public Boolean getCommPrefsDone() {
+    return commPrefsDone;
+  }
+
+
+  public void setCommPrefsDone(Boolean commPrefsDone) {
+    this.commPrefsDone = commPrefsDone;
   }
 
 
@@ -144,12 +171,13 @@ public class SetupState {
     }
     SetupState setupState = (SetupState) o;
     return Objects.equals(this.state, setupState.state) &&
+        Objects.equals(this.commPrefsDone, setupState.commPrefsDone) &&
         Objects.equals(this.loginConfig, setupState.loginConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, loginConfig);
+    return Objects.hash(state, commPrefsDone, loginConfig);
   }
 
   @Override
@@ -157,6 +185,7 @@ public class SetupState {
     StringBuilder sb = new StringBuilder();
     sb.append("class SetupState {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
+    sb.append("    commPrefsDone: ").append(toIndentedString(commPrefsDone)).append("\n");
     sb.append("    loginConfig: ").append(toIndentedString(loginConfig)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -27,10 +27,6 @@ paths:
         required: true
       responses:
         "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NextStep'
           description: communication preferences saved successfully
         "409":
           content:
@@ -6630,6 +6626,7 @@ components:
       type: object
     SetupState:
       example:
+        comm_prefs_done: true
         login_config:
           login_failed_message: login_failed_message
           logout_url: logout_url
@@ -6648,6 +6645,9 @@ components:
           - not_initialized
           - comm_prefs_done
           type: string
+        comm_prefs_done:
+          description: specify if communication preferences were submitted
+          type: boolean
         login_config:
           $ref: '#/components/schemas/LoginConfig'
       type: object
@@ -6703,16 +6703,6 @@ components:
       required:
       - featureUpdates
       - securityUpdates
-      type: object
-    NextStep:
-      example:
-        nextStep: nextStep
-      properties:
-        nextStep:
-          description: the next step in the setup process
-          type: string
-      required:
-      - nextStep
       type: object
     UpdatePasswordByToken:
       example:

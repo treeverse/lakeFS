@@ -111,6 +111,14 @@ func setupLakeFS(ctx context.Context, cfg *config.Config, metadataManager auth.M
 		// return on error or if already initialized
 		return nil, err
 	}
+
+	// mark comm prefs was not provided
+	_, err = metadataManager.UpdateCommPrefs(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("update comm prefs: %w", err)
+	}
+
+	// populate initial data and create admin user
 	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
 	if err != nil {
 		return nil, fmt.Errorf("create initial admin user: %w", err)

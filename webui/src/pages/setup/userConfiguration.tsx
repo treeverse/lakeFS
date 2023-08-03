@@ -11,12 +11,14 @@ interface UserConfigurationProps {
     onSubmit: (email: string, admin: string, checks: boolean) => Promise<void>;
     setupError: Error;
     disabled: boolean;
+    requireAdmin: boolean;
 }
 
 export const UserConfiguration: FC<UserConfigurationProps> = ({
     onSubmit,
     setupError,
     disabled,
+    requireAdmin,
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
     const [adminUser, setAdminUser] = useState<string>("admin");
@@ -45,15 +47,17 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                 <Card className="setup-widget">
                     <Card.Header>User Configuration</Card.Header>
                     <Card.Body>
+                        {requireAdmin &&
                         <Card.Text>
                             Please specify the name of the first admin account, or leave it as the default &apos;admin&apos;.
-                        </Card.Text>
+                        </Card.Text>}
 
                         <Form onSubmit={submitHandler}>
 
-                        <Form.Group controlId="user-name" className="mb-3">
-                            <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" autoFocus/>
-                        </Form.Group>
+                            {requireAdmin &&
+                            <Form.Group controlId="user-name" className="mb-3">
+                                <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" autoFocus/>
+                            </Form.Group>}
 
                             <Form.Group controlId="user-email" className="mt-4">
                                 <Form.Label>Email <span className="required-field-label">*</span></Form.Label>

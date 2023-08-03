@@ -8,6 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **state** | [**StateEnum**](#StateEnum) |  |  [optional]
+**commPrefsDone** | **Boolean** | specify if communication preferences were submitted |  [optional]
 **loginConfig** | [**LoginConfig**](LoginConfig.md) |  |  [optional]
 
 

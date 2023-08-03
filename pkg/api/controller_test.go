@@ -1022,7 +1022,6 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			Name:             repo,
 			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3040,7 +3039,6 @@ func TestLogin(t *testing.T) {
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
-	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	resp, err := clt.LoginWithResponse(context.Background(), api.LoginJSONRequestBody{
@@ -4032,7 +4030,6 @@ func TestController_ClientDisconnect(t *testing.T) {
 	// setup lakefs
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
-	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	// setup repository
