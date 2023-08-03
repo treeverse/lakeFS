@@ -165,7 +165,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	idGen := &actions.DecreasingIDGenerator{}
 	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 		Enabled: false,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
@@ -223,7 +223,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		nil,
 		actionsService,
 		auditChecker,
-		logging.Default(),
+		logging.ContextUnavailable(),
 		emailer,
 		tmpl,
 		nil,

@@ -108,7 +108,7 @@ func TestStartup(t *testing.T) {
 		FSName:              fsName,
 		DiskAllocProportion: 1.0,
 		SharedParams: params.SharedParams{
-			Logger:             logging.Default(),
+			Logger:             logging.ContextUnavailable(),
 			Adapter:            mem.New(context.Background()),
 			BlockStoragePrefix: blockStoragePrefix,
 			Local: params.LocalDiskParams{

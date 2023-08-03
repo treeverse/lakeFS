@@ -94,7 +94,7 @@ type FakeAuthService struct {
 
 func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.Credential, error) {
 	if accessKey != m.AccessKeyID {
-		logging.Default().Fatal("access key in recording different than configuration")
+		logging.ContextUnavailable().Fatal("access key in recording different than configuration")
 	}
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey

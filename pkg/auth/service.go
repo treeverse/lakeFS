@@ -1959,7 +1959,7 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		cache:       cache,
 	}
 	if emailer != nil {
-		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
+		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.ContextUnavailable(), emailer)
 	}
 	return res, nil
 }
@@ -1978,7 +1978,7 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 		ExpiresAt: jwt.NewNumericDate(exp),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	logging.Default().WithField("id", id).Info("generated auth api token")
+	logging.ContextUnavailable().WithField("id", id).Info("generated auth api token")
 	return token.SignedString(secret)
 }
 

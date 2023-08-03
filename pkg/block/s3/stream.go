@@ -51,7 +51,7 @@ func (s *StreamingReader) GetLastChunk() []byte {
 func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration, minSize int) (n int, err error) {
 	desired := len(buf)
 
-	lg := logging.Default().WithFields(logging.Fields{
+	lg := logging.ContextUnavailable().WithFields(logging.Fields{
 		"timeout":      timeout,
 		"desired_size": desired,
 	})

@@ -52,7 +52,7 @@ func init() {
 	var sortedArray []string
 	for _, word := range interestingResourcesContainer {
 		if _, ok := tempMap[word]; ok {
-			logging.Default().
+			logging.ContextUnavailable().
 				WithField("word", word).
 				Warn("appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
 		} else {
@@ -214,7 +214,7 @@ func buildPath(host string, bareDomain string, path string) string {
 		return "/" + prePath + path
 	}
 	// bareDomain is not suffix of the path probably a bug
-	logging.Default().
+	logging.ContextUnavailable().
 		WithFields(logging.Fields{"request_host": host, "bare_domain": bareDomain}).
 		Error("request host mismatch")
 	return ""

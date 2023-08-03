@@ -258,7 +258,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
 
-	executor := batch.NewConditionalExecutor(logging.Default())
+	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
 
 	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
