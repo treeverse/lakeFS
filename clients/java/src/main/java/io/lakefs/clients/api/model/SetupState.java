@@ -37,9 +37,7 @@ public class SetupState {
   public enum StateEnum {
     INITIALIZED("initialized"),
     
-    NOT_INITIALIZED("not_initialized"),
-    
-    COMM_PREFS_DONE("comm_prefs_done");
+    NOT_INITIALIZED("not_initialized");
 
     private String value;
 

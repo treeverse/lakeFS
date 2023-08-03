@@ -63,7 +63,6 @@ class SetupState(ModelNormal):
         ('state',): {
             'INITIALIZED': "initialized",
             'NOT_INITIALIZED': "not_initialized",
-            'COMM_PREFS_DONE': "comm_prefs_done",
         },
     }
 

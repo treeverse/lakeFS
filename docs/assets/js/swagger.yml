@@ -753,7 +753,7 @@ components:
       properties:
         state:
           type: string
-          enum: [initialized, not_initialized, comm_prefs_done]
+          enum: [initialized, not_initialized]
         comm_prefs_done:
           type: boolean
           description: specify if communication preferences were submitted

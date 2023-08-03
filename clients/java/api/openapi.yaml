@@ -6643,7 +6643,6 @@ components:
           enum:
           - initialized
           - not_initialized
-          - comm_prefs_done
           type: string
         comm_prefs_done:
           description: specify if communication preferences were submitted
