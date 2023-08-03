@@ -36,6 +36,8 @@ const SetupContents = () => {
             setSetupError("Please enter your email address.");
             return;
         }
+
+        setDisabled(true);
         try {
             if (missingCommPrefs) {
                await setup.commPrefs(userEmail, checked, checked);
