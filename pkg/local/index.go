@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -89,7 +90,7 @@ func FindIndices(root string) ([]string, error) {
 			return err
 		}
 		// don't traverse hidden folders like '.git', etc.
-		if d.IsDir() && d.Name()[0] == '.' {
+		if d.IsDir() && strings.HasPrefix(d.Name(), ".") {
 			return filepath.SkipDir
 		}
 		// if we found an index, no need to further traverse

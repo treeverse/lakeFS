@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"path/filepath"
 
-	"github.com/cockroachdb/errors"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/git"
