@@ -235,7 +235,7 @@ func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branch
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 
-	blockAdapter := mem.New()
+	blockAdapter := mem.New(context.Background())
 	branchLock := mock.NewMockBranchLocker(ctrl)
 	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		return f()

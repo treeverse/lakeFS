@@ -368,7 +368,7 @@ func Test_import(t *testing.T) {
 
 				writer.EXPECT().Abort().AnyTimes()
 				metaRangeId := graveler.MetaRangeID("import")
-				writer.EXPECT().Close().Return(&metaRangeId, nil).AnyTimes()
+				writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 				committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
 				_, err := committedManager.Import(ctx, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
 				if err != expectedResult.expectedErr {

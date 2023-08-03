@@ -18,7 +18,7 @@ import (
 )
 
 func TestGarbageCollectionManager_GetUncommittedLocation(t *testing.T) {
-	blockAdapter := mem.New()
+	blockAdapter := mem.New(context.Background())
 	refMgr := &testutil.RefsFake{}
 	const prefix = "test_prefix"
 	const runID = "my_test_runID"
@@ -43,7 +43,7 @@ func createTestFile(t *testing.T, filename, testLine string, count int) {
 
 func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T) {
 	ctx := context.Background()
-	blockAdapter := mem.New()
+	blockAdapter := mem.New(context.Background())
 	refMgr := &testutil.RefsFake{}
 	const prefix = "test_prefix"
 	const runID = "my_test_runID"

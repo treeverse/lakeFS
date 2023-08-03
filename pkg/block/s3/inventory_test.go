@@ -1,6 +1,7 @@
 package s3_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -211,7 +212,7 @@ func TestIterator(t *testing.T) {
 			for _, filename := range test.InventoryFiles {
 				inventoryFiles = append(inventoryFiles, s3.InventoryFile{Key: filename})
 			}
-			inv, err := s3.GenerateInventory(logging.Default(), &s3.Manifest{
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), &s3.Manifest{
 				URL:                manifestURL,
 				InventoryBucketArn: "arn:aws:s3:::example-bucket",
 				SourceBucket:       "lakefs-example-data",
