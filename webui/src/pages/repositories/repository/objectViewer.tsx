@@ -98,9 +98,7 @@ const FileObjectsViewerPage = () => {
 
   return (
     <RefContextProvider>
-      <RepositoryPageLayout activePage={"objects"}>
         {content}
-      </RepositoryPageLayout>
     </RefContextProvider>
   );
 };
