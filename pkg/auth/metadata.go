@@ -147,16 +147,6 @@ func (m *KVMetadataManager) GetSetupState(ctx context.Context) (SetupStateName, 
 		return SetupStateInitialized, nil
 	}
 	return SetupStateNotInitialized, nil
-
-	//// if this feature is disabled, skip this step
-	//if emailSubscriptionEnabled {
-	//	commPrefsSet, err := m.IsCommPrefsSet(ctx)
-	//	if err != nil || !commPrefsSet {
-	//		return SetupStateNotInitialized, nil
-	//	}
-	//}
-	//
-	//return SetupStateCommPrefsDone, nil
 }
 
 func (m *KVMetadataManager) writeMetadata(ctx context.Context, items map[string]string) error {

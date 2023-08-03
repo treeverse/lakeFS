@@ -4045,6 +4045,20 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	loginConfig := makeLoginConfig(c.Config)
+
+	// external auth reports as initialized to avoid triggering the setup wizard
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+		response := SetupState{
+			State:         swag.String(string(auth.SetupStateInitialized)),
+			LoginConfig:   loginConfig,
+			CommPrefsDone: swag.Bool(true),
+		}
+		writeResponse(w, r, http.StatusOK, response)
+		return
+	}
+
 	savedState, err := c.MetadataManager.GetSetupState(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -4061,7 +4075,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 	response := SetupState{
 		State:       swag.String(state),
-		LoginConfig: makeLoginConfig(c.Config),
+		LoginConfig: loginConfig,
 	}
 
 	// CommPrefsDone is base on existing of CommPrefsSetKeyName in the metadata
