@@ -49,7 +49,7 @@ It will also lower the storage cost.
 
 [hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [zero-copy-import]:  {% link howto/import.md %}#zero-copy-import
-[representing-refs-and-uncommitted-metadata]:  {% link understand/how/versioning-internals.md %}#representing-references-and-uncommitted-metadata)
-[lakectl-upload]:  { %link reference/cli.md %}#lakectl-fs-upload
-[lakectl-download]:  { %link reference/cli.md %}#lakectl-fs-download
+[lakectl-upload]:  {% link reference/cli.md %}#lakectl-fs-upload
+[lakectl-download]:  {% link reference/cli.md %}#lakectl-fs-download
 [api-staging]:  {% link reference/api.md %}#operations-objects-stageObject
+[representing-refs-and-uncommitted-metadata]:  {% link understand/how/versioning-internals.md %}#representing-references-and-uncommitted-metadata
