@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -9,12 +10,42 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
 	localInitMinArgs = 1
 	localInitMaxArgs = 2
 )
+
+func localInit(ctx context.Context, dir string, remote *uri.URI, force bool) *local.Index {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		DieErr(err)
+	}
+	exists, err := local.IndexExists(dir)
+	if err != nil {
+		DieErr(err)
+	}
+	if exists && !force {
+		DieFmt("directory '%s' already linked to a lakefs path, run command with --force to overwrite", dir)
+	}
+
+	// dereference
+	head := resolveCommitOrDie(ctx, getClient(), remote.Repository, remote.Ref)
+	idx, err := local.WriteIndex(dir, remote, head)
+	if err != nil {
+		DieErr(err)
+	}
+
+	ignoreFile, err := git.Ignore(dir, []string{dir}, []string{filepath.Join(dir, local.IndexFileName)}, local.IgnoreMarker)
+	if err == nil {
+		fmt.Println("location added to", ignoreFile)
+	} else if !errors.Is(err, git.ErrNotARepository) {
+		DieErr(err)
+	}
+
+	return idx
+}
 
 var localInitCmd = &cobra.Command{
 	Use:   "init <path uri> [directory]",
@@ -26,38 +57,13 @@ var localInitCmd = &cobra.Command{
 		if len(args) == localInitMaxArgs {
 			dir = args[1]
 		}
-		flagSet := cmd.Flags()
-		force := Must(flagSet.GetBool("force"))
-
 		localPath, err := filepath.Abs(dir)
 		if err != nil {
 			DieErr(err)
 		}
+		force := Must(cmd.Flags().GetBool("force"))
 
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			DieErr(err)
-		}
-		exists, err := local.IndexExists(localPath)
-		if err != nil {
-			DieErr(err)
-		}
-		if exists && !force {
-			DieFmt("directory '%s' already linked to a lakefs path, run command with --force to overwrite", localPath)
-		}
-
-		// dereference
-		head := resolveCommitOrDie(cmd.Context(), getClient(), remote.Repository, remote.Ref)
-		err = local.WriteIndex(localPath, remote, head)
-		if err != nil {
-			DieErr(err)
-		}
-
-		ignoreFile, err := git.Ignore(localPath, []string{localPath, local.IndexFileName}, []string{local.IndexFileName}, local.IgnoreMarker)
-		if err == nil {
-			fmt.Println("location added to", ignoreFile)
-		} else if !errors.Is(err, git.ErrNotARepository) {
-			DieErr(err)
-		}
+		localInit(cmd.Context(), localPath, remote, force)
 
 		fmt.Printf("Successfully linked local directory '%s' with remote '%s'\n", localPath, remote)
 	},
@@ -65,7 +71,6 @@ var localInitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	AssignAutoConfirmFlag(localInitCmd.Flags())
 	localInitCmd.Flags().Bool("force", false, "Overwrites if directory already linked to a lakeFS path")
 	localCmd.AddCommand(localInitCmd)
 }

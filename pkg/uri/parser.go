@@ -136,3 +136,11 @@ func Must(u *URI, e error) *URI {
 	}
 	return u
 }
+
+func WithRef(remote *URI, ref string) *URI {
+	return &URI{
+		Repository: remote.Repository,
+		Ref:        ref,
+		Path:       remote.Path,
+	}
+}
