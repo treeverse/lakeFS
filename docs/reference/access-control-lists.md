@@ -71,4 +71,4 @@ Note that moving to ACL from RBAC may only be performed once and **will** lose
 
 For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).
 
-[security-changes]:  {% link posts/security_update.html %}#whats-changing
+[security-changes]:  {% link posts/security_update.md %}#whats-changing
