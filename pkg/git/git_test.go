@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/git"
 )
 
-func TestIsGitRepository(t *testing.T) {
+func TestIsRepository(t *testing.T) {
 	tmpdir := t.TempDir()
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestIsGitRepository(t *testing.T) {
 	require.True(t, git.IsRepository(tmpSubdir))
 }
 
-func TestGetGitRepositoryPath(t *testing.T) {
+func TestGetRepositoryPath(t *testing.T) {
 	tmpdir := t.TempDir()
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestGetGitRepositoryPath(t *testing.T) {
 	_, err = git.GetRepositoryPath(tmpdir)
 	require.ErrorIs(t, err, git.ErrNotARepository)
 	_, err = git.GetRepositoryPath(tmpFile.Name())
-	require.ErrorIs(t, err, git.ErrGitError)
+	require.Error(t, err)
 
 	// Init git repo on root
 	require.NoError(t, exec.Command("git", "init", "-q", tmpdir).Run())
@@ -58,7 +58,7 @@ func TestGetGitRepositoryPath(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, tmpdir, gitPath)
 	_, err = git.GetRepositoryPath(tmpFile.Name())
-	require.ErrorIs(t, err, git.ErrGitError)
+	require.Error(t, err)
 	gitPath, err = git.GetRepositoryPath(tmpSubdir)
 	require.NoError(t, err)
 	require.Equal(t, tmpdir, gitPath)
@@ -85,7 +85,7 @@ func TestIgnore(t *testing.T) {
 	_, err = git.Ignore(tmpdir, []string{}, []string{}, marker)
 	require.ErrorIs(t, err, git.ErrNotARepository)
 	_, err = git.Ignore(tmpFile.Name(), []string{}, []string{}, marker)
-	require.ErrorIs(t, err, git.ErrGitError)
+	require.Error(t, err)
 
 	// Init git repo on tmpdir
 	require.NoError(t, exec.Command("git", "init", "-q", tmpdir).Run())
@@ -107,7 +107,7 @@ func TestIgnore(t *testing.T) {
 	verifyPathTracked(t, []string{filepath.Base(tmpSubdir), trackedFile})
 
 	_, err = git.Ignore(tmpFile.Name(), []string{}, []string{excludedPath}, marker)
-	require.ErrorIs(t, err, git.ErrGitError)
+	require.Error(t, err)
 	result, err := git.Ignore(tmpdir, []string{}, []string{excludedPath}, marker)
 	require.NoError(t, err)
 	require.Equal(t, ignorePath, result)

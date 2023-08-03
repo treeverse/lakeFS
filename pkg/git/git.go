@@ -21,6 +21,10 @@ const (
 )
 
 func git(dir string, args ...string) (string, error) {
+	_, err := exec.LookPath("git") // assume git is in path, otherwise consider as not having git support
+	if err != nil {
+		return "", ErrNoGit
+	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
@@ -42,7 +46,7 @@ func GetRepositoryPath(dir string) (string, error) {
 	if strings.Contains(out, "not a git repository") {
 		return "", ErrNotARepository
 	}
-	return "", fmt.Errorf("%s: %w", out, ErrGitError)
+	return "", fmt.Errorf("%s: %w", out, err)
 }
 
 func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string, error) {
