@@ -9,7 +9,7 @@ previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
 
 # Learn more about lakeFS
 
-The [lakeFS quickstart]({% link quickstart/ %}) is just the beginning of your lakeFS journey 🛣️
+The [lakeFS quickstart]({% link quickstart/index.md %}) is just the beginning of your lakeFS journey 🛣️
 
 Here are some more resources to help you find out more about lakeFS. 
 
@@ -135,4 +135,4 @@ Finally, make sure to drop by to say hi on [Twitter](https://twitter.com/lakeFS)
 We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts]({% link understand/model.md %}) and [architecture]({% link understand/architecture.md %}) guides, as well as the explanation of [how merges are handled]({% link understand/how/merge.md %}). To go deeper you might be interested in [the internals of versioning]({% link understand/how/versioning-internals.md %}) and our [internal database structure]({% link understand/how/kv.md %}).
 
 
-[onprem-k8s]:  {% link howto/deploy/onprem.html %}#k8s
+[onprem-k8s]:  {% link howto/deploy/onprem.md %}#k8s

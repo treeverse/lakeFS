@@ -48,9 +48,9 @@ lakeFS supports UI, CLI (`lakectl` commandline utility) and several clients for 
 There are two ways that you can try out lakeFS:
 
 * The lakeFS Playground on lakeFS Cloud - fully managed lakeFS with a 30-day free trial
-* Local Docker-based [quickstart]({% link quickstart %}) and [samples](https://github.com/treeverse/lakeFS-samples/)
+* Local Docker-based [quickstart]({% link quickstart/index.md %}) and [samples](https://github.com/treeverse/lakeFS-samples/)
 
-You can also [deploy lakeFS]({% link deploy %}) locally or self-managed on your cloud of choice.
+You can also [deploy lakeFS]({% link howto/deploy/index.md %}) locally or self-managed on your cloud of choice.
 
 ### Using lakeFS Playground on lakeFS Cloud
 
@@ -211,5 +211,5 @@ You can safely continue working with the data from main which is unharmed due to
 * [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
 
 
-[hadoopfs]:  {% link integrations/spark.html %}#lakefs-hadoop-filesystem
+[hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [spark-s3a]:  {% link integrations/spark.md %}#use-the-s3-compatible-api

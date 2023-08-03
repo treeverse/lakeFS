@@ -82,7 +82,7 @@ The UI layer is a simple browser-based client that uses the OpenAPI server. It a
 ## Applications
 
 As a rule of thumb, lakeFS supports any S3-compatible application. This means that many common data applications work with lakeFS out-of-the-box.
-Check out our [integrations]({% link integrations %}) to learn more.
+Check out our [integrations]({% link integrations/index.md %}) to learn more.
 
 ## lakeFS Clients
 
@@ -113,4 +113,4 @@ and all data operations directly through the same underlying object store that l
 [data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates
 [dynamodb-permissions]:  {% link howto/deploy/aws.md %}#grant-dynamodb-permissions-to-lakefs
 [roadmap]:  {% link project/index.md %}#roadmap
-[hadoopfs]:  {% link integrations/spark.html %}#lakefs-hadoop-filesystem
+[hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem

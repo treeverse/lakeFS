@@ -173,4 +173,4 @@ The metadata section of lakeFS repository with each Run contains two types of fi
 Metadata files stored in the metadata section aren't accessible like user stored files.
 {: .note }
 
-[lakectl-actions]:  {% link reference/cli.html %}#lakectl-actions
+[lakectl-actions]:  {% link reference/cli.md %}#lakectl-actions

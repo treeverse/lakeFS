@@ -88,4 +88,4 @@ lakectl dbt create-branch-schema --branch my-branch --to-schema my_branch
 You can find more advanced options [here][dbt-create-branch-schema].
  
 
-[dbt-create-branch-schema]:  {% link reference/cli.html %}#lakectl-dbt-create-branch-schema
+[dbt-create-branch-schema]:  {% link reference/cli.md %}#lakectl-dbt-create-branch-schema

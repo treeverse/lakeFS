@@ -10,7 +10,7 @@ previous: ["Rollback the changes", "./rollback.html"]
 
 # Actions and Hooks in lakeFS 🪝
 
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS]({% link howto/hooks/ %}) can be of benefit here. 
+When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS]({% link howto/hooks/index.md %}) can be of benefit here. 
 
 We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
 

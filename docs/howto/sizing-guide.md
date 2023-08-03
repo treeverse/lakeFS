@@ -601,4 +601,4 @@ An equivalent database instance on GCP or Azure should give similar results.
 <img src="{{ site.baseurl }}/assets/img/reference_arch2.png" alt="Automated pipelines lakeFS reference architecture"/>
 
 [s3-gateway]:  {% link understand/architecture.md %}#s3-gateway
-[lakectl-abuse]:  {% link reference/cli.html %}#lakectl-abuse
+[lakectl-abuse]:  {% link reference/cli.md %}#lakectl-abuse
