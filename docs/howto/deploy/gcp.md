@@ -63,7 +63,7 @@ If you already have a database, take note of the connection string and skip to t
       #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
    ```
    
-1. [Download the binary]({{ site.baseurl }}/index.md#downloads) to the GCE instance.
+1. [Download the binary][downloads] to run on the GCE instance.
 1. Run the `lakefs` binary on the GCE machine:
    ```bash
    lakefs --config config.yaml run
@@ -87,7 +87,7 @@ docker run \
   treeverse/lakefs:latest run
 ```
 
-See the [reference]({{ site.baseurl }}/reference/configuration.md#using-environment-variables) for a complete list of environment variables.
+See the [reference][config-envariables] for a complete list of environment variables.
 
 </div>
 <div markdown="3" id="gke">
@@ -136,8 +136,8 @@ To configure a load balancer to direct requests to the lakeFS servers you can us
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
 💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway]({{ site.baseurl }}/understand/architecture.md#s3-gateway) or 
-a simple PUT request using the [OpenAPI Server]({{ site.baseurl }}/understand/architecture.md#openapi-server).
+Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or 
+a simple PUT request using the [OpenAPI Server][openapi].
 Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 {: .note }
 
@@ -145,5 +145,12 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 </div>
 
 
-
 {% include_relative includes/setup.md %}
+
+[config-envariables]:  {% link reference/configuration.md %}#using-environment-variables %}
+[downloads]:  {% link index.md %}#downloads
+[openapi]:  {% link understand/architecture.md %}#openapi-server
+[s3-gateway]:  {% link understand/architecture.md %}#s3-gateway
+[understand-repository]:  {% link understand/model.md %}#repository
+[integration-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
+[understand-commits]:  {% link understand/how/versioning-internals.md %}#constructing-a-consistent-view-of-the-keyspace-ie-a-commit

@@ -71,7 +71,7 @@ In this tutorial, we will show how to use webhooks (python flask webserver) to i
 
 The tutorial provides a lakeFS environment, python flask server, a Jupyter notebook and sample data sets to demonstrate the integration of lakeFS hooks with Apache Spark and Python. It runs on Docker Compose.
 
-To understand how hooks work and how to configure hooks in your production system, refer to the documentation: [Hooks]({{ site.baseurl }}/understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates). 
+To understand how hooks work and how to configure hooks in your production system, refer to the documentation: [Hooks][data-quality-gates]. 
 
 ![lakeFS hooks - Promotion workflow]({{ site.baseurl }}/assets/img/promotion_workflow.png)
 
@@ -109,3 +109,6 @@ Open the [local Jupyter Notebook](http://localhost:8888) and go to the `hooks-de
 To explore different checks and validations on your data, refer to [pre-built hooks config](https://github.com/treeverse/lakeFS-hooks#included-webhooks) by the lakeFS team. 
 
 To understand the comprehensive list of hooks supported by lakeFS, refer to the [documentation](https://github.com/treeverse/lakeFS-hooks).
+
+
+[data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates

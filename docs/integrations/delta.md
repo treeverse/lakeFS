@@ -12,7 +12,7 @@ has_children: false
 Because lakeFS is format-agnostic, you can save data in Delta format within a lakeFS repository and benefit from the advantages of both technologies.  Specifically:
 
 1. ACID operations can span across many Delta tables.
-2. [CI/CD hooks]({{ site.baseurl }}/understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) can validate Delta table contents, schema, or even referential integrity.
+2. [CI/CD hooks][data-quality-gates] can validate Delta table contents, schema, or even referential integrity.
 3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
 {% include toc.html %}
@@ -40,9 +40,9 @@ To enable the Delta Lake diff feature, you need to install a plugin on the lakeF
 Rename the `delta_diff` binary to `delta` and put it under `~/.lakefs/plugins/diff` on the machine where lakeFS is running. 
 
 You can customize the location of the Delta Lake diff plugin by changing the `diff.delta.plugin` and 
-`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`]({{ site.baseurl }}/reference/configuration.html#plugins) file.
+`plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`][config-plugins] file.
 
-**Notice**: If you're using the lakeFS [docker image]({{ site.baseurl }}/howto/deploy/onprem.html#docker), the plugin is installed by default.
+**Notice**: If you're using the lakeFS [docker image][deploy-docker], the plugin is installed by default.
 
 ## Spark Configuration
 
@@ -83,3 +83,8 @@ If you are trying to achieve that, please reach out on Slack and the community w
 
 See [Guaranteeing Consistency in Your Delta Lake Tables With lakeFS](https://lakefs.io/guarantee-consistency-in-your-delta-lake-tables-with-lakefs/) post on the lakeFS blog to learn how to 
 guarantee data quality in a Delta table by utilizing lakeFS branches.
+
+
+[data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates
+[config-plugins]:  {% link reference/configuration.md %}#plugins
+[deploy-docker]:  {% link howto/deploy/onprem.md %}#docker

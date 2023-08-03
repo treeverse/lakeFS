@@ -83,7 +83,7 @@ For this reason it is recommended to disable the cache:
 
 ## Using Iceberg tables with lakeFS
 
-When referencing tables you need to ensure that they have a database specified (as you would anyway), and then a lakeFS [reference]({{ site.baseurl }}/understand/model.html#ref-expressions) prefix. 
+When referencing tables you need to ensure that they have a database specified (as you would anyway), and then a lakeFS [reference][ref-expr] prefix. 
 
 A reference is one of: 
 
@@ -166,3 +166,5 @@ This is done through an incremental copy from the original table into lakeFS.
     -- Create new iceberg table in lakeFS from the source table (pre-lakeFS)
     CREATE TABLE IF NOT EXISTS <lakefs-catalog>.<branch>.<db> USING iceberg AS SELECT * FROM <iceberg-original-table>
     ```
+
+[ref-expr]:  {% link understand/model.md %}#ref-expressions
