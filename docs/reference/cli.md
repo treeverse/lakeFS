@@ -2616,6 +2616,23 @@ lakectl local init <path uri> [directory] [flags]
 
 
 
+### lakectl local list
+
+find and list directories that are synced with lakeFS
+
+```
+lakectl local list [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for list
+```
+
+
+
 ### lakectl log
 
 Show log of commits
