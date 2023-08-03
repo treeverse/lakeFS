@@ -14,7 +14,6 @@ import { useAPI } from "../../../../lib/hooks/api";
 import { useRefs } from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import { SettingsLayout } from "./layout";
 import { PolicyEditor } from "../../../../lib/components/policy";
 import Alert from "react-bootstrap/Alert";
 

@@ -20,7 +20,6 @@ import {
   RefreshButton,
 } from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import { formatAlertText } from "../../../lib/components/repository/errors";
 import {
   ChangesTreeContainer,
