@@ -35,11 +35,11 @@ listing with separator `_delta_log/`.  (A simple API change could add a
 ### Iceberg Catalog
 
 lakeFS Iceberg support is a catalog that locates Iceberg files.  This allows
-it to translate schema to refs.  lakeFS Iceberg catalog is a Hadoop catalog:
+it to translate schema to refs.  lakeFS Iceberg catalog is an Iceberg HadoopCatalog wrapper:
 it supports access through paths.  In a sense, it does not support a true
 catalog concept of "all tables".
 
-Currently only HadoopCatalog is supported, but it is not clear what _other_
+Currently only HadoopCatalog-like behavior is supported, but it is not clear what _other_
 catalogs would work.
 
 ### Delta Sharing server
