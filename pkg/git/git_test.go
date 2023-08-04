@@ -38,6 +38,7 @@ func TestGetRepositoryPath(t *testing.T) {
 	var err error
 	tmpdir := t.TempDir()
 	tmpdir, err = filepath.EvalSymlinks(tmpdir) // on macOS tmpdir is a symlink
+	require.NoError(t, err)
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer os.Remove(tmpSubdir)
@@ -129,6 +130,7 @@ func TestIgnore(t *testing.T) {
 	verifyPathTracked(t, []string{trackedFile})
 
 	_, err = git.Ignore(tmpSubdir, []string{tmpSubdir, filepath.Join(tmpdir, trackedFile)}, []string{}, marker)
+	require.NoError(t, err)
 	rel, err = filepath.Rel(tmpdir, tmpSubdir)
 	require.NoError(t, err)
 	expected += fmt.Sprintf("%s\n%s\n", filepath.Join(rel, "*"), trackedFile)
