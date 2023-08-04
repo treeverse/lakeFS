@@ -13,7 +13,7 @@ const SetupContents = () => {
     const [setupData, setSetupData] = useState(null);
     const [disabled, setDisabled] = useState(false);
     const [currentStep, setCurrentStep] = useState(null);
-    const [missingCommPrefs, setMissingCommPrefs] = useState(null);
+    const [commPrefsMissing, setCommPrefsMissing] = useState(false);
     const router = useRouter();
     const { response, error, loading } = useAPI(() => {
         return setup.getState()
@@ -23,7 +23,7 @@ const SetupContents = () => {
         // Set initial state
         if (!error && response) {
             setCurrentStep(response.state);
-            setMissingCommPrefs(response.state !== SETUP_STATE_INITIALIZED || response.comm_prefs_done === false);
+            setCommPrefsMissing(response.comm_prefs_missing === true);
         }
     }, [error, response]);
 
@@ -32,20 +32,20 @@ const SetupContents = () => {
             setSetupError("Please enter your admin username.");
             return;
         }
-        if (!userEmail) {
+        if (commPrefsMissing && !userEmail) {
             setSetupError("Please enter your email address.");
             return;
         }
 
         setDisabled(true);
         try {
-            if (missingCommPrefs) {
-               await setup.commPrefs(userEmail, checked, checked);
-               setMissingCommPrefs(false);
-            }
             if (currentStep !== SETUP_STATE_INITIALIZED) {
                 const response = await setup.lakeFS(adminUser);
                 setSetupData(response);
+            }
+            if (commPrefsMissing) {
+                await setup.commPrefs(userEmail, checked, checked);
+                setCommPrefsMissing(false);
             }
             setSetupError(null);
         } catch (error) {
@@ -53,7 +53,7 @@ const SetupContents = () => {
         } finally {
             setDisabled(false);
         }
-    }, [setDisabled, setSetupError, setup, currentStep, missingCommPrefs]);
+    }, [setDisabled, setSetupError, setup, currentStep, commPrefsMissing]);
 
     if (error || loading) {
         return null;
@@ -72,7 +72,7 @@ const SetupContents = () => {
     }
 
     const notInitialized = currentStep !== SETUP_STATE_INITIALIZED;
-    if (notInitialized || missingCommPrefs) {
+    if (notInitialized || commPrefsMissing) {
         return (
             <Layout logged={false}>
                 <UserConfiguration
@@ -80,6 +80,7 @@ const SetupContents = () => {
                     setupError={setupError}
                     disabled={disabled}
                     requireAdmin={notInitialized}
+                    requireCommPrefs={commPrefsMissing}
                 />
             </Layout>
         );

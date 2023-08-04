@@ -97,7 +97,7 @@ const LoginPage = () => {
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    if (!error && response && (response.state !== SETUP_STATE_INITIALIZED || response.comm_prefs_done === false)) {
+    if (!error && response && (response.state !== SETUP_STATE_INITIALIZED || response.comm_prefs_missing === true)) {
         router.push({pathname: '/setup', query: router.query})
         return null;
     }

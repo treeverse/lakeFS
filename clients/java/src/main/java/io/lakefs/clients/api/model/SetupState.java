@@ -81,9 +81,9 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_STATE)
   private StateEnum state;
 
-  public static final String SERIALIZED_NAME_COMM_PREFS_DONE = "comm_prefs_done";
-  @SerializedName(SERIALIZED_NAME_COMM_PREFS_DONE)
-  private Boolean commPrefsDone;
+  public static final String SERIALIZED_NAME_COMM_PREFS_MISSING = "comm_prefs_missing";
+  @SerializedName(SERIALIZED_NAME_COMM_PREFS_MISSING)
+  private Boolean commPrefsMissing;
 
   public static final String SERIALIZED_NAME_LOGIN_CONFIG = "login_config";
   @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
@@ -113,26 +113,26 @@ public class SetupState {
   }
 
 
-  public SetupState commPrefsDone(Boolean commPrefsDone) {
+  public SetupState commPrefsMissing(Boolean commPrefsMissing) {
     
-    this.commPrefsDone = commPrefsDone;
+    this.commPrefsMissing = commPrefsMissing;
     return this;
   }
 
    /**
-   * specify if communication preferences were submitted
-   * @return commPrefsDone
+   * true if the comm prefs are missing.
+   * @return commPrefsMissing
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "specify if communication preferences were submitted")
+  @ApiModelProperty(value = "true if the comm prefs are missing.")
 
-  public Boolean getCommPrefsDone() {
-    return commPrefsDone;
+  public Boolean getCommPrefsMissing() {
+    return commPrefsMissing;
   }
 
 
-  public void setCommPrefsDone(Boolean commPrefsDone) {
-    this.commPrefsDone = commPrefsDone;
+  public void setCommPrefsMissing(Boolean commPrefsMissing) {
+    this.commPrefsMissing = commPrefsMissing;
   }
 
 
@@ -169,13 +169,13 @@ public class SetupState {
     }
     SetupState setupState = (SetupState) o;
     return Objects.equals(this.state, setupState.state) &&
-        Objects.equals(this.commPrefsDone, setupState.commPrefsDone) &&
+        Objects.equals(this.commPrefsMissing, setupState.commPrefsMissing) &&
         Objects.equals(this.loginConfig, setupState.loginConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, commPrefsDone, loginConfig);
+    return Objects.hash(state, commPrefsMissing, loginConfig);
   }
 
   @Override
@@ -183,7 +183,7 @@ public class SetupState {
     StringBuilder sb = new StringBuilder();
     sb.append("class SetupState {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    commPrefsDone: ").append(toIndentedString(commPrefsDone)).append("\n");
+    sb.append("    commPrefsMissing: ").append(toIndentedString(commPrefsMissing)).append("\n");
     sb.append("    loginConfig: ").append(toIndentedString(loginConfig)).append("\n");
     sb.append("}");
     return sb.toString();

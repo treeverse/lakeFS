@@ -6626,7 +6626,6 @@ components:
       type: object
     SetupState:
       example:
-        comm_prefs_done: true
         login_config:
           login_failed_message: login_failed_message
           logout_url: logout_url
@@ -6638,14 +6637,15 @@ components:
           - login_cookie_names
           fallback_login_label: fallback_login_label
         state: initialized
+        comm_prefs_missing: true
       properties:
         state:
           enum:
           - initialized
           - not_initialized
           type: string
-        comm_prefs_done:
-          description: specify if communication preferences were submitted
+        comm_prefs_missing:
+          description: true if the comm prefs are missing.
           type: boolean
         login_config:
           $ref: '#/components/schemas/LoginConfig'

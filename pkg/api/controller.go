@@ -4024,21 +4024,14 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func makeLoginConfig(c *config.Config) *LoginConfig {
-	var (
-		cookieNames        = c.Auth.UIConfig.LoginCookieNames
-		loginFailedMessage = c.Auth.UIConfig.LoginFailedMessage
-		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL
-		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel
-	)
-
+func newLoginConfig(c *config.Config) *LoginConfig {
 	return &LoginConfig{
 		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
-		LoginFailedMessage: &loginFailedMessage,
-		FallbackLoginUrl:   fallbackLoginURL,
-		FallbackLoginLabel: fallbackLoginLabel,
-		LoginCookieNames:   cookieNames,
+		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
+		FallbackLoginUrl:   c.Auth.UIConfig.FallbackLoginURL,
+		FallbackLoginLabel: c.Auth.UIConfig.FallbackLoginLabel,
+		LoginCookieNames:   c.Auth.UIConfig.LoginCookieNames,
 		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
 	}
 }
@@ -4046,14 +4039,12 @@ func makeLoginConfig(c *config.Config) *LoginConfig {
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	loginConfig := makeLoginConfig(c.Config)
-
 	// external auth reports as initialized to avoid triggering the setup wizard
 	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		response := SetupState{
-			State:         swag.String(string(auth.SetupStateInitialized)),
-			LoginConfig:   loginConfig,
-			CommPrefsDone: swag.Bool(true),
+			State:            swag.String(string(auth.SetupStateInitialized)),
+			LoginConfig:      newLoginConfig(c.Config),
+			CommPrefsMissing: swag.Bool(false),
 		}
 		writeResponse(w, r, http.StatusOK, response)
 		return
@@ -4064,23 +4055,21 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
-	state := string(savedState)
-	// no need to create an admin user if users are managed externally
-	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
-		state = string(auth.SetupStateInitialized)
-	} else if savedState == auth.SetupStateNotInitialized {
+	if savedState == auth.SetupStateNotInitialized {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
 
 	response := SetupState{
-		State:       swag.String(state),
-		LoginConfig: loginConfig,
+		State:       swag.String(string(savedState)),
+		LoginConfig: newLoginConfig(c.Config),
 	}
 
-	// CommPrefsDone is base on existing of CommPrefsSetKeyName in the metadata
-	if commPrefs, err := c.MetadataManager.IsCommPrefsSet(ctx); err == nil {
-		response.CommPrefsDone = swag.Bool(commPrefs)
+	// if email subscription is disabled in the config, set missing flag to false.
+	// otherwise, check if the comm prefs are set. if they are, set missing flag to false.
+	if !c.Config.EmailSubscription.Enabled {
+		response.CommPrefsMissing = swag.Bool(false)
+	} else if commPrefs, err := c.MetadataManager.IsCommPrefsSet(ctx); err == nil {
+		response.CommPrefsMissing = swag.Bool(!commPrefs)
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }

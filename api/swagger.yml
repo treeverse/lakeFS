@@ -754,9 +754,9 @@ components:
         state:
           type: string
           enum: [initialized, not_initialized]
-        comm_prefs_done:
+        comm_prefs_missing:
           type: boolean
-          description: specify if communication preferences were submitted
+          description: true if the comm prefs are missing.
         login_config:
           $ref: "#/components/schemas/LoginConfig"
     AccessKeyCredentials:

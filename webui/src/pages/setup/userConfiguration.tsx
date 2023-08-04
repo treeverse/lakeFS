@@ -12,6 +12,7 @@ interface UserConfigurationProps {
     setupError: Error;
     disabled: boolean;
     requireAdmin: boolean;
+    requireCommPrefs: boolean;
 }
 
 export const UserConfiguration: FC<UserConfigurationProps> = ({
@@ -19,6 +20,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
     setupError,
     disabled,
     requireAdmin,
+    requireCommPrefs,
 }) => {
     const [userEmail, setUserEmail] = useState<string>("");
     const [adminUser, setAdminUser] = useState<string>("admin");
@@ -53,20 +55,21 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                         </Card.Text>}
 
                         <Form onSubmit={submitHandler}>
-
                             {requireAdmin &&
                             <Form.Group controlId="user-name" className="mb-3">
                                 <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" autoFocus/>
                             </Form.Group>}
 
+                            {requireCommPrefs &&
                             <Form.Group controlId="user-email" className="mt-4">
                                 <Form.Label>Email <span className="required-field-label">*</span></Form.Label>
                                 <Form.Control type="email" placeholder="name@company.com" value={userEmail}  onChange={handleEmailChange} />
-                            </Form.Group>
+                            </Form.Group>}
 
+                            {requireCommPrefs &&
                             <Form.Group controlId="security-check" className="mt-4 mb-3">
                                 <Form.Check type="checkbox"  checked={checks} onChange={handleChecksChange} label="I'd like to receive security, product and feature updates" />
-                            </Form.Group>
+                            </Form.Group>}
 
                             {!!setupError && <AlertError error={setupError}/>}
                             <Button variant="primary" disabled={disabled} type="submit">
