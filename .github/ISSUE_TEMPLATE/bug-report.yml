@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thank you for contributing to the lakeFS project.
-        For us to properly address your issue, please fill in the following fields.
+        The following fields help us properly address your issue:
   - type: textarea
     id: what-happened
     attributes:
