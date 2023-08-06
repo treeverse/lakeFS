@@ -231,6 +231,10 @@ Returns 2 values:
 1. The HTTP status code returned by the lakeFS API
 1. The content of the specified object as a lua string
 
+### `lakefs/diff_branch(repository_id, branch_id [, after, amount, prefix, delimiter])`
+
+Returns an object-wise diff of uncommitted changes on `branch_id`.
+
 ### `path/parse(path_string)`
 
 Returns a table for the given path string with the following structure:
