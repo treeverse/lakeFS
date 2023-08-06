@@ -29,7 +29,8 @@ var (
 )
 
 func writeIndex(t *testing.T, dir string) {
-	require.NoError(t, local.WriteIndex(dir, testUri, head))
+	_, err := local.WriteIndex(dir, testUri, head)
+	require.NoError(t, err)
 }
 
 func TestWriteIndex(t *testing.T) {
