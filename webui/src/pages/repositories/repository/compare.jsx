@@ -1,6 +1,5 @@
-import React, {useCallback, useState} from "react";
-
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
+import React, {useCallback, useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import {useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
@@ -315,11 +314,9 @@ const CompareContainer = () => {
 };
 
 const RepositoryComparePage = () => {
-    return (
-        <RepositoryPageLayout activePage={'compare'}>
-            <CompareContainer/>
-        </RepositoryPageLayout>
-    );
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("compare"), [setActivePage]);
+  return <CompareContainer />;
 };
 
 export default RepositoryComparePage;

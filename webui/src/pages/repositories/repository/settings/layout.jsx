@@ -1,5 +1,5 @@
-import React from "react";
-
+import React, {useEffect, useState} from "react";
+import { Outlet, useOutletContext } from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -11,8 +11,13 @@ import {Loading} from "../../../../lib/components/controls";
 import {RepoError} from "../error";
 
 
-export const SettingsLayout = ({ children, activeTab }) => {
+export const SettingsLayout = () => {
+    const [activeTab, setActiveTab] = useState("general");
     const { repo, loading, error} = useRefs();
+    const [setActivePage] = useOutletContext();
+    useEffect(() => {
+        setActivePage("settings");
+    }, [setActivePage]);
     if (loading) return <Loading/>;
     if (error) return <RepoError error={error}/>;
     const repoId = repo.id
@@ -44,10 +49,9 @@ export const SettingsLayout = ({ children, activeTab }) => {
                         </Card>
                     </Col>
                     <Col md={{span: 9}}>
-                        {children}
+                        <Outlet context={[setActiveTab]} />
                     </Col>
                 </Row>
             </Container>
     );
 };
-
