@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea for lakeFS
 title: ''
-labels: 'contributor'
+labels: ''
 assignees: ''
 
 ---
