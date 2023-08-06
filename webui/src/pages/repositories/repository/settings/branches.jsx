@@ -1,9 +1,8 @@
-import React, {useRef, useState} from "react";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
+import React, {useEffect, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {AlertError, Loading, RefreshButton} from "../../../../lib/components/controls";
 import {useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
-import {SettingsLayout} from "./layout";
 import {Button, ListGroup, Row} from "react-bootstrap";
 import Col from "react-bootstrap/Col";
 import {useAPI} from "../../../../lib/hooks/api";
@@ -128,13 +127,9 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
 }
 
 const RepositorySettingsBranchesPage = () => {
-    return (
-        <RepositoryPageLayout activePage={'settings'}>
-            <SettingsLayout activeTab={"branches"}>
-                <SettingsContainer/>
-            </SettingsLayout>
-        </RepositoryPageLayout>
-    );
+  const [setActiveTab] = useOutletContext();
+  useEffect(() => setActiveTab("branches"), [setActiveTab]);
+  return <SettingsContainer />;
 };
 
 export default RepositorySettingsBranchesPage;
