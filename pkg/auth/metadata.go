@@ -130,6 +130,9 @@ func (m *KVMetadataManager) GetCommPrefs(ctx context.Context) (CommPrefs, error)
 func (m *KVMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
 	commPrefsSet, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(CommPrefsSetKeyName)))
 	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return false, ErrNotFound
+		}
 		return false, err
 	}
 

@@ -4068,9 +4068,24 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	// otherwise, check if the comm prefs are set. if they are, set missing flag to false.
 	if !c.Config.EmailSubscription.Enabled {
 		response.CommPrefsMissing = swag.Bool(false)
-	} else if commPrefs, err := c.MetadataManager.IsCommPrefsSet(ctx); err == nil {
-		response.CommPrefsMissing = swag.Bool(!commPrefs)
+		writeResponse(w, r, http.StatusOK, response)
+		return
 	}
+
+	prefsSet, err := c.MetadataManager.IsCommPrefsSet(ctx)
+	switch {
+	case errors.Is(err, auth.ErrNotFound):
+		// comprefs may not be found for two reasons:
+		// 1. The setup ran on an older version of lakeFS that didn't have commprefs. In this case, we treat it as set.
+		// 2. The setup ran on a newer version of lakeFS that has commprefs, but the setup didn't complete. In this case, we treat it as not set.
+		response.CommPrefsMissing = swag.Bool(savedState != auth.SetupStateInitialized)
+	case err != nil:
+		// failed to check if comm prefs are set, treating as set
+		response.CommPrefsMissing = swag.Bool(false)
+	default:
+		response.CommPrefsMissing = swag.Bool(!prefsSet)
+	}
+
 	writeResponse(w, r, http.StatusOK, response)
 }
 
