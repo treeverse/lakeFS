@@ -1,8 +1,12 @@
-import React from 'react';
+import React from "react";
 
-import {BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
-import {WithLoginConfigContext} from "../lib/hooks/conf";
-
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { WithLoginConfigContext } from "../lib/hooks/conf";
 
 // pages
 import RepositoriesPage from "./repositories";
