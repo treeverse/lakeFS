@@ -82,7 +82,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.SeekGE([]byte("b"))
+		itr.SeekGE([]byte("aaa"))
 		names = make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -108,7 +108,11 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 		defer itr.Close()
 		itr.SeekGE([]byte("d"))
+		if itr.Next() {
+			t.Fatalf("next after seekGE expected to be false")
+		}
 
+		itr.SeekGE([]byte("d"))
 		if itr.Next() {
 			t.Fatalf("next after seekGE expected to be false")
 		}

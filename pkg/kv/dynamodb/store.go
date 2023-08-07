@@ -411,20 +411,34 @@ func (s *Store) DropTable() error {
 	return err
 }
 
+func (e *EntriesIterator) getItem(i int64) (res DynKVItem) {
+	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &res)
+	if err != nil {
+		e.err = fmt.Errorf("unmarshal map: %w", err)
+	}
+	return res
+}
+
 func (e *EntriesIterator) TrySeek(key []byte) bool {
+	if len(e.queryResult.Items) == 0 {
+		return false
+	}
+	first := e.getItem(0)
+	if e.err != nil {
+		return false
+	}
+	last := e.getItem(aws.Int64Value(e.queryResult.Count) - 1)
+	if e.err != nil {
+		return false
+	}
+	if bytes.Compare(key, first.ItemKey) < 0 || bytes.Compare(key, last.ItemKey) > 0 {
+		return false
+	}
 	e.currEntryIdx = 0
 	for ; e.currEntryIdx < aws.Int64Value(e.queryResult.Count); e.currEntryIdx++ {
-		var item DynKVItem
-		err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
-		if err != nil {
-			e.err = fmt.Errorf("unmarshal map: %w", err)
-		}
-		if bytes.Compare(item.ItemKey, key) >= 0 {
-			e.entry = &kv.Entry{
-				Key:   item.ItemKey,
-				Value: item.ItemValue,
-			}
-			return true
+		item := e.getItem(e.currEntryIdx)
+		if e.err != nil || bytes.Compare(key, item.ItemKey) <= 0 {
+			return false
 		}
 	}
 	return false
@@ -447,12 +461,7 @@ func (e *EntriesIterator) Next() bool {
 		e.queryResult = queryResult
 		e.currEntryIdx = 0
 	}
-
-	var item DynKVItem
-	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
-	if err != nil {
-		e.err = fmt.Errorf("unmarshal map: %w", err)
-	}
+	item := e.getItem(e.currEntryIdx)
 	e.entry = &kv.Entry{
 		Key:   item.ItemKey,
 		Value: item.ItemValue,
