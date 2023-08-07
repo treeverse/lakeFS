@@ -137,7 +137,6 @@ type Config struct {
 type Catalog struct {
 	BlockAdapter          block.Adapter
 	Store                 Store
-	log                   logging.Logger
 	walkerFactory         WalkerFactory
 	managers              []io.Closer
 	workPool              *pond.WorkerPool
@@ -259,7 +258,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
 
-	executor := batch.NewConditionalExecutor(logging.Default())
+	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
 
 	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
@@ -292,7 +291,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		UGCPrepareInterval:    cfg.Config.UGC.PrepareInterval,
 		PathProvider:          cfg.PathProvider,
 		BackgroundLimiter:     cfg.Limiter,
-		log:                   logging.Default().WithField("service_name", "entry_catalog"),
 		walkerFactory:         cfg.WalkerFactory,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
@@ -304,6 +302,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 func (c *Catalog) SetHooksHandler(hooks graveler.HooksHandler) {
 	c.Store.SetHooksHandler(hooks)
+}
+
+func (c *Catalog) log(ctx context.Context) logging.Logger {
+	return logging.FromContext(ctx).WithField("service_name", "entry_catalog")
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
@@ -1876,11 +1878,15 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		return importError
 	}
 
+	prefixes := make([]graveler.Prefix, 0, len(params.Paths))
+	for _, ip := range params.Paths {
+		prefixes = append(prefixes, graveler.Prefix(ip.Destination))
+	}
 	commitID, err := c.Store.Import(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
 		Committer: params.Commit.Committer,
 		Message:   params.Commit.CommitMessage,
 		Metadata:  map[string]string(params.Commit.Metadata),
-	})
+	}, prefixes)
 	if err != nil {
 		importError := fmt.Errorf("merge import: %w", err)
 		importManager.SetError(importError)
@@ -1921,7 +1927,7 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 	id := xid.New().String()
 	// Run import
 	go func() {
-		logger := c.log.WithField("import_id", id)
+		logger := c.log(ctx).WithField("import_id", id)
 		err = c.importAsync(repository, branchID, id, params, logger)
 		if err != nil {
 			logger.WithError(err).Error("import failure")
@@ -1941,7 +1947,7 @@ func (c *Catalog) CancelImport(ctx context.Context, repositoryID, importID strin
 		return err
 	}
 	if importStatus.Completed {
-		c.log.WithFields(logging.Fields{
+		c.log(ctx).WithFields(logging.Fields{
 			"import_id": importID,
 			"completed": importStatus.Completed,
 			"error":     importStatus.Error,
@@ -2005,7 +2011,7 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 	stagingToken := params.StagingToken
 	skipped := it.GetSkippedEntries()
 	if len(skipped) > 0 {
-		c.log.Warning("Skipped count:", len(skipped))
+		c.log(ctx).Warning("Skipped count:", len(skipped))
 		if stagingToken == "" {
 			stagingToken = graveler.GenerateStagingToken("import", "ingest_range").String()
 		}
@@ -2170,7 +2176,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	defer func() {
 		_ = fd.Close()
 		if err := os.Remove(fd.Name()); err != nil {
-			c.log.WithField("filename", fd.Name()).Warn("Failed to delete temporary gc uncommitted data file")
+			c.log(ctx).WithField("filename", fd.Name()).Warn("Failed to delete temporary gc uncommitted data file")
 		}
 	}()
 
@@ -2278,14 +2284,14 @@ func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token strin
 func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
-		c.log.WithError(err).Warn("Failed list repositories during delete expired addresses")
+		c.log(ctx).WithError(err).Warn("Failed list repositories during delete expired addresses")
 		return
 	}
 
 	for _, repo := range repos {
 		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
 		if err != nil {
-			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
+			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
 		}
 	}
 }
@@ -2293,14 +2299,14 @@ func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
 func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
-		c.log.WithError(err).Warn("Delete expired imports: failed to list repositories")
+		c.log(ctx).WithError(err).Warn("Delete expired imports: failed to list repositories")
 		return
 	}
 
 	for _, repo := range repos {
 		err = c.Store.DeleteExpiredImports(ctx, repo)
 		if err != nil {
-			c.log.WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired imports failed")
+			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired imports failed")
 		}
 	}
 }

@@ -8,7 +8,7 @@ has_toc: false
 
 # How lakeFS Works
 
-The [Architecture]({{ site.baseurl }}/understand/architecture.html) page includes a logical overview of lakeFS and its components. 
+The [Architecture]({% link understand/architecture.md %}) page includes a logical overview of lakeFS and its components. 
 
 For deep-dive content about lakeFS see: 
 

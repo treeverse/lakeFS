@@ -59,7 +59,7 @@ type Adapter struct {
 	mutex      *sync.RWMutex
 }
 
-func New(opts ...func(a *Adapter)) *Adapter {
+func New(_ context.Context, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		data:       make(map[string][]byte),
 		mpu:        make(map[string]*mpu),

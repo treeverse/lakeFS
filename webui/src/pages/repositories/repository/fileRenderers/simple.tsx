@@ -77,6 +77,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
 }) => {
   return (
     <ReactMarkdown
+      className="object-viewer-markdown"
       components={CustomMarkdownRenderer}
       remarkPlugins={[
         [

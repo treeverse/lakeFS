@@ -753,7 +753,10 @@ components:
       properties:
         state:
           type: string
-          enum: [initialized, not_initialized, comm_prefs_done]
+          enum: [initialized, not_initialized]
+        comm_prefs_missing:
+          type: boolean
+          description: true if the comm prefs are missing.
         login_config:
           $ref: "#/components/schemas/LoginConfig"
     AccessKeyCredentials:
@@ -801,15 +804,6 @@ components:
       required:
         - featureUpdates
         - securityUpdates
-
-    NextStep:
-      type: object
-      properties:
-        nextStep:
-          description: the next step in the setup process
-          type: string
-      required:
-        - nextStep
 
     UpdatePasswordByToken:
       type: object
@@ -1461,10 +1455,6 @@ paths:
       responses:
         200:
           description: communication preferences saved successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NextStep"
         409:
           description: setup was already completed
           content:

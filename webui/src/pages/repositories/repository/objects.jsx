@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
+import { useOutletContext } from "react-router-dom";
 import {CheckboxIcon, UploadIcon, XIcon} from "@primer/octicons-react";
-import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
@@ -752,13 +752,10 @@ const ObjectsBrowser = ({ config, configError }) => {
 
 const RepositoryObjectsPage = () => {
   const config = useStorageConfig();
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("objects"), [setActivePage]);
 
-  return (
-    <RepositoryPageLayout activePage={"objects"}>
-      {config.loading && <Loading />}
-      <ObjectsBrowser config={config} configError={config.error} />
-    </RepositoryPageLayout>
-  );
+  return <ObjectsBrowser config={config} configError={config.error} />;
 };
 
 export default RepositoryObjectsPage;

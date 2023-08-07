@@ -107,7 +107,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	kvStore := kvtest.GetStore(ctx, t)
 	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 
 	users := []string{"bar", "barn", "baz", "foo", "foobar", "foobaz"}
 	for _, u := range users {
@@ -157,7 +157,7 @@ func TestAuthService_ListPaged(t *testing.T) {
 	kvStore := kvtest.GetStore(ctx, t)
 	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	for _, c := range chars {
@@ -540,19 +540,19 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 
 	serviceWithoutCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: false,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 	serviceWithCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     20 * time.Second,
 		Jitter:  3 * time.Second,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 	serviceWithCacheLowTTL := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     1 * time.Millisecond,
 		Jitter:  1 * time.Millisecond,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
 
 	b.Run("without_cache", func(b *testing.B) {
@@ -1124,7 +1124,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.TTL = time.Minute
 		cacheParams.Jitter = time.Minute
 	}
-	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams, logging.Default())
+	s, err := auth.NewAPIAuthServiceWithClient(mockClient, secretStore, cacheParams, logging.ContextUnavailable())
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}

@@ -50,6 +50,14 @@ public class SetupStateTest {
     }
 
     /**
+     * Test the property 'commPrefsMissing'
+     */
+    @Test
+    public void commPrefsMissingTest() {
+        // TODO: test commPrefsMissing
+    }
+
+    /**
      * Test the property 'loginConfig'
      */
     @Test

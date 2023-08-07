@@ -13,7 +13,6 @@ import (
 type Manager struct {
 	kvStore        kv.Store
 	kvStoreLimited kv.Store
-	log            logging.Logger
 	wakeup         chan asyncEvent
 
 	// cleanupCallback is being called with every successful cleanup cycle
@@ -31,11 +30,14 @@ func NewManager(ctx context.Context, store, storeLimited kv.Store) *Manager {
 	m := &Manager{
 		kvStore:        store,
 		kvStoreLimited: storeLimited,
-		log:            logging.Default().WithField("service_name", "staging_manager"),
 		wakeup:         make(chan asyncEvent, wakeupChanCapacity),
 	}
 	go m.asyncLoop(ctx)
 	return m
+}
+
+func (m *Manager) log(ctx context.Context) logging.Logger {
+	return logging.FromContext(ctx).WithField("service_name", "staging_manager")
 }
 
 func (m *Manager) OnCleanup(cleanupCallback func()) {
@@ -116,7 +118,7 @@ func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error
 	select {
 	case m.wakeup <- cleanTokens:
 	default:
-		m.log.Debug("wakeup channel is full, skipping wakeup")
+		m.log(ctx).Debug("wakeup channel is full, skipping wakeup")
 	}
 	return err
 }
@@ -147,7 +149,7 @@ func (m *Manager) asyncLoop(ctx context.Context) {
 			case cleanTokens:
 				err := m.findAndDrop(ctx)
 				if err != nil {
-					m.log.WithError(err).Error("Dropping tokens failed")
+					m.log(ctx).WithError(err).Error("Dropping tokens failed")
 				} else if m.cleanupCallback != nil {
 					m.cleanupCallback()
 				}

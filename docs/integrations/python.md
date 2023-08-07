@@ -188,7 +188,7 @@ For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.i
 
 ### Full API reference
 
-For a full reference of the lakeFS API, see [lakeFS API]({{ site.baseurl }}/reference/api.html)
+For a full reference of the lakeFS API, see [lakeFS API]({% link reference/api.md %})
 
 ## Using Boto
 

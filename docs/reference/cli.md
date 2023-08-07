@@ -2028,6 +2028,7 @@ lakectl dbt create-branch-schema --branch <branch-name>
       --continue-on-schema-exists   allow running on existing schema
       --create-branch               create a new branch for the schema
       --dbfs-location string        
+      --from-client-type string     metastore type [hive, glue]
   -h, --help                        help for create-branch-schema
       --project-root string         location of dbt project (default ".")
       --skip-views                  
@@ -2553,6 +2554,81 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
       --s3-endpoint-url string   URL to access S3 storage API (by default, use regular AWS S3 endpoint
       --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
   -v, --verbose                  print stats for each individual object staged
+```
+
+
+
+### lakectl local
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+BETA: sync local directories with lakeFS paths
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for local
+```
+
+
+
+### lakectl local help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type local help [path to command] for full details.
+
+```
+lakectl local help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl local init
+
+set a local directory to sync with a lakeFS path
+
+```
+lakectl local init <path uri> [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --force   Overwrites if directory already linked to a lakeFS path
+  -h, --help    help for init
+  -y, --yes     Automatically say yes to all confirmations
+```
+
+
+
+### lakectl local list
+
+find and list directories that are synced with lakeFS
+
+```
+lakectl local list [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for list
 ```
 
 

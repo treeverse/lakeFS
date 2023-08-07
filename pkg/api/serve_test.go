@@ -11,10 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-openapi/swag"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
-
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -33,6 +31,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
+	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -85,23 +84,6 @@ func (m *memCollector) CollectCommPrefs(email, installationID string, featureUpd
 }
 
 func (m *memCollector) Close() {}
-
-func setupCommPrefs(t testing.TB, clt api.ClientWithResponsesInterface) *api.NextStep {
-	t.Helper()
-	mockEmail := "test@acme.co"
-	res, err := clt.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
-		Email:           &mockEmail,
-		FeatureUpdates:  false,
-		SecurityUpdates: false,
-	})
-	testutil.Must(t, err)
-	if res.JSON200 == nil {
-		t.Fatal("Failed to setup comm prefs", res.HTTPResponse.StatusCode, res.HTTPResponse.Status)
-	}
-	return &api.NextStep{
-		NextStep: "comm_prefs_done",
-	}
-}
 
 func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
@@ -165,7 +147,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	idGen := &actions.DecreasingIDGenerator{}
 	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
 		Enabled: false,
-	}, logging.Default())
+	}, logging.ContextUnavailable())
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
@@ -223,7 +205,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		nil,
 		actionsService,
 		auditChecker,
-		logging.Default(),
+		logging.ContextUnavailable(),
 		emailer,
 		tmpl,
 		nil,
@@ -294,7 +276,6 @@ func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFa
 	server := setupServer(t, handler)
 	deps.server = server
 	clt := setupClientByEndpoint(t, server.URL, "", "")
-	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 	clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
 	return clt, deps
@@ -304,7 +285,6 @@ func TestInvalidRoute(t *testing.T) {
 	handler, _ := setupHandler(t)
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
-	_ = setupCommPrefs(t, clt)
 	cred := createDefaultAdminUser(t, clt)
 
 	// setup client with invalid endpoint base url

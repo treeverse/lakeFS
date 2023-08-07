@@ -56,7 +56,7 @@ The garbage collection process proceeds in three main phases:
 
 Some objects will _not_ be collected regardless of configured GC rules:
 * Any object that is accessible from any branch's HEAD.
-* Objects stored outside the repository's [storage namespace]({{ site.baseurl }}/understand/glossary.md#storage-namespace).
+* Objects stored outside the repository's [storage namespace][storage-namespace].
   For example, objects imported using the lakeFS import UI are not collected.
 * Uncommitted objects, see [Uncommitted Garbage Collection](./garbage-collection-uncommitted.md),
 
@@ -85,3 +85,5 @@ repositories may require increasing a read timeout.  If you run into timeout err
 * Add `-c
   spark.hadoop.lakefs.api.connection.timeout_seconds=TIMEOUT_IN_SECONDS`
   (default 10) to wait longer for lakeFS to accept connections.
+
+[storage-namespace]:  {% link understand/glossary.md %}#storage-namespace

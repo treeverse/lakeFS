@@ -229,7 +229,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.NextRange()
 		m.haveDest = m.dest.NextRange()
 
-	case bytes.Equal(sourceRange.MinKey, destRange.MinKey) && bytes.Equal(sourceRange.MaxKey, destRange.MaxKey): // same bounds
+	case sourceRange.EqualBounds(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return err
@@ -250,7 +250,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 			m.haveDest = m.dest.Next()
 		}
 
-	case bytes.Compare(sourceRange.MaxKey, destRange.MinKey) < 0: // source before dest
+	case sourceRange.BeforeRange(destRange):
 		baseRange, err := m.getNextOverlappingFromBase(sourceRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -271,7 +271,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 		m.haveSource = m.source.Next()
 		m.haveDest = m.dest.Next()
 
-	case bytes.Compare(destRange.MaxKey, sourceRange.MinKey) < 0: // dest before source
+	case destRange.BeforeRange(sourceRange) && m.validWritingRange(m.dest):
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -370,7 +370,8 @@ func (m *merger) handleDestRangeSourceKey(destRange *Range, sourceValue *gravele
 		return m.sourceBeforeDest(sourceValue)
 	}
 
-	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 { // dest range before source
+	if bytes.Compare(destRange.MaxKey, sourceValue.Key) < 0 &&
+		m.validWritingRange(m.dest) { // dest range before source
 		baseRange, err := m.getNextOverlappingFromBase(destRange)
 		if err != nil {
 			return fmt.Errorf("base range GE: %w", err)
@@ -478,6 +479,15 @@ func (m *merger) merge() error {
 		}
 	}
 	return nil
+}
+
+func (m *merger) validWritingRange(it Iterator) bool {
+	switch v := it.(type) {
+	case ImportIterator:
+		return !v.IsCurrentPrefixIncludedInRange()
+	default:
+		return true
+	}
 }
 
 func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {

@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect} from "react";
 import Layout from "../../lib/components/layout";
 import {useState} from "react";
-import {API_ENDPOINT, setup, SETUP_STATE_NOT_INITIALIZED, SETUP_STATE_INITIALIZED, SETUP_STATE_COMMUNICATION_PERFS_DONE} from "../../lib/api";
+import {API_ENDPOINT, setup, SETUP_STATE_NOT_INITIALIZED, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {SetupComplete} from "./setupComplete";
@@ -13,6 +13,7 @@ const SetupContents = () => {
     const [setupData, setSetupData] = useState(null);
     const [disabled, setDisabled] = useState(false);
     const [currentStep, setCurrentStep] = useState(null);
+    const [commPrefsMissing, setCommPrefsMissing] = useState(false);
     const router = useRouter();
     const { response, error, loading } = useAPI(() => {
         return setup.getState()
@@ -21,35 +22,40 @@ const SetupContents = () => {
     useEffect(() => {
         // Set initial state
         if (!error && response) {
-            setCurrentStep(response?.state);
+            setCurrentStep(response.state);
+            setCommPrefsMissing(response.comm_prefs_missing === true);
         }
     }, [error, response]);
 
-    const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, updatesChecked, securityChecked) => {
-        if (!adminUser) {
+    const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, checked) => {
+        if (currentStep !== SETUP_STATE_NOT_INITIALIZED && !adminUser) {
             setSetupError("Please enter your admin username.");
             return;
         }
-        if (!userEmail) {
+        if (commPrefsMissing && !userEmail) {
             setSetupError("Please enter your email address.");
             return;
         }
+
         setDisabled(true);
         try {
-            if (currentStep === SETUP_STATE_NOT_INITIALIZED) {
-               await setup.commPrefs(userEmail, updatesChecked, securityChecked);
+            if (currentStep !== SETUP_STATE_INITIALIZED) {
+                const response = await setup.lakeFS(adminUser);
+                setSetupData(response);
             }
-            const response = await setup.lakeFS(adminUser);
+            if (commPrefsMissing) {
+                await setup.commPrefs(userEmail, checked, checked);
+                setCommPrefsMissing(false);
+            }
             setSetupError(null);
-            setSetupData(response);
         } catch (error) {
             setSetupError(error);
         } finally {
             setDisabled(false);
         }
-    }, [setDisabled, setSetupError, setup, currentStep]);
+    }, [setDisabled, setSetupError, setup, currentStep, commPrefsMissing]);
 
-    if (loading) {
+    if (error || loading) {
         return null;
     }
 
@@ -65,25 +71,22 @@ const SetupContents = () => {
         );
     }
 
-    
-    switch (currentStep) {
-        case SETUP_STATE_INITIALIZED:
-            return router.push({pathname: '/', query: router.query});
-        case SETUP_STATE_COMMUNICATION_PERFS_DONE:
-        case SETUP_STATE_NOT_INITIALIZED:
-                return (
-                    <Layout logged={false}>
-                        <UserConfiguration
-                            onSubmit={onSubmitUserConfiguration}
-                            setupError={setupError}
-                            disabled={disabled}
-                            />
-                    </Layout>
-            );
-        default:
-            return null;
+    const notInitialized = currentStep !== SETUP_STATE_INITIALIZED;
+    if (notInitialized || commPrefsMissing) {
+        return (
+            <Layout logged={false}>
+                <UserConfiguration
+                    onSubmit={onSubmitUserConfiguration}
+                    setupError={setupError}
+                    disabled={disabled}
+                    requireAdmin={notInitialized}
+                    requireCommPrefs={commPrefsMissing}
+                />
+            </Layout>
+        );
     }
-    
+
+    return router.push({pathname: '/', query: router.query});
 };
 
 

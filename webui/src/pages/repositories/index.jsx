@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -13,7 +13,6 @@ import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-import Layout from "../../lib/components/layout";
 import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
 import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
@@ -23,8 +22,6 @@ import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
 
-import {Route, Routes} from "react-router-dom";
-import RepositoryPage from './repository';
 import Button from "react-bootstrap/Button";
 
 dayjs.extend(relativeTime);
@@ -52,15 +49,14 @@ const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = fa
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, samlpleRepoChecked = false }) => {
 
-    const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
+  const [formValid, setFormValid] = useState(false);
+
+  const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
     const showError = (error) ? error : err;
     if (loading) {
         return (
             <Modal show={show} onHide={onCancel} size="lg">
-                <Modal.Header closeButton>
-                    <ModalTitleContainer/>
-                </Modal.Header>
                 <Modal.Body>
                     <Loading/>
                 </Modal.Body>
@@ -70,12 +66,28 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
 
     return (
         <Modal show={show} onHide={onCancel} size="lg">
-            <Modal.Header closeButton>
-                <ModalTitleContainer/>
-            </Modal.Header>
             <Modal.Body>
-                <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel} inProgress={inProgress} samlpleRepoChecked={samlpleRepoChecked} />
+                <RepositoryCreateForm
+                  id="repository-create-form"
+                  config={response}
+                  error={showError}
+                  formValid={formValid}
+                  setFormValid={setFormValid}
+                  onSubmit={onSubmit}
+                  onCancel={onCancel}
+                  inProgress={inProgress}
+                  samlpleRepoChecked={samlpleRepoChecked}
+                />
             </Modal.Body>
+            <Modal.Footer>
+              <Button variant="success" type="submit" form="repository-create-form" className="me-2" disabled={!formValid || inProgress}>
+                { inProgress ? 'Creating...' : 'Create Repository' }
+              </Button>
+              <Button variant="secondary" onClick={(e) => {
+                e.preventDefault();
+                onCancel();
+              }}>Cancel</Button>
+            </Modal.Footer>
         </Modal>
     );
 };
@@ -93,7 +105,9 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo}) => {
             </Row>
             <Row className="button-container">
                 <Col>
-                    <GettingStartedCreateRepoButton text="Create Sample Repository" creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
+                    <GettingStartedCreateRepoButton text={
+                      <><span>Create Sample Repository</span> </>
+                    } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
                 </Col>
             </Row>
             <div className="d-flex flex-direction-row align-items-center">
@@ -110,14 +124,14 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after);
     }, [refresh, prefix, after]);
-
+    useEffect(() => {
+      toggleShowActionsBar();
+    }, [toggleShowActionsBar]);
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
     if (!after && !prefix && results.length === 0) {
         return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} />;
     }
-
-    toggleShowActionsBar();
 
     return (
         <div>
@@ -217,87 +231,59 @@ const RepositoriesPage = () => {
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, response, createRepo]);
 
     return (
-        <Layout>
-            <Container fluid="xl" className="mt-3">
-                {showActionsBar && <ActionsBar>
-                    <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
-                        <Form.Group>
-                            <Col>
-                                <InputGroup>
-                                    <InputGroup.Text>
-                                        <SearchIcon/>
-                                    </InputGroup.Text>
-                                    <Form.Control
-                                        placeholder="Find a repository..."
-                                        autoFocus
-                                        value={prefix}
-                                        onChange={event => setPrefix(event.target.value)}
-                                    />
-                                </InputGroup>
-                            </Col>
-                        </Form.Group>
-                    </Form>
-                    <ButtonToolbar className="ms-auto mb-2">
-                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
-                    </ButtonToolbar>
-                </ActionsBar> }
+        <Container fluid="xl" className="mt-3">
+            {showActionsBar && <ActionsBar>
+                <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
+                    <Form.Group>
+                        <Col>
+                            <InputGroup>
+                                <InputGroup.Text>
+                                    <SearchIcon/>
+                                </InputGroup.Text>
+                                <Form.Control
+                                    placeholder="Find a repository..."
+                                    autoFocus
+                                    value={prefix}
+                                    onChange={event => setPrefix(event.target.value)}
+                                />
+                            </InputGroup>
+                        </Col>
+                    </Form.Group>
+                </Form>
+                <ButtonToolbar className="ms-auto mb-2">
+                    <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
+                </ButtonToolbar>
+            </ActionsBar> }
 
-                <RepositoryList
-                    prefix={routerPfx}
-                    refresh={refresh}
-                    after={(router.query.after) ? router.query.after : ""}
-                    onPaginate={after => {
-                        const query = {after};
-                        if (router.query.prefix) query.prefix = router.query.prefix;
-                        router.push({pathname: `/repositories`, query});
-                    }}
-                    onCreateSampleRepo={createSampleRepoButtonCallback}
-                    onCreateEmptyRepo={createRepositoryButtonCallback}
-                    toggleShowActionsBar={toggleShowActionsBar}
-                    creatingRepo={creatingRepo}
-                    />
+            <RepositoryList
+                prefix={routerPfx}
+                refresh={refresh}
+                after={(router.query.after) ? router.query.after : ""}
+                onPaginate={after => {
+                    const query = {after};
+                    if (router.query.prefix) query.prefix = router.query.prefix;
+                    router.push({pathname: `/repositories`, query});
+                }}
+                onCreateSampleRepo={createSampleRepoButtonCallback}
+                onCreateEmptyRepo={createRepositoryButtonCallback}
+                toggleShowActionsBar={toggleShowActionsBar}
+                creatingRepo={creatingRepo}
+                />
 
-                <CreateRepositoryModal
-                    onCancel={() => {
-                        setShowCreateRepositoryModal(false);
-                        setCreateRepoError(null);
-                    }}
-                    show={showCreateRepositoryModal}
-                    error={createRepoError}
-                    onSubmit={(repo) => createRepo(repo, true)}
-                    samlpleRepoChecked={sampleRepoChecked}
-                    inProgress={creatingRepo}
-                    />
+            <CreateRepositoryModal
+                onCancel={() => {
+                    setShowCreateRepositoryModal(false);
+                    setCreateRepoError(null);
+                }}
+                show={showCreateRepositoryModal}
+                error={createRepoError}
+                onSubmit={(repo) => createRepo(repo, true)}
+                samlpleRepoChecked={sampleRepoChecked}
+                inProgress={creatingRepo}
+                />
 
-            </Container>
-        </Layout>
+        </Container>
     );
 }
 
-const ModalTitleContainer = () => {
-    return (
-        <Container fluid="true" className="justify-content-start">
-            <Row>
-                <Col>
-                    <Modal.Title>Create A New Repository</Modal.Title>
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/understand/model.html#repository" target="_blank" rel="noopener noreferrer">Learn more.</a>
-                </Col>
-            </Row>
-        </Container>
-    );
-};
-
-const RepositoriesIndex = () => {
-    return (
-        <Routes>
-            <Route path="/" element={<RepositoriesPage/>} />
-            <Route path=":repoId/*" element={<RepositoryPage/>} />
-        </Routes>
-    );
-};
-
-export default RepositoriesIndex;
+export default RepositoriesPage;
