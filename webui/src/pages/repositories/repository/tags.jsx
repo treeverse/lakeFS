@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useMemo, useRef, useState } from "react";
+
 import {
     TagIcon,
     LinkIcon,
@@ -19,6 +19,7 @@ import {
     AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
+import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import { useRefs } from "../../../lib/hooks/repo";
 import { useAPIWithPagination } from "../../../lib/hooks/api";
 import { Paginator } from "../../../lib/components/pagination";
@@ -254,9 +255,11 @@ const TagsContainer = () => {
 
 
 const RepositoryTagsPage = () => {
-  const [setActivePage] = useOutletContext();
-  useEffect(() => setActivePage("tags"), [setActivePage]);
-  return <TagsContainer />;
+    return (
+            <RepositoryPageLayout activePage={'tags'}>
+                <TagsContainer />
+            </RepositoryPageLayout>
+    )
 }
 
 export default RepositoryTagsPage;

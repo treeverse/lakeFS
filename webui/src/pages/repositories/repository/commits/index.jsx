@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import { useOutletContext } from "react-router-dom";
+import React, {useState} from "react";
+
 import dayjs from "dayjs";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 
@@ -16,6 +16,7 @@ import {
     LinkButton,
     Loading, RefreshButton
 } from "../../../../lib/components/controls";
+import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
@@ -158,9 +159,11 @@ const CommitsContainer = () => {
 
 
 const RepositoryCommitsPage = () => {
-  const [setActivePage] = useOutletContext();
-  useEffect(() => setActivePage('commits'), [setActivePage]);
-  return <CommitsContainer />;
+    return (
+        <RepositoryPageLayout activePage={'commits'}>
+            <CommitsContainer/>
+        </RepositoryPageLayout>
+    );
 };
 
 const RepositoryCommitsIndexPage = () => {
