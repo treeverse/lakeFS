@@ -7,7 +7,7 @@
 :new: What's new:
 - Support .text as a text file extension in the Web UI (#6130)
 - UI: allow loading >10k diff summary (#6287)
-- feat: add `diff_branch` to Lua hook (#6318)
+- Add `diff_branch` to Lua hook (#6318)
 - Setup lakefs on startup using predefined setup parameters (#5962)
 - Quickstart now uses DuckDB WASM instead of CLI (#6092)
 - Stop publishing lakeFS DuckDB image (#6141)
