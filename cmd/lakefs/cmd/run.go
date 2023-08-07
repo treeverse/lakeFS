@@ -364,21 +364,19 @@ var runCmd = &cobra.Command{
 		}
 
 		data := bannerData{
-			LocalSetup: localBanner,
+			SetupMessage: localBanner,
+			Version:      version.Version,
 		}
 		if isQuickstart {
-			data.LocalSetup = ""
-			data.Quickstart = quickStartBanner
+			data.SetupMessage = quickStartBanner
 		}
-		templ := template.New("banner")
+
 		var buf bytes.Buffer
-		t := template.Must(templ.Parse(runBannerTmpl))
-		err = t.Execute(&buf, data)
+		err = bannerTemplate.Execute(&buf, data)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Failed formatting banner: %v\n", err)
 			os.Exit(1)
 		}
-		_, _ = fmt.Fprintf(os.Stderr, "lakeFS %s - Up and running (^C to shutdown)...\n", version.Version)
 		printWelcome(os.Stderr, buf.String())
 		gracefulShutdown(ctx, server)
 	},
@@ -486,7 +484,11 @@ func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, 
 	}
 }
 
+var bannerTemplate = template.Must(template.New("banner").Parse(runBannerTmpl))
+
 const runBannerTmpl = `
+lakeFS {{ .Version }} - Up and running (^C to shutdown)...
+
 
      ██╗      █████╗ ██╗  ██╗███████╗███████╗███████╗
      ██║     ██╔══██╗██║ ██╔╝██╔════╝██╔════╝██╔════╝
@@ -494,8 +496,7 @@ const runBannerTmpl = `
      ██║     ██╔══██║██╔═██╗ ██╔══╝  ██╔══╝  ╚════██║
      ███████╗██║  ██║██║  ██╗███████╗██║     ███████║
      ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝
-{{ .LocalSetup }}
-{{ .Quickstart }}
+{{ .SetupMessage }}
 │
 │ For more information on how to use lakeFS,
 │     check out the docs at https://docs.lakefs.io/quickstart/
@@ -525,8 +526,8 @@ var quickStartBanner = fmt.Sprintf(`
 `, config.DefaultQuickstartKeyID, config.DefaultQuickstartSecretKey)
 
 type bannerData struct {
-	LocalSetup string
-	Quickstart string
+	SetupMessage string
+	Version      string
 }
 
 func printWelcome(w io.Writer, banner string) {
