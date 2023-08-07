@@ -241,6 +241,11 @@ func (si *SkipFirstIterator) Close() {
 	si.it.Close()
 }
 
+func (si *SkipFirstIterator) TrySeek(key []byte) bool {
+	si.nextCalled = false // TODO needed?
+	return si.it.TrySeek(key)
+}
+
 // PartitionIterator Used to scan through a whole partition
 type PartitionIterator struct {
 	ctx          context.Context
@@ -300,6 +305,9 @@ func (p *PartitionIterator) Next() bool {
 
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.Err() == nil {
+		if p.itr != nil && p.itr.TrySeek(key) {
+			return
+		}
 		p.Close() // Close previous before creating new iterator
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{KeyStart: key, BatchSize: p.batchSize})
 		p.itrClosed = p.err != nil

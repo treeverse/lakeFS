@@ -123,6 +123,7 @@ type EntriesIterator interface {
 	// Close should be called at the end of processing entries, required to release resources used to scan entries.
 	// After calling 'Close' the instance should not be used as the behaviour will not be defined.
 	Close()
+	TrySeek(key []byte) bool
 }
 
 // Entry holds a pair of key/value

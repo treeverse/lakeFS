@@ -35,11 +35,16 @@ type EntriesIterator struct {
 	err          error
 }
 
+func (e *EntriesIterator) TrySeek(key []byte) bool {
+	//TODO implement me
+	panic("implement me")
+}
+
 const (
 	DriverName = "postgres"
 
 	DefaultTableName = "kv"
-	paramTableName   = "lakefskv_table"
+	paramTableName   = "lakefsßkv_table"
 
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.

@@ -368,6 +368,11 @@ type EntriesIterator struct {
 	encoding     *base32.Encoding
 }
 
+func (e *EntriesIterator) TrySeek(key []byte) bool {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false

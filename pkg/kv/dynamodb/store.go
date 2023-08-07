@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -408,6 +409,25 @@ func (s *Store) DropTable() error {
 		TableName: &s.params.TableName,
 	})
 	return err
+}
+
+func (e *EntriesIterator) TrySeek(key []byte) bool {
+	e.currEntryIdx = 0
+	for ; e.currEntryIdx < aws.Int64Value(e.queryResult.Count); e.currEntryIdx++ {
+		var item DynKVItem
+		err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
+		if err != nil {
+			e.err = fmt.Errorf("unmarshal map: %w", err)
+		}
+		if bytes.Compare(item.ItemKey, key) >= 0 {
+			e.entry = &kv.Entry{
+				Key:   item.ItemKey,
+				Value: item.ItemValue,
+			}
+			return true
+		}
+	}
+	return false
 }
 
 func (e *EntriesIterator) Next() bool {
