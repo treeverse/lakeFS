@@ -27,10 +27,6 @@ paths:
         required: true
       responses:
         "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NextStep'
           description: communication preferences saved successfully
         "409":
           content:
@@ -6641,13 +6637,16 @@ components:
           - login_cookie_names
           fallback_login_label: fallback_login_label
         state: initialized
+        comm_prefs_missing: true
       properties:
         state:
           enum:
           - initialized
           - not_initialized
-          - comm_prefs_done
           type: string
+        comm_prefs_missing:
+          description: true if the comm prefs are missing.
+          type: boolean
         login_config:
           $ref: '#/components/schemas/LoginConfig'
       type: object
@@ -6703,16 +6702,6 @@ components:
       required:
       - featureUpdates
       - securityUpdates
-      type: object
-    NextStep:
-      example:
-        nextStep: nextStep
-      properties:
-        nextStep:
-          description: the next step in the setup process
-          type: string
-      required:
-      - nextStep
       type: object
     UpdatePasswordByToken:
       example:

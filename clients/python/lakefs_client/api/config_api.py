@@ -26,7 +26,6 @@ from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
-from lakefs_client.model.next_step import NextStep
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.storage_config import StorageConfig
@@ -282,7 +281,7 @@ class ConfigApi(object):
         )
         self.setup_comm_prefs_endpoint = _Endpoint(
             settings={
-                'response_type': (NextStep,),
+                'response_type': None,
                 'auth': [],
                 'endpoint_path': '/setup_comm_prefs',
                 'operation_id': 'setup_comm_prefs',
@@ -677,7 +676,7 @@ class ConfigApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            NextStep
+            None
                 If the method is called asynchronously, returns the request
                 thread.
         """

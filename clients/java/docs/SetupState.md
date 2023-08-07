@@ -8,6 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **state** | [**StateEnum**](#StateEnum) |  |  [optional]
+**commPrefsMissing** | **Boolean** | true if the comm prefs are missing. |  [optional]
 **loginConfig** | [**LoginConfig**](LoginConfig.md) |  |  [optional]
 
 
@@ -18,7 +19,6 @@ Name | Value
 ---- | -----
 INITIALIZED | &quot;initialized&quot;
 NOT_INITIALIZED | &quot;not_initialized&quot;
-COMM_PREFS_DONE | &quot;comm_prefs_done&quot;
 
 
 
