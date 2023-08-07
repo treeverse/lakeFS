@@ -37,9 +37,7 @@ public class SetupState {
   public enum StateEnum {
     INITIALIZED("initialized"),
     
-    NOT_INITIALIZED("not_initialized"),
-    
-    COMM_PREFS_DONE("comm_prefs_done");
+    NOT_INITIALIZED("not_initialized");
 
     private String value;
 
@@ -83,6 +81,10 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_STATE)
   private StateEnum state;
 
+  public static final String SERIALIZED_NAME_COMM_PREFS_MISSING = "comm_prefs_missing";
+  @SerializedName(SERIALIZED_NAME_COMM_PREFS_MISSING)
+  private Boolean commPrefsMissing;
+
   public static final String SERIALIZED_NAME_LOGIN_CONFIG = "login_config";
   @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
   private LoginConfig loginConfig;
@@ -108,6 +110,29 @@ public class SetupState {
 
   public void setState(StateEnum state) {
     this.state = state;
+  }
+
+
+  public SetupState commPrefsMissing(Boolean commPrefsMissing) {
+    
+    this.commPrefsMissing = commPrefsMissing;
+    return this;
+  }
+
+   /**
+   * true if the comm prefs are missing.
+   * @return commPrefsMissing
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "true if the comm prefs are missing.")
+
+  public Boolean getCommPrefsMissing() {
+    return commPrefsMissing;
+  }
+
+
+  public void setCommPrefsMissing(Boolean commPrefsMissing) {
+    this.commPrefsMissing = commPrefsMissing;
   }
 
 
@@ -144,12 +169,13 @@ public class SetupState {
     }
     SetupState setupState = (SetupState) o;
     return Objects.equals(this.state, setupState.state) &&
+        Objects.equals(this.commPrefsMissing, setupState.commPrefsMissing) &&
         Objects.equals(this.loginConfig, setupState.loginConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state, loginConfig);
+    return Objects.hash(state, commPrefsMissing, loginConfig);
   }
 
   @Override
@@ -157,6 +183,7 @@ public class SetupState {
     StringBuilder sb = new StringBuilder();
     sb.append("class SetupState {\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
+    sb.append("    commPrefsMissing: ").append(toIndentedString(commPrefsMissing)).append("\n");
     sb.append("    loginConfig: ").append(toIndentedString(loginConfig)).append("\n");
     sb.append("}");
     return sb.toString();

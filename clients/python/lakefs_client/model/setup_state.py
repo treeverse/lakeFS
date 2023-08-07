@@ -63,7 +63,6 @@ class SetupState(ModelNormal):
         ('state',): {
             'INITIALIZED': "initialized",
             'NOT_INITIALIZED': "not_initialized",
-            'COMM_PREFS_DONE': "comm_prefs_done",
         },
     }
 
@@ -94,6 +93,7 @@ class SetupState(ModelNormal):
         lazy_import()
         return {
             'state': (str,),  # noqa: E501
+            'comm_prefs_missing': (bool,),  # noqa: E501
             'login_config': (LoginConfig,),  # noqa: E501
         }
 
@@ -104,6 +104,7 @@ class SetupState(ModelNormal):
 
     attribute_map = {
         'state': 'state',  # noqa: E501
+        'comm_prefs_missing': 'comm_prefs_missing',  # noqa: E501
         'login_config': 'login_config',  # noqa: E501
     }
 
@@ -149,6 +150,7 @@ class SetupState(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
+            comm_prefs_missing (bool): true if the comm prefs are missing.. [optional]  # noqa: E501
             login_config (LoginConfig): [optional]  # noqa: E501
         """
 
@@ -232,6 +234,7 @@ class SetupState(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             state (str): [optional]  # noqa: E501
+            comm_prefs_missing (bool): true if the comm prefs are missing.. [optional]  # noqa: E501
             login_config (LoginConfig): [optional]  # noqa: E501
         """
 

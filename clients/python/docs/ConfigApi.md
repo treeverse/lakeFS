@@ -458,7 +458,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **setup_comm_prefs**
-> NextStep setup_comm_prefs(comm_prefs_input)
+> setup_comm_prefs(comm_prefs_input)
 
 setup communications preferences
 
@@ -471,7 +471,6 @@ import lakefs_client
 from lakefs_client.api import config_api
 from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.error import Error
-from lakefs_client.model.next_step import NextStep
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -493,8 +492,7 @@ with lakefs_client.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     try:
         # setup communications preferences
-        api_response = api_instance.setup_comm_prefs(comm_prefs_input)
-        pprint(api_response)
+        api_instance.setup_comm_prefs(comm_prefs_input)
     except lakefs_client.ApiException as e:
         print("Exception when calling ConfigApi->setup_comm_prefs: %s\n" % e)
 ```
@@ -508,7 +506,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**NextStep**](NextStep.md)
+void (empty response body)
 
 ### Authorization
 
