@@ -34,8 +34,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
         setRepoValid(isRepoValid);
         setFormValid(isRepoValid && storageNamespaceValid && defaultBranchValid);
         if (defaultNamespacePrefix) {
-            const sep = defaultNamespacePrefix.endsWith('/') ? '' : '/';
-            storageNamespaceField.current.value = defaultNamespacePrefix + sep + repoNameField.current.value
+            storageNamespaceField.current.value = defaultNamespacePrefix + repoNameField.current.value
             checkStorageNamespaceValidity()
         }
     };
