@@ -26,7 +26,7 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := config.NewConfig()
+	cfg, err := config.NewConfig("")
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	c, err := config.NewConfig()
+	c, err := config.NewConfig("")
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
 	if c.ListenAddress != config.DefaultListenAddress {

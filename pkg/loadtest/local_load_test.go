@@ -38,7 +38,7 @@ func TestLocalLoad(t *testing.T) {
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
-	conf, err := config.NewConfig()
+	conf, err := config.NewConfig("")
 	testutil.MustDo(t, "config", err)
 
 	superuser := &authmodel.SuperuserConfiguration{
