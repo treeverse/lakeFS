@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **token** | **str** | opaque staging token to use to link uploaded object | 
 **physical_address** | **str** |  | [optional] 
 **presigned_url** | **str, none_type** | if presign&#x3D;true is passed in the request, this field will contain a presigned URL to use when uploading | [optional] 
+**presigned_url_expiry** | **int** | If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*.  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

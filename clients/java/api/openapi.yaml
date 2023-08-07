@@ -5931,11 +5931,12 @@ components:
         path: path
         metadata:
           key: metadata
-        size_bytes: 0
+        size_bytes: 6
         content_type: content_type
+        physical_address_expiry: 0
         checksum: checksum
         path_type: common_prefix
-        mtime: 6
+        mtime: 1
       properties:
         path:
           type: string
@@ -5950,6 +5951,16 @@ components:
             Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
             Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
           type: string
+        physical_address_expiry:
+          description: |
+            If present and nonzero, physical_address is a presigned URL and
+            will expire at this Unix Epoch time.  This will be shorter than
+            the presigned URL lifetime if an authentication token is about
+            to expire.
+
+            This field is *optional*.
+          format: int64
+          type: integer
         checksum:
           type: string
         size_bytes:
@@ -5985,20 +5996,22 @@ components:
           path: path
           metadata:
             key: metadata
-          size_bytes: 0
+          size_bytes: 6
           content_type: content_type
+          physical_address_expiry: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 6
+          mtime: 1
         - physical_address: physical_address
           path: path
           metadata:
             key: metadata
-          size_bytes: 0
+          size_bytes: 6
           content_type: content_type
+          physical_address_expiry: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 6
+          mtime: 1
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -7211,6 +7224,7 @@ components:
       example:
         physical_address: physical_address
         presigned_url: presigned_url
+        presigned_url_expiry: 0
         token: token
       properties:
         physical_address:
@@ -7223,6 +7237,16 @@ components:
             a presigned URL to use when uploading
           nullable: true
           type: string
+        presigned_url_expiry:
+          description: |
+            If present and nonzero, physical_address is a presigned URL and
+            will expire at this Unix Epoch time.  This will be shorter than
+            the presigned URL lifetime if an authentication token is about
+            to expire.
+
+            This field is *optional*.
+          format: int64
+          type: integer
       required:
       - token
       type: object
@@ -7237,6 +7261,7 @@ components:
         staging:
           physical_address: physical_address
           presigned_url: presigned_url
+          presigned_url_expiry: 0
           token: token
       properties:
         staging:

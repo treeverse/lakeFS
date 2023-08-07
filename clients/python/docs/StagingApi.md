@@ -207,6 +207,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             physical_address="physical_address_example",
             token="token_example",
             presigned_url="presigned_url_example",
+            presigned_url_expiry=1,
         ),
         checksum="checksum_example",
         size_bytes=1,
