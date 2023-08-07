@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from "react";
-import { useOutletContext } from "react-router-dom";
+import React, {useRef, useState} from "react";
+
 import {GitCommitIcon, HistoryIcon,} from "@primer/octicons-react";
 
 import Modal from "react-bootstrap/Modal";
@@ -14,6 +14,7 @@ import {useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
+import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
 import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
@@ -256,9 +257,11 @@ const ChangesContainer = () => {
 }
 
 const RepositoryChangesPage = () => {
-  const [setActivePage] = useOutletContext();
-  useEffect(() => setActivePage('changes'), [setActivePage]);
-  return <ChangesContainer />;
+    return (
+            <RepositoryPageLayout activePage={'changes'}>
+                <ChangesContainer/>
+            </RepositoryPageLayout>
+    )
 }
 
 export default RepositoryChangesPage;
