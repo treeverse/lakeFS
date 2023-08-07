@@ -257,3 +257,17 @@ func (mr *MockEntriesIteratorMockRecorder) Next() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockEntriesIterator)(nil).Next))
 }
+
+// SeekIfInResult mocks base method.
+func (m *MockEntriesIterator) SeekIfInResult(key []byte) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SeekIfInResult", key)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SeekIfInResult indicates an expected call of SeekIfInResult.
+func (mr *MockEntriesIteratorMockRecorder) SeekIfInResult(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekIfInResult", reflect.TypeOf((*MockEntriesIterator)(nil).SeekIfInResult), key)
+}
