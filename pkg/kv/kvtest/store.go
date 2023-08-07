@@ -963,8 +963,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 		e := verifyIter.Entry()
 		if e == nil {
 			t.Fatal("unexpected nil entry in KV store")
-		}
-		if strings.Index(string(e.Key), string(delPref)) == 0 {
+		} else if strings.Index(string(e.Key), string(delPref)) == 0 {
 			t.Fatal("unexpected entry found after delete", string(e.Key), string(delPref))
 		}
 	}

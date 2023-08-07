@@ -12,11 +12,6 @@ type PrefixIterator struct {
 	completed    bool
 }
 
-func (b *PrefixIterator) TrySeek(key []byte) bool {
-	// TODO implement me
-	panic("implement me")
-}
-
 func (b *PrefixIterator) Next() bool {
 	if b.completed {
 		return false
@@ -31,6 +26,10 @@ func (b *PrefixIterator) Next() bool {
 		return false
 	}
 	return true
+}
+
+func (b *PrefixIterator) TrySeek(key []byte) bool {
+	return b.Iterator.TrySeek(key)
 }
 
 func (b *PrefixIterator) Entry() *Entry {
