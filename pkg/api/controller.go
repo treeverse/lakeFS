@@ -319,7 +319,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 
 	if swag.BoolValue(params.Presign) {
 		// generate a pre-signed PUT url for the given request
-		preSignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		preSignedURL, expiry, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       address,
 			IdentifierType:   block.IdentifierTypeRelative,
@@ -329,6 +329,9 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 		response.PresignedUrl = &preSignedURL
+		if !expiry.IsZero() {
+			response.PresignedUrlExpiry = Int64Ptr(expiry.Unix())
+		}
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -3734,13 +3737,17 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 					return
 				}
 				if authResponse.Allowed {
-					objStat.PhysicalAddress, _, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+					var expiry time.Time
+					objStat.PhysicalAddress, expiry, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 						StorageNamespace: repo.StorageNamespace,
 						IdentifierType:   entry.AddressType.ToIdentifierType(),
 						Identifier:       entry.PhysicalAddress,
 					}, block.PreSignModeRead)
 					if c.handleAPIError(ctx, w, r, err) {
 						return
+					}
+					if !expiry.IsZero() {
+						objStat.PhysicalAddressExpiry = Int64Ptr(expiry.Unix())
 					}
 				}
 			}
@@ -3806,7 +3813,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		code = http.StatusGone
 	} else if swag.BoolValue(params.Presign) {
 		// need to pre-sign the physical address
-		preSignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		preSignedURL, expiry, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
 			Identifier:       entry.PhysicalAddress,
@@ -3815,6 +3822,9 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 			return
 		}
 		objStat.PhysicalAddress = preSignedURL
+		if !expiry.IsZero() {
+			objStat.PhysicalAddressExpiry = Int64Ptr(expiry.Unix())
+		}
 	}
 	writeResponse(w, r, code, objStat)
 }
