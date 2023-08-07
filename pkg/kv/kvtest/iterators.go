@@ -82,6 +82,19 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
+		itr.SeekGE([]byte("b"))
+		names = make([]string, 0)
+		for itr.Next() {
+			e := itr.Entry()
+			model, ok := e.Value.(*TestModel)
+			if !ok {
+				t.Fatalf("Failed to cast entry to TestModel")
+			}
+			names = append(names, string(model.Name))
+		}
+		if itr.Err() != nil {
+			t.Fatalf("unexpected error: %v", itr.Err())
+		}
 
 		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)

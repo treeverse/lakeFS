@@ -19,11 +19,6 @@ type EntriesIterator struct {
 	logger       logging.Logger
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
@@ -58,6 +53,12 @@ func (e *EntriesIterator) Next() bool {
 		Value:        value,
 	}
 	e.logger.WithField("next_key", string(key)).WithField("took", time.Since(start)).Trace("read next value")
+	return true
+}
+
+func (e *EntriesIterator) TrySeek(key []byte) bool {
+	e.start = composeKey(e.partitionKey, key)
+	e.primed = false
 	return true
 }
 

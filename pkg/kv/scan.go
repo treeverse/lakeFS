@@ -13,7 +13,7 @@ type PrefixIterator struct {
 }
 
 func (b *PrefixIterator) TrySeek(key []byte) bool {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

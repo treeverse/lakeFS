@@ -369,7 +369,7 @@ type EntriesIterator struct {
 }
 
 func (e *EntriesIterator) TrySeek(key []byte) bool {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

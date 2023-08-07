@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -35,16 +36,11 @@ type EntriesIterator struct {
 	err          error
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 const (
 	DriverName = "postgres"
 
 	DefaultTableName = "kv"
-	paramTableName   = "lakefsßkv_table"
+	paramTableName   = "lakefskv_table"
 
 	// DefaultPartitions Changing the below value means repartitioning and probably a migration.
 	// Change it only if you really know what you're doing.
@@ -397,6 +393,21 @@ func (e *EntriesIterator) Next() bool {
 		}
 		e.entries = entries
 		e.currEntryIdx = 0
+	}
+	return true
+}
+
+func (e *EntriesIterator) TrySeek(key []byte) bool {
+	first := e.entries[0]
+	last := e.entries[len(e.entries)-1]
+	if bytes.Compare(key, first.Key) < 0 || bytes.Compare(key, last.Key) > 0 {
+		return false
+	}
+	for i := range e.entries {
+		if bytes.Compare(key, e.entries[i].Key) <= 0 {
+			e.currEntryIdx = i - 1
+			return true
+		}
 	}
 	return true
 }
