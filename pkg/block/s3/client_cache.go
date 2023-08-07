@@ -2,10 +2,13 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
@@ -15,8 +18,25 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
+// ErrDoesntExpire is returned by an Expirer if expiry times cannot be
+// determined.  For instance, if AWS is configured using an access key then
+// Expirer cannot determine expiry.
+var ErrDoesntExpire = errors.New("no access expiry")
+
+type Expirer interface {
+	// ExpiresAt returns an expiry time or an error.  It returns
+	// a ErrDoesntExpire if it cannot determine expiry times -- for
+	// instance, if AWS is configured using an access key.
+	ExpiresAt() (time.Time, error)
+}
+
+type S3APIWithExpirer interface {
+	s3iface.S3API
+	Expirer
+}
+
 type (
-	clientFactory  func(awsSession *session.Session, cfgs ...*aws.Config) s3iface.S3API
+	clientFactory  func(awsSession *session.Session, cfgs ...*aws.Config) S3APIWithExpirer
 	s3RegionGetter func(ctx context.Context, sess *session.Session, bucket string) (string, error)
 )
 
@@ -39,8 +59,32 @@ func getBucketRegionFromSession(ctx context.Context, sess *session.Session, buck
 	return region, nil
 }
 
-func newS3Client(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
-	return s3.New(sess, cfgs...)
+type s3Client struct {
+	s3iface.S3API
+	awsSession *session.Session
+}
+
+func newS3Client(sess *session.Session, cfgs ...*aws.Config) S3APIWithExpirer {
+	return &s3Client{
+		S3API:      s3.New(sess, cfgs...),
+		awsSession: sess,
+	}
+}
+
+func (c *s3Client) ExpiresAt() (time.Time, error) {
+	creds := c.awsSession.Config.Credentials
+	if creds == nil {
+		return time.Time{}, ErrDoesntExpire
+	}
+	expiryTime, err := creds.ExpiresAt()
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == "ProviderNotExpirer" {
+				err = ErrDoesntExpire
+			}
+		}
+	}
+	return expiryTime, err
 }
 
 func NewClientCache(awsSession *session.Session) *ClientCache {
