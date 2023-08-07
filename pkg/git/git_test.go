@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,7 +35,10 @@ func TestIsRepository(t *testing.T) {
 }
 
 func TestGetRepositoryPath(t *testing.T) {
+	var err error
 	tmpdir := t.TempDir()
+	tmpdir, err = filepath.EvalSymlinks(tmpdir) // on macOS tmpdir is a symlink
+	require.NoError(t, err)
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer os.Remove(tmpSubdir)
@@ -70,7 +72,10 @@ func TestIgnore(t *testing.T) {
 		trackedFile  = "file1"
 		marker       = "Test Marker"
 	)
+	var err error
 	tmpdir := t.TempDir()
+	tmpdir, err = filepath.EvalSymlinks(tmpdir) // on macOS tmpdir is a symlink
+	require.NoError(t, err)
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer os.Remove(tmpSubdir)
@@ -103,7 +108,7 @@ func TestIgnore(t *testing.T) {
 	fd.Close()
 
 	// Changing the working directory
-	require.NoError(t, syscall.Chdir(tmpdir))
+	require.NoError(t, os.Chdir(tmpdir))
 	verifyPathTracked(t, []string{filepath.Base(tmpSubdir), trackedFile})
 
 	_, err = git.Ignore(tmpFile.Name(), []string{}, []string{excludedPath}, marker)
@@ -125,6 +130,7 @@ func TestIgnore(t *testing.T) {
 	verifyPathTracked(t, []string{trackedFile})
 
 	_, err = git.Ignore(tmpSubdir, []string{tmpSubdir, filepath.Join(tmpdir, trackedFile)}, []string{}, marker)
+	require.NoError(t, err)
 	rel, err = filepath.Rel(tmpdir, tmpSubdir)
 	require.NoError(t, err)
 	expected += fmt.Sprintf("%s\n%s\n", filepath.Join(rel, "*"), trackedFile)

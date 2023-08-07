@@ -18,7 +18,6 @@ import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
-import io.lakefs.clients.api.model.NextStep;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
@@ -122,7 +121,7 @@ public class ConfigApiTest {
     @Test
     public void setupCommPrefsTest() throws ApiException {
         CommPrefsInput commPrefsInput = null;
-                NextStep response = api.setupCommPrefs(commPrefsInput);
+                api.setupCommPrefs(commPrefsInput);
         // TODO: test validations
     }
     

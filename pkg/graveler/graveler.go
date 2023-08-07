@@ -1035,7 +1035,7 @@ func NewGraveler(committedManager CommittedManager, stagingManager StagingManage
 		StagingManager:           stagingManager,
 		protectedBranchesManager: protectedBranchesManager,
 		garbageCollectionManager: gcManager,
-		logger:                   logging.Default().WithField("service_name", "graveler_graveler"),
+		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
 	}
 }
 

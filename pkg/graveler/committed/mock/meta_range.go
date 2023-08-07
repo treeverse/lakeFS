@@ -386,18 +386,18 @@ func (mr *MockMetaRangeWriterMockRecorder) Abort() *gomock.Call {
 }
 
 // Close mocks base method.
-func (m *MockMetaRangeWriter) Close() (*graveler.MetaRangeID, error) {
+func (m *MockMetaRangeWriter) Close(arg0 context.Context) (*graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
+	ret := m.ctrl.Call(m, "Close", arg0)
 	ret0, _ := ret[0].(*graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockMetaRangeWriterMockRecorder) Close() *gomock.Call {
+func (mr *MockMetaRangeWriterMockRecorder) Close(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockMetaRangeWriter)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockMetaRangeWriter)(nil).Close), arg0)
 }
 
 // WriteRange mocks base method.

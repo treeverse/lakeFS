@@ -1,6 +1,7 @@
 package azure_test
 
 import (
+	"context"
 	"net/url"
 	"regexp"
 	"testing"
@@ -19,7 +20,7 @@ func TestAzureAdapter(t *testing.T) {
 	externalPath, err := url.JoinPath(basePath, "external")
 	require.NoError(t, err)
 
-	adapter, err := azure.NewAdapter(params.Azure{
+	adapter, err := azure.NewAdapter(context.Background(), params.Azure{
 		StorageAccount:   accountName,
 		StorageAccessKey: accountKey,
 		TestEndpointURL:  blockURL,
@@ -29,7 +30,7 @@ func TestAzureAdapter(t *testing.T) {
 }
 
 func TestAdapterNamespace(t *testing.T) {
-	adapter, err := azure.NewAdapter(params.Azure{
+	adapter, err := azure.NewAdapter(context.Background(), params.Azure{
 		StorageAccount:   accountName,
 		StorageAccessKey: accountKey,
 		TestEndpointURL:  blockURL,

@@ -19,7 +19,7 @@ var ErrInventoryNotImplemented = errors.New("inventory feature not implemented f
 
 type Adapter struct{}
 
-func New() *Adapter {
+func New(_ context.Context) *Adapter {
 	return &Adapter{}
 }
 

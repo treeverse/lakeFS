@@ -71,7 +71,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer kvStore.Close()
-		logger := logging.Default()
+		logger := logging.ContextUnavailable()
 		authLogger := logger.WithField("service", "auth_service")
 		authService = auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
@@ -111,6 +111,14 @@ func setupLakeFS(ctx context.Context, cfg *config.Config, metadataManager auth.M
 		// return on error or if already initialized
 		return nil, err
 	}
+
+	// mark comm prefs was not provided
+	_, err = metadataManager.UpdateCommPrefs(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("update comm prefs: %w", err)
+	}
+
+	// populate initial data and create admin user
 	credentials, err := setup.CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManager, userName, &accessKeyID, &secretAccessKey)
 	if err != nil {
 		return nil, fmt.Errorf("create initial admin user: %w", err)
