@@ -1,6 +1,7 @@
 package cosmosdb
 
 import (
+	"bytes"
 	"context"
 	"encoding/base32"
 	"encoding/json"
@@ -368,11 +369,25 @@ type EntriesIterator struct {
 	encoding     *base32.Encoding
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
-	// TODO implement me
-	panic("implement me")
+func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
+	var itemResponseBody Document
+	err := json.Unmarshal(e.currPage.Items[i], &itemResponseBody)
+	if err != nil {
+		e.err = fmt.Errorf("failed to unmarshal: %w", err)
+		return nil, nil
+	}
+	key, err := e.encoding.DecodeString(itemResponseBody.Key)
+	if err != nil {
+		e.err = fmt.Errorf("failed to decode id: %w", err)
+		return nil, nil
+	}
+	value, err := e.encoding.DecodeString(itemResponseBody.Value)
+	if err != nil {
+		e.err = fmt.Errorf("failed to decode value: %w", err)
+		return nil, nil
+	}
+	return key, value
 }
-
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
@@ -390,30 +405,43 @@ func (e *EntriesIterator) Next() bool {
 		}
 		e.currEntryIdx = 0
 	}
-
-	var itemResponseBody Document
-	err := json.Unmarshal(e.currPage.Items[e.currEntryIdx], &itemResponseBody)
-	if err != nil {
-		e.err = fmt.Errorf("failed to unmarshal: %w", err)
+	key, value := e.getKeyValue(e.currEntryIdx)
+	if e.err != nil {
 		return false
 	}
-	key, err := e.encoding.DecodeString(itemResponseBody.Key)
-	if err != nil {
-		e.err = fmt.Errorf("failed to decode id: %w", err)
-		return false
-	}
-	value, err := e.encoding.DecodeString(itemResponseBody.Value)
-	if err != nil {
-		e.err = fmt.Errorf("failed to decode value: %w", err)
-		return false
-	}
-
 	e.entry = &kv.Entry{
 		Key:   key,
 		Value: value,
 	}
 
 	e.currEntryIdx++
+	return true
+}
+
+func (e *EntriesIterator) TrySeek(key []byte) bool {
+	if len(e.currPage.Items) == 0 {
+		return false
+	}
+	firstKey, _ := e.getKeyValue(0)
+	if e.err != nil {
+		return false
+	}
+	lastKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
+	if e.err != nil {
+		return false
+	}
+	if bytes.Compare(key, firstKey) < 0 || bytes.Compare(key, lastKey) > 0 {
+		return false
+	}
+	for e.currEntryIdx = 0; e.currEntryIdx <= len(e.currPage.Items); e.currEntryIdx++ {
+		currentKey, _ := e.getKeyValue(e.currEntryIdx)
+		if e.err != nil {
+			return false
+		}
+		if bytes.Compare(key, currentKey) <= 0 {
+			return true
+		}
+	}
 	return true
 }
 
