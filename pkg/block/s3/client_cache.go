@@ -160,10 +160,10 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) (ret S3APIWithExpi
 				Name:  fmt.Sprintf("created_aws_client_%s", region),
 			})
 		}
-		return
+		return ret
 	} else {
 		ret = svc.(S3APIWithExpirer)
-		return
+		return ret
 	}
 }
 
