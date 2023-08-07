@@ -128,7 +128,7 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) (ret S3APIWithExpi
 			return
 		}
 		expiry, err := ret.ExpiresAt()
-		ttl := expiry.Sub(time.Now())
+		ttl := time.Until(expiry)
 		l := logging.FromContext(ctx)
 		if !l.IsTracing() && ttl > 0 {
 			return

@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -126,11 +127,11 @@ func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
 	return nil, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
 	if err := verifyObjectPointer(obj); err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
-	return "", fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
+	return "", time.Time{}, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
 func (a *Adapter) Exists(_ context.Context, obj block.ObjectPointer) (bool, error) {

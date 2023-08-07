@@ -130,9 +130,9 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	return NewGCSWalker(a.client), nil
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
 	if a.disablePreSigned {
-		return "", block.ErrOperationNotSupported
+		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
 	var err error
@@ -140,7 +140,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	method := http.MethodGet
 	if mode == block.PreSignModeWrite {
@@ -154,9 +154,9 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	k, err := a.client.Bucket(bucket).SignedURL(key, opts)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("error generating pre-signed URL")
-		return "", err
+		return "", time.Time{}, err
 	}
-	return k, nil
+	return k, time.Time{}, nil
 }
 
 func isErrNotFound(err error) bool {
