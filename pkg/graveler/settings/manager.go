@@ -142,7 +142,7 @@ func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRec
 		}
 		err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), newData, pred)
 		if errors.Is(err, kv.ErrPredicateFailed) {
-			logging.Default().WithError(err).Warn("Predicate failed on settings update. Retrying")
+			logging.FromContext(ctx).WithError(err).Warn("Predicate failed on settings update. Retrying")
 			return graveler.ErrPreconditionFailed
 		} else if err != nil {
 			return backoff.Permanent(err)

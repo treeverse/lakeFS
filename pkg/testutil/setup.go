@@ -33,7 +33,7 @@ type SetupTestingEnvParams struct {
 }
 
 func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, string) {
-	logger := logging.Default()
+	logger := logging.ContextUnavailable()
 	viper.AddConfigPath(".")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.SetEnvPrefix(strings.ToUpper(params.Name))
@@ -59,7 +59,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	ctx := context.Background()
 
 	// initialize the env/repo
-	logger = logging.Default()
+	logger = logging.ContextUnavailable()
 	logger.WithField("settings", viper.AllSettings()).Info(fmt.Sprintf("Starting %s", params.Name))
 
 	endpointURL := ParseEndpointURL(logger, viper.GetString("endpoint_url"))

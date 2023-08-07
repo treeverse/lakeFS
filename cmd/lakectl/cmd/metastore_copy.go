@@ -38,7 +38,7 @@ var metastoreCopyCmd = &cobra.Command{
 		if len(serde) == 0 {
 			serde = toTable
 		}
-		logging.Default().WithFields(logging.Fields{
+		logging.ContextUnavailable().WithFields(logging.Fields{
 			"form_client_type": fromClientType,
 			"from_schema":      fromDB,
 			"from_table":       fromTable,

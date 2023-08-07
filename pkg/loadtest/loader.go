@@ -93,7 +93,7 @@ func (t *Loader) Run() error {
 		if errors.Is(err, io.ErrClosedPipe) {
 			continue
 		}
-		logging.Default().WithError(err).Error("error during request pipeline")
+		logging.ContextUnavailable().WithError(err).Error("error during request pipeline")
 		return err
 	}
 	err = printResults(t.Metrics, t.TotalMetrics)
@@ -162,7 +162,7 @@ func (t *Loader) doAttack() (hasErrors bool) {
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
 		typ := GetRequestType(*res)
 		if len(res.Error) > 0 {
-			logging.Default().Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
+			logging.ContextUnavailable().Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
 			hasErrors = true
 		}
 		typeMetrics := t.Metrics[typ]

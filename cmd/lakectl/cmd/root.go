@@ -88,7 +88,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.Err() == nil {
-			logging.Default().
+			logging.ContextUnavailable().
 				WithField("file", viper.ConfigFileUsed()).
 				Debug("loaded configuration from file")
 		}

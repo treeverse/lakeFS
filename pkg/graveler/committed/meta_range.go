@@ -111,7 +111,7 @@ type MetaRangeWriter interface {
 	// Close finalizes the MetaRange creation. It's invalid to add records after calling this method.
 	// During MetaRange writing, ranges are closed asynchronously and copied by tierFS
 	// while writing continues. Close waits until closing and copying all ranges.
-	Close() (*graveler.MetaRangeID, error)
+	Close(context.Context) (*graveler.MetaRangeID, error)
 
 	Abort() error
 }

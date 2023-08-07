@@ -118,7 +118,7 @@ func NewHandler(region string, catalog catalog.Interface, multipartTracker multi
 				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
 					OperationLookupHandler(
 						h))))))
-	logging.Default().WithFields(logging.Fields{
+	logging.ContextUnavailable().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
 	}).Info("initialized S3 Gateway handler")

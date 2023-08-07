@@ -42,7 +42,7 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 	// this is a copy operation
 	p, err := getPathFromSource(copySource)
 	if err != nil {
-		logging.Default().WithError(err).Error("could not parse copy source path")
+		logging.FromContext(req.Context()).WithError(err).Error("could not parse copy source path")
 		return permissions.Node{}, gatewayErrors.ErrInvalidCopySource
 	}
 

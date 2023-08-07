@@ -2,6 +2,7 @@ package sig
 
 import (
 	"bufio"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -380,7 +381,7 @@ type V4Authenticator struct {
 	ctx     V4Auth
 }
 
-func (a *V4Authenticator) Parse() (SigContext, error) {
+func (a *V4Authenticator) Parse(_ context.Context) (SigContext, error) {
 	var ctx V4Auth
 	var err error
 	ctx, err = ParseV4AuthContext(a.request)

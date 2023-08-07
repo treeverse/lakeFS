@@ -1,6 +1,7 @@
 package metastore
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -17,8 +18,8 @@ const (
 	sparkSQLProviderLocationKey = "path"
 )
 
-func (m *Table) Update(db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
-	log := logging.Default().WithFields(logging.Fields{
+func (m *Table) Update(ctx context.Context, db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+	log := logging.FromContext(ctx).WithFields(logging.Fields{
 		"db":         db,
 		"table":      table,
 		"serde":      serde,
@@ -43,8 +44,8 @@ func (m *Table) isSparkSQLTable() (res bool) {
 	return
 }
 
-func (m *Partition) Update(db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
-	log := logging.Default().WithFields(logging.Fields{
+func (m *Partition) Update(ctx context.Context, db, table, serde string, setSymlink bool, transformLocation func(location string) (string, error), isSparkSQLTable, fixSparkPlaceHolder bool) error {
+	log := logging.FromContext(ctx).WithFields(logging.Fields{
 		"db":         db,
 		"table":      table,
 		"serde":      serde,

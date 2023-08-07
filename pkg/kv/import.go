@@ -91,7 +91,7 @@ func Import(ctx context.Context, reader io.Reader, store Store) error {
 		return fmt.Errorf("bad header format: %w", ErrInvalidFormat)
 	}
 	// TODO(niro): Add validation to the header in the future
-	log := logging.Default().WithFields(logging.Fields{
+	log := logging.FromContext(ctx).WithFields(logging.Fields{
 		"package_name":      header.PackageName,
 		"lakefs_version":    header.LakeFSVersion,
 		"db_schema_version": header.DBSchemaVersion,
