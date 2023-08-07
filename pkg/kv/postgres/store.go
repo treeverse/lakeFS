@@ -398,6 +398,9 @@ func (e *EntriesIterator) Next() bool {
 }
 
 func (e *EntriesIterator) TrySeek(key []byte) bool {
+	if len(e.entries) == 0 {
+		return false
+	}
 	first := e.entries[0]
 	last := e.entries[len(e.entries)-1]
 	if bytes.Compare(key, first.Key) < 0 || bytes.Compare(key, last.Key) > 0 {
