@@ -122,22 +122,49 @@ func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string
 }
 
 // Get returns an AWS client configured to the region of the given bucket.
-func (c *ClientCache) Get(ctx context.Context, bucket string) s3iface.S3API {
+func (c *ClientCache) Get(ctx context.Context, bucket string) (ret S3APIWithExpirer) {
+	defer func() {
+		if ret == nil {
+			return
+		}
+		expiry, err := ret.ExpiresAt()
+		ttl := expiry.Sub(time.Now())
+		l := logging.FromContext(ctx)
+		if !l.IsTracing() && ttl > 0 {
+			return
+		}
+		if err != nil {
+			l = l.WithField("error", err)
+		} else if !expiry.IsZero() {
+			l = l.WithFields(logging.Fields{
+				"expiry": expiry,
+				"TTL":    ttl.String(),
+			})
+		}
+		ll := l.Trace
+		if ttl <= 5*time.Second {
+			ll = l.Warn
+		}
+		ll("Got client")
+	}()
+
 	region := c.getBucketRegion(ctx, bucket)
 	svc, hasClient := c.regionToS3Client.Load(region)
 	if !hasClient {
 		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-		svc := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
-		c.regionToS3Client.Store(region, svc)
+		ret = c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
+		c.regionToS3Client.Store(region, ret)
 		if c.collector != nil {
 			c.collector.CollectEvent(stats.Event{
 				Class: "s3_block_adapter",
 				Name:  fmt.Sprintf("created_aws_client_%s", region),
 			})
 		}
-		return svc
+		return
+	} else {
+		ret = svc.(S3APIWithExpirer)
+		return
 	}
-	return svc.(s3iface.S3API)
 }
 
 func (c *ClientCache) DiscoverBucketRegion(b bool) {
