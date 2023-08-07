@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -424,24 +425,18 @@ func (e *EntriesIterator) TrySeek(key []byte) bool {
 		return false
 	}
 	first := e.getItem(0)
-	if e.err != nil {
+	if e.err != nil || bytes.Compare(key, first.ItemKey) < 0 {
+		// requested key is before the existing range (or failed to get head of range)
 		return false
 	}
-	last := e.getItem(aws.Int64Value(e.queryResult.Count) - 1)
-	if e.err != nil {
-		return false
-	}
-	if bytes.Compare(key, first.ItemKey) < 0 || bytes.Compare(key, last.ItemKey) > 0 {
-		return false
-	}
-	e.currEntryIdx = 0
-	for ; e.currEntryIdx < aws.Int64Value(e.queryResult.Count); e.currEntryIdx++ {
+	e.currEntryIdx = int64(sort.Search(len(e.queryResult.Items), func(i int) bool {
 		item := e.getItem(e.currEntryIdx)
-		if e.err != nil || bytes.Compare(key, item.ItemKey) <= 0 {
+		if e.err != nil {
 			return false
 		}
-	}
-	return false
+		return bytes.Compare(key, item.ItemKey) <= 0
+	}))
+	return e.err == nil && e.currEntryIdx < int64(len(e.queryResult.Items))
 }
 
 func (e *EntriesIterator) Next() bool {

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -423,26 +424,18 @@ func (e *EntriesIterator) TrySeek(key []byte) bool {
 		return false
 	}
 	firstKey, _ := e.getKeyValue(0)
-	if e.err != nil {
+	if e.err != nil || bytes.Compare(key, firstKey) < 0 {
+		// requested key is before the existing range (or failed to get head of range)
 		return false
 	}
-	lastKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
-	if e.err != nil {
-		return false
-	}
-	if bytes.Compare(key, firstKey) < 0 || bytes.Compare(key, lastKey) > 0 {
-		return false
-	}
-	for e.currEntryIdx = 0; e.currEntryIdx <= len(e.currPage.Items); e.currEntryIdx++ {
-		currentKey, _ := e.getKeyValue(e.currEntryIdx)
+	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
+		currentKey, _ := e.getKeyValue(i)
 		if e.err != nil {
 			return false
 		}
-		if bytes.Compare(key, currentKey) <= 0 {
-			return true
-		}
-	}
-	return true
+		return bytes.Compare(key, currentKey) <= 0
+	})
+	return e.err == nil && e.currEntryIdx < len(e.currPage.Items)
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
