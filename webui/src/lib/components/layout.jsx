@@ -1,14 +1,13 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
 
 import TopNav from './navbar';
 
-const Layout = ({ logged = true }) => {
+const Layout = ({ logged = true, children }) => {
     return (
         <>
             <TopNav logged={logged}/>
             <div className="main-app">
-                <Outlet />
+                {children}
             </div>
         </>
     );

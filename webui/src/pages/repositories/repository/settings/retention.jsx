@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import { useOutletContext } from "react-router-dom";
+import React, {useState} from "react";
+import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {
     ActionGroup,
     ActionsBar,
@@ -14,6 +14,7 @@ import {useAPI} from "../../../../lib/hooks/api";
 import {useRefs} from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
+import {SettingsLayout} from "./layout";
 import {PolicyEditor} from "../../../../lib/components/policy";
 import Alert from "react-bootstrap/Alert";
 
@@ -167,9 +168,13 @@ const RetentionContainer = () => {
 }
 
 const RepositoryRetentionPage = () => {
-  const [setActiveTab] = useOutletContext();
-  useEffect(() => setActiveTab("retention"), [setActiveTab]);
-  return <RetentionContainer />;
+    return (
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"retention"}>
+                <RetentionContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
+    );
 };
 
 export default RepositoryRetentionPage;

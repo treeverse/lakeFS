@@ -5,23 +5,17 @@ import Container from "react-bootstrap/Container";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 
 import {useRefs} from "../../hooks/repo";
-import { Outlet } from "react-router-dom";
+import Layout from "../layout";
 import {RepositoryNavTabs} from "./tabs";
 import {Link} from "../nav";
 import { config } from "../../api";
 import { useAPI } from "../../hooks/api";
 import RepoOnboardingChecklistSlider from "./repoOnboardingChecklistSlider";
-import { RefContextProvider } from "../../hooks/repo";
 
 const RepoNav = () => {
     const { repo } = useRefs();
-    const [repoId, setRepoId] = useState("");
-    useEffect(() => {
-        if (repo) {
-        setRepoId(repo.id);
-        }
-    }, [repo]);
-
+    const repoId = (repo) ? repo.id : '#';
+    
     return (
         <Breadcrumb>
             <Link href={{pathname: '/repositories'}} component={Breadcrumb.Item}>
@@ -31,11 +25,11 @@ const RepoNav = () => {
                 {repoId}
             </Link>
         </Breadcrumb>
-    );
+
+    )
 };
 
-export const RepositoryPageLayout = ({ fluid = "sm" }) => {
-  const [activePage, setActivePage] = useState("objects");
+export const RepositoryPageLayout = ({ activePage, children, fluid = "sm" }) => {
     const [showChecklist, setShowChecklist] = useLocalStorage(
         "showChecklist",
         false
@@ -59,7 +53,7 @@ export const RepositoryPageLayout = ({ fluid = "sm" }) => {
     }, [response, setConfigRes]);
 
     return (
-        <RefContextProvider>
+        <Layout>
             <div>
                 {configRes && !dismissedChecklistForRepo && (
                     <RepoOnboardingChecklistSlider
@@ -74,11 +68,9 @@ export const RepositoryPageLayout = ({ fluid = "sm" }) => {
                 <RepositoryNavTabs active={activePage}/>
 
                 <Container fluid={fluid}>
-                    <div className="mt-4">
-                      <Outlet context={[setActivePage]} />
-                    </div>
+                    <div className="mt-4">{children}</div>
                 </Container>
             </div>
-        </RefContextProvider>
+        </Layout>
     );
 };
