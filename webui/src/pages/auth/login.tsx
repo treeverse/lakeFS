@@ -100,9 +100,7 @@ const LoginPage = () => {
         router.push({pathname: '/auth/login', query: router.query})
     }
     return (
-        <Layout logged={false}>
-            <LoginForm loginConfig={loginConfig}/>
-        </Layout>
+        <LoginForm loginConfig={loginConfig}/>
     );
 };
 

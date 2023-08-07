@@ -1,9 +1,9 @@
 import React, {createContext, useCallback, useEffect, useState} from "react";
 import {Route, Routes} from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
 
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
@@ -161,17 +161,17 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
 }
 
 const UsersPage = ({nextPage, refresh, setRefresh, error, loading, userListResults}) => {
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
     return (
-        <AuthLayout activeTab="users">
-            <UsersContainer
-                refresh={refresh}
-                loading={loading}
-                error={error}
-                nextPage={nextPage}
-                setRefresh={setRefresh}
-                userListResults={userListResults}
-            />
-        </AuthLayout>
+        <UsersContainer
+            refresh={refresh}
+            loading={loading}
+            error={error}
+            nextPage={nextPage}
+            setRefresh={setRefresh}
+            userListResults={userListResults}
+        />
     );
 };
 

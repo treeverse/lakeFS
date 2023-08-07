@@ -1,9 +1,8 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import {ConfirmationButton} from "../../../lib/components/modals";
@@ -185,18 +184,16 @@ const GroupsContainer = () => {
 };
 
 const GroupsPage = () => {
-    return (
-        <AuthLayout activeTab="groups">
-            <GroupsContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
+    return <GroupsContainer/>;
 };
 
 const GroupsIndexPage = () => {
     return (
         <Routes>
             <Route path=":groupId/*" element={<GroupPage/>} />
-            <Route path="" element={<GroupsPage/>} />
+            <Route index element={<GroupsPage/>} />
         </Routes>
     )
 }

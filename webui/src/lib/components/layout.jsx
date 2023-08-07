@@ -1,13 +1,15 @@
-import React from "react";
+import React, {useState} from "react";
+import { Outlet } from "react-router-dom";
 
 import TopNav from './navbar';
 
-const Layout = ({ logged = true, children }) => {
+const Layout = ({ logged }) => {
+    const [isLogged, setIsLogged] = useState(logged ?? true);
     return (
         <>
-            <TopNav logged={logged}/>
+            <TopNav logged={isLogged}/>
             <div className="main-app">
-                {children}
+                <Outlet context={[setIsLogged]} />
             </div>
         </>
     );
