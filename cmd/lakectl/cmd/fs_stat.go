@@ -36,6 +36,8 @@ Modified Time: {{.Mtime|date}}
 Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
 Physical Address: {{ .PhysicalAddress }}
+{{- if .PhysicalAddressExpiry }}
+Physical Address Expires: {{ .PhysicalAddressExpiry|date }}{{end}}
 Checksum: {{ .Checksum }}
 Content-Type: {{ .ContentType }}{{ if and $.Metadata $.Metadata.AdditionalProperties }}
 Metadata:
