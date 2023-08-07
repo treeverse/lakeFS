@@ -35,7 +35,10 @@ var (
 
 // UseLocalConfiguration set to true will add defaults that enable a lakeFS run
 // without any other configuration like DB or blockstore.
-const UseLocalConfiguration = "local-settings"
+const (
+	UseLocalConfiguration   = "local-settings"
+	QuickstartConfiguration = "quickstart"
+)
 
 type OIDC struct {
 	// configure how users are handled on the lakeFS side:
@@ -371,15 +374,11 @@ type Config struct {
 	Plugins Plugins   `mapstructure:"plugins"`
 }
 
-func NewConfig() (*Config, error) {
-	return newConfig(false)
+func NewConfig(cfgType string) (*Config, error) {
+	return newConfig(cfgType)
 }
 
-func NewLocalConfig() (*Config, error) {
-	return newConfig(true)
-}
-
-func newConfig(local bool) (*Config, error) {
+func newConfig(cfgType string) (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
@@ -388,7 +387,7 @@ func newConfig(local bool) (*Config, error) {
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
-	setDefaults(local)
+	setDefaults(cfgType)
 
 	err := Unmarshal(c)
 	if err != nil {

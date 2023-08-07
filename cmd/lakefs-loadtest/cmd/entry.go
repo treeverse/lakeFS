@@ -52,7 +52,7 @@ var entryCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig("")
 		if err != nil {
 			fmt.Printf("config: %s\n", err)
 		}

@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
@@ -20,6 +23,10 @@ const (
 	EmailKeyName           = "encoded_user_email"
 	FeatureUpdatesKeyName  = "feature_updates"
 	SecurityUpdatesKeyName = "security_updates"
+
+	InstrumentationSamplesRepo = "SamplesRepo"
+	InstrumentationQuickstart  = "Quickstart"
+	InstrumentationRun         = "Run"
 )
 
 type SetupStateName string
@@ -203,6 +210,34 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
+// DockeEnvExists For testing purposes
+var DockeEnvExists = "/.dockerenv"
+
+func inK8sMetadata() string {
+	_, k8s := os.LookupEnv("KUBERNETES_SERVICE_HOST")
+	return strconv.FormatBool(k8s)
+}
+
+func inDockerMetadata() string {
+	var err error
+	if DockeEnvExists != "" {
+		_, err = os.Stat(DockeEnvExists)
+	}
+	return strconv.FormatBool(err == nil)
+}
+
+func getInstrumentationMetadata() string {
+	lakefsAccessKeyID := viper.GetString("installation.access_key_id")
+	switch {
+	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
+		return InstrumentationSamplesRepo
+	case strings.HasSuffix(lakefsAccessKeyID, "QUICKSTART"):
+		return InstrumentationQuickstart
+	default:
+		return InstrumentationRun
+	}
+}
+
 func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
@@ -210,6 +245,10 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
+	metadata["is_k8s"] = inK8sMetadata()
+	metadata["is_docker"] = inDockerMetadata()
+	metadata["instrumentation"] = getInstrumentationMetadata()
+
 	err := m.writeMetadata(ctx, metadata)
 	if err != nil {
 		return nil, err
