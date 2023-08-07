@@ -75,7 +75,7 @@ func loadConfig() *config.Config {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	logger := logging.Default().WithField("phase", "startup")
+	logger := logging.ContextUnavailable().WithField("phase", "startup")
 	if cfgFile != "" {
 		logger.WithField("file", cfgFile).Info("Configuration file")
 		// Use config file from the flag.

@@ -1,6 +1,7 @@
 package sig
 
 import (
+	"context"
 	"crypto/hmac"
 	"encoding/hex"
 	"errors"
@@ -80,7 +81,7 @@ type SigContext interface {
 }
 
 type SigAuthenticator interface {
-	Parse() (SigContext, error)
+	Parse(ctx context.Context) (SigContext, error)
 	Verify(*model.Credential, string) error
 }
 
@@ -93,12 +94,12 @@ func ChainedAuthenticator(methods ...SigAuthenticator) SigAuthenticator {
 	return &chainedAuthenticator{methods, nil}
 }
 
-func (c *chainedAuthenticator) Parse() (SigContext, error) {
+func (c *chainedAuthenticator) Parse(ctx context.Context) (SigContext, error) {
 	for _, method := range c.methods {
-		ctx, err := method.Parse()
+		sigContext, err := method.Parse(ctx)
 		if err == nil {
 			c.chosen = method
-			return ctx, nil
+			return sigContext, nil
 		}
 	}
 	return nil, gwErrors.ErrMissingFields

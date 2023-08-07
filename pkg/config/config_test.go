@@ -144,7 +144,7 @@ func TestConfig_JSONLogger(t *testing.T) {
 	_, err := newConfigFromFile("testdata/valid_json_logger_config.yaml")
 	testutil.Must(t, err)
 
-	logging.Default().Info("some message that I should be looking for")
+	logging.ContextUnavailable().Info("some message that I should be looking for")
 
 	content, err := os.Open(logfile)
 	if err != nil {

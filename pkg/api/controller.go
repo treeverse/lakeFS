@@ -4597,7 +4597,7 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
-		logging.Default().WithError(err).WithField("code", code).Debug("Failed to write encoded json response")
+		logging.FromContext(r.Context()).WithError(err).WithField("code", code).Info("Failed to write encoded json response")
 	}
 }
 

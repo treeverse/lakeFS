@@ -29,7 +29,7 @@ const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
-	logging.Default().
+	logging.FromContext(ctx).
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
 	switch blockstore {
@@ -38,17 +38,17 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return buildLocalAdapter(p)
+		return buildLocalAdapter(ctx, p)
 	case block.BlockstoreTypeS3:
 		p, err := c.BlockstoreS3Params()
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(statsCollector, p)
+		return buildS3Adapter(ctx, statsCollector, p)
 	case block.BlockstoreTypeMem, "memory":
-		return mem.New(), nil
+		return mem.New(ctx), nil
 	case block.BlockstoreTypeTransient:
-		return transient.New(), nil
+		return transient.New(ctx), nil
 	case block.BlockstoreTypeGS:
 		p, err := c.BlockstoreGSParams()
 		if err != nil {
@@ -60,14 +60,14 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		if err != nil {
 			return nil, err
 		}
-		return azure.NewAdapter(p)
+		return azure.NewAdapter(ctx, p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
 	}
 }
 
-func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
+func buildLocalAdapter(ctx context.Context, params params.Local) (*local.Adapter, error) {
 	adapter, err := local.NewAdapter(params.Path,
 		local.WithAllowedExternalPrefixes(params.AllowedExternalPrefixes),
 		local.WithImportEnabled(params.ImportEnabled),
@@ -75,7 +75,7 @@ func buildLocalAdapter(params params.Local) (*local.Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("got error opening a local block adapter with path %s: %w", params.Path, err)
 	}
-	logging.Default().WithFields(logging.Fields{
+	logging.FromContext(ctx).WithFields(logging.Fields{
 		"type": "local",
 		"path": params.Path,
 	}).Info("initialized blockstore adapter")
@@ -98,7 +98,7 @@ func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*ses
 	return sess, nil
 }
 
-func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
 	sess, err := BuildS3Client(params.AwsConfig, params.SkipVerifyCertificateTestOnly)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func buildS3Adapter(statsCollector stats.Collector, params params.S3) (*s3a.Adap
 		opts = append(opts, s3a.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
 	adapter := s3a.NewAdapter(sess, opts...)
-	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
+	logging.FromContext(ctx).WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil
 }
 
@@ -147,6 +147,6 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 		gs.WithDisablePreSigned(params.DisablePreSigned),
 		gs.WithDisablePreSignedUI(params.DisablePreSignedUI),
 	)
-	logging.Default().WithField("type", "gs").Info("initialized blockstore adapter")
+	logging.FromContext(ctx).WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }

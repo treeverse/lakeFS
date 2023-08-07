@@ -1,6 +1,7 @@
 package sig
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha1" //nolint:gosec
 	"encoding/base64"
@@ -51,7 +52,7 @@ func init() {
 	var sortedArray []string
 	for _, word := range interestingResourcesContainer {
 		if _, ok := tempMap[word]; ok {
-			logging.Default().
+			logging.ContextUnavailable().
 				WithField("word", word).
 				Warn("appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
 		} else {
@@ -75,8 +76,8 @@ func (a v2Context) GetAccessKeyID() string {
 }
 
 type V2SigAuthenticator struct {
-	r   *http.Request
-	ctx v2Context
+	r      *http.Request
+	sigCtx v2Context
 }
 
 func NewV2SigAuthenticator(r *http.Request) *V2SigAuthenticator {
@@ -85,14 +86,14 @@ func NewV2SigAuthenticator(r *http.Request) *V2SigAuthenticator {
 	}
 }
 
-func (a *V2SigAuthenticator) Parse() (SigContext, error) {
-	var ctx v2Context
+func (a *V2SigAuthenticator) Parse(ctx context.Context) (SigContext, error) {
+	var sigCtx v2Context
 	headerValue := a.r.Header.Get(v2authHeaderName)
 	if len(headerValue) > 0 {
 		match := V2AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
-			logging.Default().WithField("header", v2authHeaderName).Error("log header does not match v2 structure")
-			return ctx, ErrHeaderMalformed
+			logging.FromContext(ctx).WithField("header", v2authHeaderName).Error("log header does not match v2 structure")
+			return sigCtx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
 		for i, name := range V2AuthHeaderRegexp.SubexpNames() {
@@ -100,17 +101,17 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 				result[name] = match[i]
 			}
 		}
-		ctx.accessKeyID = result["AccessKeyId"]
+		sigCtx.accessKeyID = result["AccessKeyId"]
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
-			logging.Default().WithField("header", v2authHeaderName).Error("log header does not match v2 structure (isn't proper base64)")
-			return ctx, ErrHeaderMalformed
+			logging.FromContext(ctx).WithField("header", v2authHeaderName).Error("log header does not match v2 structure (isn't proper base64)")
+			return sigCtx, ErrHeaderMalformed
 		}
-		ctx.signature = sig
+		sigCtx.signature = sig
 	}
-	a.ctx = ctx
-	return ctx, nil
+	a.sigCtx = sigCtx
+	return sigCtx, nil
 }
 
 func headerValueToString(val []string) string {
@@ -213,7 +214,7 @@ func buildPath(host string, bareDomain string, path string) string {
 		return "/" + prePath + path
 	}
 	// bareDomain is not suffix of the path probably a bug
-	logging.Default().
+	logging.ContextUnavailable().
 		WithFields(logging.Fields{"request_host": host, "bare_domain": bareDomain}).
 		Error("request host mismatch")
 	return ""
@@ -244,7 +245,7 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	path := buildPath(a.r.Host, bareDomain, rawPath)
 	stringToSign := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSign, []byte(creds.SecretAccessKey))
-	if !Equal(digest, a.ctx.signature) {
+	if !Equal(digest, a.sigCtx.signature) {
 		return errors.ErrSignatureDoesNotMatch
 	}
 	return nil
