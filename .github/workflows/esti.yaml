@@ -106,7 +106,6 @@ jobs:
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
           build-args: VERSION=${{ steps.version.outputs.tag }}
           context: .
-          labels: "db-schema-version=(kv)"
           cache-from: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
           cache-to: |
