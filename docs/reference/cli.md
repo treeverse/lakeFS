@@ -2664,7 +2664,7 @@ lakectl local status [directory] [flags]
 
 ```
   -h, --help    help for status
-  -l, --local   don't compare against remote changes
+  -l, --local   Don't compare against remote changes
 ```
 
 

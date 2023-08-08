@@ -11,7 +11,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/local"
-	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -45,7 +44,7 @@ var localStatusCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		remoteBase := uri.WithRef(remote, idx.AtHead)
+		remoteBase := remote.WithRef(idx.AtHead)
 		fmt.Printf("diff 'local://%s' <--> '%s'...\n", idx.LocalPath(), remoteBase)
 
 		client := getClient()
