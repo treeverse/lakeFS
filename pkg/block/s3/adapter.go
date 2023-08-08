@@ -321,9 +321,9 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	return NewS3Walker(a.clients.awsSession), nil
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
 	if a.disablePreSigned {
-		return "", block.ErrOperationNotSupported
+		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
 	log := a.log(ctx).WithField("operation", "GetPreSignedURL")
@@ -332,7 +332,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		log.WithField("namespace", obj.StorageNamespace).
 			WithField("identifier", obj.Identifier).
 			WithError(err).Error("could not resolve namespace")
-		return "", err
+		return "", time.Time{}, err
 	}
 	var preSignedURL string
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
@@ -356,7 +356,22 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			WithField("identifier", obj.Identifier).
 			WithError(err).Error("could not pre-sign request")
 	}
-	return preSignedURL, err
+	expiry := time.Now().Add(a.preSignedExpiry)
+	clientExpiry, clientExpiryErr := client.ExpiresAt()
+	switch {
+	case clientExpiryErr == nil:
+		if clientExpiry.Before(expiry) {
+			expiry = clientExpiry
+		}
+	case errors.Is(clientExpiryErr, ErrDoesntExpire):
+		break
+	default:
+		log.WithFields(logging.Fields{
+			"namespace":  obj.StorageNamespace,
+			"identifier": obj.Identifier,
+		}).WithError(err).Warning("Failed to get client (token) expiry: URL expiry may be too high")
+	}
+	return preSignedURL, expiry, err
 }
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {

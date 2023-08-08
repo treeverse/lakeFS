@@ -280,6 +280,16 @@ components:
             The location of the object on the underlying object store.
             Formatted as a native URI with the object store type as scheme ("s3://...", "gs://...", etc.)
             Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET
+        physical_address_expiry:
+          type: integer
+          format: int64
+          description: |
+            If present and nonzero, physical_address is a presigned URL and
+            will expire at this Unix Epoch time.  This will be shorter than
+            the presigned URL lifetime if an authentication token is about
+            to expire.
+
+            This field is *optional*.
         checksum:
           type: string
         size_bytes:
@@ -1139,7 +1149,16 @@ components:
           type: string
           nullable: true
           description: if presign=true is passed in the request, this field will contain a presigned URL to use when uploading
+        presigned_url_expiry:
+          type: integer
+          format: int64
+          description: |
+            If present and nonzero, physical_address is a presigned URL and
+            will expire at this Unix Epoch time.  This will be shorter than
+            the presigned URL lifetime if an authentication token is about
+            to expire.
 
+            This field is *optional*.
 
     StagingMetadata:
       type: object
