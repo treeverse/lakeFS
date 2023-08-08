@@ -420,6 +420,39 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		}
 		testCompareEntries(t, entries, sampleData[fromIndex:])
 	})
+
+	t.Run("deleted_last", func(t *testing.T) {
+		err := store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key)
+		if err != nil {
+			t.Fatal("failed to delete last key", err)
+		}
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - 1})
+		if err != nil {
+			t.Fatal("failed to scan", err)
+		}
+		defer scan.Close()
+
+		var entries []kv.Entry
+		for scan.Next() {
+			ent := scan.Entry()
+			switch {
+			case ent == nil:
+				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("Key is nil while scan item", len(entries))
+			case ent.Value == nil:
+				t.Fatal("Value is nil while scan item", len(entries))
+			}
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
+				break
+			}
+			entries = append(entries, *ent)
+		}
+		if err := scan.Err(); err != nil {
+			t.Fatal("scan ended with an error", err)
+		}
+		testCompareEntries(t, entries, sampleData[:len(sampleData)-1])
+	})
 }
 
 func MakeStoreByName(name string, kvParams kvparams.Config) MakeStore {
