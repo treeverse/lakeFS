@@ -2576,7 +2576,7 @@ BETA: sync local directories with lakeFS paths
 
 ### lakectl local clone
 
-init local directory and download objects from lakeFS path
+Clone a path from a lakeFS repository into a new directory.
 
 ```
 lakectl local clone <path uri> [directory] [flags]
@@ -2586,7 +2586,6 @@ lakectl local clone <path uri> [directory] [flags]
 {:.no_toc}
 
 ```
-      --force             Overwrites if directory already linked to a lakeFS path
   -h, --help              help for clone
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -2619,7 +2618,7 @@ lakectl local help [command] [flags]
 
 ### lakectl local init
 
-set a local directory to sync with a lakeFS path
+set a local directory to sync with a lakeFS path.
 
 ```
 lakectl local init <path uri> [directory] [flags]
@@ -2637,7 +2636,7 @@ lakectl local init <path uri> [directory] [flags]
 
 ### lakectl local list
 
-find and list directories that are synced with lakeFS
+find and list directories that are synced with lakeFS.
 
 ```
 lakectl local list [directory] [flags]

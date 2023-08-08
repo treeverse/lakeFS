@@ -45,12 +45,16 @@ func (p *ProgressUpdater) Done() {
 	p.t.MarkAsDone()
 }
 
+func (p *ProgressUpdater) Error() {
+	p.t.MarkAsErrored()
+}
+
 type ProgressSpinner struct {
 	t *progress.Tracker
 }
 
 func (p *ProgressSpinner) Done() {
-	p.t.Increment(progressTrackerDone)
+	p.t.MarkAsDone()
 }
 
 type ProgressPool struct {
