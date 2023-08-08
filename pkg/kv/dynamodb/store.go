@@ -412,18 +412,10 @@ func (s *Store) DropTable() error {
 	return err
 }
 
-func (e *EntriesIterator) getItem(i int) (res DynKVItem) {
-	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &res)
-	if err != nil {
-		e.err = fmt.Errorf("unmarshal map: %w", err)
-	}
-	return res
-}
-
 func (e *EntriesIterator) SeekGE(key []byte) {
+	var item DynKVItem
 	e.currEntryIdx = sort.Search(len(e.queryResult.Items), func(i int) bool {
-		item := e.getItem(i)
-		if e.err != nil {
+		if e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &item); e.err != nil {
 			return false
 		}
 		return bytes.Compare(key, item.ItemKey) <= 0
@@ -447,7 +439,11 @@ func (e *EntriesIterator) Next() bool {
 		e.queryResult = queryResult
 		e.currEntryIdx = 0
 	}
-	item := e.getItem(e.currEntryIdx)
+	var item DynKVItem
+	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
+	if e.err != nil {
+		return false
+	}
 	e.entry = &kv.Entry{
 		Key:   item.ItemKey,
 		Value: item.ItemValue,
@@ -460,15 +456,16 @@ func (e *EntriesIterator) IsInRange(key []byte) bool {
 	if len(e.queryResult.Items) == 0 {
 		return false
 	}
-	minKey := e.getItem(0).ItemKey
+	var maxItem, minItem DynKVItem
+	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[0], &minItem)
 	if e.err != nil {
 		return false
 	}
-	maxKey := e.getItem(len(e.queryResult.Items) - 1).ItemKey
+	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[len(e.queryResult.Items)-1], &maxItem)
 	if e.err != nil {
 		return false
 	}
-	return bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
+	return bytes.Compare(key, minItem.ItemKey) >= 0 && bytes.Compare(key, maxItem.ItemKey) <= 0
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
