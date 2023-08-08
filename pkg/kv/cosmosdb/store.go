@@ -371,9 +371,6 @@ type EntriesIterator struct {
 }
 
 func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
-	if len(e.currPage.Items) <= i {
-		return nil, nil
-	}
 	var itemResponseBody Document
 	err := json.Unmarshal(e.currPage.Items[i], &itemResponseBody)
 	if err != nil {
@@ -433,6 +430,9 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 }
 
 func (e *EntriesIterator) IsInRange(key []byte) bool {
+	if len(e.currPage.Items) == 0 {
+		return false
+	}
 	minKey, _ := e.getKeyValue(0)
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
 	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
