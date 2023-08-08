@@ -213,9 +213,9 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	return NewAzureBlobWalker(client)
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
 	if a.disablePreSigned {
-		return "", block.ErrOperationNotSupported
+		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
 	permissions := sas.BlobPermissions{Read: true}
@@ -226,7 +226,9 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Write: true,
 		}
 	}
-	return a.getPreSignedURL(ctx, obj, permissions)
+	url, err := a.getPreSignedURL(ctx, obj, permissions)
+	// TODO(#6347): Report expiry.
+	return url, time.Time{}, err
 }
 
 func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
@@ -385,7 +387,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	destClient := destContainerClient.NewBlobClient(qualifiedDestinationKey.BlobURL)
 
-	sasKey, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead)
+	sasKey, _, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead)
 	if err != nil {
 		return err
 	}

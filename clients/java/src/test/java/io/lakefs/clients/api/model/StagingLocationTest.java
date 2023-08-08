@@ -65,4 +65,12 @@ public class StagingLocationTest {
         // TODO: test presignedUrl
     }
 
+    /**
+     * Test the property 'presignedUrlExpiry'
+     */
+    @Test
+    public void presignedUrlExpiryTest() {
+        // TODO: test presignedUrlExpiry
+    }
+
 }
