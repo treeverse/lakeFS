@@ -422,15 +422,15 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("deleted_last", func(t *testing.T) {
-		err := store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key)
-		if err != nil {
-			t.Fatal("failed to delete last key", err)
-		}
 		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - 1})
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
 		defer scan.Close()
+		err = store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key)
+		if err != nil {
+			t.Fatal("failed to delete last key", err)
+		}
 
 		var entries []kv.Entry
 		for scan.Next() {
