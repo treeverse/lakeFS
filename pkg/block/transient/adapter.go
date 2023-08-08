@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -39,8 +40,8 @@ func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", block.ErrOperationNotSupported
+func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+	return "", time.Time{}, block.ErrOperationNotSupported
 }
 
 func (a *Adapter) Exists(_ context.Context, _ block.ObjectPointer) (bool, error) {

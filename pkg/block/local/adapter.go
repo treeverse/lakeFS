@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -99,8 +100,8 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	return localAdapter, nil
 }
 
-func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
+func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+	return "", time.Time{}, fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
 }
 
 // verifyRelPath ensures that p is under the directory controlled by this adapter.  It does not
