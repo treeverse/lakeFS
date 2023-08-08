@@ -93,10 +93,6 @@ jobs:
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
         id: version
 
-      - name: Extract db schema version from ddl migration files
-        run: echo "dbschema_version=$( (cd pkg/ddl/ && ls -d *.up.sql) | sed -nE '$s/^0*([0-9]+).*/\1/p' )" >> $GITHUB_OUTPUT
-        id: schema
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -110,7 +106,7 @@ jobs:
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
           build-args: VERSION=${{ steps.version.outputs.tag }}
           context: .
-          labels: db-schema-version=${{ steps.schema.outputs.dbschema_version }}
+          labels: "db-schema-version=(kv)"
           cache-from: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
           cache-to: |
