@@ -310,7 +310,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
@@ -397,22 +397,22 @@ func (e *EntriesIterator) Next() bool {
 	return true
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
+func (e *EntriesIterator) IsInRange(key []byte) bool {
 	if len(e.entries) == 0 {
 		return false
 	}
-	first := e.entries[0]
-	last := e.entries[len(e.entries)-1]
-	if bytes.Compare(key, first.Key) < 0 || bytes.Compare(key, last.Key) > 0 {
-		return false
-	}
+	minKey := e.entries[0].Key
+	maxKey := e.entries[len(e.entries)-1].Key
+	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
+}
+
+func (e *EntriesIterator) SeekGE(key []byte) {
 	for i := range e.entries {
 		if bytes.Compare(key, e.entries[i].Key) <= 0 {
 			e.currEntryIdx = i - 1
-			return true
+			return
 		}
 	}
-	return true
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {

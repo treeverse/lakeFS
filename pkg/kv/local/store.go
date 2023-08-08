@@ -184,7 +184,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
 	log := s.logger.WithFields(logging.Fields{
 		"partition_key": string(partitionKey),
 		"start_key":     string(options.KeyStart),

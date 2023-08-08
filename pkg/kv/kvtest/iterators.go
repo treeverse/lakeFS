@@ -69,7 +69,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		itr.SeekGE([]byte("b"))
+		itr.SeekGE([]byte("aaa"))
 		names := make([]string, 0)
 		for itr.Next() {
 			e := itr.Entry()
@@ -82,7 +82,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		if itr.Err() != nil {
 			t.Fatalf("unexpected error: %v", itr.Err())
 		}
-		itr.SeekGE([]byte("aaa"))
+		itr.SeekGE([]byte("b"))
 		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}

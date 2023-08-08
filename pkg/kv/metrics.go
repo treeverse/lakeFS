@@ -72,7 +72,7 @@ func (s *StoreMetricsWrapper) Delete(ctx context.Context, partitionKey, key []by
 	return err
 }
 
-func (s *StoreMetricsWrapper) Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error) {
+func (s *StoreMetricsWrapper) Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (ResultIterator, error) {
 	const operation = "Scan"
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, operation))
 	defer timer.ObserveDuration()

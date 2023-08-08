@@ -28,10 +28,6 @@ func (b *PrefixIterator) Next() bool {
 	return true
 }
 
-func (b *PrefixIterator) TrySeek(key []byte) bool {
-	return b.Iterator.TrySeek(key)
-}
-
 func (b *PrefixIterator) Entry() *Entry {
 	if b.completed {
 		return nil

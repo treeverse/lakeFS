@@ -55,11 +55,13 @@ func (e *EntriesIterator) Next() bool {
 	e.logger.WithField("next_key", string(key)).WithField("took", time.Since(start)).Trace("read next value")
 	return true
 }
+func (e *EntriesIterator) IsInRange(_ []byte) bool {
+	return true
+}
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
+func (e *EntriesIterator) SeekGE(key []byte) {
 	e.start = composeKey(e.partitionKey, key)
 	e.primed = false
-	return true
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {

@@ -38,7 +38,7 @@ type EntriesIterator struct {
 	err                       error
 	store                     *Store
 	queryResult               *dynamodb.QueryOutput
-	currEntryIdx              int64
+	currEntryIdx              int
 	keyConditionExpression    string
 	expressionAttributeValues map[string]*dynamodb.AttributeValue
 	limit                     int64
@@ -331,7 +331,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
@@ -412,7 +412,7 @@ func (s *Store) DropTable() error {
 	return err
 }
 
-func (e *EntriesIterator) getItem(i int64) (res DynKVItem) {
+func (e *EntriesIterator) getItem(i int) (res DynKVItem) {
 	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &res)
 	if err != nil {
 		e.err = fmt.Errorf("unmarshal map: %w", err)
@@ -420,23 +420,14 @@ func (e *EntriesIterator) getItem(i int64) (res DynKVItem) {
 	return res
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
-	if len(e.queryResult.Items) == 0 {
-		return false
-	}
-	first := e.getItem(0)
-	if e.err != nil || bytes.Compare(key, first.ItemKey) < 0 {
-		// requested key is before the existing range (or failed to get head of range)
-		return false
-	}
-	e.currEntryIdx = int64(sort.Search(len(e.queryResult.Items), func(i int) bool {
-		item := e.getItem(e.currEntryIdx)
+func (e *EntriesIterator) SeekGE(key []byte) {
+	e.currEntryIdx = sort.Search(len(e.queryResult.Items), func(i int) bool {
+		item := e.getItem(i)
 		if e.err != nil {
 			return false
 		}
 		return bytes.Compare(key, item.ItemKey) <= 0
-	}))
-	return e.err == nil && e.currEntryIdx < int64(len(e.queryResult.Items))
+	})
 }
 
 func (e *EntriesIterator) Next() bool {
@@ -444,7 +435,7 @@ func (e *EntriesIterator) Next() bool {
 		return false
 	}
 
-	for e.currEntryIdx == aws.Int64Value(e.queryResult.Count) {
+	for e.currEntryIdx == len(e.queryResult.Items) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
@@ -463,6 +454,21 @@ func (e *EntriesIterator) Next() bool {
 	}
 	e.currEntryIdx++
 	return true
+}
+
+func (e *EntriesIterator) IsInRange(key []byte) bool {
+	if len(e.queryResult.Items) == 0 {
+		return false
+	}
+	minKey := e.getItem(0).ItemKey
+	if e.err != nil {
+		return false
+	}
+	maxKey := e.getItem(len(e.queryResult.Items) - 1).ItemKey
+	if e.err != nil {
+		return false
+	}
+	return bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {

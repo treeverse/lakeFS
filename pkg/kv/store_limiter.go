@@ -38,7 +38,7 @@ func (s *StoreLimiter) Delete(ctx context.Context, partitionKey, key []byte) err
 	return s.Store.Delete(ctx, partitionKey, key)
 }
 
-func (s *StoreLimiter) Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error) {
+func (s *StoreLimiter) Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (ResultIterator, error) {
 	_ = s.Limiter.Take()
 	return s.Store.Scan(ctx, partitionKey, options)
 }

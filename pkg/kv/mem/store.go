@@ -31,9 +31,12 @@ type EntriesIterator struct {
 	store     *Store
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
-	e.start = key
+func (e *EntriesIterator) IsInRange(_ []byte) bool {
 	return true
+}
+
+func (e *EntriesIterator) SeekGE(key []byte) {
+	e.start = key
 }
 
 const DriverName = "mem"
@@ -159,7 +162,7 @@ func (s *Store) Delete(_ context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(_ context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+func (s *Store) Scan(_ context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}

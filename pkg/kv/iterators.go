@@ -241,18 +241,13 @@ func (si *SkipFirstIterator) Close() {
 	si.it.Close()
 }
 
-func (si *SkipFirstIterator) TrySeek(key []byte) bool {
-	si.nextCalled = false // TODO needed?
-	return si.it.TrySeek(key)
-}
-
 // PartitionIterator Used to scan through a whole partition
 type PartitionIterator struct {
 	ctx          context.Context
 	store        Store
 	msgType      protoreflect.MessageType
 	itrClosed    bool
-	itr          EntriesIterator
+	itr          ResultIterator
 	partitionKey string
 	value        *MessageEntry
 	err          error
@@ -305,7 +300,8 @@ func (p *PartitionIterator) Next() bool {
 
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.Err() == nil {
-		if p.itr != nil && p.itr.TrySeek(key) {
+		if p.itr != nil && p.itr.IsInRange(key) {
+			p.itr.SeekGE(key)
 			return
 		}
 		p.Close() // Close previous before creating new iterator

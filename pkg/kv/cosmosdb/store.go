@@ -329,7 +329,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
@@ -371,6 +371,9 @@ type EntriesIterator struct {
 }
 
 func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
+	if len(e.currPage.Items) <= i {
+		return nil, nil
+	}
 	var itemResponseBody Document
 	err := json.Unmarshal(e.currPage.Items[i], &itemResponseBody)
 	if err != nil {
@@ -419,15 +422,7 @@ func (e *EntriesIterator) Next() bool {
 	return true
 }
 
-func (e *EntriesIterator) TrySeek(key []byte) bool {
-	if len(e.currPage.Items) == 0 {
-		return false
-	}
-	firstKey, _ := e.getKeyValue(0)
-	if e.err != nil || bytes.Compare(key, firstKey) < 0 {
-		// requested key is before the existing range (or failed to get head of range)
-		return false
-	}
+func (e *EntriesIterator) SeekGE(key []byte) {
 	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
 		currentKey, _ := e.getKeyValue(i)
 		if e.err != nil {
@@ -435,7 +430,12 @@ func (e *EntriesIterator) TrySeek(key []byte) bool {
 		}
 		return bytes.Compare(key, currentKey) <= 0
 	})
-	return e.err == nil && e.currEntryIdx < len(e.currPage.Items)
+}
+
+func (e *EntriesIterator) IsInRange(key []byte) bool {
+	minKey, _ := e.getKeyValue(0)
+	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
+	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
