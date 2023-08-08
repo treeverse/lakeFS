@@ -136,7 +136,7 @@ type Adapter interface {
 	GetWalker(uri *url.URL) (Walker, error)
 	// Returns a presigned URL for accessing obj with mode, and the
 	// expiry time for this URL.  The expiry time IsZero() if reporting
-	// expiry is no supported.  The expiry time will be sooner than
+	// expiry is not supported.  The expiry time will be sooner than
 	// Config.*.PreSignedExpiry if an auth token is about to expire.
 	GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, time.Time, error)
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)
