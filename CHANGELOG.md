@@ -12,6 +12,7 @@
 - Quickstart now uses DuckDB WASM instead of CLI (#6092)
 - Stop publishing lakeFS DuckDB image (#6141)
 - Remove Everything Bagel - incorporated into the new lakeFS-samples repository (#6146)
+- Return presigned URL expiry time (S3 only for now) (#6328)
 
 :bug: Bugs fixed:
 - Local Storage Range Allow 0:0 (#6116)
