@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -61,9 +61,9 @@ func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
 }
 
 type Tasks struct {
-	Download uint64
-	Upload   uint64
-	Removed  uint64
+	Downloaded uint64
+	Uploaded   uint64
+	Removed    uint64
 }
 
 type SyncManager struct {
@@ -87,51 +87,50 @@ func NewSyncManager(ctx context.Context, client *api.ClientWithResponses, maxPar
 	}
 }
 
+// Sync - sync changes between remote and local directory given the Changes channel.
+// For each change, will apply download, upload or delete according to the change type and change source
 func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change) error {
 	s.progressBar.Start()
+	defer s.progressBar.Stop()
+
 	ch := make(chan bool, s.maxParallelism)
 	for i := 0; i < s.maxParallelism; i++ {
 		ch <- true
 	}
-	errCh := make(chan error)
-	doneCh := make(chan bool)
-	var wg sync.WaitGroup
-	for op := range changeSet {
-		<-ch // block until we have a slot
-		wg.Add(1)
-		go func(op *Change) {
-			err := s.apply(rootPath, remote, op)
-			if err != nil {
-				errCh <- err
-				return
-			}
-			wg.Done()
-			ch <- true // release
-		}(op)
-	}
-	go func() {
-		wg.Wait() // wait until all downloads are done
-		doneCh <- true
-	}()
 
-	select {
-	case <-doneCh:
-		s.progressBar.Stop()
-		_, err := fileutil.PruneEmptyDirectories(rootPath)
-		return err
-	case err := <-errCh:
-		s.progressBar.Stop()
+	wg, ctx := errgroup.WithContext(s.ctx)
+	done := false
+	for change := range changeSet {
+		<-ch // block until we have a slot
+		c := change
+		select {
+		case <-ctx.Done():
+			done = true
+		default:
+			wg.Go(func() error {
+				return s.apply(ctx, rootPath, remote, c)
+			})
+		}
+		ch <- true // release
+		if done {
+			break
+		}
+	}
+
+	if err := wg.Wait(); err != nil {
 		return err
 	}
+	_, err := fileutil.PruneEmptyDirectories(rootPath)
+	return err
 }
 
-func (s *SyncManager) apply(rootPath string, remote *uri.URI, change *Change) error {
+func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
 		case ChangeSourceRemote:
 			// remote changed something, download it!
-			return s.download(rootPath, remote, change)
+			return s.download(ctx, rootPath, remote, change)
 		case ChangeSourceLocal:
 		default:
 			panic("not implemented")
@@ -146,14 +145,14 @@ func (s *SyncManager) apply(rootPath string, remote *uri.URI, change *Change) er
 	return nil
 }
 
-func (s *SyncManager) download(rootPath string, remote *uri.URI, change *Change) error {
+func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
 	destination := filepath.Join(rootPath, change.Path)
 	destinationDirectory := filepath.Dir(destination)
 	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
 		return err
 	}
 
-	statResp, err := s.client.StatObjectWithResponse(s.ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
+	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
 		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
 		Presign:      swag.Bool(s.presign),
 		UserMetadata: swag.Bool(true),
@@ -170,17 +169,14 @@ func (s *SyncManager) download(rootPath string, remote *uri.URI, change *Change)
 		return err
 	}
 
-	lastModified := time.Unix(mtimeSecs, 0)
-	sizeBytes := swag.Int64Value(statResp.JSON200.SizeBytes)
-	var (
-		f *os.File
-	)
 	if strings.HasSuffix(change.Path, uri.PathSeparator) {
 		// Directory marker - skip
 		return nil
 	}
 
-	f, err = os.Create(destination)
+	lastModified := time.Unix(mtimeSecs, 0)
+	sizeBytes := swag.Int64Value(statResp.JSON200.SizeBytes)
+	f, err := os.Create(destination)
 	if err != nil {
 		// sometimes we get a file that is actually a directory marker.
 		// spark loves writing those. If we already have the directory we can skip it.
@@ -212,7 +208,7 @@ func (s *SyncManager) download(rootPath string, remote *uri.URI, change *Change)
 			}
 			body = resp.Body
 		} else {
-			resp, err := s.client.GetObject(s.ctx, remote.Repository, remote.Ref, &api.GetObjectParams{
+			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &api.GetObjectParams{
 				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
 			})
 			if err != nil {
@@ -229,17 +225,24 @@ func (s *SyncManager) download(rootPath string, remote *uri.URI, change *Change)
 
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", change.Path), sizeBytes)
 		barReader := b.Reader(body)
-		defer b.Done()
-
+		defer func() {
+			if err != nil {
+				b.Error()
+			} else {
+				b.Done()
+			}
+		}()
 		_, err = io.Copy(f, barReader)
+
 		if err != nil {
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
 	}
 
-	atomic.AddUint64(&s.tasks.Download, 1)
+	atomic.AddUint64(&s.tasks.Downloaded, 1)
 	// set mtime to the server returned one
-	return os.Chtimes(destination, time.Now(), lastModified)
+	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in defer func
+	return err
 }
 
 func (s *SyncManager) upload(rootPath string, remote *uri.URI, change *Change) error { //nolint:unused

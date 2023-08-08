@@ -9,6 +9,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -21,7 +22,7 @@ const (
 
 var localCloneCmd = &cobra.Command{
 	Use:   "clone <path uri> [directory]",
-	Short: "init local directory and download objects from lakeFS path",
+	Short: "Clone a path from a lakeFS repository into a new directory.",
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote := MustParsePathURI("path", args[0])
@@ -29,14 +30,25 @@ var localCloneCmd = &cobra.Command{
 		if len(args) == localCloneMaxArgs {
 			dir = args[1]
 		}
-		force := Must(cmd.Flags().GetBool("force"))
 		syncFlags := getLocalSyncFlags(cmd)
 		localPath, err := filepath.Abs(dir)
 		if err != nil {
 			DieErr(err)
 		}
-		idx := localInit(cmd.Context(), localPath, remote, force)
-		stableRemote := uri.WithRef(remote, idx.AtHead)
+
+		empty, err := fileutil.IsDirEmpty(localPath)
+		if err != nil {
+			DieErr(err)
+		}
+		if !empty {
+			DieFmt("directory '%s' exists and is not empty", localPath)
+		}
+
+		idx, err := localInit(cmd.Context(), localPath, remote, false)
+		if err != nil {
+			DieErr(err)
+		}
+		stableRemote := remote.WithRef(idx.AtHead)
 		client := getClient()
 		// Dynamically construct changes
 		c := make(chan *local.Change, filesChanSize)
@@ -45,17 +57,13 @@ var localCloneCmd = &cobra.Command{
 			hasMore := true
 			var after string
 			for hasMore {
-				listResp, err := client.ListObjectsWithResponse(cmd.Context(), remote.Repository, remote.Ref, &api.ListObjectsParams{
+				listResp, err := client.ListObjectsWithResponse(cmd.Context(), remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
 					After:        (*api.PaginationAfter)(swag.String(after)),
 					Prefix:       (*api.PaginationPrefix)(remote.Path),
 					UserMetadata: swag.Bool(true),
 				})
-				if err != nil {
-					DieErr(err)
-				}
-				if listResp.HTTPResponse.StatusCode != http.StatusOK {
-					DieErr(fmt.Errorf("%w: HTTP %d", err, listResp.StatusCode()))
-				}
+				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
+
 				for _, o := range listResp.JSON200.Results {
 					path := strings.TrimPrefix(o.Path, remote.GetPath())
 					// skip directory markers
@@ -81,13 +89,12 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded: %d", remote, localPath, s.Summary().Download)
+		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded: %d", remote, localPath, s.Summary().Downloaded)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	localCloneCmd.Flags().Bool("force", false, "Overwrites if directory already linked to a lakeFS path")
 	withLocalSyncFlags(localCloneCmd)
 	localCmd.AddCommand(localCloneCmd)
 }

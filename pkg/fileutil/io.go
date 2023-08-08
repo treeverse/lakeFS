@@ -55,6 +55,23 @@ func FindInParents(dir, filename string) (string, error) {
 	return "", nil
 }
 
+func IsDirEmpty(dir string) (bool, error) {
+	s, err := godirwalk.NewScanner(dir)
+	if err != nil {
+		return false, err
+	}
+	// Attempt to read only the first directory entry. Note that Scan skips both "." and ".." entries.
+	hasAtLeastOneChild := s.Scan()
+	if err = s.Err(); err != nil {
+		return false, err
+	}
+
+	if hasAtLeastOneChild {
+		return false, nil
+	}
+	return true, nil
+}
+
 // PruneEmptyDirectories iterates through the directory tree, removing empty directories, and directories that only
 // contain empty directories.
 func PruneEmptyDirectories(dir string) ([]string, error) {
@@ -67,17 +84,12 @@ func PruneEmptyDirectories(dir string) ([]string, error) {
 			return nil
 		},
 		PostChildrenCallback: func(d string, _ *godirwalk.Dirent) error {
-			s, err := godirwalk.NewScanner(d)
+			empty, err := IsDirEmpty(d)
 			if err != nil {
 				return err
 			}
-			// Attempt to read only the first directory entry. Note that Scan skips both "." and ".." entries.
-			hasAtLeastOneChild := s.Scan()
-			if err := s.Err(); err != nil {
-				return err
-			}
 
-			if d == dir || hasAtLeastOneChild { // do not remove top level directory or a directory with at least one child
+			if d == dir || !empty { // do not remove top level directory or a directory with at least one child
 				return nil
 			}
 

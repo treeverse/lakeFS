@@ -57,6 +57,15 @@ func (u *URI) GetPath() string {
 	return *u.Path
 }
 
+// WithRef returns a new URI from u replacing the Reference part with the given ref
+func (u *URI) WithRef(ref string) *URI {
+	return &URI{
+		Repository: u.Repository,
+		Ref:        ref,
+		Path:       u.Path,
+	}
+}
+
 func (u *URI) String() string {
 	var buf strings.Builder
 	buf.WriteString(LakeFSSchema)
@@ -135,12 +144,4 @@ func Must(u *URI, e error) *URI {
 		panic(e)
 	}
 	return u
-}
-
-func WithRef(remote *URI, ref string) *URI {
-	return &URI{
-		Repository: remote.Repository,
-		Ref:        ref,
-		Path:       remote.Path,
-	}
 }
