@@ -88,6 +88,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.3.1
+	github.com/karrick/godirwalk v1.17.0
 	github.com/puzpuzpuz/xsync v1.5.2
 	go.uber.org/ratelimit v0.2.0
 )
@@ -142,7 +143,7 @@ require (
 	github.com/docker/cli v23.0.6+incompatible // indirect
 	github.com/docker/docker v23.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.5.0
+	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect

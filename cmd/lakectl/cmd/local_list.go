@@ -19,7 +19,7 @@ const (
 
 var localListCmd = &cobra.Command{
 	Use:   "list [directory]",
-	Short: "find and list directories that are synced with lakeFS",
+	Short: "find and list directories that are synced with lakeFS.",
 	Args:  cobra.RangeArgs(localListMinArgs, localListMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		dir := "."
