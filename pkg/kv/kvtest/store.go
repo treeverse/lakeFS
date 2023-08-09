@@ -446,9 +446,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 			}
 			entries = append(entries, *ent)
 		}
-		if err := scan.Err(); err != nil {
-			t.Fatal("scan ended with an error", err)
-		}
+		require.NoError(t, scan.Err(), "scan ended with an error")
 
 		// you can either get the first 99 or the whole 100 since delete happened after the scan started
 		if len(entries) == len(sampleData) {
