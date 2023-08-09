@@ -60,7 +60,9 @@ func (e *EntriesIterator) IsInRange(_ []byte) bool {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
-	e.start = composeKey(e.partitionKey, key)
+	e.entry = nil
+	e.iter.Rewind()
+	e.iter.Seek(composeKey(e.partitionKey, key))
 	e.primed = false
 }
 

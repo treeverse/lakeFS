@@ -15,7 +15,7 @@ func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
-	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt := mock.NewMockResultIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 
@@ -33,7 +33,7 @@ func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
-	var entIt *mock.MockEntriesIterator
+	var entIt *mock.MockResultIterator
 	entItErr := errors.New("failed to scan")
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, entItErr).Times(1)
 

@@ -15,6 +15,21 @@ const (
 	secondPartitionKey = "ma"
 )
 
+type StoreWithCounter struct {
+	kv.Store
+	calls map[string]int
+}
+
+func NewStoreWithCounter(store kv.Store) *StoreWithCounter {
+	return &StoreWithCounter{Store: store, calls: make(map[string]int)}
+}
+
+func (swc *StoreWithCounter) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
+	// TODO lock
+	swc.calls["Scan"]++
+	return swc.Store.Scan(ctx, partitionKey, options)
+}
+
 func testPartitionIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
@@ -69,38 +84,47 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		itr.SeekGE([]byte("aaa"))
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("Failed to cast entry to TestModel")
+		for _, seekValue := range []string{"aaa", "b"} {
+			itr.SeekGE([]byte(seekValue))
+			names := make([]string, 0)
+			for itr.Next() {
+				e := itr.Entry()
+				model, ok := e.Value.(*TestModel)
+				if !ok {
+					t.Fatalf("Failed to cast entry to TestModel")
+				}
+				names = append(names, string(model.Name))
 			}
-			names = append(names, string(model.Name))
-		}
-		if itr.Err() != nil {
-			t.Fatalf("unexpected error: %v", itr.Err())
-		}
-		itr.SeekGE([]byte("b"))
-		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
-		}
-
-		names = make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("Failed to cast entry to TestModel")
+			if itr.Err() != nil {
+				t.Fatalf("unexpected error: %v", itr.Err())
 			}
-			names = append(names, string(model.Name))
+			if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
+				t.Fatalf("got wrong list of names: %v", diffs)
+			}
 		}
-		if itr.Err() != nil {
-			t.Fatalf("unexpected error: %v", itr.Err())
+	})
+	t.Run("count scans on successive SeekGE operations", func(t *testing.T) {
+		store := NewStoreWithCounter(store)
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
 		}
-		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
+		defer itr.Close()
+		for _, seekValue := range []string{"b", "c", "d"} {
+			itr.SeekGE([]byte(seekValue))
+			if !itr.Next() {
+				t.Fatalf("Expected iterator to have a value")
+			}
+			if itr.Err() != nil {
+				t.Fatalf("unexpected error: %v", itr.Err())
+			}
+			k := itr.Entry().Key
+			if string(k) != seekValue {
+				t.Fatalf("Expected to find value %s. Found %s", seekValue, k)
+			}
+		}
+		if store.calls["Scan"] != 1 {
+			t.Fatalf("Expected exactly 1 call to Scan. got: %d", store.calls["Scan"])
 		}
 	})
 
