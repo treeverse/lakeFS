@@ -230,8 +230,7 @@ func (si *SkipFirstIterator) Next() bool {
 }
 
 func (si *SkipFirstIterator) SeekGE(key []byte) {
-	//TODO implement me
-	panic("implement me")
+	si.it.SeekGE(key)
 }
 
 func (si *SkipFirstIterator) Entry() *Entry {
