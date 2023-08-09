@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -38,9 +40,10 @@ var localCloneCmd = &cobra.Command{
 
 		empty, err := fileutil.IsDirEmpty(localPath)
 		if err != nil {
-			DieErr(err)
-		}
-		if !empty {
+			if !errors.Is(err, fs.ErrNotExist) {
+				DieErr(err)
+			}
+		} else if !empty {
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
@@ -52,8 +55,8 @@ var localCloneCmd = &cobra.Command{
 		client := getClient()
 		// Dynamically construct changes
 		c := make(chan *local.Change, filesChanSize)
-
 		go func() {
+			defer close(c)
 			hasMore := true
 			var after string
 			for hasMore {
@@ -80,7 +83,6 @@ var localCloneCmd = &cobra.Command{
 				hasMore = listResp.JSON200.Pagination.HasMore
 				after = listResp.JSON200.Pagination.NextOffset
 			}
-			close(c)
 		}()
 
 		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
@@ -89,7 +91,7 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded: %d", remote, localPath, s.Summary().Downloaded)
+		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded:\t%d\n", remote, localPath, s.Summary().Downloaded)
 	},
 }
 
