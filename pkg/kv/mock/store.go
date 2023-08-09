@@ -139,10 +139,10 @@ func (mr *MockStoreMockRecorder) Get(ctx, partitionKey, key interface{}) *gomock
 }
 
 // Scan mocks base method.
-func (m *MockStore) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
+func (m *MockStore) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Scan", ctx, partitionKey, options)
-	ret0, _ := ret[0].(kv.ResultIterator)
+	ret0, _ := ret[0].(kv.EntriesIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -258,105 +258,14 @@ func (mr *MockEntriesIteratorMockRecorder) Next() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockEntriesIterator)(nil).Next))
 }
 
-// MockResultIterator is a mock of ResultIterator interface.
-type MockResultIterator struct {
-	ctrl     *gomock.Controller
-	recorder *MockResultIteratorMockRecorder
-}
-
-// MockResultIteratorMockRecorder is the mock recorder for MockResultIterator.
-type MockResultIteratorMockRecorder struct {
-	mock *MockResultIterator
-}
-
-// NewMockResultIterator creates a new mock instance.
-func NewMockResultIterator(ctrl *gomock.Controller) *MockResultIterator {
-	mock := &MockResultIterator{ctrl: ctrl}
-	mock.recorder = &MockResultIteratorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockResultIterator) EXPECT() *MockResultIteratorMockRecorder {
-	return m.recorder
-}
-
-// Close mocks base method.
-func (m *MockResultIterator) Close() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Close")
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockResultIteratorMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockResultIterator)(nil).Close))
-}
-
-// Entry mocks base method.
-func (m *MockResultIterator) Entry() *kv.Entry {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Entry")
-	ret0, _ := ret[0].(*kv.Entry)
-	return ret0
-}
-
-// Entry indicates an expected call of Entry.
-func (mr *MockResultIteratorMockRecorder) Entry() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Entry", reflect.TypeOf((*MockResultIterator)(nil).Entry))
-}
-
-// Err mocks base method.
-func (m *MockResultIterator) Err() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Err")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Err indicates an expected call of Err.
-func (mr *MockResultIteratorMockRecorder) Err() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockResultIterator)(nil).Err))
-}
-
-// IsInRange mocks base method.
-func (m *MockResultIterator) IsInRange(key []byte) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsInRange", key)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsInRange indicates an expected call of IsInRange.
-func (mr *MockResultIteratorMockRecorder) IsInRange(key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsInRange", reflect.TypeOf((*MockResultIterator)(nil).IsInRange), key)
-}
-
-// Next mocks base method.
-func (m *MockResultIterator) Next() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Next")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Next indicates an expected call of Next.
-func (mr *MockResultIteratorMockRecorder) Next() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockResultIterator)(nil).Next))
-}
-
 // SeekGE mocks base method.
-func (m *MockResultIterator) SeekGE(key []byte) {
+func (m *MockEntriesIterator) SeekGE(key []byte) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SeekGE", key)
 }
 
 // SeekGE indicates an expected call of SeekGE.
-func (mr *MockResultIteratorMockRecorder) SeekGE(key interface{}) *gomock.Call {
+func (mr *MockEntriesIteratorMockRecorder) SeekGE(key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockResultIterator)(nil).SeekGE), key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockEntriesIterator)(nil).SeekGE), key)
 }

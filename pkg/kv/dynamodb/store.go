@@ -33,6 +33,9 @@ type Store struct {
 }
 
 type EntriesIterator struct {
+	partitionKey []byte
+	keyStart     []byte
+
 	scanCtx                   context.Context
 	entry                     *kv.Entry
 	err                       error
@@ -330,45 +333,42 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	return nil
 }
+func (e *EntriesIterator) reset() {
+	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
+		":partitionkey": {
+			B: e.partitionKey,
+		},
+	}
+	keyConditionExpression := PartitionKey + " = :partitionkey"
+	if len(e.keyStart) > 0 {
+		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
+		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
+			B: e.keyStart,
+		}
+	}
+	e.queryResult, e.err = e.store.scanInternal(e.scanCtx, keyConditionExpression, expressionAttributeValues, e.limit, nil)
+	e.keyConditionExpression = keyConditionExpression
+	e.expressionAttributeValues = expressionAttributeValues
+}
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-
 	// limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
 	limit := s.params.ScanLimit
 	batchSize := int64(options.BatchSize)
 	if batchSize != 0 && limit != 0 && batchSize < limit {
 		limit = batchSize
 	}
-
-	// format key and attribute expressions
-	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
-		":partitionkey": {
-			B: partitionKey,
-		},
-	}
-	keyConditionExpression := PartitionKey + " = :partitionkey"
-	if len(options.KeyStart) > 0 {
-		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
-		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: options.KeyStart,
-		}
-	}
-
-	queryResult, err := s.scanInternal(ctx, keyConditionExpression, expressionAttributeValues, limit, nil)
-	if err != nil {
-		return nil, err
-	}
 	it := &EntriesIterator{
-		scanCtx:                   ctx,
-		store:                     s,
-		keyConditionExpression:    keyConditionExpression,
-		expressionAttributeValues: expressionAttributeValues,
-		limit:                     limit,
-		queryResult:               queryResult,
+		partitionKey: partitionKey,
+		keyStart:     options.KeyStart,
+		scanCtx:      ctx,
+		store:        s,
+		limit:        limit,
 	}
+	it.reset()
 	return it, nil
 }
 
@@ -413,6 +413,11 @@ func (s *Store) DropTable() error {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.keyStart = key
+		e.reset()
+		return
+	}
 	var item DynKVItem
 	e.currEntryIdx = sort.Search(len(e.queryResult.Items), func(i int) bool {
 		if e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &item); e.err != nil {
@@ -452,7 +457,7 @@ func (e *EntriesIterator) Next() bool {
 	return true
 }
 
-func (e *EntriesIterator) IsInRange(key []byte) bool {
+func (e *EntriesIterator) isInRange(key []byte) bool {
 	if len(e.queryResult.Items) == 0 {
 		return false
 	}

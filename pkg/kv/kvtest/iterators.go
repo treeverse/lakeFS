@@ -24,7 +24,7 @@ func NewStoreWithCounter(store kv.Store) *StoreWithCounter {
 	return &StoreWithCounter{Store: store, calls: make(map[string]int)}
 }
 
-func (swc *StoreWithCounter) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
+func (swc *StoreWithCounter) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	// TODO lock
 	swc.calls["Scan"]++
 	return swc.Store.Scan(ctx, partitionKey, options)

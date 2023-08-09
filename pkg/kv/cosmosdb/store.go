@@ -329,30 +329,40 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
+func newPager(pk azcosmos.PartitionKey,
+	containerClient *azcosmos.ContainerClient,
+	consistencyLevel azcosmos.ConsistencyLevel,
+	keyStart []byte,
+	batchSize int32,
+) *runtime.Pager[azcosmos.QueryItemsResponse] {
+	return containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
+		ConsistencyLevel: consistencyLevel.ToPtr(),
+		PageSizeHint:     batchSize,
+		QueryParameters: []azcosmos.QueryParameter{{
+			Name:  "@start",
+			Value: encoding.EncodeToString(keyStart),
+		}},
+	})
+}
+
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
-
-	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
-		ConsistencyLevel: s.consistencyLevel.ToPtr(),
-		PageSizeHint:     int32(options.BatchSize),
-		QueryParameters: []azcosmos.QueryParameter{{
-			Name:  "@start",
-			Value: encoding.EncodeToString(options.KeyStart),
-		}},
-	})
+	queryPager := newPager(pk, s.containerClient, s.consistencyLevel, options.KeyStart, int32(options.BatchSize))
 	currPage, err := queryPager.NextPage(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	return &EntriesIterator{
+		store:        s,
+		partitionKey: pk,
+		options:      options,
+
 		queryPager: queryPager,
-		currPage:   currPage,
 		queryCtx:   ctx,
+		currPage:   currPage,
 		encoding:   encoding,
 	}, nil
 }
@@ -361,6 +371,10 @@ func (s *Store) Close() {
 }
 
 type EntriesIterator struct {
+	store        *Store
+	partitionKey azcosmos.PartitionKey
+	options      kv.ScanOptions
+
 	entry        *kv.Entry
 	err          error
 	currEntryIdx int
@@ -420,6 +434,14 @@ func (e *EntriesIterator) Next() bool {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.currEntryIdx = 0
+		e.entry = nil
+		e.err = nil
+		e.queryPager = newPager(e.partitionKey, e.store.containerClient, e.store.consistencyLevel, key, int32(e.options.BatchSize))
+		e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
+		return
+	}
 	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
 		currentKey, _ := e.getKeyValue(i)
 		if e.err != nil {
@@ -429,7 +451,7 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 	})
 }
 
-func (e *EntriesIterator) IsInRange(key []byte) bool {
+func (e *EntriesIterator) isInRange(key []byte) bool {
 	if len(e.currPage.Items) == 0 {
 		return false
 	}

@@ -29,6 +29,8 @@ type Store struct {
 
 type EntriesIterator struct {
 	ctx          context.Context
+	partitionKey []byte
+
 	store        *Store
 	entries      []kv.Entry
 	limit        int
@@ -310,7 +312,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	return nil
 }
 
-func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.ResultIterator, error) {
+func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
@@ -327,6 +329,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}
 	return &EntriesIterator{
 		ctx:          ctx,
+		partitionKey: partitionKey,
 		store:        s,
 		entries:      entries,
 		limit:        limit,
@@ -397,7 +400,7 @@ func (e *EntriesIterator) Next() bool {
 	return true
 }
 
-func (e *EntriesIterator) IsInRange(key []byte) bool {
+func (e *EntriesIterator) isInRange(key []byte) bool {
 	if len(e.entries) == 0 {
 		return false
 	}
@@ -407,6 +410,10 @@ func (e *EntriesIterator) IsInRange(key []byte) bool {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.entries, e.err = e.store.scanInternal(e.ctx, e.partitionKey, key, e.limit, true)
+		return
+	}
 	for i := range e.entries {
 		if bytes.Compare(key, e.entries[i].Key) <= 0 {
 			e.currEntryIdx = i - 1

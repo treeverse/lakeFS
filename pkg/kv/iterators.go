@@ -229,6 +229,11 @@ func (si *SkipFirstIterator) Next() bool {
 	return si.it.Next()
 }
 
+func (si *SkipFirstIterator) SeekGE(key []byte) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (si *SkipFirstIterator) Entry() *Entry {
 	return si.it.Entry()
 }
@@ -246,8 +251,7 @@ type PartitionIterator struct {
 	ctx          context.Context
 	store        Store
 	msgType      protoreflect.MessageType
-	itrClosed    bool
-	itr          ResultIterator
+	itr          EntriesIterator
 	partitionKey string
 	value        *MessageEntry
 	err          error
@@ -259,7 +263,6 @@ func NewPartitionIterator(ctx context.Context, store Store, msgType protoreflect
 		ctx:          ctx,
 		store:        store,
 		msgType:      msgType,
-		itrClosed:    true,
 		partitionKey: partitionKey,
 		batchSize:    batchSize,
 	}
@@ -270,12 +273,11 @@ func (p *PartitionIterator) Next() bool {
 		return false
 	}
 	p.value = nil
-	if p.itrClosed {
+	if p.itr == nil {
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize})
 		if p.err != nil {
 			return false
 		}
-		p.itrClosed = false
 	}
 	if !p.itr.Next() {
 		return false
@@ -299,14 +301,13 @@ func (p *PartitionIterator) Next() bool {
 }
 
 func (p *PartitionIterator) SeekGE(key []byte) {
-	if p.Err() == nil {
-		if p.itr != nil && p.itr.IsInRange(key) {
-			p.itr.SeekGE(key)
-			return
-		}
-		p.Close() // Close previous before creating new iterator
-		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{KeyStart: key, BatchSize: p.batchSize})
-		p.itrClosed = p.err != nil
+	if p.itr == nil {
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize})
+	}
+	if p.err == nil {
+		p.itr.SeekGE(key)
+	} else {
+		p.itr = nil
 	}
 }
 
@@ -318,16 +319,19 @@ func (p *PartitionIterator) Err() error {
 	if p.err != nil {
 		return p.err
 	}
-	if !p.itrClosed {
-		return p.itr.Err()
+	if p.itr == nil {
+		return nil
 	}
-	return nil
+	return p.itr.Err()
 }
 
 func (p *PartitionIterator) Close() {
-	// Check itr is set, can be null in case seek fails
-	if !p.itrClosed {
-		p.itr.Close()
-		p.itrClosed = true
+	if p.err != nil {
+		return
 	}
+	if p.itr == nil {
+		return
+	}
+	p.itr.Close()
+	p.itr = nil
 }

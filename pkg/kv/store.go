@@ -102,7 +102,7 @@ type Store interface {
 	// Scan returns entries that can be read by key order
 	// partitionKey is optional, passing it might increase performance.
 	// 'options' holds optional parameters to control the batch size and the key to start the scan with.
-	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (ResultIterator, error)
+	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error)
 
 	// Close access to the database store. After calling Close the instance is unusable.
 	Close()
@@ -114,6 +114,8 @@ type EntriesIterator interface {
 	// it will process the next entry and return true if it was successful, and false when none or error.
 	Next() bool
 
+	SeekGE(key []byte)
+
 	// Entry current entry read after calling Next, set to nil in case of an error or no more entries.
 	Entry() *Entry
 
@@ -123,12 +125,6 @@ type EntriesIterator interface {
 	// Close should be called at the end of processing entries, required to release resources used to scan entries.
 	// After calling 'Close' the instance should not be used as the behaviour will not be defined.
 	Close()
-}
-
-type ResultIterator interface {
-	EntriesIterator
-	IsInRange(key []byte) bool
-	SeekGE(key []byte)
 }
 
 // Entry holds a pair of key/value
