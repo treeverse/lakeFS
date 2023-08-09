@@ -115,7 +115,7 @@ func TestTagIterator(t *testing.T) {
 func TestTagIterator_CloseTwice(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
-	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt := mock.NewMockResultIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
@@ -137,7 +137,7 @@ func TestTagIterator_CloseTwice(t *testing.T) {
 func TestTagIterator_NextClosed(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
-	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt := mock.NewMockResultIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)

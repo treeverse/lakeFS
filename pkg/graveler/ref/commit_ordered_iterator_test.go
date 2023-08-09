@@ -303,7 +303,7 @@ func TestOrderedCommitIteratorGrid(t *testing.T) {
 func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
-	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt := mock.NewMockResultIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
@@ -329,7 +329,7 @@ func TestOrderedCommitIterator_CloseTwice(t *testing.T) {
 func TestOrderedCommitIterator_NextAfterClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
-	entIt := mock.NewMockEntriesIterator(ctrl)
+	entIt := mock.NewMockResultIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
