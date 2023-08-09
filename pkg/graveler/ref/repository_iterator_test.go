@@ -104,7 +104,7 @@ func TestRepositoryIterator(t *testing.T) {
 func TestRepositoryIterator_CloseTwice(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
-	entIt := mock.NewMockResultIterator(ctrl)
+	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
@@ -120,7 +120,7 @@ func TestRepositoryIterator_CloseTwice(t *testing.T) {
 func TestRepositoryIterator_NextClosed(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
-	entIt := mock.NewMockResultIterator(ctrl)
+	entIt := mock.NewMockEntriesIterator(ctrl)
 	entIt.EXPECT().Close().Times(1)
 	store := mock.NewMockStore(ctrl)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
