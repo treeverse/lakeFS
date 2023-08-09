@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/local"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
@@ -48,7 +49,7 @@ func init() {
 }
 
 func validateQuickstartEnv(cfg *config.Config) {
-	if cfg.Database.Type != local.DriverName || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
+	if !((cfg.Database.Type == local.DriverName || cfg.Database.Type == mem.DriverName) && cfg.Blockstore.Type != block.BlockstoreTypeLocal) {
 		fmt.Printf("quickstart mode can only run with local settings\n")
 		os.Exit(1)
 	}
