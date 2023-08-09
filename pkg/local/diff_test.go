@@ -1,13 +1,21 @@
 package local_test
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/local"
+)
+
+const (
+	diffTestCorrectTime = 1691570412
 )
 
 func TestDiffLocal(t *testing.T) {
@@ -24,12 +32,12 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
-					Mtime:     1691570412,
+					Mtime:     diffTestCorrectTime,
 				},
 				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
-					Mtime:     1691570412,
+					Mtime:     diffTestCorrectTime,
 				},
 			},
 			Expected: []*local.Change{},
@@ -67,7 +75,7 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
-					Mtime:     1691570412,
+					Mtime:     diffTestCorrectTime,
 				},
 			},
 			Expected: []*local.Change{
@@ -106,6 +114,7 @@ func TestDiffLocal(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
+			fixTime(t, tt.LocalPath)
 			left := tt.RemoteList
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
@@ -132,4 +141,14 @@ func makeChan[T any](c chan<- T, l []T) {
 		c <- o
 	}
 	close(c)
+}
+
+func fixTime(t *testing.T, localPath string) {
+	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			return os.Chtimes(path, time.Now(), time.Unix(diffTestCorrectTime, 0))
+		}
+		return nil
+	})
+	require.NoError(t, err)
 }
