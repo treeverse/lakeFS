@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/diff"
 )
 
 const (
@@ -19,7 +19,6 @@ const (
 	maxDiffPageSize = 1000
 
 	twoWayFlagName = "two-way"
-	diffTypeTwoDot = "two_dot"
 )
 
 var diffCmd = &cobra.Command{
@@ -108,65 +107,27 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 }
 
 func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
-	var diffType *string
-	if twoDot {
-		diffType = api.StringPtr(diffTypeTwoDot)
+	diffs := make(chan api.Diff, maxDiffPageSize)
+	err := diff.StreamRepositoryDiffs(ctx, client, repository, leftRef, rightRef, "", diffs, twoDot)
+	if err != nil {
+		DieErr(err)
 	}
-	var after string
-	pageSize := pageSize(minDiffPageSize)
-	for {
-		amount := int(pageSize)
-		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-			Type:   diffType,
-		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		for _, line := range resp.JSON200.Results {
-			FmtDiff(line, true)
-		}
-		pagination := resp.JSON200.Pagination
-		if !pagination.HasMore {
-			break
-		}
-		after = pagination.NextOffset
-		pageSize.Next()
+	for d := range diffs {
+		FmtDiff(d, true)
 	}
 }
 
-func FmtDiff(diff api.Diff, withDirection bool) {
-	var color text.Color
-	var action string
-
-	switch diff.Type {
-	case "added":
-		color = text.FgGreen
-		action = "+ added"
-	case "removed":
-		color = text.FgRed
-		action = "- removed"
-	case "changed":
-		color = text.FgYellow
-		action = "~ modified"
-	case "conflict":
-		color = text.FgHiYellow
-		action = "* conflict"
-	default:
-	}
+func FmtDiff(d api.Diff, withDirection bool) {
+	action, color := diff.Fmt(d.Type)
 
 	if !withDirection {
 		_, _ = os.Stdout.WriteString(
-			color.Sprintf("%s %s\n", action, diff.Path),
+			color.Sprintf("%s %s\n", action, d.Path),
 		)
 		return
 	}
-
 	_, _ = os.Stdout.WriteString(
-		color.Sprintf("%s %s\n", action, diff.Path),
+		color.Sprintf("%s %s\n", action, d.Path),
 	)
 }
 

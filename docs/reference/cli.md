@@ -2651,6 +2651,24 @@ lakectl local list [directory] [flags]
 
 
 
+### lakectl local status
+
+show modifications (both remote and local) to the directory and the remote location it tracks
+
+```
+lakectl local status [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help    help for status
+  -l, --local   Don't compare against remote changes
+```
+
+
+
 ### lakectl log
 
 Show log of commits

@@ -26,28 +26,6 @@ const (
 	ClientMtimeMetadataKey = "x-client-mtime"
 )
 
-type ChangeSource int
-
-const (
-	ChangeSourceRemote ChangeSource = iota
-	ChangeSourceLocal
-)
-
-type ChangeType int
-
-const (
-	ChangeTypeAdded = iota
-	ChangeTypeModified
-	ChangeTypeRemoved
-	ChangeTypeConflict
-)
-
-type Change struct {
-	Source ChangeSource
-	Path   string
-	Type   ChangeType
-}
-
 func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
