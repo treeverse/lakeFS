@@ -72,7 +72,7 @@ Now that you have a client object, you can use it to interact with the API.
 
 ```python
 repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
-client.repositories.create_repository(repo)
+client.repositories_api.create_repository(repo)
 # output:
 # {'creation_date': 1617532175,
 #  'default_branch': 'main',
@@ -85,7 +85,7 @@ client.repositories.create_repository(repo)
 List the repository branches:
 
 ```python
-client.branches.list_branches('example-repo')
+client.branches_api.list_branches('example-repo')
 # output:
 # [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
 ```
@@ -93,7 +93,7 @@ client.branches.list_branches('example-repo')
 Create a new branch:
 
 ```python
-client.branches.create_branch(repository='example-repo', branch_creation=models.BranchCreation(name='experiment-aggregations1', source='main'))
+client.branches_api.create_branch(repository='example-repo', branch_creation=models.BranchCreation(name='experiment-aggregations1', source='main'))
 # output:
 # 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656'
 ```
@@ -101,7 +101,7 @@ client.branches.create_branch(repository='example-repo', branch_creation=models.
 List again to see your newly created branch:
 
 ```python
-client.branches.list_branches('example-repo').results
+client.branches_api.list_branches('example-repo').results
 # output:
 # [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'experiment-aggregations1'}, {'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
 ```
@@ -110,7 +110,7 @@ Great. Now, let's upload a file into your new branch:
 
 ```python
 with open('file.csv', 'rb') as f:
-    client.objects.upload_object(repository='example-repo', branch='experiment-aggregations1', path='path/to/file.csv', content=f)
+    client.objects_api.upload_object(repository='example-repo', branch='experiment-aggregations1', path='path/to/file.csv', content=f)
 # output:
 # {'checksum': '0d3b39380e2500a0f60fb3c09796fdba',
 #  'mtime': 1617534834,
@@ -123,7 +123,7 @@ with open('file.csv', 'rb') as f:
 Diffing a single branch will show all the uncommitted changes on that branch:
 
 ```python
-client.branches.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
+client.branches_api.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
 # output:
 # [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
 ```
@@ -131,7 +131,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 As expected, our change appears here. Let's commit it and attach some arbitrary metadata:
 
 ```python
-client.commits.commit(
+client.commits_api.commit(
     repository='example-repo',
     branch='experiment-aggregations1',
     commit_creation=models.CommitCreation(message='Added a CSV file!', metadata={'using': 'python_api'}))
@@ -148,7 +148,7 @@ client.commits.commit(
 Diffing again, this time there should be no uncommitted files:
 
 ```python
-client.branches.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
+client.branches_api.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
 # output:
 # []
 ```
@@ -158,7 +158,7 @@ client.branches.diff_branch(repository='example-repo', branch='experiment-aggreg
 Let's diff between your branch and the main branch:
 
 ```python
-client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
+client.refs_api.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
 # output:
 # [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
 
@@ -167,7 +167,7 @@ client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='exp
 Looks like you have a change. Let's merge it:
 
 ```python
-client.refs.merge_into_branch(repository='example-repo', source_ref='experiment-aggregations1', destination_branch='main')
+client.refs_api.merge_into_branch(repository='example-repo', source_ref='experiment-aggregations1', destination_branch='main')
 # output:
 # {'reference': 'd0414a3311a8c1cef1ef355d6aca40db72abe545e216648fe853e25db788fa2e',
 #  'summary': {'added': 1, 'changed': 0, 'conflict': 0, 'removed': 0}}
@@ -176,7 +176,7 @@ client.refs.merge_into_branch(repository='example-repo', source_ref='experiment-
 Let's diff again - there should be no changes as all changes are on our main branch already:
 
 ```python
-client.refs.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
+client.refs_api.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
 # output:
 # []
 ```
