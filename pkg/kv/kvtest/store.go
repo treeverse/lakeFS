@@ -422,7 +422,8 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("deleted_last", func(t *testing.T) {
-		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - 5})
+		scanSize := sampleItems - 5
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: scanSize})
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
