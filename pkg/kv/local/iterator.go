@@ -55,9 +55,6 @@ func (e *EntriesIterator) Next() bool {
 	e.logger.WithField("next_key", string(key)).WithField("took", time.Since(start)).Trace("read next value")
 	return true
 }
-func (e *EntriesIterator) IsInRange(_ []byte) bool {
-	return true
-}
 
 func (e *EntriesIterator) SeekGE(key []byte) {
 	e.entry = nil

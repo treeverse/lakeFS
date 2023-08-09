@@ -31,10 +31,6 @@ type EntriesIterator struct {
 	store     *Store
 }
 
-func (e *EntriesIterator) IsInRange(_ []byte) bool {
-	return true
-}
-
 func (e *EntriesIterator) SeekGE(key []byte) {
 	e.start = key
 }
