@@ -90,7 +90,7 @@ func (c Changes) String() string {
 	return strings.Join(strs, "\n")
 }
 
-// MergeWith combines changes from two diffs, sorting by lexicographic order. 
+// MergeWith combines changes from two diffs, sorting by lexicographic order.
 // If the same path appears in both diffs, it's marked as a conflict.
 func (c Changes) MergeWith(other Changes) Changes {
 	cIdx := 0
