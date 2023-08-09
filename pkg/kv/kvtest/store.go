@@ -428,10 +428,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 			t.Fatal("failed to scan", err)
 		}
 		defer scan.Close()
-		err = store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key)
-		if err != nil {
-			t.Fatal("failed to delete last key", err)
-		}
+		require.NoError(t, store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key), "failed to delete last key")
 
 		var entries []kv.Entry
 		for scan.Next() {
