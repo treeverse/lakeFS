@@ -422,7 +422,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("deleted_last", func(t *testing.T) {
-		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - 1})
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - 5})
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -451,7 +451,13 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		if err := scan.Err(); err != nil {
 			t.Fatal("scan ended with an error", err)
 		}
-		testCompareEntries(t, entries, sampleData[:len(sampleData)-1])
+
+		// you can either get the first 99 or the whole 100 since delete happened after the scan started
+		if len(entries) == len(sampleData) {
+			testCompareEntries(t, entries, sampleData)
+		} else {
+			testCompareEntries(t, entries, sampleData[:len(sampleData)-1])
+		}
 	})
 }
 
