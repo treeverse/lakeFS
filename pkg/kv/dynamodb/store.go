@@ -349,6 +349,7 @@ func (e *EntriesIterator) reset() {
 	e.queryResult, e.err = e.store.scanInternal(e.scanCtx, keyConditionExpression, expressionAttributeValues, e.limit, nil)
 	e.keyConditionExpression = keyConditionExpression
 	e.expressionAttributeValues = expressionAttributeValues
+	e.currEntryIdx = 0
 }
 
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
