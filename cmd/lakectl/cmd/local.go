@@ -52,6 +52,11 @@ func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, rem
 	if err != nil {
 		DieErr(err)
 	}
+
+	if err = wg.Wait(); err != nil {
+		DieErr(err)
+	}
+
 	return changes
 }
 

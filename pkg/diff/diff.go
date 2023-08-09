@@ -22,7 +22,6 @@ func GetDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, r
 		diffType = api.StringPtr(diffTypeTwoDot)
 	}
 
-	// left should be the base commit!
 	hasMore := true
 	var after string
 	for hasMore {

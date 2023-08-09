@@ -23,7 +23,7 @@ const (
 type ChangeType int
 
 const (
-	ChangeTypeAdded = iota
+	ChangeTypeAdded ChangeType = iota
 	ChangeTypeModified
 	ChangeTypeRemoved
 	ChangeTypeConflict
@@ -90,6 +90,7 @@ func (c Changes) String() string {
 	return strings.Join(strs, "\n")
 }
 
+// MergeWith - merges changes from 2 different diffs by lexicographic order. In case a path was changed in both diffs, mark as conflict
 func (c Changes) MergeWith(other Changes) Changes {
 	cIdx := 0
 	oIdx := 0
@@ -125,6 +126,7 @@ func (c Changes) MergeWith(other Changes) Changes {
 
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
+// left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
 func DiffLocalWithHead(left <-chan api.ObjectStats, rightPath string) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
@@ -186,6 +188,7 @@ func DiffLocalWithHead(left <-chan api.ObjectStats, rightPath string) (Changes, 
 	return changes, nil
 }
 
+// ListRemote - Lists objects from a remote uri and inserts them into the objects channel
 func ListRemote(ctx context.Context, client api.ClientWithResponsesInterface, loc *uri.URI, objects chan<- api.ObjectStats) error {
 	hasMore := true
 	var after string

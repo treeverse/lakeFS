@@ -1,26 +1,26 @@
 package local_test
 
 import (
-	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/local"
 	"sort"
 	"testing"
 
 	"github.com/go-openapi/swag"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/local"
 )
 
 func TestDiffLocal(t *testing.T) {
 	cases := []struct {
-		Name     string
-		Right    string
-		Left     []api.ObjectStats
-		Expected []*local.Change
+		Name       string
+		LocalPath  string
+		RemoteList []api.ObjectStats
+		Expected   []*local.Change
 	}{
 		{
-			Name:  "t1_no_diff",
-			Right: "testdata/localdiff/t1",
-			Left: []api.ObjectStats{
+			Name:      "t1_no_diff",
+			LocalPath: "testdata/localdiff/t1",
+			RemoteList: []api.ObjectStats{
 				{
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
@@ -35,9 +35,9 @@ func TestDiffLocal(t *testing.T) {
 			Expected: []*local.Change{},
 		},
 		{
-			Name:  "t1_modified",
-			Right: "testdata/localdiff/t1",
-			Left: []api.ObjectStats{
+			Name:      "t1_modified",
+			LocalPath: "testdata/localdiff/t1",
+			RemoteList: []api.ObjectStats{
 				{
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
@@ -61,9 +61,9 @@ func TestDiffLocal(t *testing.T) {
 			},
 		},
 		{
-			Name:  "t1_local_before",
-			Right: "testdata/localdiff/t1",
-			Left: []api.ObjectStats{
+			Name:      "t1_local_before",
+			LocalPath: "testdata/localdiff/t1",
+			RemoteList: []api.ObjectStats{
 				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
@@ -78,9 +78,9 @@ func TestDiffLocal(t *testing.T) {
 			},
 		},
 		{
-			Name:  "t1_local_after",
-			Right: "testdata/localdiff/t1",
-			Left: []api.ObjectStats{
+			Name:      "t1_local_after",
+			LocalPath: "testdata/localdiff/t1",
+			RemoteList: []api.ObjectStats{
 				{
 					Path:      "tub/r.txt",
 					SizeBytes: swag.Int64(6),
@@ -106,13 +106,13 @@ func TestDiffLocal(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			left := tt.Left
+			left := tt.RemoteList
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
 			})
 			lc := make(chan api.ObjectStats, len(left))
 			makeChan(lc, left)
-			changes, err := local.DiffLocalWithHead(lc, tt.Right)
+			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath)
 			if err != nil {
 				t.Fatal(err)
 			}
