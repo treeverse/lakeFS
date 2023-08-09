@@ -24,12 +24,12 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
-					Mtime:     1691420202,
+					Mtime:     1691570412,
 				},
 				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
-					Mtime:     1691420202,
+					Mtime:     1691570412,
 				},
 			},
 			Expected: []*local.Change{},
@@ -67,7 +67,7 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
-					Mtime:     1691420202,
+					Mtime:     1691570412,
 				},
 			},
 			Expected: []*local.Change{
