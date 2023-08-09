@@ -108,7 +108,7 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 
 func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
 	diffs := make(chan api.Diff, maxDiffPageSize)
-	err := diff.GetDiffRefs(ctx, client, repository, leftRef, rightRef, "", diffs, twoDot)
+	err := diff.StreamRepositoryDiffs(ctx, client, repository, leftRef, rightRef, "", diffs, twoDot)
 	if err != nil {
 		DieErr(err)
 	}

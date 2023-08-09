@@ -56,7 +56,7 @@ var localStatusCmd = &cobra.Command{
 			d := make(chan api.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
-				return diff.GetDiffRefs(cmd.Context(), client, remoteBase.Repository, remoteBase.Ref, remote.Ref, swag.StringValue(remoteBase.Path), d, false)
+				return diff.StreamRepositoryDiffs(cmd.Context(), client, remoteBase.Repository, remoteBase.Ref, remote.Ref, swag.StringValue(remoteBase.Path), d, false)
 			})
 
 			var changes local.Changes

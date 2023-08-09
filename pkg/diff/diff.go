@@ -13,7 +13,8 @@ import (
 
 const diffTypeTwoDot = "two_dot"
 
-func GetDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository, left, right, prefix string, diffs chan<- api.Diff, twoDot bool) error {
+// StreamRepositoryDiffs fetches differences between 'left' and 'right' references in a repository
+func StreamRepositoryDiffs(ctx context.Context, client api.ClientWithResponsesInterface, repository, left, right, prefix string, diffs chan<- api.Diff, twoDot bool) error {
 	defer func() {
 		close(diffs)
 	}()
