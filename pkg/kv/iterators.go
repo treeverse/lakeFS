@@ -301,13 +301,10 @@ func (p *PartitionIterator) Next() bool {
 
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.itr == nil {
-		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize})
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize, KeyStart: key})
+		return
 	}
-	if p.err == nil {
-		p.itr.SeekGE(key)
-	} else {
-		p.itr = nil
-	}
+	p.itr.SeekGE(key)
 }
 
 func (p *PartitionIterator) Entry() *MessageEntry {

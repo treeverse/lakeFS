@@ -16,7 +16,6 @@ func TestPartitionIterator_ClosedBehaviour(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
 	entIt := mock.NewMockEntriesIterator(ctrl)
-	entIt.EXPECT().SeekGE(gomock.Eq([]byte("test"))).Times(1)
 	entIt.EXPECT().Close().Times(1)
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, nil).Times(1)
 
