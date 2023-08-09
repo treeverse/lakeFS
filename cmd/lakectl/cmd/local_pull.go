@@ -47,10 +47,10 @@ var localPullCmd = &cobra.Command{
 		currentBase := remote.WithRef(idx.AtHead)
 		client := getClient()
 		// make sure no local changes
-		localChng := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
-		if len(localChng) > 0 && !force {
-			DieFmt("there are %d uncommitted changes. Either commit them first, or use --force to overwrite local changes",
-				len(localChng))
+		localChange := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
+		if len(localChange) > 0 && !force {
+			DieFmt("there are %d uncommitted changes. Either commit them first or use --force to revert local changes",
+				len(localChange))
 		}
 
 		// write new index

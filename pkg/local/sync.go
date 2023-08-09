@@ -233,11 +233,12 @@ func (s *SyncManager) upload(rootPath string, remote *uri.URI, change *Change) e
 	panic("Not Implemented")
 }
 
-func (s *SyncManager) deleteLocal(rootPath string, change *Change) error { //nolint:unused
+func (s *SyncManager) deleteLocal(rootPath string, change *Change) error {
 	b := s.progressBar.AddSpinner(fmt.Sprintf("delete local path: %s", change.Path))
 	source := filepath.Join(rootPath, change.Path)
 	err := fileutil.RemoveFile(source)
 	if err != nil {
+		b.Error()
 		return err
 	}
 
