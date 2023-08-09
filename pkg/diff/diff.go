@@ -9,12 +9,13 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/local"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const diffTypeTwoDot = "two_dot"
 
-// StreamRepositoryDiffs fetches differences between 'left' and 'right' references in a repository
-func StreamRepositoryDiffs(ctx context.Context, client api.ClientWithResponsesInterface, repository, left, right, prefix string, diffs chan<- api.Diff, twoDot bool) error {
+// StreamRepositoryDiffs fetches differences between 'left' and 'right' references, assumes both are in the same repository
+func StreamRepositoryDiffs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, prefix string, diffs chan<- api.Diff, twoDot bool) error {
 	defer func() {
 		close(diffs)
 	}()
@@ -26,7 +27,7 @@ func StreamRepositoryDiffs(ctx context.Context, client api.ClientWithResponsesIn
 	hasMore := true
 	var after string
 	for hasMore {
-		diffResp, err := client.DiffRefsWithResponse(ctx, repository, left, right, &api.DiffRefsParams{
+		diffResp, err := client.DiffRefsWithResponse(ctx, left.Repository, left.Ref, right.Ref, &api.DiffRefsParams{
 			After:  (*api.PaginationAfter)(swag.String(after)),
 			Prefix: (*api.PaginationPrefix)(&prefix),
 			Type:   diffType,

@@ -11,40 +11,30 @@ import (
 )
 
 const (
-	localListMinArgs = 0
-	localListMaxArgs = 1
-
 	indicesListTemplate = `{{.IndicesListTable | table -}}`
 )
 
 var localListCmd = &cobra.Command{
 	Use:   "list [directory]",
 	Short: "find and list directories that are synced with lakeFS.",
-	Args:  cobra.RangeArgs(localListMinArgs, localListMaxArgs),
+	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		dir := "."
-		if len(args) > 0 {
-			dir = args[0]
-		}
-		abs, err := filepath.Abs(dir)
-		if err != nil {
-			DieErr(err)
-		}
-		gitRoot, err := git.GetRepositoryPath(abs)
+		_, localPath := getLocalArgs(args, false)
+		gitRoot, err := git.GetRepositoryPath(localPath)
 		if err == nil {
-			abs = gitRoot
+			localPath = gitRoot
 		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
 			DieErr(err)
 		}
 
-		dirs, err := local.FindIndices(abs)
+		dirs, err := local.FindIndices(localPath)
 		if err != nil {
 			DieErr(err)
 		}
 
 		var rows [][]interface{}
 		for _, d := range dirs {
-			idx, err := local.ReadIndex(d)
+			idx, err := local.ReadIndex(filepath.Join(localPath, d))
 			if err != nil {
 				DieErr(err)
 			}

@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -13,7 +15,11 @@ import (
 const (
 	localDefaultSyncParallelism = 25
 	localDefaultSyncPresign     = true
+	localDefaultMinArgs         = 0
+	localDefaultMaxArgs         = 1
 )
+
+var localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
 
 func withParallelismFlag(cmd *cobra.Command) {
 	cmd.Flags().IntP("parallelism", "p", localDefaultSyncParallelism,
@@ -41,7 +47,23 @@ func getLocalSyncFlags(cmd *cobra.Command) syncFlags {
 	return syncFlags{parallelism: parallelism, presign: presign}
 }
 
+func getLocalArgs(args []string, requireRemote bool) (remote *uri.URI, localPath string) {
+	idx := 0
+	if requireRemote {
+		remote = MustParsePathURI("path", args[0])
+		idx += 1
+	}
+
+	dir := "."
+	if len(args) > idx {
+		dir = args[idx]
+	}
+	localPath = Must(filepath.Abs(dir))
+	return
+}
+
 func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
+	fmt.Printf("diff 'local://%s' <--> '%s'...\n", path, remote)
 	currentRemoteState := make(chan api.ObjectStats, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {

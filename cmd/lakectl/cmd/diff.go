@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/diff"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 const (
@@ -65,7 +66,7 @@ var diffCmd = &cobra.Command{
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
-		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoWay)
+		printDiffRefs(cmd.Context(), client, leftRefURI, rightRefURI, twoWay)
 	},
 }
 
@@ -106,9 +107,9 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 	}
 }
 
-func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
+func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool) {
 	diffs := make(chan api.Diff, maxDiffPageSize)
-	err := diff.StreamRepositoryDiffs(ctx, client, repository, leftRef, rightRef, "", diffs, twoDot)
+	err := diff.StreamRepositoryDiffs(ctx, client, left, right, "", diffs, twoDot)
 	if err != nil {
 		DieErr(err)
 	}

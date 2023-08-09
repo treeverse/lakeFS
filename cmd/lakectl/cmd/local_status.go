@@ -14,21 +14,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	localStatusMinArgs = 0
-	localStatusMaxArgs = 1
-)
-
 var localStatusCmd = &cobra.Command{
 	Use:   "status [directory]",
 	Short: "show modifications (both remote and local) to the directory and the remote location it tracks",
-	Args:  cobra.RangeArgs(localStatusMinArgs, localStatusMaxArgs),
+	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		dir := "."
-		if len(args) > 0 {
-			dir = args[0]
-		}
-		abs, err := filepath.Abs(dir)
+		_, localPath := getLocalArgs(args, false)
+		abs, err := filepath.Abs(localPath)
 		if err != nil {
 			DieErr(err)
 		}
@@ -45,8 +37,6 @@ var localStatusCmd = &cobra.Command{
 			DieErr(err)
 		}
 		remoteBase := remote.WithRef(idx.AtHead)
-		fmt.Printf("diff 'local://%s' <--> '%s'...\n", idx.LocalPath(), remoteBase)
-
 		client := getClient()
 		c := localDiff(cmd.Context(), client, remoteBase, idx.LocalPath())
 
@@ -56,7 +46,7 @@ var localStatusCmd = &cobra.Command{
 			d := make(chan api.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
-				return diff.StreamRepositoryDiffs(cmd.Context(), client, remoteBase.Repository, remoteBase.Ref, remote.Ref, swag.StringValue(remoteBase.Path), d, false)
+				return diff.StreamRepositoryDiffs(cmd.Context(), client, remoteBase, remote, swag.StringValue(remoteBase.Path), d, false)
 			})
 
 			var changes local.Changes

@@ -125,6 +125,49 @@ func (c Changes) MergeWith(other Changes) Changes {
 	return result
 }
 
+func switchSource(source ChangeSource) ChangeSource {
+	switch source {
+	case ChangeSourceRemote:
+		return ChangeSourceLocal
+	case ChangeSourceLocal:
+		return ChangeSourceRemote
+	default:
+		panic("invalid change source")
+	}
+}
+
+// Undo Creates a new list of changes that reverses the given changes list.
+func Undo(c Changes) Changes {
+	reversed := make(Changes, len(c))
+	for i, op := range c {
+		switch op.Type {
+		case ChangeTypeAdded:
+			reversed[i] = &Change{
+				Source: switchSource(op.Source),
+				Path:   op.Path,
+				Type:   ChangeTypeRemoved,
+			}
+		case ChangeTypeModified:
+			reversed[i] = &Change{
+				Source: switchSource(op.Source),
+				Path:   op.Path,
+				Type:   ChangeTypeModified,
+			}
+		case ChangeTypeRemoved:
+			reversed[i] = &Change{
+				Source: switchSource(op.Source),
+				Path:   op.Path,
+				Type:   ChangeTypeModified, // mark as modified so it will trigger download
+			}
+		case ChangeTypeConflict:
+		default:
+			// Should never reach
+			panic(fmt.Sprintf("got unsupported change type %d in undo", op.Type))
+		}
+	}
+	return reversed
+}
+
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
