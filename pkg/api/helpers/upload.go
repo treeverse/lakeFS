@@ -105,7 +105,13 @@ func clientUploadPreSignHelper(ctx context.Context, client api.ClientWithRespons
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, contents)
+	var body io.ReadSeeker
+	// calculate size using seek
+	if contentLength > 0 { // Passing Reader with content length == 0 results in 501 Not Implemented
+		body = contents
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
 	if err != nil {
 		return nil, err
 	}
