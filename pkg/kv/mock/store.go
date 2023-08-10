@@ -257,3 +257,15 @@ func (mr *MockEntriesIteratorMockRecorder) Next() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockEntriesIterator)(nil).Next))
 }
+
+// SeekGE mocks base method.
+func (m *MockEntriesIterator) SeekGE(key []byte) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SeekGE", key)
+}
+
+// SeekGE indicates an expected call of SeekGE.
+func (mr *MockEntriesIteratorMockRecorder) SeekGE(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockEntriesIterator)(nil).SeekGE), key)
+}

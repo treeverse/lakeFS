@@ -111,8 +111,12 @@ type Store interface {
 // EntriesIterator used to enumerate over Scan results
 type EntriesIterator interface {
 	// Next should be called first before access Entry.
-	// it will process the next entry and return true if it was successful, and false when none or error.
+	// it will process the next entry and return true if there is one.
 	Next() bool
+
+	// SeekGE moves the iterator to the first Entry with a key equal or greater to the given key.
+	// A call to Next is required after calling this method.
+	SeekGE(key []byte)
 
 	// Entry current entry read after calling Next, set to nil in case of an error or no more entries.
 	Entry() *Entry
