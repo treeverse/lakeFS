@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/git"
@@ -59,7 +60,7 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 	}
 
 	if len(args) > idx {
-		localPath = Must(filepath.Abs(args[idx]))
+		localPath = Must(filepath.Abs(Must(homedir.Expand(args[idx]))))
 		return
 	}
 	localPath = Must(filepath.Abs("."))
