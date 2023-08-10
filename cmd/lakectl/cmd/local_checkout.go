@@ -18,10 +18,10 @@ var localCheckoutCmd = &cobra.Command{
 	Short: "Sync local directory with the remote state.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		_, localPath := getLocalArgs(args, false)
 		syncFlags := getLocalSyncFlags(cmd)
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
 		all := Must(cmd.Flags().GetBool("all"))
+		_, localPath := getLocalArgs(args, false, all)
 		if !all {
 			checkout(cmd.Context(), localPath, syncFlags, specifiedRef, cmd.Flags(), true)
 			return

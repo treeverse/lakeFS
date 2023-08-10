@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -47,18 +49,29 @@ func getLocalSyncFlags(cmd *cobra.Command) syncFlags {
 	return syncFlags{parallelism: parallelism, presign: presign}
 }
 
-func getLocalArgs(args []string, requireRemote bool) (remote *uri.URI, localPath string) {
+// getLocalArgs parses arguments to extract a remote URI and deduces the local path.
+// If local path isn't provided and considerGitRoot is true, it uses the git repository root.
+func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
 		remote = MustParseRefURI("path", args[0])
 		idx += 1
 	}
 
-	dir := "."
 	if len(args) > idx {
-		dir = args[idx]
+		localPath = Must(filepath.Abs(args[idx]))
+		return
 	}
-	localPath = Must(filepath.Abs(dir))
+	localPath = Must(filepath.Abs("."))
+	if considerGitRoot {
+		gitRoot, err := git.GetRepositoryPath(localPath)
+		if err == nil {
+			localPath = gitRoot
+		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
+			DieErr(err)
+		}
+	}
+
 	return
 }
 

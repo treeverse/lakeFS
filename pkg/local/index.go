@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/fileutil"
-	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"gopkg.in/yaml.v3"
 )
@@ -84,17 +83,10 @@ func ReadIndex(path string) (*Index, error) {
 	return idx, nil
 }
 
-// FindIndices locates directories containing an index file within the given root or its associated git repository.
-// It returns a list of relative paths to the directories containing the index file.
+// FindIndices searches the specified root directory for index files, returning their relative directory paths while skipping hidden folders.
 func FindIndices(root string) ([]string, error) {
-	gitRoot, err := git.GetRepositoryPath(root)
-	if err == nil {
-		root = gitRoot
-	} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
-		return nil, err
-	}
 	locs := make([]string, 0)
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
