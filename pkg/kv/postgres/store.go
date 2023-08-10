@@ -31,7 +31,7 @@ type EntriesIterator struct {
 	ctx          context.Context
 	partitionKey []byte
 	startKey     []byte
-
+	includeStart bool
 	store        *Store
 	entries      []kv.Entry
 	limit        int
@@ -329,8 +329,9 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		startKey:     options.KeyStart,
 		store:        s,
 		limit:        limit,
+		includeStart: true,
 	}
-	it.runQuery(true)
+	it.runQuery()
 	if it.err != nil {
 		return nil, it.err
 	}
@@ -353,7 +354,8 @@ func (e *EntriesIterator) Next() bool {
 	if e.currEntryIdx+1 == len(e.entries) {
 		key := e.entries[e.currEntryIdx].Key
 		e.startKey = key
-		e.runQuery(false)
+		e.includeStart = false
+		e.runQuery()
 		if e.err != nil || len(e.entries) == 0 {
 			return false
 		}
@@ -365,7 +367,8 @@ func (e *EntriesIterator) Next() bool {
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
 		e.startKey = key
-		e.runQuery(true)
+		e.includeStart = true
+		e.runQuery()
 		return
 	}
 	for i := range e.entries {
@@ -394,7 +397,7 @@ func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }
 
-func (e *EntriesIterator) runQuery(includeStart bool) {
+func (e *EntriesIterator) runQuery() {
 	var (
 		rows pgx.Rows
 		err  error
@@ -403,7 +406,7 @@ func (e *EntriesIterator) runQuery(includeStart bool) {
 		rows, err = e.store.Pool.Query(e.ctx, `SELECT partition_key,key,value FROM `+e.store.Params.SanitizedTableName+` WHERE partition_key=$1 ORDER BY key LIMIT $2`, e.partitionKey, e.limit)
 	} else {
 		compareOp := ">="
-		if !includeStart {
+		if !e.includeStart {
 			compareOp = ">"
 		}
 		rows, err = e.store.Pool.Query(e.ctx, `SELECT partition_key,key,value FROM `+e.store.Params.SanitizedTableName+` WHERE partition_key=$1 AND key `+compareOp+` $2 ORDER BY key LIMIT $3`, e.partitionKey, e.startKey, e.limit)

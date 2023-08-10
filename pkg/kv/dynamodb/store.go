@@ -33,8 +33,9 @@ type Store struct {
 }
 
 type EntriesIterator struct {
-	partitionKey []byte
-	startKey     []byte
+	partitionKey      []byte
+	startKey          []byte
+	exclusiveStartKey map[string]*dynamodb.AttributeValue
 
 	scanCtx      context.Context
 	entry        *kv.Entry
@@ -349,7 +350,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		store:        s,
 		limit:        limit,
 	}
-	it.runQuery(nil)
+	it.runQuery()
 	if it.err != nil {
 		return nil, it.err
 	}
@@ -371,7 +372,7 @@ func (s *Store) DropTable() error {
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
 		e.startKey = key
-		e.runQuery(nil)
+		e.runQuery()
 		return
 	}
 	var item DynKVItem
@@ -391,7 +392,8 @@ func (e *EntriesIterator) Next() bool {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		e.runQuery(e.queryResult.LastEvaluatedKey)
+		e.exclusiveStartKey = e.queryResult.LastEvaluatedKey
+		e.runQuery()
 		if e.err != nil {
 			return false
 		}
@@ -421,7 +423,7 @@ func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }
 
-func (e *EntriesIterator) runQuery(exclusiveStartKey map[string]*dynamodb.AttributeValue) {
+func (e *EntriesIterator) runQuery() {
 	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
 		":partitionkey": {
 			B: e.partitionKey,
@@ -440,7 +442,7 @@ func (e *EntriesIterator) runQuery(exclusiveStartKey map[string]*dynamodb.Attrib
 		ExpressionAttributeValues: expressionAttributeValues,
 		ConsistentRead:            aws.Bool(true),
 		ScanIndexForward:          aws.Bool(true),
-		ExclusiveStartKey:         exclusiveStartKey,
+		ExclusiveStartKey:         e.exclusiveStartKey,
 		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
 	if e.limit != 0 {

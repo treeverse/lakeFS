@@ -389,7 +389,7 @@ func (e *EntriesIterator) Next() bool {
 		return false
 	}
 
-	if e.currEntryIdx >= len(e.currPage.Items) {
+	if e.currEntryIdx+1 >= len(e.currPage.Items) {
 		if !e.queryPager.More() {
 			return false
 		}
@@ -404,8 +404,9 @@ func (e *EntriesIterator) Next() bool {
 			return false
 		}
 
-		e.currEntryIdx = 0
+		e.currEntryIdx = -1
 	}
+	e.currEntryIdx++
 	key, value := e.getKeyValue(e.currEntryIdx)
 	if e.err != nil {
 		return false
@@ -415,7 +416,6 @@ func (e *EntriesIterator) Next() bool {
 		Value: value,
 	}
 
-	e.currEntryIdx++
 	return true
 }
 
@@ -430,7 +430,7 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 			return false
 		}
 		return bytes.Compare(key, currentKey) <= 0
-	})
+	}) - 1
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -455,7 +455,7 @@ func (e *EntriesIterator) runQuery() {
 			Value: encoding.EncodeToString(e.startKey),
 		}},
 	})
-	e.currEntryIdx = 0
+	e.currEntryIdx = -1
 	e.entry = nil
 	e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
 }
