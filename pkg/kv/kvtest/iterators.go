@@ -84,7 +84,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		for _, seekValue := range []string{"aaa", "b"} {
+		for _, seekValue := range []string{"b", "aaa", "b"} {
 			itr.SeekGE([]byte(seekValue))
 			names := make([]string, 0)
 			for itr.Next() {

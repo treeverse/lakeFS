@@ -275,6 +275,7 @@ func (p *PartitionIterator) Next() bool {
 	if p.itr == nil {
 		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize})
 		if p.err != nil {
+			p.itr = nil
 			return false
 		}
 	}
@@ -315,19 +316,16 @@ func (p *PartitionIterator) Err() error {
 	if p.err != nil {
 		return p.err
 	}
-	if p.itr == nil {
-		return nil
+	if p.itr != nil {
+		return p.itr.Err()
 	}
-	return p.itr.Err()
+	return nil
 }
 
 func (p *PartitionIterator) Close() {
-	if p.err != nil {
-		return
+	// Check itr is set, can be null in case seek fails
+	if p.itr != nil {
+		p.itr.Close()
+		p.itr = nil
 	}
-	if p.itr == nil {
-		return
-	}
-	p.itr.Close()
-	p.itr = nil
 }

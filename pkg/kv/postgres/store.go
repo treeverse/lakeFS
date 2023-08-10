@@ -411,7 +411,7 @@ func (e *EntriesIterator) isInRange(key []byte) bool {
 
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
-		e.currEntryIdx = 0
+		e.currEntryIdx = -1
 		e.entries, e.err = e.store.scanInternal(e.ctx, e.partitionKey, key, e.limit, true)
 		return
 	}
