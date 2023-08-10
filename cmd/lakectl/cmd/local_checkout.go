@@ -106,6 +106,7 @@ func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specif
 func init() {
 	localCheckoutCmd.Flags().StringP("ref", "r", "", "Checkout the given source branch or reference")
 	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
+	localCheckoutCmd.MarkFlagsMutuallyExclusive("ref", "all")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
 	withLocalSyncFlags(localCheckoutCmd)
 	localCmd.AddCommand(localCheckoutCmd)
