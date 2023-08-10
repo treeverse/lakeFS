@@ -387,7 +387,7 @@ func (e *EntriesIterator) runQuery(
 	queryResult, err := e.store.svc.QueryWithContext(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
-		e.err = err
+		e.err = fmt.Errorf("query: %w", handleClientError(err))
 		return
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
