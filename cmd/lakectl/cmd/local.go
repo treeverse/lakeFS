@@ -54,7 +54,7 @@ func getLocalSyncFlags(cmd *cobra.Command) syncFlags {
 func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
-		remote = MustParseRefURI("path", args[0])
+		remote = MustParseRefWithPathURI("path", args[0])
 		idx += 1
 	}
 
@@ -76,7 +76,7 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 }
 
 func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
-	fmt.Printf("diff 'local://%s' <--> '%s'...\n", path, remote)
+	fmt.Printf("\ndiff 'local://%s' <--> '%s'...\n", path, remote)
 	currentRemoteState := make(chan api.ObjectStats, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {

@@ -16,7 +16,12 @@ func TestIsRepository(t *testing.T) {
 	tmpdir := t.TempDir()
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
-	defer os.Remove(tmpSubdir)
+	defer func(name string) {
+		err = os.Remove(name)
+		if err != nil {
+
+		}
+	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
 	require.NoError(t, err)
 	defer func() {
@@ -41,7 +46,12 @@ func TestGetRepositoryPath(t *testing.T) {
 	require.NoError(t, err)
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
-	defer os.Remove(tmpSubdir)
+	defer func(name string) {
+		err = os.Remove(name)
+		if err != nil {
+
+		}
+	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
 	require.NoError(t, err)
 	defer func() {
@@ -78,7 +88,12 @@ func TestIgnore(t *testing.T) {
 	require.NoError(t, err)
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
-	defer os.Remove(tmpSubdir)
+	defer func(name string) {
+		err = os.Remove(name)
+		if err != nil {
+
+		}
+	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
 	require.NoError(t, err)
 	defer func() {
@@ -99,13 +114,13 @@ func TestIgnore(t *testing.T) {
 	// Create files in repo
 	fd, err := os.Create(filepath.Join(tmpdir, trackedFile))
 	require.NoError(t, err)
-	fd.Close()
+	require.NoError(t, fd.Close())
 	fd, err = os.Create(filepath.Join(tmpSubdir, "should_be_ignored"))
 	require.NoError(t, err)
-	fd.Close()
+	require.NoError(t, fd.Close())
 	fd, err = os.Create(excludedPath)
 	require.NoError(t, err)
-	fd.Close()
+	require.NoError(t, fd.Close())
 
 	// Changing the working directory
 	require.NoError(t, os.Chdir(tmpdir))
@@ -168,5 +183,63 @@ func verifyPathTracked(t *testing.T, paths []string) {
 		for _, p := range paths {
 			require.Contains(t, outStr, p)
 		}
+	}
+}
+
+func TestParseURL(t *testing.T) {
+	cases := []struct {
+		Url         string
+		ExpectedUrl *git.URL
+	}{
+		{
+			Url: "git@github.com:treeverse/lakeFS.git",
+			ExpectedUrl: &git.URL{
+				Server:  "github.com",
+				Owner:   "treeverse",
+				Project: "lakeFS",
+			},
+		},
+		{
+			Url: "ssh://git@github.com/tree/lake.git",
+			ExpectedUrl: &git.URL{
+				Server:  "github.com",
+				Owner:   "tree",
+				Project: "lake",
+			},
+		},
+		{
+			Url: "https://github.com/treeverse/lakeFS2.git",
+			ExpectedUrl: &git.URL{
+				Server:  "github.com",
+				Owner:   "treeverse",
+				Project: "lakeFS2",
+			},
+		},
+		{
+			Url: "git://git@192.168.1.20:MyGroup/MyProject.git",
+			ExpectedUrl: &git.URL{
+				Server:  "192.168.1.20",
+				Owner:   "MyGroup",
+				Project: "MyProject",
+			},
+		},
+		{
+			Url: "git://git@192.168.1.20:22:MyGroup/MyProject.git",
+			ExpectedUrl: &git.URL{
+				Server:  "192.168.1.20:22",
+				Owner:   "MyGroup",
+				Project: "MyProject",
+			},
+		},
+		{
+			Url:         "bad_url",
+			ExpectedUrl: nil,
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.Url, func(t *testing.T) {
+			parsed := git.ParseURL(tt.Url)
+			require.Equal(t, tt.ExpectedUrl, parsed)
+		})
 	}
 }
