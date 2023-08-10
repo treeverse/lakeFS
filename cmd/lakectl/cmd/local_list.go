@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"path/filepath"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -19,13 +17,7 @@ var localListCmd = &cobra.Command{
 	Short: "find and list directories that are synced with lakeFS.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		_, localPath := getLocalArgs(args, false)
-		gitRoot, err := git.GetRepositoryPath(localPath)
-		if err == nil {
-			localPath = gitRoot
-		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
-			DieErr(err)
-		}
+		_, localPath := getLocalArgs(args, false, true)
 
 		dirs, err := local.FindIndices(localPath)
 		if err != nil {

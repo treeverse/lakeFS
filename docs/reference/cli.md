@@ -2586,6 +2586,7 @@ lakectl local checkout [directory] [flags]
 {:.no_toc}
 
 ```
+      --all               Checkout given source branch or reference for all linked directories
   -h, --help              help for checkout
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
