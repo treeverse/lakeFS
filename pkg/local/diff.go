@@ -90,9 +90,17 @@ func (c Changes) String() string {
 	return strings.Join(strs, "\n")
 }
 
+type MergeStrategy int
+
+const (
+	MergeStrategyNone MergeStrategy = iota
+	MergeStrategyThis
+	MergeStrategyOther
+)
+
 // MergeWith combines changes from two diffs, sorting by lexicographic order.
 // If the same path appears in both diffs, it's marked as a conflict.
-func (c Changes) MergeWith(other Changes) Changes {
+func (c Changes) MergeWith(other Changes, strategy MergeStrategy) Changes {
 	cIdx := 0
 	oIdx := 0
 	result := make(Changes, 0)
@@ -106,12 +114,20 @@ func (c Changes) MergeWith(other Changes) Changes {
 			result = append(result, c[cIdx])
 			cIdx++
 		default: // both modified the same path!!
-
-			result = append(result, &Change{
-				Source: c[cIdx].Source,
-				Path:   c[cIdx].Path,
-				Type:   ChangeTypeConflict,
-			})
+			switch strategy {
+			case MergeStrategyNone:
+				result = append(result, &Change{
+					Source: c[cIdx].Source,
+					Path:   c[cIdx].Path,
+					Type:   ChangeTypeConflict,
+				})
+			case MergeStrategyOther:
+				result = append(result, other[oIdx])
+			case MergeStrategyThis:
+				result = append(result, c[cIdx])
+			default:
+				panic("invalid merge strategy")
+			}
 			cIdx++
 			oIdx++
 		}

@@ -65,7 +65,7 @@ var localStatusCmd = &cobra.Command{
 				DieErr(err)
 			}
 
-			c = c.MergeWith(changes)
+			c = c.MergeWith(changes, local.MergeStrategyNone)
 		}
 
 		if len(c) == 0 {

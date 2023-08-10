@@ -6,12 +6,8 @@ import (
 	"io/fs"
 	"strings"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/local"
-	"golang.org/x/sync/errgroup"
 )
 
 var localCheckoutCmd = &cobra.Command{
@@ -37,7 +33,7 @@ var localCheckoutCmd = &cobra.Command{
 
 		currentBase := remote.WithRef(idx.AtHead)
 		client := getClient()
-		diffs := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
+		diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
 		syncMgr := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
 		// confirm on local changes
 		if len(diffs) > 0 {
@@ -46,22 +42,9 @@ var localCheckoutCmd = &cobra.Command{
 			if err != nil || !confirmation {
 				Die("command aborted", 1)
 			}
-
-			c := make(chan *local.Change, filesChanSize)
-			// revert changes!
-			go func() {
-				defer close(c)
-				for _, change := range local.Undo(diffs) {
-					c <- change
-				}
-			}()
-			err = syncMgr.Sync(idx.LocalPath(), currentBase, c)
-			if err != nil {
-				DieErr(err)
-			}
 		}
 
-		if specifiedRef != "" {
+		if specifiedRef != "" && specifiedRef != idx.AtHead {
 			newRemote := remote.WithRef(specifiedRef)
 			newHead := resolveCommitOrDie(cmd.Context(), client, newRemote.Repository, newRemote.Ref)
 			newBase := newRemote.WithRef(newHead)
@@ -71,34 +54,26 @@ var localCheckoutCmd = &cobra.Command{
 				DieErr(err)
 			}
 
-			var wg errgroup.Group
-			d := make(chan api.Diff, maxDiffPageSize)
-			wg.Go(func() error {
-				return diff.StreamRepositoryDiffs(cmd.Context(), client, currentBase, newBase, swag.StringValue(currentBase.Path), d, true)
-			})
-
-			c := make(chan *local.Change, filesChanSize)
-			wg.Go(func() error {
-				defer close(c)
-				for dif := range d {
-					c <- &local.Change{
-						Source: local.ChangeSourceRemote,
-						Path:   strings.TrimPrefix(dif.Path, currentBase.GetPath()),
-						Type:   local.ChangeTypeFromString(dif.Type),
-					}
-				}
-				return nil
-			})
-
-			err = syncMgr.Sync(idx.LocalPath(), newBase, c)
-			if err != nil {
-				DieErr(err)
-			}
-			err = wg.Wait()
-			if err != nil {
-				DieErr(err)
-			}
+			newDiffs := local.Undo(localDiff(cmd.Context(), client, newBase, idx.LocalPath()))
+			diffs = diffs.MergeWith(newDiffs, local.MergeStrategyOther)
+			currentBase = newBase
 		}
+		c := make(chan *local.Change, filesChanSize)
+		go func() {
+			defer close(c)
+			for _, dif := range diffs {
+				c <- &local.Change{
+					Source: local.ChangeSourceRemote,
+					Path:   strings.TrimPrefix(dif.Path, currentBase.GetPath()),
+					Type:   dif.Type,
+				}
+			}
+		}()
+		err = syncMgr.Sync(idx.LocalPath(), currentBase, c)
+		if err != nil {
+			DieErr(err)
+		}
+
 		summary := syncMgr.Summary()
 		fmt.Printf("Checkout Summary:\nDownloaded:\t%d\nRemoved:\t%d\n", summary.Downloaded, summary.Removed)
 	},

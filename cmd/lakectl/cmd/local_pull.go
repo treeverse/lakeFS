@@ -53,6 +53,7 @@ var localPullCmd = &cobra.Command{
 		})
 		c := make(chan *local.Change, filesChanSize)
 		wg.Go(func() error {
+			defer close(c)
 			for dif := range d {
 				c <- &local.Change{
 					Source: local.ChangeSourceRemote,
@@ -62,13 +63,12 @@ var localPullCmd = &cobra.Command{
 			}
 			return nil
 		})
-		err = wg.Wait()
+		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
+		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {
 			DieErr(err)
 		}
-
-		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(idx.LocalPath(), newBase, c)
+		err = wg.Wait()
 		if err != nil {
 			DieErr(err)
 		}
