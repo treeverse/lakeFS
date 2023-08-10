@@ -433,6 +433,18 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 	})
 }
 
+func (e *EntriesIterator) Entry() *kv.Entry {
+	return e.entry
+}
+
+func (e *EntriesIterator) Err() error {
+	return e.err
+}
+
+func (e *EntriesIterator) Close() {
+	e.err = kv.ErrClosedEntries
+}
+
 func (e *EntriesIterator) runQuery() {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
 	queryPager := e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
@@ -455,16 +467,4 @@ func (e *EntriesIterator) isInRange(key []byte) bool {
 	minKey, _ := e.getKeyValue(0)
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
 	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
-}
-
-func (e *EntriesIterator) Entry() *kv.Entry {
-	return e.entry
-}
-
-func (e *EntriesIterator) Err() error {
-	return e.err
-}
-
-func (e *EntriesIterator) Close() {
-	e.err = kv.ErrClosedEntries
 }
