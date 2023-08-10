@@ -50,7 +50,7 @@ func getLocalSyncFlags(cmd *cobra.Command) syncFlags {
 func getLocalArgs(args []string, requireRemote bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
-		remote = MustParsePathURI("path", args[0])
+		remote = MustParseRefURI("path", args[0])
 		idx += 1
 	}
 
