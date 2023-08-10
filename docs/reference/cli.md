@@ -2574,6 +2574,27 @@ BETA: sync local directories with lakeFS paths
 
 
 
+### lakectl local checkout
+
+Sync local directory with the remote state.
+
+```
+lakectl local checkout [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help              help for checkout
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+  -r, --ref string        Checkout the given source branch or reference
+  -y, --yes               Automatically say yes to all confirmations
+```
+
+
+
 ### lakectl local clone
 
 Clone a path from a lakeFS repository into a new directory.

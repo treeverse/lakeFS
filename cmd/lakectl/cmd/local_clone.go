@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -27,16 +26,8 @@ var localCloneCmd = &cobra.Command{
 	Short: "Clone a path from a lakeFS repository into a new directory.",
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		remote := MustParsePathURI("path", args[0])
-		dir := "."
-		if len(args) == localCloneMaxArgs {
-			dir = args[1]
-		}
+		remote, localPath := getLocalArgs(args, true)
 		syncFlags := getLocalSyncFlags(cmd)
-		localPath, err := filepath.Abs(dir)
-		if err != nil {
-			DieErr(err)
-		}
 
 		empty, err := fileutil.IsDirEmpty(localPath)
 		if err != nil {

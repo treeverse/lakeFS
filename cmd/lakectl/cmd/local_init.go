@@ -53,21 +53,13 @@ var localInitCmd = &cobra.Command{
 	Short: "set a local directory to sync with a lakeFS path.",
 	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		remote := MustParsePathURI("path", args[0])
-		dir := "."
-		if len(args) == localInitMaxArgs {
-			dir = args[1]
-		}
-		localPath, err := filepath.Abs(dir)
-		if err != nil {
-			DieErr(err)
-		}
+		remote, localPath := getLocalArgs(args, true)
 		force := Must(cmd.Flags().GetBool("force"))
 
-		_, err = localInit(cmd.Context(), localPath, remote, force)
+		_, err := localInit(cmd.Context(), localPath, remote, force)
 		if err != nil {
 			if errors.Is(err, fs.ErrExist) {
-				DieFmt("directory '%s' already linked to a lakeFS path, run command with --force to overwrite", dir)
+				DieFmt("directory '%s' already linked to a lakeFS path, run command with --force to overwrite", localPath)
 			}
 			DieErr(err)
 		}
