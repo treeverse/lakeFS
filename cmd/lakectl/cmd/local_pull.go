@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -13,27 +12,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	localPullMinArgs = 0
-	localPullMaxArgs = 1
-)
-
 var localPullCmd = &cobra.Command{
 	Use:   "pull [directory]",
 	Short: "Fetch latest changes from lakeFS.",
-	Args:  cobra.RangeArgs(localPullMinArgs, localPullMaxArgs),
+	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		dir := "."
-		if len(args) == localPullMaxArgs {
-			dir = args[1]
-		}
+		_, localPath := getLocalArgs(args, false)
 		force := Must(cmd.Flags().GetBool("force"))
 		syncFlags := getLocalSyncFlags(cmd)
-		localPath, err := filepath.Abs(dir)
-		if err != nil {
-			DieErr(err)
-		}
-
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -63,10 +49,11 @@ var localPullCmd = &cobra.Command{
 		d := make(chan api.Diff, maxDiffPageSize)
 		var wg errgroup.Group
 		wg.Go(func() error {
-			return diff.StreamRepositoryDiffs(cmd.Context(), client, currentBase.Repository, currentBase.Ref, newBase.Ref, swag.StringValue(currentBase.Path), d, false)
+			return diff.StreamRepositoryDiffs(cmd.Context(), client, currentBase, newBase, swag.StringValue(currentBase.Path), d, false)
 		})
 		c := make(chan *local.Change, filesChanSize)
 		wg.Go(func() error {
+			defer close(c)
 			for dif := range d {
 				c <- &local.Change{
 					Source: local.ChangeSourceRemote,
@@ -76,13 +63,12 @@ var localPullCmd = &cobra.Command{
 			}
 			return nil
 		})
-		err = wg.Wait()
+		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
+		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {
 			DieErr(err)
 		}
-
-		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(idx.LocalPath(), newBase, c)
+		err = wg.Wait()
 		if err != nil {
 			DieErr(err)
 		}

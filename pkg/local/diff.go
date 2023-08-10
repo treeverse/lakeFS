@@ -90,9 +90,17 @@ func (c Changes) String() string {
 	return strings.Join(strs, "\n")
 }
 
+type MergeStrategy int
+
+const (
+	MergeStrategyNone MergeStrategy = iota
+	MergeStrategyThis
+	MergeStrategyOther
+)
+
 // MergeWith combines changes from two diffs, sorting by lexicographic order.
 // If the same path appears in both diffs, it's marked as a conflict.
-func (c Changes) MergeWith(other Changes) Changes {
+func (c Changes) MergeWith(other Changes, strategy MergeStrategy) Changes {
 	cIdx := 0
 	oIdx := 0
 	result := make(Changes, 0)
@@ -106,12 +114,20 @@ func (c Changes) MergeWith(other Changes) Changes {
 			result = append(result, c[cIdx])
 			cIdx++
 		default: // both modified the same path!!
-
-			result = append(result, &Change{
-				Source: c[cIdx].Source,
-				Path:   c[cIdx].Path,
-				Type:   ChangeTypeConflict,
-			})
+			switch strategy {
+			case MergeStrategyNone:
+				result = append(result, &Change{
+					Source: c[cIdx].Source,
+					Path:   c[cIdx].Path,
+					Type:   ChangeTypeConflict,
+				})
+			case MergeStrategyOther:
+				result = append(result, other[oIdx])
+			case MergeStrategyThis:
+				result = append(result, c[cIdx])
+			default:
+				panic("invalid merge strategy")
+			}
 			cIdx++
 			oIdx++
 		}
@@ -123,6 +139,49 @@ func (c Changes) MergeWith(other Changes) Changes {
 		result = append(result, other[oIdx:]...)
 	}
 	return result
+}
+
+func switchSource(source ChangeSource) ChangeSource {
+	switch source {
+	case ChangeSourceRemote:
+		return ChangeSourceLocal
+	case ChangeSourceLocal:
+		return ChangeSourceRemote
+	default:
+		panic("invalid change source")
+	}
+}
+
+// Undo Creates a new list of changes that reverses the given changes list.
+func Undo(c Changes) Changes {
+	reversed := make(Changes, len(c))
+	for i, op := range c {
+		switch op.Type {
+		case ChangeTypeAdded:
+			reversed[i] = &Change{
+				Source: switchSource(op.Source),
+				Path:   op.Path,
+				Type:   ChangeTypeRemoved,
+			}
+		case ChangeTypeModified:
+			reversed[i] = &Change{
+				Source: switchSource(op.Source),
+				Path:   op.Path,
+				Type:   ChangeTypeModified,
+			}
+		case ChangeTypeRemoved:
+			reversed[i] = &Change{
+				Source: switchSource(op.Source),
+				Path:   op.Path,
+				Type:   ChangeTypeModified, // mark as modified so it will trigger download
+			}
+		case ChangeTypeConflict:
+		default:
+			// Should never reach
+			panic(fmt.Sprintf("got unsupported change type %d in undo", op.Type))
+		}
+	}
+	return reversed
 }
 
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
