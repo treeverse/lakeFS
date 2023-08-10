@@ -17,7 +17,7 @@ var localPullCmd = &cobra.Command{
 	Short: "Fetch latest changes from lakeFS.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		_, localPath := getLocalArgs(args, false)
+		_, localPath := getLocalArgs(args, false, false)
 		force := Must(cmd.Flags().GetBool("force"))
 		syncFlags := getLocalSyncFlags(cmd)
 		idx, err := local.ReadIndex(localPath)

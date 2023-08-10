@@ -83,9 +83,9 @@ func ReadIndex(path string) (*Index, error) {
 	return idx, nil
 }
 
+// FindIndices searches the specified root directory for index files, returning their relative directory paths while skipping hidden folders.
 func FindIndices(root string) ([]string, error) {
 	locs := make([]string, 0)
-
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

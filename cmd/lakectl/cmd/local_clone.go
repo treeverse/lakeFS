@@ -26,7 +26,7 @@ var localCloneCmd = &cobra.Command{
 	Short: "Clone a path from a lakeFS repository into a new directory.",
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		remote, localPath := getLocalArgs(args, true)
+		remote, localPath := getLocalArgs(args, true, false)
 		syncFlags := getLocalSyncFlags(cmd)
 
 		empty, err := fileutil.IsDirEmpty(localPath)
