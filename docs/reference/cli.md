@@ -2651,6 +2651,26 @@ lakectl local list [directory] [flags]
 
 
 
+### lakectl local pull
+
+Fetch latest changes from lakeFS.
+
+```
+lakectl local pull [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --force             Reset any uncommitted local change
+  -h, --help              help for pull
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+```
+
+
+
 ### lakectl local status
 
 show modifications (both remote and local) to the directory and the remote location it tracks
