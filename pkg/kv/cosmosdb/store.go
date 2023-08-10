@@ -335,7 +335,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	it := &EntriesIterator{
 		store:        s,
 		partitionKey: partitionKey,
-		startKey:     options.StartKey,
+		startKey:     options.KeyStart,
 		limit:        options.BatchSize,
 		queryCtx:     ctx,
 		encoding:     encoding,

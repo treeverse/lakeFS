@@ -302,7 +302,7 @@ func (p *PartitionIterator) Next() bool {
 
 func (p *PartitionIterator) SeekGE(key []byte) {
 	if p.itr == nil {
-		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize, StartKey: key})
+		p.itr, p.err = p.store.Scan(p.ctx, []byte(p.partitionKey), ScanOptions{BatchSize: p.batchSize, KeyStart: key})
 		return
 	}
 	p.itr.SeekGE(key)

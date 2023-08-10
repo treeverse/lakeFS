@@ -75,8 +75,8 @@ type ValueWithPredicate struct {
 }
 
 type ScanOptions struct {
-	// StartKey start key to seek the scan
-	StartKey []byte
+	// KeyStart start key to seek the scan
+	KeyStart []byte
 	// BatchSize used by each implementation to perform limited query or fetching of data while scanning.
 	// The 0 value means - use the default by the implementation.
 	BatchSize int

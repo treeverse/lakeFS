@@ -163,7 +163,7 @@ func (s *Store) Scan(_ context.Context, partitionKey []byte, options kv.ScanOpti
 		return nil, kv.ErrMissingPartitionKey
 	}
 
-	start := options.StartKey
+	start := options.KeyStart
 	if start == nil {
 		start = []byte{}
 	}
