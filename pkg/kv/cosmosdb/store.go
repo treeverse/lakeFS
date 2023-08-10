@@ -1,12 +1,14 @@
 package cosmosdb
 
 import (
+	"bytes"
 	"context"
 	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -326,39 +328,34 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	return nil
 }
-
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-
-	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
-
-	queryPager := s.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
-		ConsistencyLevel: s.consistencyLevel.ToPtr(),
-		PageSizeHint:     int32(options.BatchSize),
-		QueryParameters: []azcosmos.QueryParameter{{
-			Name:  "@start",
-			Value: encoding.EncodeToString(options.KeyStart),
-		}},
-	})
-	currPage, err := queryPager.NextPage(ctx)
-	if err != nil {
-		return nil, err
+	it := &EntriesIterator{
+		store:        s,
+		partitionKey: partitionKey,
+		startKey:     options.KeyStart,
+		limit:        options.BatchSize,
+		queryCtx:     ctx,
+		encoding:     encoding,
 	}
-
-	return &EntriesIterator{
-		queryPager: queryPager,
-		currPage:   currPage,
-		queryCtx:   ctx,
-		encoding:   encoding,
-	}, nil
+	it.runQuery()
+	if it.err != nil {
+		return nil, it.err
+	}
+	return it, nil
 }
 
 func (s *Store) Close() {
 }
 
 type EntriesIterator struct {
+	store        *Store
+	partitionKey []byte
+	startKey     []byte
+	limit        int
+
 	entry        *kv.Entry
 	err          error
 	currEntryIdx int
@@ -368,12 +365,31 @@ type EntriesIterator struct {
 	encoding     *base32.Encoding
 }
 
+func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
+	var itemResponseBody Document
+	err := json.Unmarshal(e.currPage.Items[i], &itemResponseBody)
+	if err != nil {
+		e.err = fmt.Errorf("failed to unmarshal: %w", err)
+		return nil, nil
+	}
+	key, err := e.encoding.DecodeString(itemResponseBody.Key)
+	if err != nil {
+		e.err = fmt.Errorf("failed to decode id: %w", err)
+		return nil, nil
+	}
+	value, err := e.encoding.DecodeString(itemResponseBody.Value)
+	if err != nil {
+		e.err = fmt.Errorf("failed to decode value: %w", err)
+		return nil, nil
+	}
+	return key, value
+}
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
 
-	if e.currEntryIdx >= len(e.currPage.Items) {
+	if e.currEntryIdx+1 >= len(e.currPage.Items) {
 		if !e.queryPager.More() {
 			return false
 		}
@@ -388,33 +404,33 @@ func (e *EntriesIterator) Next() bool {
 			return false
 		}
 
-		e.currEntryIdx = 0
+		e.currEntryIdx = -1
 	}
-
-	var itemResponseBody Document
-	err := json.Unmarshal(e.currPage.Items[e.currEntryIdx], &itemResponseBody)
-	if err != nil {
-		e.err = fmt.Errorf("failed to unmarshal: %w", err)
+	e.currEntryIdx++
+	key, value := e.getKeyValue(e.currEntryIdx)
+	if e.err != nil {
 		return false
 	}
-	key, err := e.encoding.DecodeString(itemResponseBody.Key)
-	if err != nil {
-		e.err = fmt.Errorf("failed to decode id: %w", err)
-		return false
-	}
-	value, err := e.encoding.DecodeString(itemResponseBody.Value)
-	if err != nil {
-		e.err = fmt.Errorf("failed to decode value: %w", err)
-		return false
-	}
-
 	e.entry = &kv.Entry{
 		Key:   key,
 		Value: value,
 	}
 
-	e.currEntryIdx++
 	return true
+}
+
+func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.runQuery()
+		return
+	}
+	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
+		currentKey, _ := e.getKeyValue(i)
+		if e.err != nil {
+			return false
+		}
+		return bytes.Compare(key, currentKey) <= 0
+	}) - 1
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -427,4 +443,28 @@ func (e *EntriesIterator) Err() error {
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
+}
+
+func (e *EntriesIterator) runQuery() {
+	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
+	e.queryPager = e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
+		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
+		PageSizeHint:     int32(e.limit),
+		QueryParameters: []azcosmos.QueryParameter{{
+			Name:  "@start",
+			Value: encoding.EncodeToString(e.startKey),
+		}},
+	})
+	e.currEntryIdx = -1
+	e.entry = nil
+	e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
+}
+
+func (e *EntriesIterator) isInRange(key []byte) bool {
+	if len(e.currPage.Items) == 0 {
+		return false
+	}
+	minKey, _ := e.getKeyValue(0)
+	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
+	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
 }

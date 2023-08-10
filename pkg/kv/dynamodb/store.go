@@ -1,9 +1,11 @@
 package dynamodb
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -31,15 +33,17 @@ type Store struct {
 }
 
 type EntriesIterator struct {
-	scanCtx                   context.Context
-	entry                     *kv.Entry
-	err                       error
-	store                     *Store
-	queryResult               *dynamodb.QueryOutput
-	currEntryIdx              int64
-	keyConditionExpression    string
-	expressionAttributeValues map[string]*dynamodb.AttributeValue
-	limit                     int64
+	partitionKey      []byte
+	startKey          []byte
+	exclusiveStartKey map[string]*dynamodb.AttributeValue
+
+	scanCtx      context.Context
+	entry        *kv.Entry
+	err          error
+	store        *Store
+	queryResult  *dynamodb.QueryOutput
+	currEntryIdx int
+	limit        int64
 }
 
 type DynKVItem struct {
@@ -333,69 +337,24 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
-
 	// limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
 	limit := s.params.ScanLimit
 	batchSize := int64(options.BatchSize)
 	if batchSize != 0 && limit != 0 && batchSize < limit {
 		limit = batchSize
 	}
-
-	// format key and attribute expressions
-	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
-		":partitionkey": {
-			B: partitionKey,
-		},
-	}
-	keyConditionExpression := PartitionKey + " = :partitionkey"
-	if len(options.KeyStart) > 0 {
-		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
-		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: options.KeyStart,
-		}
-	}
-
-	queryResult, err := s.scanInternal(ctx, keyConditionExpression, expressionAttributeValues, limit, nil)
-	if err != nil {
-		return nil, err
-	}
 	it := &EntriesIterator{
-		scanCtx:                   ctx,
-		store:                     s,
-		keyConditionExpression:    keyConditionExpression,
-		expressionAttributeValues: expressionAttributeValues,
-		limit:                     limit,
-		queryResult:               queryResult,
+		partitionKey: partitionKey,
+		startKey:     options.KeyStart,
+		scanCtx:      ctx,
+		store:        s,
+		limit:        limit,
+	}
+	it.runQuery()
+	if it.err != nil {
+		return nil, it.err
 	}
 	return it, nil
-}
-
-func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
-	expressionAttributeValues map[string]*dynamodb.AttributeValue,
-	limit int64,
-	exclusiveStartKey map[string]*dynamodb.AttributeValue,
-) (*dynamodb.QueryOutput, error) {
-	queryInput := &dynamodb.QueryInput{
-		TableName:                 aws.String(s.params.TableName),
-		KeyConditionExpression:    aws.String(keyConditionExpression),
-		ExpressionAttributeValues: expressionAttributeValues,
-		ConsistentRead:            aws.Bool(true),
-		ScanIndexForward:          aws.Bool(true),
-		ExclusiveStartKey:         exclusiveStartKey,
-		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
-	}
-	if limit != 0 {
-		queryInput.SetLimit(limit)
-	}
-
-	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
-	const operation = "Query"
-	if err != nil {
-		return nil, fmt.Errorf("query: %w", handleClientError(err))
-	}
-	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
-
-	return queryOutput, nil
 }
 
 func (s *Store) Close() {
@@ -410,28 +369,39 @@ func (s *Store) DropTable() error {
 	return err
 }
 
+func (e *EntriesIterator) SeekGE(key []byte) {
+	if !e.isInRange(key) {
+		e.startKey = key
+		e.runQuery()
+		return
+	}
+	var item DynKVItem
+	e.currEntryIdx = sort.Search(len(e.queryResult.Items), func(i int) bool {
+		if e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &item); e.err != nil {
+			return false
+		}
+		return bytes.Compare(key, item.ItemKey) <= 0
+	})
+}
+
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-
-	for e.currEntryIdx == aws.Int64Value(e.queryResult.Count) {
+	for e.currEntryIdx == len(e.queryResult.Items) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		queryResult, err := e.store.scanInternal(e.scanCtx, e.keyConditionExpression, e.expressionAttributeValues, e.limit, e.queryResult.LastEvaluatedKey)
-		if err != nil {
-			e.err = fmt.Errorf("scan paging: %w", err)
+		e.exclusiveStartKey = e.queryResult.LastEvaluatedKey
+		e.runQuery()
+		if e.err != nil {
 			return false
 		}
-		e.queryResult = queryResult
-		e.currEntryIdx = 0
 	}
-
 	var item DynKVItem
-	err := dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
-	if err != nil {
-		e.err = fmt.Errorf("unmarshal map: %w", err)
+	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
+	if e.err != nil {
+		return false
 	}
 	e.entry = &kv.Entry{
 		Key:   item.ItemKey,
@@ -451,6 +421,59 @@ func (e *EntriesIterator) Err() error {
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
+}
+
+func (e *EntriesIterator) runQuery() {
+	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
+		":partitionkey": {
+			B: e.partitionKey,
+		},
+	}
+	keyConditionExpression := PartitionKey + " = :partitionkey"
+	if len(e.startKey) > 0 {
+		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
+		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
+			B: e.startKey,
+		}
+	}
+	queryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(e.store.params.TableName),
+		KeyConditionExpression:    aws.String(keyConditionExpression),
+		ExpressionAttributeValues: expressionAttributeValues,
+		ConsistentRead:            aws.Bool(true),
+		ScanIndexForward:          aws.Bool(true),
+		ExclusiveStartKey:         e.exclusiveStartKey,
+		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
+	}
+	if e.limit != 0 {
+		queryInput.SetLimit(e.limit)
+	}
+
+	queryResult, err := e.store.svc.QueryWithContext(e.scanCtx, queryInput)
+	const operation = "Query"
+	if err != nil {
+		e.err = fmt.Errorf("query: %w", handleClientError(err))
+		return
+	}
+	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
+	e.queryResult = queryResult
+	e.currEntryIdx = 0
+}
+
+func (e *EntriesIterator) isInRange(key []byte) bool {
+	if len(e.queryResult.Items) == 0 {
+		return false
+	}
+	var maxItem, minItem DynKVItem
+	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[0], &minItem)
+	if e.err != nil {
+		return false
+	}
+	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[len(e.queryResult.Items)-1], &maxItem)
+	if e.err != nil {
+		return false
+	}
+	return bytes.Compare(key, minItem.ItemKey) >= 0 && bytes.Compare(key, maxItem.ItemKey) <= 0
 }
 
 // StartPeriodicCheck performs one check and continues every 'interval' in the background

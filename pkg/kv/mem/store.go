@@ -31,6 +31,10 @@ type EntriesIterator struct {
 	store     *Store
 }
 
+func (e *EntriesIterator) SeekGE(key []byte) {
+	e.start = key
+}
+
 const DriverName = "mem"
 
 //nolint:gochecknoinits
