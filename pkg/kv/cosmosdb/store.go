@@ -447,7 +447,7 @@ func (e *EntriesIterator) Close() {
 
 func (e *EntriesIterator) runQuery() {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
-	queryPager := e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
+	e.queryPager = e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
 		PageSizeHint:     int32(e.limit),
 		QueryParameters: []azcosmos.QueryParameter{{
@@ -457,7 +457,7 @@ func (e *EntriesIterator) runQuery() {
 	})
 	e.currEntryIdx = 0
 	e.entry = nil
-	e.currPage, e.err = queryPager.NextPage(e.queryCtx)
+	e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
 }
 
 func (e *EntriesIterator) isInRange(key []byte) bool {
