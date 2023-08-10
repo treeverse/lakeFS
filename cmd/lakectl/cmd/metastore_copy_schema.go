@@ -29,7 +29,7 @@ var metastoreCopySchemaCmd = &cobra.Command{
 			toDB = toBranch
 		}
 
-		logging.Default().WithFields(logging.Fields{
+		logging.ContextUnavailable().WithFields(logging.Fields{
 			"form_client_type": fromClientType,
 			"from_db":          fromDB,
 			"to_client_type":   toClientType,

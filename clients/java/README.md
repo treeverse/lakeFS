@@ -295,7 +295,6 @@ Class | Method | HTTP request | Description
  - [MergeResult](docs/MergeResult.md)
  - [MetaRangeCreation](docs/MetaRangeCreation.md)
  - [MetaRangeCreationResponse](docs/MetaRangeCreationResponse.md)
- - [NextStep](docs/NextStep.md)
  - [OTFDiffs](docs/OTFDiffs.md)
  - [ObjectCopyCreation](docs/ObjectCopyCreation.md)
  - [ObjectError](docs/ObjectError.md)

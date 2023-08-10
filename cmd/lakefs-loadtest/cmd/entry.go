@@ -52,7 +52,7 @@ var entryCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 
-		conf, err := config.NewConfig()
+		conf, err := config.NewConfig("")
 		if err != nil {
 			fmt.Printf("config: %s\n", err)
 		}
@@ -63,11 +63,11 @@ var entryCmd = &cobra.Command{
 
 		kvParams, err := conf.DatabaseParams()
 		if err != nil {
-			logging.Default().WithError(err).Fatal("Get KV params")
+			logging.ContextUnavailable().WithError(err).Fatal("Get KV params")
 		}
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
-			logging.Default().WithError(err).Fatal("failed to open KV store")
+			logging.ContextUnavailable().WithError(err).Fatal("failed to open KV store")
 		}
 		defer kvStore.Close()
 

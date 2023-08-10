@@ -90,7 +90,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 			// Do the same for the headers.
 			req.Header = tc.Header
 			authenticator := sig.NewV4Authenticator(req)
-			_, err := authenticator.Parse()
+			_, err := authenticator.Parse(req.Context())
 			if err != nil {
 				if !tc.ExpectedParseError {
 					t.Fatal(err)
@@ -159,7 +159,7 @@ func TestSingleChunkPut(t *testing.T) {
 			// verify request with our authenticator
 
 			authenticator := sig.NewV4Authenticator(req)
-			_, err = authenticator.Parse()
+			_, err = authenticator.Parse(req.Context())
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
 			}
@@ -221,7 +221,7 @@ func TestStreaming(t *testing.T) {
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse()
+	_, err = authenticator.Parse(req.Context())
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -279,7 +279,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse()
+	_, err = authenticator.Parse(req.Context())
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -326,7 +326,7 @@ func TestUnsignedPayload(t *testing.T) {
 	}
 
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse()
+	_, err = authenticator.Parse(req.Context())
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}

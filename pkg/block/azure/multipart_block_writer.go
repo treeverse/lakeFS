@@ -135,7 +135,7 @@ func getMultipartIDs(ctx context.Context, container container.Client, objName st
 	// remove
 	_, err = blobURL.Delete(ctx, nil)
 	if err != nil {
-		logging.Default().WithContext(ctx).WithField("blob_url", blobURL.URL()).WithError(err).Warn("Failed to delete multipart ids data file")
+		logging.FromContext(ctx).WithField("blob_url", blobURL.URL()).WithError(err).Warn("Failed to delete multipart ids data file")
 	}
 	return ids, nil
 }
@@ -169,7 +169,7 @@ func getMultipartSize(ctx context.Context, container container.Client, objName s
 	// remove
 	_, err = blobURL.Delete(ctx, nil)
 	if err != nil {
-		logging.Default().WithContext(ctx).WithField("blob_url", blobURL.URL()).WithError(err).Warn("Failed to delete multipart size data file")
+		logging.FromContext(ctx).WithField("blob_url", blobURL.URL()).WithError(err).Warn("Failed to delete multipart size data file")
 	}
 	return int64(size), nil
 }

@@ -11,9 +11,13 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv/local"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/exp/slices"
 )
 
 var cfgFile string
@@ -41,26 +45,53 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakefs.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().Bool(config.UseLocalConfiguration, false, "Use lakeFS local default configuration")
+	rootCmd.PersistentFlags().Bool(config.QuickstartConfiguration, false, "Use lakeFS quickstart configuration")
 }
 
-func useLocal() bool {
-	res, err := rootCmd.PersistentFlags().GetBool(config.UseLocalConfiguration)
+func validateQuickstartEnv(cfg *config.Config) {
+	if !((cfg.Database.Type == local.DriverName || cfg.Database.Type == mem.DriverName) && cfg.Blockstore.Type != block.BlockstoreTypeLocal) {
+		fmt.Printf("quickstart mode can only run with local settings\n")
+		os.Exit(1)
+	}
+
+	if cfg.Installation.UserName != config.DefaultQuickstartUsername ||
+		cfg.Installation.AccessKeyID != config.DefaultQuickstartKeyID ||
+		cfg.Installation.SecretAccessKey != config.DefaultQuickstartSecretKey {
+		fmt.Printf("installation parameters must not be changed in quickstart mode\n")
+		os.Exit(1)
+	}
+	fmt.Printf("Access Key ID    : %s\n", config.DefaultQuickstartKeyID)
+	fmt.Printf("Secret Access Key: %s\n", config.DefaultQuickstartSecretKey)
+}
+
+func useConfig(flagName string) bool {
+	res, err := rootCmd.PersistentFlags().GetBool(flagName)
 	if err != nil {
-		fmt.Printf("%s: %s\n", config.UseLocalConfiguration, err)
+		fmt.Printf("%s: %s\n", flagName, err)
 		os.Exit(1)
 	}
 	if res {
-		printLocalWarning(os.Stderr, "local parameters configuration")
+		printLocalWarning(os.Stderr, fmt.Sprintf("%s parameters configuration", flagName))
 	}
 	return res
 }
 
 func newConfig() (*config.Config, error) {
-	if useLocal() {
-		return config.NewLocalConfig()
+	name := ""
+	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
+	if idx := slices.IndexFunc(configurations, useConfig); idx != -1 {
+		name = configurations[idx]
 	}
 
-	return config.NewConfig()
+	cfg, err := config.NewConfig(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if name == config.QuickstartConfiguration {
+		validateQuickstartEnv(cfg)
+	}
+	return cfg, nil
 }
 
 func loadConfig() *config.Config {
@@ -75,7 +106,7 @@ func loadConfig() *config.Config {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	logger := logging.Default().WithField("phase", "startup")
+	logger := logging.ContextUnavailable().WithField("phase", "startup")
 	if cfgFile != "" {
 		logger.WithField("file", cfgFile).Info("Configuration file")
 		// Use config file from the flag.

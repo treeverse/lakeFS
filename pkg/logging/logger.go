@@ -326,7 +326,10 @@ func (lf logrusCallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	return lf.f.Format(e)
 }
 
-func Default() Logger {
+// ContextUnavailable returns a Logger when no context is available.  It
+// should be used only in code during startup, teardown, or tests.  Prefer
+// to use Default().
+func ContextUnavailable() Logger {
 	// wrap formatter with our own formatter that overrides caller
 	formatterInitOnce.Do(func() {
 		defaultLogger.SetReportCaller(true)
@@ -347,8 +350,10 @@ func addFromContext(log Logger, ctx context.Context) Logger {
 	return log.WithFields(loggerFields)
 }
 
+// FromContext returns a Logger for reporting logs during ctx.  This logger
+// will typically include request IDs from the context.
 func FromContext(ctx context.Context) Logger {
-	return addFromContext(Default(), ctx)
+	return addFromContext(ContextUnavailable(), ctx)
 }
 
 func AddFields(ctx context.Context, fields Fields) context.Context {

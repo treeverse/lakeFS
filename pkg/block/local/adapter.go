@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -23,7 +24,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const StoragePrefix = block.BlockstoreTypeLocal + "://"
+const DefaultNamespacePrefix = block.BlockstoreTypeLocal + "://"
 
 type Adapter struct {
 	path                    string
@@ -31,10 +32,6 @@ type Adapter struct {
 	allowedExternalPrefixes []string
 	importEnabled           bool
 }
-
-const (
-	DefaultNamespacePrefix = "local:/"
-)
 
 var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
@@ -103,8 +100,8 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	return localAdapter, nil
 }
 
-func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
+func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+	return "", time.Time{}, fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
 }
 
 // verifyRelPath ensures that p is under the directory controlled by this adapter.  It does not
@@ -117,19 +114,19 @@ func (l *Adapter) verifyRelPath(p string) error {
 }
 
 func (l *Adapter) extractParamsFromObj(ptr block.ObjectPointer) (string, error) {
-	if strings.HasPrefix(ptr.Identifier, StoragePrefix) {
+	if strings.HasPrefix(ptr.Identifier, DefaultNamespacePrefix) {
 		// check abs path
-		p := ptr.Identifier[len(StoragePrefix):]
+		p := ptr.Identifier[len(DefaultNamespacePrefix):]
 		if err := VerifyAbsPath(p, l.path, l.allowedExternalPrefixes); err != nil {
 			return "", err
 		}
 		return p, nil
 	}
 	// relative path
-	if !strings.HasPrefix(ptr.StorageNamespace, StoragePrefix) {
+	if !strings.HasPrefix(ptr.StorageNamespace, DefaultNamespacePrefix) {
 		return "", fmt.Errorf("%w: storage namespace", ErrBadPath)
 	}
-	p := path.Join(l.path, ptr.StorageNamespace[len(StoragePrefix):], ptr.Identifier)
+	p := path.Join(l.path, ptr.StorageNamespace[len(DefaultNamespacePrefix):], ptr.Identifier)
 	if err := l.verifyRelPath(p); err != nil {
 		return "", err
 	}
@@ -186,7 +183,7 @@ func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
 	}
 	if l.removeEmptyDir {
 		dir := filepath.Dir(p)
-		repoRoot := obj.StorageNamespace[len(StoragePrefix):]
+		repoRoot := obj.StorageNamespace[len(DefaultNamespacePrefix):]
 		removeEmptyDirUntil(dir, path.Join(l.path, repoRoot))
 	}
 	return nil

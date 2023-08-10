@@ -67,7 +67,7 @@ func ReadConfig() (c *Config) {
 
 	setDefaults()
 	c.err = viper.ReadInConfig()
-	logger := logging.Default().WithField("file", viper.ConfigFileUsed())
+	logger := logging.ContextUnavailable().WithField("file", viper.ConfigFileUsed())
 
 	if errors.Is(c.err, viper.ConfigFileNotFoundError{}) {
 		logger.WithError(c.err).Fatal("failed to read config file")

@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from "react";
-import { useOutletContext } from "react-router-dom";
+import React, {useRef, useState} from "react";
+
 import {useRefs} from "../../../../lib/hooks/repo";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -11,6 +11,8 @@ import {AlertError, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
 import {repositories} from "../../../../lib/api";
 import {useRouter} from "../../../../lib/hooks/router";
+import {SettingsLayout} from "./layout";
+import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
     const [isDisabled, setIsDisabled] = useState(true);
@@ -117,9 +119,13 @@ const SettingsContainer = () => {
 
 
 const RepositoryGeneralSettingsPage = () => {
-  const [setActiveTab] = useOutletContext();
-  useEffect(() => setActiveTab("general"), [setActiveTab]);
-  return <SettingsContainer />;
+    return (
+        <RepositoryPageLayout activePage={'settings'}>
+            <SettingsLayout activeTab={"general"}>
+                <SettingsContainer/>
+            </SettingsLayout>
+        </RepositoryPageLayout>
+    )
 }
 
 

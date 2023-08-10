@@ -126,7 +126,7 @@ func TestManager_WriteMetaRange(t *testing.T) {
 					minKey = string(info.MinKey)
 					return nil
 				}).Times(len(tt.records))
-			metarangeWriter.EXPECT().Close().Return(&expectedMetarangeID, nil)
+			metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
 			metarangeWriter.EXPECT().Abort().Return(nil)
 			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
 

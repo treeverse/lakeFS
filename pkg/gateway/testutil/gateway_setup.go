@@ -41,7 +41,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
-	conf, err := config.NewConfig()
+	conf, err := config.NewConfig("")
 	testutil.MustDo(t, "config", err)
 
 	c, err := catalog.New(ctx, catalog.Config{
@@ -94,7 +94,7 @@ type FakeAuthService struct {
 
 func (m *FakeAuthService) GetCredentials(_ context.Context, accessKey string) (*model.Credential, error) {
 	if accessKey != m.AccessKeyID {
-		logging.Default().Fatal("access key in recording different than configuration")
+		logging.ContextUnavailable().Fatal("access key in recording different than configuration")
 	}
 	aCred := new(model.Credential)
 	aCred.AccessKeyID = accessKey

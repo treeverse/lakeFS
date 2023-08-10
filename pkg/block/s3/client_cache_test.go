@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,7 +14,22 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var errRegion = errors.New("failed to get region")
+var (
+	errRegion      = errors.New("failed to get region")
+	errFakeExpires = errors.New("fake Expirer")
+)
+
+type FakeS3APIWithExpirer struct {
+	s3iface.S3API
+}
+
+func NewFakeS3APIWithExpirer() FakeS3APIWithExpirer {
+	return FakeS3APIWithExpirer(struct{ s3iface.S3API }{})
+}
+
+func (f FakeS3APIWithExpirer) ExpiresAt() (time.Time, error) {
+	return time.Time{}, errFakeExpires
+}
 
 func TestClientCache(t *testing.T) {
 	defaultRegion := "us-west-2"
@@ -57,7 +73,7 @@ func TestClientCache(t *testing.T) {
 			expectedRegionFetch := make(map[string]bool)
 			c := s3.NewClientCache(sess)
 
-			c.SetClientFactory(func(sess *session.Session, cfgs ...*aws.Config) s3iface.S3API {
+			c.SetClientFactory(func(sess *session.Session, cfgs ...*aws.Config) s3.S3APIWithExpirer {
 				region := sess.Config.Region
 				for _, cfg := range cfgs {
 					if cfg.Region != nil {
@@ -68,7 +84,7 @@ func TestClientCache(t *testing.T) {
 					t.Fatalf("client created more than once for a region")
 				}
 				actualClientsCreated[*region] = true
-				return struct{ s3iface.S3API }{}
+				return NewFakeS3APIWithExpirer()
 			})
 			c.SetS3RegionGetter(func(ctx context.Context, sess *session.Session, bucket string) (string, error) {
 				if actualRegionFetch[bucket] {

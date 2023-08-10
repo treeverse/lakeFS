@@ -418,6 +418,11 @@ func (e *EntriesIterator) Next() bool {
 			e.err = fmt.Errorf("getting next page: %w", err)
 			return false
 		}
+		if len(e.currPage.Items) == 0 {
+			// returned page is empty, no more items
+			return false
+		}
+
 		e.currEntryIdx = 0
 	}
 	key, value := e.getKeyValue(e.currEntryIdx)

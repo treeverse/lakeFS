@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import { useOutletContext } from "react-router-dom";
+import React, {useState} from "react";
+import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {
     ActionGroup,
     ActionsBar,
@@ -212,9 +212,11 @@ const ActionsContainer = () => {
 };
 
 const RepositoryActionsPage = () => {
-  const [setActivePage] = useOutletContext();
-  useEffect(() => setActivePage("actions"), [setActivePage]);
-  return <ActionsContainer/>;
+    return (
+        <RepositoryPageLayout activePage={'actions'}>
+            <ActionsContainer/>
+        </RepositoryPageLayout>
+    );
 };
 
 const RepositoryActionsIndexPage = () => {

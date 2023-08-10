@@ -45,7 +45,7 @@ func createFSWithEviction(ev params.Eviction) (FS, string) {
 	baseDir := path.Join(os.TempDir(), fsName)
 
 	// starting adapter with closed channel so all Gets pass
-	adapter = &memAdapter{Adapter: mem.New(), wait: make(chan struct{})}
+	adapter = &memAdapter{Adapter: mem.New(context.Background()), wait: make(chan struct{})}
 	close(adapter.wait)
 
 	var err error

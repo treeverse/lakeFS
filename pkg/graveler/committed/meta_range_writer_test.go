@@ -89,7 +89,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 		t.Errorf("expected ErrUnsorted got = %s", err)
 	}
 
-	_, err = w.Close()
+	_, err = w.Close(ctx)
 	if err != nil {
 		t.Errorf("failed to close: %s", err)
 	}
@@ -174,7 +174,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 		t.Fatalf("unexpected error %s", err)
 	}
 
-	_, err = w.Close()
+	_, err = w.Close(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
