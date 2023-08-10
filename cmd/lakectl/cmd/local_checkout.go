@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -20,12 +21,27 @@ var localCheckoutCmd = &cobra.Command{
 		_, localPath := getLocalArgs(args, false)
 		syncFlags := getLocalSyncFlags(cmd)
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
-
-		checkout(cmd.Context(), localPath, syncFlags, specifiedRef, cmd.Flags())
+		all := Must(cmd.Flags().GetBool("all"))
+		if !all {
+			checkout(cmd.Context(), localPath, syncFlags, specifiedRef, cmd.Flags(), true)
+			return
+		}
+		fmt.Println("the operation will revert all changes in all directories that are linked with lakeFS.")
+		confirmation, err := Confirm(cmd.Flags(), "Proceed")
+		if err != nil || !confirmation {
+			Die("command aborted", 1)
+		}
+		dirs, err := local.FindIndices(localPath)
+		if err != nil {
+			DieErr(err)
+		}
+		for _, d := range dirs {
+			checkout(cmd.Context(), filepath.Join(localPath, d), syncFlags, specifiedRef, cmd.Flags(), false)
+		}
 	},
 }
 
-func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet) {
+func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet, confirmByFlag bool) {
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -44,7 +60,7 @@ func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specif
 	diffs := local.Undo(localDiff(ctx, client, currentBase, idx.LocalPath()))
 	syncMgr := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
 	// confirm on local changes
-	if len(diffs) > 0 {
+	if confirmByFlag && len(diffs) > 0 {
 		fmt.Println("Uncommitted changes exist, the operation will revert all changes on local directory.")
 		confirmation, err := Confirm(flags, "Proceed")
 		if err != nil || !confirmation {
@@ -89,6 +105,7 @@ func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specif
 //nolint:gochecknoinits
 func init() {
 	localCheckoutCmd.Flags().StringP("ref", "r", "", "Checkout the given source branch or reference")
+	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
 	withLocalSyncFlags(localCheckoutCmd)
 	localCmd.AddCommand(localCheckoutCmd)
