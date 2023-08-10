@@ -82,4 +82,5 @@ func init() {
 	localPullCmd.Flags().Bool("force", false, "Reset any uncommitted local change")
 	withLocalSyncFlags(localPullCmd)
 	localCmd.AddCommand(localPullCmd)
+
 }
