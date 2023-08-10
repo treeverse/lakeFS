@@ -114,7 +114,13 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			panic("not implemented")
 		}
 	case ChangeTypeRemoved:
-		panic("not implemented")
+		if change.Source == ChangeSourceRemote {
+			// remote deleted something, delete it locally!
+			return s.deleteLocal(rootPath, change)
+		} else {
+			// we deleted something, delete it on remote!
+			panic("not implemented")
+		}
 	case ChangeTypeConflict:
 		return ErrConflict
 	default:
@@ -227,8 +233,18 @@ func (s *SyncManager) upload(rootPath string, remote *uri.URI, change *Change) e
 	panic("Not Implemented")
 }
 
-func (s *SyncManager) deleteLocal(rootPath string, change *Change) error { //nolint:unused
-	panic("Not Implemented")
+func (s *SyncManager) deleteLocal(rootPath string, change *Change) error {
+	b := s.progressBar.AddSpinner(fmt.Sprintf("delete local path: %s", change.Path))
+	source := filepath.Join(rootPath, change.Path)
+	err := fileutil.RemoveFile(source)
+	if err != nil {
+		b.Error()
+		return err
+	}
+
+	b.Done()
+	atomic.AddUint64(&s.tasks.Removed, 1)
+	return nil
 }
 
 func (s *SyncManager) deleteRemote(remote *uri.URI, change *Change) error { //nolint:unused

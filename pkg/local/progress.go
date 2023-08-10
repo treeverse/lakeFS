@@ -53,6 +53,10 @@ type ProgressSpinner struct {
 	t *progress.Tracker
 }
 
+func (p *ProgressSpinner) Error() {
+	p.t.MarkAsErrored()
+}
+
 func (p *ProgressSpinner) Done() {
 	p.t.MarkAsDone()
 }

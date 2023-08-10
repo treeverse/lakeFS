@@ -14,6 +14,10 @@ const (
 	DefaultDirectoryMask = 0o755
 )
 
+var (
+	ErrNotFile = errors.New("path is not a file")
+)
+
 // IsDir Returns true if p is a directory, otherwise false
 func IsDir(p string) (bool, error) {
 	stat, err := os.Stat(p)
@@ -102,4 +106,28 @@ func PruneEmptyDirectories(dir string) ([]string, error) {
 	})
 
 	return pruned, err
+}
+
+func RemoveFile(p string) error {
+	fileExists, err := FileExists(p)
+	if err != nil {
+		return err
+	}
+	if !fileExists {
+		return nil // does not exist
+	}
+	return os.Remove(p)
+}
+
+func FileExists(p string) (bool, error) {
+	info, err := os.Stat(p)
+	if os.IsNotExist(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	if !info.IsDir() {
+		return true, nil
+	}
+	return false, fmt.Errorf("%s: %w", p, ErrNotFile)
 }
