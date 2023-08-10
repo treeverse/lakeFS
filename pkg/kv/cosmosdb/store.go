@@ -328,29 +328,12 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	return nil
 }
-
-func newPager(pk azcosmos.PartitionKey,
-	containerClient *azcosmos.ContainerClient,
-	consistencyLevel azcosmos.ConsistencyLevel,
-	keyStart []byte,
-	batchSize int32,
-) *runtime.Pager[azcosmos.QueryItemsResponse] {
-	return containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
-		ConsistencyLevel: consistencyLevel.ToPtr(),
-		PageSizeHint:     batchSize,
-		QueryParameters: []azcosmos.QueryParameter{{
-			Name:  "@start",
-			Value: encoding.EncodeToString(keyStart),
-		}},
-	})
-}
-
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
-	queryPager := newPager(pk, s.containerClient, s.consistencyLevel, options.KeyStart, int32(options.BatchSize))
+	queryPager := newPager(pk, s.containerClient, s.consistencyLevel, options.StartKey, int32(options.BatchSize))
 	currPage, err := queryPager.NextPage(ctx)
 	if err != nil {
 		return nil, err
@@ -367,6 +350,21 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}, nil
 }
 
+func newPager(pk azcosmos.PartitionKey,
+	containerClient *azcosmos.ContainerClient,
+	consistencyLevel azcosmos.ConsistencyLevel,
+	keyStart []byte,
+	batchSize int32,
+) *runtime.Pager[azcosmos.QueryItemsResponse] {
+	return containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
+		ConsistencyLevel: consistencyLevel.ToPtr(),
+		PageSizeHint:     batchSize,
+		QueryParameters: []azcosmos.QueryParameter{{
+			Name:  "@start",
+			Value: encoding.EncodeToString(keyStart),
+		}},
+	})
+}
 func (s *Store) Close() {
 }
 

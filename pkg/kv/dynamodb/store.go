@@ -34,17 +34,15 @@ type Store struct {
 
 type EntriesIterator struct {
 	partitionKey []byte
-	keyStart     []byte
+	startKey     []byte
 
-	scanCtx                   context.Context
-	entry                     *kv.Entry
-	err                       error
-	store                     *Store
-	queryResult               *dynamodb.QueryOutput
-	currEntryIdx              int
-	keyConditionExpression    string
-	expressionAttributeValues map[string]*dynamodb.AttributeValue
-	limit                     int64
+	scanCtx      context.Context
+	entry        *kv.Entry
+	err          error
+	store        *Store
+	queryResult  *dynamodb.QueryOutput
+	currEntryIdx int
+	limit        int64
 }
 
 type DynKVItem struct {
@@ -333,24 +331,6 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	return nil
 }
-func (e *EntriesIterator) reset() {
-	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
-		":partitionkey": {
-			B: e.partitionKey,
-		},
-	}
-	keyConditionExpression := PartitionKey + " = :partitionkey"
-	if len(e.keyStart) > 0 {
-		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
-		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: e.keyStart,
-		}
-	}
-	e.queryResult, e.err = e.store.scanInternal(e.scanCtx, keyConditionExpression, expressionAttributeValues, e.limit, nil)
-	e.keyConditionExpression = keyConditionExpression
-	e.expressionAttributeValues = expressionAttributeValues
-	e.currEntryIdx = 0
-}
 
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
@@ -364,22 +344,35 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}
 	it := &EntriesIterator{
 		partitionKey: partitionKey,
-		keyStart:     options.KeyStart,
+		startKey:     options.StartKey,
 		scanCtx:      ctx,
 		store:        s,
 		limit:        limit,
 	}
-	it.reset()
+	it.runQuery(nil)
+	if it.err != nil {
+		return nil, it.err
+	}
 	return it, nil
 }
 
-func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
-	expressionAttributeValues map[string]*dynamodb.AttributeValue,
-	limit int64,
+func (e *EntriesIterator) runQuery(
 	exclusiveStartKey map[string]*dynamodb.AttributeValue,
-) (*dynamodb.QueryOutput, error) {
+) {
+	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
+		":partitionkey": {
+			B: e.partitionKey,
+		},
+	}
+	keyConditionExpression := PartitionKey + " = :partitionkey"
+	if len(e.startKey) > 0 {
+		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
+		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
+			B: e.startKey,
+		}
+	}
 	queryInput := &dynamodb.QueryInput{
-		TableName:                 aws.String(s.params.TableName),
+		TableName:                 aws.String(e.store.params.TableName),
 		KeyConditionExpression:    aws.String(keyConditionExpression),
 		ExpressionAttributeValues: expressionAttributeValues,
 		ConsistentRead:            aws.Bool(true),
@@ -387,18 +380,19 @@ func (s *Store) scanInternal(ctx context.Context, keyConditionExpression string,
 		ExclusiveStartKey:         exclusiveStartKey,
 		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
 	}
-	if limit != 0 {
-		queryInput.SetLimit(limit)
+	if e.limit != 0 {
+		queryInput.SetLimit(e.limit)
 	}
 
-	queryOutput, err := s.svc.QueryWithContext(ctx, queryInput)
+	queryResult, err := e.store.svc.QueryWithContext(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
-		return nil, fmt.Errorf("query: %w", handleClientError(err))
+		e.err = err
+		return
 	}
-	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryOutput.ConsumedCapacity.CapacityUnits)
-
-	return queryOutput, nil
+	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
+	e.queryResult = queryResult
+	e.currEntryIdx = 0
 }
 
 func (s *Store) Close() {
@@ -415,8 +409,8 @@ func (s *Store) DropTable() error {
 
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
-		e.keyStart = key
-		e.reset()
+		e.startKey = key
+		e.runQuery(nil)
 		return
 	}
 	var item DynKVItem
@@ -432,18 +426,14 @@ func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
-
 	for e.currEntryIdx == len(e.queryResult.Items) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
 		}
-		queryResult, err := e.store.scanInternal(e.scanCtx, e.keyConditionExpression, e.expressionAttributeValues, e.limit, e.queryResult.LastEvaluatedKey)
-		if err != nil {
-			e.err = fmt.Errorf("scan paging: %w", err)
+		e.runQuery(e.queryResult.LastEvaluatedKey)
+		if e.err != nil {
 			return false
 		}
-		e.queryResult = queryResult
-		e.currEntryIdx = 0
 	}
 	var item DynKVItem
 	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)

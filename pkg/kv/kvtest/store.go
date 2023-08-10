@@ -362,7 +362,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	_ = setupSampleData(t, ctx, store, testUnusedPartitionKey, string(samplePrefix), sampleItems)
 
 	t.Run("full", func(t *testing.T) {
-		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix})
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: samplePrefix})
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -393,7 +393,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	t.Run("part", func(t *testing.T) {
 		const fromIndex = 5
 		fromKey := []byte(fmt.Sprint(string(samplePrefix), fmt.Sprintf("-key-%04d", fromIndex)))
-		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: fromKey})
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: fromKey})
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -423,7 +423,7 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 
 	t.Run("deleted_last", func(t *testing.T) {
 		scanSkipSize := 5
-		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - scanSkipSize})
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: samplePrefix, BatchSize: sampleItems - scanSkipSize})
 		if err != nil {
 			t.Fatal("failed to scan", err)
 		}
@@ -557,7 +557,7 @@ func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	t.Run("Scan", func(t *testing.T) {
 		start := uniqueKey("test-missing-argument")
 		for _, pk := range [][]byte{nil, {}} {
-			_, err := store.Scan(ctx, pk, kv.ScanOptions{KeyStart: start})
+			_, err := store.Scan(ctx, pk, kv.ScanOptions{StartKey: start})
 			if !errors.Is(err, kv.ErrMissingPartitionKey) {
 				t.Fatalf("Scan using empty partition key - err=%v, expected %s", err, kv.ErrMissingPartitionKey)
 			}
@@ -610,7 +610,7 @@ func testStoreContextCancelled(t *testing.T, ms MakeStore) {
 	})
 
 	t.Run("Scan", func(t *testing.T) {
-		res, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: []byte("")})
+		res, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: []byte("")})
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("expected context cancellation error, got: %s", err)
@@ -736,7 +736,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	// Scan and read
 	go func() {
-		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: readPref})
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: readPref})
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (read): %w", err)
 		}
@@ -759,7 +759,7 @@ func testDeleteWhileIterPrefixSingleSequence(t *testing.T, ms MakeStore, sequenc
 
 	// Scan and delete
 	go func() {
-		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: toDelPref})
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: toDelPref})
 		if err != nil {
 			chErr <- fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
 		}
@@ -887,7 +887,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 
 	// Scan and read
 	g.Go(func() error {
-		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: readPref})
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: readPref})
 		if err != nil {
 			return fmt.Errorf("unexpected error from store.Scan (read): %w", err)
 		}
@@ -906,7 +906,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 
 	// Scan and delete
 	g.Go(func() error {
-		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: delPref})
+		ei, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: delPref})
 		if err != nil {
 			return fmt.Errorf("unexpected error from store.Scan (delete): %w", err)
 		}
@@ -988,7 +988,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 
 	// verify all entries that fit delPref are indeed deleted, i.e. no such entry is left
 	// in the store
-	verifyIter, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: []byte{}})
+	verifyIter, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{StartKey: []byte{}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -56,7 +56,7 @@ func ScanPrefix(ctx context.Context, store Store, partitionKey, prefix, after []
 		start = after
 	}
 	iter, err := store.Scan(ctx, partitionKey, ScanOptions{
-		KeyStart: start,
+		StartKey: start,
 	})
 	if err != nil {
 		return nil, err

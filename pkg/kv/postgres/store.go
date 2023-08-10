@@ -323,7 +323,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		limit = options.BatchSize
 	}
 
-	entries, err := s.scanInternal(ctx, partitionKey, options.KeyStart, limit, true)
+	entries, err := s.scanInternal(ctx, partitionKey, options.StartKey, limit, true)
 	if err != nil {
 		return nil, err
 	}
