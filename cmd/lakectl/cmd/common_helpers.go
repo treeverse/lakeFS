@@ -293,6 +293,19 @@ func MustParseRefURI(name, s string) *uri.URI {
 	return u
 }
 
+func MustParseRefWithPathURI(name, s string) *uri.URI {
+	u, err := uri.ParseWithBaseURI(s, baseURI)
+	if err != nil {
+		DieFmt("Invalid '%s': %s", name, err)
+	}
+	refURI := *u
+	refURI.Path = nil
+	if !refURI.IsRef() {
+		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	}
+	return u
+}
+
 func MustParseBranchURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {

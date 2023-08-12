@@ -146,7 +146,9 @@ func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, g
 
 func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string) {
 	t.Helper()
-	expected := sanitize(expectedRaw, vars)
+	s := sanitize(expectedRaw, vars)
+	expected, err := expandVariables(s, vars)
+	require.NoError(t, err, "Variable embed failed - %s", err)
 	sanitizedResult := runCmd(t, cmd, false, isTerminal, vars)
 	require.Contains(t, sanitizedResult, expected)
 }
