@@ -50,17 +50,19 @@ func TestLakectlLocal_init(t *testing.T) {
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
 	}
 
 	// No repo
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+" "+tmpDir, false, "lakectl_local_repo_not_found", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_repo_not_found", vars)
 
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
 
 	// Bad ref
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref"+" "+tmpDir, false, "lakectl_local_commit_not_found", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/"+" "+tmpDir, false, "lakectl_local_commit_not_found", vars)
 
 	filePath := "ro_1k.1"
 	vars["FILE_PATH"] = filePath
@@ -69,7 +71,7 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" --allow-empty-message -m \" \"", false, "lakectl_commit_with_empty_msg_flag", vars)
 
 	vars["LOCAL_DIR"] = dataDir
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+" "+dataDir, false, "lakectl_local_init", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+"/ "+dataDir, false, "lakectl_local_init", vars)
 
 	relPath, err := filepath.Rel(tmpDir, dataDir)
 	require.NoError(t, err)
@@ -88,12 +90,12 @@ func TestLakectlLocal_init(t *testing.T) {
 
 	// init in a directory with files
 	vars["LOCAL_DIR"] = tmpDir
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+" "+tmpDir, false, "lakectl_local_init", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_init", vars)
 	vars["LIST_DIR"] = "."
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
 
 	// Try to init twice
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+" "+tmpDir, false, "lakectl_local_init_twice", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_init_twice", vars)
 
 	featureBranch := "feature"
 	branchVars := map[string]string{
@@ -105,8 +107,8 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
 
 	// Try to init twice with force
-	vars["BRANCH"] = featureBranch
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+featureBranch+" "+tmpDir+" --force", false, "lakectl_local_init", vars)
+	vars["REF"] = featureBranch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+featureBranch+"/ "+tmpDir+" --force", false, "lakectl_local_init", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
 }
 
@@ -128,14 +130,14 @@ func TestLakectlLocal_clone(t *testing.T) {
 
 	// No repo
 	vars["LOCAL_DIR"] = tmpDir
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+" "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
 
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
 
 	// Bad ref
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref"+" "+tmpDir, false, "lakectl_local_commit_not_found", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/ "+tmpDir, false, "lakectl_local_commit_not_found", vars)
 
 	prefix := "images"
 	objects := []string{
@@ -154,8 +156,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 	createTestData(t, vars, objects)
 
 	vars["LOCAL_DIR"] = dataDir
-	vars["PREFIX"] = "/images"
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+	vars["PREFIX"] = "images"
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 	relPath, err := filepath.Rel(tmpDir, dataDir)
 	require.NoError(t, err)
@@ -173,5 +175,5 @@ func TestLakectlLocal_clone(t *testing.T) {
 
 	// Try to clone twice
 	vars["LOCAL_DIR"] = tmpDir
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+" "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
 }
