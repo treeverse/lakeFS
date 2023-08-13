@@ -47,10 +47,7 @@ func TestGetRepositoryPath(t *testing.T) {
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer func(name string) {
-		err = os.Remove(name)
-		if err != nil {
-
-		}
+		_ = os.Remove(name)
 	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
 	require.NoError(t, err)

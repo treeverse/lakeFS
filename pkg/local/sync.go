@@ -276,10 +276,19 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	return err
 }
 
-func (s *SyncManager) deleteLocal(rootPath string, change *Change) error {
+func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 	b := s.progressBar.AddSpinner(fmt.Sprintf("delete local: %s", change.Path))
+	defer func() {
+		defer func() {
+			if err != nil {
+				b.Error()
+			} else {
+				b.Done()
+			}
+		}()
+	}()
 	source := filepath.Join(rootPath, change.Path)
-	err := fileutil.RemoveFile(source)
+	err = fileutil.RemoveFile(source)
 	if err != nil {
 		b.Error()
 		return err
@@ -290,21 +299,26 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) error {
 	return nil
 }
 
-func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) error {
+func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {
 	b := s.progressBar.AddSpinner(fmt.Sprintf("delete remote path: %s", change.Path))
+	defer func() {
+		if err != nil {
+			b.Error()
+		} else {
+			b.Done()
+		}
+	}()
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
 	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.DeleteObjectParams{
 		Path: dest,
 	})
 	if err != nil {
-		b.Error()
-		return err
+		return
 	}
 	if resp.StatusCode() != http.StatusNoContent {
 		return fmt.Errorf("could not delete object: HTTP %d: %w", resp.StatusCode(), helpers.ErrRequestFailed)
 	}
-	b.Done()
-	return nil
+	return
 }
 
 func (s *SyncManager) Summary() Tasks {
