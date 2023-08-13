@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -33,14 +38,16 @@ var localPullCmd = &cobra.Command{
 		currentBase := remote.WithRef(idx.AtHead)
 		client := getClient()
 		// make sure no local changes
-		localChange := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
+		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		localChange := localDiff(ctx, client, currentBase, idx.LocalPath())
 		if len(localChange) > 0 && !force {
 			DieFmt("there are %d uncommitted changes. Either commit them first or use --force to revert local changes",
 				len(localChange))
 		}
 
 		// write new index
-		newHead := resolveCommitOrDie(cmd.Context(), client, remote.Repository, remote.Ref)
+		newHead := resolveCommitOrDie(ctx, client, remote.Repository, remote.Ref)
 		idx, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
 		if err != nil {
 			DieErr(err)
@@ -49,7 +56,7 @@ var localPullCmd = &cobra.Command{
 		d := make(chan api.Diff, maxDiffPageSize)
 		var wg errgroup.Group
 		wg.Go(func() error {
-			return diff.StreamRepositoryDiffs(cmd.Context(), client, currentBase, newBase, swag.StringValue(currentBase.Path), d, false)
+			return diff.StreamRepositoryDiffs(ctx, client, currentBase, newBase, swag.StringValue(currentBase.Path), d, false)
 		})
 		c := make(chan *local.Change, filesChanSize)
 		wg.Go(func() error {
@@ -63,8 +70,11 @@ var localPullCmd = &cobra.Command{
 			}
 			return nil
 		})
-		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
+		s := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), newBase, c)
+		if errors.Is(ctx.Err(), context.Canceled) {
+			Die("Operation was canceled. Local data may be incomplete.", 1)
+		}
 		if err != nil {
 			DieErr(err)
 		}

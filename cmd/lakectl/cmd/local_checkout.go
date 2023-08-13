@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -42,6 +45,8 @@ var localCheckoutCmd = &cobra.Command{
 }
 
 func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet, confirmByFlag bool) {
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -94,6 +99,9 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 		}
 	}()
 	err = syncMgr.Sync(idx.LocalPath(), currentBase, c)
+	if errors.Is(ctx.Err(), context.Canceled) {
+		Die("Operation was canceled, local data may be incomplete", 1)
+	}
 	if err != nil {
 		DieErr(err)
 	}
