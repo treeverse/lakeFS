@@ -1,0 +1,2 @@
+directory '${LOCAL_DIR}' exists and is not empty
+Error executing command.

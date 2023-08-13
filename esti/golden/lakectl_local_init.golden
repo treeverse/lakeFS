@@ -1,1 +1,1 @@
-Successfully linked local directory '${LOCAL_DIR}' with remote 'lakefs://${REPO}/${BRANCH}'
+Successfully linked local directory '${LOCAL_DIR}' with remote 'lakefs://${REPO}/${REF}/'
