@@ -60,7 +60,7 @@ var localStatusCmd = &cobra.Command{
 				}
 				return nil
 			})
-			if err = wg.Wait(); err != nil {
+			if err := wg.Wait(); err != nil {
 				DieErr(err)
 			}
 

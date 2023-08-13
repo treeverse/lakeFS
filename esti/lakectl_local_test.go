@@ -10,10 +10,27 @@ import (
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
+func listDir(t *testing.T, dir string) []string {
+	var files []string
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			rel, err := filepath.Rel(dir, path)
+			if err != nil {
+				return err
+			}
+			files = append(files, rel)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	return files
+}
+
 func TestLakectlLocal_init(t *testing.T) {
 	tmpDir := t.TempDir()
-	_, err := os.CreateTemp(tmpDir, "")
+	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
+	require.NoError(t, fd.Close())
 	dataDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
 	repoName := generateUniqueRepositoryName()
@@ -54,20 +71,9 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
 	// Verify directory is empty
-	indexFound := false
-	err = filepath.WalkDir(dataDir, func(path string, d fs.DirEntry, err error) error {
-
-		switch {
-		case d.Name() == local.IndexFileName:
-			indexFound = true
-
-		case path != dataDir:
-			t.Fatalf("found files in data dir %s", path)
-		}
-		return nil
-	})
-	require.NoError(t, err)
-	require.True(t, indexFound, "No index file found in data dir", dataDir)
+	files := listDir(t, dataDir)
+	require.Equal(t, 1, len(files)) // + index file
+	require.Equal(t, local.IndexFileName, files[0])
 
 	// init in a directory with files
 	vars["LOCAL_DIR"] = tmpDir
