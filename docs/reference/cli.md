@@ -2560,10 +2560,7 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 ### lakectl local
 
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-BETA: sync local directories with lakeFS paths
+Sync local directories with lakeFS paths
 
 #### Options
 {:.no_toc}
