@@ -2615,6 +2615,28 @@ lakectl local clone <path uri> [directory] [flags]
 
 
 
+### lakectl local commit
+
+Commit changes from local directory to the lakeFS branch it tracks.
+
+```
+lakectl local commit [directory] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --allow-empty-message   Allow commit with empty message
+  -h, --help                  help for commit
+  -m, --message string        Commit message
+      --meta strings          key value pair in the form of key=value
+  -p, --parallelism int       Max concurrent operations to perform (default 25)
+      --presign               Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+```
+
+
+
 ### lakectl local help
 
 Help about any command
