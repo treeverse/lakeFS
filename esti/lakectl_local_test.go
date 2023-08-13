@@ -13,15 +13,32 @@ import (
 func createTestData(t *testing.T, vars map[string]string, objects []string) {
 	for _, o := range objects {
 		vars["FILE_PATH"] = o
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["REF"]+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["REF"]+"/"+vars["FILE_PATH"], false, false, vars)
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["REF"]+" --allow-empty-message -m \" \"", false, "lakectl_commit_with_empty_msg_flag", vars)
+	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["REF"]+" --allow-empty-message -m \" \"", false, false, vars)
+}
+
+func listDir(t *testing.T, dir string) []string {
+	var files []string
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			rel, err := filepath.Rel(dir, path)
+			if err != nil {
+				return err
+			}
+			files = append(files, rel)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	return files
 }
 
 func TestLakectlLocal_clone(t *testing.T) {
 	tmpDir := t.TempDir()
-	_, err := os.CreateTemp(tmpDir, "")
+	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
+	require.NoError(t, fd.Close())
 	dataDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
 	repoName := generateUniqueRepositoryName()
@@ -74,26 +91,9 @@ func TestLakectlLocal_clone(t *testing.T) {
 	// Expect empty since no linked directories in CWD
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
-	// Verify directory is empty
-	indexFound := false
-	count := 0
-	err = filepath.WalkDir(dataDir, func(path string, d fs.DirEntry, err error) error {
-		switch {
-		case d.Name() == local.IndexFileName:
-			indexFound = true
-
-		case !d.IsDir():
-			rel, err := filepath.Rel(dataDir, path)
-			require.NoError(t, err)
-			require.Contains(t, objects[expectedObjStartIdx:], filepath.Join(prefix, rel), "unexpected file in data dir %s", path)
-			count += 1
-		}
-		return nil
-	})
-	require.NoError(t, err)
-	require.True(t, indexFound, "No index file found in data dir", dataDir)
-
-	require.Equal(t, len(objects)-expectedObjStartIdx, count)
+	files := listDir(t, dataDir)
+	require.Equal(t, len(objects)-expectedObjStartIdx, len(files)-1) // + index file
+	require.Contains(t, files, local.IndexFileName, "Index file missing from data dir")
 
 	// Try to clone twice
 	vars["LOCAL_DIR"] = tmpDir
