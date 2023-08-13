@@ -55,7 +55,7 @@ func (d *dotWriter) Write(commits []api.Commit) {
 			label = fmt.Sprintf("<b>%s</b>", label)
 		}
 		baseURL := strings.TrimSuffix(strings.TrimSuffix(
-			cfg.Values.Server.EndpointURL, "/api/v1"), "/")
+			string(cfg.Values.Server.EndpointURL), "/api/v1"), "/")
 		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
 			commit.Id, baseURL, repoID, commit.Id, label)
 		for _, parent := range commit.Parents {
