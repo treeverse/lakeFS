@@ -81,7 +81,7 @@ var commitCmd = &cobra.Command{
 	},
 }
 
-func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolint:unparam
 	kvList, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
 		return nil, err

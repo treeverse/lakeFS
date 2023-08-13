@@ -73,7 +73,7 @@ func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specif
 		newHead := resolveCommitOrDie(ctx, client, newRemote.Repository, newRemote.Ref)
 		newBase := newRemote.WithRef(newHead)
 		// write new index
-		_, err = local.WriteIndex(idx.LocalPath(), newRemote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
 		if err != nil {
 			DieErr(err)
 		}

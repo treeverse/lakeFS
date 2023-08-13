@@ -9,7 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"golang.org/x/exp/slices"
@@ -18,35 +20,54 @@ import (
 const (
 	IgnoreFile        = ".gitignore"
 	IgnoreDefaultMode = 0644
+	NoRemoteRC        = 2
 )
 
-func git(dir string, args ...string) (string, error) {
+var (
+	RemoteRegex     = regexp.MustCompile(`(?P<server>[\w.:]+)[/:](?P<owner>[\w.]+)/(?P<project>[\w.]+)\.git$`)
+	CommitTemplates = map[string]string{
+		"github.com":    "https://github.com/{{ .Owner }}/{{ .Project }}/commit/{{ .Ref }}",
+		"gitlab.com":    "https://gitlab.com/{{ .Owner }}/{{ .Project }}/-/commit/{{ .Ref }}",
+		"bitbucket.org": "https://bitbucket.org/{{ .Owner }}/{{ .Project }}/commits/{{ .Ref }}",
+	}
+)
+
+type URL struct {
+	Server  string
+	Owner   string
+	Project string
+}
+
+func git(dir string, args ...string) (string, int, error) {
 	_, err := exec.LookPath("git") // assume git is in path, otherwise consider as not having git support
 	if err != nil {
-		return "", ErrNoGit
+		return "", 0, ErrNoGit
 	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
-	return string(out), err
+	rc := 0
+	if err != nil {
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			rc = exitError.ExitCode()
+		} else {
+			rc = -1
+		}
+	}
+	return string(out), rc, err
 }
 
 // IsRepository Return true if dir is a path to a directory in a git repository, false otherwise
 func IsRepository(dir string) bool {
-	_, err := git(dir, "rev-parse", "--is-inside-work-tree")
+	_, _, err := git(dir, "rev-parse", "--is-inside-work-tree")
 	return err == nil
 }
 
 // GetRepositoryPath Returns the git repository root path if dir is a directory inside a git repository, otherwise returns error
 func GetRepositoryPath(dir string) (string, error) {
-	out, err := git(dir, "rev-parse", "--show-toplevel")
-	if err == nil {
-		return strings.TrimSpace(out), nil
-	}
-	if strings.Contains(out, "not a git repository") {
-		return "", ErrNotARepository
-	}
-	return "", fmt.Errorf("%s: %w", out, err)
+	out, _, err := git(dir, "rev-parse", "--show-toplevel")
+	return handleOutput(out, err)
 }
 
 func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string, error) {
@@ -149,4 +170,74 @@ func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (stri
 	}
 
 	return ignoreFilePath, nil
+}
+
+func CurrentCommit(path string) (string, error) {
+	out, _, err := git(path, "rev-parse", "--short", "HEAD")
+	return handleOutput(out, err)
+}
+
+func MetadataFor(path, ref string) (map[string]string, error) {
+	kv := make(map[string]string)
+	kv["git_commit_id"] = ref
+	originURL, err := Origin(path)
+	if errors.Is(err, ErrRemoteNotFound) {
+		return kv, nil // no additional data to add
+	} else if err != nil {
+		return kv, err
+	}
+	parsed := ParseURL(originURL)
+	if parsed != nil {
+		if tmpl, ok := CommitTemplates[parsed.Server]; ok {
+			t := template.Must(template.New("url").Parse(tmpl))
+			out := new(strings.Builder)
+			_ = t.Execute(out, struct {
+				Owner   string
+				Project string
+				Ref     string
+			}{
+				Owner:   parsed.Owner,
+				Project: parsed.Project,
+				Ref:     ref,
+			})
+			kv[fmt.Sprintf("::lakefs::%s::url[url:ui]", parsed.Server)] = out.String()
+		}
+	}
+	return kv, nil
+}
+
+func Origin(path string) (string, error) {
+	out, rc, err := git(path, "remote", "get-url", "origin")
+	if rc == NoRemoteRC {
+		// from Git's man page:
+		// "When subcommands such as add, rename, and remove can’t find the remote in question,
+		//	the exit status is 2"
+		return "", nil
+	}
+	return handleOutput(out, err)
+}
+
+func ParseURL(raw string) *URL {
+	matches := RemoteRegex.FindStringSubmatch(raw)
+	if matches == nil { // TODO niro: How to handle better changes in templates?
+		return nil
+	}
+	return &URL{
+		Server:  matches[RemoteRegex.SubexpIndex("server")],
+		Owner:   matches[RemoteRegex.SubexpIndex("owner")],
+		Project: matches[RemoteRegex.SubexpIndex("project")],
+	}
+}
+
+func handleOutput(out string, err error) (string, error) {
+	switch {
+	case err == nil:
+		return strings.TrimSpace(out), nil
+	case strings.Contains(out, "not a git repository"):
+		return "", ErrNotARepository
+	case strings.Contains(out, "remote not found"):
+		return "", ErrRemoteNotFound
+	default:
+		return "", fmt.Errorf("%s: %w", out, err)
+	}
 }

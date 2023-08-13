@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -110,8 +111,10 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			// remote changed something, download it!
 			return s.download(ctx, rootPath, remote, change)
 		case ChangeSourceLocal:
+			// we wrote something, upload it!
+			return s.upload(ctx, rootPath, remote, change)
 		default:
-			panic("not implemented")
+			panic("invalid change source")
 		}
 	case ChangeTypeRemoved:
 		if change.Source == ChangeSourceRemote {
@@ -119,14 +122,13 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			return s.deleteLocal(rootPath, change)
 		} else {
 			// we deleted something, delete it on remote!
-			panic("not implemented")
+			return s.deleteRemote(ctx, remote, change)
 		}
 	case ChangeTypeConflict:
 		return ErrConflict
 	default:
 		panic("invalid change type")
 	}
-	return nil
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
@@ -229,14 +231,64 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	return err
 }
 
-func (s *SyncManager) upload(rootPath string, remote *uri.URI, change *Change) error { //nolint:unused
-	panic("Not Implemented")
+func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
+	source := filepath.Join(rootPath, change.Path)
+	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
+
+	f, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	fileStat, err := f.Stat()
+	if err != nil {
+		return err
+	}
+
+	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", change.Path), fileStat.Size())
+	defer func() {
+		if err != nil {
+			b.Error()
+		} else {
+			b.Done()
+		}
+	}()
+
+	metadata := map[string]string{
+		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
+	}
+
+	reader := fileWrapper{
+		file:   f,
+		reader: b.Reader(f),
+	}
+	if s.presign {
+		_, err = helpers.ClientUploadPreSign(
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+		return err
+	}
+	// not pre-signed
+	_, err = helpers.ClientUploadDirect(
+		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+	return err
 }
 
-func (s *SyncManager) deleteLocal(rootPath string, change *Change) error {
+func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 	b := s.progressBar.AddSpinner(fmt.Sprintf("delete local: %s", change.Path))
+	defer func() {
+		defer func() {
+			if err != nil {
+				b.Error()
+			} else {
+				b.Done()
+			}
+		}()
+	}()
 	source := filepath.Join(rootPath, change.Path)
-	err := fileutil.RemoveFile(source)
+	err = fileutil.RemoveFile(source)
 	if err != nil {
 		b.Error()
 		return err
@@ -247,8 +299,26 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) error {
 	return nil
 }
 
-func (s *SyncManager) deleteRemote(remote *uri.URI, change *Change) error { //nolint:unused
-	panic("Not Implemented")
+func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {
+	b := s.progressBar.AddSpinner(fmt.Sprintf("delete remote path: %s", change.Path))
+	defer func() {
+		if err != nil {
+			b.Error()
+		} else {
+			b.Done()
+		}
+	}()
+	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
+	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.DeleteObjectParams{
+		Path: dest,
+	})
+	if err != nil {
+		return
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		return fmt.Errorf("could not delete object: HTTP %d: %w", resp.StatusCode(), helpers.ErrRequestFailed)
+	}
+	return
 }
 
 func (s *SyncManager) Summary() Tasks {
