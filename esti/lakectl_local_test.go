@@ -4,18 +4,21 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/local"
+	"golang.org/x/exp/slices"
 )
 
 func createTestData(t *testing.T, vars map[string]string, objects []string) {
 	for _, o := range objects {
 		vars["FILE_PATH"] = o
-		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["REF"]+"/"+vars["FILE_PATH"], false, false, vars)
+		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, false, vars)
 	}
-	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["REF"]+" --allow-empty-message -m \" \"", false, false, vars)
+	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 }
 
 func listDir(t *testing.T, dir string) []string {
@@ -35,6 +38,23 @@ func listDir(t *testing.T, dir string) []string {
 	})
 	require.NoError(t, err)
 	return files
+}
+
+func verifyDirContents(t *testing.T, dir string, expected []string) {
+	all := append(expected, local.IndexFileName)
+	files := listDir(t, dir)
+	require.ElementsMatch(t, all, files)
+}
+
+func getExpected(t *testing.T, prefix string, obj []string) (expected []string) {
+	for _, s := range obj {
+		if strings.HasPrefix(s, prefix) {
+			rel, err := filepath.Rel(prefix, s)
+			require.NoError(t, err)
+			expected = append(expected, rel)
+		}
+	}
+	return
 }
 
 func TestLakectlLocal_init(t *testing.T) {
@@ -84,9 +104,7 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
 	// Verify directory is empty
-	files := listDir(t, dataDir)
-	require.Equal(t, 1, len(files)) // + index file
-	require.Equal(t, local.IndexFileName, files[0])
+	verifyDirContents(t, dataDir, []string{})
 
 	// init in a directory with files
 	vars["LOCAL_DIR"] = tmpDir
@@ -151,7 +169,6 @@ func TestLakectlLocal_clone(t *testing.T) {
 		prefix + "/subdir/2.png",
 		prefix + "/subdir/3.png",
 	}
-	expectedObjStartIdx := 3
 
 	createTestData(t, vars, objects)
 
@@ -169,11 +186,99 @@ func TestLakectlLocal_clone(t *testing.T) {
 	// Expect empty since no linked directories in CWD
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
-	files := listDir(t, dataDir)
-	require.Equal(t, len(objects)-expectedObjStartIdx, len(files)-1) // + index file
-	require.Contains(t, files, local.IndexFileName, "Index file missing from data dir")
+	expected := getExpected(t, prefix, objects)
+	verifyDirContents(t, dataDir, expected)
 
 	// Try to clone twice
 	vars["LOCAL_DIR"] = tmpDir
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+}
+
+func TestLakectlLocal_pull(t *testing.T) {
+	const successStr = "Successfully synced changes!\nTotal objects downloaded: ${DOWNLOADED}\nTotal objects removed: ${REMOVED}"
+	tmpDir := t.TempDir()
+	_, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+
+	// Not linked
+	vars["LOCAL_DIR"] = tmpDir
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local pull "+tmpDir, false, "lakectl_local_no_index", vars)
+
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "root",
+			prefix: "",
+		},
+		{
+			name:   "prefix",
+			prefix: "images",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			vars["PREFIX"] = "/" + tt.prefix
+			vars["LOCAL_DIR"] = dataDir
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+
+			// Pull nothing
+			vars["DOWNLOADED"] = "0"
+			vars["REMOVED"] = "0"
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
+
+			// Upload and commit an object
+			base := []string{
+				"ro_1k.1",
+				"ro_1k.2",
+				"ro_1k.3",
+				"images/1.png",
+				"images/2.png",
+				"images/3.png",
+			}
+
+			modified := []string{"ro_1k.1"}
+			deleted := []string{"deleted"}
+			create := append(base, deleted...)
+			createTestData(t, vars, create)
+			expected := getExpected(t, tt.prefix, create)
+			// Pull changes and verify data
+			vars["DOWNLOADED"] = strconv.Itoa(len(expected))
+			vars["REMOVED"] = "0"
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
+			verifyDirContents(t, dataDir, expected)
+
+			// Modify data
+			vars["FILE_PATH"] = modified[0]
+			runCmd(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, false, vars)
+			runCmd(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+deleted[0], false, false, vars)
+			runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+			expected = slices.DeleteFunc(expected, func(s string) bool {
+				return slices.Contains(deleted, s)
+			})
+
+			// Pull changes and verify data
+			vars["DOWNLOADED"] = strconv.Itoa(len(getExpected(t, tt.prefix, modified)))
+			vars["REMOVED"] = strconv.Itoa(len(getExpected(t, tt.prefix, deleted)))
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
+			verifyDirContents(t, dataDir, expected)
+		})
+	}
 }
