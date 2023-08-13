@@ -60,7 +60,8 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 	}
 
 	if len(args) > idx {
-		localPath = Must(filepath.Abs(Must(homedir.Expand(args[idx]))))
+		expanded := Must(homedir.Expand(args[idx]))
+		localPath = Must(filepath.Abs(expanded))
 		return
 	}
 	localPath = Must(filepath.Abs("."))
