@@ -17,7 +17,7 @@ import (
 
 const (
 	localCommitAllowEmptyMessage = "allow-empty-message"
-	localCommitMessageFlag       = "message"
+	localCommitMessageFlagName   = "message"
 )
 
 func findConflicts(changes local.Changes) (conflicts []string) {
@@ -36,7 +36,7 @@ var localCommitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		_, localPath := getLocalArgs(args, false, false)
 		syncFlags := getLocalSyncFlags(cmd)
-		message := Must(cmd.Flags().GetString(localCommitMessageFlag))
+		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
 		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
 		if message == "" && !allowEmptyMessage {
 			DieFmt("Commit message empty! To commit with empty message pass --%s flag", localCommitAllowEmptyMessage)
@@ -162,9 +162,9 @@ var localCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	localCommitCmd.Flags().StringP(localCommitMessageFlag, "m", "", "Commit message")
+	localCommitCmd.Flags().StringP(localCommitMessageFlagName, "m", "", "Commit message")
 	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
-	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlag, localCommitAllowEmptyMessage)
+	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
 	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
 	withLocalSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)

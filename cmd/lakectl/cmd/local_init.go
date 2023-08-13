@@ -19,7 +19,7 @@ const (
 	localInitMaxArgs = 2
 )
 
-func localInit(ctx context.Context, dir string, remote *uri.URI, force bool) (*local.Index, error) {
+func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (*local.Index, error) {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		DieErr(err)
 	}
@@ -38,11 +38,13 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force bool) (*l
 		return nil, err
 	}
 
-	ignoreFile, err := git.Ignore(dir, []string{dir}, []string{filepath.Join(dir, local.IndexFileName)}, local.IgnoreMarker)
-	if err == nil {
-		fmt.Println("location added to", ignoreFile)
-	} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) {
-		return nil, err
+	if updateIgnore {
+		ignoreFile, err := git.Ignore(dir, []string{dir}, []string{filepath.Join(dir, local.IndexFileName)}, local.IgnoreMarker)
+		if err == nil {
+			fmt.Println("location added to", ignoreFile)
+		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) {
+			return nil, err
+		}
 	}
 
 	return idx, nil
@@ -54,9 +56,9 @@ var localInitCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, localPath := getLocalArgs(args, true, false)
-		force := Must(cmd.Flags().GetBool("force"))
-
-		_, err := localInit(cmd.Context(), localPath, remote, force)
+		force := Must(cmd.Flags().GetBool(localForceFlagName))
+		updateIgnore := !Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
+		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)
 		if err != nil {
 			if errors.Is(err, fs.ErrExist) {
 				DieFmt("directory '%s' already linked to a lakeFS path, run command with --force to overwrite", localPath)
@@ -70,6 +72,7 @@ var localInitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	localInitCmd.Flags().Bool("force", false, "Overwrites if directory already linked to a lakeFS path")
+	withForceFlag(localInitCmd, "Overwrites if directory already linked to a lakeFS path")
+	withGitIgnoreFlag(localInitCmd)
 	localCmd.AddCommand(localInitCmd)
 }

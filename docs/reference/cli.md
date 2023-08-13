@@ -2609,6 +2609,7 @@ lakectl local clone <path uri> [directory] [flags]
 
 ```
   -h, --help              help for clone
+      --no-gitignore      Skip update of .gitignore file when working in a git repository context
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
@@ -2672,8 +2673,9 @@ lakectl local init <path uri> [directory] [flags]
 {:.no_toc}
 
 ```
-      --force   Overwrites if directory already linked to a lakeFS path
-  -h, --help    help for init
+      --force          Overwrites if directory already linked to a lakeFS path
+  -h, --help           help for init
+      --no-gitignore   Skip update of .gitignore file when working in a git repository context
 ```
 
 

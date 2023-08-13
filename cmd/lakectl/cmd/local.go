@@ -20,17 +20,22 @@ const (
 	localDefaultSyncPresign     = true
 	localDefaultMinArgs         = 0
 	localDefaultMaxArgs         = 1
+
+	localPresignFlagName     = "presign"
+	localParallelismFlagName = "parallelism"
+	localGitIgnoreFlagName   = "no-gitignore"
+	localForceFlagName       = "force"
 )
 
 var localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
 
 func withParallelismFlag(cmd *cobra.Command) {
-	cmd.Flags().IntP("parallelism", "p", localDefaultSyncParallelism,
+	cmd.Flags().IntP(localParallelismFlagName, "p", localDefaultSyncParallelism,
 		"Max concurrent operations to perform")
 }
 
 func withPresignFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool("presign", localDefaultSyncPresign,
+	cmd.Flags().Bool(localPresignFlagName, localDefaultSyncPresign,
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
 }
 
@@ -39,14 +44,23 @@ func withLocalSyncFlags(cmd *cobra.Command) {
 	withPresignFlag(cmd)
 }
 
+func withGitIgnoreFlag(cmd *cobra.Command) {
+	cmd.Flags().Bool(localGitIgnoreFlagName, false,
+		"Skip update of .gitignore file when working in a git repository context")
+}
+
+func withForceFlag(cmd *cobra.Command, usage string) {
+	cmd.Flags().Bool(localForceFlagName, false, usage)
+}
+
 type syncFlags struct {
 	parallelism int
 	presign     bool
 }
 
 func getLocalSyncFlags(cmd *cobra.Command) syncFlags {
-	parallelism := Must(cmd.Flags().GetInt("parallelism"))
-	presign := Must(cmd.Flags().GetBool("presign"))
+	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
+	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
 	return syncFlags{parallelism: parallelism, presign: presign}
 }
 

@@ -18,7 +18,7 @@ var localPullCmd = &cobra.Command{
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
 		_, localPath := getLocalArgs(args, false, false)
-		force := Must(cmd.Flags().GetBool("force"))
+		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		syncFlags := getLocalSyncFlags(cmd)
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
@@ -78,7 +78,7 @@ var localPullCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	localPullCmd.Flags().Bool("force", false, "Reset any uncommitted local change")
+	withForceFlag(localPullCmd, "Reset any uncommitted local change")
 	withLocalSyncFlags(localPullCmd)
 	localCmd.AddCommand(localPullCmd)
 }
