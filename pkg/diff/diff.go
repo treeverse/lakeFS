@@ -14,7 +14,7 @@ import (
 
 const diffTypeTwoDot = "two_dot"
 
-// StreamRepositoryDiffs fetches differences between 'left' and 'right' references, assumes both are in the same repository
+// StreamRepositoryDiffs asynchronously fetches differences between 'left' and 'right' references, assumes both are in the same repository
 func StreamRepositoryDiffs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, prefix string, diffs chan<- api.Diff, twoDot bool) error {
 	defer func() {
 		close(diffs)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/git"
@@ -59,7 +60,8 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 	}
 
 	if len(args) > idx {
-		localPath = Must(filepath.Abs(args[idx]))
+		expanded := Must(homedir.Expand(args[idx]))
+		localPath = Must(filepath.Abs(expanded))
 		return
 	}
 	localPath = Must(filepath.Abs("."))
@@ -76,7 +78,7 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 }
 
 func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
-	fmt.Printf("diff 'local://%s' <--> '%s'...\n", path, remote)
+	fmt.Printf("\ndiff 'local://%s' <--> '%s'...\n", path, remote)
 	currentRemoteState := make(chan api.ObjectStats, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {

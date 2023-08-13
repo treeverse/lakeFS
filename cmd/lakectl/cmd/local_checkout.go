@@ -23,7 +23,7 @@ var localCheckoutCmd = &cobra.Command{
 		all := Must(cmd.Flags().GetBool("all"))
 		_, localPath := getLocalArgs(args, false, all)
 		if !all {
-			checkout(cmd.Context(), localPath, syncFlags, specifiedRef, cmd.Flags(), true)
+			localCheckout(cmd.Context(), localPath, syncFlags, specifiedRef, cmd.Flags(), true)
 			return
 		}
 		fmt.Println("the operation will revert all changes in all directories that are linked with lakeFS.")
@@ -36,12 +36,12 @@ var localCheckoutCmd = &cobra.Command{
 			DieErr(err)
 		}
 		for _, d := range dirs {
-			checkout(cmd.Context(), filepath.Join(localPath, d), syncFlags, specifiedRef, cmd.Flags(), false)
+			localCheckout(cmd.Context(), filepath.Join(localPath, d), syncFlags, specifiedRef, cmd.Flags(), false)
 		}
 	},
 }
 
-func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet, confirmByFlag bool) {
+func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet, confirmByFlag bool) {
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -73,7 +73,7 @@ func checkout(ctx context.Context, localPath string, syncFlags syncFlags, specif
 		newHead := resolveCommitOrDie(ctx, client, newRemote.Repository, newRemote.Ref)
 		newBase := newRemote.WithRef(newHead)
 		// write new index
-		_, err = local.WriteIndex(idx.LocalPath(), newRemote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
 		if err != nil {
 			DieErr(err)
 		}

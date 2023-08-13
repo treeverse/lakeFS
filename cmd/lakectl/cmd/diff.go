@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/uri"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -109,12 +110,15 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 
 func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool) {
 	diffs := make(chan api.Diff, maxDiffPageSize)
-	err := diff.StreamRepositoryDiffs(ctx, client, left, right, "", diffs, twoDot)
-	if err != nil {
-		DieErr(err)
-	}
+	var wg errgroup.Group
+	wg.Go(func() error {
+		return diff.StreamRepositoryDiffs(ctx, client, left, right, "", diffs, twoDot)
+	})
 	for d := range diffs {
 		FmtDiff(d, true)
+	}
+	if err := wg.Wait(); err != nil {
+		DieErr(err)
 	}
 }
 

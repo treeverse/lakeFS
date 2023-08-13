@@ -67,7 +67,7 @@ func ReadIndex(path string) (*Index, error) {
 		return nil, err
 	}
 	if idxPath == "" {
-		return nil, fmt.Errorf("%s: %w", path, fs.ErrNotExist)
+		return nil, fmt.Errorf("could not find lakefs reference file in path %s or parents: %w", path, fs.ErrNotExist)
 	}
 	data, err := os.ReadFile(idxPath)
 	if err != nil {
