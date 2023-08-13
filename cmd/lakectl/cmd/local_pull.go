@@ -68,8 +68,7 @@ var localPullCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = wg.Wait()
-		if err != nil {
+		if err := wg.Wait(); err != nil {
 			DieErr(err)
 		}
 		summary := s.Summary()
