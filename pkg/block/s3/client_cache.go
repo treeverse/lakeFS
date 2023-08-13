@@ -134,7 +134,7 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) (ret S3APIWithExpi
 			return
 		}
 		if err != nil {
-			l = l.WithField("error", err)
+			l = l.WithError(err)
 		} else if !expiry.IsZero() {
 			l = l.WithFields(logging.Fields{
 				"expiry": expiry,

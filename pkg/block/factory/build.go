@@ -5,9 +5,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -24,8 +26,12 @@ import (
 	"google.golang.org/api/option"
 )
 
-// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
-const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
+const (
+	// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
+	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
+	// renewWebIdentity is the time to try to renew web credentials.
+	renewWebIdentity = 5 * time.Minute
+)
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -90,7 +96,14 @@ func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*ses
 		}
 		client = &http.Client{Transport: tr}
 	}
-	sess, err := session.NewSession(params, aws.NewConfig().WithHTTPClient(client))
+	opts := session.Options{}
+	opts.Config.MergeIn(params, aws.NewConfig().WithHTTPClient(client))
+	opts.CredentialsProviderOptions = &session.CredentialsProviderOptions{
+		WebIdentityRoleProviderOptions: func(wirp *stscreds.WebIdentityRoleProvider) {
+			wirp.ExpiryWindow = renewWebIdentity
+		},
+	}
+	sess, err := session.NewSessionWithOptions(opts)
 	if err != nil {
 		return nil, err
 	}
