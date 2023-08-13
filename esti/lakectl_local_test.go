@@ -13,6 +13,9 @@ import (
 func listDir(t *testing.T, dir string) []string {
 	var files []string
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if !d.IsDir() {
 			rel, err := filepath.Rel(dir, path)
 			if err != nil {
