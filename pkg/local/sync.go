@@ -103,16 +103,24 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	return err
 }
 
-func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
+func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) (err error) {
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
 		case ChangeSourceRemote:
 			// remote changed something, download it!
-			return s.download(ctx, rootPath, remote, change)
+			err = s.download(ctx, rootPath, remote, change)
+			if err != nil {
+				err = fmt.Errorf("download %s failed: %w", change.Path, err)
+			}
+			return
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
-			return s.upload(ctx, rootPath, remote, change)
+			err = s.upload(ctx, rootPath, remote, change)
+			if err != nil {
+				err = fmt.Errorf("upload %s failed: %w", change.Path, err)
+			}
+			return
 		default:
 			panic("invalid change source")
 		}
@@ -132,6 +140,9 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
+	if err := fileutil.VerifyRelPath(change.Path, rootPath); err != nil {
+		return err
+	}
 	destination := filepath.Join(rootPath, change.Path)
 	destinationDirectory := filepath.Dir(destination)
 	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
@@ -233,6 +244,9 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
 	source := filepath.Join(rootPath, change.Path)
+	if err := fileutil.VerifyRegularFile(source, rootPath); err != nil {
+		return err
+	}
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
 
 	f, err := os.Open(source)

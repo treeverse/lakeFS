@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/karrick/godirwalk"
 )
@@ -15,7 +17,10 @@ const (
 )
 
 var (
-	ErrNotFile = errors.New("path is not a file")
+	ErrNotFile     = errors.New("path is not a file")
+	ErrBadPath     = errors.New("bad path traversal blocked")
+	ErrRegularFile = errors.New("not a regular file")
+	ErrInvalidPath = errors.New("invalid path")
 )
 
 // IsDir Returns true if p is a directory, otherwise false
@@ -130,4 +135,35 @@ func FileExists(p string) (bool, error) {
 		return true, nil
 	}
 	return false, fmt.Errorf("%s: %w", p, ErrNotFile)
+}
+
+func VerifyAbsPath(absPath, basePath string) error {
+	// check we have a valid abs path
+	if !path.IsAbs(absPath) || path.Clean(absPath) != absPath {
+		return ErrBadPath
+	}
+	// point to storage namespace
+	if !strings.HasPrefix(absPath, basePath) {
+		return ErrInvalidPath
+	}
+	return nil
+}
+
+func VerifyRelPath(relPath, base string) error {
+	abs := base + string(os.PathSeparator) + relPath
+	return VerifyAbsPath(abs, base)
+}
+
+func VerifyRegularFile(name, base string) error {
+	filename, err := filepath.EvalSymlinks(name)
+	switch {
+	case err != nil:
+		return err
+	case filename != name:
+		return ErrRegularFile
+	case filepath.IsAbs(filename):
+		return VerifyAbsPath(filename, base)
+	default: // relative path
+		return VerifyRelPath(filename, base)
+	}
 }
