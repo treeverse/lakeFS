@@ -57,7 +57,7 @@ var localInitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, localPath := getLocalArgs(args, true, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
-		updateIgnore := !Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
+		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)
 		if err != nil {
 			if errors.Is(err, fs.ErrExist) {

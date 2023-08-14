@@ -28,7 +28,7 @@ var localCloneCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, localPath := getLocalArgs(args, true, false)
 		syncFlags := getLocalSyncFlags(cmd)
-		updateIgnore := !Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
+		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		empty, err := fileutil.IsDirEmpty(localPath)
 		if err != nil {
 			if !errors.Is(err, fs.ErrNotExist) {

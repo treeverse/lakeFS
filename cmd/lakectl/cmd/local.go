@@ -23,7 +23,7 @@ const (
 
 	localPresignFlagName     = "presign"
 	localParallelismFlagName = "parallelism"
-	localGitIgnoreFlagName   = "no-gitignore"
+	localGitIgnoreFlagName   = "gitignore"
 	localForceFlagName       = "force"
 )
 
@@ -45,8 +45,8 @@ func withLocalSyncFlags(cmd *cobra.Command) {
 }
 
 func withGitIgnoreFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool(localGitIgnoreFlagName, false,
-		"Skip update of .gitignore file when working in a git repository context")
+	cmd.Flags().Bool(localGitIgnoreFlagName, true,
+		"Update .gitignore file when working in a git repository context")
 }
 
 func withForceFlag(cmd *cobra.Command, usage string) {
