@@ -3,8 +3,10 @@ title: (deprecated) Committed Objects
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 10
+nav_order: 98
 has_children: false
+redirect:
+    - /howto/garbage-collection-committed.html
 ---
 
 # Garbage Collection: committed objects
@@ -13,7 +15,7 @@ has_children: false
 > Deprecation notice
 > 
 > This feature will be available up to version 0.9.1 of the lakeFS metadata client. It will be discontinued in subsequent versions.
-> Please visit the new [garbage collection documentation](./garbage-collection.md).
+> Please visit the new [garbage collection documentation](./index.md).
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 

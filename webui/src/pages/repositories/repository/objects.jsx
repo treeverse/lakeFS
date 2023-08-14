@@ -590,7 +590,7 @@ const NoGCRulesWarning = ({ repoId }) => {
         <strong>Warning</strong>: No garbage collection rules configured for
         this repository.{" "}
         <a
-          href="https://docs.lakefs.io/howto/garbage-collection.html"
+          href="https://docs.lakefs.io/howto/garbage-collection/"
           target="_blank"
           rel="noreferrer"
         >

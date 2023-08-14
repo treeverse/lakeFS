@@ -2,7 +2,7 @@
 title: AWS
 grand_parent: How-To
 parent: Install lakeFS
-description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on AWS
+description: How to deploy and set up a production-suitable lakeFS environment on AWS
 redirect_from:
    - /deploying-aws/index.html
    - /deploying-aws/install.html
@@ -15,9 +15,16 @@ next:  ["Import data into your installation", "/howto/import.html"]
 
 # Deploy lakeFS on AWS
 
-These instructions are for a self-managed deployment of lakeFS on AWS.<br/> 
-For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud/).
-{: .note }
+{: .tip }
+> The instructions given here are for a self-managed deployment of lakeFS on AWS. 
+> 
+> For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
+
+When you deploy lakeFS on AWS these are the options available to use: 
+
+![](/assets/img/deploy/deploy-on-aws.excalidraw.png)
+
+This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository. 
 
 {% include toc.html %}
 

@@ -30,7 +30,7 @@ Reverting a previous commit using `lakectl branch revert` is **allowed** on a pr
 
 ## Managing branch protection rules
 
-This section explains how to use the lakeFS UI to manage rules. You can also use the [command line][lakectl-branch-protect].
+This section explains how to use the lakeFS UI to manage rules. You can also use the [command line][lakectl-branch-protect] and [API][api].
 
 ### Reaching the branch protection rules page 
 
@@ -52,3 +52,4 @@ To delete a rule, click the _Delete_ button next to it.
 
 [data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates
 [lakectl-branch-protect]:  {% link reference/cli.md %}#lakectl-branch-protect
+[api]: {% link reference/api.md %}

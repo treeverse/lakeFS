@@ -118,7 +118,7 @@ export const getRepoOnboardingSteps = (
           For more information about setting up and running garbage collection
           on your lakeFS repository, see the{" "}
           <a
-            href="https://docs.lakefs.io/howto/garbage-collection-committed.html"
+            href="https://docs.lakefs.io/howto/garbage-collection/"
             target="_blank"
           >
             documentation
@@ -176,7 +176,7 @@ export const getRepoOnboardingSteps = (
       "Create simple hooks to validate new data meets certain requirements: schema validation, metadata registration, and more.",
     cta: "Configure",
     onClick: () =>
-      window.open("https://docs.lakefs.io/hooks/", "_blank"),
+      window.open("https://docs.lakefs.io/howto/hooks/", "_blank"),
     showStep: () => true,
     isCompleted: async () => {
       try {
