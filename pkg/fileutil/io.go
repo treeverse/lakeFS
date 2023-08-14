@@ -161,14 +161,15 @@ func VerifyRelPath(relPath, basePath string) error {
 // 2. In case name is relative: use as the base path for relative path verification
 func VerifySafeFilename(name string) error {
 	filename, err := filepath.EvalSymlinks(name)
+	if err != nil {
+		return err
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
 	switch {
-	case err != nil:
-		return err
 	case filename != name:
 		return ErrSymbolicLink
 	case filepath.IsAbs(filename):
