@@ -38,11 +38,11 @@ var localCloneCmd = &cobra.Command{
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
-		idx, err := localInit(cmd.Context(), localPath, remote, false)
+		head, err := localInit(cmd.Context(), localPath, remote, false)
 		if err != nil {
 			DieErr(err)
 		}
-		stableRemote := remote.WithRef(idx.AtHead)
+		stableRemote := remote.WithRef(head)
 		client := getClient()
 		// Dynamically construct changes
 		c := make(chan *local.Change, filesChanSize)
@@ -82,7 +82,7 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded:\t%d\n", remote, localPath, s.Summary().Downloaded)
+		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded: %d\n", remote, localPath, s.Summary().Downloaded)
 	},
 }
 
