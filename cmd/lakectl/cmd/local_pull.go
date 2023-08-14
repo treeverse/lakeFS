@@ -41,7 +41,7 @@ var localPullCmd = &cobra.Command{
 
 		// write new index
 		newHead := resolveCommitOrDie(cmd.Context(), client, remote.Repository, remote.Ref)
-		idx, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
 		if err != nil {
 			DieErr(err)
 		}
@@ -73,7 +73,7 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 		summary := s.Summary()
-		fmt.Printf("Successfully synced changes!.\nTotal objects downloaded:\t%d\nTotal objects removed:\t%d\n", summary.Downloaded, summary.Removed)
+		fmt.Printf("Successfully synced changes!\nTotal objects downloaded: %d\nTotal objects removed: %d\n", summary.Downloaded, summary.Removed)
 	},
 }
 

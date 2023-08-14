@@ -1,1 +1,1 @@
-${LIST_DIR}	lakefs://${REPO}/${BRANCH}	<COMMIT_ID>
+${LIST_DIR}	lakefs://${REPO}/${REF}/${PREFIX}	<COMMIT_ID>

@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glue"
 	"github.com/aws/aws-sdk-go/service/glue/glueiface"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 )
@@ -35,6 +36,9 @@ func NewMSClient(cfg *aws.Config, catalogID, baselLocationURI string) (metastore
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig("glue")
 	gl := glue.New(sess)
+	if catalogID == "" {
+		logging.ContextUnavailable().Warn("Glue catalog id is empty")
+	}
 	return &MSClient{
 		client:          gl,
 		catalogID:       catalogID,
