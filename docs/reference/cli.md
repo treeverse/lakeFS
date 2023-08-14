@@ -2587,7 +2587,7 @@ lakectl local checkout [directory] [flags]
   -h, --help              help for checkout
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
-  -r, --ref string        Checkout the given source branch or reference
+  -r, --ref string        Checkout the given reference
   -y, --yes               Automatically say yes to all confirmations
 ```
 
