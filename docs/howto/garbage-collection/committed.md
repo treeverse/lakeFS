@@ -15,7 +15,7 @@ redirect:
 > Deprecation notice
 > 
 > This feature will be available up to version 0.9.1 of the lakeFS metadata client. It will be discontinued in subsequent versions.
-> Please visit the new [garbage collection documentation](./garbage-collection.md).
+> Please visit the new [garbage collection documentation](./index.md).
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
