@@ -188,6 +188,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 	if sizeBytes == 0 { // if size is empty just create file
 		spinner := s.progressBar.AddSpinner(fmt.Sprintf("download %s", change.Path))
+		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
 	} else { // Download file
 		// make request
@@ -226,6 +227,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 			if err != nil {
 				b.Error()
 			} else {
+				atomic.AddUint64(&s.tasks.Downloaded, 1)
 				b.Done()
 			}
 		}()
@@ -236,7 +238,6 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		}
 	}
 
-	atomic.AddUint64(&s.tasks.Downloaded, 1)
 	// set mtime to the server returned one
 	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in defer func
 	return err
@@ -267,6 +268,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if err != nil {
 			b.Error()
 		} else {
+			atomic.AddUint64(&s.tasks.Uploaded, 1)
 			b.Done()
 		}
 	}()
@@ -297,6 +299,7 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 			if err != nil {
 				b.Error()
 			} else {
+				atomic.AddUint64(&s.tasks.Removed, 1)
 				b.Done()
 			}
 		}()
@@ -304,12 +307,8 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 	source := filepath.Join(rootPath, change.Path)
 	err = fileutil.RemoveFile(source)
 	if err != nil {
-		b.Error()
 		return err
 	}
-
-	b.Done()
-	atomic.AddUint64(&s.tasks.Removed, 1)
 	return nil
 }
 

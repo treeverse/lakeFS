@@ -99,8 +99,13 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 		DieErr(err)
 	}
 
-	summary := syncMgr.Summary()
-	fmt.Printf("Checkout Summary\nDownloaded: %d\nRemoved: %d\n", summary.Downloaded, summary.Removed)
+	Write(localSummaryTemplate, struct {
+		Operation string
+		local.Tasks
+	}{
+		Operation: "Checkout",
+		Tasks:     syncMgr.Summary(),
+	})
 }
 
 //nolint:gochecknoinits
