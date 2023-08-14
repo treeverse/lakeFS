@@ -2589,7 +2589,7 @@ lakectl local checkout [directory] [flags]
       --all               Checkout given source branch or reference for all linked directories
   -h, --help              help for checkout
   -p, --parallelism int   Max concurrent operations to perform (default 25)
-      --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -r, --ref string        Checkout the given source branch or reference
   -y, --yes               Automatically say yes to all confirmations
 ```
@@ -2608,9 +2608,10 @@ lakectl local clone <path uri> [directory] [flags]
 {:.no_toc}
 
 ```
+      --gitignore         Update .gitignore file when working in a git repository context (default true)
   -h, --help              help for clone
   -p, --parallelism int   Max concurrent operations to perform (default 25)
-      --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2632,7 +2633,7 @@ lakectl local commit [directory] [flags]
   -m, --message string        Commit message
       --meta strings          key value pair in the form of key=value
   -p, --parallelism int       Max concurrent operations to perform (default 25)
-      --presign               Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+      --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2672,8 +2673,9 @@ lakectl local init <path uri> [directory] [flags]
 {:.no_toc}
 
 ```
-      --force   Overwrites if directory already linked to a lakeFS path
-  -h, --help    help for init
+      --force       Overwrites if directory already linked to a lakeFS path
+      --gitignore   Update .gitignore file when working in a git repository context (default true)
+  -h, --help        help for init
 ```
 
 
@@ -2710,7 +2712,7 @@ lakectl local pull [directory] [flags]
       --force             Reset any uncommitted local change
   -h, --help              help for pull
   -p, --parallelism int   Max concurrent operations to perform (default 25)
-      --presign           Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
