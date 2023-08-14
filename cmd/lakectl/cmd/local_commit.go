@@ -111,8 +111,13 @@ var localCommitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("\nSync Summary:\n")
-		Write(localSummaryTemplate, s.Summary())
+		Write(localSummaryTemplate, struct {
+			Operation string
+			local.Tasks
+		}{
+			Operation: "Sync",
+			Tasks:     s.Summary(),
+		})
 		fmt.Printf("Finished syncing changes. Perform commit on branch...\n")
 		// add kv pairs if any
 		kvPairs, err := getKV(cmd, metaFlagName)

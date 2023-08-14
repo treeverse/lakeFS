@@ -73,8 +73,14 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		fmt.Printf("\nSuccessfully synced changes!\nSummary:\n")
-		Write(localSummaryTemplate, s.Summary())
+		fmt.Printf("\nSuccessfully synced changes!\n")
+		Write(localSummaryTemplate, struct {
+			Operation string
+			local.Tasks
+		}{
+			Operation: "Pull",
+			Tasks:     s.Summary(),
+		})
 	},
 }
 
