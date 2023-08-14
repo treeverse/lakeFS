@@ -21,7 +21,7 @@ const (
 	localDefaultMinArgs         = 0
 	localDefaultMaxArgs         = 1
 
-	localPresignFlagName     = "presign"
+	localPresignFlagName     = "pre-sign"
 	localParallelismFlagName = "parallelism"
 	localGitIgnoreFlagName   = "gitignore"
 	localForceFlagName       = "force"
