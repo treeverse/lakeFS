@@ -72,7 +72,7 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 	if specifiedRef != "" {
 		resolvedRef := MustParseRefURI("ref", specifiedRef)
 		if resolvedRef.Repository != remote.Repository {
-			DieFmt("invalid uri, repositories don't match")
+			DieFmt("invalid uri, ref repository doesn't match")
 		}
 		newRemote := remote.WithRef(resolvedRef.Ref)
 		newHead := resolveCommitOrDie(ctx, client, newRemote.Repository, newRemote.Ref)
