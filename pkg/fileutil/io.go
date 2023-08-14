@@ -17,10 +17,10 @@ const (
 )
 
 var (
-	ErrNotFile     = errors.New("path is not a file")
-	ErrBadPath     = errors.New("bad path traversal blocked")
-	ErrRegularFile = errors.New("not a regular file")
-	ErrInvalidPath = errors.New("invalid path")
+	ErrNotFile        = errors.New("path is not a file")
+	ErrBadPath        = errors.New("bad path traversal blocked")
+	ErrNotRegularFile = errors.New("not a regular file")
+	ErrInvalidPath    = errors.New("invalid path")
 )
 
 // IsDir Returns true if p is a directory, otherwise false
@@ -149,21 +149,26 @@ func VerifyAbsPath(absPath, basePath string) error {
 	return nil
 }
 
-func VerifyRelPath(relPath, base string) error {
-	abs := base + string(os.PathSeparator) + relPath
-	return VerifyAbsPath(abs, base)
+func VerifyRelPath(relPath, basePath string) error {
+	abs := basePath + string(os.PathSeparator) + relPath
+	return VerifyAbsPath(abs, basePath)
 }
 
-func VerifyRegularFile(name, base string) error {
+// VerifySafeFilename checks that the given file name is not a symbolic link and that
+// the file name does not contain path traversal
+// The basePath is the path we want to verify against we use it for the following:
+// 1. In case name is an absolute path: ensure name is a sub-path of base path
+// 2. In case name is relative: use as the base path for relative path verification
+func VerifySafeFilename(name, basePath string) error {
 	filename, err := filepath.EvalSymlinks(name)
 	switch {
 	case err != nil:
 		return err
 	case filename != name:
-		return ErrRegularFile
+		return ErrNotRegularFile
 	case filepath.IsAbs(filename):
-		return VerifyAbsPath(filename, base)
+		return VerifyAbsPath(filename, basePath)
 	default: // relative path
-		return VerifyRelPath(filename, base)
+		return VerifyRelPath(filename, basePath)
 	}
 }
