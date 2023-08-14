@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -95,6 +98,17 @@ func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, rem
 	}
 
 	return changes
+}
+
+func localHandleSyncInterrupt(ctx context.Context) context.Context {
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		defer stop()
+		<-ctx.Done()
+		Die(`Operation was canceled, local data may be incomplete.
+	Use "lakectl local checkout..." to sync with the remote.`, 1)
+	}()
+	return ctx
 }
 
 var localCmd = &cobra.Command{

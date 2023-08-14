@@ -5,11 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -45,8 +42,6 @@ var localCheckoutCmd = &cobra.Command{
 }
 
 func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet, confirmByFlag bool) {
-	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -63,7 +58,8 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 	currentBase := remote.WithRef(idx.AtHead)
 	client := getClient()
 	diffs := local.Undo(localDiff(ctx, client, currentBase, idx.LocalPath()))
-	syncMgr := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
+	sigCtx := localHandleSyncInterrupt(ctx)
+	syncMgr := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {
 		fmt.Println("Uncommitted changes exist, the operation will revert all changes on local directory.")

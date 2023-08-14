@@ -1,15 +1,11 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -41,8 +37,6 @@ var localCloneCmd = &cobra.Command{
 		} else if !empty {
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
-		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
-		defer stop()
 		idx, err := localInit(cmd.Context(), localPath, remote, false)
 		if err != nil {
 			DieErr(err)
@@ -56,7 +50,7 @@ var localCloneCmd = &cobra.Command{
 			hasMore := true
 			var after string
 			for hasMore {
-				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
+				listResp, err := client.ListObjectsWithResponse(cmd.Context(), remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
 					After:        (*api.PaginationAfter)(swag.String(after)),
 					Prefix:       (*api.PaginationPrefix)(remote.Path),
 					UserMetadata: swag.Bool(true),
@@ -80,11 +74,9 @@ var localCloneCmd = &cobra.Command{
 				after = listResp.JSON200.Pagination.NextOffset
 			}
 		}()
-		s := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
+		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(localPath, stableRemote, c)
-		if errors.Is(ctx.Err(), context.Canceled) {
-			Die("Operation was canceled, local data may be incomplete", 1)
-		}
 		if err != nil {
 			DieErr(err)
 		}
