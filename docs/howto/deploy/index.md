@@ -20,12 +20,7 @@ redirect_from:
 > 
 > For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-lakeFS has several dependencies for which you need to select and configure a technology or interface. 
-
-* Object Store
-* Authentication
-* Key-Value Store
-* Execution Platform
+This section will guide you through deploying lakeFS on top of an object store. You will require a database, and can optionally configure authentication using providers specific to your deployment platform. 
 
 Which options are available depends on your deployment platform. For example, the object store available on Azure differs from that on AWS. 
 
