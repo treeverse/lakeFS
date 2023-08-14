@@ -30,6 +30,16 @@ const (
 	localForceFlagName       = "force"
 )
 
+const localSummaryTemplate = `
+{{.Operation}} Summary:
+
+{{ if and (eq .Downloaded 0) (eq .Removed 0) (eq .Uploaded 0)}}No changes{{else -}}
+{{"Downloaded:" | printf|green}} {{.Downloaded|green}}
+{{"Uploaded:" | printf|yellow}} {{.Uploaded|yellow}}
+{{"Removed:" | printf|red}} {{.Removed|red}}
+{{end}}
+`
+
 var localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
 
 func withParallelismFlag(cmd *cobra.Command) {
