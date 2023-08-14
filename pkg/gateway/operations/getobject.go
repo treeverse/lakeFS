@@ -112,6 +112,10 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		w.WriteHeader(http.StatusPartialContent)
 	}
 
+	o.SetHeader(w, "X-Content-Type-Options", "nosniff")
+	o.SetHeader(w, "X-Frame-Options", "DENY")
+	o.SetHeader(w, "Content-Security-Policy", "default-src 'none'")
+
 	defer func() {
 		_ = data.Close()
 	}()
