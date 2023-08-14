@@ -82,7 +82,7 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded:%d\n", remote, localPath, s.Summary().Downloaded)
+		fmt.Printf("Successfully cloned %s to %s.\nTotal objects downloaded: %d\n", remote, localPath, s.Summary().Downloaded)
 	},
 }
 
