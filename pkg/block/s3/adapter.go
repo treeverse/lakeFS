@@ -321,6 +321,43 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	return NewS3Walker(a.clients.awsSession), nil
 }
 
+// refreshClientIfNeeded ensure client has some time before its token
+// expires.  It returns the updated expiry time.  It fails with
+// ErrDoesntExpire if the client is not an Expirer,
+func refreshClientIfNeeded(ctx context.Context, client S3APIWithExpirer) (time.Time, error) {
+	if client == nil {
+		return time.Time{}, nil
+	}
+
+	expiry, err := client.ExpiresAt()
+	if errors.Is(err, ErrDoesntExpire) {
+		return time.Time{}, ErrDoesntExpire
+	} else if err != nil {
+		return time.Time{}, fmt.Errorf("refresh client if needed: get current expiry: %w", err)
+	}
+
+	ttl := time.Until(expiry)
+	l := logging.FromContext(ctx).WithFields(logging.Fields{
+		"expiry": expiry,
+		"TTL":    ttl.String(),
+	})
+	if ttl < 5*time.Minute { // TODO(ariels): Configure!
+		l.Info("Refresh client as it will expire soon")
+		expiry, err = client.Refresh()
+		if err != nil {
+			return time.Time{}, fmt.Errorf("refresh client if needed: refreshing: %w", err)
+		}
+		ttl = time.Until(expiry)
+		l = l.WithFields(logging.Fields{
+			"expiry": expiry,
+			"TTL":    ttl.String(),
+		})
+		l.Info("Refreshed client")
+	}
+	l.Trace("Got client")
+	return expiry, nil
+}
+
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
 	if a.disablePreSigned {
 		return "", time.Time{}, block.ErrOperationNotSupported
@@ -337,7 +374,8 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 
-	clientExpiry, clientExpiryErr := client.ExpiresAt()
+	clientExpiry, clientExpiryErr := refreshClientIfNeeded(ctx, client)
+
 	expiry := time.Now().Add(a.preSignedExpiry)
 	log = log.WithField("expiry", expiry)
 	switch {

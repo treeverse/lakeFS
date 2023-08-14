@@ -31,6 +31,10 @@ func (f FakeS3APIWithExpirer) ExpiresAt() (time.Time, error) {
 	return time.Time{}, errFakeExpires
 }
 
+func (f FakeS3APIWithExpirer) Refresh() (time.Time, error) {
+	return f.ExpiresAt()
+}
+
 func TestClientCache(t *testing.T) {
 	defaultRegion := "us-west-2"
 	sess, err := session.NewSession(&aws.Config{Region: &defaultRegion})

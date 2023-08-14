@@ -28,6 +28,8 @@ type Expirer interface {
 	// a ErrDoesntExpire if it cannot determine expiry times -- for
 	// instance, if AWS is configured using an access key.
 	ExpiresAt() (time.Time, error)
+	// Refresh attempts to refresh and returns ExpiresAt().
+	Refresh() (time.Time, error)
 }
 
 type S3APIWithExpirer interface {
@@ -87,6 +89,15 @@ func (c *s3Client) ExpiresAt() (time.Time, error) {
 	return expiryTime, err
 }
 
+func (c *s3Client) Refresh() (time.Time, error) {
+	c.awsSession.Config.Credentials.Expire()
+	_, err := c.awsSession.Config.Credentials.Get()
+	if err != nil {
+		return time.Time{}, fmt.Errorf("refresh credentials: %w", err)
+	}
+	return c.ExpiresAt()
+}
+
 func NewClientCache(awsSession *session.Session) *ClientCache {
 	return &ClientCache{
 		awsSession:     awsSession,
@@ -122,37 +133,12 @@ func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string
 }
 
 // Get returns an AWS client configured to the region of the given bucket.
-func (c *ClientCache) Get(ctx context.Context, bucket string) (ret S3APIWithExpirer) {
-	defer func() {
-		if ret == nil {
-			return
-		}
-		expiry, err := ret.ExpiresAt()
-		ttl := time.Until(expiry)
-		l := logging.FromContext(ctx)
-		if !l.IsTracing() && ttl > 0 {
-			return
-		}
-		if err != nil {
-			l = l.WithError(err)
-		} else if !expiry.IsZero() {
-			l = l.WithFields(logging.Fields{
-				"expiry": expiry,
-				"TTL":    ttl.String(),
-			})
-		}
-		ll := l.Trace
-		if ttl <= 5*time.Second {
-			ll = l.Warn
-		}
-		ll("Got client")
-	}()
-
+func (c *ClientCache) Get(ctx context.Context, bucket string) S3APIWithExpirer {
 	region := c.getBucketRegion(ctx, bucket)
 	svc, hasClient := c.regionToS3Client.Load(region)
 	if !hasClient {
 		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-		ret = c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
+		ret := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
 		c.regionToS3Client.Store(region, ret)
 		if c.collector != nil {
 			c.collector.CollectEvent(stats.Event{
@@ -162,8 +148,7 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) (ret S3APIWithExpi
 		}
 		return ret
 	} else {
-		ret = svc.(S3APIWithExpirer)
-		return ret
+		return svc.(S3APIWithExpirer)
 	}
 }
 
