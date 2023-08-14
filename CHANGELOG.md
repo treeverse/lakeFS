@@ -2,6 +2,19 @@
 
 ## UNRELEASED
 
+## v0.106.0
+
+:new: What's new:
+- lakectl local release (#6388)
+- Bump vite from 4.0.2 to 4.0.5 in /webui (#6026)
+- Graveler: use result from memory on seek (#6339)
+
+:bug: Bugs fixed:
+- Fix: pass nil reader when content size is 0 (#6367)
+- Fix cosmosdb pagination bug (#6336)
+- Add a warning in lakectl when catalog id is empty (#6381)
+- Arbitrary JavaScript Injection via Direct Link to HTML Files ([GHSA-9phh-r37v-34wh](https://github.com/treeverse/lakeFS/security/advisories/GHSA-9phh-r37v-34wh))
+
 ## v0.105.0
 
 :new: What's new:
