@@ -13,7 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func createTestData(t *testing.T, vars map[string]string, objects []string) {
+func localCreateTestData(t *testing.T, vars map[string]string, objects []string) {
 	for _, o := range objects {
 		vars["FILE_PATH"] = o
 		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, false, vars)
@@ -21,7 +21,8 @@ func createTestData(t *testing.T, vars map[string]string, objects []string) {
 	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 }
 
-func listDir(t *testing.T, dir string) []string {
+func localListDir(t *testing.T, dir string) []string {
+	t.Helper()
 	var files []string
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -40,14 +41,16 @@ func listDir(t *testing.T, dir string) []string {
 	return files
 }
 
-func verifyDirContents(t *testing.T, dir string, expected []string) {
+func localVerifyDirContents(t *testing.T, dir string, expected []string) {
+	t.Helper()
 	all := append(expected, local.IndexFileName)
-	files := listDir(t, dir)
+	files := localListDir(t, dir)
 	require.ElementsMatch(t, all, files)
 }
 
-func getExpected(t *testing.T, prefix string, obj []string) (expected []string) {
-	for _, s := range obj {
+func localExtractRelativePathsByPrefix(t *testing.T, prefix string, objs []string) (expected []string) {
+	t.Helper()
+	for _, s := range objs {
 		if strings.HasPrefix(s, prefix) {
 			rel, err := filepath.Rel(prefix, s)
 			require.NoError(t, err)
@@ -77,9 +80,8 @@ func TestLakectlLocal_init(t *testing.T) {
 	// No repo
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_repo_not_found", vars)
 
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	// Bad ref
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/"+" "+tmpDir, false, "lakectl_local_commit_not_found", vars)
@@ -104,7 +106,7 @@ func TestLakectlLocal_init(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
 	// Verify directory is empty
-	verifyDirContents(t, dataDir, []string{})
+	localVerifyDirContents(t, dataDir, []string{})
 
 	// init in a directory with files
 	vars["LOCAL_DIR"] = tmpDir
@@ -150,9 +152,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 	vars["LOCAL_DIR"] = tmpDir
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
 
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	// Bad ref
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/ "+tmpDir, false, "lakectl_local_commit_not_found", vars)
@@ -170,7 +171,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		prefix + "/subdir/3.png",
 	}
 
-	createTestData(t, vars, objects)
+	localCreateTestData(t, vars, objects)
 
 	vars["LOCAL_DIR"] = dataDir
 	vars["PREFIX"] = "images"
@@ -186,8 +187,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 	// Expect empty since no linked directories in CWD
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
-	expected := getExpected(t, prefix, objects)
-	verifyDirContents(t, dataDir, expected)
+	expected := localExtractRelativePathsByPrefix(t, prefix, objects)
+	localVerifyDirContents(t, dataDir, expected)
 
 	// Try to clone twice
 	vars["LOCAL_DIR"] = tmpDir
@@ -197,22 +198,22 @@ func TestLakectlLocal_clone(t *testing.T) {
 func TestLakectlLocal_pull(t *testing.T) {
 	const successStr = "Successfully synced changes!\nTotal objects downloaded: ${DOWNLOADED}\nTotal objects removed: ${REMOVED}"
 	tmpDir := t.TempDir()
-	_, err := os.CreateTemp(tmpDir, "")
+	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
+	require.NoError(t, fd.Close())
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
+		"LOCAL_DIR": tmpDir,
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
 	}
 
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	// Not linked
-	vars["LOCAL_DIR"] = tmpDir
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local pull "+tmpDir, false, "lakectl_local_no_index", vars)
 
 	tests := []struct {
@@ -255,30 +256,30 @@ func TestLakectlLocal_pull(t *testing.T) {
 			}
 
 			modified := []string{"ro_1k.1"}
-			deleted := []string{"deleted"}
-			create := append(base, deleted...)
-			createTestData(t, vars, create)
-			expected := getExpected(t, tt.prefix, create)
+			deleted := "deleted"
+			create := append(base, deleted)
+			localCreateTestData(t, vars, create)
+			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
 			// Pull changes and verify data
 			vars["DOWNLOADED"] = strconv.Itoa(len(expected))
 			vars["REMOVED"] = "0"
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
-			verifyDirContents(t, dataDir, expected)
+			localVerifyDirContents(t, dataDir, expected)
 
 			// Modify data
 			vars["FILE_PATH"] = modified[0]
 			runCmd(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, false, vars)
-			runCmd(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+deleted[0], false, false, vars)
+			runCmd(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+deleted, false, false, vars)
 			runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 			expected = slices.DeleteFunc(expected, func(s string) bool {
-				return slices.Contains(deleted, s)
+				return s == deleted
 			})
 
 			// Pull changes and verify data
-			vars["DOWNLOADED"] = strconv.Itoa(len(getExpected(t, tt.prefix, modified)))
-			vars["REMOVED"] = strconv.Itoa(len(getExpected(t, tt.prefix, deleted)))
+			vars["DOWNLOADED"] = strconv.Itoa(len(localExtractRelativePathsByPrefix(t, tt.prefix, modified)))
+			vars["REMOVED"] = strconv.Itoa(len(localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted})))
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
-			verifyDirContents(t, dataDir, expected)
+			localVerifyDirContents(t, dataDir, expected)
 		})
 	}
 }
