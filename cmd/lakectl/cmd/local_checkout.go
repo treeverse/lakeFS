@@ -69,20 +69,28 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 		}
 	}
 
-	if specifiedRef != "" && specifiedRef != idx.AtHead {
-		newRemote := remote.WithRef(specifiedRef)
-		newHead := resolveCommitOrDie(ctx, client, newRemote.Repository, newRemote.Ref)
-		newBase := newRemote.WithRef(newHead)
-		// write new index
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
-		if err != nil {
-			DieErr(err)
+	if specifiedRef != "" {
+		resolvedRef := MustParseRefURI("ref", specifiedRef)
+		if resolvedRef.Repository != remote.Repository {
+			DieFmt("invalid uri, repositories don't match")
 		}
+		newRemote := remote.WithRef(resolvedRef.Ref)
+		newHead := resolveCommitOrDie(ctx, client, newRemote.Repository, newRemote.Ref)
+		if newHead != idx.AtHead {
+			newBase := newRemote.WithRef(newHead)
 
-		newDiffs := local.Undo(localDiff(ctx, client, newBase, idx.LocalPath()))
-		diffs = diffs.MergeWith(newDiffs, local.MergeStrategyOther)
-		currentBase = newBase
+			// write new index
+			_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+			if err != nil {
+				DieErr(err)
+			}
+
+			newDiffs := local.Undo(localDiff(ctx, client, newBase, idx.LocalPath()))
+			diffs = diffs.MergeWith(newDiffs, local.MergeStrategyOther)
+			currentBase = newBase
+		}
 	}
+
 	c := make(chan *local.Change, filesChanSize)
 	go func() {
 		defer close(c)
@@ -110,7 +118,7 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 
 //nolint:gochecknoinits
 func init() {
-	localCheckoutCmd.Flags().StringP("ref", "r", "", "Checkout the given source branch or reference")
+	localCheckoutCmd.Flags().StringP("ref", "r", "", "Checkout the given reference")
 	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
 	localCheckoutCmd.MarkFlagsMutuallyExclusive("ref", "all")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
