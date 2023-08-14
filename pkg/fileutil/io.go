@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/karrick/godirwalk"
 )
@@ -15,7 +17,10 @@ const (
 )
 
 var (
-	ErrNotFile = errors.New("path is not a file")
+	ErrNotFile      = errors.New("path is not a file")
+	ErrBadPath      = errors.New("bad path traversal blocked")
+	ErrSymbolicLink = errors.New("symbolic links not supported")
+	ErrInvalidPath  = errors.New("invalid path")
 )
 
 // IsDir Returns true if p is a directory, otherwise false
@@ -130,4 +135,40 @@ func FileExists(p string) (bool, error) {
 		return true, nil
 	}
 	return false, fmt.Errorf("%s: %w", p, ErrNotFile)
+}
+
+func VerifyAbsPath(absPath, basePath string) error {
+	// check we have a valid abs path
+	if !path.IsAbs(absPath) || path.Clean(absPath) != absPath {
+		return ErrBadPath
+	}
+	// point to storage namespace
+	if !strings.HasPrefix(absPath, basePath) {
+		return ErrInvalidPath
+	}
+	return nil
+}
+
+func VerifyRelPath(relPath, basePath string) error {
+	abs := basePath + string(os.PathSeparator) + relPath
+	return VerifyAbsPath(abs, basePath)
+}
+
+// VerifySafeFilename checks that the given file name is not a symbolic link and that
+// the file name does not contain path traversal
+func VerifySafeFilename(absPath string) error {
+	if err := VerifyAbsPath(absPath, absPath); err != nil {
+		return err
+	}
+	if !filepath.IsAbs(absPath) {
+		return fmt.Errorf("relative path not allowed: %w", ErrInvalidPath)
+	}
+	filename, err := filepath.EvalSymlinks(absPath)
+	if err != nil {
+		return err
+	}
+	if filename != absPath {
+		return ErrSymbolicLink
+	}
+	return nil
 }
