@@ -100,7 +100,7 @@ For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/)
 ### Spark Metadata Client
 
 The lakeFS [Spark Metadata Client]({% link reference/spark-client.md %}) makes it easy to perform
-operations related to lakeFS metadata, at scale. Examples include [garbage collection]({% link howto/garbage-collection-index.md %}) or [exporting data from lakeFS]({% link howto/export.md %}).
+operations related to lakeFS metadata, at scale. Examples include [garbage collection]({% link howto/garbage-collection/index.md %}) or [exporting data from lakeFS]({% link howto/export.md %}).
 
 ### lakeFS Hadoop FileSystem
 

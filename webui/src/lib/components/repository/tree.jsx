@@ -711,7 +711,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           </Button>
           &nbsp;data from {config.config.blockstore_type}. Or, see the&nbsp;
           <a
-            href="https://docs.lakefs.io/setup/import.html"
+            href="https://docs.lakefs.io/howto/import.html"
             target="_blank"
             rel="noopener noreferrer"
           >

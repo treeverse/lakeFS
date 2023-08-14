@@ -1,32 +1,32 @@
 ---
 title: Garbage Collection
 description: Clean up expired objects using the garbage collection feature in lakeFS.
-parent: Garbage Collection
-grand_parent: How-To
-nav_order: 1
-has_children: false
+parent: How-To
+has_children: true
 redirect_from:
   - /reference/garbage-collection.html
   - /howto/garbage-collection-index.html
+  - /howto/garbage-collection.html
 ---
+
+# Garbage Collection
 
 [lakeFS Cloud](https://lakefs.cloud) users enjoy a managed garbage collection service, and do not need to run this Spark program.
 {: .tip }
 
-# Garbage Collection
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to remove the objects from the underlying storage completely.
 Reasons for this include cost-reduction and privacy policies.
 
-The garbage collection job is a Spark program that removes the following from the underlying storage:
-1. _Committed objects_ that have been deleted (or replaced) in lakeFS, and are considered expired according to [rules you define](#understanding-garbage-collection-rules).
+The garbage collection (GC) job is a Spark program that removes the following from the underlying storage:
+1. _Committed objects_ that have been deleted (or replaced) in lakeFS, and are considered expired according to [rules you define](#garbage-collection-rules).
 2. _Uncommitted objects_ that are no longer accessible
    * For example, objects deleted before ever being committed.
 
 {% include toc.html %}
 
-## Understanding garbage collection rules
+## Garbage collection rules
 
 {: .note }
 These rules only apply to objects that have been _committed_ at some point.
@@ -53,9 +53,9 @@ In the above example, objects will be retained for 14 days after deletion by def
 However, if present in the branch `main`, objects will be retained for 21 days.
 Objects present _only_ in the `dev` branch will be retained for 7 days after they are deleted.
 
-## Configuring garbage collection rules
+### How to configure garbage collection rules
 
-To define retention rules, either use the `lakectl` command or the lakeFS web UI:
+To define retention rules, either use the `lakectl` command, the lakeFS web UI, or [API](/reference/api.html#/retention/set%20garbage%20collection%20rules):
 
 <div class="tabs">
   <ul>
@@ -96,7 +96,7 @@ From the lakeFS web UI:
 </div>
 </div>
 
-## Running the GC job
+## How to run the garbage collection job
 
 To run the job, use the following `spark-submit` command (or using your preferred method of running Spark programs).
 
@@ -238,7 +238,7 @@ spark.hadoop.lakefs.gc.do_mark=false
 spark.hadoop.lakefs.gc.mark_id=<MARK_ID> # Replace <MARK_ID> with the identifier you obtained from a previous mark-only run
 ```
 
-## Considerations
+## Garbage collection notes
 
 1. In order for an object to be removed, it must not exist on the HEAD of any branch.
    You should remove stale branches to prevent them from retaining old objects.

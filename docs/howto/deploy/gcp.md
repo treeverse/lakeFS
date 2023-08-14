@@ -2,7 +2,7 @@
 title: GCP
 grand_parent: How-To
 parent: Install lakeFS
-description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
+description: How to deploy and set up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
 redirect_from:
    - /setup/storage/gcs.html 
    - /deploy/gcp.html 
@@ -11,9 +11,15 @@ next:  ["Import data into your installation", "/howto/import.html"]
 
 # Deploy lakeFS on GCP
 
-These instructions are for a self-managed deployment of lakeFS on GCP. <br/> 
-For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud/).
-{: .note }
+
+{: .tip }
+> The instructions given here are for a self-managed deployment of lakeFS on GCP. 
+> 
+> For a hosted lakeFS service with guaranteed SLAs, please [contact us](support@treeverse.io) for details of lakeFS Cloud on GCP.
+
+When you deploy lakeFS on GCP these are the options available to use: 
+
+![](/assets/img/deploy/deploy-on-gcp.excalidraw.png)
 
 {% include toc.html %}
 
