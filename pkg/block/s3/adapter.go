@@ -334,34 +334,20 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			WithError(err).Error("could not resolve namespace")
 		return "", time.Time{}, err
 	}
-	var preSignedURL string
+
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
-	if mode == block.PreSignModeWrite {
-		putObjectInput := &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-		}
-		req, _ := client.PutObjectRequest(putObjectInput)
-		preSignedURL, err = req.Presign(a.preSignedExpiry)
-	} else {
-		getObjectInput := &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-		}
-		req, _ := client.GetObjectRequest(getObjectInput)
-		preSignedURL, err = req.Presign(a.preSignedExpiry)
-	}
-	if err != nil {
-		log.WithField("namespace", obj.StorageNamespace).
-			WithField("identifier", obj.Identifier).
-			WithError(err).Error("could not pre-sign request")
-	}
-	expiry := time.Now().Add(a.preSignedExpiry)
+
 	clientExpiry, clientExpiryErr := client.ExpiresAt()
+	expiry := time.Now().Add(a.preSignedExpiry)
+	log = log.WithField("expiry", expiry)
 	switch {
 	case clientExpiryErr == nil:
-		if clientExpiry.Before(expiry) {
+		if clientExpiry.Before(expiry) && !clientExpiry.IsZero() {
+			log.WithField("client_expiry", clientExpiry).
+				Trace("URL expiry shortened by client expiry")
+			// TODO(ariels): Monitor this?
 			expiry = clientExpiry
+			log = log.WithField("expiry", expiry)
 		}
 	case errors.Is(clientExpiryErr, ErrDoesntExpire):
 		break
@@ -369,7 +355,42 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		log.WithFields(logging.Fields{
 			"namespace":  obj.StorageNamespace,
 			"identifier": obj.Identifier,
-		}).WithError(err).Warning("Failed to get client (token) expiry: URL expiry may be too high")
+		}).
+			WithError(err).
+			Warning("Failed to get client (token) expiry: URL expiry may be too high")
+	}
+
+	// BUG(ariels): This is an inherent race.  urlLifetime is computed
+	//     relative to the local clock.  If expiry was shortened because
+	//     of clientExpiry then AWS will determine _remotely_ whether
+	//     the URL expired.  So this URL can expire before the client or
+	//     even lakeFS think that it has.
+	//
+	//     This is a limitation of the AWS SDK, which signs locally, and
+	//     of the AWS S3 API, which does not allow a meaningful
+	//     workaround.
+	urlLifetime := time.Until(expiry)
+	log = log.WithField("TTL", urlLifetime)
+	var preSignedURL string
+	if mode == block.PreSignModeWrite {
+		putObjectInput := &s3.PutObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		}
+		req, _ := client.PutObjectRequest(putObjectInput)
+		preSignedURL, err = req.Presign(urlLifetime)
+	} else {
+		getObjectInput := &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		}
+		req, _ := client.GetObjectRequest(getObjectInput)
+		preSignedURL, err = req.Presign(urlLifetime)
+	}
+	if err != nil {
+		log.WithField("namespace", obj.StorageNamespace).
+			WithField("identifier", obj.Identifier).
+			WithError(err).Error("could not pre-sign request")
 	}
 	return preSignedURL, expiry, err
 }
