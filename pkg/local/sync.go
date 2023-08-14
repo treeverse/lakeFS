@@ -113,14 +113,14 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			if err != nil {
 				err = fmt.Errorf("download %s failed: %w", change.Path, err)
 			}
-			return
+			return err
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
 			err = s.upload(ctx, rootPath, remote, change)
 			if err != nil {
 				err = fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
-			return
+			return err
 		default:
 			panic("invalid change source")
 		}
