@@ -19,23 +19,23 @@ const (
 	localInitMaxArgs = 2
 )
 
-func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (*local.Index, error) {
+func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		DieErr(err)
 	}
 	exists, err := local.IndexExists(dir)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if exists && !force {
-		return nil, fs.ErrExist
+		return "", fs.ErrExist
 	}
 
 	// dereference
 	head := resolveCommitOrDie(ctx, getClient(), remote.Repository, remote.Ref)
-	idx, err := local.WriteIndex(dir, remote, head)
+	_, err = local.WriteIndex(dir, remote, head)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if updateIgnore {
@@ -43,11 +43,11 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 		if err == nil {
 			fmt.Println("Location added to", ignoreFile)
 		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) {
-			return nil, err
+			return "", err
 		}
 	}
 
-	return idx, nil
+	return head, nil
 }
 
 var localInitCmd = &cobra.Command{
