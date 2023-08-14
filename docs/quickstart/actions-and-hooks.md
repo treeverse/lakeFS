@@ -10,7 +10,7 @@ previous: ["Rollback the changes", "./rollback.html"]
 
 # Actions and Hooks in lakeFS 🪝
 
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS]({{ site.baseurl }}/howto/hooks/) can be of benefit here. 
+When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS]({% link howto/hooks/index.md %}) can be of benefit here. 
 
 We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
 
@@ -20,7 +20,7 @@ We're going to enforce a rule that when a commit is made to any branch that begi
 
 To do this we'll create an _action_. In lakeFS, an action specifies one or more events that will trigger it, and references one or more _hooks_ to run when triggered. Actions are YAML files written to lakeFS under the `_lakefs_actions/` folder of the lakeFS repository.
 
-_Hooks_ can be either a [Lua]({{ site.baseurl }}/howto/hooks/lua.html) script that lakeFS will execute itself, an external [web hook]({{ site.baseurl }}/howto/hooks/webhooks.html), or an [Airflow DAG]({{ site.baseurl }}/howto/hooks/airflow.html). In this example, we're using a Lua hook.
+_Hooks_ can be either a [Lua]({% link howto/hooks/lua.md %}) script that lakeFS will execute itself, an external [web hook]({% link howto/hooks/webhooks.md %}), or an [Airflow DAG]({% link howto/hooks/airflow.md %}). In this example, we're using a Lua hook.
 
 ## Configuring the Action
 

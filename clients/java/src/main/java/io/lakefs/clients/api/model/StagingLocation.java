@@ -43,6 +43,10 @@ public class StagingLocation {
   @SerializedName(SERIALIZED_NAME_PRESIGNED_URL)
   private String presignedUrl;
 
+  public static final String SERIALIZED_NAME_PRESIGNED_URL_EXPIRY = "presigned_url_expiry";
+  @SerializedName(SERIALIZED_NAME_PRESIGNED_URL_EXPIRY)
+  private Long presignedUrlExpiry;
+
 
   public StagingLocation physicalAddress(String physicalAddress) {
     
@@ -113,6 +117,29 @@ public class StagingLocation {
   }
 
 
+  public StagingLocation presignedUrlExpiry(Long presignedUrlExpiry) {
+    
+    this.presignedUrlExpiry = presignedUrlExpiry;
+    return this;
+  }
+
+   /**
+   * If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. 
+   * @return presignedUrlExpiry
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
+
+  public Long getPresignedUrlExpiry() {
+    return presignedUrlExpiry;
+  }
+
+
+  public void setPresignedUrlExpiry(Long presignedUrlExpiry) {
+    this.presignedUrlExpiry = presignedUrlExpiry;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -124,7 +151,8 @@ public class StagingLocation {
     StagingLocation stagingLocation = (StagingLocation) o;
     return Objects.equals(this.physicalAddress, stagingLocation.physicalAddress) &&
         Objects.equals(this.token, stagingLocation.token) &&
-        Objects.equals(this.presignedUrl, stagingLocation.presignedUrl);
+        Objects.equals(this.presignedUrl, stagingLocation.presignedUrl) &&
+        Objects.equals(this.presignedUrlExpiry, stagingLocation.presignedUrlExpiry);
   }
 
   private static <T> boolean equalsNullable(JsonNullable<T> a, JsonNullable<T> b) {
@@ -133,7 +161,7 @@ public class StagingLocation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, token, presignedUrl);
+    return Objects.hash(physicalAddress, token, presignedUrl, presignedUrlExpiry);
   }
 
   private static <T> int hashCodeNullable(JsonNullable<T> a) {
@@ -150,6 +178,7 @@ public class StagingLocation {
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
     sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    presignedUrl: ").append(toIndentedString(presignedUrl)).append("\n");
+    sb.append("    presignedUrlExpiry: ").append(toIndentedString(presignedUrlExpiry)).append("\n");
     sb.append("}");
     return sb.toString();
   }

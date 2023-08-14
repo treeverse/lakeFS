@@ -1,13 +1,12 @@
 ---
-title: SageMaker
-description: This section explains how to integrate your SageMaker installation to work with lakeFS.
+title: Amazon SageMaker
+description: This section explains how to integrate your Amazon SageMaker installation to work with lakeFS.
 parent: Integrations
-nav_order: 130
 has_children: false
 redirect_from: /using/sagemaker.html
 ---
 
-# Using lakeFS with SageMaker 
+# Using lakeFS with Amazon SageMaker 
 [Amazon SageMaker](https://aws.amazon.com/sagemaker/) helps to prepare, build, train and deploy ML models quickly by bringing together a broad set of capabilities purpose-built for ML.
 
 {% include toc.html %}
@@ -72,6 +71,6 @@ session.download_data(path=localpath, bucket=repo, key_prefix = branch + prefix)
 
 **Note:**
 Advanced AWS SageMaker features, like Autopilot jobs, are encapsulated and don't have the option to override the S3 endpoint.
-However, it is possible to [export]({{ site.baseurl }}/howto/export.md) the required inputs from lakeFS to S3.
+However, it is possible to [export]({% link howto/export.md %}) the required inputs from lakeFS to S3.
 <br/>If you're using SageMaker features that aren't supported by lakeFS, we'd love to [hear from you](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw).
 {: .note}

@@ -54,7 +54,7 @@ func (d *db) GetAccessCount() int32 {
 
 func testReadAfterWrite(t *testing.T) {
 	// Setup executor
-	exec := batch.NewExecutor(logging.Default())
+	exec := batch.NewExecutor(logging.ContextUnavailable())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go exec.Run(ctx)
@@ -141,7 +141,7 @@ func testReadAfterWrite(t *testing.T) {
 
 func testBatchExpiration(t *testing.T) {
 	// Setup executor
-	exec := batch.NewExecutor(logging.Default())
+	exec := batch.NewExecutor(logging.ContextUnavailable())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go exec.Run(ctx)
@@ -182,7 +182,7 @@ func testBatchExpiration(t *testing.T) {
 
 func testBatchByKey(t *testing.T) {
 	// Setup executor
-	exec := batch.NewExecutor(logging.Default())
+	exec := batch.NewExecutor(logging.ContextUnavailable())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go exec.Run(ctx)

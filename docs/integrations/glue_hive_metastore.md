@@ -2,7 +2,6 @@
 title: Glue / Hive metastore
 description: This section explains how to query data from lakeFS branches in services backed by Glue/Hive Metastore.
 parent: Integrations
-nav_order: 60
 has_children: false
 redirect_from: /using/glue_hive_metastore.html
 ---

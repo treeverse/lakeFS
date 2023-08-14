@@ -4,12 +4,13 @@ import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
-import com.amazonaws.services.s3.model.{HeadBucketRequest, Region}
+import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -99,23 +100,30 @@ object StorageUtils {
 
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
-
       var client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
-
-      if (!validateClientAndBucketRegionsMatch(client, bucket)) {
-        val bucketRegion = getAWSS3Region(client, bucket)
-        logger.info(
-          s"""Bucket "$bucket" is not in region "$region", discovered it in region "$bucketRegion"""
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+      var bucketRegion =
+        try {
+          getAWSS3Region(client, bucket)
+        } catch {
+          case e: Throwable =>
+            logger.info(f"Could not fetch region for bucket ${bucket}", e)
+            ""
+        }
+      if (bucketRegion == "" && region == "") {
+        throw new IllegalArgumentException(
+          s"""Could not fetch region for bucket "$bucket" and no region was provided"""
         )
-        client = initializeS3Client(configuration,
-                                    credentialsProvider,
-                                    AmazonS3ClientBuilder.standard(),
-                                    endpoint,
-                                    bucketRegion
-                                   )
       }
-      client
+      if (bucketRegion == "") {
+        bucketRegion = region
+      }
+      initializeS3Client(configuration,
+                         credentialsProvider,
+                         awsS3ClientBuilder,
+                         endpoint,
+                         bucketRegion
+                        )
     }
 
     private def initializeS3Client(
@@ -123,19 +131,19 @@ object StorageUtils {
         credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
-        region: String
+        region: String = null
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
-
       val builderWithEndpoint =
         if (endpoint != null)
           builder.withEndpointConfiguration(
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
-        else
+        else if (region != null)
           builder.withRegion(region)
-
+        else
+          builder
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) => builderWithEndpoint.withCredentials(cp)
         case None     => builderWithEndpoint
@@ -143,34 +151,17 @@ object StorageUtils {
       builderWithCredentials.build
     }
 
-    private def validateClientAndBucketRegionsMatch(client: AmazonS3, bucket: String): Boolean = {
-      try {
-        client.headBucket(new HeadBucketRequest(bucket))
-        true
-      } catch {
-        case e: AmazonServiceException =>
-          logger.info("Bucket \"{}\" isn't reachable with error: {}",
-                      bucket: Any,
-                      e.getMessage: Any
-                     )
-          false
-      }
-    }
-
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
-      val bucketRegion = client.getBucketLocation(bucket)
-      val region = Region.fromValue(bucketRegion)
-      // The comparison `region.equals(Region.US_Standard))` is required due to AWS's backward compatibility:
-      // https://github.com/aws/aws-sdk-java/issues/1470.
-      // "us-east-1" was previously called "US Standard". This resulted in a return value of "US" when
-      // calling `client.getBucketLocation(bucket)`.
-      if (region.equals(Region.US_Standard)) "us-east-1"
-      else region.toString
+      var request = new GetBucketLocationRequest(bucket)
+      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(1).intValue())
+      val bucketRegion = client.getBucketLocation(request)
+      Region.fromValue(bucketRegion).toAWSRegion().getName()
     }
   }
 }
 
 class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
 
   private val clock = java.time.Clock.systemDefaultZone
@@ -184,15 +175,15 @@ class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
     exception match {
       case ce: SdkClientException =>
         if (ce.getMessage contains XML_PARSE_BROKEN) {
-          println(s"Retry $originalRequest @$now: Received non-XML: $ce")
+          logger.info(s"Retry $originalRequest @$now: Received non-XML: $ce")
         } else if (RetryUtils.isThrottlingException(ce)) {
-          println(s"Retry $originalRequest @$now: Throttled: $ce")
+          logger.info(s"Retry $originalRequest @$now: Throttled: $ce")
         } else {
-          println(s"Retry $originalRequest @$now: Other client exception: $ce")
+          logger.info(s"Retry $originalRequest @$now: Other client exception: $ce")
         }
         true
       case e => {
-        println(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
+        logger.info(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
         super.shouldRetry(originalRequest, exception, retriesAttempted)
       }
     }

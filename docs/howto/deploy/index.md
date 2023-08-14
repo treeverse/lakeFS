@@ -37,7 +37,7 @@ lakeFS releases include [binaries](https://github.com/treeverse/lakeFS/releases)
 
 Check out our guides below for full deployment details: 
 
-* [AWS](aws.html)
-* [Azure](azure.html)
-* [GCP](gcp.html)
-* [On-premises and other cloud providers](onprem.html)
+* [AWS]( {% link howto/deploy/aws.md %})
+* [Azure]( {% link howto/deploy/azure.md %})
+* [GCP]( {% link howto/deploy/gcp.md %})
+* [On-premises and other cloud providers]( {% link howto/deploy/onprem.md %})

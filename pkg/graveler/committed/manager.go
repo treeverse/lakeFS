@@ -15,7 +15,6 @@ type committedManager struct {
 	metaRangeManager MetaRangeManager
 	RangeManager     RangeManager
 	params           *Params
-	logger           logging.Logger
 }
 
 func NewCommittedManager(m MetaRangeManager, r RangeManager, p Params) graveler.CommittedManager {
@@ -23,7 +22,6 @@ func NewCommittedManager(m MetaRangeManager, r RangeManager, p Params) graveler.
 		metaRangeManager: m,
 		RangeManager:     r,
 		params:           &p,
-		logger:           logging.Default(),
 	}
 }
 
@@ -72,7 +70,7 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 
 	defer func() {
 		if err := writer.Abort(); err != nil {
-			c.logger.WithError(err).Error("Aborting write to range")
+			logging.FromContext(ctx).WithError(err).Error("Aborting write to range")
 		}
 	}()
 
@@ -112,7 +110,7 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 	writer := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		if err := writer.Abort(); err != nil {
-			c.logger.WithError(err).Error("Aborting write to meta range")
+			logging.FromContext(ctx).WithError(err).Error("Aborting write to meta range")
 		}
 	}()
 
@@ -129,12 +127,12 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 			Count:         int64(r.Count),
 			Tombstone:     false,
 		}); err != nil {
-			c.logger.WithError(err).Error("Aborting writing range to meta range")
+			logging.FromContext(ctx).WithError(err).Error("Aborting writing range to meta range")
 			return nil, fmt.Errorf("writing range: %w", err)
 		}
 	}
 
-	id, err := writer.Close()
+	id, err := writer.Close(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("closing metarange: %w", err)
 	}
@@ -148,7 +146,7 @@ func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns grav
 	writer := c.metaRangeManager.NewWriter(ctx, ns, metadata)
 	defer func() {
 		if err := writer.Abort(); err != nil {
-			c.logger.WithError(err).Error("Aborting write to meta range")
+			logging.FromContext(ctx).WithError(err).Error("Aborting write to meta range")
 		}
 	}()
 
@@ -160,7 +158,7 @@ func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns grav
 	if err := it.Err(); err != nil {
 		return nil, fmt.Errorf("getting value from iterator: %w", err)
 	}
-	id, err := writer.Close()
+	id, err := writer.Close(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("closing writer: %w", err)
 	}
@@ -180,6 +178,24 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffValueIterator(ctx, leftIt, rightIt), nil
 }
 
+func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix) (graveler.MetaRangeID, error) {
+	destIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
+	if err != nil {
+		return "", fmt.Errorf("get destination iterator: %w", err)
+	}
+	destIt = NewSkipPrefixIterator(prefixes, destIt)
+	defer destIt.Close()
+	mctx := mergeContext{
+		destIt:        destIt,
+		strategy:      graveler.MergeStrategyNone,
+		ns:            ns,
+		destinationID: destination,
+		sourceID:      source,
+		baseID:        "",
+	}
+	return c.merge(ctx, mctx)
+}
+
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
 	if source == base {
 		// no changes on source
@@ -189,43 +205,74 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		// changes introduced only on source
 		return source, nil
 	}
-
-	baseIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, base)
-	if err != nil {
-		return "", fmt.Errorf("get base iterator: %w", err)
+	mctx := mergeContext{
+		strategy:      strategy,
+		ns:            ns,
+		destinationID: destination,
+		sourceID:      source,
+		baseID:        base,
 	}
-	defer baseIt.Close()
+	return c.merge(ctx, mctx)
+}
 
-	destIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
-	if err != nil {
-		return "", fmt.Errorf("get destination iterator: %w", err)
-	}
-	defer destIt.Close()
+type mergeContext struct {
+	destIt        Iterator
+	srcIt         Iterator
+	baseIt        Iterator
+	strategy      graveler.MergeStrategy
+	ns            graveler.StorageNamespace
+	destinationID graveler.MetaRangeID
+	sourceID      graveler.MetaRangeID
+	baseID        graveler.MetaRangeID
+}
 
-	srcIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, source)
-	if err != nil {
-		return "", fmt.Errorf("get source iterator: %w", err)
-	}
-	defer srcIt.Close()
-
-	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
-	defer func() {
-		err := mwWriter.Abort()
+func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (graveler.MetaRangeID, error) {
+	var err error = nil
+	baseIt := mctx.baseIt
+	if baseIt == nil {
+		baseIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, mctx.ns, mctx.baseID)
 		if err != nil {
-			c.logger.WithError(err).Error("Abort failed after Merge")
+			return "", fmt.Errorf("get base iterator: %w", err)
+		}
+		defer baseIt.Close()
+	}
+
+	destIt := mctx.destIt
+	if destIt == nil {
+		destIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, mctx.ns, mctx.destinationID)
+		if err != nil {
+			return "", fmt.Errorf("get destination iterator: %w", err)
+		}
+		defer destIt.Close()
+	}
+
+	srcIt := mctx.srcIt
+	if srcIt == nil {
+		srcIt, err = c.metaRangeManager.NewMetaRangeIterator(ctx, mctx.ns, mctx.sourceID)
+		if err != nil {
+			return "", fmt.Errorf("get source iterator: %w", err)
+		}
+		defer srcIt.Close()
+	}
+
+	mwWriter := c.metaRangeManager.NewWriter(ctx, mctx.ns, nil)
+	defer func() {
+		err = mwWriter.Abort()
+		if err != nil {
+			logging.FromContext(ctx).WithError(err).Error("Abort failed after Merge")
 		}
 	}()
 
-	err = Merge(ctx, mwWriter, baseIt, srcIt, destIt, strategy)
+	err = Merge(ctx, mwWriter, baseIt, srcIt, destIt, mctx.strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
-			err = fmt.Errorf("merge ns=%s id=%s: %w", ns, destination, err)
+			err = fmt.Errorf("merge ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)
 		}
 		return "", err
 	}
-	newID, err := mwWriter.Close()
+	newID, err := mwWriter.Close(ctx)
 	if newID == nil {
-		return "", fmt.Errorf("close writer ns=%s id=%s: %w", ns, destination, err)
+		return "", fmt.Errorf("close writer ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)
 	}
 	return *newID, err
 }
@@ -235,7 +282,7 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 	defer func() {
 		err := mwWriter.Abort()
 		if err != nil {
-			c.logger.WithError(err).Error("Abort failed after Commit")
+			logging.FromContext(ctx).WithError(err).Error("Abort failed after Commit")
 		}
 	}()
 	metaRangeIterator, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, baseMetaRangeID)
@@ -253,7 +300,7 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 		}
 		return "", summary, err
 	}
-	newID, err := mwWriter.Close()
+	newID, err := mwWriter.Close(ctx)
 	if newID == nil {
 		return "", summary, fmt.Errorf("close writer ns=%s metarange id=%s: %w", ns, baseMetaRangeID, err)
 	}

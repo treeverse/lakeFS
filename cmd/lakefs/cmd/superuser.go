@@ -46,7 +46,7 @@ var superuserCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		logger := logging.Default()
+		logger := logging.ContextUnavailable()
 		ctx := cmd.Context()
 		kvParams, err := cfg.DatabaseParams()
 		if err != nil {

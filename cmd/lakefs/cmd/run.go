@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"text/template"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -36,7 +38,7 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	"github.com/treeverse/lakefs/pkg/kv/local"
-	_ "github.com/treeverse/lakefs/pkg/kv/mem"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -71,7 +73,7 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := logging.Default()
+		logger := logging.ContextUnavailable()
 		cfg := loadConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
@@ -190,7 +192,7 @@ var runCmd = &cobra.Command{
 
 		// initial setup - support only when a local database is configured.
 		// local database lock will make sure that only one instance will run the setup.
-		if kvParams.Type == local.DriverName &&
+		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
 			cfg.Installation.UserName != "" && cfg.Installation.AccessKeyID.SecureValue() != "" && cfg.Installation.SecretAccessKey.SecureValue() != "" {
 			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Installation.UserName,
 				cfg.Installation.AccessKeyID.SecureValue(), cfg.Installation.SecretAccessKey.SecureValue())
@@ -355,6 +357,27 @@ var runCmd = &cobra.Command{
 			}
 		}()
 
+		isQuickstart, err := cmd.Flags().GetBool(config.QuickstartConfiguration)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to get command flag %s: %v\n", config.QuickstartConfiguration, err)
+			os.Exit(1)
+		}
+
+		data := bannerData{
+			SetupMessage: localBanner,
+			Version:      version.Version,
+		}
+		if isQuickstart {
+			data.SetupMessage = quickStartBanner
+		}
+
+		var buf bytes.Buffer
+		err = bannerTemplate.Execute(&buf, data)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed formatting banner: %v\n", err)
+			os.Exit(1)
+		}
+		printWelcome(os.Stderr, buf.String())
 		gracefulShutdown(ctx, server)
 	},
 }
@@ -461,7 +484,11 @@ func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, 
 	}
 }
 
-const runBanner = `
+var bannerTemplate = template.Must(template.New("banner").Parse(runBannerTmpl))
+
+const runBannerTmpl = `
+lakeFS {{ .Version }} - Up and running (^C to shutdown)...
+
 
      ██╗      █████╗ ██╗  ██╗███████╗███████╗███████╗
      ██║     ██╔══██╗██║ ██╔╝██╔════╝██╔════╝██╔════╝
@@ -469,12 +496,7 @@ const runBanner = `
      ██║     ██╔══██║██╔═██╗ ██╔══╝  ██╔══╝  ╚════██║
      ███████╗██║  ██║██║  ██╗███████╗██║     ███████║
      ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝
-
-│
-│ If you're running lakeFS locally for the first time,
-│     complete the setup process at http://127.0.0.1:8000/setup
-│
-
+{{ .SetupMessage }}
 │
 │ For more information on how to use lakeFS,
 │     check out the docs at https://docs.lakefs.io/quickstart/
@@ -487,15 +509,36 @@ const runBanner = `
 
 `
 
-func printWelcome(w io.Writer) {
-	_, _ = fmt.Fprint(w, runBanner)
+const localBanner = `
+│
+│ If you're running lakeFS locally for the first time,
+│     complete the setup process at http://127.0.0.1:8000/setup
+│`
+
+var quickStartBanner = fmt.Sprintf(`
+│
+│ lakeFS running in quickstart mode. 
+│     Login at http://127.0.0.1:8000/
+│
+│     Access Key ID    : %s 
+│     Secret Access Key: %s
+│
+`, config.DefaultQuickstartKeyID, config.DefaultQuickstartSecretKey)
+
+type bannerData struct {
+	SetupMessage string
+	Version      string
+}
+
+func printWelcome(w io.Writer, banner string) {
+	_, _ = fmt.Fprint(w, banner)
 	_, _ = fmt.Fprintf(w, "Version %s\n\n", version.Version)
 }
 
 const localWarningBanner = `
 WARNING!
 
-Using %s.  This is suitable only for testing! It is NOT SUPPORTED for production.
+Using %s. This is suitable only for testing! It is NOT SUPPORTED for production.
 `
 
 func printLocalWarning(w io.Writer, msg string) {
@@ -503,8 +546,6 @@ func printLocalWarning(w io.Writer, msg string) {
 }
 
 func gracefulShutdown(ctx context.Context, services ...Shutter) {
-	_, _ = fmt.Fprintf(os.Stderr, "lakeFS %s - Up and running (^C to shutdown)...\n", version.Version)
-	printWelcome(os.Stderr)
 	<-ctx.Done()
 
 	_, _ = fmt.Fprintf(os.Stderr, "Shutting down...\n")

@@ -91,6 +91,10 @@ public class ObjectStats {
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
   private String physicalAddress;
 
+  public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS_EXPIRY = "physical_address_expiry";
+  @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS_EXPIRY)
+  private Long physicalAddressExpiry;
+
   public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
   @SerializedName(SERIALIZED_NAME_CHECKSUM)
   private String checksum;
@@ -178,6 +182,29 @@ public class ObjectStats {
 
   public void setPhysicalAddress(String physicalAddress) {
     this.physicalAddress = physicalAddress;
+  }
+
+
+  public ObjectStats physicalAddressExpiry(Long physicalAddressExpiry) {
+    
+    this.physicalAddressExpiry = physicalAddressExpiry;
+    return this;
+  }
+
+   /**
+   * If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. 
+   * @return physicalAddressExpiry
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
+
+  public Long getPhysicalAddressExpiry() {
+    return physicalAddressExpiry;
+  }
+
+
+  public void setPhysicalAddressExpiry(Long physicalAddressExpiry) {
+    this.physicalAddressExpiry = physicalAddressExpiry;
   }
 
 
@@ -316,6 +343,7 @@ public class ObjectStats {
     return Objects.equals(this.path, objectStats.path) &&
         Objects.equals(this.pathType, objectStats.pathType) &&
         Objects.equals(this.physicalAddress, objectStats.physicalAddress) &&
+        Objects.equals(this.physicalAddressExpiry, objectStats.physicalAddressExpiry) &&
         Objects.equals(this.checksum, objectStats.checksum) &&
         Objects.equals(this.sizeBytes, objectStats.sizeBytes) &&
         Objects.equals(this.mtime, objectStats.mtime) &&
@@ -325,7 +353,7 @@ public class ObjectStats {
 
   @Override
   public int hashCode() {
-    return Objects.hash(path, pathType, physicalAddress, checksum, sizeBytes, mtime, metadata, contentType);
+    return Objects.hash(path, pathType, physicalAddress, physicalAddressExpiry, checksum, sizeBytes, mtime, metadata, contentType);
   }
 
   @Override
@@ -335,6 +363,7 @@ public class ObjectStats {
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("    pathType: ").append(toIndentedString(pathType)).append("\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
+    sb.append("    physicalAddressExpiry: ").append(toIndentedString(physicalAddressExpiry)).append("\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");

@@ -52,15 +52,14 @@ const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = fa
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, samlpleRepoChecked = false }) => {
 
-    const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
+  const [formValid, setFormValid] = useState(false);
+
+  const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
 
     const showError = (error) ? error : err;
     if (loading) {
         return (
             <Modal show={show} onHide={onCancel} size="lg">
-                <Modal.Header closeButton>
-                    <ModalTitleContainer/>
-                </Modal.Header>
                 <Modal.Body>
                     <Loading/>
                 </Modal.Body>
@@ -70,12 +69,28 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
 
     return (
         <Modal show={show} onHide={onCancel} size="lg">
-            <Modal.Header closeButton>
-                <ModalTitleContainer/>
-            </Modal.Header>
             <Modal.Body>
-                <RepositoryCreateForm config={response} error={showError} onSubmit={onSubmit} onCancel={onCancel} inProgress={inProgress} samlpleRepoChecked={samlpleRepoChecked} />
+                <RepositoryCreateForm
+                  id="repository-create-form"
+                  config={response}
+                  error={showError}
+                  formValid={formValid}
+                  setFormValid={setFormValid}
+                  onSubmit={onSubmit}
+                  onCancel={onCancel}
+                  inProgress={inProgress}
+                  samlpleRepoChecked={samlpleRepoChecked}
+                />
             </Modal.Body>
+            <Modal.Footer>
+              <Button variant="success" type="submit" form="repository-create-form" className="me-2" disabled={!formValid || inProgress}>
+                { inProgress ? 'Creating...' : 'Create Repository' }
+              </Button>
+              <Button variant="secondary" onClick={(e) => {
+                e.preventDefault();
+                onCancel();
+              }}>Cancel</Button>
+            </Modal.Footer>
         </Modal>
     );
 };
@@ -93,7 +108,9 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo}) => {
             </Row>
             <Row className="button-container">
                 <Col>
-                    <GettingStartedCreateRepoButton text="Create Sample Repository" creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
+                    <GettingStartedCreateRepoButton text={
+                      <><span>Create Sample Repository</span> </>
+                    } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
                 </Col>
             </Row>
             <div className="d-flex flex-direction-row align-items-center">
@@ -273,23 +290,6 @@ const RepositoriesPage = () => {
         </Layout>
     );
 }
-
-const ModalTitleContainer = () => {
-    return (
-        <Container fluid="true" className="justify-content-start">
-            <Row>
-                <Col>
-                    <Modal.Title>Create A New Repository</Modal.Title>
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    A repository contains all of your objects, including the revision history. <a href="https://docs.lakefs.io/understand/model.html#repository" target="_blank" rel="noopener noreferrer">Learn more.</a>
-                </Col>
-            </Row>
-        </Container>
-    );
-};
 
 const RepositoriesIndex = () => {
     return (

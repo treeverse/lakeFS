@@ -3,7 +3,7 @@ title: (deprecated) Committed Objects
 description: Clean up unnecessary objects using the garbage collection feature in lakeFS.
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 1980
+nav_order: 98
 has_children: false
 redirect:
     - /howto/garbage-collection-committed.html
@@ -13,8 +13,9 @@ redirect:
 
 {: .warning-title }
 > Deprecation notice
->
-> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./index.html).
+> 
+> This feature will be available up to version 0.9.1 of the lakeFS metadata client. It will be discontinued in subsequent versions.
+> Please visit the new [garbage collection documentation](./garbage-collection.md).
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to hard-delete your objects - namely, delete them from the underlying storage. 
@@ -117,7 +118,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.0/lakefs-spark-client-312-hadoop3-assembly-0.9.0.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.1/lakefs-spark-client-312-hadoop3-assembly-0.9.1.jar \
   example-repo us-east-1
   ```
   </div>
@@ -130,7 +131,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
   -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/0.9.0/lakefs-spark-client-301-assembly-0.9.0.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/0.9.1/lakefs-spark-client-301-assembly-0.9.1.jar \
   example-repo us-east-1
   ```
   </div>
@@ -146,7 +147,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
   -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
   -c spark.hadoop.fs.azure.account.key.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<AZURE_STORAGE_ACCESS_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.0/lakefs-spark-client-312-hadoop3-assembly-0.9.0.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.1/lakefs-spark-client-312-hadoop3-assembly-0.9.1.jar \
   example-repo
   ```
 
@@ -163,7 +164,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.fs.azure.account.oauth2.client.id.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<application-id> \
   -c spark.hadoop.fs.azure.account.oauth2.client.secret.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=<service-credential-key> \
   -c spark.hadoop.fs.azure.account.oauth2.client.endpoint.<AZURE_STORAGE_ACCOUNT>.dfs.core.windows.net=https://login.microsoftonline.com/<directory-id>/oauth2/token \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.0/lakefs-spark-client-312-hadoop3-assembly-0.9.0.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.1/lakefs-spark-client-312-hadoop3-assembly-0.9.1.jar \
   example-repo
   ```
 
@@ -191,7 +192,7 @@ spark-submit --class io.treeverse.clients.GarbageCollector \
   -c spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem \
   -c spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS \
   -c spark.hadoop.lakefs.gc.do_sweep=false  \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.0/lakefs-spark-client-312-hadoop3-assembly-0.9.0.jar \
+  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/0.9.1/lakefs-spark-client-312-hadoop3-assembly-0.9.1.jar \
   example-repo
 ```
 

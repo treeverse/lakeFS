@@ -68,6 +68,14 @@ public class ObjectStatsTest {
     }
 
     /**
+     * Test the property 'physicalAddressExpiry'
+     */
+    @Test
+    public void physicalAddressExpiryTest() {
+        // TODO: test physicalAddressExpiry
+    }
+
+    /**
      * Test the property 'checksum'
      */
     @Test

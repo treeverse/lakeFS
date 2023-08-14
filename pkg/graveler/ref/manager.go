@@ -704,7 +704,7 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 		}
 		if status.UpdatedAt.AsTime().Before(expiry) {
 			if !status.Completed && status.Error == "" {
-				logging.Default().WithFields(logging.Fields{"import_id": status.Id}).Warning("removing stale import")
+				logging.FromContext(ctx).WithFields(logging.Fields{"import_id": status.Id}).Warning("removing stale import")
 			}
 			err = m.kvStoreLimited.Delete(ctx, []byte(repoPartition), entry.Key)
 			if err != nil {

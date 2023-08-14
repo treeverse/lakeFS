@@ -25,7 +25,6 @@
 .gitlab-ci.yml
 git_push.sh
 
-lakefs_client/client.py
 Gemfile.lock
 Gemfile
 _config.yml

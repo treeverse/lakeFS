@@ -5,7 +5,6 @@ export const DEFAULT_LISTING_AMOUNT = 100;
 
 export const SETUP_STATE_INITIALIZED = "initialized";
 export const SETUP_STATE_NOT_INITIALIZED = "not_initialized";
-export const SETUP_STATE_COMMUNICATION_PERFS_DONE = "comm_prefs_done";
 
 class LocalCache {
     get(key) {
@@ -976,7 +975,7 @@ class Setup {
 
         switch (response.status) {
             case 200:
-                return response.json();
+                return;
             case 409:
                 throw new Error('Setup is already complete.');
             default:

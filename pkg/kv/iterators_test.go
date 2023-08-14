@@ -33,11 +33,11 @@ func TestPartitionIterator_CloseAfterSeekGEFailed(t *testing.T) {
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	store := mock.NewMockStore(ctrl)
-	var entIt *mock.MockEntriesIterator
+	entIt := mock.NewMockEntriesIterator(ctrl)
 	entItErr := errors.New("failed to scan")
 	store.EXPECT().Scan(ctx, gomock.Any(), gomock.Any()).Return(entIt, entItErr).Times(1)
-
+	entIt.EXPECT().Close().Times(1)
 	it := kv.NewPartitionIterator(ctx, store, (&kvtest.TestModel{}).ProtoReflect().Type(), "partitionKey", 0)
 	it.SeekGE([]byte("test"))
-	it.Close() // verify we don't crash after after SeekGE failed internally with Scan
+	it.Close() // verify we don't crash after SeekGE failed internally with Scan
 }

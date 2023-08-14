@@ -231,6 +231,10 @@ Returns 2 values:
 1. The HTTP status code returned by the lakeFS API
 1. The content of the specified object as a lua string
 
+### `lakefs/diff_branch(repository_id, branch_id [, after, amount, prefix, delimiter])`
+
+Returns an object-wise diff of uncommitted changes on `branch_id`.
+
 ### `path/parse(path_string)`
 
 Returns a table for the given path string with the following structure:
@@ -384,7 +388,7 @@ Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: 
 ### `net/http` (optional)
 
 Provides a `request` function that performs an HTTP request.
-For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration]({{ site.baseurl }}/reference/configuration.md).
+For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration]({% link reference/configuration.md %}).
 Request will time out after 30 seconds.
 
 ```lua

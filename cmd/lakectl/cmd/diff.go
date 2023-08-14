@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/diff"
+	"github.com/treeverse/lakefs/pkg/uri"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -19,7 +21,6 @@ const (
 	maxDiffPageSize = 1000
 
 	twoWayFlagName = "two-way"
-	diffTypeTwoDot = "two_dot"
 )
 
 var diffCmd = &cobra.Command{
@@ -54,19 +55,19 @@ var diffCmd = &cobra.Command{
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
 			branchURI := MustParseRefURI("ref", args[0])
-			Fmt("Ref: %s\n", branchURI.String())
+			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}
 
-		twoWay, _ := cmd.Flags().GetBool(twoWayFlagName)
+		twoWay := Must(cmd.Flags().GetBool(twoWayFlagName))
 		leftRefURI := MustParseRefURI("left ref", args[0])
 		rightRefURI := MustParseRefURI("right ref", args[1])
-		Fmt("Left ref: %s\nRight ref: %s\n", leftRefURI.String(), rightRefURI.String())
+		fmt.Printf("Left ref: %s\nRight ref: %s\n", leftRefURI, rightRefURI)
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
-		printDiffRefs(cmd.Context(), client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref, twoWay)
+		printDiffRefs(cmd.Context(), client, leftRefURI, rightRefURI, twoWay)
 	},
 }
 
@@ -107,71 +108,37 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 	}
 }
 
-func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, repository string, leftRef string, rightRef string, twoDot bool) {
-	var diffType *string
-	if twoDot {
-		diffType = api.StringPtr(diffTypeTwoDot)
+func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool) {
+	diffs := make(chan api.Diff, maxDiffPageSize)
+	var wg errgroup.Group
+	wg.Go(func() error {
+		return diff.StreamRepositoryDiffs(ctx, client, left, right, "", diffs, twoDot)
+	})
+	for d := range diffs {
+		FmtDiff(d, true)
 	}
-	var after string
-	pageSize := pageSize(minDiffPageSize)
-	for {
-		amount := int(pageSize)
-		resp, err := client.DiffRefsWithResponse(ctx, repository, leftRef, rightRef, &api.DiffRefsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
-			Type:   diffType,
-		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-
-		for _, line := range resp.JSON200.Results {
-			FmtDiff(line, true)
-		}
-		pagination := resp.JSON200.Pagination
-		if !pagination.HasMore {
-			break
-		}
-		after = pagination.NextOffset
-		pageSize.Next()
+	if err := wg.Wait(); err != nil {
+		DieErr(err)
 	}
 }
 
-func FmtDiff(diff api.Diff, withDirection bool) {
-	var color text.Color
-	var action string
-
-	switch diff.Type {
-	case "added":
-		color = text.FgGreen
-		action = "+ added"
-	case "removed":
-		color = text.FgRed
-		action = "- removed"
-	case "changed":
-		color = text.FgYellow
-		action = "~ modified"
-	case "conflict":
-		color = text.FgHiYellow
-		action = "* conflict"
-	default:
-	}
+func FmtDiff(d api.Diff, withDirection bool) {
+	action, color := diff.Fmt(d.Type)
 
 	if !withDirection {
 		_, _ = os.Stdout.WriteString(
-			color.Sprintf("%s %s\n", action, diff.Path),
+			color.Sprintf("%s %s\n", action, d.Path),
 		)
 		return
 	}
-
 	_, _ = os.Stdout.WriteString(
-		color.Sprintf("%s %s\n", action, diff.Path),
+		color.Sprintf("%s %s\n", action, d.Path),
 	)
 }
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(diffCmd)
 	diffCmd.Flags().Bool(twoWayFlagName, false, "Use two-way diff: show difference between the given refs, regardless of a common ancestor.")
+
+	rootCmd.AddCommand(diffCmd)
 }

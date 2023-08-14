@@ -177,7 +177,7 @@ func registerDefaultPlugins(service *Service, pluginsPath string) {
 	_, err := os.Stat(deltaPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logging.Default().WithError(err).Error("failed to access delta lake diff plugin")
+			logging.ContextUnavailable().WithError(err).Error("failed to access delta lake diff plugin")
 		}
 		return
 	}
@@ -194,7 +194,7 @@ func registerPlugin(service *Service, pluginProps config.Plugins, rf registratio
 	if props, ok := pluginProps.Properties[pluginName]; ok {
 		pp, err := homedir.Expand(props.Path)
 		if err != nil {
-			logging.Default().Errorf("failed to register a plugin for an invalid path: '%s'", props.Path)
+			logging.ContextUnavailable().Errorf("failed to register a plugin for an invalid path: '%s'", props.Path)
 			return
 		}
 		pluginPath = pp
@@ -207,7 +207,7 @@ func registerPlugin(service *Service, pluginProps config.Plugins, rf registratio
 	pa := plugins.PluginHandshake{}
 	rf(service, pid, pa)
 
-	logging.Default().Infof("successfully registered a plugin for diff type: '%s'", diffType)
+	logging.ContextUnavailable().Infof("successfully registered a plugin for diff type: '%s'", diffType)
 }
 
 type registrationFunc func(ds *Service, pid plugins.PluginIdentity, handshake plugins.PluginHandshake)

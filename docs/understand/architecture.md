@@ -28,7 +28,7 @@ lakeFS stores data in object stores. Those supported include:
 
 ### Metadata Storage
 
-In additional a Key Value storage is used for storing metadata, with supported databases including PostgreSQL, DynamoDB, and CosmosDB Instructions of how to deploy such database on AWS can be found [here]({{ site.baseurl }}/howto/deploy/aws.md#grant-dynamodb-permissions-to-lakefs).
+In additional a Key Value storage is used for storing metadata, with supported databases including PostgreSQL, DynamoDB, and CosmosDB Instructions of how to deploy such database on AWS can be found [here][dynamodb-permissions].
 
 Additional information on the data format can be found in [Versioning internals](./how/versioning-internals.md) and [Internal database structure](./how/kv.md)
 
@@ -45,23 +45,23 @@ to lakeFS server(s) would do.
 
 The S3 Gateway is the layer in lakeFS responsible for the compatibility with S3. It implements a compatible subset of the S3 API to ensure most data systems can use lakeFS as a drop-in replacement for S3.
 
-See the [S3 API Reference]({{ site.baseurl }}/reference/s3.md) section for information on supported API operations.
+See the [S3 API Reference]({% link reference/s3.md %}) section for information on supported API operations.
 
 ### OpenAPI Server
 
-The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) server exposes the full set of lakeFS operations (see [Reference]({{ site.baseurl }}/reference/api.html)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing, and reverting changes to data.
+The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) server exposes the full set of lakeFS operations (see [Reference]({% link reference/api.md %})). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing, and reverting changes to data.
 
 ### Storage Adapter
 
 The Storage Adapter is an abstraction layer for communicating with any underlying object store. 
 Its implementations allow compatibility with many types of underlying storage such as S3, GCS, Azure Blob Storage, or non-production usages such as the local storage adapter.
 
-See the [roadmap]({{ site.baseurl }}/project/index.md#roadmap) for information on the future plans for storage compatibility. 
+See the [roadmap][roadmap] for information on the future plans for storage compatibility. 
 
 ### Graveler
 
 The Graveler handles lakeFS versioning by translating lakeFS addresses to the actual stored objects.
-To learn about the data model used to store lakeFS metadata, see the [versioning internals page]({{ site.baseurl }}/understand/how/versioning-internals.md).
+To learn about the data model used to store lakeFS metadata, see the [versioning internals page]({% link understand/how/versioning-internals.md %}).
 
 ### Authentication & Authorization Service
 
@@ -73,7 +73,7 @@ Currently, the Auth service manages its own database of users and credentials an
 
 ### Hooks Engine
 
-The Hooks Engine enables CI/CD for data by triggering user defined [Actions]({{ site.baseurl }}/understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates) that will run during commit/merge. 
+The Hooks Engine enables CI/CD for data by triggering user defined [Actions][data-quality-gates] that will run during commit/merge. 
 
 ### UI
 
@@ -82,7 +82,7 @@ The UI layer is a simple browser-based client that uses the OpenAPI server. It a
 ## Applications
 
 As a rule of thumb, lakeFS supports any S3-compatible application. This means that many common data applications work with lakeFS out-of-the-box.
-Check out our [integrations]({{ site.baseurl }}/integrations) to learn more.
+Check out our [integrations]({% link integrations/index.md %}) to learn more.
 
 ## lakeFS Clients
 
@@ -95,16 +95,22 @@ For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/)
 
 ### lakectl
 
-[lakectl]({{ site.baseurl }}/reference/cli.html) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
+[lakectl]({% link reference/cli.md %}) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
 
 ### Spark Metadata Client
 
-The lakeFS [Spark Metadata Client]({{ site.baseurl }}/reference/spark-client.md) makes it easy to perform
-operations related to lakeFS metadata, at scale. Examples include [garbage collection]({{ site.baseurl }}/howto/garbage-collection-index.html) or [exporting data from lakeFS]({{ site.baseurl }}/howto/export.md).
+The lakeFS [Spark Metadata Client]({% link reference/spark-client.md %}) makes it easy to perform
+operations related to lakeFS metadata, at scale. Examples include [garbage collection]({% link howto/garbage-collection/index.md %}) or [exporting data from lakeFS]({% link howto/export.md %}).
 
 ### lakeFS Hadoop FileSystem
 
 Thanks to the [S3 Gateway](#s3-gateway), it's possible to interact with lakeFS using Hadoop's S3AFIleSystem, 
 but due to limitations of the S3 API, doing so requires reading and writing data objects through the lakeFS server.
-Using [lakeFSFileSystem]({{ site.baseurl }}/integrations/spark.md#use-the-lakefs-hadoop-filesystem) increases Spark ETL jobs performance by executing the metadata operations on the lakeFS server,
+Using [lakeFSFileSystem][hadoopfs] increases Spark ETL jobs performance by executing the metadata operations on the lakeFS server,
 and all data operations directly through the same underlying object store that lakeFS uses.
+
+
+[data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates
+[dynamodb-permissions]:  {% link howto/deploy/aws.md %}#grant-dynamodb-permissions-to-lakefs
+[roadmap]:  {% link project/index.md %}#roadmap
+[hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem

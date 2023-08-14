@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"golang.org/x/exp/slices"
 )
 
 const commitsTemplate = `{{ range $val := .Commits }}
@@ -54,7 +55,7 @@ func (d *dotWriter) Write(commits []api.Commit) {
 			label = fmt.Sprintf("<b>%s</b>", label)
 		}
 		baseURL := strings.TrimSuffix(strings.TrimSuffix(
-			cfg.Values.Server.EndpointURL, "/api/v1"), "/")
+			string(cfg.Values.Server.EndpointURL), "/api/v1"), "/")
 		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
 			commit.Id, baseURL, repoID, commit.Id, label)
 		for _, parent := range commit.Parents {
@@ -72,16 +73,23 @@ var logCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := MustInt(cmd.Flags().GetInt("amount"))
-		after := MustString(cmd.Flags().GetString("after"))
-		limit := MustBool(cmd.Flags().GetBool("limit"))
-		dot := MustBool(cmd.Flags().GetBool("dot"))
-		firstParent := MustBool(cmd.Flags().GetBool("first-parent"))
-		objectsList := MustSliceNonEmptyString("objects", MustStringSlice(cmd.Flags().GetStringSlice("objects")))
-		prefixesList := MustSliceNonEmptyString("prefixes", MustStringSlice(cmd.Flags().GetStringSlice("prefixes")))
+		amount := Must(cmd.Flags().GetInt("amount"))
+		after := Must(cmd.Flags().GetString("after"))
+		limit := Must(cmd.Flags().GetBool("limit"))
+		dot := Must(cmd.Flags().GetBool("dot"))
+		firstParent := Must(cmd.Flags().GetBool("first-parent"))
+		objects := Must(cmd.Flags().GetStringSlice("objects"))
+		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
+
+		if slices.Contains(objects, "") {
+			Die("Objects list contains empty string!", 1)
+		}
+		if slices.Contains(prefixes, "") {
+			Die("Prefixes list contains empty string!", 1)
+		}
 
 		pagination := api.Pagination{HasMore: true}
-		showMetaRangeID, _ := cmd.Flags().GetBool("show-meta-range-id")
+		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
 		branchURI := MustParseRefURI("branch", args[0])
 		amountForPagination := amount
@@ -94,11 +102,11 @@ var logCmd = &cobra.Command{
 			Limit:       &limit,
 			FirstParent: &firstParent,
 		}
-		if len(objectsList) > 0 {
-			logCommitsParams.Objects = &objectsList
+		if len(objects) > 0 {
+			logCommitsParams.Objects = &objects
 		}
-		if len(prefixesList) > 0 {
-			logCommitsParams.Prefixes = &prefixesList
+		if len(prefixes) > 0 {
+			logCommitsParams.Prefixes = &prefixes
 		}
 
 		graph := &dotWriter{

@@ -256,7 +256,7 @@ func TestReaders(t *testing.T) {
 					localFile = generateParquet(t, objs(test.ObjectNum, lastModified), test.ExcludeField)
 				}
 				uploadFile(t, svc, inventoryBucketName, "myFile.inv", localFile)
-				reader := NewReader(context.Background(), svc, logging.Default())
+				reader := NewReader(context.Background(), svc, logging.ContextUnavailable())
 				fileReader, err := reader.GetFileReader(format, inventoryBucketName, "myFile.inv")
 				if err != nil {
 					t.Fatalf("failed to create file reader: %v", err)

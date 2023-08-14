@@ -89,7 +89,7 @@ func newPluginClient(name string, p plugin.Plugin, hc plugin.HandshakeConfig, cm
 		Output: os.Stdout,
 		Level:  hclog.Debug,
 	})
-	l := logging.Default()
+	l := logging.ContextUnavailable().WithField("plugin_name", name)
 	hcl := NewHClogger(hl, l)
 	clientConfig.Logger = hcl
 	return plugin.NewClient(&clientConfig)

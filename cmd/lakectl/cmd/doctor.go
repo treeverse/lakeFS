@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -18,6 +20,12 @@ type Detailed interface {
 type CredentialsError struct {
 	Message string
 	Details string
+}
+
+var accessKeyRegexp = regexp.MustCompile(`^AKIA[I|J][A-Z0-9]{14}Q$`)
+
+func IsValidAccessKeyID(accessKeyID string) bool {
+	return accessKeyRegexp.MatchString(accessKeyID)
 }
 
 func (e *CredentialsError) Error() string { return e.Message }
@@ -84,7 +92,7 @@ var doctorCmd = &cobra.Command{
 		}
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate access key format."})
-		accessKeyID := cfg.Values.Credentials.AccessKeyID
+		accessKeyID := string(cfg.Values.Credentials.AccessKeyID)
 		if !IsValidAccessKeyID(accessKeyID) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "access_key_id value looks suspicious: " + accessKeyID})
 		} else {
@@ -93,14 +101,14 @@ var doctorCmd = &cobra.Command{
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate secret access key format."})
 		secretAccessKey := cfg.Values.Credentials.SecretAccessKey
-		if !IsValidSecretAccessKey(secretAccessKey) {
+		if !IsValidSecretAccessKey(string(secretAccessKey)) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "secret_access_key value looks suspicious..."})
 		} else {
 			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Couldn't find a problem with secret access key format."})
 		}
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate endpoint URL format."})
-		serverEndpoint := cfg.Values.Server.EndpointURL
+		serverEndpoint := string(cfg.Values.Server.EndpointURL)
 		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "Suspicious URI format for server.endpoint_url: " + serverEndpoint})
 		} else {
@@ -117,7 +125,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to get endpoint URL and parse it as a URL format."})
 	// getClient might die on url.Parse error, so check it first.
-	serverEndpoint := cfg.Values.Server.EndpointURL
+	serverEndpoint := string(cfg.Values.Server.EndpointURL)
 	_, err := url.Parse(serverEndpoint)
 	if err != nil {
 		return &WrongEndpointURIError{Message: msgOnErrWrongEndpointURI, Details: err.Error()}
@@ -154,4 +162,9 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(doctorCmd)
+}
+
+func IsValidSecretAccessKey(secretAccessKey string) bool {
+	_, err := base64.StdEncoding.DecodeString(secretAccessKey)
+	return err == nil && len(secretAccessKey) == 40
 }

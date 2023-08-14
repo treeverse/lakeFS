@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,10 +59,16 @@ var (
 
 	// logLevel logging level (default is off)
 	logLevel string
-	// logFormat logging format
+	// logFormat logging output format
 	logFormat string
 	// logOutputs logging outputs
 	logOutputs []string
+
+	// noColorRequested is set to true when the user requests no color output
+	noColorRequested = false
+
+	// verboseMode is set to true when the user requests verbose output
+	verboseMode = false
 )
 
 // rootCmd represents the base command when called without any sub-commands
@@ -83,7 +88,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.Err() == nil {
-			logging.Default().
+			logging.ContextUnavailable().
 				WithField("file", viper.ConfigFileUsed()).
 				Debug("loaded configuration from file")
 		}
@@ -108,8 +113,7 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if !MustBool(cmd.Flags().GetBool("version")) {
+		if !Must(cmd.Flags().GetBool("version")) {
 			if err := cmd.Help(); err != nil {
 				WriteIfVerbose("failed showing help {{ . }}", err)
 			}
@@ -159,7 +163,7 @@ var rootCmd = &cobra.Command{
 }
 
 func getClient() *api.ClientWithResponses {
-	// override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
+	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
@@ -171,12 +175,12 @@ func getClient() *api.ClientWithResponses {
 
 	accessKeyID := cfg.Values.Credentials.AccessKeyID
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Values.Server.EndpointURL
+	serverEndpoint := string(cfg.Values.Server.EndpointURL)
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
@@ -199,12 +203,6 @@ func getClient() *api.ClientWithResponses {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
-}
-
-// isSeekable returns true if f.Seek appears to work.
-func isSeekable(f io.Seeker) bool {
-	_, err := f.Seek(0, io.SeekCurrent)
-	return err == nil // a little naive, but probably good enough for its purpose
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

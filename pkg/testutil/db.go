@@ -183,7 +183,7 @@ func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 		return lakefsS3.NewAdapter(sess)
 
 	default:
-		return mem.New()
+		return mem.New(context.Background())
 	}
 }
 

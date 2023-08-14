@@ -420,6 +420,41 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 		}
 		testCompareEntries(t, entries, sampleData[fromIndex:])
 	})
+
+	t.Run("deleted_last", func(t *testing.T) {
+		scanSkipSize := 5
+		scan, err := store.Scan(ctx, []byte(testPartitionKey), kv.ScanOptions{KeyStart: samplePrefix, BatchSize: sampleItems - scanSkipSize})
+		if err != nil {
+			t.Fatal("failed to scan", err)
+		}
+		defer scan.Close()
+		require.NoError(t, store.Delete(ctx, []byte(testPartitionKey), sampleData[len(sampleData)-1].Key), "failed to delete last key")
+
+		var entries []kv.Entry
+		for scan.Next() {
+			ent := scan.Entry()
+			switch {
+			case ent == nil:
+				t.Fatal("scan got nil entry")
+			case ent.Key == nil:
+				t.Fatal("Key is nil while scan item", len(entries))
+			case ent.Value == nil:
+				t.Fatal("Value is nil while scan item", len(entries))
+			}
+			if !bytes.HasPrefix(ent.Key, samplePrefix) {
+				break
+			}
+			entries = append(entries, *ent)
+		}
+		require.NoError(t, scan.Err(), "scan ended with an error")
+
+		// you can either get the first 99 or the whole 100 since delete happened after the scan started
+		if len(entries) == len(sampleData) {
+			testCompareEntries(t, entries, sampleData)
+		} else {
+			testCompareEntries(t, entries, sampleData[:len(sampleData)-1])
+		}
+	})
 }
 
 func MakeStoreByName(name string, kvParams kvparams.Config) MakeStore {
@@ -963,8 +998,7 @@ func verifyDeleteWhileIterResults(t *testing.T, ctx context.Context, store kv.St
 		e := verifyIter.Entry()
 		if e == nil {
 			t.Fatal("unexpected nil entry in KV store")
-		}
-		if strings.Index(string(e.Key), string(delPref)) == 0 {
+		} else if strings.Index(string(e.Key), string(delPref)) == 0 {
 			t.Fatal("unexpected entry found after delete", string(e.Key), string(delPref))
 		}
 	}

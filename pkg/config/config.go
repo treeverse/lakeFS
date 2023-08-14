@@ -35,7 +35,10 @@ var (
 
 // UseLocalConfiguration set to true will add defaults that enable a lakeFS run
 // without any other configuration like DB or blockstore.
-const UseLocalConfiguration = "local-settings"
+const (
+	UseLocalConfiguration   = "local-settings"
+	QuickstartConfiguration = "quickstart"
+)
 
 type OIDC struct {
 	// configure how users are handled on the lakeFS side:
@@ -371,15 +374,11 @@ type Config struct {
 	Plugins Plugins   `mapstructure:"plugins"`
 }
 
-func NewConfig() (*Config, error) {
-	return newConfig(false)
+func NewConfig(cfgType string) (*Config, error) {
+	return newConfig(cfgType)
 }
 
-func NewLocalConfig() (*Config, error) {
-	return newConfig(true)
-}
-
-func newConfig(local bool) (*Config, error) {
+func newConfig(cfgType string) (*Config, error) {
 	c := &Config{}
 
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
@@ -388,7 +387,7 @@ func newConfig(local bool) (*Config, error) {
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
-	setDefaults(local)
+	setDefaults(cfgType)
 
 	err := Unmarshal(c)
 	if err != nil {
@@ -501,7 +500,7 @@ func (c *Config) DatabaseParams() (kvparams.Config, error) {
 }
 
 func (c *Config) GetAwsConfig() *aws.Config {
-	logger := logging.Default().WithField("sdk", "aws")
+	logger := logging.ContextUnavailable().WithField("sdk", "aws")
 	cfg := &aws.Config{
 		Logger: &logging.AWSAdapter{Logger: logger},
 	}
@@ -521,7 +520,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if c.Blockstore.S3.Credentials != nil {
 		secretAccessKey := c.Blockstore.S3.Credentials.SecretAccessKey
 		if secretAccessKey == "" {
-			logging.Default().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
+			logging.ContextUnavailable().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
 			secretAccessKey = c.Blockstore.S3.Credentials.AccessSecretKey
 		}
 		cfg.Credentials = credentials.NewStaticCredentials(
@@ -590,7 +589,7 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 
 func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	if c.Blockstore.Azure.AuthMethod != "" {
-		logging.Default().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
+		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
 	return blockparams.Azure{
 		StorageAccount:     c.Blockstore.Azure.StorageAccount,
@@ -628,7 +627,7 @@ func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams
 		return nil, fmt.Errorf("expand %s: %w", c.Committed.LocalCache.Dir, err)
 	}
 
-	logger := logging.Default().WithField("module", "pyramid")
+	logger := logging.ContextUnavailable().WithField("module", "pyramid")
 	return &pyramidparams.ExtParams{
 		RangeAllocationProportion:     rangePro,
 		MetaRangeAllocationProportion: metaRangePro,

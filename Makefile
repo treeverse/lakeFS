@@ -95,7 +95,7 @@ docs-serve-docker: ### Serve local docs from Docker
 			--volume="$$PWD/docs:/srv/jekyll:Z" \
 			--volume="$$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
 			--interactive --tty \
-			jekyll/jekyll:3.8 \
+			jekyll/jekyll:4.2.2 \
 			jekyll serve --livereload
 
 gen-docs: ## Generate CLI docs automatically
@@ -112,7 +112,7 @@ tools: ## Install tools
 client-python: api/swagger.yml  ## Generate SDK for Python client
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_client -prune -o ! \( -name client.py -or -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache \) -delete
+		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
@@ -121,6 +121,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
+		-c /mnt/clients/python-codegen-config.yaml \
 		-o /mnt/clients/python
 
 client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
@@ -200,7 +201,7 @@ gofmt:  ## gofmt code formating
 
 validate-fmt:  ## Validate go format
 	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -o \( -path ./pkg/ddl \) -prune -o \( -path ./pkg/webui \) -prune -o \( -path ./pkg/api/gen \) -prune -o \( -path ./pkg/permissions/*.gen.go \) -prune -o -name '*.go' -print)); \
+	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./pkg/metastore/hive/gen-go \) -prune -prune -o \( -path ./pkg/api/gen \) -prune -o \( -path ./pkg/permissions/*.gen.go \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
 		echo checking gofmt fail... ; \
 		echo "$${res}"; \

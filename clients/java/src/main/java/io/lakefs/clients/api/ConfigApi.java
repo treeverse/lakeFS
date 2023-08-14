@@ -31,7 +31,6 @@ import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
-import io.lakefs.clients.api.model.NextStep;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
@@ -672,7 +671,6 @@ public class ConfigApi {
      * setup communications preferences
      * 
      * @param commPrefsInput  (required)
-     * @return NextStep
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -683,16 +681,15 @@ public class ConfigApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public NextStep setupCommPrefs(CommPrefsInput commPrefsInput) throws ApiException {
-        ApiResponse<NextStep> localVarResp = setupCommPrefsWithHttpInfo(commPrefsInput);
-        return localVarResp.getData();
+    public void setupCommPrefs(CommPrefsInput commPrefsInput) throws ApiException {
+        setupCommPrefsWithHttpInfo(commPrefsInput);
     }
 
     /**
      * setup communications preferences
      * 
      * @param commPrefsInput  (required)
-     * @return ApiResponse&lt;NextStep&gt;
+     * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -703,10 +700,9 @@ public class ConfigApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<NextStep> setupCommPrefsWithHttpInfo(CommPrefsInput commPrefsInput) throws ApiException {
+    public ApiResponse<Void> setupCommPrefsWithHttpInfo(CommPrefsInput commPrefsInput) throws ApiException {
         okhttp3.Call localVarCall = setupCommPrefsValidateBeforeCall(commPrefsInput, null);
-        Type localVarReturnType = new TypeToken<NextStep>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
+        return localVarApiClient.execute(localVarCall);
     }
 
     /**
@@ -725,11 +721,10 @@ public class ConfigApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call setupCommPrefsAsync(CommPrefsInput commPrefsInput, final ApiCallback<NextStep> _callback) throws ApiException {
+    public okhttp3.Call setupCommPrefsAsync(CommPrefsInput commPrefsInput, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = setupCommPrefsValidateBeforeCall(commPrefsInput, _callback);
-        Type localVarReturnType = new TypeToken<NextStep>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 }

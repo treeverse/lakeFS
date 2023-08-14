@@ -40,12 +40,12 @@ func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, 
 		return nil, err
 	}
 	svc := a.clients.Get(ctx, m.inventoryBucket)
-	return GenerateInventory(logger, m, s3inventory.NewReader(ctx, svc, logger), shouldSort, prefixes)
+	return GenerateInventory(ctx, logger, m, s3inventory.NewReader(ctx, svc, logger), shouldSort, prefixes)
 }
 
-func GenerateInventory(logger logging.Logger, m *Manifest, inventoryReader s3inventory.IReader, shouldSort bool, prefixes []string) (block.Inventory, error) {
+func GenerateInventory(ctx context.Context, logger logging.Logger, m *Manifest, inventoryReader s3inventory.IReader, shouldSort bool, prefixes []string) (block.Inventory, error) {
 	if logger == nil {
-		logger = logging.Default()
+		logger = logging.FromContext(ctx)
 	}
 	if shouldSort || len(prefixes) > 0 {
 		if err := sortManifest(m, logger, inventoryReader); err != nil {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -18,10 +19,6 @@ type mockAdapter struct {
 	lastStorageClass *string
 }
 
-func (a *mockAdapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, error) {
-	return "", block.ErrOperationNotSupported
-}
-
 func newMockAdapter() *mockAdapter {
 	adapter := mockAdapter{
 		totalSize:        0,
@@ -29,6 +26,10 @@ func newMockAdapter() *mockAdapter {
 		lastStorageClass: nil,
 	}
 	return &adapter
+}
+
+func (a *mockAdapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+	return "", time.Time{}, block.ErrOperationNotSupported
 }
 
 func (a *mockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {

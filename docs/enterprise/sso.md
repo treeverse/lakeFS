@@ -13,7 +13,7 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> SSO is also available on [lakeFS Cloud]({{ site.baseurl }}/cloud/sso.md). Using the open-source version of lakeFS? Read more on [authentication]({{ site.baseurl }}/reference/authentication.md). 
+> SSO is also available on [lakeFS Cloud]({% link cloud/sso.md %}). Using the open-source version of lakeFS? Read more about [authentication]({% link reference/authentication.md %}). 
 
 Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
 
@@ -101,7 +101,7 @@ auth:
 
 In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
 1. Replace `lakefsConfig.friendly_name_claim_name` with the right claim name.
-1. Replace `lakefsConfig.default_initial_groups` with desired claim name (See [pre-configured]({{ site.baseurl }}/reference/rbac.md#preconfigured-groups) groups for enterprise)
+1. Replace `lakefsConfig.default_initial_groups` with desired claim name (See [pre-configured][rbac-preconfigured] groups for enterprise)
 2. Replace `fluffyConfig.auth.logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/logout/path`)
 3. Replace `fluffyConfig.auth.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com`)
 4. Replace `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters you'd like to pass to the OIDC provider for logout.
@@ -218,3 +218,5 @@ Notes:
 * Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
+
+[rbac-preconfigured]:  {% link reference/rbac.md %}#preconfigured-groups

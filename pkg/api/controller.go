@@ -319,7 +319,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 
 	if swag.BoolValue(params.Presign) {
 		// generate a pre-signed PUT url for the given request
-		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		preSignedURL, expiry, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       address,
 			IdentifierType:   block.IdentifierTypeRelative,
@@ -329,6 +329,9 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 			return
 		}
 		response.PresignedUrl = &preSignedURL
+		if !expiry.IsZero() {
+			response.PresignedUrlExpiry = Int64Ptr(expiry.Unix())
+		}
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -3016,7 +3019,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	presignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+	presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 		Identifier:     gcRunMetadata.CommitsCSVLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, block.PreSignModeRead)
@@ -3598,7 +3601,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		Identifier:       entry.PhysicalAddress,
 	}
 	if swag.BoolValue(params.Presign) {
-		location, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -3734,13 +3737,17 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 					return
 				}
 				if authResponse.Allowed {
-					objStat.PhysicalAddress, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+					var expiry time.Time
+					objStat.PhysicalAddress, expiry, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 						StorageNamespace: repo.StorageNamespace,
 						IdentifierType:   entry.AddressType.ToIdentifierType(),
 						Identifier:       entry.PhysicalAddress,
 					}, block.PreSignModeRead)
 					if c.handleAPIError(ctx, w, r, err) {
 						return
+					}
+					if !expiry.IsZero() {
+						objStat.PhysicalAddressExpiry = Int64Ptr(expiry.Unix())
 					}
 				}
 			}
@@ -3806,7 +3813,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		code = http.StatusGone
 	} else if swag.BoolValue(params.Presign) {
 		// need to pre-sign the physical address
-		preSignedURL, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		preSignedURL, expiry, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 			StorageNamespace: repo.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
 			Identifier:       entry.PhysicalAddress,
@@ -3815,6 +3822,9 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 			return
 		}
 		objStat.PhysicalAddress = preSignedURL
+		if !expiry.IsZero() {
+			objStat.PhysicalAddressExpiry = Int64Ptr(expiry.Unix())
+		}
 	}
 	writeResponse(w, r, code, objStat)
 }
@@ -4024,46 +4034,68 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func makeLoginConfig(c *config.Config) *LoginConfig {
-	var (
-		cookieNames        = c.Auth.UIConfig.LoginCookieNames
-		loginFailedMessage = c.Auth.UIConfig.LoginFailedMessage
-		fallbackLoginURL   = c.Auth.UIConfig.FallbackLoginURL
-		fallbackLoginLabel = c.Auth.UIConfig.FallbackLoginLabel
-	)
-
+func newLoginConfig(c *config.Config) *LoginConfig {
 	return &LoginConfig{
 		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
-		LoginFailedMessage: &loginFailedMessage,
-		FallbackLoginUrl:   fallbackLoginURL,
-		FallbackLoginLabel: fallbackLoginLabel,
-		LoginCookieNames:   cookieNames,
+		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
+		FallbackLoginUrl:   c.Auth.UIConfig.FallbackLoginURL,
+		FallbackLoginLabel: c.Auth.UIConfig.FallbackLoginLabel,
+		LoginCookieNames:   c.Auth.UIConfig.LoginCookieNames,
 		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
 	}
 }
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	savedState, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
+
+	// external auth reports as initialized to avoid triggering the setup wizard
+	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+		response := SetupState{
+			State:            swag.String(string(auth.SetupStateInitialized)),
+			LoginConfig:      newLoginConfig(c.Config),
+			CommPrefsMissing: swag.Bool(false),
+		}
+		writeResponse(w, r, http.StatusOK, response)
+		return
+	}
+
+	savedState, err := c.MetadataManager.GetSetupState(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
-	state := string(savedState)
-	// no need to create an admin user if users are managed externally
-	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
-		state = string(auth.SetupStateInitialized)
-	} else if savedState == auth.SetupStateNotInitialized {
+	if savedState == auth.SetupStateNotInitialized {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
-	lc := makeLoginConfig(c.Config)
+
 	response := SetupState{
-		State:       swag.String(state),
-		LoginConfig: lc,
+		State:       swag.String(string(savedState)),
+		LoginConfig: newLoginConfig(c.Config),
 	}
+
+	// if email subscription is disabled in the config, set missing flag to false.
+	// otherwise, check if the comm prefs are set. if they are, set missing flag to false.
+	if !c.Config.EmailSubscription.Enabled {
+		response.CommPrefsMissing = swag.Bool(false)
+		writeResponse(w, r, http.StatusOK, response)
+		return
+	}
+
+	prefsSet, err := c.MetadataManager.IsCommPrefsSet(ctx)
+	switch {
+	case errors.Is(err, auth.ErrNotFound):
+		// comprefs may not be found for two reasons:
+		// 1. The setup ran on an older version of lakeFS that didn't have commprefs. In this case, we treat it as set.
+		// 2. The setup ran on a newer version of lakeFS that has commprefs, but the setup didn't complete. In this case, we treat it as not set.
+		response.CommPrefsMissing = swag.Bool(savedState != auth.SetupStateInitialized)
+	case err != nil:
+		// failed to check if comm prefs are set, treating as set
+		response.CommPrefsMissing = swag.Bool(false)
+	default:
+		response.CommPrefsMissing = swag.Bool(!prefsSet)
+	}
+
 	writeResponse(w, r, http.StatusOK, response)
 }
 
@@ -4073,20 +4105,14 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		return
 	}
 
-	// check if previous setup completed
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
+	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	if initialized == auth.SetupStateInitialized {
+	if initialized {
 		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
-		return
-	}
-	if initialized == auth.SetupStateNotInitialized {
-		writeError(w, r, http.StatusPreconditionFailed, "wrong step - must first complete previous steps")
 		return
 	}
 
@@ -4102,6 +4128,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 		writeResponse(w, r, http.StatusOK, CredentialsWithSecret{})
 		return
 	}
+
 	var cred *model.Credential
 	if body.Key == nil {
 		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
@@ -4128,57 +4155,30 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body SetupJSO
 
 func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body SetupCommPrefsJSONRequestBody) {
 	ctx := r.Context()
-	emailSubscriptionEnabled := c.Config.EmailSubscription.Enabled
-	initialized, err := c.MetadataManager.GetSetupState(ctx, emailSubscriptionEnabled)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	if initialized == auth.SetupStateInitialized {
-		writeError(w, r, http.StatusConflict, "lakeFS already initialized")
-		return
-	}
-
-	// users should not get here
-	// after this step is done, the browser should navigate the user to the next step
-	// even on refresh or closing the tab and continuing setup in a new tab later
-	// the user should not be posting to this handler
-	if initialized == auth.SetupStateCommPrefsDone {
-		writeError(w, r, http.StatusPreconditionFailed, "wrong step - CommPrefs have already been set")
-		return
-	}
-
-	// this is the "natural" next step in the setup process
-	nextStep := auth.SetupStateCommPrefsDone
-	// if users are managed externally, we can skip the admin user creation step
-	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
-		nextStep = auth.SetupStateInitialized
-	}
-	response := NextStep{
-		NextStep: string(nextStep),
-	}
-
-	if *body.Email == "" {
+	emailAddress := swag.StringValue(body.Email)
+	if emailAddress == "" {
 		writeResponse(w, r, http.StatusBadRequest, "email is required")
 		return
 	}
 
 	// validate email. if the user typed some value into the input, they might have a typo
 	// we assume the intent was to provide a valid email, so we'll return an error
-	if _, err := mail.ParseAddress(*body.Email); err != nil {
+	if _, err := mail.ParseAddress(emailAddress); err != nil {
+		c.Logger.WithError(err).WithField("email", emailAddress).Error("Setup comm prefs, invalid email address")
 		writeError(w, r, http.StatusBadRequest, "invalid email address")
 		return
 	}
 
 	// save comm prefs to metadata, for future in-app preferences/unsubscribe functionality
 	commPrefs := auth.CommPrefs{
-		UserEmail:       *body.Email,
+		UserEmail:       emailAddress,
 		FeatureUpdates:  body.FeatureUpdates,
 		SecurityUpdates: body.SecurityUpdates,
 	}
 
-	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, commPrefs)
+	installationID, err := c.MetadataManager.UpdateCommPrefs(ctx, &commPrefs)
 	if err != nil {
+		c.Logger.WithError(err).WithField("email", emailAddress).Error("Setup comm prefs, failed to save comm prefs to metadata")
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
@@ -4186,7 +4186,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	// collect comm prefs
 	go c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
 
-	writeResponse(w, r, http.StatusOK, response)
+	writeResponse(w, r, http.StatusOK, nil)
 }
 
 func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -4597,7 +4597,7 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
-		logging.Default().WithError(err).WithField("code", code).Debug("Failed to write encoded json response")
+		logging.FromContext(r.Context()).WithError(err).WithField("code", code).Info("Failed to write encoded json response")
 	}
 }
 

@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
@@ -20,6 +23,10 @@ const (
 	EmailKeyName           = "encoded_user_email"
 	FeatureUpdatesKeyName  = "feature_updates"
 	SecurityUpdatesKeyName = "security_updates"
+
+	InstrumentationSamplesRepo = "SamplesRepo"
+	InstrumentationQuickstart  = "Quickstart"
+	InstrumentationRun         = "Run"
 )
 
 type SetupStateName string
@@ -27,7 +34,6 @@ type SetupStateName string
 const (
 	SetupStateInitialized    SetupStateName = "initialized"
 	SetupStateNotInitialized SetupStateName = "not_initialized"
-	SetupStateCommPrefsDone  SetupStateName = "comm_prefs_done"
 )
 
 //nolint:gochecknoinits
@@ -38,8 +44,9 @@ func init() {
 
 type MetadataManager interface {
 	IsInitialized(ctx context.Context) (bool, error)
-	GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error)
-	UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error)
+	GetSetupState(ctx context.Context) (SetupStateName, error)
+	UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefs) (string, error)
+	IsCommPrefsSet(ctx context.Context) (bool, error)
 	UpdateSetupTimestamp(context.Context, time.Time) error
 	GetMetadata(context.Context) (map[string]string, error)
 }
@@ -127,41 +134,29 @@ func (m *KVMetadataManager) GetCommPrefs(ctx context.Context) (CommPrefs, error)
 	}, nil
 }
 
-func (m *KVMetadataManager) areCommPrefsSet(ctx context.Context) (bool, error) {
+func (m *KVMetadataManager) IsCommPrefsSet(ctx context.Context) (bool, error) {
 	commPrefsSet, err := m.store.Get(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(CommPrefsSetKeyName)))
 	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return false, ErrNotFound
+		}
 		return false, err
 	}
 
-	commPrefsSetBool, err := strconv.ParseBool(string(commPrefsSet.Value))
-	if err != nil {
-		return false, err
-	}
-
-	return commPrefsSetBool, nil
+	return strconv.ParseBool(string(commPrefsSet.Value))
 }
 
-func (m *KVMetadataManager) GetSetupState(ctx context.Context, emailSubscriptionEnabled bool) (SetupStateName, error) {
+func (m *KVMetadataManager) GetSetupState(ctx context.Context) (SetupStateName, error) {
 	// for backwards compatibility (i.e. so existing instances don't need to go through setup again)
 	// we first check if the setup timestamp has already been set
 	isInitialized, err := m.IsInitialized(ctx)
 	if err != nil {
 		return "", err
 	}
-
 	if isInitialized {
 		return SetupStateInitialized, nil
 	}
-
-	// if this feature is disabled, skip this step
-	if emailSubscriptionEnabled {
-		commPrefsSet, err := m.areCommPrefsSet(ctx)
-		if err != nil || !commPrefsSet {
-			return SetupStateNotInitialized, nil
-		}
-	}
-
-	return SetupStateCommPrefsDone, nil
+	return SetupStateNotInitialized, nil
 }
 
 func (m *KVMetadataManager) writeMetadata(ctx context.Context, items map[string]string) error {
@@ -181,18 +176,27 @@ func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Ti
 	})
 }
 
-func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs CommPrefs) (string, error) {
-	encodedEmail := ""
-	if commPrefs.UserEmail != "" {
-		encodedEmail = base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail))
+// UpdateCommPrefs - updates the comm prefs metadata.
+// When commPrefs is nil, we assume the setup is done and the user didn't provide any comm prefs.
+// The data can be provided later as the web UI verifies if the comm prefs are set.
+func (m *KVMetadataManager) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefs) (string, error) {
+	var meta map[string]string
+	if commPrefs != nil {
+		// if commPrefs is not nil, we assume the setup is done and the user provided comm prefs
+		meta = map[string]string{
+			EmailKeyName:           base64.StdEncoding.EncodeToString([]byte(commPrefs.UserEmail)),
+			FeatureUpdatesKeyName:  strconv.FormatBool(commPrefs.FeatureUpdates),
+			SecurityUpdatesKeyName: strconv.FormatBool(commPrefs.SecurityUpdates),
+			CommPrefsSetKeyName:    strconv.FormatBool(true),
+		}
+	} else {
+		// if commPrefs is nil, we assume the setup is done and the user didn't provide any comm prefs
+		meta = map[string]string{
+			CommPrefsSetKeyName: strconv.FormatBool(false),
+		}
 	}
-
-	return m.installationID, m.writeMetadata(ctx, map[string]string{
-		EmailKeyName:           encodedEmail,
-		FeatureUpdatesKeyName:  strconv.FormatBool(commPrefs.FeatureUpdates),
-		SecurityUpdatesKeyName: strconv.FormatBool(commPrefs.SecurityUpdates),
-		CommPrefsSetKeyName:    strconv.FormatBool(true),
-	})
+	err := m.writeMetadata(ctx, meta)
+	return m.installationID, err
 }
 
 func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
@@ -206,6 +210,34 @@ func (m *KVMetadataManager) IsInitialized(ctx context.Context) (bool, error) {
 	return !setupTimestamp.IsZero(), nil
 }
 
+// DockeEnvExists For testing purposes
+var DockeEnvExists = "/.dockerenv"
+
+func inK8sMetadata() string {
+	_, k8s := os.LookupEnv("KUBERNETES_SERVICE_HOST")
+	return strconv.FormatBool(k8s)
+}
+
+func inDockerMetadata() string {
+	var err error
+	if DockeEnvExists != "" {
+		_, err = os.Stat(DockeEnvExists)
+	}
+	return strconv.FormatBool(err == nil)
+}
+
+func getInstrumentationMetadata() string {
+	lakefsAccessKeyID := viper.GetString("installation.access_key_id")
+	switch {
+	case strings.HasSuffix(lakefsAccessKeyID, "LKFSSAMPLES"):
+		return InstrumentationSamplesRepo
+	case strings.HasSuffix(lakefsAccessKeyID, "QUICKSTART"):
+		return InstrumentationQuickstart
+	default:
+		return InstrumentationRun
+	}
+}
+
 func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
@@ -213,6 +245,10 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
+	metadata["is_k8s"] = inK8sMetadata()
+	metadata["is_docker"] = inDockerMetadata()
+	metadata["instrumentation"] = getInstrumentationMetadata()
+
 	err := m.writeMetadata(ctx, metadata)
 	if err != nil {
 		return nil, err

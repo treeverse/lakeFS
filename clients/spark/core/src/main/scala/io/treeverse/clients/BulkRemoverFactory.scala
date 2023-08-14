@@ -12,8 +12,11 @@ import java.net.URI
 import java.nio.charset.Charset
 import java.util.stream.Collectors
 import scala.collection.JavaConverters._
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 trait BulkRemover {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
   /** Provides the max bulk size allowed by the underlying SDK client that does the actual deletion.
    *
@@ -36,7 +39,7 @@ trait BulkRemover {
       keepNsSchemeAndHost: Boolean,
       applyUTF8Encoding: Boolean
   ): Seq[String] = {
-    println("storageNamespace: " + storageNamespace)
+    logger.info("storageNamespace: " + storageNamespace)
     var removeKeyNames =
       StorageUtils.concatKeysToStorageNamespace(keys, storageNamespace, keepNsSchemeAndHost)
     if (applyUTF8Encoding) {
@@ -72,7 +75,7 @@ object BulkRemoverFactory {
                                                    keepNsSchemeAndHost = false,
                                                    applyUTF8Encoding = false
                                                   )
-      println(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
+      logger.info(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
@@ -86,14 +89,14 @@ object BulkRemoverFactory {
 
           // TODO(ariels): Metric!
           val errors = mde.getErrors();
-          println(s"deleteObjects: Partial failure: ${errors.size} errors: ${errors}")
+          logger.info(s"deleteObjects: Partial failure: ${errors.size} errors: ${errors}")
           errors.asScala.foreach((de) =>
-            println(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}")
+            logger.info(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}")
           )
           mde.getDeletedObjects.asScala.map(_.getKey)
         }
         case e: Exception => {
-          println(s"deleteObjects failed: ${e}")
+          logger.info(s"deleteObjects failed: ${e}")
           throw e
         }
       }
@@ -110,7 +113,7 @@ object BulkRemoverFactory {
 
     override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
       val removeKeyNames = constructRemoveKeyNames(keys, storageNamespace, true, true)
-      println(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
+      logger.info(s"Remove keys: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.asJava
       val blobBatchClient = client.blobBatchClient
 

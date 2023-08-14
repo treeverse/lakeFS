@@ -1017,7 +1017,7 @@ func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
 
-func checkPermissions(node permissions.Node, username string, policies []*model.Policy) CheckResult {
+func checkPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy) CheckResult {
 	allowed := CheckNeutral
 	switch node.Type {
 	case permissions.NodeTypeNode:
@@ -1049,7 +1049,7 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 		// Denied - one of the permissions is Deny
 		// Natural - otherwise
 		for _, node := range node.Nodes {
-			result := checkPermissions(node, username, policies)
+			result := checkPermissions(ctx, node, username, policies)
 			if result == CheckDeny {
 				return CheckDeny
 			}
@@ -1064,7 +1064,7 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 		// Denied - one of the permissions is Deny
 		// Natural - otherwise
 		for _, node := range node.Nodes {
-			result := checkPermissions(node, username, policies)
+			result := checkPermissions(ctx, node, username, policies)
 			if result == CheckNeutral || result == CheckDeny {
 				return result
 			}
@@ -1072,7 +1072,7 @@ func checkPermissions(node permissions.Node, username string, policies []*model.
 		return CheckAllow
 
 	default:
-		logging.Default().Error("unknown permission node type")
+		logging.FromContext(ctx).Error("unknown permission node type")
 		return CheckDeny
 	}
 	return allowed
@@ -1087,7 +1087,7 @@ func (s *AuthService) Authorize(ctx context.Context, req *AuthorizationRequest) 
 		return nil, err
 	}
 
-	allowed := checkPermissions(req.RequiredPermissions, req.Username, policies)
+	allowed := checkPermissions(ctx, req.RequiredPermissions, req.Username, policies)
 
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{
@@ -1892,7 +1892,7 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 		return nil, err
 	}
 
-	allowed := checkPermissions(req.RequiredPermissions, req.Username, policies)
+	allowed := checkPermissions(ctx, req.RequiredPermissions, req.Username, policies)
 
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{
@@ -1959,7 +1959,7 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		cache:       cache,
 	}
 	if emailer != nil {
-		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.Default(), emailer)
+		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.ContextUnavailable(), emailer)
 	}
 	return res, nil
 }
@@ -1978,7 +1978,7 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 		ExpiresAt: jwt.NewNumericDate(exp),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	logging.Default().WithField("id", id).Info("generated auth api token")
+	logging.ContextUnavailable().WithField("id", id).Info("generated auth api token")
 	return token.SignedString(secret)
 }
 
