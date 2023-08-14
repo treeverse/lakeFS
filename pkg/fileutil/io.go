@@ -156,25 +156,19 @@ func VerifyRelPath(relPath, basePath string) error {
 
 // VerifySafeFilename checks that the given file name is not a symbolic link and that
 // the file name does not contain path traversal
-// The basePath is the path we want to verify against we use it for the following:
-// 1. In case name is an absolute path: ensure name is a sub-path of base path
-// 2. In case name is relative: use as the base path for relative path verification
-func VerifySafeFilename(name string) error {
-	filename, err := filepath.EvalSymlinks(name)
+func VerifySafeFilename(absPath string) error {
+	if err := VerifyAbsPath(absPath, absPath); err != nil {
+		return err
+	}
+	if !filepath.IsAbs(absPath) {
+		return fmt.Errorf("relative path not allowed: %w", ErrInvalidPath)
+	}
+	filename, err := filepath.EvalSymlinks(absPath)
 	if err != nil {
 		return err
 	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	switch {
-	case filename != name:
+	if filename != absPath {
 		return ErrSymbolicLink
-	case filepath.IsAbs(filename):
-		return VerifyAbsPath(filename, cwd)
-	default: // relative path
-		return VerifyRelPath(filename, cwd)
 	}
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/block"
 	"io"
 	"net/http"
 	"os"
@@ -140,7 +141,7 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
-	if err := fileutil.VerifyRelPath(change.Path, rootPath); err != nil {
+	if err := fileutil.VerifyRelPath(strings.TrimPrefix(change.Path, block.Separator), rootPath); err != nil {
 		return err
 	}
 	destination := filepath.Join(rootPath, change.Path)
