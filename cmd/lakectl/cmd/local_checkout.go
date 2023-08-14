@@ -95,9 +95,6 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 		}
 	}()
 	err = syncMgr.Sync(idx.LocalPath(), currentBase, c)
-	if errors.Is(ctx.Err(), context.Canceled) {
-		Die("Operation was canceled, local data may be incomplete", 1)
-	}
 	if err != nil {
 		DieErr(err)
 	}

@@ -105,8 +105,8 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		ctx := localHandleSyncInterrupt(cmd.Context())
-		s := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
+		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
 			DieErr(err)
