@@ -58,7 +58,8 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 	currentBase := remote.WithRef(idx.AtHead)
 	client := getClient()
 	diffs := local.Undo(localDiff(ctx, client, currentBase, idx.LocalPath()))
-	syncMgr := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
+	sigCtx := localHandleSyncInterrupt(ctx)
+	syncMgr := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {
 		fmt.Println("Uncommitted changes exist, the operation will revert all changes on local directory.")

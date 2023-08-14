@@ -75,10 +75,9 @@ var localCloneCmd = &cobra.Command{
 				after = listResp.JSON200.Pagination.NextOffset
 			}
 		}()
-
-		s := local.NewSyncManager(cmd.Context(), client, syncFlags.parallelism, syncFlags.presign)
+		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(localPath, stableRemote, c)
-
 		if err != nil {
 			DieErr(err)
 		}
