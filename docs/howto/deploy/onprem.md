@@ -1,8 +1,8 @@
 ---
-title: On-Premises Deployment of lakeFS
+title: On-Premises
 grand_parent: How-To
 parent: Install lakeFS
-description: This section will guide you through deploying and setting up a production-suitable lakeFS environment on-premises (or on other cloud providers)
+description: How to deploy and set up a production-suitable lakeFS environment on-premises (or on other cloud providers)
 redirect_from:
    - /deploy/k8s.html
    - /deploy/docker.html 
@@ -12,10 +12,12 @@ redirect_from:
 next:  ["Import data into your installation", "/howto/import.html"]
 ---
 
-# On-Premises deployment
+# On-Premises Deployment
 
-For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
-{: .note }
+{: .tip }
+> The instructions given here are for a self-managed deployment of lakeFS.
+> 
+> For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
 {% include toc.html %}
 

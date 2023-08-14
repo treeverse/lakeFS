@@ -114,7 +114,7 @@ const ImportForm = ({
         <Alert variant="info">
             Import doesn&apos;t copy objects. It only creates links to the objects in the lakeFS metadata layer.
             Don&apos;t worry, we will never change objects in the import source.
-            <a href="https://docs.lakefs.io/setup/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
+            <a href="https://docs.lakefs.io/howto/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
         </Alert>
         <form>
             <Form.Group className='form-group'>

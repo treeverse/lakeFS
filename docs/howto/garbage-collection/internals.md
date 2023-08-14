@@ -1,15 +1,23 @@
 ---
-title: "Internals: Committed GC"
+title: Internals
 description: How Garbage Collection in lakeFS works
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 30
+nav_order: 1
 has_children: false
+redirect:
+    - /howto/gc-internals.html
 ---
 
-## Committed GC Internals
+# Committed Garbage Collection Internals
 
-### What gets collected
+{: .warning-title }
+> Deprecation notice
+>
+> This page describes a deprecated feature. Please visit the new [garbage collection documentation](./index.html).
+
+
+## What gets collected
 
 Because each object in lakeFS may be accessible from multiple branches, it
 might not be obvious which objects will be considered garbage and collected.
@@ -52,15 +60,15 @@ The garbage collection process proceeds in three main phases:
   about the object, but attempting to read it via the lakeFS API or the S3
   gateway will return HTTP status 410 ("Gone").
 
-### What does _not_ get collected
+## What does _not_ get collected
 
 Some objects will _not_ be collected regardless of configured GC rules:
 * Any object that is accessible from any branch's HEAD.
 * Objects stored outside the repository's [storage namespace][storage-namespace].
   For example, objects imported using the lakeFS import UI are not collected.
-* Uncommitted objects, see [Uncommitted Garbage Collection](./garbage-collection-uncommitted.md),
+* Uncommitted objects, see [Uncommitted Garbage Collection](./uncommitted.html),
 
-### Performance
+## Performance
 
 Garbage collection reads many commits.  It uses Spark to spread the load of
 reading the contents of all of these commits.  For very large jobs running
@@ -75,7 +83,7 @@ on very large clusters, you may want to tweak this load.  To do this:
 
 Normally this should not be needed.
 
-### Networking
+## Networking
 
 Garbage collection communicates with the lakeFS server.  Very large
 repositories may require increasing a read timeout.  If you run into timeout errors during communication from the Spark job to lakeFS consider increasing these timeouts:
