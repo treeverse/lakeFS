@@ -25,6 +25,14 @@ const (
 	localDefaultMaxArgs         = 1
 )
 
+const localSummaryTemplate = `
+{{ if and (eq .Downloaded 0) (eq .Removed 0) (eq .Uploaded 0)}}No changes{{else}}{{if 
+gt .Downloaded 0 }}{{"Downloaded:" | printf|green}} {{.Downloaded|green}}{{end}}{{if 
+gt .Uploaded 0 }}{{"\nUploaded:" | printf|yellow}} {{.Uploaded|yellow}}{{end}}{{if 
+gt .Removed 0 }}{{"\nRemoved:" | printf|red}} {{.Removed|red}}{{end}}
+{{end}}
+` // Line breaks are intentional for formatting purposes
+
 var localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
 
 func withParallelismFlag(cmd *cobra.Command) {

@@ -72,8 +72,9 @@ var localPullCmd = &cobra.Command{
 		if err := wg.Wait(); err != nil {
 			DieErr(err)
 		}
-		summary := s.Summary()
-		fmt.Printf("Successfully synced changes!\nTotal objects downloaded: %d\nTotal objects removed: %d\n", summary.Downloaded, summary.Removed)
+
+		fmt.Printf("\nSuccessfully synced changes!\nSummary:\n")
+		Write(localSummaryTemplate, s.Summary())
 	},
 }
 

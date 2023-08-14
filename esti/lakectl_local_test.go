@@ -1,10 +1,10 @@
 package esti
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -58,6 +58,23 @@ func localExtractRelativePathsByPrefix(t *testing.T, prefix string, objs []strin
 		}
 	}
 	return
+}
+
+func localGetSummary(t *testing.T, tasks local.Tasks) string {
+	result := "Summary:\n\n"
+	t.Helper()
+	switch {
+	case tasks.Downloaded > 0:
+		result += fmt.Sprintf("Downloaded: %d\n", tasks.Downloaded)
+	case tasks.Uploaded > 0:
+		result += fmt.Sprintf("Uploaded: %d\n", tasks.Uploaded)
+	case tasks.Removed > 0:
+		result += fmt.Sprintf("Deleted: %d\n", tasks.Removed)
+	}
+	if tasks.Downloaded+tasks.Uploaded+tasks.Removed == 0 {
+		result += "No changes\n"
+	}
+	return result
 }
 
 func TestLakectlLocal_init(t *testing.T) {
@@ -196,7 +213,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 }
 
 func TestLakectlLocal_pull(t *testing.T) {
-	const successStr = "Successfully synced changes!\nTotal objects downloaded: ${DOWNLOADED}\nTotal objects removed: ${REMOVED}"
+	const successStr = "Successfully synced changes!\n"
+
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
@@ -241,9 +259,8 @@ func TestLakectlLocal_pull(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			// Pull nothing
-			vars["DOWNLOADED"] = "0"
-			vars["REMOVED"] = "0"
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
+			expectedStr := successStr + localGetSummary(t, local.Tasks{})
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
 
 			// Upload and commit an object
 			base := []string{
@@ -261,9 +278,11 @@ func TestLakectlLocal_pull(t *testing.T) {
 			localCreateTestData(t, vars, create)
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
 			// Pull changes and verify data
-			vars["DOWNLOADED"] = strconv.Itoa(len(expected))
-			vars["REMOVED"] = "0"
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
+			tasks := local.Tasks{
+				Downloaded: uint64(len(expected)),
+			}
+			expectedStr = successStr + localGetSummary(t, tasks)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
 			localVerifyDirContents(t, dataDir, expected)
 
 			// Modify data
@@ -276,9 +295,12 @@ func TestLakectlLocal_pull(t *testing.T) {
 			})
 
 			// Pull changes and verify data
-			vars["DOWNLOADED"] = strconv.Itoa(len(localExtractRelativePathsByPrefix(t, tt.prefix, modified)))
-			vars["REMOVED"] = strconv.Itoa(len(localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted})))
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, successStr, vars)
+			tasks = local.Tasks{
+				Downloaded: uint64(len(localExtractRelativePathsByPrefix(t, tt.prefix, modified))),
+				Removed:    uint64(len(localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted}))),
+			}
+			expectedStr = successStr + localGetSummary(t, tasks)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
 			localVerifyDirContents(t, dataDir, expected)
 		})
 	}
