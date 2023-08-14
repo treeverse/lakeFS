@@ -28,7 +28,8 @@ const (
 const localSummaryTemplate = `
 {{.Operation}} Summary:
 
-{{ if and (eq .Downloaded 0) (eq .Removed 0) (eq .Uploaded 0)}}No changes{{else}}{{"Downloaded:" | printf|green}} {{.Downloaded|green}}
+{{ if and (eq .Downloaded 0) (eq .Removed 0) (eq .Uploaded 0)}}No changes{{else -}}
+{{"Downloaded:" | printf|green}} {{.Downloaded|green}}
 {{"Uploaded:" | printf|yellow}} {{.Uploaded|yellow}}
 {{"Removed:" | printf|red}} {{.Removed|red}}
 {{end}}
