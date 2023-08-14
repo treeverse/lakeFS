@@ -244,7 +244,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
 	source := filepath.Join(rootPath, change.Path)
-	if err := fileutil.VerifySafeFilename(source, rootPath); err != nil {
+	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
 	}
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
