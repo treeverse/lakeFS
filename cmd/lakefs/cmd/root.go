@@ -49,8 +49,8 @@ func init() {
 }
 
 func validateQuickstartEnv(cfg *config.Config) {
-	if ((cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal) {
-		fmt.Println("quickstart mode can only run with local settings")
+	if (cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
+		_, _ = fmt.Fprint(os.Stderr, "\nERROR: quickstart mode can only run with local settings\n")
 		os.Exit(1)
 	}
 
