@@ -46,6 +46,7 @@ type Adapter struct {
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
+	preSignedRefreshWindow       time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
 }
@@ -71,6 +72,12 @@ func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.clients.DiscoverBucketRegion(b)
+	}
+}
+
+func WithPreSignedRefreshWindow(v time.Duration) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.preSignedRefreshWindow = v
 	}
 }
 
@@ -324,7 +331,7 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 // refreshClientIfNeeded ensure client has some time before its token
 // expires.  It returns the updated expiry time.  It fails with
 // ErrDoesntExpire if the client is not an Expirer,
-func refreshClientIfNeeded(ctx context.Context, client S3APIWithExpirer) (time.Time, error) {
+func refreshClientIfNeeded(ctx context.Context, client S3APIWithExpirer, refreshWindow time.Duration) (time.Time, error) {
 	if client == nil {
 		return time.Time{}, nil
 	}
@@ -341,7 +348,7 @@ func refreshClientIfNeeded(ctx context.Context, client S3APIWithExpirer) (time.T
 		"expiry": expiry,
 		"TTL":    ttl.String(),
 	})
-	if ttl < 5*time.Minute { // TODO(ariels): Configure!
+	if ttl < refreshWindow {
 		l.Info("Refresh client as it will expire soon")
 		expiry, err = client.Refresh()
 		if err != nil {
@@ -374,7 +381,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 
-	clientExpiry, clientExpiryErr := refreshClientIfNeeded(ctx, client)
+	clientExpiry, clientExpiryErr := refreshClientIfNeeded(ctx, client, a.preSignedRefreshWindow)
 
 	expiry := time.Now().Add(a.preSignedExpiry)
 	log = log.WithField("expiry", expiry)

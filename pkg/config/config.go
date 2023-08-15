@@ -259,6 +259,10 @@ type Config struct {
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI            bool          `mapstructure:"disable_pre_signed_ui"`
+			WebIdentity                   *struct {
+				SessionDuration     time.Duration `mapstructure:"session_duration"`
+				SessionExpiryWindow time.Duration `mapstructure:"session_expiry_window"`
+			} `mapstructure:"web_identity"`
 		} `mapstructure:"s3"`
 		Azure *struct {
 			TryTimeout       time.Duration `mapstructure:"try_timeout"`
@@ -547,6 +551,13 @@ func (c *Config) BlockstoreType() string {
 }
 
 func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
+	var webIdentity *blockparams.S3WebIdentity
+	if c.Blockstore.S3.WebIdentity != nil {
+		webIdentity = &blockparams.S3WebIdentity{
+			SessionDuration:     c.Blockstore.S3.WebIdentity.SessionDuration,
+			SessionExpiryWindow: c.Blockstore.S3.WebIdentity.SessionExpiryWindow,
+		}
+	}
 	return blockparams.S3{
 		AwsConfig:                     c.GetAwsConfig(),
 		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
@@ -558,6 +569,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
+		WebIdentity:                   webIdentity,
 	}, nil
 }
 
