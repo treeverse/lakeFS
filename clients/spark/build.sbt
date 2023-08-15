@@ -74,11 +74,11 @@ def generateExamplesProject(buildType: BuildType) =
     )
 
 lazy val spark3Type =
-  new BuildType("301", "3.0.1", "0.10.11", "hadoop2", "hadoop2-2.0.1")
+  new BuildType("-301", "3.0.1", "0.10.11", "hadoop2", "hadoop2-2.0.1")
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
+  new BuildType("-312-hadoop3", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
 
 lazy val coreType =
   new BuildType("", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
