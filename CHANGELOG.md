@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+## v0.106.1
+
+- Fix: quickstart validation (#6402)
+
 ## v0.106.0
 
 :new: What's new:
