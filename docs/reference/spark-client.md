@@ -45,7 +45,7 @@ Start Spark Shell / PySpark with the `--packages` flag:
   versions and higher Hadoop versions.
   
   ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-assembly_2.12:0.10.0
+  spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.10.0
   ```
 
   Alternatively an assembled jar is available on S3, at
