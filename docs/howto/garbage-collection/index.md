@@ -102,8 +102,8 @@ To run the job, use the following `spark-submit` command (or using your preferre
 
 <div class="tabs">
   <ul>
-    <li><a href="#aws-option">On AWS (Spark 3.1.2 and higher)</a></li>
-    <li><a href="#aws-301-option">On AWS (Spark 3.0.1)</a></li>
+    <li><a href="#aws-option">On AWS</a></li>
+    <li><a href="#aws-301-option">On AWS (Hadoop 2 - deprecated)</a></li>
     <li><a href="#azure-option">On Azure</a></li>
     <li><a href="#gcp-option">On GCP</a></li>
   </ul>
