@@ -16,23 +16,23 @@ The Uber-Jar can be found on a public S3 location:
 
 It should be used when running into conflicting dependencies on environments like EMR, Databricks, etc.
 
-For Spark 3.1.2+:
+For Spark for Hadoop 3:
 http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-312-hadoop3/${CLIENT_VERSION}/lakefs-spark-client-312-hadoop3-assembly-${CLIENT_VERSION}.jar
 
-For Spark 3.0.1:
+For Spark for Hadoop 2 (deprecated):
 http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/${CLIENT_VERSION}/lakefs-spark-client-301-assembly-${CLIENT_VERSION}.jar
 
 
 ### Maven
 Otherwise, the client can be included using Maven coordinates:
 
-For Spark 3.1.2+:
+For Spark for Hadoop 3:
 ```
 io.lakefs:lakefs-spark-client-312-hadoop3_2.12:<version>
 ```
 [See available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-312-hadoop3_2.12).
 
-For Spark 3.0.1:
+For Spark for Hadoop 2 (deprecated):
 ```
 io.lakefs:lakefs-spark-client-301_2.12:<version>
 ```
@@ -41,7 +41,7 @@ io.lakefs:lakefs-spark-client-301_2.12:<version>
 ## Usage Examples
 ### Export using spark-submit
 
-Replace `<version>` below with the latest version available. See available versions for [Spark 3.1.2+](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-312-hadoop3_2.12) or [Spark 3.0.1](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12).
+Replace `<version>` below with the latest version available. See available versions for [Spark for Hadoop 3](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-312-hadoop3_2.12) or [Spark for Hadoop 2](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12) (deprecated).
 
 ```
 CLIENT_VERSION=0.8.1
@@ -60,7 +60,7 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 
 ### Export using spark-submit (uber-jar)
 
-Replace `<version>` below with the latest version available. See available versions for [Spark 3.1.2+](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-312-hadoop3_2.12) or [Spark 3.0.1](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12).
+Replace `<version>` below with the latest version available. See available versions for [Spark for Hadoop 3](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-312-hadoop3_2.12) or [Spark for Hadoop 2](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12) (deprecated).
 ```
 CLIENT_VERSION=0.8.1
 SPARK_VERSION=301 # or 312-hadoop3

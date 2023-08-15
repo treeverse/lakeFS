@@ -645,11 +645,14 @@ jobs:
       matrix:
         spark:
           - project-variable: core3
-            project-suffix: 301
+            project-suffix: "-301"
             artifact-suffix: ""
           - project-variable: core312
-            project-suffix: 312-hadoop3
+            project-suffix: "-312-hadoop3"
             artifact-suffix: "-hadoop3"
+          - project-variable: core
+            project-suffix: ""
+            artifact-suffix: ""
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -674,7 +677,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: clients/spark
         run: |
-          sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client-${{ matrix.spark.project-suffix }}/assembly
+          sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client${{ matrix.spark.project-suffix }}/assembly
 
       - name: Prepare Metaclient location for export
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -684,7 +687,7 @@ jobs:
         working-directory: clients/spark
         run: |
           mkdir -p ${{ github.workspace }}/test/spark/metaclient
-          cp target/core-${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client-${{ matrix.spark.project-suffix }}-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
+          cp target/core${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client${{ matrix.spark.project-suffix }}-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.artifact-suffix }}.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x

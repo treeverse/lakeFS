@@ -25,8 +25,8 @@ Start Spark Shell / PySpark with the `--packages` flag:
 
 <div class="tabs">
   <ul>
-	<li><a href="#packages-3-hadoop2">Spark 3.x</a></li>
-	<li><a href="#packages-3-hadoop3">Spark 3.x on Hadoop 3.x</a></li>
+	<li><a href="#packages-3-hadoop2">Spark 3.x for Hadoop 2 (deprecated)</a></li>
+	<li><a href="#packages-3-hadoop3">Spark 3.x for Hadoop 3</a></li>
   </ul>
   <div markdown="1" id="packages-3-hadoop2">
   This client is compiled for Spark 3.0.1 with Hadoop 2 and tested with it, but can work for
