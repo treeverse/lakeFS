@@ -28,8 +28,7 @@ def generateCoreProject(buildType: BuildType) =
   Project(s"${baseName}-client-${buildType.name}", file(s"core"))
     .settings(
       sharedSettings,
-      if (buildType.hadoopFlavour == "hadoop2") hadoop2ShadingSettings
-      else hadoop3ShadingSettings,
+      assembly / assemblyShadeRules := shadeRules,
       s3UploadSettings,
       settingsToCompileIn("core", buildType.hadoopFlavour),
       semanticdbEnabled := true, // enable SemanticDB
@@ -38,8 +37,7 @@ def generateCoreProject(buildType: BuildType) =
       Compile / PB.targets := Seq(
         scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
       ),
-      libraryDependencies ++= getSharedLibraryDependencies(buildType)
-        ++ getLibraryDependenciesByHadoopFlavour(buildType.hadoopFlavour),
+      libraryDependencies ++= getSharedLibraryDependencies(buildType),
       testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
       Test / logBuffered := false,
       // Uncomment to get accurate benchmarks with just "sbt test".
@@ -96,6 +94,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
+    "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
     "org.json4s" %% "json4s-native" % "3.6.12",
     "org.rogach" %% "scallop" % "4.0.3",
     "com.azure" % "azure-core" % "1.10.0",
@@ -124,17 +123,6 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
   )
 }
 
-def getLibraryDependenciesByHadoopFlavour(hadoopFlavour: String): Seq[ModuleID] = {
-  if (hadoopFlavour == "hadoop2") {
-    // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
-    // version, but ask to use whatever is provided so we do not
-    // override what it selects.
-    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194")
-  } else {
-    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided")
-  }
-}
-
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
 
 // We are using the default sbt assembly merge strategy https://github.com/sbt/sbt-assembly#merge-strategy with a change
@@ -158,7 +146,7 @@ lazy val sharedAssemblyMergeStrategy =
     case _ => MergeStrategy.first
   }
 
-lazy val sharedShadeRules = Seq(
+lazy val shadeRules = Seq(
   rename("org.apache.http.**").inAll,
   rename("com.google.protobuf.**").inAll,
   rename("com.google.common.**")
@@ -172,12 +160,6 @@ lazy val sharedShadeRules = Seq(
   rename("reactor.netty.**").inAll,
   rename("reactor.util.**").inAll
 )
-
-lazy val hadoop2ShadeRules = sharedShadeRules ++ Seq(rename("com.amazonaws.**").inAll)
-lazy val hadoop3ShadeRules = sharedShadeRules
-
-lazy val hadoop2ShadingSettings = assembly / assemblyShadeRules := hadoop2ShadeRules
-lazy val hadoop3ShadingSettings = assembly / assemblyShadeRules := hadoop3ShadeRules
 
 // Upload assembly jars to S3
 lazy val s3UploadSettings = Seq(
