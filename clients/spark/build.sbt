@@ -25,11 +25,12 @@ def settingsToCompileIn(dir: String, flavour: String = "") = {
   allSettings ++ flavourSettings
 }
 
-def generateCoreProject(buildType: BuildType) =
-  Project(if (buildType.name != null) s"${baseName}-client-${buildType.name}"
-          else s"${baseName}-client",
-          file(s"core")
-         )
+def generateCoreProject(buildType: BuildType) = {
+  var projectName = s"${baseName}-client"
+  if (buildType.name != null) {
+    projectName = s"${projectName}-${buildType.name}"
+  }
+  Project(projectName, file("core"))
     .settings(
       sharedSettings,
       assembly / assemblyShadeRules := shadeRules,
@@ -53,12 +54,12 @@ def generateCoreProject(buildType: BuildType) =
 
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
-      target := file(s"target/core-${buildType.name}/"),
+      target := file(s"target/${projectName}/"),
       buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "io.treeverse.clients"
     )
     .enablePlugins(S3Plugin, BuildInfoPlugin)
-
+}
 def generateExamplesProject(buildType: BuildType) =
   Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))
     .settings(
