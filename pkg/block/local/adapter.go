@@ -101,7 +101,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 }
 
 func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
-	return "", time.Time{}, fmt.Errorf("local adapter: %w", block.ErrOperationNotSupported)
+	return "", time.Time{}, fmt.Errorf("local adapter presigned URL: %w", block.ErrOperationNotSupported)
 }
 
 // verifyRelPath ensures that p is under the directory controlled by this adapter.  It does not

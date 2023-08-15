@@ -108,6 +108,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     Forbidden:
       description: Forbidden
       content:
@@ -1525,11 +1531,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CredentialsWithSecret"
         400:
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+          $ref: "#/components/responses/BadRequest"
         409:
           description: setup was already called
           content:
@@ -1621,11 +1623,7 @@ paths:
         204:
           description: No content
         400:
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+          $ref: "#/components/responses/BadRequest"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3946,10 +3944,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
+        400:
+          $ref: "#/components/responses/BadRequest"
         410:
           description: object gone (but partial metadata may be available)
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/refs/{ref}/objects/underlyingProperties:
     parameters:
@@ -4629,11 +4629,7 @@ paths:
         204:
           description: reported successfully
         400:
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         default:

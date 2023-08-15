@@ -389,7 +389,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user created successfully |  -  |
-**400** | bad request |  -  |
+**400** | Bad Request |  -  |
 **409** | setup was already called |  -  |
 **0** | Internal Server Error |  -  |
 
