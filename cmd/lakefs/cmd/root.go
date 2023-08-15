@@ -57,7 +57,7 @@ func validateQuickstartEnv(cfg *config.Config) {
 	if cfg.Installation.UserName != config.DefaultQuickstartUsername ||
 		cfg.Installation.AccessKeyID != config.DefaultQuickstartKeyID ||
 		cfg.Installation.SecretAccessKey != config.DefaultQuickstartSecretKey {
-		fmt.Println("installation parameters must not be changed in quickstart mode")
+		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: installation parameters must not be changed in quickstart mode\n")
 		os.Exit(1)
 	}
 }
