@@ -49,19 +49,17 @@ func init() {
 }
 
 func validateQuickstartEnv(cfg *config.Config) {
-	if !((cfg.Database.Type == local.DriverName || cfg.Database.Type == mem.DriverName) && cfg.Blockstore.Type != block.BlockstoreTypeLocal) {
-		fmt.Printf("quickstart mode can only run with local settings\n")
+	if (cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
+		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: quickstart mode can only run with local settings\n")
 		os.Exit(1)
 	}
 
 	if cfg.Installation.UserName != config.DefaultQuickstartUsername ||
 		cfg.Installation.AccessKeyID != config.DefaultQuickstartKeyID ||
 		cfg.Installation.SecretAccessKey != config.DefaultQuickstartSecretKey {
-		fmt.Printf("installation parameters must not be changed in quickstart mode\n")
+		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: installation parameters must not be changed in quickstart mode\n")
 		os.Exit(1)
 	}
-	fmt.Printf("Access Key ID    : %s\n", config.DefaultQuickstartKeyID)
-	fmt.Printf("Secret Access Key: %s\n", config.DefaultQuickstartSecretKey)
 }
 
 func useConfig(flagName string) bool {
