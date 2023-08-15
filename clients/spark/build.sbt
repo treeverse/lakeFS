@@ -2,6 +2,7 @@ import build.BuildType
 
 lazy val baseName = "lakefs-spark"
 lazy val projectVersion = "0.9.1"
+lazy val hadoopVersion = "3.2.1"
 
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
@@ -73,11 +74,11 @@ def generateExamplesProject(buildType: BuildType) =
     )
 
 lazy val spark3Type =
-  new BuildType("301", "3.0.1", "0.10.11", "2.7.7", "hadoop2", "hadoop2-2.0.1")
+  new BuildType("301", "3.0.1", "0.10.11", "hadoop2", "hadoop2-2.0.1")
 
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
-  new BuildType("312-hadoop3", "3.1.2", "0.10.11", "3.2.1", "hadoop3", "hadoop3-2.0.1")
+  new BuildType("312-hadoop3", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
@@ -91,9 +92,9 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "io.lakefs" % "api-client" % "0.91.0",
     "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-    "org.apache.hadoop" % "hadoop-aws" % buildType.hadoopVersion % "provided",
-    "org.apache.hadoop" % "hadoop-common" % buildType.hadoopVersion % "provided",
-    "org.apache.hadoop" % "hadoop-azure" % buildType.hadoopVersion % "provided",
+    "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
+    "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+    "org.apache.hadoop" % "hadoop-azure" % hadoopVersion % "provided",
     "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
     "org.json4s" %% "json4s-native" % "3.6.12",
     "org.rogach" %% "scallop" % "4.0.3",
