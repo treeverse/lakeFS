@@ -60,8 +60,6 @@ func validateQuickstartEnv(cfg *config.Config) {
 		fmt.Println("installation parameters must not be changed in quickstart mode")
 		os.Exit(1)
 	}
-	fmt.Printf("Access Key ID    : %s\n", config.DefaultQuickstartKeyID)
-	fmt.Printf("Secret Access Key: %s\n", config.DefaultQuickstartSecretKey)
 }
 
 func useConfig(flagName string) bool {
