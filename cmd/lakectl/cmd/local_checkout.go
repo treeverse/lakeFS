@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -9,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -18,12 +16,11 @@ var localCheckoutCmd = &cobra.Command{
 	Short: "Sync local directory with the remote state.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		syncFlags := getLocalSyncFlags(cmd)
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
 		all := Must(cmd.Flags().GetBool("all"))
 		_, localPath := getLocalArgs(args, false, all)
 		if !all {
-			localCheckout(cmd.Context(), localPath, syncFlags, specifiedRef, cmd.Flags(), true)
+			localCheckout(cmd, localPath, specifiedRef, true)
 			return
 		}
 		fmt.Println("the operation will revert all changes in all directories that are linked with lakeFS.")
@@ -36,12 +33,14 @@ var localCheckoutCmd = &cobra.Command{
 			DieErr(err)
 		}
 		for _, d := range dirs {
-			localCheckout(cmd.Context(), filepath.Join(localPath, d), syncFlags, specifiedRef, cmd.Flags(), false)
+			localCheckout(cmd, filepath.Join(localPath, d), specifiedRef, false)
 		}
 	},
 }
 
-func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, specifiedRef string, flags *pflag.FlagSet, confirmByFlag bool) {
+func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, confirmByFlag bool) {
+	client := getClient()
+	locaSyncFlags := getLocalSyncFlags(cmd, client)
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -56,14 +55,13 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 	}
 
 	currentBase := remote.WithRef(idx.AtHead)
-	client := getClient()
-	diffs := local.Undo(localDiff(ctx, client, currentBase, idx.LocalPath()))
-	sigCtx := localHandleSyncInterrupt(ctx)
-	syncMgr := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
+	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
+	sigCtx := localHandleSyncInterrupt(cmd.Context())
+	syncMgr := local.NewSyncManager(sigCtx, client, locaSyncFlags.parallelism, locaSyncFlags.presign)
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {
 		fmt.Println("Uncommitted changes exist, the operation will revert all changes on local directory.")
-		confirmation, err := Confirm(flags, "Proceed")
+		confirmation, err := Confirm(cmd.Flags(), "Proceed")
 		if err != nil || !confirmation {
 			Die("command aborted", 1)
 		}
@@ -75,7 +73,7 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 			DieFmt("invalid uri, ref repository doesn't match")
 		}
 		newRemote := remote.WithRef(resolvedRef.Ref)
-		newHead := resolveCommitOrDie(ctx, client, newRemote.Repository, newRemote.Ref)
+		newHead := resolveCommitOrDie(cmd.Context(), client, newRemote.Repository, newRemote.Ref)
 		if newHead != idx.AtHead {
 			newBase := newRemote.WithRef(newHead)
 
@@ -85,7 +83,7 @@ func localCheckout(ctx context.Context, localPath string, syncFlags syncFlags, s
 				DieErr(err)
 			}
 
-			newDiffs := local.Undo(localDiff(ctx, client, newBase, idx.LocalPath()))
+			newDiffs := local.Undo(localDiff(cmd.Context(), client, newBase, idx.LocalPath()))
 			diffs = diffs.MergeWith(newDiffs, local.MergeStrategyOther)
 			currentBase = newBase
 		}

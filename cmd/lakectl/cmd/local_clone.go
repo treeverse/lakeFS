@@ -26,8 +26,9 @@ var localCloneCmd = &cobra.Command{
 	Short: "Clone a path from a lakeFS repository into a new directory.",
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
 		remote, localPath := getLocalArgs(args, true, false)
-		syncFlags := getLocalSyncFlags(cmd)
+		syncFlags := getLocalSyncFlags(cmd, client)
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		empty, err := fileutil.IsDirEmpty(localPath)
 		if err != nil {
@@ -43,7 +44,6 @@ var localCloneCmd = &cobra.Command{
 			DieErr(err)
 		}
 		stableRemote := remote.WithRef(head)
-		client := getClient()
 		// Dynamically construct changes
 		c := make(chan *local.Change, filesChanSize)
 		go func() {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -71,9 +72,19 @@ type syncFlags struct {
 	presign     bool
 }
 
-func getLocalSyncFlags(cmd *cobra.Command) syncFlags {
-	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
+func getLocalSyncFlags(cmd *cobra.Command, client *api.ClientWithResponses) syncFlags {
 	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
+	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
+	if !presignFlag.Changed {
+		resp, err := client.GetStorageConfigWithResponse(cmd.Context())
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+		presign = resp.JSON200.PreSignSupport
+	}
+
+	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
 	return syncFlags{parallelism: parallelism, presign: presign}
 }
 
