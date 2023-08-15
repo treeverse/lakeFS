@@ -26,7 +26,10 @@ def settingsToCompileIn(dir: String, flavour: String = "") = {
 }
 
 def generateCoreProject(buildType: BuildType) =
-  Project(s"${baseName}-client-${buildType.name}", file(s"core"))
+  Project(if (buildType.name != null) s"${baseName}-client-${buildType.name}"
+          else s"${baseName}-client",
+          file(s"core")
+         )
     .settings(
       sharedSettings,
       assembly / assemblyShadeRules := shadeRules,
@@ -79,13 +82,17 @@ lazy val spark3Type =
 // EMR-6.5.0 beta, managed GC
 lazy val spark312Type =
   new BuildType("312-hadoop3", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
+
+lazy val coreType =
+  new BuildType(null, "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
+lazy val core = generateCoreProject(coreType)
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
 lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
 lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
 
 lazy val root =
-  (project in file(".")).aggregate(core3, core312, examples3, examples312)
+  (project in file(".")).aggregate(core, core3, core312, examples3, examples312)
 
 def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
   Seq(
