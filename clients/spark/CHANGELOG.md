@@ -1,4 +1,9 @@
 # Changelog
+
+## v0.10.0 - 2023-08-15
+* Bug fixes and improvements.
+* Seperated flows of committs and uncommitted GC are no longer supported. Use the [new GC job](https://docs.lakefs.io/howto/garbage-collection/).
+
 ## v0.9.1 - 2023-07-31
 * Fix bug when GC runs into the initial commit repository.
 * Fix bug when GC runs on a bucket outside the provided region. (#6283)
