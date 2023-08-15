@@ -215,7 +215,7 @@ jobs:
           go test -timeout 30m -v ./esti \
             -system-tests -use-local-credentials -run=TestUnifiedGC \
             -spark-image-tag=3.2.1 \
-            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly-hadoop3.jar
+            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly-core.jar
         env:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
@@ -741,7 +741,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly${{ matrix.spark.project }}.jar
+          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly-${{ matrix.spark.project }}.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
