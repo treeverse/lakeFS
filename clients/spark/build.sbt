@@ -26,11 +26,7 @@ def settingsToCompileIn(dir: String, flavour: String = "") = {
 }
 
 def generateCoreProject(buildType: BuildType) = {
-  var projectName = s"${baseName}-client"
-  if (buildType.name != null) {
-    projectName = s"${projectName}-${buildType.name}"
-  }
-  Project(projectName, file("core"))
+  Project(s"${baseName}-client${buildType.suffix}", file("core"))
     .settings(
       sharedSettings,
       assembly / assemblyShadeRules := shadeRules,
@@ -54,14 +50,14 @@ def generateCoreProject(buildType: BuildType) = {
 
       // Uncomment to get (very) full stacktraces in test:
       //      Test / testOptions += Tests.Argument("-oF"),
-      target := file(s"target/${projectName}/"),
+      target := file(s"target/core${buildType.suffix}/"),
       buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
       buildInfoPackage := "io.treeverse.clients"
     )
     .enablePlugins(S3Plugin, BuildInfoPlugin)
 }
 def generateExamplesProject(buildType: BuildType) =
-  Project(s"${baseName}-examples-${buildType.name}", file(s"examples"))
+  Project(s"${baseName}-examples${buildType.suffix}", file(s"examples"))
     .settings(
       sharedSettings,
       settingsToCompileIn("examples", buildType.hadoopFlavour),
@@ -73,7 +69,7 @@ def generateExamplesProject(buildType: BuildType) =
         "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194"
       ),
       assembly / mainClass := Some("io.treeverse.examples.List"),
-      target := file(s"target/examples-${buildType.name}/"),
+      target := file(s"target/examples${buildType.suffix}/"),
       run / fork := false // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
     )
 
@@ -85,7 +81,7 @@ lazy val spark312Type =
   new BuildType("312-hadoop3", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
 
 lazy val coreType =
-  new BuildType(null, "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
+  new BuildType("", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
 lazy val core = generateCoreProject(coreType)
 lazy val core3 = generateCoreProject(spark3Type)
 lazy val core312 = generateCoreProject(spark312Type)
