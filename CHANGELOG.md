@@ -2,6 +2,13 @@
 
 ## UNRELEASED
 
+# v0.106.2
+
+:bug: Bugs fixed:
+
+- Refresh credentials if needed before pre-signing URLs, include S3 credentials expiry in their requested lifetime, and make these S3 parameters configurable (#6392)
+- Add meaningful error on block unsupported operation and check pre-sign capabilities in lakectl local (#6408)
+
 ## v0.106.1
 
 - Fix: quickstart validation (#6402)
