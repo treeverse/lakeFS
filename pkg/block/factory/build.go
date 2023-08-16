@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -24,8 +25,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
-const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
+const (
+	// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
+	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
+)
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
@@ -82,7 +85,7 @@ func buildLocalAdapter(ctx context.Context, params params.Local) (*local.Adapter
 	return adapter, nil
 }
 
-func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*session.Session, error) {
+func BuildS3Client(awsConfig *aws.Config, webIdentity *params.S3WebIdentity, skipVerifyCertificateTestOnly bool) (*session.Session, error) {
 	client := http.DefaultClient
 	if skipVerifyCertificateTestOnly {
 		tr := &http.Transport{
@@ -90,7 +93,22 @@ func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*ses
 		}
 		client = &http.Client{Transport: tr}
 	}
-	sess, err := session.NewSession(params, aws.NewConfig().WithHTTPClient(client))
+	opts := session.Options{}
+	opts.Config.MergeIn(awsConfig, aws.NewConfig().WithHTTPClient(client))
+	if webIdentity != nil {
+		wi := *webIdentity // Copy WebIdentity: it will be used asynchronously.
+		opts.CredentialsProviderOptions = &session.CredentialsProviderOptions{
+			WebIdentityRoleProviderOptions: func(wirp *stscreds.WebIdentityRoleProvider) {
+				if wi.SessionDuration > 0 {
+					wirp.Duration = wi.SessionDuration
+				}
+				if wi.SessionExpiryWindow > 0 {
+					wirp.ExpiryWindow = wi.SessionExpiryWindow
+				}
+			},
+		}
+	}
+	sess, err := session.NewSessionWithOptions(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +117,7 @@ func BuildS3Client(params *aws.Config, skipVerifyCertificateTestOnly bool) (*ses
 }
 
 func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	sess, err := BuildS3Client(params.AwsConfig, params.SkipVerifyCertificateTestOnly)
+	sess, err := BuildS3Client(params.AwsConfig, params.WebIdentity, params.SkipVerifyCertificateTestOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +135,9 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	}
 	if params.ServerSideEncryptionKmsKeyID != "" {
 		opts = append(opts, s3a.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
+	}
+	if params.WebIdentity != nil && params.WebIdentity.SessionExpiryWindow > 0 {
+		opts = append(opts, s3a.WithPreSignedRefreshWindow(params.WebIdentity.SessionExpiryWindow))
 	}
 	adapter := s3a.NewAdapter(sess, opts...)
 	logging.FromContext(ctx).WithField("type", "s3").Info("initialized blockstore adapter")

@@ -24,6 +24,19 @@ type Local struct {
 	AllowedExternalPrefixes []string
 }
 
+// S3WebIdentity contains parameters for customizing S3 web identity.  This
+// is also used when configuring S3 with IRSA in EKS (Kubernetes).
+type S3WebIdentity struct {
+	// SessionDuration is the duration WebIdentityRoleProvider will
+	// request for a token for its assumed role.  It can be 1 hour or
+	// more, but its maximum is configurable on AWS.
+	SessionDuration time.Duration
+
+	// SessionExpiryWindow is the time before credentials expiry that
+	// the WebIdentityRoleProvider may request a fresh token.
+	SessionExpiryWindow time.Duration
+}
+
 type S3 struct {
 	AwsConfig                     *aws.Config
 	StreamingChunkSize            int
@@ -35,6 +48,7 @@ type S3 struct {
 	PreSignedExpiry               time.Duration
 	DisablePreSigned              bool
 	DisablePreSignedUI            bool
+	WebIdentity                   *S3WebIdentity
 }
 
 type GS struct {
