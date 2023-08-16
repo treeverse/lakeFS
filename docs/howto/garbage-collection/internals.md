@@ -5,7 +5,7 @@ parent: Garbage Collection
 grand_parent: How-To
 nav_order: 1
 has_children: false
-redirect:
+redirect_from: 
     - /howto/gc-internals.html
 ---
 
