@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -127,10 +128,18 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 	case ChangeTypeRemoved:
 		if change.Source == ChangeSourceRemote {
 			// remote deleted something, delete it locally!
-			return s.deleteLocal(rootPath, change)
+			err = s.deleteLocal(rootPath, change)
+			if err != nil {
+				err = fmt.Errorf("delete local %s failed: %w", change.Path, err)
+			}
+			return err
 		} else {
 			// we deleted something, delete it on remote!
-			return s.deleteRemote(ctx, remote, change)
+			err = s.deleteRemote(ctx, remote, change)
+			if err != nil {
+				err = fmt.Errorf("delete remote %s failed: %w", change.Path, err)
+			}
+			return err
 		}
 	case ChangeTypeConflict:
 		return ErrConflict
@@ -158,7 +167,9 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 	if statResp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("%s (stat HTTP %d): %w", change.Path, statResp.StatusCode(), ErrDownloadingFile)
+		httpErr := api.Error{Message: "no content"}
+		_ = json.Unmarshal(statResp.Body, &httpErr)
+		return fmt.Errorf("(stat: HTTP %d, message: %s): %w", statResp.StatusCode(), httpErr.Message, ErrDownloadingFile)
 	}
 	// get mtime
 	mtimeSecs, err := getMtimeFromStats(*statResp.JSON200)

@@ -904,6 +904,7 @@ Name | Type | Description  | Notes
 **200** | object metadata |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**400** | Bad Request |  -  |
 **410** | object gone (but partial metadata may be available) |  -  |
 **0** | Internal Server Error |  -  |
 

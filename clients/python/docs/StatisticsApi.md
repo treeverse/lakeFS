@@ -115,7 +115,7 @@ void (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | reported successfully |  -  |
-**400** | bad request |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 
