@@ -5,7 +5,7 @@ parent: Garbage Collection
 grand_parent: How-To
 nav_order: 98
 has_children: false
-redirect:
+redirect_from: 
     - /howto/garbage-collection-committed.html
 ---
 
