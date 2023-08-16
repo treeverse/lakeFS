@@ -6,6 +6,7 @@
   --color-bg-added: #e6ffec;
   --color-bg-removed: #ffece6;
   --color-bg-changed: #fff6db;
+  --color-bg-unknown: #f1f4ff;
   --color-bg-conflict: #fff3cd;
 }
 
@@ -708,6 +709,10 @@ td.change-summary {
 
 .otf-diff-delete {
   background-color: var(--color-bg-removed);
+}
+
+.otf-diff-unknown {
+  background-color: var(--color-bg-unknown);
 }
 
 .table.table-diff {
