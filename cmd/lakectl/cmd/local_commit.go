@@ -34,8 +34,9 @@ var localCommitCmd = &cobra.Command{
 	Short: "Commit changes from local directory to the lakeFS branch it tracks.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
 		_, localPath := getLocalArgs(args, false, false)
-		syncFlags := getLocalSyncFlags(cmd)
+		syncFlags := getLocalSyncFlags(cmd, client)
 		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
 		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
 		if message == "" && !allowEmptyMessage {
@@ -52,7 +53,6 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
-		client := getClient()
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 

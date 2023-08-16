@@ -93,7 +93,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: bad request
+          description: Bad Request
         "409":
           content:
             application/json:
@@ -214,7 +214,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: bad request
+          description: Bad Request
         default:
           content:
             application/json:
@@ -4494,14 +4494,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "410":
+          description: object gone (but partial metadata may be available)
         default:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-        "410":
-          description: object gone (but partial metadata may be available)
       summary: get object metadata
       tags:
       - objects
@@ -5626,7 +5632,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          description: bad request
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -5734,6 +5740,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Precondition Failed
+    BadRequest:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Bad Request
     Forbidden:
       content:
         application/json:

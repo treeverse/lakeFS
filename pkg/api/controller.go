@@ -2073,7 +2073,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrParentOutOfRange),
 		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
-		errors.Is(err, block.ErrInvalidAddress):
+		errors.Is(err, block.ErrInvalidAddress),
+		errors.Is(err, block.ErrOperationNotSupported):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
