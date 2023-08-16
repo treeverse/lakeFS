@@ -66,7 +66,7 @@ func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*s3.Walker, error) {
 		if err != nil {
 			return nil, err
 		}
-		sess, err = factory.BuildS3Client(s3params.AwsConfig, s3params.SkipVerifyCertificateTestOnly)
+		sess, err = factory.BuildS3Client(s3params.AwsConfig, s3params.WebIdentity, s3params.SkipVerifyCertificateTestOnly)
 		if err != nil {
 			return nil, err
 		}

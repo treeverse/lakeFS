@@ -67,6 +67,7 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("blockstore.s3.max_retries", 5)
 	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
 	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)
+	viper.SetDefault("blockstore.s3.web_identity.session_expiry_window", 5*time.Minute)
 	viper.SetDefault("blockstore.s3.disable_pre_signed_ui", true)
 
 	viper.SetDefault("committed.local_cache.size_bytes", 1*1024*1024*1024)
