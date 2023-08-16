@@ -30,6 +30,7 @@ const (
 	OpTypeCreate    = "create"
 	OpTypeUpdate    = "update"
 	OpTypeDelete    = "delete"
+	OpTypeUnknown   = "unknown"
 )
 
 func getOpType(operationType OperationType) string {
@@ -38,8 +39,10 @@ func getOpType(operationType OperationType) string {
 		return OpTypeCreate
 	case OperationType_DELETE:
 		return OpTypeDelete
-	default:
+	case OperationType_UPDATE:
 		return OpTypeUpdate
+	default:
+		return OpTypeUnknown
 	}
 }
 

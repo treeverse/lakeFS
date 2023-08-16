@@ -42,6 +42,7 @@ enum OperationType {
   CREATE = 0;
   UPDATE = 1;
   DELETE = 2;
+  UNKNOWN = 3;
 }
 
 message DiffResponse {
