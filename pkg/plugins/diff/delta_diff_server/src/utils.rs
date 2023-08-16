@@ -7,19 +7,17 @@ use deltalake::DeltaDataTypeVersion;
 use prost_types::Timestamp;
 
 use crate::delta_ops::OP_TYPES;
-use crate::differ::{GatewayConfig, TableOperation};
+use crate::differ::{GatewayConfig, OperationType, TableOperation};
 
 #[derive(Debug)]
 pub enum TableOperationsError {
     MissingKey(String),
-    UnknownOperation(String),
 }
 
 impl Display for TableOperationsError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             TableOperationsError::MissingKey(key) => write!(f, "Key '{}' is missing", key),
-            TableOperationsError::UnknownOperation(op) => write!(f, "Unknown operation: '{}'", op),
         }
     }
 }
@@ -68,7 +66,7 @@ pub(crate) fn construct_table_op(commit_info: &CommitInfo, version: DeltaDataTyp
                 .collect();
 
             match prefix_matches.len() {
-                0 => return Err(TableOperationsError::UnknownOperation(op_name.to_string())),
+                0 => OperationType::Unknown as i32,
                 1 => prefix_matches[0].1,
                 _ => {
                     // Handle multiple prefix matches

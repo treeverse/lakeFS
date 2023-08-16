@@ -116,6 +116,7 @@ pub enum OperationType {
     Create = 0,
     Update = 1,
     Delete = 2,
+    Unknown = 3,
 }
 impl OperationType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -127,6 +128,7 @@ impl OperationType {
             OperationType::Create => "CREATE",
             OperationType::Update => "UPDATE",
             OperationType::Delete => "DELETE",
+            OperationType::Unknown => "UNKNOWN",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -135,6 +137,7 @@ impl OperationType {
             "CREATE" => Some(Self::Create),
             "UPDATE" => Some(Self::Update),
             "DELETE" => Some(Self::Delete),
+            "UNKNOWN" => Some(Self::Unknown),
             _ => None,
         }
     }
