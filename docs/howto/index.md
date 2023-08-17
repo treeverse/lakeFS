@@ -3,7 +3,7 @@ title: How-To
 description: How to perform various tasks in lakeFS
 nav_order: 5
 has_children: true
-has_toc: true
+has_toc: false
 ---
 
 # lakeFS - How To
