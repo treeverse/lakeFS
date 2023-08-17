@@ -58,9 +58,9 @@ func (e *EntriesIterator) Next() bool {
 
 func (e *EntriesIterator) SeekGE(key []byte) {
 	e.entry = nil
-	e.iter.Rewind()
-	e.iter.Seek(composeKey(e.partitionKey, key))
+	e.start = composeKey(e.partitionKey, key)
 	e.primed = false
+	e.iter.Seek(e.start)
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
