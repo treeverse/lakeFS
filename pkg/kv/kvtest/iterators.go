@@ -14,7 +14,6 @@ import (
 const (
 	firstPartitionKey  = "m"
 	secondPartitionKey = "ma"
-	separatorPartition = "s"
 )
 
 type StoreWithCounter struct {
@@ -51,21 +50,6 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 
 		err = kv.SetMsg(ctx, store, secondPartitionKey, m[i].Name, &m[i])
-		if err != nil {
-			t.Fatal("failed to set model", err)
-		}
-	}
-
-	m2 := []TestModel{
-		{Name: []byte("a")},
-		{Name: []byte("b/1")},
-		{Name: []byte("b/2")},
-		{Name: []byte("c/1")},
-		{Name: []byte("c/2")},
-	}
-
-	for i := 0; i < len(m2); i++ {
-		err := kv.SetMsg(ctx, store, separatorPartition, m2[i].Name, &m2[i])
 		if err != nil {
 			t.Fatal("failed to set model", err)
 		}
@@ -166,36 +150,25 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 	})
 
-	t.Run("seekGE with separator", func(t *testing.T) {
-		t.Skip()
-		t.Helper()
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), separatorPartition, 0)
+	t.Run("seekGE past end", func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-
-		for _, seekValue := range [][]byte{
-			[]byte(""),
-			graveler.UpperBoundForPrefix([]byte("a/")),
-			graveler.UpperBoundForPrefix([]byte("b/")),
-		} {
-			itr.SeekGE(seekValue)
-			if !itr.Next() {
-				t.Fatal("expected Next to be true")
-			}
-			e := itr.Entry()
-			model, ok := e.Value.(*TestModel)
-			if !ok {
-				t.Fatalf("Failed to cast entry to TestModel")
-			}
-			names = append(names, string(model.Name))
+		itr.SeekGE([]byte("b"))
+		if !itr.Next() {
+			t.Fatal("expected Next to be true")
 		}
-		for _, n := range names {
-			println(n)
+		e := itr.Entry()
+		model, ok := e.Value.(*TestModel)
+		if !ok {
+			t.Fatalf("Failed to cast entry to TestModel")
 		}
-		itr.SeekGE(graveler.UpperBoundForPrefix([]byte("c/")))
+		if string(model.Name) != "b" {
+			t.Fatalf("expected value b from iterator")
+		}
+		itr.SeekGE(graveler.UpperBoundForPrefix([]byte("d1")))
 		if itr.Next() {
 			t.Fatalf("expected Next to be false")
 		}
@@ -204,6 +177,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 	})
 }
+
 func testPrimaryIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
