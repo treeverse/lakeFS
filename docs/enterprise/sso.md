@@ -13,7 +13,7 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> SSO is also available on [lakeFS Cloud]({% link cloud/sso.md %}). Using the open-source version of lakeFS? Read more about [authentication]({% link reference/authentication.md %}). 
+> SSO is also available on [lakeFS Cloud]({% link cloud/sso.md %}). Using the open-source version of lakeFS? Read more about [authentication]({% link reference/security/authentication.md %}). 
 
 Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
 
@@ -219,4 +219,4 @@ Notes:
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
 
-[rbac-preconfigured]:  {% link reference/rbac.md %}#preconfigured-groups
+[rbac-preconfigured]:  {% link reference/security/rbac.md %}#preconfigured-groups
