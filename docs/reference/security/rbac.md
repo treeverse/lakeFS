@@ -1,11 +1,11 @@
 ---
 title: Role-Based Access Control (RBAC)
 description: This section covers authorization (using RBAC) of your lakeFS server.
-parent: Reference
-nav_order: 65
-has_children: false
+grand_parent: Reference
+parent: Security
 redirect_from:
   - /reference/authorization.html
+  - /reference/rbac.html
 ---
 
 
@@ -305,7 +305,7 @@ The following Policies are created during initial setup:
 
 ## Additional Policies
 
-You can create additional policies to further limit user access. Use the web UI or the [lakectl auth](./cli.html#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
+You can create additional policies to further limit user access. Use the web UI or the [lakectl auth]({% link reference/cli.md%}#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
 
 ```json
 {
