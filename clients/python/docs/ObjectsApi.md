@@ -1119,6 +1119,7 @@ Name | Type | Description  | Notes
 import time
 import lakefs_client
 from lakefs_client.api import objects_api
+from lakefs_client.model.object_user_metadata import ObjectUserMetadata
 from lakefs_client.model.error import Error
 from lakefs_client.model.object_stats import ObjectStats
 from pprint import pprint
@@ -1170,6 +1171,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     path = "path_example" # str | relative to the branch
     storage_class = "storageClass_example" # str |  (optional)
+    user_metadata =  # ObjectUserMetadata |  (optional)
     if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
     content = open('/path/to/file', 'rb') # file_type | Only a single file per upload which must be named \\\"content\\\". (optional)
 
@@ -1183,7 +1185,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, content=content)
+        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, user_metadata=user_metadata, if_none_match=if_none_match, content=content)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
@@ -1198,6 +1200,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
  **storage_class** | **str**|  | [optional]
+ **user_metadata** | **ObjectUserMetadata**|  | [optional]
  **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
  **content** | **file_type**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 

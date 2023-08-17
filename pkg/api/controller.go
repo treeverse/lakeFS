@@ -2648,6 +2648,9 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	} else {
 		entryBuilder.AddressType(catalog.AddressTypeFull)
 	}
+	if params.UserMetadata != nil {
+		entryBuilder.Metadata(params.UserMetadata.AdditionalProperties)
+	}
 	entry := entryBuilder.Build()
 
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite))

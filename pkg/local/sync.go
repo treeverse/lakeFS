@@ -298,7 +298,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		return err
 	}
 	// not pre-signed
-	_, err = helpers.ClientUploadDirect(
+	_, err = helpers.ClientUpload(
 		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
 	return err
 }

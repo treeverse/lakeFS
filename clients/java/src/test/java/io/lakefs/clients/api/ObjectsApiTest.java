@@ -219,9 +219,10 @@ public class ObjectsApiTest {
         String branch = null;
         String path = null;
         String storageClass = null;
+        Map<String, String> userMetadata = null;
         String ifNoneMatch = null;
         File content = null;
-                ObjectStats response = api.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
+                ObjectStats response = api.uploadObject(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content);
         // TODO: test validations
     }
     

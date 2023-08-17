@@ -6,21 +6,75 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api"
 )
 
+// ClientUpload uploads contents as a file via lakeFS
+func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
+	pr, pw := io.Pipe()
+	defer func() {
+		_ = pr.Close()
+	}()
+	mpw := multipart.NewWriter(pw)
+	mpContentType := mpw.FormDataContentType()
+	go func() {
+		defer func() {
+			_ = pw.Close()
+		}()
+		filename := filepath.Base(objPath)
+		const fieldName = "content"
+		var err error
+		var cw io.Writer
+		// when no content-type is specified we let 'CreateFromFile' add the part with the default content type.
+		// otherwise, we add a part and set the content-type.
+		if contentType != "" {
+			h := make(textproto.MIMEHeader)
+			contentDisposition := mime.FormatMediaType("form-data", map[string]string{"name": fieldName, "filename": filename})
+			h.Set("Content-Disposition", contentDisposition)
+			h.Set("Content-Type", contentType)
+			cw, err = mpw.CreatePart(h)
+		} else {
+			cw, err = mpw.CreateFormFile(fieldName, filename)
+		}
+		if err != nil {
+			_ = pw.CloseWithError(err)
+			return
+		}
+		if _, err := io.Copy(cw, contents); err != nil {
+			_ = pw.CloseWithError(err)
+			return
+		}
+		_ = mpw.Close()
+	}()
+
+	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
+		Path:         objPath,
+		UserMetadata: &api.ObjectUserMetadata{AdditionalProperties: metadata},
+	}, mpContentType, pr)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusCreated {
+		return nil, ResponseAsError(resp)
+	}
+	return resp.JSON201, nil
+}
+
 // ClientUploadDirect uploads contents as a file using client-side ("direct") access to underlying
 // storage.  It requires credentials both to lakeFS and to underlying storage, but
 // considerably reduces the load on the lakeFS server.
 func ClientUploadDirect(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*api.ObjectStats, error) {
 	stagingLocation, err := getPhysicalAddress(ctx, client, repoID, branchID, &api.GetPhysicalAddressParams{
-		Path:    objPath,
-		Presign: swag.Bool(true),
+		Path: objPath,
 	})
 	if err != nil {
 		return nil, err
