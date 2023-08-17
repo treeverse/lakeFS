@@ -2,7 +2,6 @@
 title: Authentication 
 description: This section covers Authentication of your lakeFS server.
 parent: Reference
-nav_order: 60
 has_children: false
 ---
 

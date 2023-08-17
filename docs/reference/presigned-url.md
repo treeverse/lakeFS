@@ -2,7 +2,6 @@
 title: Presigned URL
 description: Configuring lakeFS to use presigned URLs
 parent: Reference
-nav_order: 100
 has_children: false
 ---
 

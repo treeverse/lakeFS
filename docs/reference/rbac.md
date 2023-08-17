@@ -2,7 +2,6 @@
 title: Role-Based Access Control (RBAC)
 description: This section covers authorization (using RBAC) of your lakeFS server.
 parent: Reference
-nav_order: 65
 has_children: false
 redirect_from:
   - /reference/authorization.html
