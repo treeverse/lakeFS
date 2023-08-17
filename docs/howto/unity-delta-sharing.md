@@ -3,6 +3,8 @@ title: Unity Delta Sharing
 parent: lakeFS Cloud
 description: The lakeFS Delta Sharing service lets you export DeltaLake and HMS-style tables stored on lakeFS over the Delta Sharing protocol. This is particularly useful with DataBricks Unity.
 has_children: false
+redirect_from:
+  - /cloud/unity-delta-sharing.html
 ---
 
 # Unity Delta Sharing

@@ -1,21 +1,23 @@
 ---
 title: lakeFS Cloud
-description: This section includes lakeFS Cloud documentation
-nav_order: 80
-has_children: true
-redirect_from: "/cloud.html"
-has_toc: false
+description: lakeFS Cloud is a fully-managed lakeFS solution
+parent: Understanding lakeFS
+redirect_from: 
+    - /cloud.html
+    - /cloud/index.html
 ---
 
 # lakeFS Cloud
+
 [lakeFS Cloud](https://lakefs.cloud) is a fully-managed lakeFS solution provided by Treeverse, implemented using our best practices, providing high availability, auto-scaling, support and enterprise-ready features.
 	
 ## lakeFS Cloud Features
 * [Role-Based Access Control]({% link reference/security/rbac.md %})
-* [Auditing](./auditing.md)
-* [Single-Sign-On](./sso.md) (including support for SAML, OIDC, AD FS, Okta, and Azure AD)
-* [Managed Garbage Collection](./managed-gc.md)
-* [Private-Link](./private-link.md)
+* [Auditing]({% link reference/auditing.md %})
+* [Single-Sign-On]({% link reference/security/sso.md %}#sso-for-lakefs-cloud) (including support for SAML, OIDC, AD FS, Okta, and Azure AD)
+* [Managed Garbage Collection]({% link howto/garbage-collection/managed-gc.md %})
+* [Private-Link]({% link howto/private-link.md %})
+* [Unity Delta Sharing]({% link howto/unity-delta-sharing.md %})
 * SOC 2 Type II Compliance
 
 ## How lakeFS Cloud interacts with your infrastructure
