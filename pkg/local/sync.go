@@ -25,7 +25,7 @@ import (
 
 const (
 	DefaultDirectoryMask   = 0o755
-	ClientMtimeMetadataKey = "x-client-mtime"
+	ClientMtimeMetadataKey = "X-LakeFS-Client-Mtime"
 )
 
 func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
