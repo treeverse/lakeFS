@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"net/http"
 	"net/url"
 	"os"
@@ -162,7 +166,44 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func getClient() *api.ClientWithResponses {
+func getGatewayClient() *s3.S3 {
+	api := getClient()
+	const defaultS3GatewayRegion = "us-east-1"
+	region := defaultS3GatewayRegion
+	gatewayConfigResponse, err := api.GetS3GatewayConfigWithResponse(context.Background())
+	if err == nil {
+		if gatewayConfigResponse.StatusCode() == http.StatusOK {
+			region = gatewayConfigResponse.JSON200.Region
+		}
+	}
+	client := getHTTPClient()
+	accessKeyID := cfg.Values.Credentials.AccessKeyID
+	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
+	serverEndpoint := string(cfg.Values.Server.EndpointURL)
+	u, err := url.Parse(serverEndpoint)
+	if err != nil {
+		DieErr(err)
+	}
+	endpoint := (&url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
+	}).String()
+
+	creds := credentials.NewStaticCredentials(string(accessKeyID), string(secretAccessKey), "")
+	sess, err := session.NewSession(&aws.Config{
+		Credentials:      creds,
+		Endpoint:         aws.String(endpoint),
+		Region:           aws.String(region),
+		S3ForcePathStyle: aws.Bool(true),
+		HTTPClient:       client,
+	})
+	if err != nil {
+		DieErr(err)
+	}
+	return s3.New(sess)
+}
+
+func getHTTPClient() *http.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -172,7 +213,11 @@ func getClient() *api.ClientWithResponses {
 	httpClient := &http.Client{
 		Transport: transport,
 	}
+	return httpClient
+}
 
+func getClient() *api.ClientWithResponses {
+	httpClient := getHTTPClient()
 	accessKeyID := cfg.Values.Credentials.AccessKeyID
 	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))

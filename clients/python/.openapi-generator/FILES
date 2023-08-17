@@ -88,6 +88,7 @@ docs/RepositoryMetadata.md
 docs/ResetCreation.md
 docs/RetentionApi.md
 docs/RevertCreation.md
+docs/S3GatewayConfig.md
 docs/Setup.md
 docs/SetupState.md
 docs/StageRangeCreation.md
@@ -209,6 +210,7 @@ lakefs_client/model/repository_list.py
 lakefs_client/model/repository_metadata.py
 lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
+lakefs_client/model/s3_gateway_config.py
 lakefs_client/model/setup.py
 lakefs_client/model/setup_state.py
 lakefs_client/model/stage_range_creation.py
@@ -322,6 +324,7 @@ test/test_repository_metadata.py
 test/test_reset_creation.py
 test/test_retention_api.py
 test/test_revert_creation.py
+test/test_s3_gateway_config.py
 test/test_setup.py
 test/test_setup_state.py
 test/test_stage_range_creation.py

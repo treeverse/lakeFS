@@ -76,7 +76,7 @@ var localCloneCmd = &cobra.Command{
 			}
 		}()
 		sigCtx := localHandleSyncInterrupt(cmd.Context())
-		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
+		s := local.NewSyncManager(sigCtx, getGatewayClient(), client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(localPath, stableRemote, c)
 		if err != nil {
 			DieErr(err)

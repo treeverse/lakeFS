@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
+import io.lakefs.clients.api.model.S3GatewayConfig;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
@@ -64,6 +65,20 @@ public class ConfigApiTest {
     @Test
     public void getLakeFSVersionTest() throws ApiException {
                 VersionConfig response = api.getLakeFSVersion();
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * retrieve S3 Gateway information from lakeFS
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getS3GatewayConfigTest() throws ApiException {
+                S3GatewayConfig response = api.getS3GatewayConfig();
         // TODO: test validations
     }
     

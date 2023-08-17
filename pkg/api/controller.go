@@ -1426,6 +1426,22 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
+func (c *Controller) GetS3GatewayConfig(w http.ResponseWriter, r *http.Request) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadConfigAction,
+			Resource: permissions.All,
+		},
+	}) {
+		return
+	}
+
+	response := S3GatewayConfig{
+		Region: c.Config.Gateways.S3.Region,
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

@@ -1043,6 +1043,14 @@ components:
         import_support:
           type: boolean
 
+    S3GatewayConfig:
+      type: object
+      required:
+        - region
+      properties:
+        region:
+          type: string
+
     VersionConfig:
       type: object
       properties:
@@ -4558,6 +4566,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageConfig"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/gateway/s3:
+    get:
+      tags:
+        - config
+      operationId: getS3GatewayConfig
+      description: retrieve S3 Gateway information from lakeFS
+      responses:
+        200:
+          description: lakeFS S3 Gateway configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/S3GatewayConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
   /config/garbage-collection:

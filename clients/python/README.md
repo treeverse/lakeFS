@@ -167,6 +167,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**log_branch_commits**](docs/CommitsApi.md#log_branch_commits) | **GET** /repositories/{repository}/branches/{branch}/commits | get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
 *ConfigApi* | [**get_garbage_collection_config**](docs/ConfigApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
 *ConfigApi* | [**get_lake_fs_version**](docs/ConfigApi.md#get_lake_fs_version) | **GET** /config/version | 
+*ConfigApi* | [**get_s3_gateway_config**](docs/ConfigApi.md#get_s3_gateway_config) | **GET** /config/gateway/s3 | 
 *ConfigApi* | [**get_setup_state**](docs/ConfigApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config/storage | 
 *ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
@@ -302,6 +303,7 @@ Class | Method | HTTP request | Description
  - [RepositoryMetadata](docs/RepositoryMetadata.md)
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
+ - [S3GatewayConfig](docs/S3GatewayConfig.md)
  - [Setup](docs/Setup.md)
  - [SetupState](docs/SetupState.md)
  - [StageRangeCreation](docs/StageRangeCreation.md)

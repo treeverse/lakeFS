@@ -36,6 +36,12 @@ class TestConfigApi(unittest.TestCase):
         """
         pass
 
+    def test_get_s3_gateway_config(self):
+        """Test case for get_s3_gateway_config
+
+        """
+        pass
+
     def test_get_setup_state(self):
         """Test case for get_setup_state
 

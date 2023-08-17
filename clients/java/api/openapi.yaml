@@ -5541,6 +5541,26 @@ paths:
       tags:
       - config
       x-accepts: application/json
+  /config/gateway/s3:
+    get:
+      description: retrieve S3 Gateway information from lakeFS
+      operationId: getS3GatewayConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/S3GatewayConfig'
+          description: lakeFS S3 Gateway configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/garbage-collection:
     get:
       description: get information of gc settings
@@ -7060,6 +7080,15 @@ components:
       - import_support
       - pre_sign_support
       - pre_sign_support_ui
+      type: object
+    S3GatewayConfig:
+      example:
+        region: region
+      properties:
+        region:
+          type: string
+      required:
+      - region
       type: object
     VersionConfig:
       example:

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"io"
 	"net/http"
 	"os"
@@ -24,8 +26,9 @@ import (
 )
 
 const (
-	DefaultDirectoryMask   = 0o755
-	ClientMtimeMetadataKey = "x-client-mtime"
+	DefaultDirectoryMask          = 0o755
+	ClientMtimeMetadataKey        = "x-client-mtime"
+	ClientMtimeGatewayMetadataKey = "X-Amz-Meta-X-Client-Mtime"
 )
 
 func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
@@ -33,6 +36,11 @@ func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
 		return stats.Mtime, nil
 	}
 	clientMtime, hasClientMtime := stats.Metadata.Get(ClientMtimeMetadataKey)
+	if hasClientMtime {
+		// parse
+		return strconv.ParseInt(clientMtime, 10, 64)
+	}
+	clientMtime, hasClientMtime = stats.Metadata.Get(ClientMtimeGatewayMetadataKey)
 	if hasClientMtime {
 		// parse
 		return strconv.ParseInt(clientMtime, 10, 64)
@@ -48,6 +56,7 @@ type Tasks struct {
 
 type SyncManager struct {
 	ctx            context.Context
+	gateway        *s3.S3
 	client         *api.ClientWithResponses
 	httpClient     *http.Client
 	progressBar    *ProgressPool
@@ -56,9 +65,10 @@ type SyncManager struct {
 	tasks          Tasks
 }
 
-func NewSyncManager(ctx context.Context, client *api.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
+func NewSyncManager(ctx context.Context, gateway *s3.S3, client *api.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
 	return &SyncManager{
 		ctx:            ctx,
+		gateway:        gateway,
 		client:         client,
 		httpClient:     http.DefaultClient,
 		progressBar:    NewProgressPool(),
@@ -88,7 +98,11 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 			done = true
 		default:
 			wg.Go(func() error {
-				return s.apply(ctx, rootPath, remote, c)
+				err := s.apply(ctx, rootPath, remote, c)
+				if err != nil {
+					return err
+				}
+				return nil
 			})
 		}
 		ch <- true // release
@@ -297,9 +311,27 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
 		return err
 	}
-	// not pre-signed
-	_, err = helpers.ClientUploadDirect(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+	// not pre-signed - upload through S3gw since its API supports setting metadata
+	return s3GatewayUpload(ctx, s.gateway, remote.Repository, remote.Ref, dest, metadata, "", reader)
+}
+
+func s3GatewayUpload(ctx context.Context, gateway *s3.S3, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) error {
+	// Create S3 service client
+	var ct *string
+	if contentType != "" {
+		ct = aws.String(contentType)
+	}
+	md := make(map[string]*string)
+	for k, v := range metadata {
+		md[k] = aws.String(v)
+	}
+	_, err := gateway.PutObjectWithContext(ctx, &s3.PutObjectInput{
+		Body:        contents,
+		Bucket:      aws.String(repoID),
+		ContentType: ct,
+		Key:         aws.String(fmt.Sprintf("%s/%s", branchID, objPath)),
+		Metadata:    md,
+	})
 	return err
 }
 

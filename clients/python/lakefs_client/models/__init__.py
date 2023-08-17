@@ -82,6 +82,7 @@ from lakefs_client.model.repository_list import RepositoryList
 from lakefs_client.model.repository_metadata import RepositoryMetadata
 from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation
+from lakefs_client.model.s3_gateway_config import S3GatewayConfig
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.stage_range_creation import StageRangeCreation
