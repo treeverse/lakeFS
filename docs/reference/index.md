@@ -34,6 +34,7 @@ nav_order: 20
 - [Presigned URL]({% link reference/security/presigned-url.md %})
 - [Access Control Lists (ACLs)]({% link reference/security/access-control-lists.md %})
 
-## Monitoring
+## Other Reference Documentation
 
 - [Monitoring using Prometheus]({% link reference/monitor.md %})
+- [Auditing]({% link reference/auditing.md %})
