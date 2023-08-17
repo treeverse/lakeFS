@@ -2,7 +2,6 @@
 title: dbt
 description: Integrating dbt and lakeFS
 parent: Integrations
-has_children: false
 redirect_from: /using/dbt.html
 ---
 

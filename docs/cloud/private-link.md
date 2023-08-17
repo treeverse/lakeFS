@@ -2,7 +2,6 @@
 title: Private Link
 description: Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
 parent: lakeFS Cloud
-has_children: false
 ---
 
 # Private Link

@@ -2,7 +2,6 @@
 title: Apache Iceberg
 description: How to integrate lakeFS with Apache Iceberg
 parent: Integrations
-has_children: false
 ---
 
 # Using lakeFS with Apache Iceberg

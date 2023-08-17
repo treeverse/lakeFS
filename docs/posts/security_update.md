@@ -1,6 +1,5 @@
 ---
 parent: posts
-has_children: false
 date: 2023-01-31
 search_exclude: true
 ---

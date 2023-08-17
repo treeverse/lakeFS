@@ -4,7 +4,6 @@ title: Reproducibility
 description: In this tutorial, we will explore how to use lakeFS for reproducibility of data.
 parent: Use Cases
 grand_parent: Understanding lakeFS
-has_children: false
 redirect_from:
    - /use_cases/reproducibility.html
 ---

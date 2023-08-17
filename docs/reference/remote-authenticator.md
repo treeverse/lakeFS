@@ -3,7 +3,6 @@ title: Remote Authenticator
 description: Create a pluggable remote authenticator to integrate lakeFS with your existing security infrastructure.
 parent: Reference
 nav_order: 62
-has_children: false
 ---
 
 # Remote Authenticator

@@ -2,7 +2,6 @@
 title: Managed Garbage Collection
 description: Reduce the operational overhead of running garbage collection manually.
 parent: lakeFS Cloud
-has_children: false
 ---
 
 # Managed Garbage Collection

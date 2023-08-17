@@ -4,7 +4,6 @@ description: Clean up unnecessary objects using the garbage collection feature i
 parent: Garbage Collection
 grand_parent: How-To
 nav_order: 98
-has_children: false
 redirect_from: 
     - /howto/garbage-collection-committed.html
 ---

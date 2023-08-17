@@ -3,7 +3,6 @@ title: Single Sign On (SSO) in lakeFS Enterprise
 description: How to configure Single Sign On in lakeFS Enterprise.
 parent: lakeFS Enterprise
 nav_order: 65
-has_children: false
 has_toc: false
 ---
 
