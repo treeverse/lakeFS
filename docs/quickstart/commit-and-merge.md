@@ -3,7 +3,6 @@ title: 4️⃣ Commit and Merge
 description: lakeFS quickstart / Commit the change and merge it back into the main branhch
 parent: ⭐ Quickstart ⭐
 nav_order: 20
-has_children: false
 next: ["Rollback the changes", "./rollback.html"]
 previous: ["Create a branch of the data", "./branch.html"]
 ---

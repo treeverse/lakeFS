@@ -3,7 +3,6 @@ title: Callouts
 description: Using and Customising Callouts in lakeFS Documentation
 parent: Documentation
 grand_parent: The lakeFS Project
-has_children: false
 redirect_from: 
   - /callouts.html
 ---

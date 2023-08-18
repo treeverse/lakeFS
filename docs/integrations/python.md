@@ -2,7 +2,6 @@
 title: Python
 description: Use Python to interact with your objects on lakeFS
 parent: Integrations
-has_children: false
 redirect_from: 
   - /using/python.html
   - /using/boto.html

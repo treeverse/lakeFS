@@ -3,7 +3,6 @@ title: Upgrade lakeFS
 description: How to upgrade lakeFS to the latest version.
 grand_parent: How-To
 parent: Install lakeFS
-has_children: false
 redirect_from: 
   - /deploying-aws/upgrade.html
   - /reference/upgrade.html
