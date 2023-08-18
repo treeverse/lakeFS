@@ -4,7 +4,6 @@ description: Clean up uncommitted objects that are no longer needed.
 parent: Garbage Collection
 grand_parent: How-To
 nav_order: 99
-has_children: false
 redirect_from: 
     - /howto/garbage-collection-uncommitted.html
 ---

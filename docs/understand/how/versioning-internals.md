@@ -3,7 +3,6 @@ title: Versioning Internals
 parent: How lakeFS Works
 grand_parent: Understanding lakeFS
 description: This section explains how versioning works in lakeFS.
-has_children: false
 redirect_from: 
   - /understand/architecture/data-model.html
   - /understand/understand/data-model.html

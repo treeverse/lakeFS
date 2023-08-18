@@ -3,7 +3,6 @@ title: Internal database structure
 parent: How lakeFS Works
 grand_parent: Understanding lakeFS
 description: Brief introduction to lakeFS over KV
-has_children: false
 redirect_from:
   - /understand/kv-in-a-nutshell.html
 ---

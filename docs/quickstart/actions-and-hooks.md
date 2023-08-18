@@ -3,7 +3,6 @@ title: 6️⃣ Using Actions and Hooks in lakeFS
 description: lakeFS quickstart / Use Actions and Hooks to enforce conditions when committing and merging changes
 parent: ⭐ Quickstart ⭐
 nav_order: 30
-has_children: false
 next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"]
 previous: ["Rollback the changes", "./rollback.html"]
 ---

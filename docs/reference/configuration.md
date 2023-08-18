@@ -2,7 +2,6 @@
 title: lakeFS Server Configuration
 description: Configuration reference for lakeFS Server
 parent: Reference
-has_children: false
 ---
 
 # lakeFS Server Configuration

@@ -4,7 +4,6 @@ title: Rollback
 description: In this tutorial, we will explore how to use lakeFS for rollback operations.
 parent: Use Cases
 grand_parent: Understanding lakeFS
-has_children: false
 redirect_from:
    - /use_cases/rollback.html
 ---

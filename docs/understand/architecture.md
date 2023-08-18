@@ -2,7 +2,6 @@
 title: Architecture
 parent: Understanding lakeFS
 description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.
-has_children: false
 redirect_from:
     - /architecture/index.html
     - /architecture/overview.html

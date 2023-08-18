@@ -3,7 +3,6 @@ title: 3️⃣ Create a branch
 description: lakeFS quickstart / Create a branch in lakeFS without copying data on disk, make a change to the branch, see that the original version of the data is unchanged. 
 parent: ⭐ Quickstart ⭐
 nav_order: 15
-has_children: false
 next: ["Merge the branch back into main", "./commit-and-merge.html"]
 previous: ["Query the pre-populated data", "./query.html"]
 ---
