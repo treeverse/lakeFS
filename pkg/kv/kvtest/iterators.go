@@ -31,9 +31,6 @@ func (swc *StoreWithCounter) Scan(ctx context.Context, partitionKey []byte, opti
 	return swc.Store.Scan(ctx, partitionKey, options)
 }
 
-func setupTestPartitionIterator(t *testing.T) {
-}
-
 func testPartitionIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
