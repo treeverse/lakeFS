@@ -3,7 +3,7 @@ title: Internals
 description: How Garbage Collection in lakeFS works
 parent: Garbage Collection
 grand_parent: How-To
-nav_order: 1
+nav_order: 2
 redirect_from: 
     - /howto/gc-internals.html
 ---
@@ -28,14 +28,34 @@ branch in that past number of days will be retained.
 
 The garbage collection process proceeds in three main phases:
 
-* **Discover which commits will retain their objects.**  For every branch,
+1. **Discover which commits will retain their objects.**  For every branch,
   the garbage collection job looks at the HEAD of the branch that many days
   ago; every commit at or since that HEAD must be retained.
 
-  ![mermaid diagram]({{ site.baseurl }}/assets/img/gc-sample-commits.png)
+    ```mermaid
+      %%{init: { 'theme': 'base', 'gitGraph': {'rotateCommitLabel': true}} }%%
+      gitGraph
+        commit id: "2022-02-27 🚮"
+        commit id: "2022-03-01 🚮"
+        commit id: "2022-03-09"
+      branch dev
+      checkout main
+        commit id: "2022-03-12"
+      checkout dev
+        commit id: "d: 2022-03-14 🚮"
+        commit id: "d: 2022-03-16 🚮"
+      checkout main
+        commit id: "2022-03-18"
+      checkout dev
+        commit id: "d: 2022-03-20 🚮"
+        commit id: "d: 2022-03-23"
+      checkout main
+      merge dev
+        commit id: "2022-03-26"
+    ```
 
-  Continuing the example, branch `main` retains for 21 days and branch `dev`
-  for 7. When running GC on 2022-03-31:
+    Continuing the example, branch `main` retains for 21 days and branch `dev`
+    for 7. When running GC on 2022-03-31:
 
     - 7 days ago, on 2022-03-24 the head of branch `dev` was `d:
       2022-03-23`. So, that commit is retained (along with all more recent
@@ -45,16 +65,16 @@ The garbage collection process proceeds in three main phases:
       commits on `main`) but commits `2022-02-27` and `2022-03-01` will be
       collected.
 
-* **Discover which objects need to be garbage collected.** Hold (_only_)
+1. **Discover which objects need to be garbage collected.** Hold (_only_)
   objects accessible on some retained commits.
 
-  In the example, all objects of commit `2022-03-12`, for instance, are
-  retained. This _includes_ objects added in previous commits. However,
-  objects added in commit `d: 2022-03-14` which were overwritten or
-  deleted in commit `d: 2022-03-20` are not visible in any retained commit
-  and will be garbage collected.
+    In the example, all objects of commit `2022-03-12`, for instance, are
+    retained. This _includes_ objects added in previous commits. However,
+    objects added in commit `d: 2022-03-14` which were overwritten or
+    deleted in commit `d: 2022-03-20` are not visible in any retained commit
+    and will be garbage collected.
 
-* **Garbage collect those objects by deleting them.** The data of any
+1. **Garbage collect those objects by deleting them.** The data of any
   deleted object will no longer be accessible. lakeFS retains all metadata
   about the object, but attempting to read it via the lakeFS API or the S3
   gateway will return HTTP status 410 ("Gone").

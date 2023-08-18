@@ -43,4 +43,13 @@ has_toc: false
 
 ## Garbage Collection
 
-* lakeFS will keep all of your objects forever, unless you tell it otherwise. Use [Garbage Collection](/howto/garbage-collection/) (GC) to remove objects from the underlying storage. This can be useful in situations including cost reduction (use less storage) and privacy policies.
+* lakeFS will keep all of your objects forever, unless you tell it otherwise. Use [Garbage Collection]({% link howto/garbage-collection/index.md %}) (GC) to remove objects from the underlying storage.
+    If you want GC to happen automagically then you can use [Managed Garbage Collection]({% link howto/garbage-collection/managed-gc.md %}) which is available as part of lakeFS Cloud.
+
+## Private Link
+
+* [Private Link]({% link howto/private-link.md %}) enables lakeFS Cloud to interact with your infrastructure using private networking.
+
+## Unity Delta Sharing
+
+* lakeFS [Unity Delta Sharing]({% link howto/unity-delta-sharing.md %}) provides a read-only experience from Unity Catalog for lakeFS customers.

@@ -1,11 +1,10 @@
 ---
-title: Configuration
-description: Configuring lakeFS is done using a YAML configuration file. This reference uses `.` to denote the nesting of values.
+title: lakeFS Server Configuration
+description: Configuration reference for lakeFS Server
 parent: Reference
-nav_order: 10
 ---
 
-# Configuration Reference
+# lakeFS Server Configuration
 
 {% include toc.html %}
 
@@ -216,7 +215,9 @@ To set an environment variable, prepend `LAKEFS_` to its name, convert it to upp
 For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
 
 
-## Example: Local Development with PostgreSQL database
+## Example Configurations
+
+### Local Development with PostgreSQL database
 
 ```yaml
 ---
@@ -247,7 +248,7 @@ gateways:
 ```
 
 
-## Example: AWS Deployment with DynamoDB database
+### AWS Deployment with DynamoDB database
 
 ```yaml
 ---
@@ -274,10 +275,7 @@ blockstore:
 
 ```
 
-[aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
-
-
-## Example: Google Storage
+### Google Storage
 
 ```yaml
 ---
@@ -302,7 +300,7 @@ blockstore:
 
 ```
 
-## Example: MinIO
+### MinIO
 
 ```yaml
 ---
@@ -331,7 +329,7 @@ blockstore:
       secret_access_key: minioadmin
 
 ```
-## Example: Azure blob storage
+### Azure blob storage
 
 ```yaml
 ---

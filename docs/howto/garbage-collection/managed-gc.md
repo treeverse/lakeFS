@@ -1,7 +1,11 @@
 ---
 title: Managed Garbage Collection
 description: Reduce the operational overhead of running garbage collection manually.
-parent: lakeFS Cloud
+parent: Garbage Collection
+nav_order: 1
+grand_parent: How-To
+redirect_from:
+  - /cloud/managed-gc.html
 ---
 
 # Managed Garbage Collection
@@ -10,7 +14,7 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> Managed GC is only available for [lakeFS Cloud]({% link cloud/index.md %}). If you are using the self-managed lakeFS, garbage collection is [available to run manually]({% link howto/garbage-collection/index.md %}).
+> Managed GC is only available for [lakeFS Cloud]({% link understand/lakefs-cloud.md %}). If you are using the self-managed lakeFS, garbage collection is [available to run manually]({% link howto/garbage-collection/index.md %}).
 
 ## Benefits of using managed GC
 * The quick and safe way to delete your unnecessary objects

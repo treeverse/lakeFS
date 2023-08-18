@@ -1,10 +1,11 @@
 ---
 title: Role-Based Access Control (RBAC)
 description: This section covers authorization (using RBAC) of your lakeFS server.
-parent: Reference
-nav_order: 65
+grand_parent: Reference
+parent: Security
 redirect_from:
   - /reference/authorization.html
+  - /reference/rbac.html
 ---
 
 
@@ -18,7 +19,7 @@ lakeFS Enterprise
 
 
 {: .note}
-> RBAC is available on [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}).
+> RBAC is available on [lakeFS Cloud]({% link understand/lakefs-cloud.md %}) and [lakeFS Enterprise]({% link understand/lakefs-enterprise.md %}).
 >
 > If you're using the open source version of lakeFS then the [ACL-based authorization mechanism](access-control-lists.html) is an alternative to RBAC.
 
@@ -304,7 +305,7 @@ The following Policies are created during initial setup:
 
 ## Additional Policies
 
-You can create additional policies to further limit user access. Use the web UI or the [lakectl auth](./cli.html#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
+You can create additional policies to further limit user access. Use the web UI or the [lakectl auth]({% link reference/cli.md%}#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
 
 ```json
 {
