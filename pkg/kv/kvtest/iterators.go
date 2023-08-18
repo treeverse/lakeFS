@@ -1,7 +1,6 @@
 package kvtest
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"sync/atomic"
@@ -53,16 +52,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model := e.Value.(*TestModel)
-			names = append(names, string(model.Name))
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
 		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
@@ -76,15 +66,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		defer itr.Close()
 		for _, seekValue := range []string{"b", "aaa", "b"} {
 			itr.SeekGE([]byte(seekValue))
-			names := make([]string, 0)
-			for itr.Next() {
-				e := itr.Entry()
-				model := e.Value.(*TestModel)
-				names = append(names, string(model.Name))
-			}
-			if err := itr.Err(); err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
 			if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
 				t.Fatalf("got wrong list of names: %v", diffs)
 			}
@@ -190,6 +172,22 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 	})
 }
 
+// scanPartitionIterator scans the iterator and returns a slice of the results of applying fn to each model.
+// slice element type is based on the callback 'fn' function return type.
+func scanPartitionIterator[E any](t *testing.T, itr kv.MessageIterator, fn func(key []byte, model *TestModel) E) []E {
+	t.Helper()
+	result := make([]E, 0)
+	for itr.Next() {
+		e := itr.Entry()
+		model := e.Value.(*TestModel)
+		result = append(result, fn(e.Key, model))
+	}
+	if err := itr.Err(); err != nil {
+		t.Fatalf("While scan partition iterator unexpected error: %v", err)
+	}
+	return result
+}
+
 func testPrimaryIterator(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
@@ -213,16 +211,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model := e.Value.(*TestModel)
-			names = append(names, string(model.Name))
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
 		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
@@ -235,16 +224,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model := e.Value.(*TestModel)
-			names = append(names, string(model.Name))
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
 		if diffs := deep.Equal(names, []string{"a", "aa"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
@@ -273,16 +253,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model := e.Value.(*TestModel)
-			names = append(names, string(model.Name))
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
 		if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
@@ -295,16 +266,7 @@ func testPrimaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create primary iterator: %v", err)
 		}
 		defer itr.Close()
-		names := make([]string, 0)
-		for itr.Next() {
-			e := itr.Entry()
-			model := e.Value.(*TestModel)
-			names = append(names, string(model.Name))
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
 		if diffs := deep.Equal(names, []string{"c", "d"}); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
@@ -351,25 +313,25 @@ func testSecondaryIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create secondary iterator: %v", err)
 		}
 		defer itr.Close()
-		var msgs []*TestModel
-		for itr.Next() {
-			e := itr.Entry()
-			model := e.Value.(*TestModel)
-			expectedKey := append([]byte("just_a_string/"), model.JustAString...)
-			if !bytes.Equal(e.Key, expectedKey) {
-				t.Fatalf("Iterator key=%s, expected=%s", e.Key, expectedKey)
+
+		type KeyNameValue struct {
+			Key   []byte
+			Name  []byte
+			Value string
+		}
+		msgs := scanPartitionIterator(t, itr, func(key []byte, model *TestModel) KeyNameValue {
+			return KeyNameValue{
+				Key:   key,
+				Name:  model.Name,
+				Value: model.JustAString,
 			}
-			msgs = append(msgs, model)
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		expectedMsgs := []*TestModel{
-			{Name: []byte("e"), JustAString: "five"},
-			{Name: []byte("d"), JustAString: "four"},
-			{Name: []byte("a"), JustAString: "one"},
-			{Name: []byte("c"), JustAString: "three"},
-			{Name: []byte("b"), JustAString: "two"},
+		})
+		expectedMsgs := []KeyNameValue{
+			{Key: []byte("just_a_string/five"), Name: []byte("e"), Value: "five"},
+			{Key: []byte("just_a_string/four"), Name: []byte("d"), Value: "four"},
+			{Key: []byte("just_a_string/one"), Name: []byte("a"), Value: "one"},
+			{Key: []byte("just_a_string/three"), Name: []byte("c"), Value: "three"},
+			{Key: []byte("just_a_string/two"), Name: []byte("b"), Value: "two"},
 		}
 		if diffs := deep.Equal(msgs, expectedMsgs); diffs != nil {
 			t.Fatalf("Diff expected result: %v", diffs)
