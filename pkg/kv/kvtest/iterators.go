@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
 
@@ -146,6 +147,33 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 
 		if !errors.Is(itr.Err(), kv.ErrMissingPartitionKey) {
 			t.Fatalf("expected error: %s, got %v", kv.ErrMissingPartitionKey, itr.Err())
+		}
+	})
+
+	t.Run("seekGE past end", func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		itr.SeekGE([]byte("b"))
+		if !itr.Next() {
+			t.Fatal("expected Next to be true")
+		}
+		e := itr.Entry()
+		model, ok := e.Value.(*TestModel)
+		if !ok {
+			t.Fatalf("Failed to cast entry to TestModel")
+		}
+		if string(model.Name) != "b" {
+			t.Fatalf("expected value b from iterator")
+		}
+		itr.SeekGE(graveler.UpperBoundForPrefix([]byte("d1")))
+		if itr.Next() {
+			t.Fatalf("expected Next to be false")
+		}
+		if itr.Err() != nil {
+			t.Fatalf("unexpected error: %v", itr.Err())
 		}
 	})
 }
