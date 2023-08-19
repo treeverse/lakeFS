@@ -3256,6 +3256,13 @@ paths:
           schema:
             type: string
             pattern: '^bytes=((\d*-\d*,? ?)+)$'
+        - in: header
+          name: If-None-Match
+          description: Returns response only if the object does not have a matching ETag
+          example: "abc123efg"
+          required: false
+          schema:
+            type: string
         - in: query
           name: presign
           required: false
@@ -3308,6 +3315,8 @@ paths:
             Location:
               schema:
                 type: string
+        304:
+          description: Content Not modified
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

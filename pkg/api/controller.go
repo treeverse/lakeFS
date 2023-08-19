@@ -3611,6 +3611,16 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
+	// check ETag if not modified
+	etag := httputil.ETag(entry.Checksum)
+	fmt.Println(r.Header.Get("If-None-Match"))
+	fmt.Println(etag)
+
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	// setup response
 	var reader io.ReadCloser
 
@@ -3642,7 +3652,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
 	}
 
-	etag := httputil.ETag(entry.Checksum)
 	w.Header().Set("ETag", etag)
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
 	w.Header().Set("Last-Modified", lastModified)

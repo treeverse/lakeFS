@@ -2399,6 +2399,20 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
 		}
 	})
+
+	t.Run("get object not modified", func(t *testing.T) {
+		etag_input := "\"" + blob.Checksum + "\""
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &api.GetObjectParams{
+			Path:        "foo/bar",
+			IfNoneMatch: &etag_input,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusNotModified {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusNotModified)
+		}
+	})
 }
 
 func TestController_ObjectsUploadObjectHandler(t *testing.T) {

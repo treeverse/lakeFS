@@ -3321,6 +3321,16 @@ paths:
           pattern: ^bytes=((\d*-\d*,? ?)+)$
           type: string
         style: simple
+      - description: Returns response only if the object does not have a matching
+          ETag
+        example: abc123efg
+        explode: false
+        in: header
+        name: If-None-Match
+        required: false
+        schema:
+          type: string
+        style: simple
       - explode: true
         in: query
         name: presign
@@ -3391,6 +3401,8 @@ paths:
               schema:
                 type: string
               style: simple
+        "304":
+          description: Content Not modified
         "401":
           content:
             application/json:
