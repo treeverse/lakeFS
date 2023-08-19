@@ -4,16 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type Manager struct {
-	kvStore        kv.Store
-	kvStoreLimited kv.Store
-	wakeup         chan asyncEvent
+	kvStore                     kv.Store
+	kvStoreLimited              kv.Store
+	wakeup                      chan asyncEvent
+	batchExecutor               batch.Batcher
+	batchDBIOTransactionMarkers bool
 
 	// cleanupCallback is being called with every successful cleanup cycle
 	cleanupCallback func()
@@ -23,14 +28,19 @@ type Manager struct {
 type asyncEvent string
 
 // cleanTokens is async cleaning of deleted staging tokens
-const cleanTokens = asyncEvent("clean_tokens")
+const (
+	MaxBatchDelay = 3 * time.Millisecond
+	cleanTokens   = asyncEvent("clean_tokens")
+)
 
-func NewManager(ctx context.Context, store, storeLimited kv.Store) *Manager {
+func NewManager(ctx context.Context, store, storeLimited kv.Store, batchDBIOTransactionMarkers bool, executor batch.Batcher) *Manager {
 	const wakeupChanCapacity = 100
 	m := &Manager{
-		kvStore:        store,
-		kvStoreLimited: storeLimited,
-		wakeup:         make(chan asyncEvent, wakeupChanCapacity),
+		kvStore:                     store,
+		kvStoreLimited:              storeLimited,
+		wakeup:                      make(chan asyncEvent, wakeupChanCapacity),
+		batchExecutor:               executor,
+		batchDBIOTransactionMarkers: batchDBIOTransactionMarkers,
 	}
 	go m.asyncLoop(ctx)
 	return m
@@ -44,9 +54,34 @@ func (m *Manager) OnCleanup(cleanupCallback func()) {
 	m.cleanupCallback = cleanupCallback
 }
 
+func (m *Manager) getBatchedEntryData(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.StagedEntryData, error) {
+	dt, err := m.batchExecutor.BatchFor(ctx, key.String(), MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+		dt := &graveler.StagedEntryData{}
+		_, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, dt)
+		return dt, err
+	}))
+	if err != nil {
+		return nil, err
+	}
+	return dt.(*graveler.StagedEntryData), nil
+}
+
+// isDBIOTransactionalMarkerObject returns true if the key is a DBIO transactional marker object (_started or _committed
+func isDBIOTransactionalMarkerObject(key graveler.Key) bool {
+	ss := strings.Split(key.String(), "/")
+	s := ss[len(ss)-1]
+	return strings.HasPrefix(s, "_started_") || strings.HasPrefix(s, "_committed_")
+}
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
+	var err error
 	data := &graveler.StagedEntryData{}
-	_, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, data)
+	// workaround for batching delta _started objects
+	if m.batchDBIOTransactionMarkers && isDBIOTransactionalMarkerObject(key) {
+		data, err = m.getBatchedEntryData(ctx, st, key)
+	} else {
+		_, err = kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, data)
+	}
+
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound

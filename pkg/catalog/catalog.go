@@ -279,7 +279,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter)
+	stagingExecutor := batch.NewConditionalExecutor(logging.ContextUnavailable())
+	go stagingExecutor.Run(ctx)
+	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter, cfg.Config.Graveler.BatchDBIOTransactionMarkers, stagingExecutor)
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
