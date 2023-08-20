@@ -68,7 +68,7 @@ docker run --rm --pull always \
 _Bear in mind that if you are running lakeFS itself locally you will need to account for this in your networking configuration of 
 the Docker container. That is to say, `localhost` to a Docker container is itself, not the host machine on which it is running._
 
-## Command Reference
+## Operation Reference
 ### lakectl
 
 A cli tool to explore manage and work with lakeFS
@@ -2582,6 +2582,7 @@ lakectl local checkout [directory] [flags]
 
 ```
       --all               Checkout given source branch or reference for all linked directories
+      --force             Overwrite any local modifications you may have in your working directory
   -h, --help              help for checkout
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -2624,6 +2625,7 @@ lakectl local commit [directory] [flags]
 
 ```
       --allow-empty-message   Allow commit with empty message
+      --force                 Creates a new commit with the current changes between the local data and the remote data.
   -h, --help                  help for commit
   -m, --message string        Commit message
       --meta strings          key value pair in the form of key=value

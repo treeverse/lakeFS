@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/mitchellh/go-homedir"
@@ -144,6 +145,22 @@ func localHandleSyncInterrupt(ctx context.Context) context.Context {
 	Use "lakectl local checkout..." to sync with the remote.`, 1)
 	}()
 	return ctx
+}
+
+func dieOnInterruptedOperation(interruptedOperation string, currentOperation string, force bool) {
+	if !force {
+		switch strings.ToLower(interruptedOperation) {
+		case "commit":
+			Die(`Latest commit operation was interrupted, remote data may be incomplete.
+	Use "lakectl local commit... --force" to commit your latest changes.`, 1)
+		case "checkout":
+			Die(`Latest checkout operation was interrupted, local data may be incomplete.
+	Use "lakectl local checkout... --force" to sync with the remote.`, 1)
+		case "pull":
+			Die(`Latest pull operation was interrupted, local data may be incomplete.
+	Use "lakectl local pull... --force" to sync with the remote.`, 1)
+		}
+	}
 }
 
 var localCmd = &cobra.Command{

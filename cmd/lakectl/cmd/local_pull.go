@@ -31,6 +31,13 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		currentOperation := "pull"
+		dieOnInterruptedOperation(idx.Operation, currentOperation, force)
+		_, err = local.WriteOperation(localPath, currentOperation)
+		if err != nil {
+			DieErr(err)
+		}
+
 		currentBase := remote.WithRef(idx.AtHead)
 		// make sure no local changes
 		localChange := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
@@ -72,6 +79,8 @@ var localPullCmd = &cobra.Command{
 		if err := wg.Wait(); err != nil {
 			DieErr(err)
 		}
+
+		local.DeleteOperation(localPath)
 
 		fmt.Printf("\nSuccessfully synced changes!\n")
 		Write(localSummaryTemplate, struct {
