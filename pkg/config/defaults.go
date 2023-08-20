@@ -128,7 +128,6 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("graveler.commit_cache.size", 50_000)
 	viper.SetDefault("graveler.commit_cache.expiry", 10*time.Minute)
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
-	viper.SetDefault("graveler.batch_dbio_transaction_markers", true)
 
 	viper.SetDefault("plugins.default_path", "~/.lakefs/plugins")
 

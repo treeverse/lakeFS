@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 	"time"
 
@@ -55,7 +56,8 @@ func (m *Manager) OnCleanup(cleanupCallback func()) {
 }
 
 func (m *Manager) getBatchedEntryData(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.StagedEntryData, error) {
-	dt, err := m.batchExecutor.BatchFor(ctx, key.String(), MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	batchKey := fmt.Sprintf("StagingGet:%s:%s", st, key)
+	dt, err := m.batchExecutor.BatchFor(ctx, batchKey, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		dt := &graveler.StagedEntryData{}
 		_, err := kv.GetMsg(ctx, m.kvStore, graveler.StagingTokenPartition(st), key, dt)
 		return dt, err
@@ -68,14 +70,14 @@ func (m *Manager) getBatchedEntryData(ctx context.Context, st graveler.StagingTo
 
 // isDBIOTransactionalMarkerObject returns true if the key is a DBIO transactional marker object (_started or _committed
 func isDBIOTransactionalMarkerObject(key graveler.Key) bool {
-	ss := strings.Split(key.String(), "/")
-	s := ss[len(ss)-1]
-	return strings.HasPrefix(s, "_started_") || strings.HasPrefix(s, "_committed_")
+	_, f := path.Split(key.String())
+	return strings.HasPrefix(f, "_started_") || strings.HasPrefix(f, "_committed_")
 }
+
 func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key graveler.Key) (*graveler.Value, error) {
 	var err error
 	data := &graveler.StagedEntryData{}
-	// workaround for batching delta _started objects
+	// workaround for batching DBIO markers objects
 	if m.batchDBIOTransactionMarkers && isDBIOTransactionalMarkerObject(key) {
 		data, err = m.getBatchedEntryData(ctx, st, key)
 	} else {
