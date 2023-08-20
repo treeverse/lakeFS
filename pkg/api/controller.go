@@ -69,7 +69,9 @@ const (
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
 
-	LakeFSHeaderPrefix = "x-lakefs-meta-"
+	LakeFSHeaderMetadataPrefix = "x-lakefs-meta-"
+	LakeFSHeaderInternalPrefix = "x-lakefs-internal-"
+	LakeFSMetadataPrefix       = "::lakefs::"
 )
 
 type actionsHandler interface {
@@ -4841,8 +4843,12 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 	meta := make(map[string]string)
 	for k, v := range header {
 		lowerKey := strings.ToLower(k)
-		if strings.HasPrefix(lowerKey, LakeFSHeaderPrefix) {
-			meta[lowerKey] = v[0]
+		if strings.HasPrefix(lowerKey, LakeFSHeaderMetadataPrefix) {
+			_, metaKey, _ := strings.Cut(strings.ToLower(k), LakeFSHeaderMetadataPrefix)
+			meta[metaKey] = v[0]
+		} else if strings.HasPrefix(lowerKey, LakeFSHeaderInternalPrefix) {
+			_, metaKey, _ := strings.Cut(strings.ToLower(k), LakeFSHeaderInternalPrefix)
+			meta[LakeFSMetadataPrefix+metaKey] = v[0]
 		}
 	}
 	return meta

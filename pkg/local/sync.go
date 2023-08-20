@@ -25,7 +25,8 @@ import (
 
 const (
 	DefaultDirectoryMask   = 0o755
-	ClientMtimeMetadataKey = api.LakeFSHeaderPrefix + "client-mtime"
+	ClientMtimeHeaderKey   = api.LakeFSHeaderInternalPrefix + "client-mtime"
+	ClientMtimeMetadataKey = api.LakeFSMetadataPrefix + "client-mtime"
 )
 
 func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
@@ -285,7 +286,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}()
 
 	metadata := map[string]string{
-		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
+		ClientMtimeHeaderKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
 	}
 
 	reader := fileWrapper{
