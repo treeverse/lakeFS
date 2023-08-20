@@ -61,8 +61,15 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
 		Path: objPath,
 	}, mpContentType, pr, func(ctx context.Context, req *http.Request) error {
+		var metaKey string
 		for k, v := range metadata {
-			req.Header.Set(k, v)
+			lowerKey := strings.ToLower(k)
+			if strings.HasPrefix(lowerKey, api.LakeFSMetadataPrefix) {
+				metaKey = api.LakeFSHeaderInternalPrefix + lowerKey[len(api.LakeFSMetadataPrefix):]
+			} else {
+				metaKey = api.LakeFSHeaderMetadataPrefix + lowerKey
+			}
+			req.Header.Set(metaKey, v)
 		}
 		return nil
 	})

@@ -285,15 +285,9 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		}
 	}()
 
-	mtimeKey := ClientMtimeHeaderKey
-	if s.presign {
-		mtimeKey = ClientMtimeMetadataKey
-	}
-
 	metadata := map[string]string{
-		mtimeKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
+		ClientMtimeHeaderKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
 	}
-
 	reader := fileWrapper{
 		file:   f,
 		reader: b.Reader(f),
