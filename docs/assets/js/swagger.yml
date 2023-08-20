@@ -3769,12 +3769,6 @@ paths:
           required: false
           schema:
             type: string
-        - in: query 
-          name: userMetadata
-          content: 
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObjectUserMetadata"
         - in: header
           name: If-None-Match
           description: Currently supports only "*" to allow uploading an object only if one doesn't exist yet

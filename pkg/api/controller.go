@@ -68,6 +68,8 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
+
+	LakeFSHeaderPrefix = "x-lakefs-meta-"
 )
 
 type actionsHandler interface {
@@ -2648,8 +2650,9 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	} else {
 		entryBuilder.AddressType(catalog.AddressTypeFull)
 	}
-	if params.UserMetadata != nil {
-		entryBuilder.Metadata(params.UserMetadata.AdditionalProperties)
+	meta := extractLakeFSMetadata(r.Header)
+	if meta != nil {
+		entryBuilder.Metadata(meta)
 	}
 	entry := entryBuilder.Build()
 
@@ -4832,4 +4835,15 @@ func encodeGCUncommittedMark(mark *catalog.GCUncommittedMark) (*string, error) {
 
 	token := base64.StdEncoding.EncodeToString(raw)
 	return &token, nil
+}
+
+func extractLakeFSMetadata(header http.Header) map[string]string {
+	meta := make(map[string]string)
+	for k, v := range header {
+		lowerKey := strings.ToLower(k)
+		if strings.HasPrefix(lowerKey, LakeFSHeaderPrefix) {
+			meta[lowerKey] = v[0]
+		}
+	}
+	return meta
 }

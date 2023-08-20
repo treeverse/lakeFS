@@ -4161,15 +4161,6 @@ paths:
         schema:
           type: string
         style: form
-      - content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ObjectUserMetadata'
-        explode: true
-        in: query
-        name: userMetadata
-        required: false
-        style: form
       - description: Currently supports only "*" to allow uploading an object only
           if one doesn't exist yet
         example: '*'

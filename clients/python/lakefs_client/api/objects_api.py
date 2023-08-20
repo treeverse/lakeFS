@@ -28,7 +28,6 @@ from lakefs_client.model.object_error_list import ObjectErrorList
 from lakefs_client.model.object_stage_creation import ObjectStageCreation
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.object_stats_list import ObjectStatsList
-from lakefs_client.model.object_user_metadata import ObjectUserMetadata
 from lakefs_client.model.path_list import PathList
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 
@@ -751,7 +750,6 @@ class ObjectsApi(object):
                     'branch',
                     'path',
                     'storage_class',
-                    'user_metadata',
                     'if_none_match',
                     'content',
                 ],
@@ -788,8 +786,6 @@ class ObjectsApi(object):
                         (str,),
                     'storage_class':
                         (str,),
-                    'user_metadata':
-                        (ObjectUserMetadata,),
                     'if_none_match':
                         (str,),
                     'content':
@@ -800,7 +796,6 @@ class ObjectsApi(object):
                     'branch': 'branch',
                     'path': 'path',
                     'storage_class': 'storageClass',
-                    'user_metadata': 'userMetadata',
                     'if_none_match': 'If-None-Match',
                     'content': 'content',
                 },
@@ -809,7 +804,6 @@ class ObjectsApi(object):
                     'branch': 'path',
                     'path': 'query',
                     'storage_class': 'query',
-                    'user_metadata': 'query',
                     'if_none_match': 'header',
                     'content': 'form',
                 },
@@ -1588,7 +1582,6 @@ class ObjectsApi(object):
 
         Keyword Args:
             storage_class (str): [optional]
-            user_metadata (ObjectUserMetadata): [optional]
             if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. [optional]
             content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]
             _return_http_data_only (bool): response data without head status

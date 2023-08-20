@@ -24,12 +24,15 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 	defer func() {
 		_ = pr.Close()
 	}()
+
 	mpw := multipart.NewWriter(pw)
 	mpContentType := mpw.FormDataContentType()
 	go func() {
 		defer func() {
+			_ = mpw.Close()
 			_ = pw.Close()
 		}()
+
 		filename := filepath.Base(objPath)
 		const fieldName = "content"
 		var err error
@@ -53,17 +56,20 @@ func ClientUpload(ctx context.Context, client api.ClientWithResponsesInterface, 
 			_ = pw.CloseWithError(err)
 			return
 		}
-		_ = mpw.Close()
 	}()
 
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
-		Path:         objPath,
-		UserMetadata: &api.ObjectUserMetadata{AdditionalProperties: metadata},
-	}, mpContentType, pr)
+		Path: objPath,
+	}, mpContentType, pr, func(ctx context.Context, req *http.Request) error {
+		for k, v := range metadata {
+			req.Header.Set(k, v)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode() != http.StatusCreated {
+	if resp.JSON201 == nil {
 		return nil, ResponseAsError(resp)
 	}
 	return resp.JSON201, nil

@@ -910,7 +910,7 @@ Name | Type | Description  | Notes
 
 <a name="uploadObject"></a>
 # **uploadObject**
-> ObjectStats uploadObject(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content)
+> ObjectStats uploadObject(repository, branch, path, storageClass, ifNoneMatch, content)
 
 
 
@@ -961,11 +961,10 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     String storageClass = "storageClass_example"; // String | 
-    Map<String, String> userMetadata = new HashMap(); // Map<String, String> | 
     String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
-      ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content);
+      ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#uploadObject");
@@ -986,7 +985,6 @@ Name | Type | Description  | Notes
  **branch** | **String**|  |
  **path** | **String**| relative to the branch |
  **storageClass** | **String**|  | [optional]
- **userMetadata** | [**Map&lt;String, String&gt;**](String.md)|  | [optional]
  **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
  **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 

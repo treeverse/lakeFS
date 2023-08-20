@@ -1528,7 +1528,6 @@ public class ObjectsApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param storageClass  (optional)
-     * @param userMetadata  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @param _callback Callback for upload/download progress
@@ -1546,7 +1545,7 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call uploadObjectCall(String repository, String branch, String path, String storageClass, Map<String, String> userMetadata, String ifNoneMatch, File content, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call uploadObjectCall(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -1572,10 +1571,6 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("storageClass", storageClass));
         }
 
-        if (userMetadata != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("userMetadata", userMetadata));
-        }
-
         if (ifNoneMatch != null) {
             localVarHeaderParams.put("If-None-Match", localVarApiClient.parameterToString(ifNoneMatch));
         }
@@ -1599,7 +1594,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call uploadObjectValidateBeforeCall(String repository, String branch, String path, String storageClass, Map<String, String> userMetadata, String ifNoneMatch, File content, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call uploadObjectValidateBeforeCall(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -1617,7 +1612,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = uploadObjectCall(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content, _callback);
+        okhttp3.Call localVarCall = uploadObjectCall(repository, branch, path, storageClass, ifNoneMatch, content, _callback);
         return localVarCall;
 
     }
@@ -1629,7 +1624,6 @@ public class ObjectsApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param storageClass  (optional)
-     * @param userMetadata  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @return ObjectStats
@@ -1646,8 +1640,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ObjectStats uploadObject(String repository, String branch, String path, String storageClass, Map<String, String> userMetadata, String ifNoneMatch, File content) throws ApiException {
-        ApiResponse<ObjectStats> localVarResp = uploadObjectWithHttpInfo(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content);
+    public ObjectStats uploadObject(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content) throws ApiException {
+        ApiResponse<ObjectStats> localVarResp = uploadObjectWithHttpInfo(repository, branch, path, storageClass, ifNoneMatch, content);
         return localVarResp.getData();
     }
 
@@ -1658,7 +1652,6 @@ public class ObjectsApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param storageClass  (optional)
-     * @param userMetadata  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @return ApiResponse&lt;ObjectStats&gt;
@@ -1675,8 +1668,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ObjectStats> uploadObjectWithHttpInfo(String repository, String branch, String path, String storageClass, Map<String, String> userMetadata, String ifNoneMatch, File content) throws ApiException {
-        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content, null);
+    public ApiResponse<ObjectStats> uploadObjectWithHttpInfo(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content) throws ApiException {
+        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, ifNoneMatch, content, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1688,7 +1681,6 @@ public class ObjectsApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param storageClass  (optional)
-     * @param userMetadata  (optional)
      * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @param _callback The callback to be executed when the API call finishes
@@ -1706,9 +1698,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call uploadObjectAsync(String repository, String branch, String path, String storageClass, Map<String, String> userMetadata, String ifNoneMatch, File content, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    public okhttp3.Call uploadObjectAsync(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, userMetadata, ifNoneMatch, content, _callback);
+        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, ifNoneMatch, content, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

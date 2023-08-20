@@ -144,6 +144,7 @@ var localCommitCmd = &cobra.Command{
 				AdditionalProperties: kvPairs,
 			},
 		})
+		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		commit := response.JSON201
 		if commit == nil {
 			Die("Bad response from server", 1)
@@ -153,7 +154,6 @@ var localCommitCmd = &cobra.Command{
 			Repository: remote.Repository,
 			Ref:        remote.Ref,
 		}
-		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
