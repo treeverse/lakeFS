@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	"github.com/treeverse/lakefs/pkg/metastore/glue"
@@ -12,16 +14,36 @@ var metastoreCmd = &cobra.Command{
 	Short: "Manage metastore commands",
 }
 
+func getMetastoreAwsConfig(c *Configuration) *aws.Config {
+	cfg := &aws.Config{
+		Region: aws.String(string(c.Metastore.Glue.Region)),
+	}
+	if c.Metastore.Glue.Profile != "" || c.Metastore.Glue.CredentialsFile != "" {
+		cfg.Credentials = credentials.NewSharedCredentials(
+			string(c.Metastore.Glue.CredentialsFile),
+			string(c.Metastore.Glue.Profile),
+		)
+	}
+	if c.Metastore.Glue.Credentials != nil {
+		cfg.Credentials = credentials.NewStaticCredentials(
+			string(c.Metastore.Glue.Credentials.AccessKeyID),
+			string(c.Metastore.Glue.Credentials.AccessSecretKey),
+			string(c.Metastore.Glue.Credentials.SessionToken),
+		)
+	}
+	return cfg
+}
+
 func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 	if msType == "" {
-		msType = cfg.GetMetastoreType()
+		msType = cfg.Metastore.Type.String()
 	}
 	switch msType {
 	case "hive":
 		if len(hiveAddress) == 0 {
-			hiveAddress = cfg.GetMetastoreHiveURI()
+			hiveAddress = cfg.Metastore.Hive.URI.String()
 		}
-		hiveClient, err := hive.NewMSClient(hiveAddress, false, cfg.GetHiveDBLocationURI())
+		hiveClient, err := hive.NewMSClient(hiveAddress, false, cfg.Metastore.Hive.DBLocationURI.String())
 		if err != nil {
 			DieErr(err)
 		}
@@ -34,7 +56,8 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 		return hiveClient, deferFunc
 
 	case "glue":
-		client, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID(), cfg.GetGlueDBLocationURI())
+		awsConfig := getMetastoreAwsConfig(cfg)
+		client, err := glue.NewMSClient(awsConfig, cfg.Metastore.Glue.CatalogID.String(), cfg.Metastore.Glue.DBLocationURI.String())
 		if err != nil {
 			DieErr(err)
 		}
@@ -47,7 +70,7 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 }
 
 func getClients(fromClientType, toClientType, fromAddress, toAddress string) (metastore.Client, metastore.Client, func(), func()) {
-	msType := cfg.GetMetastoreType()
+	msType := cfg.Metastore.Type.String()
 	if len(fromClientType) == 0 {
 		fromClientType = msType
 	}
