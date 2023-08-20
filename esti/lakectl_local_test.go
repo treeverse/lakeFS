@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/exp/slices"
 )
@@ -137,7 +138,7 @@ func TestLakectlLocal_init(t *testing.T) {
 		"SOURCE_BRANCH": mainBranch,
 		"DEST_BRANCH":   featureBranch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+	runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, false, branchVars)
 
 	// Try to init twice with force
 	vars["REF"] = featureBranch
@@ -298,6 +299,110 @@ func TestLakectlLocal_pull(t *testing.T) {
 			expectedStr = successStr + localGetSummary(tasks)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
 			localVerifyDirContents(t, dataDir, expected)
+		})
+	}
+}
+
+func TestLakectlLocal_commit(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	// No repo
+	vars["LOCAL_DIR"] = tmpDir
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local commit -m test "+tmpDir, false, "lakectl_local_no_index", vars)
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	prefix := "images"
+	objects := []string{
+		"ro_1k.1",
+		"ro_1k.2",
+		"ro_1k.3",
+		prefix + "/1.png",
+		prefix + "/2.png",
+		prefix + "/3.png",
+		prefix + "/subdir/1.png",
+		prefix + "/subdir/2.png",
+		prefix + "/subdir/3.png",
+	}
+
+	tests := []struct {
+		name    string
+		prefix  string
+		presign bool
+	}{
+		{
+			name:    "root",
+			prefix:  "",
+			presign: false,
+		},
+		{
+			name:    "root-presign",
+			prefix:  "",
+			presign: true,
+		},
+		{
+			name:    prefix,
+			prefix:  prefix,
+			presign: false,
+		},
+		{
+			name:    prefix + "-presign",
+			prefix:  prefix,
+			presign: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.presign {
+				// Skip due to bug on Azure https://github.com/treeverse/lakeFS/issues/6426
+				requireBlockstoreType(t, block.BlockstoreTypeS3, block.BlockstoreTypeGS)
+			}
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			deleted := prefix + "/subdir/deleted.png"
+
+			localCreateTestData(t, vars, append(objects, deleted))
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+			vars["LOCAL_DIR"] = dataDir
+			vars["PREFIX"] = ""
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			presign := fmt.Sprintf(" --pre-sign=%v ", tt.presign)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+presign+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+			//relPath, err := filepath.Rel(tmpDir, dataDir)
+			//require.NoError(t, err)
+
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
+
+			// Modify local folder - add and remove files
+			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
+			require.NoError(t, err)
+			require.NoError(t, fd.Close())
+			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+
+			// Commit changes to branch
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
+
+			// Check no diff after commit
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 		})
 	}
 }
