@@ -9,7 +9,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 )
 
 // configCmd represents the config command
@@ -33,10 +32,10 @@ var configCmd = &cobra.Command{
 			Key    string
 			Prompt *promptui.Prompt
 		}{
-			{Key: config.ConfigAccessKeyIDKey, Prompt: &promptui.Prompt{Label: "Access key ID"}},
-			{Key: config.ConfigSecretAccessKey, Prompt: &promptui.Prompt{Label: "Secret access key", Mask: '*'}},
-			{Key: config.ConfigServerEndpointURLKey, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawurl string) error {
-				_, err := url.ParseRequestURI(rawurl)
+			{Key: "credentials.access_key_id", Prompt: &promptui.Prompt{Label: "Access key ID"}},
+			{Key: "credentials.secret_access_key", Prompt: &promptui.Prompt{Label: "Secret access key", Mask: '*'}},
+			{Key: "server.endpoint_url", Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawURL string) error {
+				_, err := url.ParseRequestURI(rawURL)
 				return err
 			}}},
 		}
