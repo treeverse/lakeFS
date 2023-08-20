@@ -2,6 +2,15 @@
 
 ## UNRELEASED
 
+# v0.107.0
+
+:new: What's new:
+- Experiment: Batch staging get operations for DBIO transaction markers (#6441)
+
+:bug: Bug fixed:
+- Fix kv local SeekGE fail to skip common prefix (#6435)
+- Fix lakectl local commit to use lakefs upload with user metadata (#6437)
+
 # v0.106.2
 
 :bug: Bugs fixed:
