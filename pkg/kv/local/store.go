@@ -50,7 +50,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 
 	var value []byte
 	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(composeKey(partitionKey, key))
+		item, err := txn.Get(k)
 		if errors.Is(err, badger.ErrKeyNotFound) {
 			return kv.ErrNotFound
 		}
@@ -150,7 +150,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 			return kv.ErrPredicateFailed
 		}
 
-		return txn.Set(composeKey(partitionKey, key), value)
+		return txn.Set(k, value)
 	})
 	if errors.Is(err, badger.ErrConflict) { // Return predicate failed on transaction conflict - to retry
 		log.WithError(err).Trace("transaction conflict")
