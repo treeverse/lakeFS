@@ -32,7 +32,7 @@ var metastoreCopyAllCmd = &cobra.Command{
 		defer toDeferFunc()
 
 		fmt.Printf("copy %s -> %s\n", fromAddress, toAddress)
-		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
+		err := metastore.CopyOrMergeAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, branch, continueOnError, cfg.Metastore.FixSparkPlaceholder, dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
