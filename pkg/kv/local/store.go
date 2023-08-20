@@ -12,11 +12,18 @@ import (
 )
 
 func partitionRange(partitionKey []byte) []byte {
-	return append(partitionKey, kv.PathDelimiter[0])
+	result := make([]byte, len(partitionKey)+1)
+	copy(result, partitionKey)
+	result[len(result)-1] = kv.PathDelimiter[0]
+	return result
 }
 
 func composeKey(partitionKey, key []byte) []byte {
-	return append(partitionRange(partitionKey), key...)
+	pr := partitionRange(partitionKey)
+	result := make([]byte, len(pr)+len(key))
+	copy(result, pr)
+	copy(result[len(pr):], key)
+	return result
 }
 
 type Store struct {
