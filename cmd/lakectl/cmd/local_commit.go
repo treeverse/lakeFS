@@ -97,6 +97,11 @@ var localCommitCmd = &cobra.Command{
 			}
 		}
 
+		if len(changes) == 0 {
+			fmt.Printf("\nNo changes\n")
+			return
+		}
+
 		// sync changes
 		c := make(chan *local.Change, filesChanSize)
 		go func() {
@@ -144,6 +149,7 @@ var localCommitCmd = &cobra.Command{
 				AdditionalProperties: kvPairs,
 			},
 		})
+		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		commit := response.JSON201
 		if commit == nil {
 			Die("Bad response from server", 1)
@@ -153,7 +159,6 @@ var localCommitCmd = &cobra.Command{
 			Repository: remote.Repository,
 			Ref:        remote.Ref,
 		}
-		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
