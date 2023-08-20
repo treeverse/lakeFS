@@ -310,7 +310,8 @@ type Config struct {
 		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
 	} `mapstructure:"ugc"`
 	Graveler struct {
-		RepositoryCache struct {
+		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
+		RepositoryCache             struct {
 			Size   int           `mapstructure:"size"`
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`
