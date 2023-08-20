@@ -68,7 +68,7 @@ docker run --rm --pull always \
 _Bear in mind that if you are running lakeFS itself locally you will need to account for this in your networking configuration of 
 the Docker container. That is to say, `localhost` to a Docker container is itself, not the host machine on which it is running._
 
-## Operation Reference
+## Command Reference
 ### lakectl
 
 A cli tool to explore manage and work with lakeFS
