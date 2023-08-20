@@ -97,6 +97,11 @@ var localCommitCmd = &cobra.Command{
 			}
 		}
 
+		if len(changes) == 0 {
+			fmt.Printf("\nNo changes\n")
+			return
+		}
+
 		// sync changes
 		c := make(chan *local.Change, filesChanSize)
 		go func() {

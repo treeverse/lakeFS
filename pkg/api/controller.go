@@ -4843,13 +4843,16 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 	meta := make(map[string]string)
 	for k, v := range header {
 		lowerKey := strings.ToLower(k)
-		if strings.HasPrefix(lowerKey, LakeFSHeaderMetadataPrefix) {
-			_, metaKey, _ := strings.Cut(strings.ToLower(k), LakeFSHeaderMetadataPrefix)
-			meta[metaKey] = v[0]
-		} else if strings.HasPrefix(lowerKey, LakeFSHeaderInternalPrefix) {
-			_, metaKey, _ := strings.Cut(strings.ToLower(k), LakeFSHeaderInternalPrefix)
-			meta[LakeFSMetadataPrefix+metaKey] = v[0]
+		metaKey := ""
+		switch {
+		case strings.HasPrefix(lowerKey, LakeFSHeaderMetadataPrefix):
+			metaKey = lowerKey[len(LakeFSHeaderMetadataPrefix):]
+		case strings.HasPrefix(lowerKey, LakeFSHeaderInternalPrefix):
+			metaKey = LakeFSMetadataPrefix + lowerKey[len(LakeFSHeaderInternalPrefix):]
+		default:
+			continue
 		}
+		meta[metaKey] = v[0]
 	}
 	return meta
 }
