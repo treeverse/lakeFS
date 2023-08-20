@@ -2653,7 +2653,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		entryBuilder.AddressType(catalog.AddressTypeFull)
 	}
 	meta := extractLakeFSMetadata(r.Header)
-	if meta != nil {
+	if len(meta) > 0 {
 		entryBuilder.Metadata(meta)
 	}
 	entry := entryBuilder.Build()
