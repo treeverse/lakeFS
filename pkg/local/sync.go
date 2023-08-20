@@ -286,7 +286,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}()
 
 	metadata := map[string]string{
-		ClientMtimeHeaderKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
+		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
 	}
 	reader := fileWrapper{
 		file:   f,
