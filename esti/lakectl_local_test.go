@@ -465,8 +465,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 
 			// Pull changes without force flag
 			text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
-	Use "lakectl local pull... --force" to sync with the remote.`
+			expectedStr := "there are 1 uncommitted changes. Either commit them first or use --force to revert local changes"
 			require.Contains(t, text, expectedStr)
 
 			// Pull changes and verify data
