@@ -461,7 +461,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			localCreateTestData(t, vars, create)
 
 			// Pull changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Second)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Pull changes without force flag
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
@@ -552,7 +552,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
 			// Commit changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Second)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Commit changes without force flag
 			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
