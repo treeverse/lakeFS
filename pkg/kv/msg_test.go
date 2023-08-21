@@ -12,10 +12,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
-<<<<<<< HEAD
-=======
-	"github.com/treeverse/lakefs/pkg/kv/kvparams"
->>>>>>> 667aabcad (kvparams extract configuration params)
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"google.golang.org/protobuf/proto"
