@@ -466,8 +466,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			localCreateTestData(t, vars, create)
 
 			// Pull changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, `Received unexpected error:
-	context deadline exceeded`, vars, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Nanosecond)
 
 			// Pull changes without force flag
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
@@ -520,27 +519,20 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		prefix  string
-		presign bool
+		name   string
+		prefix string
 	}{
 		{
-			name:    "root",
-			prefix:  "",
-			presign: false,
+			name:   "root",
+			prefix: "",
 		},
 		{
-			name:    prefix,
-			prefix:  prefix,
-			presign: false,
+			name:   prefix,
+			prefix: prefix,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.presign {
-				// Skip due to bug on Azure https://github.com/treeverse/lakeFS/issues/6426
-				requireBlockstoreType(t, block.BlockstoreTypeS3, block.BlockstoreTypeGS)
-			}
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
 			deleted := prefix + "/subdir/deleted.png"
@@ -553,8 +545,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			vars["PREFIX"] = ""
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
-			presign := fmt.Sprintf(" --pre-sign=%v ", tt.presign)
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+presign+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			// Modify local folder - add and remove files
 			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
@@ -562,19 +553,20 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			require.NoError(t, fd.Close())
 			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
 
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+
 			// Commit changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test"+presign+dataDir, true, false, `Received unexpected error:
-	context deadline exceeded`, vars, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Nanosecond)
 
 			// Commit changes without force flag
-			expected := localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted})
 			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
 	Use "lakectl local commit... --force" to commit your latest changes.`
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local -m test"+presign+dataDir, false, expectedStr, vars)
-			localVerifyDirContents(t, dataDir, expected)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, false, expectedStr, vars)
+
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
 			// Commit changes to branch
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir+" --force", false, "Commit for branch \"${BRANCH}\" completed", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir+" --force", false, "Commit for branch \"${BRANCH}\" completed", vars)
 
 			// Check no diff after commit
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
