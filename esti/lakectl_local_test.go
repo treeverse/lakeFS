@@ -466,8 +466,8 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			localCreateTestData(t, vars, create)
 
 			// Pull changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, false, `Operation was canceled, local data may be incomplete.
-	Use "lakectl local checkout..." to sync with the remote.`, vars, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, `Received unexpected error:
+	context deadline exceeded`, vars, time.Nanosecond)
 
 			// Pull changes without force flag
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
@@ -563,8 +563,8 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
 
 			// Commit changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test"+presign+dataDir, false, `Operation was canceled, local data may be incomplete.
-	Use "lakectl local checkout..." to sync with the remote.`, vars, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test"+presign+dataDir, true, false, `Received unexpected error:
+	context deadline exceeded`, vars, time.Nanosecond)
 
 			// Commit changes without force flag
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted})

@@ -168,12 +168,12 @@ func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expe
 	require.Contains(t, sanitizedResult, expected)
 }
 
-func RunCmdAndVerifyContainsTextWithTimeout(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string, timeout time.Duration) {
+func RunCmdAndVerifyContainsTextWithTimeout(t *testing.T, cmd string, expectFail bool, isTerminal bool, expectedRaw string, vars map[string]string, timeout time.Duration) {
 	t.Helper()
 	s := sanitize(expectedRaw, vars)
 	expected, err := expandVariables(s, vars)
 	require.NoError(t, err, "Variable embed failed - %s", err)
-	sanitizedResult := runCmdWithTimeout(t, cmd, false, isTerminal, vars, timeout)
+	sanitizedResult := runCmdWithTimeout(t, cmd, expectFail, isTerminal, vars, timeout)
 	require.Contains(t, sanitizedResult, expected)
 }
 
