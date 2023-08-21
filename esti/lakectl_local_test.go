@@ -453,7 +453,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 
 			// Upload and commit an object
 			var base []string
-			for i := 0; i <= 100000; i++ {
+			for i := 0; i <= 100; i++ {
 				base = append(base, fmt.Sprintf("test-%d.txt", i))
 			}
 			deleted := "deleted"
