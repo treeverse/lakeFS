@@ -2,6 +2,7 @@ name: Docs Preview and Link Check
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, closed]
     paths:
       - "docs/**"
     branches:
