@@ -461,7 +461,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 			// Pull changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond)
 
 			// Pull changes without force flag
 			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
