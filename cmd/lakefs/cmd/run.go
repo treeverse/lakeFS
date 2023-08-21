@@ -14,8 +14,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
@@ -39,6 +37,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"

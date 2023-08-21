@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -18,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/local"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
