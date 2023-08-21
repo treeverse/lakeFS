@@ -60,7 +60,7 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.19.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.1.0
 )
 

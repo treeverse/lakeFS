@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 func TestDynamoKV(t *testing.T) {

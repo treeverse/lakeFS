@@ -13,8 +13,8 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type MakeStore func(t testing.TB, ctx context.Context) kv.Store
