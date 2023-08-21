@@ -7,17 +7,16 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
-	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd/config"
 	"github.com/treeverse/lakefs/pkg/api"
-	config_types "github.com/treeverse/lakefs/pkg/config"
+	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
 )
@@ -37,6 +36,41 @@ const (
 {{- if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }}{{ "\n" }}{{ end -}}`
 )
 
+// Configuration is the user-visible configuration structure in Golang form.
+// When editing, make sure *all* fields have a `mapstructure:"..."` tag, to simplify future refactoring.
+type Configuration struct {
+	Credentials struct {
+		AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
+		SecretAccessKey lakefsconfig.OnlyString `mapstructure:"secret_access_key"`
+	} `mapstructure:"credentials"`
+	Server struct {
+		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
+	} `mapstructure:"server"`
+	Metastore struct {
+		Type lakefsconfig.OnlyString `mapstructure:"type"`
+		Hive struct {
+			URI           lakefsconfig.OnlyString `mapstructure:"uri"`
+			DBLocationURI lakefsconfig.OnlyString `mapstructure:"db_location_uri"`
+		} `mapstructure:"hive"`
+		Glue struct {
+			// TODO(ariels): Refactor credentials to share with server side.
+			Profile         lakefsconfig.OnlyString `mapstructure:"profile"`
+			CredentialsFile lakefsconfig.OnlyString `mapstructure:"credentials_file"`
+			DBLocationURI   lakefsconfig.OnlyString `mapstructure:"db_location_uri"`
+			Credentials     *struct {
+				AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
+				AccessSecretKey lakefsconfig.OnlyString `mapstructure:"access_secret_key"`
+				SessionToken    lakefsconfig.OnlyString `mapstructure:"session_token"`
+			} `mapstructure:"credentials"`
+
+			Region    lakefsconfig.OnlyString `mapstructure:"region"`
+			CatalogID lakefsconfig.OnlyString `mapstructure:"catalog_id"`
+		} `mapstructure:"glue"`
+		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
+		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
+	}
+}
+
 type versionInfo struct {
 	LakectlVersion       string
 	LakeFSVersion        string
@@ -47,7 +81,8 @@ type versionInfo struct {
 
 var (
 	cfgFile string
-	cfg     *config.Config
+	cfgErr  error
+	cfg     *Configuration
 
 	// baseURI default value is set by the environment variable LAKECTL_BASE_URI and
 	// override by flag 'base-url'. The baseURI is used as a prefix when we parse lakefs address (repo, ref or path).
@@ -87,26 +122,24 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		if cfg.Err() == nil {
+		if cfgErr == nil {
 			logging.ContextUnavailable().
 				WithField("file", viper.ConfigFileUsed()).
 				Debug("loaded configuration from file")
-		}
-
-		if errors.As(cfg.Err(), &viper.ConfigFileNotFoundError{}) {
+		} else if errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) {
 			if cfgFile != "" {
 				// specific message in case the file isn't found
-				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfg.Err())
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
 			}
 			// if the config file wasn't provided, try to run using the default values + env vars
-		} else if cfg.Err() != nil {
+		} else if cfgErr != nil {
 			// other errors while reading the config file
-			DieFmt("error reading configuration file: %v", cfg.Err())
+			DieFmt("error reading configuration file: %v", cfgErr)
 		}
 
-		err := viper.UnmarshalExact(&cfg.Values, viper.DecodeHook(
+		err := viper.UnmarshalExact(&cfg, viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(
-				config_types.DecodeOnlyString,
+				lakefsconfig.DecodeOnlyString,
 				mapstructure.StringToTimeDurationHookFunc())))
 		if err != nil {
 			DieFmt("error unmarshal configuration: %v", err)
@@ -173,14 +206,14 @@ func getClient() *api.ClientWithResponses {
 		Transport: transport,
 	}
 
-	accessKeyID := cfg.Values.Credentials.AccessKeyID
-	secretAccessKey := cfg.Values.Credentials.SecretAccessKey
+	accessKeyID := cfg.Credentials.AccessKeyID
+	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
 	if err != nil {
 		DieErr(err)
 	}
 
-	serverEndpoint := string(cfg.Values.Server.EndpointURL)
+	serverEndpoint := cfg.Server.EndpointURL.String()
 	u, err := url.Parse(serverEndpoint)
 	if err != nil {
 		DieErr(err)
@@ -237,20 +270,34 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
-		home, err := homedir.Dir()
+		home, err := os.UserHomeDir()
 		if err != nil {
 			DieErr(err)
 		}
 
-		// Search config in home directory with name ".lakefs" (without extension).
+		// Search config in home directory
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".lakectl")
 	}
-
 	viper.SetEnvPrefix("LAKECTL")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
 
-	cfg = config.ReadConfig()
+	// Inform viper of all expected fields.
+	// Otherwise, it fails to deserialize from the environment.
+	var cfg Configuration
+	keys := lakefsconfig.GetStructKeys(reflect.TypeOf(cfg), "mapstructure", "squash")
+	for _, key := range keys {
+		viper.SetDefault(key, nil)
+	}
+
+	// set defaults
+	viper.SetDefault("metastore.hive.db_location_uri", "file:/user/hive/warehouse/")
+	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
+
+	cfgErr = viper.ReadInConfig()
+	if errors.Is(cfgErr, viper.ConfigFileNotFoundError{}) {
+		DieFmt("Failed to read config file '%s': %s", viper.ConfigFileUsed(), cfgErr)
+	}
 }

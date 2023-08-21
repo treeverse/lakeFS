@@ -36,7 +36,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 		defer toDeferFunc()
 
 		fmt.Printf("import %s -> %s\n", fromAddress, toAddress)
-		err := metastore.ImportAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, repo, branch, continueOnError, cfg.GetFixSparkPlaceholder(), dbfsLocation)
+		err := metastore.ImportAll(cmd.Context(), fromClient, toClient, schemaFilter, tableFilter, repo, branch, continueOnError, cfg.Metastore.FixSparkPlaceholder, dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}

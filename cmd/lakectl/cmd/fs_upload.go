@@ -3,11 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
-	"mime"
-	"mime/multipart"
-	"net/http"
-	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,7 +88,7 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	objectPath := api.StringValue(destURI.Path)
 	switch method {
 	case transportMethodDefault:
-		return uploadObject(ctx, client, destURI.Repository, destURI.Ref, objectPath, contentType, fp)
+		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	case transportMethodDirect:
 		return helpers.ClientUploadDirect(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	case transportMethodPreSign:
@@ -101,52 +96,6 @@ func upload(ctx context.Context, client api.ClientWithResponsesInterface, source
 	default:
 		panic("unsupported upload method")
 	}
-}
-
-func uploadObject(ctx context.Context, client api.ClientWithResponsesInterface, repoID, branchID, objectPath, contentType string, fp io.Reader) (*api.ObjectStats, error) {
-	pr, pw := io.Pipe()
-	mpw := multipart.NewWriter(pw)
-	mpContentType := mpw.FormDataContentType()
-	go func() {
-		defer func() {
-			_ = pw.Close()
-		}()
-		filename := filepath.Base(objectPath)
-		const fieldName = "content"
-		var err error
-		var cw io.Writer
-		// when no content-type is specified we let 'CreateFromFile' add the part with the default content type.
-		// otherwise, we add a part and set the content-type.
-		if contentType != "" {
-			h := make(textproto.MIMEHeader)
-			contentDisposition := mime.FormatMediaType("form-data", map[string]string{"name": fieldName, "filename": filename})
-			h.Set("Content-Disposition", contentDisposition)
-			h.Set("Content-Type", contentType)
-			cw, err = mpw.CreatePart(h)
-		} else {
-			cw, err = mpw.CreateFormFile(fieldName, filename)
-		}
-		if err != nil {
-			_ = pw.CloseWithError(err)
-			return
-		}
-		if _, err := io.Copy(cw, fp); err != nil {
-			_ = pw.CloseWithError(err)
-			return
-		}
-		_ = mpw.Close()
-	}()
-
-	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &api.UploadObjectParams{
-		Path: objectPath,
-	}, mpContentType, pr)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode() != http.StatusCreated {
-		return nil, helpers.ResponseAsError(resp)
-	}
-	return resp.JSON201, nil
 }
 
 //nolint:gochecknoinits

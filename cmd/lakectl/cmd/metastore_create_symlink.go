@@ -38,7 +38,7 @@ var metastoreCreateSymlinkCmd = &cobra.Command{
 		}
 		location := resp.JSON201.Location
 
-		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
+		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.Metastore.FixSparkPlaceholder)
 		if err != nil {
 			DieErr(err)
 		}

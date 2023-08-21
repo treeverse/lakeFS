@@ -50,7 +50,7 @@ var metastoreCopyCmd = &cobra.Command{
 			"partition":        partition,
 		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
-		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder(), dbfsLocation)
+		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.Metastore.FixSparkPlaceholder, dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}
