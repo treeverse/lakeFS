@@ -466,7 +466,8 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			localCreateTestData(t, vars, create)
 
 			// Pull changes and interrupt
-			StartCmdWithTimeout(t, Lakectl()+" local pull "+dataDir, false, false, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, false, `Operation was canceled, local data may be incomplete.
+	Use "lakectl local checkout..." to sync with the remote.`, vars, time.Nanosecond)
 
 			// Pull changes without force flag
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
@@ -562,10 +563,11 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
 
 			// Commit changes and interrupt
-			StartCmdWithTimeout(t, Lakectl()+" local commit -m test"+presign+dataDir, false, false, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test"+presign+dataDir, false, `Operation was canceled, local data may be incomplete.
+	Use "lakectl local checkout..." to sync with the remote.`, vars, time.Nanosecond)
 
 			// Commit changes without force flag
-			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
+			expected := localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted})
 			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
 	Use "lakectl local commit... --force" to commit your latest changes.`
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local -m test"+presign+dataDir, false, expectedStr, vars)

@@ -50,7 +50,7 @@ func WriteOperation(path string, operation string) (*Index, error) {
 	return idx, os.WriteFile(idxPath, data, IndexFileMode)
 }
 
-func DeleteOperation(path string) (*Index, error) {
+func RemoveOperationFromIndexFile(path string) (*Index, error) {
 	idx, err := ReadIndex(path)
 	if err != nil {
 		return nil, err

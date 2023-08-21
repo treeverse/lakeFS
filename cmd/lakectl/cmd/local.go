@@ -147,7 +147,7 @@ func localHandleSyncInterrupt(ctx context.Context) context.Context {
 	return ctx
 }
 
-func dieOnInterruptedOperation(interruptedOperation string, currentOperation string, force bool) {
+func dieOnInterruptedOperation(interruptedOperation string, force bool) {
 	if !force {
 		switch strings.ToLower(interruptedOperation) {
 		case "commit":

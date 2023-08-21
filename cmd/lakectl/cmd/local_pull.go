@@ -31,9 +31,8 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		currentOperation := "pull"
-		dieOnInterruptedOperation(idx.Operation, currentOperation, force)
-		_, err = local.WriteOperation(localPath, currentOperation)
+		dieOnInterruptedOperation(idx.Operation, force)
+		_, err = local.WriteOperation(localPath, "pull")
 		if err != nil {
 			DieErr(err)
 		}
@@ -80,7 +79,10 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		local.DeleteOperation(localPath)
+		_, err = local.RemoveOperationFromIndexFile(localPath)
+		if err != nil {
+			DieErr(err)
+		}
 
 		fmt.Printf("\nSuccessfully synced changes!\n")
 		Write(localSummaryTemplate, struct {

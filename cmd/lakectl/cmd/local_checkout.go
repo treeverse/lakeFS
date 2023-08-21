@@ -55,9 +55,8 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 	}
 
 	force := Must(cmd.Flags().GetBool(localForceFlagName))
-	currentOperation := "checkout"
-	dieOnInterruptedOperation(idx.Operation, currentOperation, force)
-	_, err = local.WriteOperation(localPath, currentOperation)
+	dieOnInterruptedOperation(idx.Operation, force)
+	_, err = local.WriteOperation(localPath, "checkout")
 	if err != nil {
 		DieErr(err)
 	}
@@ -112,7 +111,10 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		DieErr(err)
 	}
 
-	local.DeleteOperation(localPath)
+	_, err = local.RemoveOperationFromIndexFile(localPath)
+	if err != nil {
+		DieErr(err)
+	}
 
 	Write(localSummaryTemplate, struct {
 		Operation string

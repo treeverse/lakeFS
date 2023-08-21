@@ -53,9 +53,8 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
-		currentOperation := "commit"
-		dieOnInterruptedOperation(idx.Operation, currentOperation, force)
-		_, err = local.WriteOperation(localPath, currentOperation)
+		dieOnInterruptedOperation(idx.Operation, force)
+		_, err = local.WriteOperation(localPath, "commit")
 		if err != nil {
 			DieErr(err)
 		}
@@ -168,7 +167,10 @@ var localCommitCmd = &cobra.Command{
 			Ref:        remote.Ref,
 		}
 		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
-		local.DeleteOperation(localPath)
+		_, err = local.RemoveOperationFromIndexFile(localPath)
+		if err != nil {
+			DieErr(err)
+		}
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
