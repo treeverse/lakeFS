@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -62,6 +63,21 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
 	)
 	return cmd.CombinedOutput()
+}
+
+func startShellCommandWithTimeout(t *testing.T, command string, isTerminal bool, timeout time.Duration) error {
+	t.Helper()
+	t.Logf("Run shell command '%s'", command)
+	// Assuming linux. Not sure if this is correct
+	cmd := exec.Command("/bin/sh", "-c", command)
+	cmd.Env = append(os.Environ(),
+		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
+	)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	time.Sleep(timeout)
+	return cmd.Process.Kill()
 }
 
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
@@ -205,6 +221,15 @@ func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map
 	return sanitize(string(result), vars)
 }
 
+func StartCmdWithTimeout(t *testing.T, cmd string, expectFail bool, isTerminal bool, timeout time.Duration) {
+	t.Helper()
+	err := startShellCommandWithTimeout(t, cmd, isTerminal, timeout)
+	if expectFail {
+		require.Error(t, err, "Expected error in '%s' command did not occur cmd")
+	} else {
+		require.NoError(t, err, "Failed to run '%s' command", cmd)
+	}
+}
 func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal bool, expected string, vars map[string]string) {
 	t.Helper()
 	expanded, err := expandVariables(expected, vars)

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/local"
@@ -298,6 +299,84 @@ func TestLakectlLocal_pull(t *testing.T) {
 			expectedStr = successStr + localGetSummary(tasks)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
 			localVerifyDirContents(t, dataDir, expected)
+		})
+	}
+}
+
+func TestLakectlLocal_interruptedPull(t *testing.T) {
+	const successStr = "Successfully synced changes!\n\nPull "
+
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"LOCAL_DIR": tmpDir,
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "root",
+			prefix: "",
+		},
+		{
+			name:   "prefix",
+			prefix: "images",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			vars["PREFIX"] = "/" + tt.prefix
+			vars["LOCAL_DIR"] = dataDir
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+
+			// Upload and commit an object
+			base := []string{
+				"ro_1k.1",
+				"ro_1k.2",
+				"ro_1k.3",
+				"images/1.png",
+				"images/2.png",
+				"images/3.png",
+			}
+
+			deleted := "deleted"
+			create := append(base, deleted)
+			localCreateTestData(t, vars, create)
+			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
+			// Pull changes and interrupt
+			StartCmdWithTimeout(t, Lakectl()+" local pull "+dataDir, false, false, time.Nanosecond)
+
+			// Pull changes without force flag
+			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
+	Use "lakectl local pull... --force" to sync with the remote.`
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
+			localVerifyDirContents(t, dataDir, expected)
+
+			// Pull changes and verify data
+			tasks := local.Tasks{
+				Downloaded: uint64(len(expected)),
+			}
+			expectedStr = successStr + localGetSummary(tasks)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir+" --force", false, expectedStr, vars)
+			localVerifyDirContents(t, dataDir, expected)
+
 		})
 	}
 }
