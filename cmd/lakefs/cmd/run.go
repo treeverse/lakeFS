@@ -134,7 +134,7 @@ var runCmd = &cobra.Command{
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
-				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
 				apiEmailer,
 				logger.WithField("service", "auth_api"),
@@ -145,7 +145,7 @@ var runCmd = &cobra.Command{
 		} else {
 			authService = auth.NewAuthService(
 				kvStore,
-				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				emailer,
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),

@@ -557,14 +557,6 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	}, nil
 }
 
-func (c *Config) AuthEncryptionSecret() []byte {
-	secret := c.Auth.Encrypt.SecretKey
-	if len(secret) == 0 {
-		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
-	}
-	return []byte(secret)
-}
-
 const (
 	AuthRBACSimplified = "simplified"
 	AuthRBACExternal   = "external"
