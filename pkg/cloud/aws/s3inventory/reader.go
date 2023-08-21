@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/pkg/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"

@@ -8,7 +8,6 @@ import (
 	"io"
 	"time"
 
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 

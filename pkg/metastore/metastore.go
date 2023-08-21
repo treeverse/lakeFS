@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/glue"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/pkg/logging"
 )

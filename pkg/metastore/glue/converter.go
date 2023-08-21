@@ -4,33 +4,35 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/glue"
+
+	"github.com/aws/aws-sdk-go-v2/service/glue"
+	"github.com/aws/aws-sdk-go-v2/service/glue/types"
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
-func serDeGlueToLocal(g *glue.SerDeInfo) *metastore.SerDeInfo {
+func serDeGlueToLocal(g *types.SerDeInfo) *metastore.SerDeInfo {
 	if g == nil {
 		return nil
 	}
 	return &metastore.SerDeInfo{
 		Name:             aws.StringValue(g.Name),
 		SerializationLib: aws.StringValue(g.SerializationLibrary),
-		Parameters:       aws.StringValueMap(g.Parameters),
+		Parameters:       g.Parameters,
 	}
 }
 
-func skewedGlueToLocal(g *glue.SkewedInfo) *metastore.SkewedInfo {
+func skewedGlueToLocal(g *types.SkewedInfo) *metastore.SkewedInfo {
 	if g == nil {
 		return &metastore.SkewedInfo{}
 	}
 	return &metastore.SkewedInfo{
-		SkewedColNames:             aws.StringValueSlice(g.SkewedColumnNames),
-		SkewedColValues:            [][]string{aws.StringValueSlice(g.SkewedColumnValues)}, // TODO(Guys): validate this hive uses [][]string glue uses []string (????)
-		SkewedColValueLocationMaps: aws.StringValueMap(g.SkewedColumnValueLocationMaps),
+		SkewedColNames:             g.SkewedColumnNames,
+		SkewedColValues:            [][]string{g.SkewedColumnValues}, // TODO(Guys): validate this hive uses [][]string glue uses []string (????)
+		SkewedColValueLocationMaps: g.SkewedColumnValueLocationMaps,
 	}
 }
 
-func sortColumnsGlueToLocal(columns []*glue.Order) []*metastore.Order {
+func sortColumnsGlueToLocal(columns []*types.Order) []*metastore.Order {
 	res := make([]*metastore.Order, len(columns))
 	for i, column := range columns {
 		res[i] = &metastore.Order{
@@ -41,7 +43,7 @@ func sortColumnsGlueToLocal(columns []*glue.Order) []*metastore.Order {
 	return res
 }
 
-func columnsGlueToLocal(columns []*glue.Column) []*metastore.FieldSchema {
+func columnsGlueToLocal(columns []*types.Column) []*metastore.FieldSchema {
 	res := make([]*metastore.FieldSchema, len(columns))
 	for i, column := range columns {
 		res[i] = &metastore.FieldSchema{
@@ -53,7 +55,7 @@ func columnsGlueToLocal(columns []*glue.Column) []*metastore.FieldSchema {
 	return res
 }
 
-func TableGlueToLocal(glueTable *glue.TableData) *metastore.Table {
+func TableGlueToLocal(glueTable *types.TableData) *metastore.Table {
 	sd := SDGlueToLocal(glueTable.StorageDescriptor)
 	ht := &metastore.Table{
 		TableName:        aws.StringValue(glueTable.Name),
@@ -74,7 +76,7 @@ func TableGlueToLocal(glueTable *glue.TableData) *metastore.Table {
 	return ht
 }
 
-func TablesGlueToLocal(glueTables []*glue.TableData) []*metastore.Table {
+func TablesGlueToLocal(glueTables []*types.TableData) []*metastore.Table {
 	tables := make([]*metastore.Table, len(glueTables))
 	for i, table := range glueTables {
 		tables[i] = TableGlueToLocal(table)
@@ -82,7 +84,7 @@ func TablesGlueToLocal(glueTables []*glue.TableData) []*metastore.Table {
 	return tables
 }
 
-func PartitionGlueToLocal(gluePartition *glue.Partition) *metastore.Partition {
+func PartitionGlueToLocal(gluePartition *types.Partition) *metastore.Partition {
 	sd := SDGlueToLocal(gluePartition.StorageDescriptor)
 	partition := &metastore.Partition{
 		Values:              aws.StringValueSlice(gluePartition.Values),
@@ -97,7 +99,7 @@ func PartitionGlueToLocal(gluePartition *glue.Partition) *metastore.Partition {
 	return partition
 }
 
-func PartitionsGlueToLocal(gluePartitions []*glue.Partition) []*metastore.Partition {
+func PartitionsGlueToLocal(gluePartitions []*types.Partition) []*metastore.Partition {
 	partitions := make([]*metastore.Partition, len(gluePartitions))
 	for i, partition := range gluePartitions {
 		partitions[i] = PartitionGlueToLocal(partition)
@@ -105,7 +107,7 @@ func PartitionsGlueToLocal(gluePartitions []*glue.Partition) []*metastore.Partit
 	return partitions
 }
 
-func serDeLocalToGlue(info *metastore.SerDeInfo) *glue.SerDeInfo {
+func serDeLocalToGlue(info *metastore.SerDeInfo) *types.SerDeInfo {
 	if info == nil {
 		return nil
 	}
@@ -123,7 +125,7 @@ func serDeLocalToGlue(info *metastore.SerDeInfo) *glue.SerDeInfo {
 	}
 }
 
-func skewedLocalToGlue(info *metastore.SkewedInfo) *glue.SkewedInfo {
+func skewedLocalToGlue(info *metastore.SkewedInfo) *types.SkewedInfo {
 	if info == nil {
 		return &glue.SkewedInfo{}
 	}
@@ -134,8 +136,8 @@ func skewedLocalToGlue(info *metastore.SkewedInfo) *glue.SkewedInfo {
 	}
 }
 
-func sortColumnsLocalToGlue(columns []*metastore.Order) []*glue.Order {
-	res := make([]*glue.Order, len(columns))
+func sortColumnsLocalToGlue(columns []*metastore.Order) []*types.Order {
+	res := make([]*types.Order, len(columns))
 	for i, column := range columns {
 		res[i] = &glue.Order{
 			Column:    aws.String(column.Col),
@@ -145,22 +147,22 @@ func sortColumnsLocalToGlue(columns []*metastore.Order) []*glue.Order {
 	return res
 }
 
-func columnsLocalToGlue(columns []*metastore.FieldSchema) []*glue.Column {
-	res := make([]*glue.Column, len(columns))
+func columnsLocalToGlue(columns []*metastore.FieldSchema) []*types.Column {
+	res := make([]*types.Column, len(columns))
 	for i, column := range columns {
 		res[i] = &glue.Column{
 			Comment: aws.String(column.Comment),
 			Name:    aws.String(column.Name),
-			//Parameters: nil,
+			// Parameters: nil,
 			Type: aws.String(column.Type),
 		}
 	}
 	return res
 }
 
-func DatabaseLocalToGlue(db *metastore.Database) *glue.DatabaseInput {
+func DatabaseLocalToGlue(db *metastore.Database) *types.DatabaseInput {
 	return &glue.DatabaseInput{
-		//CreateTableDefaultPermissions: db.,
+		// CreateTableDefaultPermissions: db.,
 		Description:    aws.String(db.Description),
 		LocationUri:    aws.String(db.LocationURI),
 		Name:           aws.String(db.Name),
@@ -169,7 +171,7 @@ func DatabaseLocalToGlue(db *metastore.Database) *glue.DatabaseInput {
 	}
 }
 
-func DatabasesGlueToLocal(glueDatabases []*glue.Database) []*metastore.Database {
+func DatabasesGlueToLocal(glueDatabases []*types.Database) []*metastore.Database {
 	databases := make([]*metastore.Database, len(glueDatabases))
 	for i, partition := range glueDatabases {
 		databases[i] = DatabaseGlueToLocal(partition)
@@ -177,7 +179,7 @@ func DatabasesGlueToLocal(glueDatabases []*glue.Database) []*metastore.Database 
 	return databases
 }
 
-func DatabaseGlueToLocal(db *glue.Database) *metastore.Database {
+func DatabaseGlueToLocal(db *types.Database) *metastore.Database {
 	return &metastore.Database{
 		Name:        aws.StringValue(db.Name),
 		Description: aws.StringValue(db.Description),
@@ -186,9 +188,9 @@ func DatabaseGlueToLocal(db *glue.Database) *metastore.Database {
 	}
 }
 
-func TableLocalToGlue(table *metastore.Table) *glue.TableInput {
+func TableLocalToGlue(table *metastore.Table) *types.TableInput {
 	sd := SDLocalToGlue(table.Sd)
-	targetTable, _ := table.AWSTargetTable.(*glue.TableIdentifier)
+	targetTable, _ := table.AWSTargetTable.(*types.TableIdentifier)
 	ht := &glue.TableInput{
 		Description:       table.AWSDescription,
 		LastAccessTime:    localToAWSTime(table.LastAccessTime), // TODO(Guys): check if this OK
@@ -207,10 +209,10 @@ func TableLocalToGlue(table *metastore.Table) *glue.TableInput {
 	return ht
 }
 
-func PartitionLocalToGlue(partition *metastore.Partition) *glue.PartitionInput {
+func PartitionLocalToGlue(partition *metastore.Partition) *types.PartitionInput {
 	sd := SDLocalToGlue(partition.Sd)
 	ht := &glue.PartitionInput{
-		//IsRegisteredWithLakeFormation: partition.AWSIsRegisteredWithLakeFormation,
+		// IsRegisteredWithLakeFormation: partition.AWSIsRegisteredWithLakeFormation,
 		LastAccessTime:    localToAWSTime(int64(partition.LastAccessTime)), // TODO(Guys): check if this OK
 		LastAnalyzedTime:  partition.AWSLastAnalyzedTime,
 		Parameters:        aws.StringMap(partition.Parameters),
@@ -220,21 +222,21 @@ func PartitionLocalToGlue(partition *metastore.Partition) *glue.PartitionInput {
 	return ht
 }
 
-func PartitionsLocalToGlue(partitions []*metastore.Partition) []*glue.PartitionInput {
-	gluePartitions := make([]*glue.PartitionInput, len(partitions))
+func PartitionsLocalToGlue(partitions []*metastore.Partition) []*types.PartitionInput {
+	gluePartitions := make([]*types.PartitionInput, len(partitions))
 	for i, partition := range partitions {
 		gluePartitions[i] = PartitionLocalToGlue(partition)
 	}
 	return gluePartitions
 }
 
-func SDLocalToGlue(sd *metastore.StorageDescriptor) *glue.StorageDescriptor {
+func SDLocalToGlue(sd *metastore.StorageDescriptor) *types.StorageDescriptor {
 	if sd == nil {
 		return nil
 	}
-	schemaRef, _ := sd.AWSSchemaReference.(*glue.SchemaReference)
-	return &glue.StorageDescriptor{
-		BucketColumns:          aws.StringSlice(sd.BucketCols),
+	schemaRef, _ := sd.AWSSchemaReference.(*types.SchemaReference)
+	return &types.StorageDescriptor{
+		BucketColumns:          sd.BucketCols,
 		Columns:                columnsLocalToGlue(sd.Cols),
 		Compressed:             aws.Bool(sd.Compressed),
 		InputFormat:            aws.String(sd.InputFormat),
@@ -250,7 +252,7 @@ func SDLocalToGlue(sd *metastore.StorageDescriptor) *glue.StorageDescriptor {
 	}
 }
 
-func SDGlueToLocal(sd *glue.StorageDescriptor) *metastore.StorageDescriptor {
+func SDGlueToLocal(sd *types.StorageDescriptor) *metastore.StorageDescriptor {
 	if sd == nil {
 		return nil
 	}

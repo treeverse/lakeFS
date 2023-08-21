@@ -7,11 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/glue"
-	"github.com/aws/aws-sdk-go/service/glue/glueiface"
-
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/glue"
+	"github.com/aws/aws-sdk-go-v2/service/glue/types"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
@@ -20,7 +18,7 @@ import (
 const MaxParts = 1000 // max possible 1000
 
 type MSClient struct {
-	client          glueiface.GlueAPI
+	client          *glue.Client
 	catalogID       string
 	baseLocationURI string
 }
@@ -33,15 +31,12 @@ func (g *MSClient) NormalizeDBName(db string) string {
 	return db
 }
 
-func NewMSClient(cfg *aws.Config, catalogID, baselLocationURI string) (metastore.Client, error) {
-	sess := session.Must(session.NewSession(cfg))
-	sess.ClientConfig("glue")
-	gl := glue.New(sess)
+func NewMSClient(client *glue.Client, catalogID, baselLocationURI string) (metastore.Client, error) {
 	if catalogID == "" {
 		logging.ContextUnavailable().Warn("Glue catalog id is empty")
 	}
 	return &MSClient{
-		client:          gl,
+		client:          client,
 		catalogID:       catalogID,
 		baseLocationURI: strings.TrimRight(baselLocationURI, "/"),
 	}, nil
@@ -57,7 +52,7 @@ func (g *MSClient) HasTable(ctx context.Context, dbName string, tableName string
 }
 
 func (g *MSClient) GetDatabase(ctx context.Context, name string) (*metastore.Database, error) {
-	db, err := g.client.GetDatabaseWithContext(ctx, &glue.GetDatabaseInput{
+	db, err := g.client.GetDatabase(ctx, &glue.GetDatabaseInput{
 		CatalogId: aws.String(g.catalogID),
 		Name:      aws.String(name),
 	})
@@ -68,11 +63,10 @@ func (g *MSClient) GetDatabase(ctx context.Context, name string) (*metastore.Dat
 }
 
 func (g *MSClient) getDatabaseFromGlue(ctx context.Context, token *string, parts int) (*glue.GetDatabasesOutput, error) {
-	return g.client.GetDatabasesWithContext(ctx, &glue.GetDatabasesInput{
-		CatalogId:         aws.String(g.catalogID),
-		MaxResults:        aws.Int64(int64(parts)),
-		NextToken:         token,
-		ResourceShareType: nil,
+	return g.client.GetDatabases(ctx, &glue.GetDatabasesInput{
+		CatalogId:  aws.String(g.catalogID),
+		MaxResults: aws.Int32(int32(parts)),
+		NextToken:  token,
 	})
 }
 
@@ -99,7 +93,7 @@ func (g *MSClient) GetDatabases(ctx context.Context, pattern string) ([]*metasto
 	return allDatabases, nil
 }
 
-func filterDatabases(databases []*glue.Database, pattern string) ([]*glue.Database, error) {
+func filterDatabases(databases []types.Database, pattern string) ([]types.Database, error) {
 	if pattern == "" {
 		return databases, nil
 	}
@@ -107,9 +101,9 @@ func filterDatabases(databases []*glue.Database, pattern string) ([]*glue.Databa
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*glue.Database, 0)
+	res := make([]types.Database, 0)
 	for _, database := range databases {
-		if r.MatchString(aws.StringValue(database.Name)) {
+		if r.MatchString(aws.ToString(database.Name)) {
 			res = append(res, database)
 		}
 	}
@@ -120,7 +114,7 @@ func (g *MSClient) GetTables(ctx context.Context, dbName string, pattern string)
 	var nextToken *string
 	allTables := make([]*metastore.Table, 0)
 	for {
-		getTablesOutput, err := g.client.GetTablesWithContext(ctx, &glue.GetTablesInput{
+		getTablesOutput, err := g.client.GetTables(ctx, &glue.GetTablesInput{
 			CatalogId:    aws.String(g.catalogID),
 			DatabaseName: aws.String(dbName),
 			Expression:   aws.String(pattern),
@@ -143,7 +137,7 @@ func (g *MSClient) GetTables(ctx context.Context, dbName string, pattern string)
 
 func (g *MSClient) AlterTable(ctx context.Context, dbName string, _ string, newTable *metastore.Table) error {
 	table := TableLocalToGlue(newTable)
-	_, err := g.client.UpdateTableWithContext(ctx, &glue.UpdateTableInput{
+	_, err := g.client.UpdateTable(ctx, &glue.UpdateTableInput{
 		CatalogId:    aws.String(g.catalogID),
 		DatabaseName: aws.String(dbName),
 		SkipArchive:  aws.Bool(false), // UpdateTable always creates an archived version of the table before updating it. However, if skipArchive is set to true, UpdateTable does not create the archived version.
@@ -153,7 +147,7 @@ func (g *MSClient) AlterTable(ctx context.Context, dbName string, _ string, newT
 }
 
 func (g *MSClient) DropPartition(ctx context.Context, dbName string, tableName string, values []string) error {
-	_, err := g.client.DeletePartitionWithContext(ctx, &glue.DeletePartitionInput{
+	_, err := g.client.DeletePartition(ctx, &glue.DeletePartitionInput{
 		CatalogId:       aws.String(g.catalogID),
 		DatabaseName:    aws.String(dbName),
 		PartitionValues: aws.StringSlice(values),
@@ -164,7 +158,7 @@ func (g *MSClient) DropPartition(ctx context.Context, dbName string, tableName s
 
 func (g *MSClient) CreateDatabase(ctx context.Context, database *metastore.Database) error {
 	databaseInput := DatabaseLocalToGlue(database)
-	_, err := g.client.CreateDatabaseWithContext(ctx, &glue.CreateDatabaseInput{
+	_, err := g.client.CreateDatabase(ctx, &glue.CreateDatabaseInput{
 		CatalogId:     aws.String(g.catalogID),
 		DatabaseInput: databaseInput,
 	})
@@ -176,7 +170,7 @@ func (g *MSClient) CreateDatabase(ctx context.Context, database *metastore.Datab
 }
 
 func (g *MSClient) getTableData(ctx context.Context, dbName string, tblName string) (*glue.TableData, error) {
-	table, err := g.client.GetTableWithContext(ctx,
+	table, err := g.client.GetTable(ctx,
 		&glue.GetTableInput{
 			CatalogId:    aws.String(g.catalogID),
 			DatabaseName: aws.String(dbName),
@@ -199,7 +193,7 @@ func (g *MSClient) GetTable(ctx context.Context, dbName string, tableName string
 func (g *MSClient) CreateTable(ctx context.Context, tbl *metastore.Table) error {
 	table := TableLocalToGlue(tbl)
 	dbName := tbl.DBName
-	_, err := g.client.CreateTableWithContext(ctx,
+	_, err := g.client.CreateTable(ctx,
 		&glue.CreateTableInput{
 			CatalogId:    aws.String(g.catalogID),
 			DatabaseName: aws.String(dbName),
@@ -209,7 +203,7 @@ func (g *MSClient) CreateTable(ctx context.Context, tbl *metastore.Table) error 
 }
 
 func (g *MSClient) GetPartition(ctx context.Context, dbName string, tableName string, values []string) (*metastore.Partition, error) {
-	output, err := g.client.GetPartitionWithContext(ctx,
+	output, err := g.client.GetPartition(ctx,
 		&glue.GetPartitionInput{
 			CatalogId:       aws.String(g.catalogID),
 			DatabaseName:    aws.String(dbName),
@@ -232,7 +226,7 @@ func (g *MSClient) GetPartitions(ctx context.Context, dbName string, tableName s
 }
 
 func (g *MSClient) getPartitionsFromGlue(ctx context.Context, dbName, tableName string, nextToken *string, maxParts int16) (*glue.GetPartitionsOutput, error) {
-	return g.client.GetPartitionsWithContext(ctx,
+	return g.client.GetPartitions(ctx,
 		&glue.GetPartitionsInput{
 			CatalogId:    aws.String(g.catalogID),
 			DatabaseName: aws.String(dbName),
@@ -262,7 +256,7 @@ func (g *MSClient) GetAllPartitions(ctx context.Context, dbName, tableName strin
 
 func (g *MSClient) AddPartition(ctx context.Context, tableName string, dbName string, newPartition *metastore.Partition) error {
 	gluePartition := PartitionLocalToGlue(newPartition)
-	_, err := g.client.CreatePartitionWithContext(ctx,
+	_, err := g.client.CreatePartition(ctx,
 		&glue.CreatePartitionInput{
 			CatalogId:      aws.String(g.catalogID),
 			DatabaseName:   aws.String(dbName),
@@ -285,7 +279,7 @@ func (g *MSClient) AddPartitions(ctx context.Context, tableName string, dbName s
 			Values:            partition.Values,
 		})
 	}
-	_, err := g.client.BatchCreatePartitionWithContext(ctx,
+	_, err := g.client.BatchCreatePartition(ctx,
 		&glue.BatchCreatePartitionInput{
 			CatalogId:          aws.String(g.catalogID),
 			DatabaseName:       aws.String(dbName),
@@ -300,7 +294,7 @@ func (g *MSClient) AlterPartition(ctx context.Context, dbName string, tableName 
 	// No batch alter partitions we will need to do it one by one
 	gluePartition := PartitionLocalToGlue(partition)
 
-	_, err := g.client.UpdatePartitionWithContext(ctx,
+	_, err := g.client.UpdatePartition(ctx,
 		&glue.UpdatePartitionInput{
 			CatalogId:          aws.String(g.catalogID),
 			DatabaseName:       aws.String(dbName),

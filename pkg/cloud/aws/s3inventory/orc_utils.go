@@ -8,10 +8,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	gproto "github.com/golang/protobuf/proto" //nolint:staticcheck // orc lib uses old proto
 	"github.com/scritchley/orc/proto"
 	"github.com/treeverse/lakefs/pkg/logging"

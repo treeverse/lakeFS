@@ -9,14 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
-
 	"github.com/treeverse/lakefs/pkg/auth/model"
-
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-
 	"github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 

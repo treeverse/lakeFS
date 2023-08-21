@@ -2,8 +2,6 @@ package params
 
 import (
 	"time"
-
-	"github.com/aws/aws-sdk-go/aws"
 )
 
 // AdapterConfig configures a block adapter.

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/cznic/mathutil"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/pkg/logging"

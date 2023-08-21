@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -33,7 +33,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.ClientWithResponsesInterface, *s3.S3, string) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.ClientWithResponsesInterface, *s3.Client, string) {
 	logger := logging.ContextUnavailable()
 	viper.AddConfigPath(".")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
@@ -124,22 +124,18 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	return logger, client, svc, endpointURL
 }
 
-func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
-	awsSession := session.Must(session.NewSession())
+func SetupTestS3Client(endpoint, key, secret string) *s3.Client {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background())
+	if err != nil {
+		panic(err)
+	}
 	forcePathStyleS3Client := viper.GetBool("force_path_style")
-	svc := s3.New(awsSession,
-		aws.NewConfig().
-			WithRegion("us-east-1").
-			WithEndpoint(endpoint).
-			WithS3ForcePathStyle(forcePathStyleS3Client).
-			WithDisableSSL(true).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     key,
-						SecretAccessKey: secret,
-					},
-				})))
+	svc := s3.NewFromConfig(cfg, func(options *s3.Options) {
+		options.Region = "us-east-1"
+		options.BaseEndpoint = aws.String(endpoint)
+		options.UsePathStyle = forcePathStyleS3Client
+		options.Credentials = credentials.NewStaticCredentialsProvider(key, secret, "")
+	})
 	return svc
 }
 
