@@ -75,7 +75,6 @@ var entryCmd = &cobra.Command{
 			Config:       conf,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-			Limiter:      conf.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)

@@ -11,18 +11,15 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
-	"go.uber.org/ratelimit"
 )
 
 var (
@@ -657,15 +654,6 @@ func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams
 	}, nil
 }
 
-func (c *Config) CommittedParams() committed.Params {
-	return committed.Params{
-		MinRangeSizeBytes:          c.Committed.Permanent.MinRangeSizeBytes,
-		MaxRangeSizeBytes:          c.Committed.Permanent.MaxRangeSizeBytes,
-		RangeSizeEntriesRaggedness: c.Committed.Permanent.RangeRaggednessEntries,
-		MaxUploaders:               c.Committed.LocalCache.MaxUploadersPerWriter,
-	}
-}
-
 const (
 	AuthRBACSimplified = "simplified"
 	AuthRBACExternal   = "external"
@@ -688,12 +676,4 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
-}
-
-func (c *Config) NewGravelerBackgroundLimiter() ratelimit.Limiter {
-	rateLimit := c.Graveler.Background.RateLimit
-	if rateLimit == 0 {
-		return ratelimit.NewUnlimited()
-	}
-	return ratelimit.New(rateLimit)
 }

@@ -153,7 +153,7 @@ var runCmd = &cobra.Command{
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		blockstoreType := cfg.BlockstoreType()
+		blockstoreType := cfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
@@ -176,7 +176,6 @@ var runCmd = &cobra.Command{
 			Config:       cfg,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
@@ -293,12 +292,14 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
+		oidcConfig := api.OIDCConfig(cfg.Auth.OIDC)
+		cookieAuthConfig := api.CookieAuthConfig(cfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
 			authService,
-			&cfg.Auth.OIDC,
-			&cfg.Auth.CookieAuthVerification,
+			&oidcConfig,
+			&cookieAuthConfig,
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")

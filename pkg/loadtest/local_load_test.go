@@ -62,7 +62,6 @@ func TestLocalLoad(t *testing.T) {
 		Config:       conf,
 		KVStore:      kvStore,
 		PathProvider: upload.DefaultPathProvider,
-		Limiter:      conf.NewGravelerBackgroundLimiter(),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
