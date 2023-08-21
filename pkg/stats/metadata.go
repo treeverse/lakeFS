@@ -49,15 +49,29 @@ func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType stri
 	return res
 }
 
+type noopMetadataProvider struct{}
+
+func (n *noopMetadataProvider) GetMetadata() map[string]string {
+	return nil
+}
+
 func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.MetadataProvider {
-	switch c.BlockstoreType() {
+	var provider cloud.MetadataProvider
+	switch c.Blockstore.Type {
 	case block.BlockstoreTypeGS:
-		return gcp.NewMetadataProvider(logger)
+		provider = gcp.NewMetadataProvider(logger)
 	case block.BlockstoreTypeS3:
-		return aws.NewMetadataProvider(logger, c.GetAwsConfig())
+		s3Params, err := c.BlockstoreS3Params()
+		if err != nil {
+			logger.WithError(err).Warn("Failed to create S3 client for MetadataProvider")
+		} else {
+			provider = aws.NewMetadataProvider(logger, s3Params.AwsConfig)
+		}
 	case block.BlockstoreTypeAzure:
-		return azure.NewMetadataProvider(logger)
-	default:
-		return nil
+		provider = azure.NewMetadataProvider(logger)
 	}
+	if provider == nil {
+		return &noopMetadataProvider{}
+	}
+	return provider
 }

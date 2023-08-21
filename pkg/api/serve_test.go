@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -157,7 +158,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		WalkerFactory:         factory,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
 		PathProvider:          upload.DefaultPathProvider,
-		Limiter:               cfg.NewGravelerBackgroundLimiter(),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
@@ -177,7 +177,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := cfg.DatabaseParams()
+	kvParams, err := kvparams.NewConfig(cfg)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 

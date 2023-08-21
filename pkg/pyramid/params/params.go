@@ -1,7 +1,12 @@
 package params
 
 import (
+	"fmt"
+	"math"
+
+	"github.com/mitchellh/go-homedir"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -75,6 +80,8 @@ type InstanceParams struct {
 	DiskAllocProportion float64
 }
 
+var ErrInvalidProportion = fmt.Errorf("%w: total proportion isn't 1.0", config.ErrBadConfiguration)
+
 // AllocatedBytes returns the maximum bytes an instance of TierFS is allowed to use.
 func (ip InstanceParams) AllocatedBytes() int64 {
 	return int64(ip.DiskAllocProportion * float64(ip.Local.TotalAllocatedBytes))
@@ -83,4 +90,36 @@ func (ip InstanceParams) AllocatedBytes() int64 {
 func (p ExtParams) WithLogger(logger logging.Logger) ExtParams {
 	p.Logger = logger
 	return p
+}
+
+// NewCommittedTierFSParams returns parameters for building a tierFS.
+// Caller must separately build and populate Adapter.
+func NewCommittedTierFSParams(c *config.Config, adapter block.Adapter) (*ExtParams, error) {
+	const floatSumTolerance = 1e-6
+	rangePro := c.Committed.LocalCache.RangeProportion
+	metaRangePro := c.Committed.LocalCache.MetaRangeProportion
+	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
+		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
+	}
+
+	localCacheDir, err := homedir.Expand(c.Committed.LocalCache.Dir)
+	if err != nil {
+		return nil, fmt.Errorf("expand %s: %w", c.Committed.LocalCache.Dir, err)
+	}
+
+	logger := logging.ContextUnavailable().WithField("module", "pyramid")
+	return &ExtParams{
+		RangeAllocationProportion:     rangePro,
+		MetaRangeAllocationProportion: metaRangePro,
+		SharedParams: SharedParams{
+			Logger:             logger,
+			Adapter:            adapter,
+			BlockStoragePrefix: c.Committed.BlockStoragePrefix,
+			Local: LocalDiskParams{
+				BaseDir:             localCacheDir,
+				TotalAllocatedBytes: c.Committed.LocalCache.SizeBytes,
+			},
+			PebbleSSTableCacheSizeBytes: c.Committed.SSTable.Memory.CacheSizeBytes,
+		},
+	}, nil
 }

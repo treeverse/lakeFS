@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -11,24 +10,17 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
-	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
-	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
-	"go.uber.org/ratelimit"
 )
 
 var (
 	ErrBadConfiguration    = errors.New("bad configuration")
 	ErrMissingSecretKey    = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
-	ErrInvalidProportion   = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
 	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
@@ -454,56 +446,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) DatabaseParams() (kvparams.Config, error) {
-	p := kvparams.Config{
-		Type: c.Database.Type,
-	}
-	if c.Database.Local != nil {
-		localPath, err := homedir.Expand(c.Database.Local.Path)
-		if err != nil {
-			return kvparams.Config{}, fmt.Errorf("parse database local path '%s': %w", c.Database.Local.Path, err)
-		}
-		p.Local = &kvparams.Local{
-			Path:         localPath,
-			PrefetchSize: c.Database.Local.PrefetchSize,
-		}
-	}
-
-	if c.Database.Postgres != nil {
-		p.Postgres = &kvparams.Postgres{
-			ConnectionString:      c.Database.Postgres.ConnectionString.SecureValue(),
-			MaxIdleConnections:    c.Database.Postgres.MaxIdleConnections,
-			MaxOpenConnections:    c.Database.Postgres.MaxOpenConnections,
-			ConnectionMaxLifetime: c.Database.Postgres.ConnectionMaxLifetime,
-		}
-	}
-
-	if c.Database.DynamoDB != nil {
-		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:           c.Database.DynamoDB.TableName,
-			ScanLimit:           c.Database.DynamoDB.ScanLimit,
-			Endpoint:            c.Database.DynamoDB.Endpoint,
-			AwsRegion:           c.Database.DynamoDB.AwsRegion,
-			AwsProfile:          c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
-			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
-		}
-	}
-
-	if c.Database.CosmosDB != nil {
-		p.CosmosDB = &kvparams.CosmosDB{
-			Key:               c.Database.CosmosDB.Key.SecureValue(),
-			Endpoint:          c.Database.CosmosDB.Endpoint,
-			Database:          c.Database.CosmosDB.Database,
-			Container:         c.Database.CosmosDB.Container,
-			StrongConsistency: true,
-		}
-	}
-
-	return p, nil
-}
-
 func (c *Config) GetAwsConfig() *aws.Config {
 	logger := logging.ContextUnavailable().WithField("sdk", "aws")
 	cfg := &aws.Config{
@@ -615,57 +557,6 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	}, nil
 }
 
-func (c *Config) AuthEncryptionSecret() []byte {
-	secret := c.Auth.Encrypt.SecretKey
-	if len(secret) == 0 {
-		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
-	}
-	return []byte(secret)
-}
-
-const floatSumTolerance = 1e-6
-
-// GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
-// build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams.ExtParams, error) {
-	rangePro := c.Committed.LocalCache.RangeProportion
-	metaRangePro := c.Committed.LocalCache.MetaRangeProportion
-
-	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
-		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
-	}
-
-	localCacheDir, err := homedir.Expand(c.Committed.LocalCache.Dir)
-	if err != nil {
-		return nil, fmt.Errorf("expand %s: %w", c.Committed.LocalCache.Dir, err)
-	}
-
-	logger := logging.ContextUnavailable().WithField("module", "pyramid")
-	return &pyramidparams.ExtParams{
-		RangeAllocationProportion:     rangePro,
-		MetaRangeAllocationProportion: metaRangePro,
-		SharedParams: pyramidparams.SharedParams{
-			Logger:             logger,
-			Adapter:            adapter,
-			BlockStoragePrefix: c.Committed.BlockStoragePrefix,
-			Local: pyramidparams.LocalDiskParams{
-				BaseDir:             localCacheDir,
-				TotalAllocatedBytes: c.Committed.LocalCache.SizeBytes,
-			},
-			PebbleSSTableCacheSizeBytes: c.Committed.SSTable.Memory.CacheSizeBytes,
-		},
-	}, nil
-}
-
-func (c *Config) CommittedParams() committed.Params {
-	return committed.Params{
-		MinRangeSizeBytes:          c.Committed.Permanent.MinRangeSizeBytes,
-		MaxRangeSizeBytes:          c.Committed.Permanent.MaxRangeSizeBytes,
-		RangeSizeEntriesRaggedness: c.Committed.Permanent.RangeRaggednessEntries,
-		MaxUploaders:               c.Committed.LocalCache.MaxUploadersPerWriter,
-	}
-}
-
 const (
 	AuthRBACSimplified = "simplified"
 	AuthRBACExternal   = "external"
@@ -688,12 +579,4 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
-}
-
-func (c *Config) NewGravelerBackgroundLimiter() ratelimit.Limiter {
-	rateLimit := c.Graveler.Background.RateLimit
-	if rateLimit == 0 {
-		return ratelimit.NewUnlimited()
-	}
-	return ratelimit.New(rateLimit)
 }

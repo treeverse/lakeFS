@@ -36,7 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
-	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
@@ -131,7 +131,6 @@ type Config struct {
 	WalkerFactory         WalkerFactory
 	SettingsManagerOption settings.ManagerOption
 	PathProvider          *upload.PathPartitionProvider
-	Limiter               ratelimit.Limiter
 }
 
 type Catalog struct {
@@ -214,12 +213,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cfg.WalkerFactory = store.NewFactory(cfg.Config)
 	}
 
-	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
+	tierFSParams, err := pyramidparams.NewCommittedTierFSParams(cfg.Config, adapter)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
-	metaRangeFS, err := pyramid.NewFS(&params.InstanceParams{
+	metaRangeFS, err := pyramid.NewFS(&pyramidparams.InstanceParams{
 		SharedParams:        tierFSParams.SharedParams,
 		FSName:              MetaRangeFSName,
 		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
@@ -229,7 +228,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		return nil, fmt.Errorf("create tiered FS for committed metaranges: %w", err)
 	}
 
-	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
+	rangeFS, err := pyramid.NewFS(&pyramidparams.InstanceParams{
 		SharedParams:        tierFSParams.SharedParams,
 		FSName:              RangeFSName,
 		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
@@ -245,7 +244,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 
-	committedParams := cfg.Config.CommittedParams()
+	committedParams := committed.Params{
+		MinRangeSizeBytes:          cfg.Config.Committed.Permanent.MinRangeSizeBytes,
+		MaxRangeSizeBytes:          cfg.Config.Committed.Permanent.MaxRangeSizeBytes,
+		RangeSizeEntriesRaggedness: cfg.Config.Committed.Permanent.RangeRaggednessEntries,
+		MaxUploaders:               cfg.Config.Committed.LocalCache.MaxUploadersPerWriter,
+	}
 	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 		committedParams,
 		// TODO(ariels): Use separate range managers for metaranges and ranges
@@ -261,7 +265,10 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
 
-	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, cfg.Limiter)
+	// Setup rate limiter used for background operations
+	limiter := newLimiter(cfg.Config.Graveler.Background.RateLimit)
+
+	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, limiter)
 	addressProvider := ident.NewHexAddressProvider()
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
@@ -284,13 +291,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
+
 	return &Catalog{
 		BlockAdapter:          tierFSParams.Adapter,
 		Store:                 gStore,
 		UGCPrepareMaxFileSize: cfg.Config.UGC.PrepareMaxFileSize,
 		UGCPrepareInterval:    cfg.Config.UGC.PrepareInterval,
 		PathProvider:          cfg.PathProvider,
-		BackgroundLimiter:     cfg.Limiter,
+		BackgroundLimiter:     limiter,
 		walkerFactory:         cfg.WalkerFactory,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
@@ -298,6 +306,16 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 	}, nil
+}
+
+func newLimiter(rateLimit int) ratelimit.Limiter {
+	var limiter ratelimit.Limiter
+	if rateLimit == 0 {
+		limiter = ratelimit.NewUnlimited()
+	} else {
+		limiter = ratelimit.New(rateLimit)
+	}
+	return limiter
 }
 
 func (c *Catalog) SetHooksHandler(hooks graveler.HooksHandler) {
@@ -404,8 +422,8 @@ func (c *Catalog) GetRepositoryMetadata(ctx context.Context, repository string) 
 	return c.Store.GetRepositoryMetadata(ctx, repositoryID)
 }
 
-// ListRepositories list repositories information, the bool returned is true when more repositories can be listed.
-// In this case pass the last repository name as 'after' on the next call to ListRepositories
+// ListRepositories list repository information, the bool returned is true when more repositories can be listed.
+// In this case, pass the last repository name as 'after' on the next call to ListRepositories
 func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
@@ -597,7 +615,7 @@ func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix 
 	if err := it.Err(); err != nil {
 		return nil, false, err
 	}
-	// return results (optional trimmed) and hasMore
+	// return results (optionally trimmed) and hasMore
 	hasMore := false
 	if len(branches) > limit {
 		hasMore = true
@@ -755,7 +773,7 @@ func (c *Catalog) ListTags(ctx context.Context, repositoryID string, prefix stri
 	if err := it.Err(); err != nil {
 		return nil, false, err
 	}
-	// return results (optional trimmed) and hasMore
+	// return results (optionally trimmed) and hasMore
 	hasMore := false
 	if len(tags) > limit {
 		hasMore = true
@@ -783,7 +801,7 @@ func (c *Catalog) GetTag(ctx context.Context, repositoryID string, tagID string)
 	return commit.String(), nil
 }
 
-// GetEntry returns the current entry for path in repository branch reference.  Returns
+// GetEntry returns the current entry for a path in repository branch reference.  Returns
 // the entry with ExpiredError if it has expired from underlying storage.
 func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference string, path string, params GetEntryParams) (*DBEntry, error) {
 	refToGet := graveler.Ref(reference)
@@ -1156,7 +1174,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 	// Shared workPool for the workers. 2 designated to create the work and receive the result
 	paths := params.PathList
 
-	// iterate over commits log and push work into work channel
+	// iterate over commits log and push work into the work channel
 	outCh := make(chan *commitLogJob, numReadResults)
 	var mgmtGroup multierror.Group
 	mgmtGroup.Go(func() error {
@@ -1206,7 +1224,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 		return it.Err()
 	})
 
-	// process out channel to keep order into results channel by using heap
+	// process out the channel to keep order into results channel by using heap
 	resultCh := make(chan *CommitLog, numReadResults)
 	var jobsHeap commitLogJobHeap
 	mgmtGroup.Go(func() error {

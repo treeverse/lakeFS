@@ -63,6 +63,8 @@ func Serve(
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+	oidcConfig := OIDCConfig(cfg.Auth.OIDC)
+	cookieAuthConfig := CookieAuthConfig(cfg.Auth.CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
@@ -73,7 +75,7 @@ func Serve(
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &cfg.Auth.OIDC, &cfg.Auth.CookieAuthVerification),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
 	controller := NewController(
@@ -135,7 +137,7 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
 // This middleware is good for net/http either since go-chi is 100% compatible with net/http.
 // The original implementation can be found at https://github.com/deepmap/oapi-codegen/blob/master/pkg/chi-middleware/oapi_validate.go
-// Used our own implementation in order to:
+// Use our own implementation in order to:
 //  1. Use the latest version kin-openapi (can switch back when oapi-codegen will be updated)
 //  2. For file upload wanted to skip body validation for two reasons:
 //     a. didn't find a way for the validator to accept any file content type

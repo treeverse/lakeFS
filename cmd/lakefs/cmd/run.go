@@ -37,9 +37,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
-	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
@@ -93,7 +93,7 @@ var runCmd = &cobra.Command{
 
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}
@@ -134,7 +134,7 @@ var runCmd = &cobra.Command{
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
-				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
 				apiEmailer,
 				logger.WithField("service", "auth_api"),
@@ -145,7 +145,7 @@ var runCmd = &cobra.Command{
 		} else {
 			authService = auth.NewAuthService(
 				kvStore,
-				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				emailer,
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
@@ -153,7 +153,7 @@ var runCmd = &cobra.Command{
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		blockstoreType := cfg.BlockstoreType()
+		blockstoreType := cfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
@@ -176,7 +176,6 @@ var runCmd = &cobra.Command{
 			Config:       cfg,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
@@ -293,12 +292,14 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
+		oidcConfig := api.OIDCConfig(cfg.Auth.OIDC)
+		cookieAuthConfig := api.CookieAuthConfig(cfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
 			authService,
-			&cfg.Auth.OIDC,
-			&cfg.Auth.CookieAuthVerification,
+			&oidcConfig,
+			&cookieAuthConfig,
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
@@ -559,7 +560,7 @@ func gracefulShutdown(ctx context.Context, services ...Shutter) {
 }
 
 // enableKVParamsMetrics returns a copy of params.KV with postgres metrics enabled.
-func enableKVParamsMetrics(p params.Config) params.Config {
+func enableKVParamsMetrics(p kvparams.Config) kvparams.Config {
 	if p.Postgres == nil || p.Postgres.Metrics {
 		return p
 	}

@@ -11,7 +11,7 @@ import (
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 const (
