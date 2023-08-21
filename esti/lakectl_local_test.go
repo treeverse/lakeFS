@@ -2,17 +2,15 @@ package esti
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/local"
+	"golang.org/x/exp/slices"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/local"
-	"golang.org/x/exp/slices"
 )
 
 func localCreateTestData(t *testing.T, vars map[string]string, objects []string) {
@@ -466,7 +464,8 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			localCreateTestData(t, vars, create)
 
 			// Pull changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, `context deadline exceeded
+	Program exited.`, vars, 0)
 
 			// Pull changes without force flag
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
@@ -556,7 +555,8 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
 			// Commit changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Nanosecond)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, `context deadline exceeded
+	Program exited.`, vars, 0)
 
 			// Commit changes without force flag
 			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
