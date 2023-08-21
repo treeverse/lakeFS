@@ -17,7 +17,7 @@ func TestIsRepository(t *testing.T) {
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer func(name string) {
-		err = os.Remove(name)
+		err = os.RemoveAll(name)
 		if err != nil {
 			t.Error("failed to remove temp dir", err)
 		}
@@ -86,7 +86,7 @@ func TestIgnore(t *testing.T) {
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer func(name string) {
-		err = os.Remove(name)
+		err = os.RemoveAll(name)
 		if err != nil {
 			t.Error("failed to remove temp dir", err)
 		}
