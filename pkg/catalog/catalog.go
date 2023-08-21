@@ -36,7 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
-	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
@@ -213,12 +213,12 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cfg.WalkerFactory = store.NewFactory(cfg.Config)
 	}
 
-	tierFSParams, err := cfg.Config.GetCommittedTierFSParams(adapter)
+	tierFSParams, err := pyramidparams.NewCommittedTierFSParams(cfg.Config, adapter)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
 	}
-	metaRangeFS, err := pyramid.NewFS(&params.InstanceParams{
+	metaRangeFS, err := pyramid.NewFS(&pyramidparams.InstanceParams{
 		SharedParams:        tierFSParams.SharedParams,
 		FSName:              MetaRangeFSName,
 		DiskAllocProportion: tierFSParams.MetaRangeAllocationProportion,
@@ -228,7 +228,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		return nil, fmt.Errorf("create tiered FS for committed metaranges: %w", err)
 	}
 
-	rangeFS, err := pyramid.NewFS(&params.InstanceParams{
+	rangeFS, err := pyramid.NewFS(&pyramidparams.InstanceParams{
 		SharedParams:        tierFSParams.SharedParams,
 		FSName:              RangeFSName,
 		DiskAllocProportion: tierFSParams.RangeAllocationProportion,
@@ -1174,7 +1174,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 	// Shared workPool for the workers. 2 designated to create the work and receive the result
 	paths := params.PathList
 
-	// iterate over commits log and push work into work channel
+	// iterate over commits log and push work into the work channel
 	outCh := make(chan *commitLogJob, numReadResults)
 	var mgmtGroup multierror.Group
 	mgmtGroup.Go(func() error {
@@ -1224,7 +1224,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 		return it.Err()
 	})
 
-	// process out channel to keep order into results channel by using heap
+	// process out the channel to keep order into results channel by using heap
 	resultCh := make(chan *CommitLog, numReadResults)
 	var jobsHeap commitLogJobHeap
 	mgmtGroup.Go(func() error {
