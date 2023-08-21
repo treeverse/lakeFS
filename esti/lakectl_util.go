@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -58,6 +60,19 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 	t.Logf("Run shell command '%s'", command)
 	// Assuming linux. Not sure if this is correct
 	cmd := exec.Command("/bin/sh", "-c", command)
+	cmd.Env = append(os.Environ(),
+		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
+	)
+	return cmd.CombinedOutput()
+}
+
+func runShellCommandWithTimeout(t *testing.T, command string, isTerminal bool, timeout time.Duration) ([]byte, error) {
+	t.Helper()
+	t.Logf("Run shell command '%s' with timeout of '%d'", command, timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	// Assuming linux. Not sure if this is correct
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", command)
 	cmd.Env = append(os.Environ(),
 		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
 	)
@@ -153,6 +168,15 @@ func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expe
 	require.Contains(t, sanitizedResult, expected)
 }
 
+func RunCmdAndVerifyContainsTextWithTimeout(t *testing.T, cmd string, expectFail bool, isTerminal bool, expectedRaw string, vars map[string]string, timeout time.Duration) {
+	t.Helper()
+	s := sanitize(expectedRaw, vars)
+	expected, err := expandVariables(s, vars)
+	require.NoError(t, err, "Variable embed failed - %s", err)
+	sanitizedResult := runCmdWithTimeout(t, cmd, expectFail, isTerminal, vars, timeout)
+	require.Contains(t, sanitizedResult, expected)
+}
+
 func RunCmdAndVerifyFailureWithFile(t *testing.T, cmd string, isTerminal bool, goldenFile string, vars map[string]string) {
 	t.Helper()
 	runCmdAndVerifyWithFile(t, cmd, goldenFile, true, isTerminal, vars)
@@ -197,6 +221,17 @@ func RunCmdAndVerifyFailure(t *testing.T, cmd string, isTerminal bool, expected 
 func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map[string]string) string {
 	t.Helper()
 	result, err := runShellCommand(t, cmd, isTerminal)
+	if expectFail {
+		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
+	} else {
+		require.NoError(t, err, "Failed to run '%s' command - %s", cmd, string(result))
+	}
+	return sanitize(string(result), vars)
+}
+
+func runCmdWithTimeout(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map[string]string, timeout time.Duration) string {
+	t.Helper()
+	result, err := runShellCommandWithTimeout(t, cmd, isTerminal, timeout)
 	if expectFail {
 		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {

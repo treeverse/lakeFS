@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -400,6 +401,168 @@ func TestLakectlLocal_commit(t *testing.T) {
 
 			// Commit changes to branch
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
+
+			// Check no diff after commit
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
+		})
+	}
+}
+
+func TestLakectlLocal_interruptedPull(t *testing.T) {
+	const successStr = "Successfully synced changes!\n\nPull "
+
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"LOCAL_DIR": tmpDir,
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "root",
+			prefix: "",
+		},
+		{
+			name:   "prefix",
+			prefix: "images",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			vars["PREFIX"] = "/" + tt.prefix
+			vars["LOCAL_DIR"] = dataDir
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+
+			// Upload and commit an object
+			var base []string
+			for i := 0; i <= 100000; i++ {
+				base = append(base, fmt.Sprintf("test-%d.txt", i))
+			}
+			deleted := "deleted"
+			create := append(base, deleted)
+			localCreateTestData(t, vars, create)
+
+			// Pull changes and interrupt
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Second)
+
+			// Pull changes without force flag
+			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
+			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
+	Use "lakectl local pull... --force" to sync with the remote.`
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
+			localVerifyDirContents(t, dataDir, expected)
+
+			// Pull changes and verify data
+			tasks := local.Tasks{
+				Downloaded: uint64(len(expected)),
+			}
+			expectedStr = successStr + localGetSummary(tasks)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir+" --force", false, expectedStr, vars)
+			localVerifyDirContents(t, dataDir, expected)
+
+		})
+	}
+}
+
+func TestLakectlLocal_interruptedCommit(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	prefix := "images"
+	objects := []string{
+		"ro_1k.1",
+		"ro_1k.2",
+		"ro_1k.3",
+		prefix + "/1.png",
+		prefix + "/2.png",
+		prefix + "/3.png",
+		prefix + "/subdir/1.png",
+		prefix + "/subdir/2.png",
+		prefix + "/subdir/3.png",
+	}
+
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "root",
+			prefix: "",
+		},
+		{
+			name:   prefix,
+			prefix: prefix,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			deleted := prefix + "/subdir/deleted.png"
+
+			localCreateTestData(t, vars, append(objects, deleted))
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+			vars["LOCAL_DIR"] = dataDir
+			vars["PREFIX"] = ""
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+			// Modify local folder - add and remove files
+			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
+			require.NoError(t, err)
+			require.NoError(t, fd.Truncate(1e7))
+			require.NoError(t, fd.Close())
+			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+
+			// Commit changes and interrupt
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Second)
+
+			// Commit changes without force flag
+			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
+	Use "lakectl local commit... --force" to commit your latest changes.`
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, false, expectedStr, vars)
+
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+
+			// Commit changes to branch
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir+" --force", false, "Commit for branch \"${BRANCH}\" completed", vars)
 
 			// Check no diff after commit
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)

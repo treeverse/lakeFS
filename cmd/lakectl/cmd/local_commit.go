@@ -52,6 +52,13 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		force := Must(cmd.Flags().GetBool(localForceFlagName))
+		dieOnInterruptedOperation(idx.Operation, force)
+		_, err = local.WriteOperation(localPath, "commit")
+		if err != nil {
+			DieErr(err)
+		}
+
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -159,6 +166,11 @@ var localCommitCmd = &cobra.Command{
 			Repository: remote.Repository,
 			Ref:        remote.Ref,
 		}
+		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
+		_, err = local.RemoveOperationFromIndexFile(localPath)
+		if err != nil {
+			DieErr(err)
+		}
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
@@ -178,6 +190,7 @@ func init() {
 	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
 	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
 	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
+	withForceFlag(localCommitCmd, "Creates a new commit with the current changes between the local data and the remote data.")
 	withLocalSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }

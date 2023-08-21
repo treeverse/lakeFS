@@ -2582,6 +2582,7 @@ lakectl local checkout [directory] [flags]
 
 ```
       --all               Checkout given source branch or reference for all linked directories
+      --force             Overwrite any local modifications you may have in your working directory
   -h, --help              help for checkout
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -2624,6 +2625,7 @@ lakectl local commit [directory] [flags]
 
 ```
       --allow-empty-message   Allow commit with empty message
+      --force                 Creates a new commit with the current changes between the local data and the remote data.
   -h, --help                  help for commit
   -m, --message string        Commit message
       --meta strings          key value pair in the form of key=value

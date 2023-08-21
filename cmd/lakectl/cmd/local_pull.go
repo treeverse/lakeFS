@@ -31,6 +31,12 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		dieOnInterruptedOperation(idx.Operation, force)
+		_, err = local.WriteOperation(localPath, "pull")
+		if err != nil {
+			DieErr(err)
+		}
+
 		currentBase := remote.WithRef(idx.AtHead)
 		// make sure no local changes
 		localChange := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
@@ -70,6 +76,11 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 		if err := wg.Wait(); err != nil {
+			DieErr(err)
+		}
+
+		_, err = local.RemoveOperationFromIndexFile(localPath)
+		if err != nil {
 			DieErr(err)
 		}
 

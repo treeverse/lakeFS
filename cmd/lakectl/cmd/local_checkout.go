@@ -54,6 +54,12 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		DieErr(err)
 	}
 
+	force := Must(cmd.Flags().GetBool(localForceFlagName))
+	dieOnInterruptedOperation(idx.Operation, force)
+	_, err = local.WriteOperation(localPath, "checkout")
+	if err != nil {
+		DieErr(err)
+	}
 	currentBase := remote.WithRef(idx.AtHead)
 	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
 	sigCtx := localHandleSyncInterrupt(cmd.Context())
@@ -105,6 +111,11 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		DieErr(err)
 	}
 
+	_, err = local.RemoveOperationFromIndexFile(localPath)
+	if err != nil {
+		DieErr(err)
+	}
+
 	Write(localSummaryTemplate, struct {
 		Operation string
 		local.Tasks
@@ -120,6 +131,7 @@ func init() {
 	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
 	localCheckoutCmd.MarkFlagsMutuallyExclusive("ref", "all")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
+	withForceFlag(localCheckoutCmd, "Overwrite any local modifications you may have in your working directory")
 	withLocalSyncFlags(localCheckoutCmd)
 	localCmd.AddCommand(localCheckoutCmd)
 }
