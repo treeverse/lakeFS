@@ -555,10 +555,10 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Commit changes without force flag
+			text := runCmd(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, vars)
 			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
 	Use "lakectl local commit... --force" to commit your latest changes.`
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, false, expectedStr, vars)
-
+			require.Contains(t, text, expectedStr)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
 			// Commit changes to branch
