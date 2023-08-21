@@ -56,22 +56,19 @@ func (n *noopMetadataProvider) GetMetadata() map[string]string {
 }
 
 func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.MetadataProvider {
-	var provider cloud.MetadataProvider
 	switch c.Blockstore.Type {
 	case block.BlockstoreTypeGS:
-		provider = gcp.NewMetadataProvider(logger)
+		return gcp.NewMetadataProvider(logger)
 	case block.BlockstoreTypeS3:
 		s3Params, err := c.BlockstoreS3Params()
 		if err != nil {
 			logger.WithError(err).Warn("Failed to create S3 client for MetadataProvider")
-		} else {
-			provider = aws.NewMetadataProvider(logger, s3Params.AwsConfig)
+			return &noopMetadataProvider{}
 		}
+		return aws.NewMetadataProvider(logger, s3Params.AwsConfig)
 	case block.BlockstoreTypeAzure:
-		provider = azure.NewMetadataProvider(logger)
-	}
-	if provider == nil {
+		return azure.NewMetadataProvider(logger)
+	default:
 		return &noopMetadataProvider{}
 	}
-	return provider
 }
