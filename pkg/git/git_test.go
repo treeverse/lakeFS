@@ -19,7 +19,7 @@ func TestIsRepository(t *testing.T) {
 	defer func(name string) {
 		err = os.Remove(name)
 		if err != nil {
-
+			t.Error("failed to remove temp dir", err)
 		}
 	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
@@ -88,7 +88,7 @@ func TestIgnore(t *testing.T) {
 	defer func(name string) {
 		err = os.Remove(name)
 		if err != nil {
-
+			t.Error("failed to remove temp dir", err)
 		}
 	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
