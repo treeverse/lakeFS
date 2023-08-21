@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
