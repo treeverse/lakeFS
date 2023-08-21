@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/migrations"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -24,7 +25,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -65,7 +66,7 @@ var upCmd = &cobra.Command{
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -131,7 +132,7 @@ var gotoCmd = &cobra.Command{
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)

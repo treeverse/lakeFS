@@ -14,6 +14,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
@@ -39,7 +41,6 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
-	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
@@ -93,7 +94,7 @@ var runCmd = &cobra.Command{
 
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}
@@ -560,7 +561,7 @@ func gracefulShutdown(ctx context.Context, services ...Shutter) {
 }
 
 // enableKVParamsMetrics returns a copy of params.KV with postgres metrics enabled.
-func enableKVParamsMetrics(p params.Config) params.Config {
+func enableKVParamsMetrics(p kvparams.Config) kvparams.Config {
 	if p.Postgres == nil || p.Postgres.Metrics {
 		return p
 	}

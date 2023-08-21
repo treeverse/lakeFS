@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 )
 

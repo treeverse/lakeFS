@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -48,7 +49,7 @@ var superuserCmd = &cobra.Command{
 
 		logger := logging.ContextUnavailable()
 		ctx := cmd.Context()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			fmt.Printf("KV params: %s\n", err)
 			os.Exit(1)

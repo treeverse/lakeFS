@@ -17,7 +17,6 @@ import (
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
 )
@@ -449,56 +448,6 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
 	return nil
-}
-
-func (c *Config) DatabaseParams() (kvparams.Config, error) {
-	p := kvparams.Config{
-		Type: c.Database.Type,
-	}
-	if c.Database.Local != nil {
-		localPath, err := homedir.Expand(c.Database.Local.Path)
-		if err != nil {
-			return kvparams.Config{}, fmt.Errorf("parse database local path '%s': %w", c.Database.Local.Path, err)
-		}
-		p.Local = &kvparams.Local{
-			Path:         localPath,
-			PrefetchSize: c.Database.Local.PrefetchSize,
-		}
-	}
-
-	if c.Database.Postgres != nil {
-		p.Postgres = &kvparams.Postgres{
-			ConnectionString:      c.Database.Postgres.ConnectionString.SecureValue(),
-			MaxIdleConnections:    c.Database.Postgres.MaxIdleConnections,
-			MaxOpenConnections:    c.Database.Postgres.MaxOpenConnections,
-			ConnectionMaxLifetime: c.Database.Postgres.ConnectionMaxLifetime,
-		}
-	}
-
-	if c.Database.DynamoDB != nil {
-		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:           c.Database.DynamoDB.TableName,
-			ScanLimit:           c.Database.DynamoDB.ScanLimit,
-			Endpoint:            c.Database.DynamoDB.Endpoint,
-			AwsRegion:           c.Database.DynamoDB.AwsRegion,
-			AwsProfile:          c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
-			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
-		}
-	}
-
-	if c.Database.CosmosDB != nil {
-		p.CosmosDB = &kvparams.CosmosDB{
-			Key:               c.Database.CosmosDB.Key.SecureValue(),
-			Endpoint:          c.Database.CosmosDB.Endpoint,
-			Database:          c.Database.CosmosDB.Database,
-			Container:         c.Database.CosmosDB.Container,
-			StrongConsistency: true,
-		}
-	}
-
-	return p, nil
 }
 
 func (c *Config) GetAwsConfig() *aws.Config {
