@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -15,16 +14,13 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
-	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
-	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
 )
 
 var (
 	ErrBadConfiguration    = errors.New("bad configuration")
 	ErrMissingSecretKey    = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
-	ErrInvalidProportion   = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
 	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
@@ -558,48 +554,6 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		TestEndpointURL:    c.Blockstore.Azure.TestEndpointURL,
 		DisablePreSigned:   c.Blockstore.Azure.DisablePreSigned,
 		DisablePreSignedUI: c.Blockstore.Azure.DisablePreSignedUI,
-	}, nil
-}
-
-func (c *Config) AuthEncryptionSecret() []byte {
-	secret := c.Auth.Encrypt.SecretKey
-	if len(secret) == 0 {
-		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
-	}
-	return []byte(secret)
-}
-
-const floatSumTolerance = 1e-6
-
-// GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
-// build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams.ExtParams, error) {
-	rangePro := c.Committed.LocalCache.RangeProportion
-	metaRangePro := c.Committed.LocalCache.MetaRangeProportion
-
-	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
-		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
-	}
-
-	localCacheDir, err := homedir.Expand(c.Committed.LocalCache.Dir)
-	if err != nil {
-		return nil, fmt.Errorf("expand %s: %w", c.Committed.LocalCache.Dir, err)
-	}
-
-	logger := logging.ContextUnavailable().WithField("module", "pyramid")
-	return &pyramidparams.ExtParams{
-		RangeAllocationProportion:     rangePro,
-		MetaRangeAllocationProportion: metaRangePro,
-		SharedParams: pyramidparams.SharedParams{
-			Logger:             logger,
-			Adapter:            adapter,
-			BlockStoragePrefix: c.Committed.BlockStoragePrefix,
-			Local: pyramidparams.LocalDiskParams{
-				BaseDir:             localCacheDir,
-				TotalAllocatedBytes: c.Committed.LocalCache.SizeBytes,
-			},
-			PebbleSSTableCacheSizeBytes: c.Committed.SSTable.Memory.CacheSizeBytes,
-		},
 	}, nil
 }
 
