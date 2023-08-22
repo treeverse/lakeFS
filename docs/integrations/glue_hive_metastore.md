@@ -61,7 +61,7 @@ metastore:
 metastore:
   type: glue
   glue:
-    catalog-id: 123456789012
+    catalog_id: 123456789012
     region: us-east-1
     profile: default # optional, implies using a credentials file
     credentials:
