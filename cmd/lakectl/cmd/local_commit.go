@@ -52,10 +52,7 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		_, err = local.WriteActiveOperation(localPath, "commit")
-		if err != nil {
-			DieErr(err)
-		}
+		Must(local.WriteActiveOperation(localPath, "commit"))
 
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)

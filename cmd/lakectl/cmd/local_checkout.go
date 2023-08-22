@@ -54,10 +54,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		DieErr(err)
 	}
 
-	_, err = local.WriteActiveOperation(localPath, "checkout")
-	if err != nil {
-		DieErr(err)
-	}
+	Must(local.WriteActiveOperation(localPath, "checkout"))
 
 	currentBase := remote.WithRef(idx.AtHead)
 	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))

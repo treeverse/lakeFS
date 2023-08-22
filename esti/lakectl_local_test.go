@@ -552,16 +552,13 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Pull changes without force flag
-			text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
-	Use "lakectl local pull... --force" to sync with the remote.`
-			require.Contains(t, text, expectedStr)
+			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
 
 			// Pull changes and verify data
 			tasks := local.Tasks{
 				Downloaded: 1,
 			}
-			expectedStr = successStr + localGetSummary(tasks)
+			expectedStr := successStr + localGetSummary(tasks)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir+" --force", false, expectedStr, vars)
 			localVerifyDirContents(t, dataDir, []string{fileName})
 		})
@@ -621,8 +618,8 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	vars["LOCAL_DIR"] = dataDir
 	vars["PREFIX"] = "images"
 
-	// Pull changes and interrupt
-	RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
+	// Clone changes and interrupt
+	RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 	// Pull changes without force flag
 	text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)

@@ -32,10 +32,7 @@ var localPullCmd = &cobra.Command{
 		}
 
 		dieOnInterruptedOperation(idx.ActiveOperation, force)
-		_, err = local.WriteActiveOperation(localPath, "pull")
-		if err != nil {
-			DieErr(err)
-		}
+		Must(local.WriteActiveOperation(localPath, "pull"))
 
 		currentBase := remote.WithRef(idx.AtHead)
 		// make sure no local changes

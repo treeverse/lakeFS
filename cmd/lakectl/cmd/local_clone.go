@@ -44,10 +44,7 @@ var localCloneCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		_, err = local.WriteActiveOperation(localPath, "clone")
-		if err != nil {
-			DieErr(err)
-		}
+		Must(local.WriteActiveOperation(localPath, "clone"))
 
 		stableRemote := remote.WithRef(head)
 		// Dynamically construct changes
@@ -87,7 +84,7 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		_, err = local.WriteActiveOperation(localPath, "")
+		Must(local.WriteActiveOperation(localPath, ""))
 		fmt.Printf("\nSuccessfully cloned %s to %s.\n", remote, localPath)
 		Write(localSummaryTemplate, struct {
 			Operation string
