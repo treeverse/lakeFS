@@ -22,10 +22,10 @@ const (
 // Index defines the structure of the lakefs local reference file
 // consisting of the information linking local directory with lakefs path
 type Index struct {
-	root      string `yaml:"-"`
-	PathURI   string `yaml:"src"`
-	AtHead    string `yaml:"at_head"`
-	Operation string `yaml:"operation"`
+	root            string `yaml:"-"`
+	PathURI         string `yaml:"src"`
+	AtHead          string `yaml:"at_head"`
+	ActiveOperation string `yaml:"active_operation"`
 }
 
 func (l *Index) LocalPath() string {
@@ -36,26 +36,12 @@ func (l *Index) GetCurrentURI() (*uri.URI, error) {
 	return uri.Parse(l.PathURI)
 }
 
-func WriteOperation(path string, operation string) (*Index, error) {
+func WriteActiveOperation(path string, operation string) (*Index, error) {
 	idx, err := ReadIndex(path)
 	if err != nil {
 		return nil, err
 	}
-	idx.Operation = operation
-	data, err := yaml.Marshal(idx)
-	if err != nil {
-		return nil, err
-	}
-	idxPath := filepath.Join(path, IndexFileName)
-	return idx, os.WriteFile(idxPath, data, IndexFileMode)
-}
-
-func RemoveOperationFromIndexFile(path string) (*Index, error) {
-	idx, err := ReadIndex(path)
-	if err != nil {
-		return nil, err
-	}
-	idx.Operation = ""
+	idx.ActiveOperation = operation
 	data, err := yaml.Marshal(idx)
 	if err != nil {
 		return nil, err

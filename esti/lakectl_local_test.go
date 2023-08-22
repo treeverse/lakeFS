@@ -481,17 +481,154 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Commit changes without force flag
-			text := runCmd(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, vars)
+			text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
 			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
-	Use "lakectl local commit... --force" to commit your latest changes.`
+	Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
 			require.Contains(t, text, expectedStr)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
 			// Commit changes to branch
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir+" --force", false, "Commit for branch \"${BRANCH}\" completed", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
 
 			// Check no diff after commit
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 		})
 	}
+}
+
+func TestLakectlLocal_interruptedPull(t *testing.T) {
+	const successStr = "Successfully synced changes!\n\nPull "
+
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"LOCAL_DIR": tmpDir,
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "root",
+			prefix: "",
+		},
+		{
+			name:   "prefix",
+			prefix: "images",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			vars["PREFIX"] = "/" + tt.prefix
+			vars["LOCAL_DIR"] = dataDir
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+
+			// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
+			fileName := "test.txt"
+			fd, err = os.Create(fileName)
+			require.NoError(t, err)
+			require.NoError(t, fd.Truncate(1e9))
+			require.NoError(t, fd.Close())
+			runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+vars["PREFIX"]+"/"+fileName, false, false, vars)
+			runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+
+			// Pull changes and interrupt
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
+
+			// Pull changes without force flag
+			text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
+	Use "lakectl local pull... --force" to sync with the remote.`
+			require.Contains(t, text, expectedStr)
+
+			// Pull changes and verify data
+			tasks := local.Tasks{
+				Downloaded: 1,
+			}
+			expectedStr = successStr + localGetSummary(tasks)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir+" --force", false, expectedStr, vars)
+			localVerifyDirContents(t, dataDir, []string{fileName})
+		})
+	}
+}
+
+func TestLakectlLocal_interruptedClone(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	dataDir, err := os.MkdirTemp(tmpDir, "")
+	require.NoError(t, err)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+	}
+
+	// No repo
+	vars["LOCAL_DIR"] = tmpDir
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	// Bad ref
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/ "+tmpDir, false, "lakectl_local_commit_not_found", vars)
+
+	prefix := "images"
+	objects := []string{
+		"ro_1k.1",
+		"ro_1k.2",
+		"ro_1k.3",
+		prefix + "/1.png",
+		prefix + "/2.png",
+		prefix + "/3.png",
+		prefix + "/subdir/1.png",
+		prefix + "/subdir/2.png",
+		prefix + "/subdir/3.png",
+	}
+
+	localCreateTestData(t, vars, objects)
+
+	// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
+	fileName := "test.txt"
+	fd, err = os.Create(fileName)
+	require.NoError(t, err)
+	require.NoError(t, fd.Truncate(1e9))
+	require.NoError(t, fd.Close())
+	runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+vars["PREFIX"]+"/"+fileName, false, false, vars)
+	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+
+	vars["LOCAL_DIR"] = dataDir
+	vars["PREFIX"] = "images"
+
+	// Pull changes and interrupt
+	RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
+
+	// Pull changes without force flag
+	text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+	expectedStr := `Latest clone operation was interrupted, local data may be incomplete.
+	Use "lakectl local clone..." to sync with the remote.`
+	require.Contains(t, text, expectedStr)
+
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 }

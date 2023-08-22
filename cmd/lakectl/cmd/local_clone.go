@@ -43,6 +43,12 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+
+		_, err = local.WriteActiveOperation(localPath, "clone")
+		if err != nil {
+			DieErr(err)
+		}
+
 		stableRemote := remote.WithRef(head)
 		// Dynamically construct changes
 		c := make(chan *local.Change, filesChanSize)
