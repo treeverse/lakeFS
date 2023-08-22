@@ -495,8 +495,6 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 }
 
 func TestLakectlLocal_interruptedPull(t *testing.T) {
-	const successStr = "Successfully synced changes!\n\nPull "
-
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
@@ -535,7 +533,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
 			fileName := "test.txt"
@@ -543,7 +541,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, fd.Truncate(1e9))
 			require.NoError(t, fd.Close())
-			runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+"/"+fileName, false, false, vars)
+			runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+"/"+fileName, false, false, vars)
 			runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 			// Pull changes and interrupt
@@ -606,7 +604,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, fd.Truncate(1e9))
 	require.NoError(t, fd.Close())
-	runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+mainBranch+prefix+"/"+fileName, false, false, vars)
+	runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+mainBranch+"/"+prefix+"/"+fileName, false, false, vars)
 	runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" --allow-empty-message -m \" \"", false, false, vars)
 
 	vars["LOCAL_DIR"] = dataDir
