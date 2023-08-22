@@ -478,7 +478,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
 			// Commit changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*500)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*200)
 
 			// Pull without force flag
 			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
@@ -545,7 +545,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 			// Pull changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
+			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*200)
 
 			// Pull changes without force flag
 			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
@@ -611,7 +611,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	vars["PREFIX"] = "images"
 
 	// Clone changes and interrupt
-	RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, true, false, "", vars, time.Millisecond*500)
+	RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, true, false, "", vars, time.Millisecond*200)
 
 	// Pull changes without force flag
 	text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
