@@ -536,7 +536,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
 			fileName := "test.txt"
@@ -624,6 +624,4 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	expectedStr := `Latest clone operation was interrupted, local data may be incomplete.
 	Use "lakectl local clone..." to sync with the remote.`
 	require.Contains(t, text, expectedStr)
-
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 }
