@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -8,8 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -42,7 +46,7 @@ type OIDC struct {
 // CookieAuthVerification is related to auth based on a cookie set by an external service
 // TODO(isan) consolidate with OIDC
 type CookieAuthVerification struct {
-	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
+	// ValidateIDTokenClaims if set will validate the values (e.g., department: "R&D") exist in the token claims
 	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
 	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
 	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
@@ -61,11 +65,7 @@ type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 	Profile         string
 	Credentials     *struct {
-		AccessKeyID SecureString `mapstructure:"access_key_id"`
-		// AccessSecretKey is the old name for SecretAccessKey.
-		//
-		// Deprecated: use SecretAccessKey instead.
-		AccessSecretKey SecureString `mapstructure:"access_secret_key"`
+		AccessKeyID     SecureString `mapstructure:"access_key_id"`
 		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
 		SessionToken    SecureString `mapstructure:"session_token"`
 	}
@@ -446,47 +446,46 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) GetAwsConfig() *aws.Config {
+func (c *Config) GetAwsConfig() (aws.Config, error) {
 	logger := logging.ContextUnavailable().WithField("sdk", "aws")
-	cfg := &aws.Config{
-		Logger: &logging.AWSAdapter{Logger: logger},
-	}
+
+	var opts []func(*config.LoadOptions) error
+	// setup logger
+	opts = append(opts, config.WithLogger(&logging.AWSAdapter{Logger: logger}))
+	// setup region
 	if c.Blockstore.S3.Region != "" {
-		cfg.Region = aws.String(c.Blockstore.S3.Region)
+		opts = append(opts, config.WithRegion(c.Blockstore.S3.Region))
 	}
+	// setup log request and retries
 	level := strings.ToLower(logging.Level())
 	if level == "trace" {
-		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-	}
-	if c.Blockstore.S3.Profile != "" || c.Blockstore.S3.CredentialsFile != "" {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			c.Blockstore.S3.CredentialsFile,
-			c.Blockstore.S3.Profile,
-		)
-	}
-	if c.Blockstore.S3.Credentials != nil {
-		secretAccessKey := c.Blockstore.S3.Credentials.SecretAccessKey
-		if secretAccessKey == "" {
-			logging.ContextUnavailable().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
-			secretAccessKey = c.Blockstore.S3.Credentials.AccessSecretKey
-		}
-		cfg.Credentials = credentials.NewStaticCredentials(
-			c.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
-			secretAccessKey.SecureValue(),
-			c.Blockstore.S3.Credentials.SessionToken.SecureValue(),
-		)
+		opts = append(opts, config.WithClientLogMode(aws.LogRequest|aws.LogRetries))
 	}
 
-	s3Endpoint := c.Blockstore.S3.Endpoint
-	if len(s3Endpoint) > 0 {
-		cfg = cfg.WithEndpoint(s3Endpoint)
+	if c.Blockstore.S3.Profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(c.Blockstore.S3.Profile))
 	}
-	s3ForcePathStyle := c.Blockstore.S3.ForcePathStyle
-	if s3ForcePathStyle {
-		cfg = cfg.WithS3ForcePathStyle(true)
+	if c.Blockstore.S3.CredentialsFile != "" {
+		opts = append(opts, config.WithSharedCredentialsFiles([]string{c.Blockstore.S3.CredentialsFile}))
 	}
-	cfg = cfg.WithMaxRetries(c.Blockstore.S3.MaxRetries)
-	return cfg
+	if c.Blockstore.S3.Credentials != nil {
+		opts = append(opts, config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				c.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
+				c.Blockstore.S3.Credentials.SecretAccessKey.SecureValue(),
+				c.Blockstore.S3.Credentials.SessionToken.SecureValue(),
+			),
+		))
+	}
+
+	if c.Blockstore.S3.MaxRetries > 0 {
+		opts = append(opts, config.WithRetryMaxAttempts(c.Blockstore.S3.MaxRetries))
+	}
+
+	// TODO(barak): s3 specific configuration not part of aws.Config
+	// c.Blockstore.S3.Endpoint
+	// c.Blockstore.S3.ForcePathStyle
+	return config.LoadDefaultConfig(context.Background(), opts...)
 }
 
 func (c *Config) BlockstoreType() string {
@@ -494,6 +493,11 @@ func (c *Config) BlockstoreType() string {
 }
 
 func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
+	awsConfig, err := c.GetAwsConfig()
+	if err != nil {
+		return blockparams.S3{}, err
+	}
+
 	var webIdentity *blockparams.S3WebIdentity
 	if c.Blockstore.S3.WebIdentity != nil {
 		webIdentity = &blockparams.S3WebIdentity{
@@ -502,7 +506,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		}
 	}
 	return blockparams.S3{
-		AwsConfig:                     c.GetAwsConfig(),
+		AwsConfig:                     awsConfig,
 		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
@@ -512,6 +516,8 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
+		S3Endpoint:                    c.Blockstore.S3.Endpoint,
+		S3ForcePathStyle:              c.Blockstore.S3.ForcePathStyle,
 		WebIdentity:                   webIdentity,
 	}, nil
 }

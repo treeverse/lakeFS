@@ -10,6 +10,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
@@ -19,7 +29,7 @@ import (
 type Driver struct{}
 
 type Store struct {
-	svc    *dynamodb.DynamoDB
+	svc    *dynamodb.Client
 	params *kvparams.DynamoDB
 	wg     sync.WaitGroup
 	logger logging.Logger
@@ -67,39 +77,38 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Profile:           params.AwsProfile,
-	})
+	var opts []func(*config.LoadOptions) error
+	if params.AwsRegion != "" {
+		opts = append(opts, config.WithRegion(params.AwsRegion))
+	}
+	if params.AwsProfile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(params.AwsProfile))
+	}
+	if params.AwsAccessKeyID != "" {
+		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			params.AwsAccessKeyID,
+			params.AwsSecretAccessKey,
+			"",
+		)))
+	}
+	const maxConnectionPerHost = 10
+	opts = append(opts, config.WithHTTPClient(
+		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
+			transport.MaxConnsPerHost = defaultMaxConnsPerHost
+		})))
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := aws.NewConfig()
-	if params.Endpoint != "" {
-		cfg.Endpoint = aws.String(params.Endpoint)
-	}
-	if params.AwsRegion != "" {
-		cfg = cfg.WithRegion(params.AwsRegion)
-	}
-	if params.AwsAccessKeyID != "" {
-		cfg = cfg.WithCredentials(credentials.NewCredentials(
-			&credentials.StaticProvider{
-				Value: credentials.Value{
-					AccessKeyID:     params.AwsAccessKeyID,
-					SecretAccessKey: params.AwsSecretAccessKey,
-				},
-			}))
-	}
-	const maxConnectionPerHost = 10
-	cfg = cfg.WithHTTPClient(&http.Client{
-		Transport: &http.Transport{
-			MaxConnsPerHost: maxConnectionPerHost,
-		},
+	// Create DynamoDB client
+	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+		if params.Endpoint != "" {
+			o.BaseEndpoint = &params.Endpoint
+		}
 	})
 
-	// Create DynamoDB client
-	svc := dynamodb.New(sess, cfg)
 	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
@@ -118,12 +127,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 }
 
 // isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
-func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bool, error) {
-	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+func isTableExist(ctx context.Context, svc *dynamodb.Client, table string) (bool, error) {
+	_, err := svc.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+		var errResNotFound *types.ResourceNotFoundException
+		if errors.As(err, &errResNotFound) {
 			return false, nil
 		}
 		return false, handleClientError(err)
@@ -132,39 +142,40 @@ func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bo
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *kvparams.DynamoDB) error {
+func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.Client, params *kvparams.DynamoDB) error {
 	// main kv table
 	exist, err := isTableExist(ctx, svc, params.TableName)
 	if exist || err != nil {
 		return err
 	}
 
-	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
+	table, err := svc.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName:   aws.String(params.TableName),
-		BillingMode: aws.String(dynamodb.BillingModePayPerRequest), // On-Demand
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+		BillingMode: types.BillingModePayPerRequest, // On-Demand
+		AttributeDefinitions: []*types.AttributeDefinition{
 			{
 				AttributeName: aws.String(PartitionKey),
-				AttributeType: aws.String("B"),
+				AttributeType: types.ScalarAttributeTypeB,
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				AttributeType: aws.String("B"),
+				AttributeType: types.ScalarAttributeTypeB,
 			},
 		},
-		KeySchema: []*dynamodb.KeySchemaElement{
+		KeySchema: []*types.KeySchemaElement{
 			{
 				AttributeName: aws.String(PartitionKey),
-				KeyType:       aws.String("HASH"),
+				KeyType:       types.KeyTypeHash,
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				KeyType:       aws.String("RANGE"),
+				KeyType:       types.KeyTypeRange,
 			},
 		},
 	})
 	if err != nil {
-		if _, ok := err.(*dynamodb.ResourceInUseException); ok {
+		var errResInUse *types.ResourceInUseException
+		if errors.As(err, &errResInUse) {
 			return nil
 		}
 		return err
@@ -178,28 +189,28 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 	bo.MaxInterval = maxInterval * time.Second
 	bo.MaxElapsedTime = maxElapsed * time.Second
 	err = backoff.Retry(func() error {
-		desc, err := svc.DescribeTable(&dynamodb.DescribeTableInput{
+		desc, err := svc.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 			TableName: table.TableDescription.TableName,
 		})
 		if err != nil {
 			// we shouldn't retry on anything but kv.ErrTableNotActive
 			return backoff.Permanent(err)
 		}
-		if *desc.Table.TableStatus != dynamodb.TableStatusActive {
-			return fmt.Errorf("table status(%s): %w", *desc.Table.TableStatus, kv.ErrTableNotActive)
+		if desc.Table.TableStatus != types.TableStatusActive {
+			return fmt.Errorf("table status(%s): %w", desc.Table.TableStatus, kv.ErrTableNotActive)
 		}
 		return nil
 	}, bo)
 	return err
 }
 
-func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
-		PartitionKey: {
-			B: partitionKey,
+func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		PartitionKey: &types.AttributeValueMemberB{
+			Value: partitionKey,
 		},
-		ItemKey: {
-			B: key,
+		ItemKey: &types.AttributeValueMemberB{
+			Value: key,
 		},
 	}
 }
@@ -211,12 +222,11 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
-
-	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
+	result, err := s.svc.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
 		ConsistentRead:         aws.Bool(true),
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	})
 	const operation = "GetItem"
 	if err != nil {
@@ -297,7 +307,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		}
 	}
 
-	resp, err := s.svc.PutItemWithContext(ctx, input)
+	resp, err := s.svc.PutItem(ctx, input)
 	const operation = "PutItem"
 	if err != nil {
 		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
@@ -319,7 +329,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		return kv.ErrMissingKey
 	}
 
-	resp, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
+	resp, err := s.svc.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
 		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
@@ -451,7 +461,7 @@ func (e *EntriesIterator) runQuery() {
 		queryInput.SetLimit(e.limit)
 	}
 
-	queryResult, err := e.store.svc.QueryWithContext(e.scanCtx, queryInput)
+	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
 		e.err = fmt.Errorf("query: %w", handleClientError(err))
