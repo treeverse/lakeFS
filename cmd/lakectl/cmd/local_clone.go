@@ -87,6 +87,7 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		_, err = local.WriteActiveOperation(localPath, "")
 		fmt.Printf("\nSuccessfully cloned %s to %s.\n", remote, localPath)
 		Write(localSummaryTemplate, struct {
 			Operation string
