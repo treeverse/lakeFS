@@ -544,7 +544,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, fd.Truncate(1e9))
 			require.NoError(t, fd.Close())
-			runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+"/"+fileName, false, false, vars)
+			runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+"/"+fileName, false, false, vars)
 			runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 			// Pull changes and interrupt
