@@ -25,7 +25,6 @@ import (
 
 const (
 	DefaultDirectoryMask   = 0o755
-	ClientMtimeHeaderKey   = api.LakeFSHeaderInternalPrefix + "client-mtime"
 	ClientMtimeMetadataKey = api.LakeFSMetadataPrefix + "client-mtime"
 )
 
@@ -329,6 +328,7 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		if err != nil {
 			b.Error()
 		} else {
+			atomic.AddUint64(&s.tasks.Removed, 1)
 			b.Done()
 		}
 	}()
