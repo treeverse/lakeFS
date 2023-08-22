@@ -13,12 +13,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
-// setupCmd initial lakeFS system setup - build database, load initial data and create first superuser
+// setupCmd initial lakeFS system setup - build the database, load initial data and create first superuser
 var setupCmd = &cobra.Command{
 	Use:     "setup",
 	Aliases: []string{"init"},
@@ -27,7 +28,7 @@ var setupCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -73,11 +74,11 @@ var setupCmd = &cobra.Command{
 		defer kvStore.Close()
 		logger := logging.ContextUnavailable()
 		authLogger := logger.WithField("service", "auth_service")
-		authService = auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
+		authService = auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), nil, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), metadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, metadataManager, cloudMetadataProvider)
 
 		credentials, err := setupLakeFS(ctx, cfg, metadataManager, authService, userName, accessKeyID, secretAccessKey)
 		if err != nil {

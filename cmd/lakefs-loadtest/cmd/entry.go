@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -61,7 +62,7 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("invalid config: %s\n", err)
 		}
 
-		kvParams, err := conf.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(conf)
 		if err != nil {
 			logging.ContextUnavailable().WithError(err).Fatal("Get KV params")
 		}
@@ -75,7 +76,6 @@ var entryCmd = &cobra.Command{
 			Config:       conf,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-			Limiter:      conf.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)

@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/local"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -91,7 +92,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := c.DatabaseParams()
+	kvParams, err := kvparams.NewConfig(c)
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)
@@ -169,8 +170,9 @@ func TestConfig_JSONLogger(t *testing.T) {
 }
 
 func verifyAWSConfig(t *testing.T, c *config.Config) {
-	awsConfig := c.GetAwsConfig()
-	credentials, err := awsConfig.Credentials.Get()
+	s3Params, err := c.BlockstoreS3Params()
+	testutil.Must(t, err)
+	credentials, err := s3Params.AwsConfig.Credentials.Get()
 	testutil.Must(t, err)
 	if credentials.AccessKeyID != "my-key-id" {
 		t.Fatalf("unexpected key id in credentials. expected %s got %s", "my-key-id", credentials.AccessKeyID)

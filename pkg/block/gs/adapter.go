@@ -54,7 +54,7 @@ func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 func WithDisablePreSigned(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
-			a.disablePreSigned = false
+			a.disablePreSigned = true
 		}
 	}
 }
@@ -62,7 +62,7 @@ func WithDisablePreSigned(b bool) func(a *Adapter) {
 func WithDisablePreSignedUI(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
-			a.disablePreSignedUI = false
+			a.disablePreSignedUI = true
 		}
 	}
 }

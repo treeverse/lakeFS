@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 // KV Schema versions
