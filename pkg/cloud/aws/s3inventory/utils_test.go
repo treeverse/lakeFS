@@ -1,12 +1,21 @@
 package s3inventory
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 )
@@ -55,36 +64,50 @@ func objs(num int, lastModified []time.Time) <-chan *TestObject {
 	return out
 }
 
-func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventoryFilename string, f *os.File) {
+func uploadFile(t *testing.T, client *s3.Client, inventoryBucket string, inventoryFilename string, f *os.File) {
 	defer func() {
 		_ = f.Close()
 	}()
-	uploader := s3manager.NewUploaderWithClient(s3)
-	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(inventoryBucket),
-		Key:    aws.String(inventoryFilename),
-		Body:   f,
-	})
+	uploader := manager.NewUploader(client)
+	_, err := uploader.Upload(context.Background(),
+		&s3.PutObjectInput{
+			Bucket: aws.String(inventoryBucket),
+			Key:    aws.String(inventoryFilename),
+			Body:   f,
+		})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Upload file '%s/%s', failed: %s", inventoryBucket, inventoryFilename, err)
 	}
 }
 
-func getS3Fake(t *testing.T) (s3iface.S3API, *httptest.Server) {
+func getS3Fake(t *testing.T) (*s3.Client, *httptest.Server) {
 	backend := s3mem.New()
 	faker := gofakes3.New(backend)
 	ts := httptest.NewServer(faker.Server())
+	defer ts.Close()
+
 	// configure S3 client
-	s3Config := &aws.Config{
-		Credentials:      credentials.NewStaticCredentials("YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", ""),
-		Endpoint:         aws.String(ts.URL),
-		Region:           aws.String("eu-central-1"),
-		DisableSSL:       aws.Bool(true),
-		S3ForcePathStyle: aws.Bool(true),
-	}
-	newSession, err := session.NewSession(s3Config)
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", "")),
+		config.WithRegion("eu-central-1"),
+		config.WithHTTPClient(&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}),
+		config.WithEndpointResolverWithOptions(
+			aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{URL: ts.URL}, nil
+			}),
+		),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return s3.New(newSession), ts
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
+	return client, ts
 }

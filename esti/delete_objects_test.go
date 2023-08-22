@@ -112,5 +112,5 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Len(t, listOut.Contents, 1, "list should find 'delete-me' file")
-	assert.Equal(t, aws.StringValue(listOut.Contents[0].Key), mainBranch+"/"+filename)
+	assert.Equal(t, aws.ToString(listOut.Contents[0].Key), mainBranch+"/"+filename)
 }

@@ -44,7 +44,7 @@ func TestMultipartUpload(t *testing.T) {
 	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
-	logger.WithField("key", aws.StringValue(completeResponse.Key)).Info("Completed multipart request successfully")
+	logger.WithField("key", aws.ToString(completeResponse.Key)).Info("Completed multipart request successfully")
 
 	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
@@ -85,7 +85,7 @@ func TestMultipartUploadAbort(t *testing.T) {
 		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
 		require.NoError(t, err, "CreateMultipartUpload")
 
-		uploadID := aws.StringValue(createResp.UploadId)
+		uploadID := aws.ToString(createResp.UploadId)
 		// reverse the upload id to get valid unknown upload id
 		unknownUploadID := reverse(uploadID)
 

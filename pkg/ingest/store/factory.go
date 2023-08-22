@@ -8,6 +8,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/factory"
@@ -58,24 +61,24 @@ func NewFactory(params params.AdapterConfig) *WalkerFactory {
 }
 
 func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*s3.Walker, error) {
-	var sess *session.Session
+	var client *awss3.Client
 	if f.params != nil {
 		s3params, err := f.params.BlockstoreS3Params()
 		if err != nil {
 			return nil, err
 		}
-		sess, err = factory.BuildS3Client(s3params.AwsConfig, s3params.WebIdentity, s3params.SkipVerifyCertificateTestOnly)
+		client, err = factory.BuildS3ClientConfig(s3params.AwsConfig, s3params.WebIdentity, s3params.SkipVerifyCertificateTestOnly)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		var err error
-		sess, err = getS3Client(opts.S3EndpointURL)
+		client, err = getS3Client(opts.S3EndpointURL)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return s3.NewS3Walker(sess), nil
+	return s3.NewS3Walker(client), nil
 }
 
 func (f *WalkerFactory) buildGCSWalker(ctx context.Context) (*gs.GCSWalker, error) {
@@ -193,17 +196,18 @@ func (f *WalkerFactory) buildLocalWalker() (*local.Walker, error) {
 	return local.NewLocalWalker(localParams), nil
 }
 
-func getS3Client(s3EndpointURL string) (*session.Session, error) {
-	var config aws.Config
-	if s3EndpointURL != "" {
-		config = aws.Config{
-			Endpoint:         aws.String(s3EndpointURL),
-			Region:           aws.String("us-east-1"), // Needs region for validation as it is AWS client
-			S3ForcePathStyle: aws.Bool(true),
-		}
+func getS3Client(s3EndpointURL string) (*awss3.Client, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, err
 	}
-	return session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Config:            config,
+	client := awss3.NewFromConfig(cfg, func(o *awss3.Options) {
+		if s3EndpointURL != "" {
+			o.BaseEndpoint = aws.String(s3EndpointURL)
+			o.Region = "us-east-1"
+			o.UsePathStyle = true
+		}
 	})
+	// TODO(barak): do we require SharedConfigState: session.SharedConfigEnable,
+	return client, nil
 }

@@ -300,7 +300,7 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	var objects []Object
 	for _, obj := range listOutput.Contents {
 		objects = append(objects, Object{
-			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)),
+			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.ToString(obj.Key)),
 			LastModified: aws.TimeValue(obj.LastModified),
 		})
 	}

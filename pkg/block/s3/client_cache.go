@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
@@ -27,7 +28,7 @@ type Expirer interface {
 }
 
 type S3APIWithExpirer interface {
-	s3iface.S3API
+	*s3.Client
 	Expirer
 }
 
@@ -51,12 +52,12 @@ func getBucketRegionFromS3(ctx context.Context, sess *session.Session, bucket st
 }
 
 func getBucketRegionFromSession(ctx context.Context, sess *session.Session, bucket string) (string, error) {
-	region := aws.StringValue(sess.Config.Region)
+	region := aws.ToString(sess.Config.Region)
 	return region, nil
 }
 
 type s3Client struct {
-	s3iface.S3API
+	*s3.Client
 	awsSession *session.Session
 }
 

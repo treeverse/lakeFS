@@ -6,11 +6,12 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
 type Walker struct {
-	s3   s3iface.S3API
+	s3   *s3.Client
 	mark block.Mark
 }
 
@@ -58,13 +59,13 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 			return err
 		}
 		for _, record := range result.Contents {
-			key := aws.StringValue(record.Key)
+			key := aws.ToString(record.Key)
 			addr := fmt.Sprintf("s3://%s/%s", bucket, key)
 			ent := block.ObjectStoreEntry{
 				FullKey:     key,
 				RelativeKey: strings.TrimPrefix(key, basePath),
 				Address:     addr,
-				ETag:        strings.Trim(aws.StringValue(record.ETag), "\""),
+				ETag:        strings.Trim(aws.ToString(record.ETag), "\""),
 				Mtime:       aws.TimeValue(record.LastModified),
 				Size:        aws.Int64Value(record.Size),
 			}

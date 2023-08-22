@@ -224,7 +224,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
 	baseSigner.DisableURIPathEscaping = true
-	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
+	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.ToString(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
 		return nil, err
@@ -242,7 +242,7 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 		Size:   sizeBytes,
 		Time:   sigTime,
 		StreamSigner: v4.NewStreamSigner(
-			aws.StringValue(sdkRequest.Config.Region),
+			aws.ToString(sdkRequest.Config.Region),
 			s3.ServiceName,
 			sigSeed,
 			sdkRequest.Config.Credentials,
@@ -649,7 +649,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if err != nil {
 		return nil, err
 	}
-	uploadID := aws.StringValue(resp.UploadId)
+	uploadID := aws.ToString(resp.UploadId)
 	a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
@@ -736,7 +736,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		return nil, err
 	}
 
-	etag := strings.Trim(aws.StringValue(resp.ETag), `"`)
+	etag := strings.Trim(aws.ToString(resp.ETag), `"`)
 	contentLength := aws.Int64Value(headResp.ContentLength)
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:             etag,
@@ -828,7 +828,7 @@ func (a *Adapter) managerUpload(ctx context.Context, obj block.ObjectPointer, re
 	if err != nil {
 		return err
 	}
-	if aws.StringValue(output.ETag) == "" {
+	if aws.ToString(output.ETag) == "" {
 		return ErrMissingETag
 	}
 	return nil

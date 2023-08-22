@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/pkg/logging"
-	s3parquet "github.com/xitongsys/parquet-go-source/s3"
+	s3parquet "github.com/xitongsys/parquet-go-source/s3v2"
 	"github.com/xitongsys/parquet-go/reader"
 )
 
@@ -70,7 +71,7 @@ func (o *InventoryObject) GetPhysicalAddress() string {
 
 type Reader struct {
 	ctx    context.Context
-	svc    s3iface.S3API
+	svc    *s3.Client
 	logger logging.Logger
 }
 
@@ -86,7 +87,7 @@ type FileReader interface {
 	Read(n int) ([]*InventoryObject, error)
 }
 
-func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
+func NewReader(ctx context.Context, svc *s3.Client, logger logging.Logger) IReader {
 	return &Reader{ctx: ctx, svc: svc, logger: logger}
 }
 

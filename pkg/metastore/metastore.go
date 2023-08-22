@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/glue/types"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -114,7 +115,7 @@ type Database struct {
 	HivePrivileges    interface{}
 	OwnerName         *string
 	HiveOwnerType     interface{}
-	AWSTargetDatabase *glue.DatabaseIdentifier
+	AWSTargetDatabase *types.DatabaseIdentifier
 }
 
 type Table struct {

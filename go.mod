@@ -28,13 +28,13 @@ require (
 	github.com/johannesboyne/gofakes3 v0.0.0-20210217223559-02ffa763be97
 	github.com/manifoldco/promptui v0.8.0
 	github.com/matoous/go-nanoid/v2 v2.0.0
-	github.com/minio/minio-go/v7 v7.0.13
+	github.com/minio/minio-go/v7 v7.0.34
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.16.0
-	github.com/rs/xid v1.2.1
+	github.com/rs/xid v1.4.0
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/scritchley/orc v0.0.0-20201124122313-cba38e582ef9
 	github.com/sirupsen/logrus v1.9.3
@@ -47,7 +47,7 @@ require (
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/vbauerster/mpb/v5 v5.4.0
 	github.com/xitongsys/parquet-go v1.6.0
-	github.com/xitongsys/parquet-go-source v0.0.0-20201108113611-f372b7d813be
+	github.com/xitongsys/parquet-go-source v0.0.0-20230607234618-40034c8066df
 	golang.org/x/crypto v0.11.0
 	golang.org/x/oauth2 v0.8.0
 	golang.org/x/term v0.10.0
@@ -73,13 +73,17 @@ require (
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.2
 	github.com/antonmedv/expr v1.12.5
+	github.com/aws/aws-sdk-go v1.43.31
 	github.com/aws/aws-sdk-go-v2 v1.21.0
-	github.com/aws/aws-sdk-go-v2/config v1.18.35
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.34
+	github.com/aws/aws-sdk-go-v2/config v1.18.36
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.35
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.39
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.66
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.80
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5
 	github.com/aws/aws-sdk-go-v2/service/glue v1.61.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.38.4
-	github.com/aws/aws-sdk-go-v2/service/sts v1.21.4
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.38.5
+	github.com/aws/aws-sdk-go-v2/service/sts v1.21.5
 	github.com/aws/smithy-go v1.14.2
 	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
 	github.com/dgraph-io/badger/v3 v3.2103.2
@@ -106,19 +110,19 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.10 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.41 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.3 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.42 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.15.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.14 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.36 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.34 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.13.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.15.4 // indirect
-	github.com/cloudflare/circl v1.3.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.13.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.15.5 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
@@ -128,6 +132,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 // indirect
@@ -183,7 +188,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a // indirect
 	github.com/klauspost/compress v1.15.14 // indirect
-	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
@@ -193,8 +197,8 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
-	github.com/minio/md5-simd v1.1.0 // indirect
-	github.com/minio/sha256-simd v0.1.1 // indirect
+	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

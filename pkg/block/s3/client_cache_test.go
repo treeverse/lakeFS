@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -17,11 +19,11 @@ var (
 )
 
 type FakeS3APIWithExpirer struct {
-	s3iface.S3API
+	*awss3.Client
 }
 
 func NewFakeS3APIWithExpirer() FakeS3APIWithExpirer {
-	return FakeS3APIWithExpirer(struct{ s3iface.S3API }{})
+	return FakeS3APIWithExpirer(struct{ *awss3.Client }{})
 }
 
 func (f FakeS3APIWithExpirer) ExpiresAt() (time.Time, error) {

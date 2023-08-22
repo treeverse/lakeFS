@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )

@@ -7,6 +7,10 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/storage"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -81,39 +85,44 @@ func buildLocalAdapter(ctx context.Context, params params.Local) (*local.Adapter
 	return adapter, nil
 }
 
-func BuildS3Client(awsConfig *aws.Config, webIdentity *params.S3WebIdentity, skipVerifyCertificateTestOnly bool) (*session.Session, error) {
-	client := http.DefaultClient
+func BuildS3ClientConfig(awsConfig aws.Config, webIdentity *params.S3WebIdentity, skipVerifyCertificateTestOnly bool) (*s3.Client, error) {
+	var opts []func(*config.LoadOptions) error
+
+	// Add customer transport to http client to skip certificate verification
 	if skipVerifyCertificateTestOnly {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 		}
-		client = &http.Client{Transport: tr}
+		httpClient := &http.Client{Transport: tr}
+		opts = append(opts, config.WithHTTPClient(httpClient))
 	}
-	opts := session.Options{}
-	opts.Config.MergeIn(awsConfig, aws.NewConfig().WithHTTPClient(client))
+
 	if webIdentity != nil {
 		wi := *webIdentity // Copy WebIdentity: it will be used asynchronously.
-		opts.CredentialsProviderOptions = &session.CredentialsProviderOptions{
-			WebIdentityRoleProviderOptions: func(wirp *stscreds.WebIdentityRoleProvider) {
+		opts = append(opts,
+			config.WithWebIdentityRoleCredentialOptions(func(options *stscreds.WebIdentityRoleOptions) {
 				if wi.SessionDuration > 0 {
-					wirp.Duration = wi.SessionDuration
+					options.Duration = wi.SessionDuration
 				}
+			}),
+			config.WithCredentialsCacheOptions(func(options *aws.CredentialsCacheOptions) {
 				if wi.SessionExpiryWindow > 0 {
-					wirp.ExpiryWindow = wi.SessionExpiryWindow
+					options.ExpiryWindow = wi.SessionExpiryWindow
 				}
-			},
-		}
+			}),
+		)
 	}
-	sess, err := session.NewSessionWithOptions(opts)
+
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
-	sess.ClientConfig(s3.ServiceName)
-	return sess, nil
+	return cfg, nil
 }
 
 func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	sess, err := BuildS3Client(params.AwsConfig, params.WebIdentity, params.SkipVerifyCertificateTestOnly)
+	sess, err := BuildS3ClientConfig(params.AwsConfig, params.WebIdentity, params.SkipVerifyCertificateTestOnly)
 	if err != nil {
 		return nil, err
 	}
