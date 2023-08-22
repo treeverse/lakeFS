@@ -121,6 +121,8 @@ var localCommitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		Must(local.WriteActiveOperation(localPath, ""))
+
 		Write(localSummaryTemplate, struct {
 			Operation string
 			local.Tasks
@@ -164,7 +166,6 @@ var localCommitCmd = &cobra.Command{
 			Repository: remote.Repository,
 			Ref:        remote.Ref,
 		}
-		Must(local.WriteActiveOperation(localPath, ""))
 
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
