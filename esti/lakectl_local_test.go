@@ -481,7 +481,10 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Pull without force flag
-			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			expectedStr := `Latest commit operation was interrupted, remote data may be incomplete.
+	Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
+			require.Contains(t, text, expectedStr)
 
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
 
@@ -548,7 +551,10 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local pull "+dataDir, true, false, "", vars, time.Millisecond*500)
 
 			// Pull changes without force flag
-			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			expectedStr := `Latest pull operation was interrupted, local data may be incomplete.
+	Use "lakectl local pull... --force" to sync with the remote.`
+			require.Contains(t, text, expectedStr)
 
 			// Pull changes and verify data
 			runCmd(t, Lakectl()+" local pull "+dataDir+" --force", false, false, vars)
