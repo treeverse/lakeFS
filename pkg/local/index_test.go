@@ -34,7 +34,7 @@ func writeIndex(t *testing.T, dir string) {
 }
 
 func TestWriteIndex(t *testing.T) {
-	expectedContent := fmt.Sprintf("src: lakefs://%s/%s/%s\nat_head: %s\noperation: \"\"\n", repo, ref, uPath, head)
+	expectedContent := fmt.Sprintf("src: lakefs://%s/%s/%s\nat_head: %s\nactive_operation: \"\"\n", repo, ref, uPath, head)
 	tmpDir := t.TempDir()
 	writeIndex(t, tmpDir)
 	buf, err := os.ReadFile(filepath.Join(tmpDir, local.IndexFileName))
