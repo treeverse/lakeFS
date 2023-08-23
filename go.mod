@@ -217,4 +217,4 @@ require (
 	pgregory.net/rapid v0.4.0 // indirect
 )
 
-replace github.com/karrick/godirwalk => github.com/N-o-Z/godirwalk v1.17.3
+replace github.com/karrick/godirwalk => github.com/treeverse/godirwalk v1.17.3
