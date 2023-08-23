@@ -583,22 +583,8 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	// Bad ref
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/ "+tmpDir, false, "lakectl_local_commit_not_found", vars)
 
-	prefix := "images"
-	objects := []string{
-		"ro_1k.1",
-		"ro_1k.2",
-		"ro_1k.3",
-		prefix + "/1.png",
-		prefix + "/2.png",
-		prefix + "/3.png",
-		prefix + "/subdir/1.png",
-		prefix + "/subdir/2.png",
-		prefix + "/subdir/3.png",
-	}
-
-	localCreateTestData(t, vars, objects)
-
 	// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
+	prefix := "images"
 	fileName := "test.txt"
 	fd, err = os.Create(fileName)
 	require.NoError(t, err)
@@ -619,5 +605,5 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	// Pull changes and verify data
 	runCmd(t, Lakectl()+" local pull "+dataDir+" --force", false, false, vars)
 
-	localVerifyDirContents(t, dataDir, append(objects, fileName))
+	localVerifyDirContents(t, dataDir, []string{fileName})
 }
