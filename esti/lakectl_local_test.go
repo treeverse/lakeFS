@@ -493,9 +493,6 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 
 func TestLakectlLocal_interruptedPull(t *testing.T) {
 	tmpDir := t.TempDir()
-	fd, err := os.CreateTemp(tmpDir, "")
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -534,7 +531,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 
 			// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
 			fileName := "test.txt"
-			fd, err = os.Create(fileName)
+			fd, err := os.Create(fileName)
 			require.NoError(t, err)
 			require.NoError(t, fd.Truncate(1e8))
 			require.NoError(t, fd.Close())
@@ -556,9 +553,6 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 
 func TestLakectlLocal_interruptedClone(t *testing.T) {
 	tmpDir := t.TempDir()
-	fd, err := os.CreateTemp(tmpDir, "")
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
 	dataDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
 	repoName := generateUniqueRepositoryName()
@@ -583,7 +577,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	// Upload and commit a large object, so we will have a chance to interrupt the pull before it finishes
 	prefix := "images"
 	fileName := "test.txt"
-	fd, err = os.Create(fileName)
+	fd, err := os.Create(fileName)
 	require.NoError(t, err)
 	require.NoError(t, fd.Truncate(1e9))
 	require.NoError(t, fd.Close())
