@@ -142,12 +142,16 @@ func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, rem
 	return changes
 }
 
-func localHandleSyncInterrupt(ctx context.Context, updateIndexFileFunc func(string, string) error, path string, operation string) context.Context {
+func localHandleSyncInterrupt(ctx context.Context, idx *local.Index, operation string) context.Context {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		defer stop()
 		<-ctx.Done()
-		err := updateIndexFileFunc(path, operation)
+		pathURI, err := idx.GetCurrentURI()
+		if err != nil {
+			WriteTo("{{.Error|red}}\n", struct{ Error string }{Error: "Failed to get PathURI index file."}, os.Stderr)
+		}
+		_, err = local.WriteIndex(idx.LocalPath(), pathURI, idx.AtHead, operation)
 		if err != nil {
 			WriteTo("{{.Error|red}}\n", struct{ Error string }{Error: "Failed to write failed operation to index file."}, os.Stderr)
 		}
@@ -158,7 +162,7 @@ func localHandleSyncInterrupt(ctx context.Context, updateIndexFileFunc func(stri
 }
 
 func dieOnInterruptedOperation(interruptedOperation LocalOperation, force bool) {
-	if !force {
+	if !force && interruptedOperation != "" {
 		switch interruptedOperation {
 		case "commit":
 			Die(`Latest commit operation was interrupted, data may be incomplete.
@@ -172,6 +176,8 @@ Use "lakectl local pull... --force" to sync with the remote.`, 1)
 		case "clone":
 			Die(`Latest clone operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, 1)
+		default:
+			panic(fmt.Errorf("found an unknown interrupted operation in the index file: %s", interruptedOperation))
 		}
 	}
 }

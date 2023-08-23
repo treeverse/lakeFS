@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -43,7 +45,7 @@ var localPullCmd = &cobra.Command{
 
 		// write new index
 		newHead := resolveCommitOrDie(cmd.Context(), client, remote.Repository, remote.Ref)
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, idx.ActiveOperation)
 		if err != nil {
 			DieErr(err)
 		}
@@ -65,13 +67,28 @@ var localPullCmd = &cobra.Command{
 			}
 			return nil
 		})
-		sigCtx := localHandleSyncInterrupt(cmd.Context(), local.WriteActiveOperation, localPath, string(pullOperation))
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(pullOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {
 			DieErr(err)
 		}
 		if err := wg.Wait(); err != nil {
+			DieErr(err)
+		}
+		idx, err = local.ReadIndex(localPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				DieFmt("Failed to read index file from path %s", localPath)
+			}
+			DieErr(err)
+		}
+		pathURI, err := idx.GetCurrentURI()
+		if err != nil {
+			DieFmt("Failed to get PathURI index file.")
+		}
+		_, err = local.WriteIndex(idx.LocalPath(), pathURI, idx.AtHead, "")
+		if err != nil {
 			DieErr(err)
 		}
 

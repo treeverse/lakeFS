@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"strings"
 
@@ -110,9 +112,24 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context(), local.WriteActiveOperation, localPath, string(commitOperation))
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), remote, c)
+		if err != nil {
+			DieErr(err)
+		}
+		idx, err = local.ReadIndex(localPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				DieFmt("Failed to read index file from path %s", localPath)
+			}
+			DieErr(err)
+		}
+		pathURI, err := idx.GetCurrentURI()
+		if err != nil {
+			DieFmt("Failed to get PathURI index file.")
+		}
+		_, err = local.WriteIndex(idx.LocalPath(), pathURI, idx.AtHead, "")
 		if err != nil {
 			DieErr(err)
 		}
@@ -167,7 +184,7 @@ var localCommitCmd = &cobra.Command{
 		}{Branch: branchURI, Commit: commit})
 
 		newHead := response.JSON201.Id
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, idx.ActiveOperation)
 		if err != nil {
 			DieErr(err)
 		}

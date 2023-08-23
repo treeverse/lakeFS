@@ -76,12 +76,35 @@ var localCloneCmd = &cobra.Command{
 				after = listResp.JSON200.Pagination.NextOffset
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context(), local.WriteActiveOperation, localPath, string(cloneOperation))
+		idx, err := local.ReadIndex(localPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				DieFmt("failed to read index file from path %s", localPath)
+			}
+			DieErr(err)
+		}
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(localPath, stableRemote, c)
 		if err != nil {
 			DieErr(err)
 		}
+		idx, err = local.ReadIndex(localPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				DieFmt("Failed to read index file from path %s", localPath)
+			}
+			DieErr(err)
+		}
+		pathURI, err := idx.GetCurrentURI()
+		if err != nil {
+			DieFmt("Failed to get PathURI index file.")
+		}
+		_, err = local.WriteIndex(idx.LocalPath(), pathURI, idx.AtHead, "")
+		if err != nil {
+			DieErr(err)
+		}
+
 		fmt.Printf("\nSuccessfully cloned %s to %s.\n", remote, localPath)
 		Write(localSummaryTemplate, struct {
 			Operation string
