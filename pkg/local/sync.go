@@ -102,7 +102,10 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 		return err
 	}
 	_, err := fileutil.PruneEmptyDirectories(rootPath)
-	return err
+	if err != nil {
+		return err
+	}
+	return WriteActiveOperation(rootPath, "")
 }
 
 func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) (err error) {

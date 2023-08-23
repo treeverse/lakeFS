@@ -616,6 +616,6 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	// Pull changes without force flag
 	text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
 	expectedStr := `Latest clone operation was interrupted, local data may be incomplete.
-	Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`
 	require.Contains(t, text, expectedStr)
 }
