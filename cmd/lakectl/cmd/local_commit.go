@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"strings"
 
@@ -118,22 +116,6 @@ var localCommitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		idx, err = local.ReadIndex(localPath)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				DieFmt("Failed to read index file from path %s", localPath)
-			}
-			DieErr(err)
-		}
-		pathURI, err := idx.GetCurrentURI()
-		if err != nil {
-			DieFmt("Failed to get PathURI index file.")
-		}
-		_, err = local.WriteIndex(idx.LocalPath(), pathURI, idx.AtHead, "")
-		if err != nil {
-			DieErr(err)
-		}
-
 		Write(localSummaryTemplate, struct {
 			Operation string
 			local.Tasks
@@ -184,7 +166,7 @@ var localCommitCmd = &cobra.Command{
 		}{Branch: branchURI, Commit: commit})
 
 		newHead := response.JSON201.Id
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, idx.ActiveOperation)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
 		if err != nil {
 			DieErr(err)
 		}
