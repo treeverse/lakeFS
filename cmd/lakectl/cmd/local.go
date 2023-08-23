@@ -48,7 +48,10 @@ const localSummaryTemplate = `
 {{end}}
 `
 
-var localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
+var (
+	localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
+	ErrUnknownOperation   = errors.New("unknown operation")
+)
 
 func withParallelismFlag(cmd *cobra.Command) {
 	cmd.Flags().IntP(localParallelismFlagName, "p", localDefaultSyncParallelism,
@@ -177,7 +180,7 @@ Use "lakectl local pull... --force" to sync with the remote.`, 1)
 			Die(`Latest clone operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, 1)
 		default:
-			panic(fmt.Errorf("found an unknown interrupted operation in the index file: %s", interruptedOperation))
+			panic(fmt.Errorf("found an unknown interrupted operation in the index file: %s- %w", interruptedOperation, ErrUnknownOperation))
 		}
 	}
 }

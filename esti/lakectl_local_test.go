@@ -410,9 +410,6 @@ func TestLakectlLocal_commit(t *testing.T) {
 
 func TestLakectlLocal_interruptedCommit(t *testing.T) {
 	tmpDir := t.TempDir()
-	fd, err := os.CreateTemp(tmpDir, "")
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -469,7 +466,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			// Modify local folder - add and remove files
-			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
+			fd, err := os.Create(filepath.Join(dataDir, "test.txt"))
 			require.NoError(t, err)
 			require.NoError(t, fd.Truncate(1e7))
 			require.NoError(t, fd.Close())
