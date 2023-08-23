@@ -16,6 +16,45 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 
 {% include toc.html %}
 
+## Using Delta Lake with lakeFS from Apache Spark
+
+_Given the native integration between Delta Lake and Spark, it's most common that you'll interact with Delta tables in a Spark environment._
+
+To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md) environment.
+
+Once set, you can interact with Delta tables using regular Spark path URIs. Make sure that you include the lakeFS repository and branch name:
+
+```scala
+df.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-table")
+```
+
+Note: If using the Databricks Analytics Platform, see the [integration guide](./spark.md#installation) for configuring a Databricks cluster to use lakeFS.
+
+To see the integration in action see [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/delta-lake.ipynb) in the [lakeFS Samples Repository](https://github.com/treeverse/lakeFS-samples/).
+
+## Using Delta Lake with lakeFS from Python
+
+The [delta-rs](https://delta-io.github.io/delta-rs/) library provides bindings for Python. This means that you can use Delta Lake and lakeFS directly from Python without needing Spark. Integration is done through the [lakeFS S3 Gateway]({% link understand/architecture.md %}#s3-gateway)
+
+The documentation for the `deltalake` Python module details how to [read](https://delta-io.github.io/delta-rs/python/usage.html#loading-a-delta-table), [write](https://delta-io.github.io/delta-rs/python/usage.html#writing-delta-tables), and [query](https://delta-io.github.io/delta-rs/python/usage.html#querying-delta-tables) Delta Lake tables. To use it with lakeFS use an `s3a` path for the table based on your repository and branch (for example, `s3a://delta-lake-demo/main/my_table/`) and specify the following `storage_options`:
+
+```python
+storage_options = {"AWS_ENDPOINT": <your lakeFS endpoint>,
+                   "AWS_ACCESS_KEY_ID": <your lakeFS access key>,
+                   "AWS_SECRET_ACCESS_KEY": <your lakeFS secret key>,
+                   "AWS_REGION": "us-east-1",
+                   "AWS_S3_ALLOW_UNSAFE_RENAME": "true"
+                  }
+```
+
+If your lakeFS is not using HTTPS (for example, you're just running it locally) then add the option
+
+```python
+                   "AWS_STORAGE_ALLOW_HTTP": "true"
+```
+
+To see the integration in action see [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/delta-lake-python.ipynb) in the [lakeFS Samples Repository](https://github.com/treeverse/lakeFS-samples/).
+
 ## Viewing Delta Lake table changes in lakeFS <sup>BETA</sup>
 
 Using lakeFS you can
@@ -42,20 +81,6 @@ You can customize the location of the Delta Lake diff plugin by changing the `di
 `plugin.properties.<plugin name>.path` configurations in the [`.lakefs.yaml`][config-plugins] file.
 
 **Notice**: If you're using the lakeFS [docker image][deploy-docker], the plugin is installed by default.
-
-## Spark Configuration
-
-_Given the native integration between Delta Lake and Spark, it's most common that you'll interact with Delta tables in a Spark environment._
-
-To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md) environment.
-
-Once set, you can interact with Delta tables using regular Spark path URIs. Make sure that you include the lakeFS repository and branch name:
-
-```scala
-df.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-table")
-```
-
-Note: If using the Databricks Analytics Platform, see the [integration guide](./spark.md#installation) for configuring a Databricks cluster to use lakeFS.
 
 ## Best Practices
 
