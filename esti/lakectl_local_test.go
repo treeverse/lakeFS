@@ -618,5 +618,6 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 
 	// Pull changes and verify data
 	runCmd(t, Lakectl()+" local pull "+dataDir+" --force", false, false, vars)
-	localVerifyDirContents(t, dataDir, []string{fileName})
+
+	localVerifyDirContents(t, dataDir, append(objects, fileName))
 }
