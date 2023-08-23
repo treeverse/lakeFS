@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -39,7 +38,8 @@ func FindInParents(dir, filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for fullPath != string(filepath.Separator) && fullPath != filepath.VolumeName(fullPath) {
+	volumeName := filepath.VolumeName(fullPath)
+	for fullPath != filepath.Join(volumeName, string(filepath.Separator)) {
 		info, err := os.Stat(fullPath)
 		if err != nil {
 			return "", fmt.Errorf("%s: %w", fullPath, err)
@@ -69,6 +69,9 @@ func IsDirEmpty(dir string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer func() {
+		_ = s.Close()
+	}()
 	// Attempt to read only the first directory entry. Note that Scan skips both "." and ".." entries.
 	hasAtLeastOneChild := s.Scan()
 	if err = s.Err(); err != nil {
@@ -139,7 +142,7 @@ func FileExists(p string) (bool, error) {
 
 func VerifyAbsPath(absPath, basePath string) error {
 	// check we have a valid abs path
-	if !path.IsAbs(absPath) || path.Clean(absPath) != absPath {
+	if !filepath.IsAbs(absPath) || filepath.Clean(absPath) != absPath {
 		return ErrBadPath
 	}
 	// point to storage namespace

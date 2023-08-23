@@ -88,7 +88,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.3.1
-	github.com/karrick/godirwalk v1.17.0
+	github.com/karrick/godirwalk v0.0.0-00010101000000-000000000000
 	github.com/puzpuzpuz/xsync v1.5.2
 	go.uber.org/ratelimit v0.2.0
 )
@@ -216,3 +216,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	pgregory.net/rapid v0.4.0 // indirect
 )
+
+replace github.com/karrick/godirwalk => github.com/treeverse/godirwalk v1.17.3
