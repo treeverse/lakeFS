@@ -539,7 +539,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 			fileName := "test.txt"
 			fd, err = os.Create(fileName)
 			require.NoError(t, err)
-			require.NoError(t, fd.Truncate(1e9))
+			require.NoError(t, fd.Truncate(1e8))
 			require.NoError(t, fd.Close())
 			runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+"/"+fileName, false, false, vars)
 			runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
@@ -602,7 +602,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	fileName := "test.txt"
 	fd, err = os.Create(fileName)
 	require.NoError(t, err)
-	require.NoError(t, fd.Truncate(1e9))
+	require.NoError(t, fd.Truncate(1e8))
 	require.NoError(t, fd.Close())
 	runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+mainBranch+"/"+prefix+"/"+fileName, false, false, vars)
 	runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" --allow-empty-message -m \" \"", false, false, vars)

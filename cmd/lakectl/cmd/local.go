@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/mitchellh/go-homedir"
@@ -20,6 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type LocalOperation string
+
 const (
 	localDefaultSyncParallelism = 25
 	localDefaultSyncPresign     = true
@@ -30,6 +31,11 @@ const (
 	localParallelismFlagName = "parallelism"
 	localGitIgnoreFlagName   = "gitignore"
 	localForceFlagName       = "force"
+
+	commitOperation   LocalOperation = "commit"
+	pullOperation     LocalOperation = "pull"
+	checkoutOperation LocalOperation = "checkout"
+	cloneOperation    LocalOperation = "clone"
 )
 
 const localSummaryTemplate = `
@@ -136,22 +142,26 @@ func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, rem
 	return changes
 }
 
-func localHandleSyncInterrupt(ctx context.Context) context.Context {
+func localHandleSyncInterrupt(ctx context.Context, updateIndexFileFunc func(string, string) error, path string, operation string) context.Context {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		defer stop()
 		<-ctx.Done()
+		err := updateIndexFileFunc(path, operation)
+		if err != nil {
+			WriteTo("{{.Error|red}}\n", struct{ Error string }{Error: "Failed to write failed operation to index file."}, os.Stderr)
+		}
 		Die(`Operation was canceled, local data may be incomplete.
 	Use "lakectl local checkout..." to sync with the remote.`, 1)
 	}()
 	return ctx
 }
 
-func dieOnInterruptedOperation(interruptedOperation string, force bool) {
+func dieOnInterruptedOperation(interruptedOperation LocalOperation, force bool) {
 	if !force {
-		switch strings.ToLower(interruptedOperation) {
+		switch interruptedOperation {
 		case "commit":
-			Die(`Latest commit operation was interrupted, remote data may be incomplete.
+			Die(`Latest commit operation was interrupted, data may be incomplete.
 	Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`, 1)
 		case "checkout":
 			Die(`Latest checkout operation was interrupted, local data may be incomplete.
@@ -161,7 +171,7 @@ func dieOnInterruptedOperation(interruptedOperation string, force bool) {
 	Use "lakectl local pull... --force" to sync with the remote.`, 1)
 		case "clone":
 			Die(`Latest clone operation was interrupted, local data may be incomplete.
-	Use "lakectl local clone..." to sync with the remote.`, 1)
+	Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, 1)
 		}
 	}
 }

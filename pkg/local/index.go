@@ -36,18 +36,18 @@ func (l *Index) GetCurrentURI() (*uri.URI, error) {
 	return uri.Parse(l.PathURI)
 }
 
-func WriteActiveOperation(path string, operation string) (*Index, error) {
+func WriteActiveOperation(path string, operation string) error {
 	idx, err := ReadIndex(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	idx.ActiveOperation = operation
 	data, err := yaml.Marshal(idx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	idxPath := filepath.Join(path, IndexFileName)
-	return idx, os.WriteFile(idxPath, data, IndexFileMode)
+	return os.WriteFile(idxPath, data, IndexFileMode)
 }
 
 func WriteIndex(path string, remote *uri.URI, atHead string) (*Index, error) {

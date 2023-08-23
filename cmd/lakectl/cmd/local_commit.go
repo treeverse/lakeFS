@@ -52,8 +52,6 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		Must(local.WriteActiveOperation(localPath, "commit"))
-
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -112,13 +110,12 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), local.WriteActiveOperation, localPath, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
 			DieErr(err)
 		}
-		Must(local.WriteActiveOperation(localPath, ""))
 
 		Write(localSummaryTemplate, struct {
 			Operation string

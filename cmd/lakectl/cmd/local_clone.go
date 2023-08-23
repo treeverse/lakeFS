@@ -44,8 +44,6 @@ var localCloneCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		Must(local.WriteActiveOperation(localPath, "clone"))
-
 		stableRemote := remote.WithRef(head)
 		// Dynamically construct changes
 		c := make(chan *local.Change, filesChanSize)
@@ -78,13 +76,12 @@ var localCloneCmd = &cobra.Command{
 				after = listResp.JSON200.Pagination.NextOffset
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), local.WriteActiveOperation, localPath, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(localPath, stableRemote, c)
 		if err != nil {
 			DieErr(err)
 		}
-		Must(local.WriteActiveOperation(localPath, ""))
 		fmt.Printf("\nSuccessfully cloned %s to %s.\n", remote, localPath)
 		Write(localSummaryTemplate, struct {
 			Operation string

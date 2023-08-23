@@ -54,11 +54,9 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		DieErr(err)
 	}
 
-	Must(local.WriteActiveOperation(localPath, "checkout"))
-
 	currentBase := remote.WithRef(idx.AtHead)
 	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
-	sigCtx := localHandleSyncInterrupt(cmd.Context())
+	sigCtx := localHandleSyncInterrupt(cmd.Context(), local.WriteActiveOperation, localPath, string(checkoutOperation))
 	syncMgr := local.NewSyncManager(sigCtx, client, locaSyncFlags.parallelism, locaSyncFlags.presign)
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {
@@ -106,8 +104,6 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 	if err != nil {
 		DieErr(err)
 	}
-
-	Must(local.WriteActiveOperation(localPath, ""))
 
 	Write(localSummaryTemplate, struct {
 		Operation string
