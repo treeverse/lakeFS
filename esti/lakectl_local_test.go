@@ -602,7 +602,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	fileName := "test.txt"
 	fd, err = os.Create(fileName)
 	require.NoError(t, err)
-	require.NoError(t, fd.Truncate(1e8))
+	require.NoError(t, fd.Truncate(1e9))
 	require.NoError(t, fd.Close())
 	runCmd(t, Lakectl()+" fs upload -s "+fileName+" lakefs://"+repoName+"/"+mainBranch+"/"+prefix+"/"+fileName, false, false, vars)
 	runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" --allow-empty-message -m \" \"", false, false, vars)
@@ -616,6 +616,6 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 	// Pull changes without force flag
 	text := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
 	expectedStr := `Latest clone operation was interrupted, local data may be incomplete.
-	Use "lakectl local clone..." to sync with the remote.`
+	Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`
 	require.Contains(t, text, expectedStr)
 }
