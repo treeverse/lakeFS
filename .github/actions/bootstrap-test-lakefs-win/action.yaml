@@ -1,0 +1,59 @@
+name: 'Start lakeFS for testing'
+description: 'Get generated code, authenticate to ECR, and run docker-compose up'
+inputs:
+  compose-flags:
+    description: flags to add to docker-compose up command
+    required: false
+    default: "-d"
+  compose-file:
+    description: alternative path to docker-compose file
+    required: false
+  compose-directory:
+    description: working directory for the docker-compose step
+    required: false
+    default: "."
+runs:
+  using: "composite"
+  steps:
+    - name: Print value
+      run: echo "$env:TEMP"
+      shell: pwsh
+    - name: Get temp folder
+      id: temp
+      run: |
+        echo "value=$env:TEMP" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo "$GITHUB_OUTPUT"
+      shell: pwsh
+    - name: Retrieve generated code
+      uses: actions/download-artifact@v3
+      with:
+        name: generated-code
+        path: ${{ steps.temp.outputs.value }}
+    - name: Unpack generated code
+      shell: pwsh
+      run: tar -xf ${{ steps.temp.outputs.value }}/generated.tar.gz
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1-node16
+      with:
+        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Start docker-compose
+      env:
+        LAKEFS_STATS_ENABLED: "false"
+        LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
+      run: |
+        dir
+        dir ${{ steps.temp.outputs.value }}
+        $flags = ""
+        if ("${{ inputs.compose-file }}" -ne "") {
+          $flags = "-f ${{ inputs.compose-file }}"
+        }
+        echo "$flags"
+        echo "${{ inputs.compose-directory }}"
+        docker-compose --verbose -f docker-compose-win.yaml up ${{ inputs.compose-flags }}
+      shell: pwsh
+      working-directory: ${{ inputs.compose-directory }}
