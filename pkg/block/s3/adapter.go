@@ -397,9 +397,9 @@ func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, s
 }
 */
 
-func isErrNotFound(err error) bool {
-	var errNotFound *types.NotFound
-	return errors.As(err, &errNotFound)
+func isErrNoSuchKey(err error) bool {
+	var errNoSuchKey *types.NoSuchKey
+	return errors.As(err, &errNoSuchKey)
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
@@ -416,10 +416,9 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
-
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
-	if isErrNotFound(err) {
+	if isErrNoSuchKey(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
@@ -599,7 +598,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	}
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	_, err = client.HeadObject(ctx, &input)
-	if isErrNotFound(err) {
+	if isErrNoSuchKey(err) {
 		return false, nil
 	}
 	if err != nil {
@@ -625,7 +624,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	}
 	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
-	if isErrNotFound(err) {
+	if isErrNoSuchKey(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {

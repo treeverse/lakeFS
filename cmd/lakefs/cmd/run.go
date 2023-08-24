@@ -168,6 +168,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
+
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
