@@ -38,6 +38,6 @@ runs:
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
-        docker-compose ${flags} up ${{ inputs.compose-flags }}
+        docker-compose --verbose ${flags} up ${{ inputs.compose-flags }}
       shell: bash
       working-directory: ${{ inputs.compose-directory }}

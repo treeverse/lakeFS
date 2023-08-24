@@ -15,23 +15,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Print value
-      run: echo "$env:TEMP"
-      shell: pwsh
-    - name: Get temp folder
-      id: temp
-      run: |
-        echo "value=$env:TEMP" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
-        echo "$GITHUB_OUTPUT"
-      shell: pwsh
     - name: Retrieve generated code
       uses: actions/download-artifact@v3
       with:
         name: generated-code
-        path: ${{ steps.temp.outputs.value }}
+        path: /tmp/
     - name: Unpack generated code
-      shell: pwsh
-      run: tar -xf ${{ steps.temp.outputs.value }}/generated.tar.gz
+      shell: bash
+      run: tar -xf /tmp/generated.tar.gz
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1-node16
       with:
@@ -46,14 +37,7 @@ runs:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
       run: |
-        dir
-        dir ${{ steps.temp.outputs.value }}
-        $flags = ""
-        if ("${{ inputs.compose-file }}" -ne "") {
-          $flags = "-f ${{ inputs.compose-file }}"
-        }
-        echo "$flags"
-        echo "${{ inputs.compose-directory }}"
-        docker-compose --verbose -f docker-compose-win.yaml up ${{ inputs.compose-flags }}
-      shell: pwsh
+        [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
+        docker-compose ${flags} up ${{ inputs.compose-flags }}
+      shell: bash
       working-directory: ${{ inputs.compose-directory }}
