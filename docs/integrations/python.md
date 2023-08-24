@@ -60,6 +60,7 @@ production setting.
 Optionally, to enable communication via proxies, simply set the proxy configuration:
 
 ```python
+configuration.ssl_ca_cert = <ssl CA certificate path>
 configuration.proxy = <proxy server URL>
 ``` 
 
