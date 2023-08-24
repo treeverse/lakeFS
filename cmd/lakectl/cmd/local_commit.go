@@ -52,6 +52,14 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		if idx.ActiveOperation != "" {
+			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)
+			confirmation, err := Confirm(cmd.Flags(), "Proceed")
+			if err != nil || !confirmation {
+				Die("command aborted", 1)
+			}
+		}
+
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -110,7 +118,7 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
@@ -159,13 +167,14 @@ var localCommitCmd = &cobra.Command{
 			Repository: remote.Repository,
 			Ref:        remote.Ref,
 		}
+
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *api.Commit
 		}{Branch: branchURI, Commit: commit})
 
 		newHead := response.JSON201.Id
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
 		if err != nil {
 			DieErr(err)
 		}

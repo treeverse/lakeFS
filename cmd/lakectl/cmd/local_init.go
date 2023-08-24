@@ -33,7 +33,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 
 	// dereference
 	head := resolveCommitOrDie(ctx, getClient(), remote.Repository, remote.Ref)
-	_, err = local.WriteIndex(dir, remote, head)
+	_, err = local.WriteIndex(dir, remote, head, "")
 	if err != nil {
 		return "", err
 	}

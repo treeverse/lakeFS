@@ -29,12 +29,12 @@ var (
 )
 
 func writeIndex(t *testing.T, dir string) {
-	_, err := local.WriteIndex(dir, testUri, head)
+	_, err := local.WriteIndex(dir, testUri, head, "")
 	require.NoError(t, err)
 }
 
 func TestWriteIndex(t *testing.T) {
-	expectedContent := fmt.Sprintf("src: lakefs://%s/%s/%s\nat_head: %s\n", repo, ref, uPath, head)
+	expectedContent := fmt.Sprintf("src: lakefs://%s/%s/%s\nat_head: %s\nactive_operation: \"\"\n", repo, ref, uPath, head)
 	tmpDir := t.TempDir()
 	writeIndex(t, tmpDir)
 	buf, err := os.ReadFile(filepath.Join(tmpDir, local.IndexFileName))

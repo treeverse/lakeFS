@@ -31,6 +31,8 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), force)
+
 		currentBase := remote.WithRef(idx.AtHead)
 		// make sure no local changes
 		localChange := localDiff(cmd.Context(), client, currentBase, idx.LocalPath())
@@ -41,7 +43,7 @@ var localPullCmd = &cobra.Command{
 
 		// write new index
 		newHead := resolveCommitOrDie(cmd.Context(), client, remote.Repository, remote.Ref)
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
 		if err != nil {
 			DieErr(err)
 		}
@@ -63,7 +65,7 @@ var localPullCmd = &cobra.Command{
 			}
 			return nil
 		})
-		sigCtx := localHandleSyncInterrupt(cmd.Context())
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(pullOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {

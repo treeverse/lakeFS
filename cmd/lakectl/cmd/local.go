@@ -19,6 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type LocalOperation string
+
 const (
 	localDefaultSyncParallelism = 25
 	localDefaultSyncPresign     = true
@@ -29,6 +31,11 @@ const (
 	localParallelismFlagName = "parallelism"
 	localGitIgnoreFlagName   = "gitignore"
 	localForceFlagName       = "force"
+
+	commitOperation   LocalOperation = "commit"
+	pullOperation     LocalOperation = "pull"
+	checkoutOperation LocalOperation = "checkout"
+	cloneOperation    LocalOperation = "clone"
 )
 
 const localSummaryTemplate = `
@@ -41,7 +48,10 @@ const localSummaryTemplate = `
 {{end}}
 `
 
-var localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
+var (
+	localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
+	ErrUnknownOperation   = errors.New("unknown operation")
+)
 
 func withParallelismFlag(cmd *cobra.Command) {
 	cmd.Flags().IntP(localParallelismFlagName, "p", localDefaultSyncParallelism,
@@ -135,15 +145,44 @@ func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, rem
 	return changes
 }
 
-func localHandleSyncInterrupt(ctx context.Context) context.Context {
+func localHandleSyncInterrupt(ctx context.Context, idx *local.Index, operation string) context.Context {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		defer stop()
 		<-ctx.Done()
+		pathURI, err := idx.GetCurrentURI()
+		if err != nil {
+			WriteTo("{{.Error|red}}\n", struct{ Error string }{Error: "Failed to get PathURI index file."}, os.Stderr)
+		}
+		_, err = local.WriteIndex(idx.LocalPath(), pathURI, idx.AtHead, operation)
+		if err != nil {
+			WriteTo("{{.Error|red}}\n", struct{ Error string }{Error: "Failed to write failed operation to index file."}, os.Stderr)
+		}
 		Die(`Operation was canceled, local data may be incomplete.
 	Use "lakectl local checkout..." to sync with the remote.`, 1)
 	}()
 	return ctx
+}
+
+func dieOnInterruptedOperation(interruptedOperation LocalOperation, force bool) {
+	if !force && interruptedOperation != "" {
+		switch interruptedOperation {
+		case commitOperation:
+			Die(`Latest commit operation was interrupted, data may be incomplete.
+Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`, 1)
+		case checkoutOperation:
+			Die(`Latest checkout operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote.`, 1)
+		case pullOperation:
+			Die(`Latest pull operation was interrupted, local data may be incomplete.
+Use "lakectl local pull... --force" to sync with the remote.`, 1)
+		case cloneOperation:
+			Die(`Latest clone operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, 1)
+		default:
+			panic(fmt.Errorf("found an unknown interrupted operation in the index file: %s- %w", interruptedOperation, ErrUnknownOperation))
+		}
+	}
 }
 
 var localCmd = &cobra.Command{
