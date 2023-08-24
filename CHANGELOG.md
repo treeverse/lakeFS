@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+# v0.107.1
+
+:bug: Bug fixed:
+- Fix: Allow disabling pre-signed URLs for google storage block adapter (#6462)
+- Fix lakectl local with windows (#6464)
+
 # v0.107.0
 
 :new: What's new:
