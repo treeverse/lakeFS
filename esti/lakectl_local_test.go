@@ -464,7 +464,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			// Modify local folder - add and remove files
 			fd, err := os.Create(filepath.Join(dataDir, "test.txt"))
 			require.NoError(t, err)
-			require.NoError(t, fd.Truncate(1e8))
+			require.NoError(t, fd.Truncate(1e9))
 			require.NoError(t, fd.Close())
 			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
 
