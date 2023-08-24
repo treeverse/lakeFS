@@ -63,8 +63,10 @@ repositories:
     - id: repo2
       share_name: share_two
       branches:
-      - *
+      - "*"
 ```
+
+Note that a plain "*" line must be quoted in YAML.
 
 Upload it to your config URL.  For instance if the config URL is `lakefs://repo/main/lakefs_delta_sharing.yaml`, you might use:
 

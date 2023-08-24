@@ -13,6 +13,7 @@ import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeBranch } from "../../../constants";
 import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import { RefContextProvider } from "../../../lib/hooks/repo";
+import { useStorageConfig } from "../../../lib/hooks/storageConfig";
 import { linkToPath } from "../../../lib/api";
 
 import "../../../styles/ipynb.css";
@@ -57,6 +58,7 @@ export const getContentType = (headers: Headers): string | null => {
 };
 
 const FileObjectsViewerPage = () => {
+  const config = useStorageConfig();
   const { repoId } = useParams<ObjectViewerPathParams>();
   const queryString = useQuery<ObjectViewerQueryString>();
   const refId = queryString["ref"] ?? "";
@@ -66,7 +68,7 @@ const FileObjectsViewerPage = () => {
   }, [repoId, refId, path]);
 
   let content;
-  if (loading) {
+  if (loading || config.loading) {
     content = <Loading />;
   } else if (error) {
     content = <AlertError error={error} />;
@@ -92,6 +94,7 @@ const FileObjectsViewerPage = () => {
         sizeBytes={sizeBytes}
         error={error}
         loading={loading}
+        presign={config.pre_sign_support_ui}
       />
     );
   }
