@@ -182,6 +182,10 @@ func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, metho
 //nolint:gochecknoinits
 func init() {
 	fsDownloadCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (requires credentials)")
+	err := fsDownloadCmd.Flags().MarkDeprecated("direct", "use --pre-sign instead")
+	if err != nil {
+		DieErr(err)
+	}
 	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
 	fsDownloadCmd.Flags().IntP("parallel", "p", fsDownloadParallelDefault, "max concurrent downloads")
 	fsDownloadCmd.Flags().Bool("pre-sign", false, "Request pre-sign link to access the data")
