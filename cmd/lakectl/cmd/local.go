@@ -167,16 +167,16 @@ func localHandleSyncInterrupt(ctx context.Context, idx *local.Index, operation s
 func dieOnInterruptedOperation(interruptedOperation LocalOperation, force bool) {
 	if !force && interruptedOperation != "" {
 		switch interruptedOperation {
-		case "commit":
+		case commitOperation:
 			Die(`Latest commit operation was interrupted, data may be incomplete.
 Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`, 1)
-		case "checkout":
+		case checkoutOperation:
 			Die(`Latest checkout operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote.`, 1)
-		case "pull":
+		case pullOperation:
 			Die(`Latest pull operation was interrupted, local data may be incomplete.
 Use "lakectl local pull... --force" to sync with the remote.`, 1)
-		case "clone":
+		case cloneOperation:
 			Die(`Latest clone operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, 1)
 		default:
