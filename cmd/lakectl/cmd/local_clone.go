@@ -77,9 +77,6 @@ var localCloneCmd = &cobra.Command{
 		}()
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				DieFmt("failed to read index file from path %s", localPath)
-			}
 			DieErr(err)
 		}
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(cloneOperation))

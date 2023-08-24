@@ -52,8 +52,8 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		if idx.ActiveOperation != "" && idx.ActiveOperation != string(commitOperation) {
-			fmt.Println("Latest 'local " + idx.ActiveOperation + "' operation was interrupted, running 'local commit' operation now might lead to data loss.")
+		if idx.ActiveOperation != "" {
+			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)
 			confirmation, err := Confirm(cmd.Flags(), "Proceed")
 			if err != nil || !confirmation {
 				Die("command aborted", 1)
