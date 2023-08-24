@@ -480,7 +480,9 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			// Pull without force flag
 			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+			exceptedRaw := `Latest pull operation was interrupted, local data may be incomplete.
+Use "lakectl local pull... --force" to sync with the remote.`
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, exceptedRaw, vars)
 
 			// Commit changes to branch
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)

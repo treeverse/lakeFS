@@ -52,6 +52,14 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		if idx.ActiveOperation != "" && idx.ActiveOperation != string(commitOperation) {
+			fmt.Println("Latest 'local " + idx.ActiveOperation + "' operation was interrupted, running 'local commit' operation now might lead to data loss.")
+			confirmation, err := Confirm(cmd.Flags(), "Proceed")
+			if err != nil || !confirmation {
+				Die("command aborted", 1)
+			}
+		}
+
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
