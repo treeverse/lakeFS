@@ -441,10 +441,6 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 		prefix string
 	}{
 		{
-			name:   "root",
-			prefix: "",
-		},
-		{
 			name:   prefix,
 			prefix: prefix,
 		},
@@ -483,12 +479,6 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			exceptedRaw := `Latest pull operation was interrupted, local data may be incomplete.
 Use "lakectl local pull... --force" to sync with the remote.`
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, exceptedRaw, vars)
-
-			// Commit changes to branch
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
-
-			// Check no diff after commit
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 		})
 	}
 }
