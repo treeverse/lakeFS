@@ -241,14 +241,16 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return a.managerUpload(ctx, obj, reader, opts)
 	}
 
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
 
 	putObject := s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Bucket:        aws.String(bucket),
+		Key:           aws.String(key),
+		Body:          reader,
+		ContentLength: sizeBytes,
 	}
 	if opts.StorageClass != nil {
 		putObject.StorageClass = types.StorageClass(*opts.StorageClass)
@@ -260,9 +262,8 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		putObject.SSEKMSKeyId = aws.String(a.ServerSideEncryptionKmsKeyID)
 	}
 
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	resp, err := client.PutObject(ctx, &putObject)
-	// headers, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
 	if err != nil {
 		return err
 	}
@@ -276,17 +277,18 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
 
 	uploadPartInput := &s3.UploadPartInput{
-		Bucket:     aws.String(bucket),
-		Key:        aws.String(key),
-		PartNumber: int32(partNumber),
-		UploadId:   aws.String(uploadID),
-		Body:       reader,
+		Bucket:        aws.String(bucket),
+		Key:           aws.String(key),
+		PartNumber:    int32(partNumber),
+		UploadId:      aws.String(uploadID),
+		Body:          reader,
+		ContentLength: sizeBytes,
 	}
 	if a.ServerSideEncryption != "" {
 		uploadPartInput.SSECustomerAlgorithm = &a.ServerSideEncryption
@@ -295,9 +297,8 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		uploadPartInput.SSECustomerKey = &a.ServerSideEncryptionKmsKeyID
 	}
 
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	resp, err := client.UploadPart(ctx, uploadPartInput)
-	// headers, err := a.streamToS3(ctx, sdkRequest, sizeBytes, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -310,92 +311,6 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		ServerSideHeader: extractSSHeaderUploadPart(resp),
 	}, nil
 }
-
-/*
-func (a *Adapter) streamToS3(ctx context.Context, sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (http.Header, error) {
-	sigTime := time.Now()
-	log := a.log(ctx).WithField("operation", "PutObject")
-
-	if err := sdkRequest.Build(); err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Encoding", StreamingContentEncoding)
-	req.Header.Set("Transfer-Encoding", "chunked")
-	req.Header.Set("x-amz-content-sha256", StreamingSha256)
-	req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", sizeBytes))
-	if a.ServerSideEncryption != "" {
-		req.Header.Set("x-amz-server-side-encryption", a.ServerSideEncryption)
-	}
-	if a.ServerSideEncryptionKmsKeyID != "" {
-		req.Header.Set("x-amz-server-side-encryption-aws-kms-key-id", a.ServerSideEncryptionKmsKeyID)
-	}
-	req = req.WithContext(ctx)
-
-	baseSigner := v4.NewSigner(func(options *v4.SignerOptions) {
-		options.DisableURIPathEscaping = true
-	})
-	err = baseSigner.SignHTTP(ctx, sdkRequest.Config.Credentials, req, "", s3.ServiceID, sdkRequest.Config.Region, sigTime)
-	if err != nil {
-		log.WithError(err).Error("failed to sign request")
-		return nil, err
-	}
-	req.Header.Set("Expect", "100-Continue")
-
-	sigSeed, err := v4.GetSignedRequestSignature(req)
-	if err != nil {
-		log.WithError(err).Error("failed to get seed signature")
-		return nil, err
-	}
-
-	req.Body = io.NopCloser(&StreamingReader{
-		Ctx:    ctx,
-		Reader: reader,
-		Size:   sizeBytes,
-		Time:   sigTime,
-		StreamSigner: v4.NewStreamSigner(
-			sdkRequest.Config.Credentials,
-			s3.ServiceID,
-			sdkRequest.Config.Region,
-			sigSeed,
-		),
-		ChunkSize:    a.streamingChunkSize,
-		ChunkTimeout: a.streamingChunkTimeout,
-	})
-	resp, err := a.httpClient.Do(req)
-	if err != nil {
-		log.WithError(err).
-			WithField("url", sdkRequest.HTTPRequest.URL.String()).
-			Error("error making request")
-		return nil, err
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			err = fmt.Errorf("%w: %d %s (unknown)", ErrS3, resp.StatusCode, resp.Status)
-		} else {
-			err = fmt.Errorf("%w: %s", ErrS3, body)
-		}
-		log.WithError(err).
-			WithField("url", sdkRequest.HTTPRequest.URL.String()).
-			WithField("status_code", resp.StatusCode).
-			Error("bad S3 PutObject response")
-		return nil, err
-	}
-
-	a.extractS3Server(resp)
-	return resp.Header, nil
-}
-*/
 
 func isErrNoSuchKey(err error) bool {
 	var errNoSuchKey *types.NoSuchKey
@@ -416,7 +331,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
 	if isErrNoSuchKey(err) {
 		return nil, block.ErrDataNotFound
@@ -433,48 +348,8 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	if err := block.ValidateStorageType(uri, block.StorageTypeS3); err != nil {
 		return nil, err
 	}
-
 	return NewS3Walker(a.clients.GetDefault()), nil
 }
-
-/*
-// refreshClientIfNeeded ensure client has some time before its token
-// expires.  It returns the updated expiry time.  It fails with
-// ErrDoesntExpire if the client is not an Expirer,
-func refreshClientIfNeeded(ctx context.Context, client S3APIWithExpirer, refreshWindow time.Duration) (time.Time, error) {
-	if client == nil {
-		return time.Time{}, nil
-	}
-
-	expiry, err := client.ExpiresAt()
-	if errors.Is(err, ErrDoesntExpire) {
-		return time.Time{}, ErrDoesntExpire
-	} else if err != nil {
-		return time.Time{}, fmt.Errorf("refresh client if needed: get current expiry: %w", err)
-	}
-
-	ttl := time.Until(expiry)
-	l := logging.FromContext(ctx).WithFields(logging.Fields{
-		"expiry": expiry,
-		"TTL":    ttl.String(),
-	})
-	if ttl < refreshWindow {
-		l.Info("Refresh client as it will expire soon")
-		expiry, err = client.Refresh()
-		if err != nil {
-			return time.Time{}, fmt.Errorf("refresh client if needed: refreshing: %w", err)
-		}
-		ttl = time.Until(expiry)
-		l = l.WithFields(logging.Fields{
-			"expiry": expiry,
-			"TTL":    ttl.String(),
-		})
-		l.Info("Refreshed client")
-	}
-	l.Trace("Got client")
-	return expiry, nil
-}
-*/
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
 	if a.disablePreSigned {
@@ -491,13 +366,13 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		"identifier": obj.Identifier,
 		"ttl":        time.Until(expiry),
 	})
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		log.WithError(err).Error("could not resolve namespace")
 		return "", time.Time{}, err
 	}
 
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	presigner := s3.NewPresignClient(client, func(options *s3.PresignOptions) {
 		options.Expires = a.preSignedExpiry
 	})
@@ -587,7 +462,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
 	log := a.log(ctx).WithField("operation", "HeadObject")
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return false, err
 	}
@@ -596,7 +471,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	_, err = client.HeadObject(ctx, &input)
 	if isErrNoSuchKey(err) {
 		return false, nil
@@ -612,7 +487,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	var err error
 	var sizeBytes int64
 	defer reportMetrics("GetRange", time.Now(), &sizeBytes, &err)
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -622,7 +497,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		Key:    aws.String(key),
 		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
 	}
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
 	if isErrNoSuchKey(err) {
 		return nil, block.ErrDataNotFound
@@ -641,7 +516,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -650,7 +525,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	s3Props, err := client.HeadObject(ctx, headObjectParams)
 	if err != nil {
 		return block.Properties{}, err
@@ -663,7 +538,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
@@ -672,8 +547,8 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
-	svc := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
-	_, err = svc.DeleteObject(ctx, deleteInput)
+	client := a.clients.Get(ctx, bucket)
+	_, err = client.DeleteObject(ctx, deleteInput)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("failed to delete S3 object")
 		return err
@@ -685,7 +560,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 		Key:    aws.String(key),
 	}
 	const maxWaitDur = 100 * time.Second
-	waiter := s3.NewObjectNotExistsWaiter(svc)
+	waiter := s3.NewObjectNotExistsWaiter(client)
 	return waiter.Wait(ctx, headInput, maxWaitDur)
 }
 
@@ -695,7 +570,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 		return nil, err
 	}
 
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(destinationObj)
+	bucket, key, _, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return nil, err
 	}
@@ -710,7 +585,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	if byteRange != nil {
 		uploadPartCopyObject.CopySourceRange = byteRange
 	}
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	resp, err := client.UploadPartCopy(ctx, &uploadPartCopyObject)
 	if err != nil {
 		return nil, err
@@ -864,7 +739,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	if a.ServerSideEncryptionKmsKeyID != "" {
 		input.SSEKMSKeyId = &a.ServerSideEncryptionKmsKeyID
 	}
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	resp, err := client.CreateMultipartUpload(ctx, input)
 	if err != nil {
 		return nil, err
@@ -895,7 +770,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 		UploadId: aws.String(uploadID),
 	}
 
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	_, err = client.AbortMultipartUpload(ctx, input)
 	lg := a.log(ctx).WithFields(logging.Fields{
 		"upload_id":     uploadID,
@@ -941,7 +816,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
 	})
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	resp, err := client.CompleteMultipartUpload(ctx, input)
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
@@ -1025,12 +900,12 @@ func (a *Adapter) extractS3Server(resp *http.Response) {
 */
 
 func (a *Adapter) managerUpload(ctx context.Context, obj block.ObjectPointer, reader io.Reader, opts block.PutOpts) error {
-	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
 	}
 
-	client := a.clients.Get(ctx, qualifiedKey.GetStorageNamespace())
+	client := a.clients.Get(ctx, bucket)
 	uploader := manager.NewUploader(client)
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
