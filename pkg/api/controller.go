@@ -2611,57 +2611,64 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 
 	// read request body parse multipart for "content" and upload the data
-	mt, p, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	contentType := r.Header.Get("Content-Type")
+	mediaType, p, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	if mt != "multipart/form-data" {
-		writeError(w, r, http.StatusInternalServerError, http.ErrNotMultipart)
-		return
-	}
-	boundary, ok := p["boundary"]
-	if !ok {
-		writeError(w, r, http.StatusInternalServerError, http.ErrMissingBoundary)
-		return
-	}
 
-	reader := multipart.NewReader(r.Body, boundary)
-	var (
-		contentUploaded bool
-		contentType     string
-		blob            *upload.Blob
-	)
-	for !contentUploaded {
-		part, err := reader.NextPart()
-		if err == io.EOF {
-			break
-		}
+	var blob *upload.Blob
+	if mediaType != "multipart/form-data" {
+		address := c.PathProvider.NewPath()
+		blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, r.Body, r.ContentLength,
+			block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		contentType = part.Header.Get("Content-Type")
-		partName := part.FormName()
-		if partName == "content" {
-			// upload the first "content" and exit the loop
-			address := c.PathProvider.NewPath()
-			blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, part, -1, block.PutOpts{StorageClass: params.StorageClass})
+
+		// writeError(w, r, http.StatusInternalServerError, http.ErrNotMultipart)
+		// return
+	} else {
+		boundary, ok := p["boundary"]
+		if !ok {
+			writeError(w, r, http.StatusInternalServerError, http.ErrMissingBoundary)
+			return
+		}
+
+		contentUploaded := false
+		reader := multipart.NewReader(r.Body, boundary)
+		for !contentUploaded {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
 			if err != nil {
-				_ = part.Close()
 				writeError(w, r, http.StatusInternalServerError, err)
 				return
 			}
-			contentUploaded = true
+			contentType = part.Header.Get("Content-Type")
+			partName := part.FormName()
+			if partName == "content" {
+				// upload the first "content" and exit the loop
+				address := c.PathProvider.NewPath()
+				blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, part, -1, block.PutOpts{StorageClass: params.StorageClass})
+				if err != nil {
+					_ = part.Close()
+					writeError(w, r, http.StatusInternalServerError, err)
+					return
+				}
+				contentUploaded = true
+			}
+			_ = part.Close()
 		}
-		_ = part.Close()
+		if !contentUploaded {
+			err := fmt.Errorf("multipart upload missing key 'content': %w", http.ErrMissingFile)
+			writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
 	}
-	if !contentUploaded {
-		err := fmt.Errorf("multipart upload missing key 'content': %w", http.ErrMissingFile)
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-
 	// write metadata
 	writeTime := time.Now()
 	entryBuilder := catalog.NewDBEntryBuilder().

@@ -751,7 +751,7 @@ class ObjectsApi(object):
                     'path',
                     'storage_class',
                     'if_none_match',
-                    'content',
+                    'body',
                 ],
                 'required': [
                     'repository',
@@ -788,7 +788,7 @@ class ObjectsApi(object):
                         (str,),
                     'if_none_match':
                         (str,),
-                    'content':
+                    'body':
                         (file_type,),
                 },
                 'attribute_map': {
@@ -797,7 +797,6 @@ class ObjectsApi(object):
                     'path': 'path',
                     'storage_class': 'storageClass',
                     'if_none_match': 'If-None-Match',
-                    'content': 'content',
                 },
                 'location_map': {
                     'repository': 'path',
@@ -805,7 +804,7 @@ class ObjectsApi(object):
                     'path': 'query',
                     'storage_class': 'query',
                     'if_none_match': 'header',
-                    'content': 'form',
+                    'body': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -815,6 +814,7 @@ class ObjectsApi(object):
                     'application/json'
                 ],
                 'content_type': [
+                    'application/octet-stream',
                     'multipart/form-data'
                 ]
             },
@@ -1583,7 +1583,7 @@ class ObjectsApi(object):
         Keyword Args:
             storage_class (str): [optional]
             if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. [optional]
-            content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]
+            body (file_type): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

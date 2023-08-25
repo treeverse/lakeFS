@@ -4103,8 +4103,11 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object'
         content:
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
           multipart/form-data:
             schema:
               properties:
@@ -4159,7 +4162,7 @@ paths:
       tags:
       - objects
       x-validation-exclude-body: true
-      x-contentType: multipart/form-data
+      x-contentType: application/octet-stream
       x-accepts: application/json
     put:
       operationId: stageObject
@@ -5302,7 +5305,7 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object_1'
+        $ref: '#/components/requestBodies/inline_object'
         content:
           application/json:
             schema:
@@ -5622,17 +5625,12 @@ components:
         type: string
       style: form
   requestBodies:
-    inline_object_1:
+    inline_object:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/inline_object_1'
-      required: true
-    inline_object:
-      content:
-        multipart/form-data:
-          schema:
             $ref: '#/components/schemas/inline_object'
+      required: true
   responses:
     NotFoundOrNoACL:
       content:
@@ -7581,13 +7579,6 @@ components:
       - events
       type: object
     inline_object:
-      properties:
-        content:
-          description: Only a single file per upload which must be named "content".
-          format: binary
-          type: string
-      type: object
-    inline_object_1:
       properties:
         pattern:
           type: string

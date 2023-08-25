@@ -910,7 +910,7 @@ Name | Type | Description  | Notes
 
 <a name="uploadObject"></a>
 # **uploadObject**
-> ObjectStats uploadObject(repository, branch, path, storageClass, ifNoneMatch, content)
+> ObjectStats uploadObject(repository, branch, path, storageClass, ifNoneMatch, body)
 
 
 
@@ -962,9 +962,9 @@ public class Example {
     String path = "path_example"; // String | relative to the branch
     String storageClass = "storageClass_example"; // String | 
     String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
-    File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
+    File body = new File("/path/to/file"); // File | 
     try {
-      ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
+      ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, ifNoneMatch, body);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#uploadObject");
@@ -986,7 +986,7 @@ Name | Type | Description  | Notes
  **path** | **String**| relative to the branch |
  **storageClass** | **String**|  | [optional]
  **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
- **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
+ **body** | **File**|  | [optional]
 
 ### Return type
 
@@ -998,7 +998,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: multipart/form-data
+ - **Content-Type**: application/octet-stream, multipart/form-data
  - **Accept**: application/json
 
 ### HTTP response details
