@@ -73,28 +73,22 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
 
-	ch := make(chan bool, s.maxParallelism)
-	for i := 0; i < s.maxParallelism; i++ {
-		ch <- true
-	}
-
 	wg, ctx := errgroup.WithContext(s.ctx)
-	done := false
-	for change := range changeSet {
-		<-ch // block until we have a slot
-		c := change
-		select {
-		case <-ctx.Done():
-			done = true
-		default:
-			wg.Go(func() error {
-				return s.apply(ctx, rootPath, remote, c)
-			})
-		}
-		ch <- true // release
-		if done {
-			break
-		}
+	for i := 0; i < s.maxParallelism; i++ {
+		wg.Go(func() error {
+			for change := range changeSet {
+				c := change
+				select {
+				case <-ctx.Done():
+					return nil
+				default:
+					if err := s.apply(ctx, rootPath, remote, c); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		})
 	}
 
 	if err := wg.Wait(); err != nil {
