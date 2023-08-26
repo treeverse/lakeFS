@@ -312,9 +312,12 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}, nil
 }
 
-func isErrNoSuchKey(err error) bool {
-	var errNoSuchKey *types.NoSuchKey
-	return errors.As(err, &errNoSuchKey)
+func isErrNotFound(err error) bool {
+	var (
+		errNoSuchKey *types.NoSuchKey
+		errNotFound  *types.NotFound
+	)
+	return errors.As(err, &errNoSuchKey) || errors.As(err, &errNotFound)
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
@@ -333,7 +336,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	}
 	client := a.clients.Get(ctx, bucket)
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
-	if isErrNoSuchKey(err) {
+	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
@@ -473,7 +476,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	}
 	client := a.clients.Get(ctx, bucket)
 	_, err = client.HeadObject(ctx, &input)
-	if isErrNoSuchKey(err) {
+	if isErrNotFound(err) {
 		return false, nil
 	}
 	if err != nil {
@@ -499,7 +502,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	}
 	client := a.clients.Get(ctx, bucket)
 	objectOutput, err := client.GetObject(ctx, &getObjectInput)
-	if isErrNoSuchKey(err) {
+	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
