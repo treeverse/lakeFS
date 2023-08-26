@@ -14,6 +14,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
