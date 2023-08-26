@@ -2,12 +2,14 @@ package s3
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"time"
 
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -17,6 +19,7 @@ const (
 )
 
 type StreamingReader struct {
+	Ctx          context.Context
 	Reader       io.Reader
 	Size         int64
 	StreamSigner *v4.StreamSigner
@@ -37,9 +40,16 @@ func isEOF(err error) bool {
 	return err == io.EOF || errors.Is(err, io.ErrUnexpectedEOF)
 }
 
+func (s *StreamingReader) Context() context.Context {
+	if s.Ctx != nil {
+		return s.Ctx
+	}
+	return context.Background()
+}
+
 func (s *StreamingReader) GetLastChunk() []byte {
 	res := make([]byte, 0)
-	sig, _ := s.StreamSigner.GetSignature([]byte{}, []byte{}, s.Time)
+	sig, _ := s.StreamSigner.GetSignature(s.Ctx, []byte{}, []byte{}, s.Time)
 	lastBoundary := chunkBoundary(sig, 0)
 	res = append(res, lastBoundary...)
 	res = append(res, '\r', '\n') // additional \r\n after the last boundary
@@ -62,7 +72,7 @@ func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration, minSize 
 		nn, err = r.Read(buf[n:])
 		n += nn
 
-		if time.Since(start) > timeout && n >= minChunkSize {
+		if time.Since(start) > timeout && n >= minSize {
 			timedOut = true
 			break
 		}
@@ -96,7 +106,7 @@ func (s *StreamingReader) readNextChunk() error {
 		}
 		return io.EOF
 	}
-	sig, sigErr := s.StreamSigner.GetSignature([]byte{}, buf, s.Time)
+	sig, sigErr := s.StreamSigner.GetSignature(s.Ctx, []byte{}, buf, s.Time)
 	if sigErr != nil {
 		return sigErr
 	}

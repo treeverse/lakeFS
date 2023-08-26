@@ -2,8 +2,6 @@ package params
 
 import (
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 // AdapterConfig configures a block adapter.
@@ -37,8 +35,20 @@ type S3WebIdentity struct {
 	SessionExpiryWindow time.Duration
 }
 
+type S3Credentials struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+}
+
 type S3 struct {
-	AwsConfig                     aws.Config
+	Region                        string
+	Profile                       string
+	CredentialsFile               string
+	Credentials                   S3Credentials
+	MaxRetries                    int
+	Endpoint                      string
+	ForcePathStyle                bool
 	StreamingChunkSize            int
 	StreamingChunkTimeout         time.Duration
 	DiscoverBucketRegion          bool
@@ -49,8 +59,6 @@ type S3 struct {
 	DisablePreSigned              bool
 	DisablePreSignedUI            bool
 	WebIdentity                   *S3WebIdentity
-	S3Endpoint                    string
-	S3ForcePathStyle              bool
 }
 
 type GS struct {

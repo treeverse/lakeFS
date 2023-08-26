@@ -2,6 +2,7 @@ package s3_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 )
 
@@ -66,10 +71,15 @@ func TestS3StreamingReader_Read(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
+	creds := aws.Credentials{
+		AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
+		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+	}
+
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			// this is just boilerplate to create a signature
-			keys := credentials.NewStaticCredentials("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "")
 			sigTime, _ := time.Parse("Jan 2 15:04:05 2006 -0700", "Apr 7 15:13:13 2005 -0700")
 			req, _ := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/example/foo", nil)
 			req.Header.Set("Content-Encoding", "aws-chunked")
@@ -77,15 +87,11 @@ func TestS3StreamingReader_Read(t *testing.T) {
 			req.Header.Set("x-amz-content-sha", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD")
 			req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", len(cas.Input)))
 			req.Header.Set("Expect", "100-Continue")
-			baseSigner := v4.NewSigner(keys)
 
-			signature, err := baseSigner.Sign(req, nil, s3.ServiceName, "us-east-1", sigTime)
+			signer := v4.NewSigner()
+			err := signer.SignHTTP(ctx, creds, req, "", s3.ServiceID, "us-east-1", sigTime)
 			if err != nil {
 				t.Fatal(err)
-			}
-
-			for k := range signature {
-				req.Header.Set(k, signature.Get(k))
 			}
 
 			sigSeed, err := v4.GetSignedRequestSignature(req)
@@ -94,7 +100,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 			}
 
 			r := io.NopCloser(bytes.NewBuffer(cas.Input))
-			timeout := time.Second * 300
+			timeout := 300 * time.Second
 			if cas.Delay {
 				r = io.NopCloser(&delayReader{
 					r:    bytes.NewBuffer(cas.Input),
@@ -106,7 +112,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 			data := &s3a.StreamingReader{
 				Reader:       r,
 				Size:         int64(len(cas.Input)),
-				StreamSigner: v4.NewStreamSigner("us-east-1", s3.ServiceName, sigSeed, keys),
+				StreamSigner: v4.NewStreamSigner(creds, s3.ServiceID, "us-east-1", sigSeed),
 				Time:         sigTime,
 				ChunkSize:    cas.ChunkSize,
 				ChunkTimeout: timeout,

@@ -4,40 +4,23 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/treeverse/lakefs/pkg/block/params"
+
+	"github.com/aws/aws-sdk-go-v2/config"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-var (
-	errRegion      = errors.New("failed to get region")
-	errFakeExpires = errors.New("fake Expirer")
-)
-
-type FakeS3APIWithExpirer struct {
-	*awss3.Client
-}
-
-func NewFakeS3APIWithExpirer() FakeS3APIWithExpirer {
-	return FakeS3APIWithExpirer(struct{ *awss3.Client }{})
-}
-
-func (f FakeS3APIWithExpirer) ExpiresAt() (time.Time, error) {
-	return time.Time{}, errFakeExpires
-}
-
-func (f FakeS3APIWithExpirer) Refresh() (time.Time, error) {
-	return f.ExpiresAt()
-}
+var errRegion = errors.New("failed to get region")
 
 func TestClientCache(t *testing.T) {
-	defaultRegion := "us-west-2"
-	sess, err := session.NewSession(&aws.Config{Region: &defaultRegion})
+	const defaultRegion = "us-west-2"
+	cfg, err := config.LoadDefaultConfig(context.Background())
 	testutil.Must(t, err)
+
 	tests := map[string]struct {
 		bucketToRegion      map[string]string
 		bucketCalls         []string
@@ -74,22 +57,20 @@ func TestClientCache(t *testing.T) {
 			expectedClientsCreated := make(map[string]bool)
 			actualRegionFetch := make(map[string]bool)
 			expectedRegionFetch := make(map[string]bool)
-			c := s3.NewClientCache(sess)
 
-			c.SetClientFactory(func(sess *session.Session, cfgs ...*aws.Config) s3.S3APIWithExpirer {
-				region := sess.Config.Region
-				for _, cfg := range cfgs {
-					if cfg.Region != nil {
-						region = cfg.Region
-					}
-				}
-				if actualClientsCreated[*region] {
+			c := s3.NewClientCache(cfg, params.S3{}) // params are ignored as we use custom client factory
+
+			c.SetClientFactory(func(region string) *awss3.Client {
+				if actualClientsCreated[region] {
 					t.Fatalf("client created more than once for a region")
 				}
-				actualClientsCreated[*region] = true
-				return NewFakeS3APIWithExpirer()
+				actualClientsCreated[region] = true
+				return awss3.NewFromConfig(cfg, func(o *awss3.Options) {
+					o.Region = region
+				})
 			})
-			c.SetS3RegionGetter(func(ctx context.Context, sess *session.Session, bucket string) (string, error) {
+
+			c.SetS3RegionGetter(func(ctx context.Context, bucket string) (string, error) {
 				if actualRegionFetch[bucket] {
 					t.Fatalf("region fetched more than once for bucket")
 				}
@@ -99,9 +80,10 @@ func TestClientCache(t *testing.T) {
 				}
 				return tst.bucketToRegion[bucket], nil
 			})
+
 			alreadyCalled := make(map[string]bool)
 			for callIdx, bucket = range tst.bucketCalls {
-				expectedRegionFetch[bucket] = true // for every bucket, there should be exactly 1 region fetch
+				expectedRegionFetch[bucket] = true // for every bucket, there should be exactly one region fetch
 				if _, ok := alreadyCalled[bucket]; !ok {
 					if tst.regionErrorsIndexes[callIdx] {
 						// if there's an error, a client should be created for the default region

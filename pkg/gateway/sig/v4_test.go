@@ -2,6 +2,10 @@ package sig_test
 
 import (
 	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,9 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	gtwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
 )
 
 const sigV4NoDomain = ""
@@ -120,7 +126,7 @@ func TestSingleChunkPut(t *testing.T) {
 			Name:              "amazon example should fail",
 			RequestBody:       "Welcome to Amazon S3",
 			SignBody:          "Welcome to Amazon S3.",
-			ExpectedReadError: errors.ErrSignatureDoesNotMatch,
+			ExpectedReadError: gtwerrors.ErrSignatureDoesNotMatch,
 		},
 		{
 			Name:        "empty body",
@@ -133,18 +139,25 @@ func TestSingleChunkPut(t *testing.T) {
 		ID     = "AKIAIOSFODNN7EXAMPLE"
 		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
+	ctx := context.Background()
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
 			// build request with amazons sdk
-			creds := credentials.NewStaticCredentials(ID, SECRET, "")
-			signer := v4.NewSigner(creds)
+			signer := v4.NewSigner()
 
 			req, err := http.NewRequest(http.MethodPut, PATH, nil)
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
 			}
 
-			_, err = signer.Sign(req, strings.NewReader(tc.SignBody), "s3", "us-east-1", time.Now())
+			creds := aws.Credentials{
+				AccessKeyID:     ID,
+				SecretAccessKey: SECRET,
+			}
+
+			h := sha256.Sum256([]byte(tc.SignBody))
+			hash := hex.EncodeToString(h[:])
+			err = signer.SignHTTP(ctx, creds, req, hash, "s3", "us-east-1", time.Now())
 			if err != nil {
 				t.Errorf("expect not no error, got %v", err)
 			}
@@ -171,7 +184,7 @@ func TestSingleChunkPut(t *testing.T) {
 
 			// read all
 			_, err = io.ReadAll(req.Body)
-			if err != tc.ExpectedReadError {
+			if !errors.Is(err, tc.ExpectedReadError) {
 				t.Errorf("expect Error %v error, got %s", tc.ExpectedReadError, err)
 			}
 		})
@@ -290,8 +303,8 @@ func TestStreamingLastByteWrong(t *testing.T) {
 	}
 
 	_, err = io.ReadAll(req.Body)
-	if err != errors.ErrSignatureDoesNotMatch {
-		t.Errorf("expect %v, got %v", errors.ErrSignatureDoesNotMatch, err)
+	if err != gtwerrors.ErrSignatureDoesNotMatch {
+		t.Errorf("expect %v, got %v", gtwerrors.ErrSignatureDoesNotMatch, err)
 	}
 }
 

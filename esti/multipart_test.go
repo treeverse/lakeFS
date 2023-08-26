@@ -2,9 +2,15 @@ package esti
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"sync"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +34,7 @@ func TestMultipartUpload(t *testing.T) {
 		Key:    aws.String(path),
 	}
 
-	resp, err := svc.CreateMultipartUpload(input)
+	resp, err := svc.CreateMultipartUpload(ctx, input)
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
@@ -39,9 +45,8 @@ func TestMultipartUpload(t *testing.T) {
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 
-	completedParts := uploadMultipartParts(t, logger, resp, parts, 0)
-
-	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
+	completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
+	completeResponse, err := uploadMultipartComplete(ctx, svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
 	logger.WithField("key", aws.ToString(completeResponse.Key)).Info("Completed multipart request successfully")
@@ -64,7 +69,7 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Bucket: aws.String(repo),
 			Key:    aws.String(objPath),
 		}
-		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
+		createResp, err := svc.CreateMultipartUpload(ctx, createInput)
 		require.NoError(t, err, "CreateMultipartUpload")
 
 		abortInput := &s3.AbortMultipartUploadInput{
@@ -72,8 +77,8 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Key:      aws.String(objPath),
 			UploadId: createResp.UploadId,
 		}
-		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
-		require.NoError(t, err, "AbortMultipartUploadWithContext")
+		_, err = svc.AbortMultipartUpload(ctx, abortInput)
+		require.NoError(t, err, "AbortMultipartUpload")
 	})
 
 	t.Run("unknown_upload_id", func(t *testing.T) {
@@ -82,7 +87,7 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Bucket: aws.String(repo),
 			Key:    aws.String(objPath),
 		}
-		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
+		createResp, err := svc.CreateMultipartUpload(ctx, createInput)
 		require.NoError(t, err, "CreateMultipartUpload")
 
 		uploadID := aws.ToString(createResp.UploadId)
@@ -94,8 +99,8 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Key:      aws.String(objPath),
 			UploadId: aws.String(unknownUploadID),
 		}
-		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
-		require.Error(t, err, "AbortMultipartUploadWithContext should fail with unknown upload id")
+		_, err = svc.AbortMultipartUpload(ctx, abortInput)
+		require.Error(t, err, "AbortMultipartUpload should fail with unknown upload id")
 	})
 
 	t.Run("unknown_key", func(t *testing.T) {
@@ -104,7 +109,7 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Bucket: aws.String(repo),
 			Key:    aws.String(objPath),
 		}
-		createResp, err := svc.CreateMultipartUploadWithContext(ctx, createInput)
+		createResp, err := svc.CreateMultipartUpload(ctx, createInput)
 		require.NoError(t, err, "CreateMultipartUpload")
 
 		abortInput := &s3.AbortMultipartUploadInput{
@@ -112,8 +117,8 @@ func TestMultipartUploadAbort(t *testing.T) {
 			Key:      aws.String(mainBranch + "/unknown_file"),
 			UploadId: createResp.UploadId,
 		}
-		_, err = svc.AbortMultipartUploadWithContext(ctx, abortInput)
-		require.Error(t, err, "AbortMultipartUploadWithContext should fail with unknown key")
+		_, err = svc.AbortMultipartUpload(ctx, abortInput)
+		require.Error(t, err, "AbortMultipartUpload should fail with unknown key")
 	})
 }
 
@@ -125,9 +130,9 @@ func reverse(s string) string {
 	return string(runes)
 }
 
-func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []*s3.CompletedPart {
+func uploadMultipartParts(t *testing.T, ctx context.Context, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []types.CompletedPart {
 	count := len(parts)
-	completedParts := make([]*s3.CompletedPart, count)
+	completedParts := make([]types.CompletedPart, count)
 	errs := make([]error, count)
 	var wg sync.WaitGroup
 	wg.Add(count)
@@ -135,7 +140,7 @@ func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 		go func(i int) {
 			defer wg.Done()
 			partNumber := firstIndex + i + 1
-			completedParts[i], errs[i] = uploadMultipartPart(logger, svc, resp, parts[i], partNumber)
+			completedParts[i], errs[i] = uploadMultipartPart(ctx, logger, svc, resp, parts[i], partNumber)
 		}(i)
 	}
 	wg.Wait()
@@ -145,42 +150,42 @@ func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 		partNumber := int64(firstIndex + i + 1)
 		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
 		// verify part number
-		assert.Equal(t, partNumber, *(completedParts[i].PartNumber), "inconsistent part number")
+		assert.Equal(t, partNumber, completedParts[i].PartNumber, "inconsistent part number")
 	}
 	return completedParts
 }
 
-func uploadMultipartComplete(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, completedParts []*s3.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
+func uploadMultipartComplete(ctx context.Context, svc *s3.Client, resp *s3.CreateMultipartUploadOutput, completedParts []types.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
 	completeInput := &s3.CompleteMultipartUploadInput{
 		Bucket:   resp.Bucket,
 		Key:      resp.Key,
 		UploadId: resp.UploadId,
-		MultipartUpload: &s3.CompletedMultipartUpload{
+		MultipartUpload: &types.CompletedMultipartUpload{
 			Parts: completedParts,
 		},
 	}
-	return svc.CompleteMultipartUpload(completeInput)
+	return svc.CompleteMultipartUpload(ctx, completeInput)
 }
 
-func uploadMultipartPart(logger logging.Logger, svc *s3.S3, resp *s3.CreateMultipartUploadOutput, fileBytes []byte, partNumber int) (*s3.CompletedPart, error) {
+func uploadMultipartPart(ctx context.Context, logger logging.Logger, svc *s3.Client, resp *s3.CreateMultipartUploadOutput, fileBytes []byte, partNumber int) (types.CompletedPart, error) {
 	partInput := &s3.UploadPartInput{
 		Body:          bytes.NewReader(fileBytes),
 		Bucket:        resp.Bucket,
 		Key:           resp.Key,
-		PartNumber:    aws.Int64(int64(partNumber)),
+		PartNumber:    int32(partNumber),
 		UploadId:      resp.UploadId,
-		ContentLength: aws.Int64(int64(len(fileBytes))),
+		ContentLength: int64(len(fileBytes)),
 	}
 
-	uploadResult, err := svc.UploadPart(partInput)
+	uploadResult, err := svc.UploadPart(ctx, partInput)
 	if err != nil {
-		return nil, err
+		return types.CompletedPart{}, err
 	}
 
 	logger.WithField("partNumber", partNumber).Info("Uploaded part successfully")
 
-	return &s3.CompletedPart{
+	return types.CompletedPart{
 		ETag:       uploadResult.ETag,
-		PartNumber: aws.Int64(int64(partNumber)),
+		PartNumber: int32(partNumber),
 	}, nil
 }

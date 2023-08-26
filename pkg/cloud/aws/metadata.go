@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/md5" //nolint:gosec
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -19,7 +22,7 @@ type MetadataProvider struct {
 	stsClient *sts.Client
 }
 
-func NewMetadataProvider(logger logging.Logger, awsConfig aws.Config) *MetadataProvider {
+func NewMetadataProvider(logger logging.Logger, params params.S3) (*MetadataProvider, error) {
 	// set up a session with a shorter timeout and no retries
 	const sessionMaxRetries = 0 // max number of retries on the client operation
 
@@ -27,13 +30,38 @@ func NewMetadataProvider(logger logging.Logger, awsConfig aws.Config) *MetadataP
 	// because the service can be inaccessible from networks
 	// which don't have an internet connection
 	const sessionTimeout = 5 * time.Second
-	stsClient := sts.NewFromConfig(awsConfig, func(options *sts.Options) {
+	/// params
+	var opts []func(*config.LoadOptions) error
+	if params.Region != "" {
+		opts = append(opts, config.WithRegion(params.Region))
+	}
+	if params.Profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(params.Profile))
+	}
+	if params.CredentialsFile != "" {
+		opts = append(opts, config.WithSharedCredentialsFiles([]string{params.CredentialsFile}))
+	}
+	if params.Credentials.AccessKeyID != "" {
+		opts = append(opts, config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				params.Credentials.AccessKeyID,
+				params.Credentials.SecretAccessKey,
+				params.Credentials.SessionToken,
+			),
+		))
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.Background(), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	stsClient := sts.NewFromConfig(cfg, func(options *sts.Options) {
 		options.RetryMaxAttempts = sessionMaxRetries
-		options.HTTPClient = &http.Client{
-			Timeout: sessionTimeout,
-		}
+		options.HTTPClient = awshttp.NewBuildableClient().
+			WithTimeout(sessionTimeout)
 	})
-	return &MetadataProvider{logger: logger, stsClient: stsClient}
+	return &MetadataProvider{logger: logger, stsClient: stsClient}, nil
 }
 
 func (m *MetadataProvider) GetMetadata() map[string]string {

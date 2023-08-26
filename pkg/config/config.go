@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -9,11 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/credentials"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -446,58 +440,11 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) GetAwsConfig() (aws.Config, error) {
-	logger := logging.ContextUnavailable().WithField("sdk", "aws")
-
-	var opts []func(*config.LoadOptions) error
-	// setup logger
-	opts = append(opts, config.WithLogger(&logging.AWSAdapter{Logger: logger}))
-	// setup region
-	if c.Blockstore.S3.Region != "" {
-		opts = append(opts, config.WithRegion(c.Blockstore.S3.Region))
-	}
-	// setup log request and retries
-	level := strings.ToLower(logging.Level())
-	if level == "trace" {
-		opts = append(opts, config.WithClientLogMode(aws.LogRequest|aws.LogRetries))
-	}
-
-	if c.Blockstore.S3.Profile != "" {
-		opts = append(opts, config.WithSharedConfigProfile(c.Blockstore.S3.Profile))
-	}
-	if c.Blockstore.S3.CredentialsFile != "" {
-		opts = append(opts, config.WithSharedCredentialsFiles([]string{c.Blockstore.S3.CredentialsFile}))
-	}
-	if c.Blockstore.S3.Credentials != nil {
-		opts = append(opts, config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				c.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
-				c.Blockstore.S3.Credentials.SecretAccessKey.SecureValue(),
-				c.Blockstore.S3.Credentials.SessionToken.SecureValue(),
-			),
-		))
-	}
-
-	if c.Blockstore.S3.MaxRetries > 0 {
-		opts = append(opts, config.WithRetryMaxAttempts(c.Blockstore.S3.MaxRetries))
-	}
-
-	// TODO(barak): s3 specific configuration not part of aws.Config
-	// c.Blockstore.S3.Endpoint
-	// c.Blockstore.S3.ForcePathStyle
-	return config.LoadDefaultConfig(context.Background(), opts...)
-}
-
 func (c *Config) BlockstoreType() string {
 	return c.Blockstore.Type
 }
 
 func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
-	awsConfig, err := c.GetAwsConfig()
-	if err != nil {
-		return blockparams.S3{}, err
-	}
-
 	var webIdentity *blockparams.S3WebIdentity
 	if c.Blockstore.S3.WebIdentity != nil {
 		webIdentity = &blockparams.S3WebIdentity{
@@ -505,8 +452,22 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 			SessionExpiryWindow: c.Blockstore.S3.WebIdentity.SessionExpiryWindow,
 		}
 	}
+
+	var creds blockparams.S3Credentials
+	if c.Blockstore.S3.Credentials != nil {
+		creds.AccessKeyID = c.Blockstore.S3.Credentials.AccessKeyID.SecureValue()
+		creds.SecretAccessKey = c.Blockstore.S3.Credentials.SecretAccessKey.SecureValue()
+		creds.SessionToken = c.Blockstore.S3.Credentials.SessionToken.SecureValue()
+	}
+
 	return blockparams.S3{
-		AwsConfig:                     awsConfig,
+		Region:                        c.Blockstore.S3.Region,
+		Profile:                       c.Blockstore.S3.Profile,
+		CredentialsFile:               c.Blockstore.S3.CredentialsFile,
+		Credentials:                   creds,
+		MaxRetries:                    c.Blockstore.S3.MaxRetries,
+		Endpoint:                      c.Blockstore.S3.Endpoint,
+		ForcePathStyle:                c.Blockstore.S3.ForcePathStyle,
 		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
 		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
@@ -516,8 +477,6 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
-		S3Endpoint:                    c.Blockstore.S3.Endpoint,
-		S3ForcePathStyle:              c.Blockstore.S3.ForcePathStyle,
 		WebIdentity:                   webIdentity,
 	}, nil
 }

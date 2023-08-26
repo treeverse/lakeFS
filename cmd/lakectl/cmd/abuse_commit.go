@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,7 +30,6 @@ var abuseCommitCmd = &cobra.Command{
 		generator := stress.NewGenerator("commit", 1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				add(strconv.Itoa(i + 1))

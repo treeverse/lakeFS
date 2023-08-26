@@ -38,7 +38,6 @@ var abuseRandomReadsCmd = &cobra.Command{
 		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				//nolint:gosec

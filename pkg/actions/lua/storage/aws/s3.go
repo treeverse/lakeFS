@@ -18,6 +18,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
+var errDeleteObject = errors.New("delete object failed")
+
 func Open(l *lua.State, ctx context.Context) {
 	open := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
@@ -123,8 +125,9 @@ func deleteRecursive(c *S3Client) lua.Function {
 				break
 			}
 			for _, deleteError := range deleteObjects.Errors {
-				errs = errors.Join(errs, fmt.Errorf("failed to delete %s, %s",
-					aws.ToString(deleteError.Key), aws.ToString(deleteError.Message)))
+				errDel := fmt.Errorf("%w '%s', %s",
+					errDeleteObject, aws.ToString(deleteError.Key), aws.ToString(deleteError.Message))
+				errs = errors.Join(errs, errDel)
 			}
 
 			if !listObjects.IsTruncated {

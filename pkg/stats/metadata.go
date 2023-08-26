@@ -65,10 +65,14 @@ func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.Metada
 			logger.WithError(err).Warn("Failed to create S3 client for MetadataProvider")
 			return &noopMetadataProvider{}
 		}
-		return aws.NewMetadataProvider(logger, s3Params.AwsConfig)
+		provider, err := aws.NewMetadataProvider(logger, s3Params)
+		if err != nil {
+			logger.WithError(err).Warn("Failed to create S3 client for MetadataProvider")
+			return &noopMetadataProvider{}
+		}
+		return provider
 	case block.BlockstoreTypeAzure:
 		return azure.NewMetadataProvider(logger)
-	default:
-		return &noopMetadataProvider{}
 	}
+	return &noopMetadataProvider{}
 }

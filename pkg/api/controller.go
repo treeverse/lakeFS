@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
@@ -50,7 +52,7 @@ import (
 )
 
 const (
-	// DefaultMaxPerPage is the maximum amount of results returned for paginated queries to the API
+	// DefaultMaxPerPage is the maximum number of results returned for paginated queries to the API
 	DefaultMaxPerPage int = 1000
 	lakeFSPrefix          = "symlinks"
 
@@ -3428,12 +3430,11 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 func writeSymlink(ctx context.Context, repo *catalog.Repository, branch, path string, addresses []string, adapter block.Adapter) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, branch, path)
 	data := strings.Join(addresses, "\n")
-	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
 	err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
-	}, int64(len(data)), symlinkReader, block.PutOpts{})
+	}, int64(len(data)), strings.NewReader(data), block.PutOpts{})
 	return err
 }
 

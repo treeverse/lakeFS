@@ -6,19 +6,20 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
 type Walker struct {
-	s3   *s3.Client
-	mark block.Mark
+	client *s3.Client
+	mark   block.Mark
 }
 
-func NewS3Walker(sess *session.Session) *Walker {
+func NewS3Walker(client *s3.Client) *Walker {
 	return &Walker{
-		s3:   s3.New(sess),
-		mark: block.Mark{HasMore: true},
+		client: client,
+		mark:   block.Mark{HasMore: true},
 	}
 }
 
@@ -45,10 +46,10 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 	}
 	bucket := storageURI.Host
 	for {
-		result, err := s.s3.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
+		result, err := s.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 			Bucket:            aws.String(bucket),
 			ContinuationToken: continuation,
-			MaxKeys:           aws.Int64(maxKeys),
+			MaxKeys:           maxKeys,
 			Prefix:            aws.String(prefix),
 			StartAfter:        aws.String(op.After),
 		})
@@ -66,8 +67,8 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 				RelativeKey: strings.TrimPrefix(key, basePath),
 				Address:     addr,
 				ETag:        strings.Trim(aws.ToString(record.ETag), "\""),
-				Mtime:       aws.TimeValue(record.LastModified),
-				Size:        aws.Int64Value(record.Size),
+				Mtime:       aws.ToTime(record.LastModified),
+				Size:        record.Size,
 			}
 			s.mark.LastKey = key
 			err := walkFn(ent)
@@ -75,7 +76,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 				return err
 			}
 		}
-		if !aws.BoolValue(result.IsTruncated) {
+		if !result.IsTruncated {
 			break
 		}
 		continuation = result.NextContinuationToken

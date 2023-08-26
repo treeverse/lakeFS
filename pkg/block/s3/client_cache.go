@@ -2,102 +2,55 @@ package s3
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
-	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
-// ErrDoesntExpire is returned by an Expirer if expiry times cannot be
-// determined.  For instance, if AWS is configured using an access key then
-// Expirer cannot determine expiry.
-var ErrDoesntExpire = errors.New("no access expiry")
-
-type Expirer interface {
-	// ExpiresAt returns an expiry time or an error.  It returns
-	// a ErrDoesntExpire if it cannot determine expiry times -- for
-	// instance, if AWS is configured using an access key.
-	ExpiresAt() (time.Time, error)
-	// Refresh attempts to refresh and returns ExpiresAt().
-	Refresh() (time.Time, error)
-}
-
-type S3APIWithExpirer interface {
-	*s3.Client
-	Expirer
-}
-
 type (
-	clientFactory  func(awsSession *session.Session, cfgs ...*aws.Config) S3APIWithExpirer
-	s3RegionGetter func(ctx context.Context, sess *session.Session, bucket string) (string, error)
+	clientFactory  func(region string) *s3.Client
+	s3RegionGetter func(ctx context.Context, bucket string) (string, error)
 )
 
 type ClientCache struct {
 	regionToS3Client sync.Map
 	bucketToRegion   sync.Map
-	awsSession       *session.Session
-
-	clientFactory  clientFactory
-	s3RegionGetter s3RegionGetter
-	collector      stats.Collector
+	awsConfig        aws.Config
+	defaultClient    *s3.Client
+	clientFactory    clientFactory
+	s3RegionGetter   s3RegionGetter
+	collector        stats.Collector
 }
 
-func getBucketRegionFromS3(ctx context.Context, sess *session.Session, bucket string) (string, error) {
-	return s3manager.GetBucketRegion(ctx, sess, bucket, "")
-}
-
-func getBucketRegionFromSession(ctx context.Context, sess *session.Session, bucket string) (string, error) {
-	region := aws.ToString(sess.Config.Region)
-	return region, nil
-}
-
-type s3Client struct {
-	*s3.Client
-	awsSession *session.Session
-}
-
-func newS3Client(sess *session.Session, cfgs ...*aws.Config) S3APIWithExpirer {
-	return &s3Client{
-		S3API:      s3.New(sess, cfgs...),
-		awsSession: sess,
+func NewClientCache(awsConfig aws.Config, params params.S3) *ClientCache {
+	clientFactory := newClientFactory(awsConfig, WithClientParams(params))
+	defaultClient := clientFactory(awsConfig.Region)
+	clientCache := &ClientCache{
+		awsConfig:     awsConfig,
+		defaultClient: defaultClient,
+		clientFactory: clientFactory,
+		collector:     &stats.NullCollector{},
 	}
+	clientCache.DiscoverBucketRegion(true)
+	return clientCache
 }
 
-func (c *s3Client) ExpiresAt() (time.Time, error) {
-	creds := c.awsSession.Config.Credentials
-	if creds == nil {
-		return time.Time{}, ErrDoesntExpire
-	}
-	expiryTime, err := creds.ExpiresAt()
-	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok {
-			if awsErr.Code() == "ProviderNotExpirer" {
-				err = ErrDoesntExpire
+// newClientFactory returns a function that creates a new S3 client with the given region.
+// accepts aws configuration and list of s3 options functions to apply on the client.
+// the factory function is used to create a new client for a region when it is not cached.
+func newClientFactory(awsConfig aws.Config, s3OptFns ...func(options *s3.Options)) clientFactory {
+	return func(region string) *s3.Client {
+		return s3.NewFromConfig(awsConfig, func(options *s3.Options) {
+			for _, opts := range s3OptFns {
+				opts(options)
 			}
-		}
-	}
-	return expiryTime, err
-}
-
-func (c *s3Client) Refresh() (time.Time, error) {
-	c.awsSession.Config.Credentials.Expire()
-	_, err := c.awsSession.Config.Credentials.Get()
-	if err != nil {
-		return time.Time{}, fmt.Errorf("refresh credentials: %w", err)
-	}
-	return c.ExpiresAt()
-}
-
-func NewClientCache(awsSession *session.Session) *ClientCache {
-	return &ClientCache{
-		awsSession:     awsSession,
-		clientFactory:  newS3Client,
-		s3RegionGetter: getBucketRegionFromS3,
+			options.Region = region
+		})
 	}
 }
 
@@ -113,44 +66,54 @@ func (c *ClientCache) SetStatsCollector(statsCollector stats.Collector) {
 	c.collector = statsCollector
 }
 
-func (c *ClientCache) getBucketRegion(ctx context.Context, bucket string) string {
+func (c *ClientCache) bucketRegion(ctx context.Context, bucket string) string {
 	if region, hasRegion := c.bucketToRegion.Load(bucket); hasRegion {
 		return region.(string)
 	}
-	logging.FromContext(ctx).WithField("bucket", bucket).Debug("requesting region for bucket")
-	region, err := c.s3RegionGetter(ctx, c.awsSession, bucket)
+	region, err := c.s3RegionGetter(ctx, bucket)
 	if err != nil {
-		logging.FromContext(ctx).WithError(err).Error("failed to get region for bucket, falling back to default region")
-		region = *c.awsSession.Config.Region
+		region = c.awsConfig.Region
+		logging.FromContext(ctx).
+			WithError(err).
+			WithField("default_region", region).
+			Error("Failed to get region for bucket, falling back to default region")
 	}
 	c.bucketToRegion.Store(bucket, region)
 	return region
 }
 
-// Get returns an AWS client configured to the region of the given bucket.
-func (c *ClientCache) Get(ctx context.Context, bucket string) S3APIWithExpirer {
-	region := c.getBucketRegion(ctx, bucket)
-	svc, hasClient := c.regionToS3Client.Load(region)
-	if !hasClient {
-		logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
-		ret := c.clientFactory(c.awsSession, &aws.Config{Region: swag.String(region)})
-		c.regionToS3Client.Store(region, ret)
-		if c.collector != nil {
-			c.collector.CollectEvent(stats.Event{
-				Class: "s3_block_adapter",
-				Name:  fmt.Sprintf("created_aws_client_%s", region),
-			})
-		}
-		return ret
+func (c *ClientCache) DiscoverBucketRegion(b bool) {
+	if b {
+		c.s3RegionGetter = c.getBucketRegionFromAWS
 	} else {
-		return svc.(S3APIWithExpirer)
+		c.s3RegionGetter = c.getBucketRegionDefault
 	}
 }
 
-func (c *ClientCache) DiscoverBucketRegion(b bool) {
-	if b {
-		c.s3RegionGetter = getBucketRegionFromS3
-	} else {
-		c.s3RegionGetter = getBucketRegionFromSession
+func (c *ClientCache) getBucketRegionFromAWS(ctx context.Context, bucket string) (string, error) {
+	return manager.GetBucketRegion(ctx, c.defaultClient, bucket)
+}
+
+func (c *ClientCache) getBucketRegionDefault(_ context.Context, _ string) (string, error) {
+	return c.awsConfig.Region, nil
+}
+
+func (c *ClientCache) Get(ctx context.Context, bucket string) *s3.Client {
+	region := c.bucketRegion(ctx, bucket)
+	if client, found := c.regionToS3Client.Load(region); found {
+		return client.(*s3.Client)
 	}
+
+	logging.FromContext(ctx).WithField("bucket", bucket).WithField("region", region).Debug("creating client for region")
+	client := c.clientFactory(region)
+	c.regionToS3Client.Store(region, client)
+	c.collector.CollectEvent(stats.Event{
+		Class: "s3_block_adapter",
+		Name:  "created_aws_client_" + region,
+	})
+	return client
+}
+
+func (c *ClientCache) GetDefault() *s3.Client {
+	return c.defaultClient
 }

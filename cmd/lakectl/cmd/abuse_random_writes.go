@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"syscall"
@@ -30,7 +29,6 @@ var abuseRandomWritesCmd = &cobra.Command{
 		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				add(fmt.Sprintf("%sfile-%d", prefix, i))

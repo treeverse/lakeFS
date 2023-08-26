@@ -112,31 +112,35 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		viper.Set("secret_access_key", params.AdminSecretAccessKey)
 	}
 
-	client, err = NewClientFromCreds(logger, viper.GetString("access_key_id"), viper.GetString("secret_access_key"), endpointURL)
+	key := viper.GetString("access_key_id")
+	secret := viper.GetString("secret_access_key")
+	client, err = NewClientFromCreds(logger, key, secret, endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
-	key := viper.GetString("access_key_id")
-	secret := viper.GetString("secret_access_key")
-	svc := SetupTestS3Client(s3Endpoint, key, secret)
+	svc, err := SetupTestS3Client(s3Endpoint, key, secret)
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize S3 client")
+	}
 	return logger, client, svc, endpointURL
 }
 
-func SetupTestS3Client(endpoint, key, secret string) *s3.Client {
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background())
+func SetupTestS3Client(endpoint, key, secret string) (*s3.Client, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion("us-east-1"),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(key, secret, "")),
+	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	forcePathStyleS3Client := viper.GetBool("force_path_style")
 	svc := s3.NewFromConfig(cfg, func(options *s3.Options) {
-		options.Region = "us-east-1"
 		options.BaseEndpoint = aws.String(endpoint)
 		options.UsePathStyle = forcePathStyleS3Client
-		options.Credentials = credentials.NewStaticCredentialsProvider(key, secret, "")
 	})
-	return svc
+	return svc, nil
 }
 
 // ParseEndpointURL parses the given endpoint string

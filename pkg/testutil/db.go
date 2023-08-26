@@ -16,7 +16,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/mem"
-	lakefsS3 "github.com/treeverse/lakefs/pkg/block/s3"
+	"github.com/treeverse/lakefs/pkg/block/params"
+	blocks3 "github.com/treeverse/lakefs/pkg/block/s3"
 )
 
 const (
@@ -152,9 +153,9 @@ func MustDo(t testing.TB, what string, err error) {
 }
 
 func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
+	ctx := context.Background()
 	switch blockstoreType {
 	case block.BlockstoreTypeGS:
-		ctx := context.Background()
 		client, err := storage.NewClient(ctx)
 		if err != nil {
 			t.Fatal("Google Storage new client", err)
@@ -162,22 +163,23 @@ func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 		return gs.NewAdapter(client)
 
 	case block.BlockstoreTypeS3:
-		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
-		if !regionOk {
-			awsRegion = "us-east-1"
-		}
-		cfg := &aws.Config{
-			Region: aws.String(awsRegion),
-		}
-		awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
-		awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
-		if keyOk && secretOk {
-			cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
+		var s3Params params.S3
+		if awsRegion, ok := os.LookupEnv(envKeyAwsRegion); ok {
+			s3Params.Region = awsRegion
 		} else {
-			cfg.Credentials = credentials.NewSharedCredentials("", "default")
+			s3Params.Region = "us-east-1"
 		}
-		sess := session.Must(session.NewSession(cfg))
-		return lakefsS3.NewAdapter(sess)
+		awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
+		awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
+		if keyOk && secretOk {
+			s3Params.Credentials.AccessKeyID = awsKey
+			s3Params.Credentials.SecretAccessKey = awsSecret
+		}
+		blockAdapter, err := blocks3.NewAdapterFromParams(ctx, s3Params)
+		if err != nil {
+			t.Fatal("Failed to create S3 block adapter", err)
+		}
+		return blockAdapter
 
 	default:
 		return mem.New(context.Background())

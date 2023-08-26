@@ -116,7 +116,7 @@ func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 		}
 		if len(it.prefixes) > 0 {
 			// check file against prefix filter
-			// loop while current prefix may fit current object
+			// loop while current prefix may fit the current object
 			for it.prefixes[it.currentPrefix] < obj.Key {
 				if strings.HasPrefix(obj.Key, it.prefixes[it.currentPrefix]) {
 					// found current prefix

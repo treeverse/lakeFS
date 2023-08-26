@@ -2,14 +2,9 @@ package factory
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 
 	"cloud.google.com/go/storage"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
@@ -85,44 +80,18 @@ func buildLocalAdapter(ctx context.Context, params params.Local) (*local.Adapter
 	return adapter, nil
 }
 
-func BuildS3ClientConfig(awsConfig aws.Config, webIdentity *params.S3WebIdentity, skipVerifyCertificateTestOnly bool) (*s3.Client, error) {
-	var opts []func(*config.LoadOptions) error
-
-	// Add customer transport to http client to skip certificate verification
-	if skipVerifyCertificateTestOnly {
-		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
-		}
-		httpClient := &http.Client{Transport: tr}
-		opts = append(opts, config.WithHTTPClient(httpClient))
-	}
-
-	if webIdentity != nil {
-		wi := *webIdentity // Copy WebIdentity: it will be used asynchronously.
-		opts = append(opts,
-			config.WithWebIdentityRoleCredentialOptions(func(options *stscreds.WebIdentityRoleOptions) {
-				if wi.SessionDuration > 0 {
-					options.Duration = wi.SessionDuration
-				}
-			}),
-			config.WithCredentialsCacheOptions(func(options *aws.CredentialsCacheOptions) {
-				if wi.SessionExpiryWindow > 0 {
-					options.ExpiryWindow = wi.SessionExpiryWindow
-				}
-			}),
-		)
-	}
-
-	ctx := context.Background()
-	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+func BuildS3Client(ctx context.Context, params params.S3) (*s3.Client, error) {
+	cfg, err := s3a.LoadConfig(ctx, params)
 	if err != nil {
 		return nil, err
 	}
-	return cfg, nil
+
+	client := s3.NewFromConfig(cfg, s3a.WithClientParams(params))
+	return client, nil
 }
 
 func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	sess, err := BuildS3ClientConfig(params.AwsConfig, params.WebIdentity, params.SkipVerifyCertificateTestOnly)
+	cfg, err := s3a.LoadConfig(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +113,7 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.WebIdentity != nil && params.WebIdentity.SessionExpiryWindow > 0 {
 		opts = append(opts, s3a.WithPreSignedRefreshWindow(params.WebIdentity.SessionExpiryWindow))
 	}
-	adapter := s3a.NewAdapter(sess, opts...)
+	adapter := s3a.NewAdapter(cfg, params, opts...)
 	logging.FromContext(ctx).WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil
 }

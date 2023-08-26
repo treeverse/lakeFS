@@ -67,7 +67,7 @@ func (f *WalkerFactory) buildS3Walker(opts WalkerOptions) (*s3.Walker, error) {
 		if err != nil {
 			return nil, err
 		}
-		client, err = factory.BuildS3ClientConfig(s3params.AwsConfig, s3params.WebIdentity, s3params.SkipVerifyCertificateTestOnly)
+		client, err = factory.BuildS3Client(context.Background(), s3params)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func (f *WalkerFactory) buildAzureWalker(importURL *url.URL, skipOutOfOrder bool
 		}
 	}
 
-	// Use StorageAccessKey to initialize storage account client only if it was provided for this given storage account
+	// Use StorageAccessKey to initialize the storage account client only if it was provided for this given storage account
 	// Otherwise fall back to the default credentials
 	if azureParams.StorageAccount != storageAccount {
 		azureParams.StorageAccount = storageAccount

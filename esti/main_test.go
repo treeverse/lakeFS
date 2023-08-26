@@ -288,13 +288,12 @@ func TestMain(m *testing.M) {
 
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {
-		logger.
-			WithFields(logging.Fields{
-				"repositories": repositoriesToKeep,
-				"groups":       groupsToKeep,
-				"users":        usersToKeep,
-				"policies":     policiesToKeep,
-			}).Info("Deleting repositories, groups, users and policies before Esti run")
+		logger.WithFields(logging.Fields{
+			"repositories": repositoriesToKeep,
+			"groups":       groupsToKeep,
+			"users":        usersToKeep,
+			"policies":     policiesToKeep,
+		}).Info("Deleting repositories, groups, users and policies before Esti run")
 		err := envCleanup(client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
 		if err != nil {
 			logger.WithError(err).Fatal("env cleanup")

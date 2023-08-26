@@ -7,11 +7,10 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 // ObjectStats metadata of an object stored on a backing store.
@@ -20,7 +19,7 @@ type ObjectStats struct {
 	Size int64
 	// ETag is a unique identifier of the contents.
 	ETag string
-	// MTime is the time stored for last object modification.  It can be returned as 0
+	// MTime is the time stored for last object modification. It can be returned as 0
 	// from calls to ClientAdapter.Upload().
 	MTime time.Time
 }
@@ -54,19 +53,15 @@ var adapterFactory = AdapterFactory{
 const s3Scheme = "s3"
 
 type s3Adapter struct {
-	svc  *s3.S3
-	sess client.ConfigProvider
+	svc *s3.Client
 }
 
 func newS3Adapter() (ClientAdapter, error) {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
+	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("connect to S3 session: %w", err)
+		return nil, fmt.Errorf("aws load default config: %w", err)
 	}
-	sess.ClientConfig(s3.ServiceName)
-	return &s3Adapter{sess: sess, svc: s3.New(sess)}, nil
+	return &s3Adapter{svc: s3.NewFromConfig(cfg)}, nil
 }
 
 func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error) {
@@ -74,10 +69,10 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 		return ObjectStats{}, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
 	}
 
-	manager := s3manager.NewUploader(s.sess)
-	out, err := manager.UploadWithContext(ctx, &s3manager.UploadInput{
+	uploader := manager.NewUploader(s.svc)
+	out, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Body:   contents,
-		Bucket: apiutil.Ptr(physicalAddress.Hostname()),
+		Bucket: aws.String(physicalAddress.Hostname()),
 		Key:    &physicalAddress.Path,
 	})
 	if err != nil {
@@ -89,7 +84,7 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 	}
 	return ObjectStats{
 		Size: size,
-		ETag: apiutil.Value(out.ETag),
+		ETag: aws.String(out.ETag),
 		// S3Manager Upload does not return creation time.
 	}, nil
 }
@@ -99,8 +94,8 @@ func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.
 		return nil, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
 	}
 	// TODO(ariels): Allow customization of request
-	getObjectResponse, err := s.svc.GetObjectWithContext(ctx, &s3.GetObjectInput{
-		Bucket: apiutil.Ptr(physicalAddress.Hostname()),
+	getObjectResponse, err := s.svc.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(physicalAddress.Hostname()),
 		Key:    &physicalAddress.Path,
 	})
 	if err != nil {

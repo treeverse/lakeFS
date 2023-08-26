@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -27,7 +29,7 @@ type Manifest struct {
 }
 
 type InventoryFile struct {
-	Key      string `json:"key"` // an s3 key for an inventory list file
+	Key      string `json:"key"` // a s3 key for an inventory list file
 	firstKey string
 	lastKey  string
 }
@@ -83,7 +85,7 @@ func (a *Adapter) loadManifest(ctx context.Context, manifestURL string) (*Manife
 	if err != nil {
 		return nil, err
 	}
-	output, err := a.clients.Get(ctx, u.Host).GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
+	output, err := a.clients.Get(ctx, u.Host).GetObject(ctx, &s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to read manifest.json from %s", err, manifestURL)
 	}
@@ -119,7 +121,7 @@ func filterFiles(files []InventoryFile, prefixes []string) []InventoryFile {
 				// first object in file starts with prefix
 				break
 			}
-			// current prefix ends before this file - move to next prefix
+			// the current prefix ends before this file - move to the next prefix
 			currentPrefixIdx++
 			if currentPrefixIdx == len(prefixes) {
 				// no more prefixes - other files are irrelevant

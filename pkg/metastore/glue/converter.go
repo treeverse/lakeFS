@@ -74,10 +74,10 @@ func TableGlueToLocal(glueTable *types.Table) *metastore.Table {
 	return ht
 }
 
-func TablesGlueToLocal(glueTables []*types.Table) []*metastore.Table {
+func TablesGlueToLocal(glueTables []types.Table) []*metastore.Table {
 	tables := make([]*metastore.Table, len(glueTables))
-	for i, table := range glueTables {
-		tables[i] = TableGlueToLocal(table)
+	for i := range glueTables {
+		tables[i] = TableGlueToLocal(&glueTables[i])
 	}
 	return tables
 }
@@ -97,10 +97,10 @@ func PartitionGlueToLocal(gluePartition *types.Partition) *metastore.Partition {
 	return partition
 }
 
-func PartitionsGlueToLocal(gluePartitions []*types.Partition) []*metastore.Partition {
+func PartitionsGlueToLocal(gluePartitions []types.Partition) []*metastore.Partition {
 	partitions := make([]*metastore.Partition, len(gluePartitions))
-	for i, partition := range gluePartitions {
-		partitions[i] = PartitionGlueToLocal(partition)
+	for i := range gluePartitions {
+		partitions[i] = PartitionGlueToLocal(&gluePartitions[i])
 	}
 	return partitions
 }
@@ -169,10 +169,10 @@ func DatabaseLocalToGlue(db *metastore.Database) *types.DatabaseInput {
 	}
 }
 
-func DatabasesGlueToLocal(glueDatabases []*types.Database) []*metastore.Database {
+func DatabasesGlueToLocal(glueDatabases []types.Database) []*metastore.Database {
 	databases := make([]*metastore.Database, len(glueDatabases))
-	for i, partition := range glueDatabases {
-		databases[i] = DatabaseGlueToLocal(partition)
+	for i := range glueDatabases {
+		databases[i] = DatabaseGlueToLocal(&glueDatabases[i])
 	}
 	return databases
 }

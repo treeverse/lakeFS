@@ -44,8 +44,8 @@ func NewMSClient(client *glue.Client, catalogID, baselLocationURI string) (metas
 
 func (g *MSClient) HasTable(ctx context.Context, dbName string, tableName string) (bool, error) {
 	table, err := g.GetTable(ctx, dbName, tableName)
-	var noSuchObjectErr *glue.EntityNotFoundException // TODO(Guys): validate this one
-	if err != nil && !errors.As(err, &noSuchObjectErr) {
+	var errEnityNotFound *types.EntityNotFoundException // TODO(Guys): validate this one
+	if err != nil && !errors.As(err, &errEnityNotFound) {
 		return false, err
 	}
 	return table != nil, nil
@@ -118,7 +118,7 @@ func (g *MSClient) GetTables(ctx context.Context, dbName string, pattern string)
 			CatalogId:    aws.String(g.catalogID),
 			DatabaseName: aws.String(dbName),
 			Expression:   aws.String(pattern),
-			MaxResults:   aws.Int64(MaxParts),
+			MaxResults:   aws.Int32(MaxParts),
 			NextToken:    nextToken,
 		})
 		if err != nil {
@@ -150,7 +150,7 @@ func (g *MSClient) DropPartition(ctx context.Context, dbName string, tableName s
 	_, err := g.client.DeletePartition(ctx, &glue.DeletePartitionInput{
 		CatalogId:       aws.String(g.catalogID),
 		DatabaseName:    aws.String(dbName),
-		PartitionValues: aws.StringSlice(values),
+		PartitionValues: values,
 		TableName:       aws.String(tableName),
 	})
 	return err
@@ -162,14 +162,14 @@ func (g *MSClient) CreateDatabase(ctx context.Context, database *metastore.Datab
 		CatalogId:     aws.String(g.catalogID),
 		DatabaseInput: databaseInput,
 	})
-	var ErrExists *glue.AlreadyExistsException
-	if errors.As(err, &ErrExists) {
+	var errExists *types.AlreadyExistsException
+	if errors.As(err, &errExists) {
 		return mserrors.ErrSchemaExists
 	}
 	return err
 }
 
-func (g *MSClient) getTableData(ctx context.Context, dbName string, tblName string) (*glue.TableData, error) {
+func (g *MSClient) getTableData(ctx context.Context, dbName string, tblName string) (*types.Table, error) {
 	table, err := g.client.GetTable(ctx,
 		&glue.GetTableInput{
 			CatalogId:    aws.String(g.catalogID),
@@ -207,7 +207,7 @@ func (g *MSClient) GetPartition(ctx context.Context, dbName string, tableName st
 		&glue.GetPartitionInput{
 			CatalogId:       aws.String(g.catalogID),
 			DatabaseName:    aws.String(dbName),
-			PartitionValues: aws.StringSlice(values),
+			PartitionValues: values,
 			TableName:       aws.String(tableName),
 		})
 	if err != nil {
@@ -230,15 +230,15 @@ func (g *MSClient) getPartitionsFromGlue(ctx context.Context, dbName, tableName 
 		&glue.GetPartitionsInput{
 			CatalogId:    aws.String(g.catalogID),
 			DatabaseName: aws.String(dbName),
-			MaxResults:   aws.Int64(int64(maxParts)),
+			MaxResults:   aws.Int32(int32(maxParts)),
 			NextToken:    nextToken,
 			TableName:    aws.String(tableName),
 		})
 }
 
-func (g *MSClient) GetAllPartitions(ctx context.Context, dbName, tableName string) ([]*glue.Partition, error) {
+func (g *MSClient) GetAllPartitions(ctx context.Context, dbName, tableName string) ([]types.Partition, error) {
 	var nextToken *string
-	var allPartitions []*glue.Partition
+	var allPartitions []types.Partition
 	for {
 		getPartitionsOutput, err := g.getPartitionsFromGlue(ctx, dbName, tableName, nextToken, MaxParts)
 		if err != nil {
@@ -269,9 +269,9 @@ func (g *MSClient) AddPartition(ctx context.Context, tableName string, dbName st
 func (g *MSClient) AddPartitions(ctx context.Context, tableName string, dbName string, newParts []*metastore.Partition) error {
 	gluePartitions := PartitionsLocalToGlue(newParts)
 
-	partitionList := make([]*glue.PartitionInput, 0, len(gluePartitions))
+	partitionList := make([]types.PartitionInput, 0, len(gluePartitions))
 	for _, partition := range gluePartitions {
-		partitionList = append(partitionList, &glue.PartitionInput{
+		partitionList = append(partitionList, types.PartitionInput{
 			LastAccessTime:    partition.LastAccessTime,
 			LastAnalyzedTime:  partition.LastAnalyzedTime,
 			Parameters:        partition.Parameters,
