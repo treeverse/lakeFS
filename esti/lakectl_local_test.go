@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"embed"
 	"fmt"
 	"io/fs"
 	"os"
@@ -449,8 +448,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			idx := local.Index{}
-			var dataPath embed.FS
-			indexDir, _ := fs.Sub(dataPath, dataDir)
+			indexDir := os.DirFS(dataDir)
 			yamlFile, err := fs.ReadFile(indexDir, "/.lakefs_ref.yaml")
 
 			require.NoError(t, err)
