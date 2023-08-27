@@ -189,7 +189,7 @@ func localSendStats(ctx context.Context, client api.ClientWithResponsesInterface
 	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
 		Events: []api.StatsEvent{
 			{
-				Class: "lakectl_local_event",
+				Class: "lakectl_local",
 				Name:  cmd,
 				Count: 1,
 			},
