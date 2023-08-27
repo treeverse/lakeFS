@@ -450,7 +450,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 
 			idx := local.Index{}
 			indexDir := os.DirFS(dataDir)
-			yamlFile, err := fs.ReadFile(indexDir, "/.lakefs_ref.yaml")
+			yamlFile, err := fs.ReadFile(indexDir, ".lakefs_ref.yaml")
 
 			require.NoError(t, err)
 
