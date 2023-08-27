@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/api"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
