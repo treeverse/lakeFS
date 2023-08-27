@@ -2,16 +2,17 @@ package esti
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/local"
-	"golang.org/x/exp/slices"
-	"gopkg.in/yaml.v3"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/local"
+	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v3"
 )
 
 func localCreateTestData(t *testing.T, vars map[string]string, objects []string) {
