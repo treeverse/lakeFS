@@ -80,13 +80,13 @@ ds.wait()
 print(f'Done! {ds.display_name} ({ds.resource_name})')
 ```
 
-### Using lakeFS with Cloud Storage Fuse
+## Using lakeFS with Cloud Storage Fuse
 
 Vertex allows using Google Cloud Storage mounted as a [Fuse Filesystem](https://cloud.google.com/vertex-ai/docs/training/cloud-storage-file-system) as custom input for training jobs.
 
 Instead of having to copy lakeFS files for each version we want to consume, we can create symlinks by using [gcsfuse](https://github.com/GoogleCloudPlatform/gcsfuse)'s native [symlink inodes](https://github.com/GoogleCloudPlatform/gcsfuse/blob/v1.0.0/docs/semantics.md#symlink-inodes).
 
-This process can be fully automated by using the example [gcsfuse_symlink_exporter.lua](https://github.com/treeverse/lakeFS/blob/master/examples/hooks/gcsfuse_symlink_exporter.lua) Lua hook.
+This process can be fully automated by using the example [gcsfuse_symlink_exporter.lua](https://github.com/treeverse/lakeFS/blob/feature/vertex-ai/examples/hooks/gcsfuse_symlink_exporter.lua) Lua hook.
 
 Here's what we need to do:
 
@@ -148,7 +148,7 @@ with open(f'/gcs/my-bucket/exports/my-repo/branches/main/{commit_id}/datasets/im
 
 ```
 
-#### Considerations when using lakeFS with Cloud Storage Fuse
+### Considerations when using lakeFS with Cloud Storage Fuse
 
 For lakeFS paths to be readable by gcsfuse, the mount option `--implicit-dirs` must be specified.
 
