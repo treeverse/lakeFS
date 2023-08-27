@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"embed"
 	"fmt"
 	"io/fs"
 	"os"
@@ -424,17 +425,6 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	prefix := "images"
-	objects := []string{
-		"ro_1k.1",
-		"ro_1k.2",
-		"ro_1k.3",
-		prefix + "/1.png",
-		prefix + "/2.png",
-		prefix + "/3.png",
-		prefix + "/subdir/1.png",
-		prefix + "/subdir/2.png",
-		prefix + "/subdir/3.png",
-	}
 
 	tests := []struct {
 		name   string
@@ -449,9 +439,6 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
-			deleted := prefix + "/subdir/deleted.png"
-
-			localCreateTestData(t, vars, append(objects, deleted))
 
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
@@ -461,20 +448,25 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			vars["REF"] = tt.name
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			// Modify local folder - add and remove files
-			fd, err := os.Create(filepath.Join(dataDir, "test.txt"))
+			idx := local.Index{}
+			var dataPath embed.FS
+			indexDir, _ := fs.Sub(dataPath, dataDir)
+			yamlFile, err := fs.ReadFile(indexDir, "/.lakefs_ref.yaml")
+
 			require.NoError(t, err)
-			require.NoError(t, fd.Truncate(1e8))
-			require.NoError(t, fd.Close())
-			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+			err = yaml.Unmarshal(yamlFile, &idx)
+			require.NoError(t, err)
 
-			// Commit changes and interrupt
-			RunCmdAndVerifyContainsTextWithTimeout(t, Lakectl()+" local commit -m test --pre-sign=false "+dataDir, true, false, "", vars, time.Millisecond*100)
+			idx.ActiveOperation = "commit"
+			_, err = yaml.Marshal(&idx)
+			require.NoError(t, err)
 
 			// Pull without force flag
-			runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
+Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
+			sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			require.Contains(t, sanitizedResult, expectedRaw)
 		})
 	}
 }
