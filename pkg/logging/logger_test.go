@@ -9,9 +9,10 @@ import (
 
 func TestSetOutputs(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
+		currentOut := defaultLogger.Out
 		SetOutputs(nil, 0, 0)
-		if defaultLogger.Out != os.Stderr {
-			t.Error("Logger output should be stderr by default")
+		if defaultLogger.Out != currentOut {
+			t.Error("Logger output should not change by default")
 		}
 	})
 
