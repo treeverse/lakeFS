@@ -459,11 +459,12 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			require.NoError(t, err)
 
 			idx.ActiveOperation = "commit"
-			_, err = yaml.Marshal(&idx)
+			updatedYAML, err := yaml.Marshal(&idx)
 			require.NoError(t, err)
 
-			log.Info("demo")
-			log.Info(idx.AtHead)
+			err = os.WriteFile(dataDir+"/.lakefs_ref.yaml", updatedYAML, 0644)
+			require.NoError(t, err)
+
 			// Pull without force flag
 			expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
 Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
