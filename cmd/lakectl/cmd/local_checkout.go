@@ -3,12 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/api"
 	"io/fs"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
