@@ -13,7 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/exp/slices"
-        "gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v3"
 )
 
 func localCreateTestData(t *testing.T, vars map[string]string, objects []string) {
