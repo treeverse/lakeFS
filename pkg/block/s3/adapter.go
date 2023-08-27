@@ -128,16 +128,19 @@ func NewAdapter(awsConfig aws.Config, params params.S3, opts ...AdapterOption) *
 func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {
 	var opts []func(*config.LoadOptions) error
 
-	// setup logger
 	opts = append(opts, config.WithLogger(&logging.AWSAdapter{
 		Logger: logging.ContextUnavailable().WithField("sdk", "aws"),
 	}))
-
-	// setup client log mode
-	if strings.ToLower(logging.Level()) == "trace" {
-		opts = append(opts, config.WithClientLogMode(aws.LogRequest|aws.LogRetries))
+	var logMode aws.ClientLogMode
+	if params.ClientLogRetries {
+		logMode |= aws.LogRetries
 	}
-
+	if params.ClientLogRequest {
+		logMode |= aws.LogRequest
+	}
+	if logMode != 0 {
+		opts = append(opts, config.WithClientLogMode(logMode))
+	}
 	if params.Region != "" {
 		opts = append(opts, config.WithRegion(params.Region))
 	}
