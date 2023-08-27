@@ -49,8 +49,6 @@ type S3 struct {
 	MaxRetries                    int
 	Endpoint                      string
 	ForcePathStyle                bool
-	StreamingChunkSize            int
-	StreamingChunkTimeout         time.Duration
 	DiscoverBucketRegion          bool
 	SkipVerifyCertificateTestOnly bool
 	ServerSideEncryption          string

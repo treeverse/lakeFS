@@ -96,8 +96,6 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 		return nil, err
 	}
 	opts := []s3a.AdapterOption{
-		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
-		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
 		s3a.WithPreSignedExpiry(params.PreSignedExpiry),

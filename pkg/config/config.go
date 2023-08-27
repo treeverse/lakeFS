@@ -233,8 +233,8 @@ type Config struct {
 			S3AuthInfo                    `mapstructure:",squash"`
 			Region                        string        `mapstructure:"region"`
 			Endpoint                      string        `mapstructure:"endpoint"`
-			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
-			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
+			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`    // deprecated
+			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"` // deprecated
 			MaxRetries                    int           `mapstructure:"max_retries"`
 			ForcePathStyle                bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
@@ -468,8 +468,6 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		MaxRetries:                    c.Blockstore.S3.MaxRetries,
 		Endpoint:                      c.Blockstore.S3.Endpoint,
 		ForcePathStyle:                c.Blockstore.S3.ForcePathStyle,
-		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
 		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
 		SkipVerifyCertificateTestOnly: c.Blockstore.S3.SkipVerifyCertificateTestOnly,
 		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,

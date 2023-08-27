@@ -26,23 +26,15 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
-const (
-	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
-	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
-
-	// Chunks smaller than that are only allowed for the last chunk upload
-	minChunkSize = 8 * 1024
-)
-
 var (
 	ErrS3          = errors.New("s3 error")
 	ErrMissingETag = fmt.Errorf("%w: missing ETag", ErrS3)
 )
 
 type Adapter struct {
-	clients                      *ClientCache
-	streamingChunkSize           int
-	streamingChunkTimeout        time.Duration
+	clients *ClientCache
+	// streamingChunkSize           int
+	// streamingChunkTimeout        time.Duration
 	respServer                   string
 	respServerLock               sync.Mutex
 	ServerSideEncryption         string
@@ -51,18 +43,6 @@ type Adapter struct {
 	preSignedRefreshWindow       time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
-}
-
-func WithStreamingChunkSize(sz int) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.streamingChunkSize = sz
-	}
-}
-
-func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.streamingChunkTimeout = d
-	}
 }
 
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
@@ -125,10 +105,8 @@ func NewAdapterFromParams(ctx context.Context, params params.S3, opts ...Adapter
 		return nil, err
 	}
 	a := &Adapter{
-		clients:               NewClientCache(cfg, params),
-		streamingChunkSize:    DefaultStreamingChunkSize,
-		streamingChunkTimeout: DefaultStreamingChunkTimeout,
-		preSignedExpiry:       block.DefaultPreSignExpiryDuration,
+		clients:         NewClientCache(cfg, params),
+		preSignedExpiry: block.DefaultPreSignExpiryDuration,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -138,10 +116,8 @@ func NewAdapterFromParams(ctx context.Context, params params.S3, opts ...Adapter
 
 func NewAdapter(awsConfig aws.Config, params params.S3, opts ...AdapterOption) *Adapter {
 	a := &Adapter{
-		clients:               NewClientCache(awsConfig, params),
-		streamingChunkSize:    DefaultStreamingChunkSize,
-		streamingChunkTimeout: DefaultStreamingChunkTimeout,
-		preSignedExpiry:       block.DefaultPreSignExpiryDuration,
+		clients:         NewClientCache(awsConfig, params),
+		preSignedExpiry: block.DefaultPreSignExpiryDuration,
 	}
 	for _, opt := range opts {
 		opt(a)
