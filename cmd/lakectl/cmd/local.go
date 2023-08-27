@@ -185,6 +185,19 @@ Use "lakectl local checkout..." to sync with the remote or run "lakectl local cl
 	}
 }
 
+func localSendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
+	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
+		Events: []api.StatsEvent{
+			{
+				Class: "lakectl_local_event",
+				Name:  cmd,
+				Count: 1,
+			},
+		},
+	})
+	DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
+}
+
 var localCmd = &cobra.Command{
 	Use:   "local",
 	Short: "Sync local directories with lakeFS paths",

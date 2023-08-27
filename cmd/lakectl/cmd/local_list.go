@@ -17,6 +17,8 @@ var localListCmd = &cobra.Command{
 	Short: "find and list directories that are synced with lakeFS.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		localSendStats(cmd.Context(), client, "list")
 		_, localPath := getLocalArgs(args, false, true)
 
 		dirs, err := local.FindIndices(localPath)

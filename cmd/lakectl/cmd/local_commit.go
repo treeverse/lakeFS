@@ -35,6 +35,7 @@ var localCommitCmd = &cobra.Command{
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
+		localSendStats(cmd.Context(), client, "commit")
 		_, localPath := getLocalArgs(args, false, false)
 		syncFlags := getLocalSyncFlags(cmd, client)
 		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
