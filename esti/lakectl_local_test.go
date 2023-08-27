@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
+	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/exp/slices"
 )
 
@@ -151,8 +154,6 @@ func TestLakectlLocal_clone(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	dataDir, err := os.MkdirTemp(tmpDir, "")
-	require.NoError(t, err)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -187,26 +188,60 @@ func TestLakectlLocal_clone(t *testing.T) {
 
 	localCreateTestData(t, vars, objects)
 
-	vars["LOCAL_DIR"] = dataDir
-	vars["PREFIX"] = "images"
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+	t.Run("clone object path", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["PATH"] = "lakefs://" + repoName + "/" + mainBranch + "/" + objects[0]
+		RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone "+vars["PATH"]+" "+dataDir, false, "lakectl_local_init_is_object", vars)
+	})
 
-	relPath, err := filepath.Rel(tmpDir, dataDir)
-	require.NoError(t, err)
-	vars["LIST_DIR"] = relPath
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
-	vars["LIST_DIR"] = "."
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
+	t.Run("clone existing path", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = "images"
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
 
-	// Expect empty since no linked directories in CWD
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
+		relPath, err := filepath.Rel(tmpDir, dataDir)
+		require.NoError(t, err)
+		vars["LIST_DIR"] = relPath
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
+		vars["LIST_DIR"] = "."
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
 
-	expected := localExtractRelativePathsByPrefix(t, prefix, objects)
-	localVerifyDirContents(t, dataDir, expected)
+		// Expect empty since no linked directories in CWD
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list", false, "lakectl_empty", vars)
 
-	// Try to clone twice
-	vars["LOCAL_DIR"] = tmpDir
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+		expected := localExtractRelativePathsByPrefix(t, prefix, objects)
+		localVerifyDirContents(t, dataDir, expected)
+
+		// Try to clone twice
+		vars["LOCAL_DIR"] = tmpDir
+		RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+	})
+
+	t.Run("clone new path", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = "new_prefix"
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+		localVerifyDirContents(t, dataDir, []string{})
+
+		// Add new files to path
+		localCreateTestData(t, vars, []string{vars["PREFIX"] + "nodiff.txt"})
+		require.NoError(t, os.Mkdir(filepath.Join(dataDir, vars["PREFIX"]), fileutil.DefaultDirectoryMask))
+		fd, err = os.Create(filepath.Join(dataDir, "test1.txt"))
+		require.NoError(t, err)
+		require.NoError(t, fd.Close())
+		fd, err = os.Create(filepath.Join(dataDir, vars["PREFIX"]+"test2.txt"))
+		require.NoError(t, err)
+		require.NoError(t, fd.Close())
+		sanitizedResult := runCmd(t, Lakectl()+" local status "+dataDir, false, false, vars)
+		require.Contains(t, sanitizedResult, "test1.txt")
+		require.Contains(t, sanitizedResult, vars["PREFIX"]+"test2.txt")
+		require.NotContains(t, sanitizedResult, vars["PREFIX"]+"nodiff.txt")
+	})
 }
 
 func TestLakectlLocal_pull(t *testing.T) {
@@ -248,12 +283,16 @@ func TestLakectlLocal_pull(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
-			vars["PREFIX"] = "/" + tt.prefix
+
+			vars["PREFIX"] = tt.prefix
+			if len(tt.prefix) > 0 {
+				vars["PREFIX"] = path.Join(uri.PathSeparator, tt.prefix)
+			}
 			vars["LOCAL_DIR"] = dataDir
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+tt.prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}${PREFIX}/ to ${LOCAL_DIR}.", vars)
 
 			// Pull nothing
 			expectedStr := successStr + localGetSummary(local.Tasks{})

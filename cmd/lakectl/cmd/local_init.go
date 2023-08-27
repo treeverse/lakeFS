@@ -7,8 +7,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -20,6 +22,25 @@ const (
 )
 
 func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
+	client := getClient()
+	if len(remote.GetPath()) > 0 { // Verify path is not an existing object
+		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
+			Path: *remote.Path,
+		})
+		switch {
+		case err != nil:
+			DieErr(err)
+		case stat.JSON200 != nil:
+			DieFmt("lakeFS path %s is an existing object and cannot be used as a reference source", remote.String())
+		case stat.JSON404 == nil:
+			dieOnResponseError(stat, err)
+		}
+
+		if !strings.HasSuffix(remote.GetPath(), uri.PathSeparator) { // Ensure we treat this path as a directory
+			*remote.Path += uri.PathSeparator
+		}
+	}
+
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		DieErr(err)
 	}
