@@ -410,7 +410,6 @@ func TestLakectlLocal_commit(t *testing.T) {
 }
 
 func TestLakectlLocal_interruptedCommit(t *testing.T) {
-	_, log, _ := setupTest(t)
 	tmpDir := t.TempDir()
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
