@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"sync"
 	"time"
@@ -97,6 +98,11 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 				},
 			}))
 	}
+	cfg = cfg.WithHTTPClient(&http.Client{
+		Transport: &http.Transport{
+			MaxConnsPerHost: 10,
+		},
+	})
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)
 	err = setupKeyValueDatabase(ctx, svc, params)
