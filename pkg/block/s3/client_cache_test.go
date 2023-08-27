@@ -17,39 +17,46 @@ var errRegion = errors.New("failed to get region")
 
 func TestClientCache(t *testing.T) {
 	const defaultRegion = "us-west-2"
-	cfg, err := config.LoadDefaultConfig(context.Background())
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(defaultRegion))
 	testutil.Must(t, err)
 
-	tests := map[string]struct {
+	tests := []struct {
+		name                string
 		bucketToRegion      map[string]string
 		bucketCalls         []string
 		regionErrorsIndexes map[int]bool
 	}{
-		"two_buckets_two_regions": {
+		{
+			name:           "two_buckets_two_regions",
 			bucketToRegion: map[string]string{"us-bucket": "us-east-1", "eu-bucket": "eu-west-1"},
 			bucketCalls:    []string{"us-bucket", "us-bucket", "us-bucket", "eu-bucket", "eu-bucket", "eu-bucket"},
 		},
-		"multiple_buckets_two_regions": {
+		{
+			name:           "multiple_buckets_two_regions",
 			bucketToRegion: map[string]string{"us-bucket-1": "us-east-1", "us-bucket-2": "us-east-1", "us-bucket-3": "us-east-1", "eu-bucket-1": "eu-west-1", "eu-bucket-2": "eu-west-1"},
 			bucketCalls:    []string{"us-bucket-1", "us-bucket-2", "us-bucket-3", "eu-bucket-1", "eu-bucket-2"},
 		},
-		"error_on_get_region": {
+		{
+			name:                "error_on_get_region",
 			bucketToRegion:      map[string]string{"us-bucket": "us-east-1", "eu-bucket": "eu-west-1"},
 			bucketCalls:         []string{"us-bucket", "us-bucket", "us-bucket", "eu-bucket", "eu-bucket", "eu-bucket"},
 			regionErrorsIndexes: map[int]bool{3: true},
 		},
-		"all_errors": {
+		{
+			name:                "all_errors",
 			bucketToRegion:      map[string]string{"us-bucket-1": "us-east-1", "us-bucket-2": "us-east-1", "us-bucket-3": "us-east-1", "eu-bucket-1": "eu-west-1", "eu-bucket-2": "eu-west-1"},
 			bucketCalls:         []string{"us-bucket-1", "us-bucket-2", "us-bucket-3", "eu-bucket-1", "eu-bucket-2"},
 			regionErrorsIndexes: map[int]bool{0: true, 1: true, 2: true, 3: true, 4: true},
 		},
-		"alternating_regions": {
+		{
+			name:           "alternating_regions",
 			bucketToRegion: map[string]string{"us-bucket-1": "us-east-1", "us-bucket-2": "us-east-1", "us-bucket-3": "us-east-1", "eu-bucket-1": "eu-west-1", "eu-bucket-2": "eu-west-1"},
 			bucketCalls:    []string{"us-bucket-1", "eu-bucket-1", "us-bucket-2", "eu-bucket-2", "us-bucket-3", "us-bucket-1", "eu-bucket-1", "us-bucket-2", "eu-bucket-2", "us-bucket-3"},
 		},
 	}
-	for name, tst := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			var callIdx int
 			var bucket string
 			actualClientsCreated := make(map[string]bool)
@@ -74,26 +81,26 @@ func TestClientCache(t *testing.T) {
 					t.Fatalf("region fetched more than once for bucket")
 				}
 				actualRegionFetch[bucket] = true
-				if tst.regionErrorsIndexes[callIdx] {
+				if test.regionErrorsIndexes[callIdx] {
 					return "", errRegion
 				}
-				return tst.bucketToRegion[bucket], nil
+				return test.bucketToRegion[bucket], nil
 			})
 
 			alreadyCalled := make(map[string]bool)
-			for callIdx, bucket = range tst.bucketCalls {
+			for callIdx, bucket = range test.bucketCalls {
 				expectedRegionFetch[bucket] = true // for every bucket, there should be exactly one region fetch
 				if _, ok := alreadyCalled[bucket]; !ok {
-					if tst.regionErrorsIndexes[callIdx] {
+					if test.regionErrorsIndexes[callIdx] {
 						// if there's an error, a client should be created for the default region
 						expectedClientsCreated[defaultRegion] = true
 					} else {
 						// for every region, a client is created exactly once
-						expectedClientsCreated[tst.bucketToRegion[bucket]] = true
+						expectedClientsCreated[test.bucketToRegion[bucket]] = true
 					}
 				}
 				alreadyCalled[bucket] = true
-				c.Get(context.Background(), bucket)
+				c.Get(ctx, bucket)
 			}
 			if diff := deep.Equal(expectedClientsCreated, actualClientsCreated); diff != nil {
 				t.Fatal("unexpected client creation count: ", diff)

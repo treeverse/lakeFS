@@ -86,7 +86,7 @@ func (c *ClientCache) getBucketRegionDefault(_ context.Context, _ string) (strin
 }
 
 func (c *ClientCache) Get(ctx context.Context, bucket string) *s3.Client {
-	client, region := c.cachedClient(bucket)
+	client, region := c.cachedClientByBucket(bucket)
 	if client != nil {
 		return client
 	}
@@ -94,6 +94,9 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) *s3.Client {
 	// lookup region if needed
 	if region == "" {
 		region = c.refreshBucketRegion(ctx, bucket)
+		if client, ok := c.cachedClientByRegion(region); ok {
+			return client
+		}
 	}
 
 	// create client and update cache
@@ -121,13 +124,20 @@ func (c *ClientCache) Get(ctx context.Context, bucket string) *s3.Client {
 	return client
 }
 
-func (c *ClientCache) cachedClient(bucket string) (*s3.Client, string) {
+func (c *ClientCache) cachedClientByBucket(bucket string) (*s3.Client, string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if region, ok := c.bucketRegion[bucket]; ok {
 		return c.regionClient[region], region
 	}
 	return nil, ""
+}
+
+func (c *ClientCache) cachedClientByRegion(region string) (*s3.Client, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	client, ok := c.regionClient[region]
+	return client, ok
 }
 
 func (c *ClientCache) refreshBucketRegion(ctx context.Context, bucket string) string {

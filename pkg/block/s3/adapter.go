@@ -214,13 +214,6 @@ func WithClientParams(params params.S3) func(options *s3.Options) {
 		if params.Endpoint != "" {
 			options.BaseEndpoint = aws.String(params.Endpoint)
 		}
-		// TODO(barak): handle this one in the aws configuration level for now
-		//if params.SkipVerifyCertificateTestOnly {
-		//	options.HTTPClient = awshttp.NewBuildableClient().
-		//		WithTransportOptions(func(tr *http.Transport) {
-		//			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
-		//		})
-		//}
 		if params.ForcePathStyle {
 			options.UsePathStyle = true
 		}
