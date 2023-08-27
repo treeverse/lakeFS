@@ -57,6 +57,10 @@ var fsCatCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	fsCatCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (faster but requires more credentials)")
+	err := fsCatCmd.Flags().MarkDeprecated("direct", "use --pre-sign instead")
+	if err != nil {
+		DieErr(err)
+	}
 	fsCatCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
 
 	fsCmd.AddCommand(fsCatCmd)
