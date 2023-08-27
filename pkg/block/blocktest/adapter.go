@@ -50,7 +50,7 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 			obj := block.ObjectPointer{
 				StorageNamespace: storageNamespace,
 				Identifier:       c.path,
-				IdentifierType:   block.IdentifierTypeRelative,
+				IdentifierType:   c.identifierType,
 			}
 
 			err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})

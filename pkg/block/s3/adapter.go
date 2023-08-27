@@ -14,7 +14,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
@@ -215,12 +214,13 @@ func WithClientParams(params params.S3) func(options *s3.Options) {
 		if params.Endpoint != "" {
 			options.BaseEndpoint = aws.String(params.Endpoint)
 		}
-		if params.SkipVerifyCertificateTestOnly {
-			options.HTTPClient = awshttp.NewBuildableClient().
-				WithTransportOptions(func(tr *http.Transport) {
-					tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
-				})
-		}
+		// TODO(barak): handle this one in the aws configuration level for now
+		//if params.SkipVerifyCertificateTestOnly {
+		//	options.HTTPClient = awshttp.NewBuildableClient().
+		//		WithTransportOptions(func(tr *http.Transport) {
+		//			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
+		//		})
+		//}
 		if params.ForcePathStyle {
 			options.UsePathStyle = true
 		}

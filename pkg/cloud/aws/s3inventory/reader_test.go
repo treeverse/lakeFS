@@ -182,10 +182,10 @@ func generateOrc(t *testing.T, objs <-chan *TestObject, fieldToRemove string) *o
 }
 
 func TestReaders(t *testing.T) {
-	svc, testServer := getS3Fake(t)
+	client, testServer := getS3Fake(t)
 	defer testServer.Close()
 	ctx := context.Background()
-	_, err := svc.CreateBucket(ctx, &s3.CreateBucketInput{
+	_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(inventoryBucketName),
 	})
 	if err != nil {
@@ -256,8 +256,8 @@ func TestReaders(t *testing.T) {
 				} else if format == "Parquet" {
 					localFile = generateParquet(t, objs(test.ObjectNum, lastModified), test.ExcludeField)
 				}
-				uploadFile(t, svc, inventoryBucketName, "myFile.inv", localFile)
-				reader := NewReader(context.Background(), svc, logging.ContextUnavailable())
+				uploadFile(t, client, inventoryBucketName, "myFile.inv", localFile)
+				reader := NewReader(context.Background(), client, logging.ContextUnavailable())
 				fileReader, err := reader.GetFileReader(format, inventoryBucketName, "myFile.inv")
 				if err != nil {
 					t.Fatalf("failed to create file reader: %v", err)

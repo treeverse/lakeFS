@@ -5,11 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/block/params"
-
 	"github.com/aws/aws-sdk-go-v2/config"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )

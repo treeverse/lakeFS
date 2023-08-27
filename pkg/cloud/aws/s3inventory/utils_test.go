@@ -2,9 +2,7 @@ package s3inventory
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -83,29 +81,22 @@ func getS3Fake(t *testing.T) (*s3.Client, *httptest.Server) {
 	backend := s3mem.New()
 	faker := gofakes3.New(backend)
 	ts := httptest.NewServer(faker.Server())
-	defer ts.Close()
+	t.Cleanup(func() {
+		ts.Close()
+	})
 
 	// configure S3 client
 	cfg, err := config.LoadDefaultConfig(
 		context.Background(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", "")),
 		config.WithRegion("eu-central-1"),
-		config.WithHTTPClient(&http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		}),
-		config.WithEndpointResolverWithOptions(
-			aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
-				return aws.Endpoint{URL: ts.URL}, nil
-			}),
-		),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(ts.URL)
 		o.UsePathStyle = true
 	})
 	return client, ts
