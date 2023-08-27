@@ -410,6 +410,7 @@ func TestLakectlLocal_commit(t *testing.T) {
 }
 
 func TestLakectlLocal_interruptedCommit(t *testing.T) {
+	_, log, _ := setupTest(t)
 	tmpDir := t.TempDir()
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -461,6 +462,8 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			_, err = yaml.Marshal(&idx)
 			require.NoError(t, err)
 
+			log.Info("demo")
+			log.Info(idx.LocalPath())
 			// Pull without force flag
 			expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
 Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
