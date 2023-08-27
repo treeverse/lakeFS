@@ -34,7 +34,7 @@ For more information, see [how uncommitted data is managed in lakeFS][representi
 Sometimes, storage operations can become a bottleneck. For example, when your data pipelines upload many big objects.
 In such cases, it can be beneficial to perform only versioning operations on lakeFS, while performing storage reads/writes directly on the object store.
 lakeFS offers multiple ways to do that:
-* The [`lakectl fs upload --direct`][lakectl-upload] command (or [download][lakectl-download]).
+* The [`lakectl fs upload --pre-sign`][lakectl-upload] command (or [download][lakectl-download]).
 * The lakeFS [Hadoop Filesystem][hadoopfs].
 * The [staging API][api-staging] which can be used to add lakeFS references to objects after having written them to the storage.
 

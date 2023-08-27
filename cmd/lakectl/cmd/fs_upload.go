@@ -103,6 +103,10 @@ func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
+	err := fsUploadCmd.Flags().MarkDeprecated("direct", "use --pre-sign instead")
+	if err != nil {
+		DieErr(err)
+	}
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
