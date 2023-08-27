@@ -74,14 +74,14 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	for i := 0; i < s.maxParallelism; i++ {
+	wg.SetLimit(s.maxParallelism)
+	for change := range changeSet {
+		c := change
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		wg.Go(func() error {
-			for change := range changeSet {
-				if err := s.apply(ctx, rootPath, remote, change); err != nil {
-					return err
-				}
-			}
-			return nil
+			return s.apply(ctx, rootPath, remote, c)
 		})
 	}
 
@@ -93,9 +93,6 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 }
 
 func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) (err error) {
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
