@@ -2,22 +2,26 @@ package gcloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/Shopify/go-lua"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
-
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 )
 
 const (
 	// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
+)
+
+var (
+	ErrInvalidGCSURI = errors.New("invalid Google Cloud Storage URI")
 )
 
 func Open(l *lua.State, ctx context.Context) {
@@ -113,13 +117,13 @@ func writeFuseSymlink(c *GSClient) lua.Function {
 	}
 }
 
-func asObject(client *storage.Client, gsUri string) (*storage.ObjectHandle, error) {
-	parsed, err := url.Parse(gsUri)
+func asObject(client *storage.Client, gsURI string) (*storage.ObjectHandle, error) {
+	parsed, err := url.Parse(gsURI)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to parse URI: %s: %w", gsURI, ErrInvalidGCSURI)
 	}
 	if parsed.Scheme != "gs" {
-		return nil, fmt.Errorf("invalid scheme: %s, expected \"gs\"", parsed.Scheme)
+		return nil, ErrInvalidGCSURI
 	}
 	bucket := parsed.Host
 	objectPath := strings.TrimPrefix(parsed.Path, path.SEPARATOR)
