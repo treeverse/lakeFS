@@ -2,6 +2,7 @@ package lua
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
@@ -37,6 +38,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	parquet.Open(l)
 	path.Open(l)
 	aws.Open(l, ctx)
+	gcloud.Open(l, ctx)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}

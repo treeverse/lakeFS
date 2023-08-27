@@ -205,6 +205,33 @@ Read the payload (string) as the contents of a Parquet file and return its schem
 }
 ```
 
+### `gcloud`
+
+### `gcloud/gs_client(gcs_credentials_json_string)`
+
+Create a new Google Cloud Storage client using a string that contains a valid [`credentials.json`](https://developers.google.com/workspace/guides/create-credentials) file content.
+
+### `gcloud/gs.write_fuse_symlink(source, destination, mount_info)`
+
+Will create a [gcsfuse symlink](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/semantics.md#symlink-inodes)
+from the source (typically a lakeFS physical address for an object) to a given destination.
+
+`mount_info` is a Lua table with `"from"` and `"to"` keys - since symlinks don't work for `gs://...` URIs, they need to point
+to the mounted location instead. `from` will be removed from the beginning of `source`, and `destination` will be added instead.
+
+Example:
+
+```lua
+source = "gs://bucket/lakefs/data/abc/def"
+destination = "gs://bucket/exported/path/to/object"
+mount_info = {
+    ["from"] = "gs://bucket",
+    ["to"] = "/home/user/gcs-mount"
+}
+gs.write_fuse_symlink(source, destination, mount_info)
+-- Symlink: "/home/user/gcs-mount/exported/path/to/object" -> "/home/user/gcs-mount/lakefs/data/abc/def"
+```
+
 ### `lakefs`
 
 The Lua Hook library allows calling back to the lakeFS API using the identity of the user that triggered the action.
