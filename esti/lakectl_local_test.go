@@ -463,7 +463,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 			require.NoError(t, err)
 
 			log.Info("demo")
-			log.Info(idx.LocalPath())
+			log.Info(idx.AtHead)
 			// Pull without force flag
 			expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
 Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
