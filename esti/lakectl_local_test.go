@@ -428,7 +428,7 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 		vars["LOCAL_DIR"] = dataDir
 		vars["PREFIX"] = ""
@@ -471,7 +471,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 		vars["LOCAL_DIR"] = dataDir
 		vars["PREFIX"] = ""
@@ -515,7 +515,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 		vars["LOCAL_DIR"] = dataDir
 		vars["PREFIX"] = ""
@@ -558,7 +558,7 @@ func TestLakectlLocal_interruptedCheckout(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 		vars["LOCAL_DIR"] = dataDir
 		vars["PREFIX"] = ""
