@@ -1626,20 +1626,33 @@ func (c *Controller) validateStorageNamespace(storageNamespace string) error {
 }
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
-	const (
-		dummyKey  = "dummy"
-		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
-	)
+	dummyKey := fmt.Sprintf("%s/dummy", c.Config.Committed.BlockStoragePrefix)
+	const dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
 
+	// check if dummy file exists in previous lakeFS versions at the root of the storage namespace
+	objLegacyLocation := block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       "dummy",
+	}
+	objLen := int64(len(dummyData))
+
+	if _, err := c.BlockAdapter.Get(ctx, objLegacyLocation, objLen); err == nil {
+		return fmt.Errorf("found lakeFS objects in the legacy storage namespace(%s): %w",
+			storageNamespace, ErrStorageNamespaceInUse)
+	} else if !errors.Is(err, block.ErrDataNotFound) {
+		return err
+	}
+	// check if the dummy file exist
 	obj := block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       dummyKey,
 	}
-	objLen := int64(len(dummyData))
-	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
-		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
-			storageNamespace, ErrStorageNamespaceInUse)
+
+	if _, err := c.BlockAdapter.Get(ctx, objLegacyLocation, objLen); err == nil {
+		return fmt.Errorf("found lakeFS objects in the storage namespace(%s/%s): %w",
+			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
