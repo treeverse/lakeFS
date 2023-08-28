@@ -75,13 +75,15 @@ func (a v2Context) GetAccessKeyID() string {
 }
 
 type V2SigAuthenticator struct {
-	req    *http.Request
-	sigCtx v2Context
+	req        *http.Request
+	bareDomain string
+	sigCtx     v2Context
 }
 
-func NewV2SigAuthenticator(r *http.Request) *V2SigAuthenticator {
+func NewV2SigAuthenticator(r *http.Request, bareDomain string) *V2SigAuthenticator {
 	return &V2SigAuthenticator{
-		req: r,
+		req:        r,
+		bareDomain: bareDomain,
 	}
 }
 
@@ -220,7 +222,7 @@ func buildPath(host string, bareDomain string, path string) string {
 	return ""
 }
 
-func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) error {
+func (a *V2SigAuthenticator) Verify(creds *model.Credential) error {
 	/*
 		s3 sigV2 implementation:
 		the s3 signature is somewhat different from general aws signature implementation.
@@ -242,7 +244,7 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	// Prefer the raw path if it exists -- *this* is what SigV2 signs
 	rawPath := a.req.URL.EscapedPath()
 
-	path := buildPath(a.req.Host, bareDomain, rawPath)
+	path := buildPath(a.req.Host, a.bareDomain, rawPath)
 	stringToSign := canonicalString(a.req.Method, a.req.URL.Query(), path, a.req.Header)
 	digest := signCanonicalString(stringToSign, []byte(creds.SecretAccessKey))
 	if !Equal(digest, a.sigCtx.signature) {

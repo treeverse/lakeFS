@@ -81,19 +81,23 @@ func MakeV4Signer(keyID, secretKey, location string) Signer {
 
 func MakeV2Verifier(keyID, secretKey, bareDomain string) Verifier {
 	return func(req *http.Request) error {
-		authenticator := sig.NewV2SigAuthenticator(req)
+		authenticator := sig.NewV2SigAuthenticator(req, bareDomain)
 		_, err := authenticator.Parse()
 		if err != nil {
 			return fmt.Errorf("sigV2 parse failed: %w", err)
 		}
 		return authenticator.Verify(
-			&model.Credential{BaseCredential: model.BaseCredential{AccessKeyID: keyID, SecretAccessKey: secretKey}},
-			bareDomain,
+			&model.Credential{
+				BaseCredential: model.BaseCredential{
+					AccessKeyID:     keyID,
+					SecretAccessKey: secretKey,
+				},
+			},
 		)
 	}
 }
 
-func MakeV4Verifier(keyID, secretKey, bareDomain string) Verifier {
+func MakeV4Verifier(keyID, secretKey string) Verifier {
 	return func(req *http.Request) error {
 		authenticator := sig.NewV4Authenticator(req)
 		_, err := authenticator.Parse()
@@ -102,7 +106,6 @@ func MakeV4Verifier(keyID, secretKey, bareDomain string) Verifier {
 		}
 		return authenticator.Verify(
 			&model.Credential{BaseCredential: model.BaseCredential{AccessKeyID: keyID, SecretAccessKey: secretKey}},
-			bareDomain,
 		)
 	}
 }
@@ -145,12 +148,12 @@ var signatures = []SignCase{
 	}, {
 		Name:     "V4Host",
 		Signer:   MakeV4Signer(keyID, secretKey, location),
-		Verifier: MakeV4Verifier(keyID, secretKey, domain),
+		Verifier: MakeV4Verifier(keyID, secretKey),
 		Style:    "host",
 	}, {
 		Name:     "V4Path",
 		Signer:   MakeV4Signer(keyID, secretKey, location),
-		Verifier: MakeV4Verifier(keyID, secretKey, domain),
+		Verifier: MakeV4Verifier(keyID, secretKey),
 		Style:    "path",
 	},
 }

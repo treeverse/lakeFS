@@ -389,7 +389,7 @@ func (a *V4Authenticator) String() string {
 	return "sigv4"
 }
 
-func (a *V4Authenticator) Verify(creds *model.Credential, _ string) error {
+func (a *V4Authenticator) Verify(creds *model.Credential) error {
 	return V4Verify(a.sigCtx, creds, a.request)
 }
 

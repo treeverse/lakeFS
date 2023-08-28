@@ -35,7 +35,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		authenticator := sig.ChainedAuthenticator(
 			sig.NewV4Authenticator(req),
-			sig.NewV2SigAuthenticator(req),
+			sig.NewV2SigAuthenticator(req, o.FQDN),
 		)
 		authContext, err := authenticator.Parse()
 		if err != nil {
@@ -56,7 +56,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			}
 			return
 		}
-		err = authenticator.Verify(creds, o.FQDN)
+		err = authenticator.Verify(creds)
 		logger = logger.WithField("authenticator", authenticator)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
