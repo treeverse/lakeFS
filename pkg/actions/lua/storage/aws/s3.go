@@ -47,7 +47,7 @@ func newS3Client(ctx context.Context) lua.Function {
 		}
 
 		l.NewTable()
-		for name, goFn := range regexpFunc {
+		for name, goFn := range functions {
 			// -1: tbl
 			l.PushGoFunction(goFn(c))
 			// -1: fn, -2:tbl
@@ -79,7 +79,7 @@ func (c *S3Client) client() *s3.S3 {
 	return s3.New(sess)
 }
 
-var regexpFunc = map[string]func(client *S3Client) lua.Function{
+var functions = map[string]func(client *S3Client) lua.Function{
 	"get_object":       getObject,
 	"put_object":       putObject,
 	"list_objects":     listObjects,
