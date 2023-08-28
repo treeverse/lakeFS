@@ -147,7 +147,7 @@ func uploadMultipartParts(t *testing.T, ctx context.Context, logger logging.Logg
 
 	// verify upload completed successfully
 	for i, err := range errs {
-		partNumber := int64(firstIndex + i + 1)
+		partNumber := int32(firstIndex + i + 1)
 		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
 		// verify part number
 		assert.Equal(t, partNumber, completedParts[i].PartNumber, "inconsistent part number")
