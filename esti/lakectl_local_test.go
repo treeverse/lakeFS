@@ -12,7 +12,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/exp/slices"
-	"gopkg.in/yaml.v3"
 )
 
 func localCreateTestData(t *testing.T, vars map[string]string, objects []string) {
@@ -488,52 +487,29 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	prefix := "images"
+	t.Run(prefix, func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
 
-	tests := []struct {
-		name   string
-		prefix string
-	}{
-		{
-			name:   prefix,
-			prefix: prefix,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dataDir, err := os.MkdirTemp(tmpDir, "")
-			require.NoError(t, err)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = prefix
+		vars["REF"] = prefix
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			vars["LOCAL_DIR"] = dataDir
-			vars["PREFIX"] = ""
-			vars["BRANCH"] = tt.name
-			vars["REF"] = tt.name
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+		idx, err := local.ReadIndex(dataDir)
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), idx.PathURI, idx.AtHead, "pull")
+		require.NoError(t, err)
 
-			idx := local.Index{}
-			indexDir := os.DirFS(dataDir)
-			yamlFile, err := fs.ReadFile(indexDir, ".lakefs_ref.yaml")
-
-			require.NoError(t, err)
-
-			err = yaml.Unmarshal(yamlFile, &idx)
-			require.NoError(t, err)
-
-			idx.ActiveOperation = "pull"
-			updatedYAML, err := yaml.Marshal(&idx)
-			require.NoError(t, err)
-
-			err = os.WriteFile(dataDir+"/.lakefs_ref.yaml", updatedYAML, 0644)
-			require.NoError(t, err)
-
-			// Pull without force flag
-			expectedRaw := `Latest pull operation was interrupted, local data may be incomplete.
+		// Pull without force flag
+		expectedRaw := `Latest pull operation was interrupted, local data may be incomplete.
 Use "lakectl local pull... --force" to sync with the remote.`
-			sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-			require.Contains(t, sanitizedResult, expectedRaw)
-		})
-	}
+		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+		require.Contains(t, sanitizedResult, expectedRaw)
+	})
 }
 
 func TestLakectlLocal_interruptedClone(t *testing.T) {
@@ -553,51 +529,29 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 
 	prefix := "images"
 
-	tests := []struct {
-		name   string
-		prefix string
-	}{
-		{
-			name:   prefix,
-			prefix: prefix,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dataDir, err := os.MkdirTemp(tmpDir, "")
-			require.NoError(t, err)
+	t.Run(prefix, func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
-			vars["LOCAL_DIR"] = dataDir
-			vars["PREFIX"] = ""
-			vars["BRANCH"] = tt.name
-			vars["REF"] = tt.name
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = prefix
+		vars["REF"] = prefix
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			idx := local.Index{}
-			indexDir := os.DirFS(dataDir)
-			yamlFile, err := fs.ReadFile(indexDir, ".lakefs_ref.yaml")
+		idx, err := local.ReadIndex(dataDir)
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), idx.PathURI, idx.AtHead, "clone")
+		require.NoError(t, err)
 
-			require.NoError(t, err)
-
-			err = yaml.Unmarshal(yamlFile, &idx)
-			require.NoError(t, err)
-
-			idx.ActiveOperation = "clone"
-			updatedYAML, err := yaml.Marshal(&idx)
-			require.NoError(t, err)
-
-			err = os.WriteFile(dataDir+"/.lakefs_ref.yaml", updatedYAML, 0644)
-			require.NoError(t, err)
-
-			// Pull without force flag
-			expectedRaw := `Latest clone operation was interrupted, local data may be incomplete.
+		// Pull without force flag
+		expectedRaw := `Latest clone operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`
-			sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-			require.Contains(t, sanitizedResult, expectedRaw)
-		})
-	}
+		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+		require.Contains(t, sanitizedResult, expectedRaw)
+	})
 }
 
 func TestLakectlLocal_interruptedCheckout(t *testing.T) {
@@ -616,50 +570,27 @@ func TestLakectlLocal_interruptedCheckout(t *testing.T) {
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	prefix := "images"
+	t.Run(prefix, func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
 
-	tests := []struct {
-		name   string
-		prefix string
-	}{
-		{
-			name:   prefix,
-			prefix: prefix,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dataDir, err := os.MkdirTemp(tmpDir, "")
-			require.NoError(t, err)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = prefix
+		vars["REF"] = prefix
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			vars["LOCAL_DIR"] = dataDir
-			vars["PREFIX"] = ""
-			vars["BRANCH"] = tt.name
-			vars["REF"] = tt.name
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+		idx, err := local.ReadIndex(dataDir)
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), idx.PathURI, idx.AtHead, "checkout")
+		require.NoError(t, err)
 
-			idx := local.Index{}
-			indexDir := os.DirFS(dataDir)
-			yamlFile, err := fs.ReadFile(indexDir, ".lakefs_ref.yaml")
-
-			require.NoError(t, err)
-
-			err = yaml.Unmarshal(yamlFile, &idx)
-			require.NoError(t, err)
-
-			idx.ActiveOperation = "checkout"
-			updatedYAML, err := yaml.Marshal(&idx)
-			require.NoError(t, err)
-
-			err = os.WriteFile(dataDir+"/.lakefs_ref.yaml", updatedYAML, 0644)
-			require.NoError(t, err)
-
-			// Pull without force flag
-			expectedRaw := `Latest checkout operation was interrupted, local data may be incomplete.
+		// Pull without force flag
+		expectedRaw := `Latest checkout operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote.`
-			sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-			require.Contains(t, sanitizedResult, expectedRaw)
-		})
-	}
+		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+		require.Contains(t, sanitizedResult, expectedRaw)
+	})
 }
