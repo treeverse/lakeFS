@@ -438,7 +438,9 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "commit")
+		uri, err := idx.GetCurrentURI()
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "commit")
 		require.NoError(t, err)
 
 		// Pull without force flag
@@ -479,7 +481,9 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "pull")
+		uri, err := idx.GetCurrentURI()
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "pull")
 		require.NoError(t, err)
 
 		// Pull without force flag
@@ -521,7 +525,9 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "clone")
+		uri, err := idx.GetCurrentURI()
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "clone")
 		require.NoError(t, err)
 
 		// Pull without force flag
@@ -562,7 +568,9 @@ func TestLakectlLocal_interruptedCheckout(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "checkout")
+		uri, err := idx.GetCurrentURI()
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "checkout")
 		require.NoError(t, err)
 
 		// Pull without force flag
