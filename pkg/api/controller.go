@@ -1547,34 +1547,36 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		writeResponse(w, r, http.StatusCreated, response)
 		return
 	}
-
-	if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
-		var (
-			reason string
-			retErr error
-			urlErr *url.Error
-		)
-		switch {
-		case errors.As(err, &urlErr) && urlErr.Op == "parse":
-			retErr = err
-			reason = "bad_url"
-		case errors.Is(err, block.ErrInvalidAddress):
-			retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
-			reason = "invalid_namespace"
-		case errors.Is(err, ErrStorageNamespaceInUse):
-			retErr = err
-			reason = "already_in_use"
-		default:
-			retErr = ErrFailedToAccessStorage
-			reason = "unknown"
+	// if skip is true will not test accessability to storage namespace
+	if !swag.BoolValue(body.SkipAccessibilityTest) {
+		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
+			var (
+				reason string
+				retErr error
+				urlErr *url.Error
+			)
+			switch {
+			case errors.As(err, &urlErr) && urlErr.Op == "parse":
+				retErr = err
+				reason = "bad_url"
+			case errors.Is(err, block.ErrInvalidAddress):
+				retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
+				reason = "invalid_namespace"
+			case errors.Is(err, ErrStorageNamespaceInUse):
+				retErr = err
+				reason = "already_in_use"
+			default:
+				retErr = ErrFailedToAccessStorage
+				reason = "unknown"
+			}
+			c.Logger.
+				WithError(err).
+				WithField("storage_namespace", body.StorageNamespace).
+				WithField("reason", reason).
+				Warn("Could not access storage namespace")
+			writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
+			return
 		}
-		c.Logger.
-			WithError(err).
-			WithField("storage_namespace", body.StorageNamespace).
-			WithField("reason", reason).
-			Warn("Could not access storage namespace")
-		writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
-		return
 	}
 
 	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
@@ -1582,7 +1584,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
 	}
-
+	// TODO(isan) do we still want to allow this even if skipping dummy file test and just let it error?
 	if sampleData {
 		// add sample data, hooks, etc.
 		user, err := auth.GetUser(ctx)

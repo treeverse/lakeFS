@@ -5895,6 +5895,7 @@ components:
       type: object
     RepositoryCreation:
       example:
+        skip_accessibility_test: true
         sample_data: true
         name: name
         default_branch: main
@@ -5912,6 +5913,10 @@ components:
           example: main
           type: string
         sample_data:
+          default: false
+          example: true
+          type: boolean
+        skip_accessibility_test:
           default: false
           example: true
           type: boolean

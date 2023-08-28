@@ -30,12 +30,17 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		skipAccessibilityTest, err := cmd.Flags().GetBool("skip-accessibility-test")
+		if err != nil {
+			DieErr(err)
+		}
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&api.CreateRepositoryParams{},
 			api.CreateRepositoryJSONRequestBody{
-				Name:             u.Repository,
-				StorageNamespace: args[1],
-				DefaultBranch:    &defaultBranch,
+				Name:                  u.Repository,
+				StorageNamespace:      args[1],
+				DefaultBranch:         &defaultBranch,
+				SkipAccessibilityTest: &skipAccessibilityTest,
 			})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
@@ -49,6 +54,6 @@ var repoCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-
+	repoCreateCmd.Flags().Bool("skip-accessibility-test", false, "skip accessability check to the underlying storage")
 	repoCmd.AddCommand(repoCreateCmd)
 }

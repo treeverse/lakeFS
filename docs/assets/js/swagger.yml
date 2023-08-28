@@ -254,6 +254,10 @@ components:
           type: boolean
           example: "true"
           default: false
+        skip_accessibility_test:
+          type: boolean
+          example: "true"
+          default: false
 
     PathList:
       type: object

@@ -45,6 +45,10 @@ public class RepositoryCreation {
   @SerializedName(SERIALIZED_NAME_SAMPLE_DATA)
   private Boolean sampleData = false;
 
+  public static final String SERIALIZED_NAME_SKIP_ACCESSIBILITY_TEST = "skip_accessibility_test";
+  @SerializedName(SERIALIZED_NAME_SKIP_ACCESSIBILITY_TEST)
+  private Boolean skipAccessibilityTest = false;
+
 
   public RepositoryCreation name(String name) {
     
@@ -138,6 +142,29 @@ public class RepositoryCreation {
   }
 
 
+  public RepositoryCreation skipAccessibilityTest(Boolean skipAccessibilityTest) {
+    
+    this.skipAccessibilityTest = skipAccessibilityTest;
+    return this;
+  }
+
+   /**
+   * Get skipAccessibilityTest
+   * @return skipAccessibilityTest
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(example = "true", value = "")
+
+  public Boolean getSkipAccessibilityTest() {
+    return skipAccessibilityTest;
+  }
+
+
+  public void setSkipAccessibilityTest(Boolean skipAccessibilityTest) {
+    this.skipAccessibilityTest = skipAccessibilityTest;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -150,12 +177,13 @@ public class RepositoryCreation {
     return Objects.equals(this.name, repositoryCreation.name) &&
         Objects.equals(this.storageNamespace, repositoryCreation.storageNamespace) &&
         Objects.equals(this.defaultBranch, repositoryCreation.defaultBranch) &&
-        Objects.equals(this.sampleData, repositoryCreation.sampleData);
+        Objects.equals(this.sampleData, repositoryCreation.sampleData) &&
+        Objects.equals(this.skipAccessibilityTest, repositoryCreation.skipAccessibilityTest);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, storageNamespace, defaultBranch, sampleData);
+    return Objects.hash(name, storageNamespace, defaultBranch, sampleData, skipAccessibilityTest);
   }
 
   @Override
@@ -166,6 +194,7 @@ public class RepositoryCreation {
     sb.append("    storageNamespace: ").append(toIndentedString(storageNamespace)).append("\n");
     sb.append("    defaultBranch: ").append(toIndentedString(defaultBranch)).append("\n");
     sb.append("    sampleData: ").append(toIndentedString(sampleData)).append("\n");
+    sb.append("    skipAccessibilityTest: ").append(toIndentedString(skipAccessibilityTest)).append("\n");
     sb.append("}");
     return sb.toString();
   }

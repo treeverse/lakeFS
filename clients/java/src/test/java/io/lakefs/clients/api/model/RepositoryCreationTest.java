@@ -72,4 +72,12 @@ public class RepositoryCreationTest {
         // TODO: test sampleData
     }
 
+    /**
+     * Test the property 'skipAccessibilityTest'
+     */
+    @Test
+    public void skipAccessibilityTestTest() {
+        // TODO: test skipAccessibilityTest
+    }
+
 }
