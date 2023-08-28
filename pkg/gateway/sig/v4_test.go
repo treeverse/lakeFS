@@ -108,7 +108,6 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 }
 
 func TestSingleChunkPut(t *testing.T) {
-	t.Skip("TODO(barak): looking into chunk verification")
 	tt := []struct {
 		Name              string
 		Host              string
@@ -147,15 +146,14 @@ func TestSingleChunkPut(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
 			// build request with amazons sdk
-			req, err := http.NewRequest(http.MethodPut, testURL, strings.NewReader(tc.SignBody))
+			req, err := http.NewRequest(http.MethodPut, testURL, nil)
 			if err != nil {
 				t.Fatalf("expect not no error, got %v", err)
 			}
-			req.Header.Set("Content-Type", "text/plain")
-			req.ContentLength = int64(len(tc.SignBody))
 
 			h := sha256.Sum256([]byte(tc.SignBody))
 			payloadHash := hex.EncodeToString(h[:])
+			req.Header.Set("X-Amz-Content-Sha256", payloadHash)
 
 			sigTime := time.Now()
 			signer := v4.NewSigner()
