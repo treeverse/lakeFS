@@ -422,8 +422,6 @@ func TestLakectlLocal_interrupted(t *testing.T) {
 	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
-	prefix := "images"
-
 	tests := []struct {
 		action          string
 		expectedmessage string
@@ -450,16 +448,16 @@ Use "lakectl local checkout..." to sync with the remote or run "lakectl local cl
 		},
 	}
 	for _, tt := range tests {
-		t.Run(prefix, func(t *testing.T) {
+		t.Run(tt.action, func(t *testing.T) {
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.action+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 			vars["LOCAL_DIR"] = dataDir
 			vars["PREFIX"] = ""
-			vars["BRANCH"] = prefix
-			vars["REF"] = prefix
+			vars["BRANCH"] = tt.action
+			vars["REF"] = tt.action
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			idx, err := local.ReadIndex(dataDir)
