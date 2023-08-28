@@ -99,9 +99,11 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			}))
 	}
 	const maxConnectionPerHost = 10
-	cfg.HTTPClient.Transport = &http.Transport{
-		MaxConnsPerHost: maxConnectionPerHost,
-	}
+	cfg = cfg.WithHTTPClient(&http.Client{
+		Transport: &http.Transport{
+			MaxConnsPerHost: maxConnectionPerHost,
+		},
+	})
 
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)
