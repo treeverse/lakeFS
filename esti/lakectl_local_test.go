@@ -434,17 +434,17 @@ Use "lakectl local checkout..." to sync with the remote or run "lakectl local cl
 		{
 			action: "checkout",
 			expectedmessage: `Latest checkout operation was interrupted, local data may be incomplete.
-Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+Use "lakectl local checkout..." to sync with the remote.`,
 		},
 		{
 			action: "commit",
-			expectedmessage: `Latest commit operation was interrupted, local data may be incomplete.
-Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+			expectedmessage: `Latest commit operation was interrupted, data may be incomplete.
+Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`,
 		},
 		{
 			action: "pull",
 			expectedmessage: `Latest pull operation was interrupted, local data may be incomplete.
-Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+Use "lakectl local pull... --force" to sync with the remote.`,
 		},
 	}
 	for _, tt := range tests {
