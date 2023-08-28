@@ -501,7 +501,7 @@ func TestLakectlLocal_interruptedPull(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.PathURI, idx.AtHead, "pull")
+		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "pull")
 		require.NoError(t, err)
 
 		// Pull without force flag
@@ -543,7 +543,7 @@ func TestLakectlLocal_interruptedClone(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.PathURI, idx.AtHead, "clone")
+		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "clone")
 		require.NoError(t, err)
 
 		// Pull without force flag
@@ -584,7 +584,7 @@ func TestLakectlLocal_interruptedCheckout(t *testing.T) {
 
 		idx, err := local.ReadIndex(dataDir)
 		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), idx.PathURI, idx.AtHead, "checkout")
+		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "checkout")
 		require.NoError(t, err)
 
 		// Pull without force flag
