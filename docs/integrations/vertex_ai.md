@@ -96,7 +96,7 @@ Vertex allows using Google Cloud Storage mounted as a [Fuse Filesystem](https://
 
 Instead of having to copy lakeFS files for each version we want to consume, we can create symlinks by using [gcsfuse](https://github.com/GoogleCloudPlatform/gcsfuse)'s native [symlink inodes](https://github.com/GoogleCloudPlatform/gcsfuse/blob/v1.0.0/docs/semantics.md#symlink-inodes).
 
-This process can be fully automated by using the example [gcsfuse_symlink_exporter.lua](https://github.com/treeverse/lakeFS/blob/feature/vertex-ai/examples/hooks/gcsfuse_symlink_exporter.lua) Lua hook.
+This process can be fully automated by using the example [gcsfuse_symlink_exporter.lua](https://github.com/treeverse/lakeFS/blob/master/examples/hooks/gcsfuse_symlink_exporter.lua) Lua hook.
 
 Here's what we need to do:
 
