@@ -233,10 +233,10 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	}
 
 	client := a.clients.Get(ctx, bucket)
-	resp, err := client.PutObject(ctx, &putObject,
-		s3.WithAPIOptions(
-			v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware,
-		))
+	resp, err := client.PutObject(ctx, &putObject)
+	//s3.WithAPIOptions(
+	//	v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware,
+	//))
 	if err != nil {
 		return err
 	}
