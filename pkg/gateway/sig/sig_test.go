@@ -82,7 +82,7 @@ func MakeV4Signer(keyID, secretKey, location string) Signer {
 func MakeV2Verifier(keyID, secretKey, bareDomain string) Verifier {
 	return func(req *http.Request) error {
 		authenticator := sig.NewV2SigAuthenticator(req)
-		_, err := authenticator.Parse(req.Context())
+		_, err := authenticator.Parse()
 		if err != nil {
 			return fmt.Errorf("sigV2 parse failed: %w", err)
 		}
@@ -96,7 +96,7 @@ func MakeV2Verifier(keyID, secretKey, bareDomain string) Verifier {
 func MakeV4Verifier(keyID, secretKey, bareDomain string) Verifier {
 	return func(req *http.Request) error {
 		authenticator := sig.NewV4Authenticator(req)
-		_, err := authenticator.Parse(req.Context())
+		_, err := authenticator.Parse()
 		if err != nil {
 			return fmt.Errorf("sigV4 parse failed: %w", err)
 		}

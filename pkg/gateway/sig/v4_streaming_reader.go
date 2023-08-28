@@ -106,7 +106,7 @@ func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, c
 	}, nil
 }
 
-// Represents the overall state that is required for decoding a
+// Represents the overall state that is required for decoding an
 // AWS Signature V4 chunked reader.
 type s3ChunkedReader struct {
 	reader            *bufio.Reader

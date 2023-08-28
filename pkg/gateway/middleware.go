@@ -35,8 +35,9 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		authenticator := sig.ChainedAuthenticator(
 			sig.NewV4Authenticator(req),
-			sig.NewV2SigAuthenticator(req))
-		authContext, err := authenticator.Parse(req.Context())
+			sig.NewV2SigAuthenticator(req),
+		)
+		authContext, err := authenticator.Parse()
 		if err != nil {
 			o.Log(req).WithError(err).Warn("failed to parse signature")
 			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))

@@ -90,7 +90,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 			// Do the same for the headers.
 			req.Header = tc.Header
 			authenticator := sig.NewV4Authenticator(req)
-			_, err := authenticator.Parse(req.Context())
+			_, err := authenticator.Parse()
 			if err != nil {
 				if !tc.ExpectedParseError {
 					t.Fatal(err)
@@ -135,51 +135,53 @@ func TestSingleChunkPut(t *testing.T) {
 		},
 	}
 	const (
-		PATH   = "http://example.test/foo"
-		ID     = "AKIAIOSFODNN7EXAMPLE"
-		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		testURL             = "https://example.test/foo"
+		testAccessKeyID     = "AKIAIOSFODNN7EXAMPLE"
+		testSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
 	ctx := context.Background()
+	creds := aws.Credentials{
+		AccessKeyID:     testAccessKeyID,
+		SecretAccessKey: testSecretAccessKey,
+	}
+
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
 			// build request with amazons sdk
-			signer := v4.NewSigner()
-
-			req, err := http.NewRequest(http.MethodPut, PATH, nil)
+			req, err := http.NewRequest(http.MethodPut, testURL, strings.NewReader(tc.SignBody))
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
-
-			creds := aws.Credentials{
-				AccessKeyID:     ID,
-				SecretAccessKey: SECRET,
-			}
+			req.Header.Set("Content-Type", "text/plain")
+			req.ContentLength = int64(len(tc.SignBody))
 
 			h := sha256.Sum256([]byte(tc.SignBody))
-			hash := hex.EncodeToString(h[:])
-			err = signer.SignHTTP(ctx, creds, req, hash, "s3", "us-east-1", time.Now())
+			payloadHash := hex.EncodeToString(h[:])
+
+			sigTime := time.Now()
+			signer := v4.NewSigner()
+			err = signer.SignHTTP(ctx, creds, req, payloadHash, "s3", "us-east-1", sigTime)
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
-			req.Body = io.NopCloser(strings.NewReader(tc.RequestBody))
 			// verify request with our authenticator
-
+			req.Body = io.NopCloser(strings.NewReader(tc.RequestBody))
 			authenticator := sig.NewV4Authenticator(req)
-			_, err = authenticator.Parse(req.Context())
+			_, err = authenticator.Parse()
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
 			err = authenticator.Verify(&model.Credential{
 				BaseCredential: model.BaseCredential{
-					AccessKeyID:     ID,
-					SecretAccessKey: SECRET,
-					IssuedDate:      time.Now(),
+					AccessKeyID:     testAccessKeyID,
+					SecretAccessKey: testSecretAccessKey,
+					IssuedDate:      sigTime,
 				},
 			}, sigV4NoDomain)
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
 			// read all
@@ -228,7 +230,7 @@ func TestStreaming(t *testing.T) {
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse(req.Context())
+	_, err = authenticator.Parse()
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -286,7 +288,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse(req.Context())
+	_, err = authenticator.Parse()
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -333,7 +335,7 @@ func TestUnsignedPayload(t *testing.T) {
 	}
 
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse(req.Context())
+	_, err = authenticator.Parse()
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
