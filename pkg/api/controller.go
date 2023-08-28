@@ -1547,7 +1547,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		writeResponse(w, r, http.StatusCreated, response)
 		return
 	}
-	// if skip is true will not test accessability to storage namespace
+
+	// if SkipAccessibilityTest == true then lakeFS will not create dummy file to test accessibility with the underlying storage
 	if !swag.BoolValue(body.SkipAccessibilityTest) {
 		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 			var (
@@ -1584,7 +1585,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
 	}
-	// TODO(isan) do we still want to allow this even if skipping dummy file test and just let it error?
+
 	if sampleData {
 		// add sample data, hooks, etc.
 		user, err := auth.GetUser(ctx)

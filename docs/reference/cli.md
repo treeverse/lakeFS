@@ -3100,8 +3100,9 @@ lakectl repo create lakefs://some-repo-name s3://some-bucket-name
 {:.no_toc}
 
 ```
-  -d, --default-branch string   the default branch of this repository (default "main")
-  -h, --help                    help for create
+  -d, --default-branch string     the default branch of this repository (default "main")
+  -h, --help                      help for create
+      --skip-accessibility-test   skip accessability check between lakeFS and the underlying storage
 ```
 
 
@@ -3128,8 +3129,9 @@ lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
 {:.no_toc}
 
 ```
-  -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
-  -h, --help                    help for create-bare
+  -d, --default-branch string     the default branch name of this repository (will not be created) (default "main")
+  -h, --help                      help for create-bare
+      --skip-accessibility-test   skip accessability check between lakeFS and the underlying storage
 ```
 
 

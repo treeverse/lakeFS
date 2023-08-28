@@ -256,6 +256,7 @@ components:
           default: false
         skip_accessibility_test:
           type: boolean
+          description: "skip accessability check between lakeFS and the underlying storage"
           example: "true"
           default: false
 

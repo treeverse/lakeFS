@@ -54,6 +54,6 @@ var repoCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-	repoCreateCmd.Flags().Bool("skip-accessibility-test", false, "skip accessability check to the underlying storage")
+	repoCreateCmd.Flags().Bool("skip-accessibility-test", false, "skip accessability check between lakeFS and the underlying storage")
 	repoCmd.AddCommand(repoCreateCmd)
 }

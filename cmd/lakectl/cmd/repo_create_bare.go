@@ -25,13 +25,18 @@ var repoCreateBareCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		skipAccessibilityTest, err := cmd.Flags().GetBool("skip-accessibility-test")
+		if err != nil {
+			DieErr(err)
+		}
 		bareRepo := true
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
 			Bare: &bareRepo,
 		}, api.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    &defaultBranch,
-			Name:             u.Repository,
-			StorageNamespace: args[1],
+			DefaultBranch:         &defaultBranch,
+			Name:                  u.Repository,
+			StorageNamespace:      args[1],
+			SkipAccessibilityTest: &skipAccessibilityTest,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
@@ -45,6 +50,6 @@ var repoCreateBareCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
-
+	repoCreateBareCmd.Flags().Bool("skip-accessibility-test", false, "skip accessability check between lakeFS and the underlying storage")
 	repoCmd.AddCommand(repoCreateBareCmd)
 }

@@ -418,7 +418,6 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 				}
 
 				checkForeignRepo(repoStorageType, logger, adapterStorageType, repo.Name)
-				checkMetadataPrefix(ctx, repo, logger, blockStore, repoStorageType)
 
 				next = repo.Name
 			}
@@ -451,27 +450,6 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 
 func getScheduler() *gocron.Scheduler {
 	return gocron.NewScheduler(time.UTC)
-}
-
-// checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)
-func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger logging.Logger, adapter block.Adapter, repoStorageType block.StorageType) {
-	if repoStorageType != block.StorageTypeGS &&
-		repoStorageType != block.StorageTypeAzure {
-		return
-	}
-
-	const dummyFile = "dummy"
-	if _, err := adapter.Get(ctx, block.ObjectPointer{
-		StorageNamespace: repo.StorageNamespace,
-		Identifier:       dummyFile,
-		IdentifierType:   block.IdentifierTypeRelative,
-	}, -1); err != nil {
-		logger.WithFields(logging.Fields{
-			"path":              dummyFile,
-			"storage_namespace": repo.StorageNamespace,
-		}).Fatal("Can't find dummy file in storage namespace, did you run the migration? " +
-			"(https://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0500)")
-	}
 }
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.

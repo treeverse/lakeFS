@@ -5918,6 +5918,8 @@ components:
           type: boolean
         skip_accessibility_test:
           default: false
+          description: skip accessability check between lakeFS and the underlying
+            storage
           example: true
           type: boolean
       required:

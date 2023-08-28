@@ -159,7 +159,7 @@ class RepositoryCreation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             default_branch (str): [optional]  # noqa: E501
             sample_data (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
-            skip_accessibility_test (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
+            skip_accessibility_test (bool): skip accessability check between lakeFS and the underlying storage. [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -249,7 +249,7 @@ class RepositoryCreation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             default_branch (str): [optional]  # noqa: E501
             sample_data (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
-            skip_accessibility_test (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
+            skip_accessibility_test (bool): skip accessability check between lakeFS and the underlying storage. [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

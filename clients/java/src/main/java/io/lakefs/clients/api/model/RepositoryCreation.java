@@ -149,11 +149,11 @@ public class RepositoryCreation {
   }
 
    /**
-   * Get skipAccessibilityTest
+   * skip accessability check between lakeFS and the underlying storage
    * @return skipAccessibilityTest
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(example = "true", value = "")
+  @ApiModelProperty(example = "true", value = "skip accessability check between lakeFS and the underlying storage")
 
   public Boolean getSkipAccessibilityTest() {
     return skipAccessibilityTest;
