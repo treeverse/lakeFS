@@ -98,11 +98,11 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 				},
 			}))
 	}
-	cfg = cfg.WithHTTPClient(&http.Client{
-		Transport: &http.Transport{
-			MaxConnsPerHost: 10,
-		},
-	})
+	const maxConnectionPerHost = 10
+	cfg.HTTPClient.Transport = &http.Transport{
+		MaxConnsPerHost: maxConnectionPerHost,
+	}
+
 	// Create DynamoDB client
 	svc := dynamodb.New(sess, cfg)
 	err = setupKeyValueDatabase(ctx, svc, params)
