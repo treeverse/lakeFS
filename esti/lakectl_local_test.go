@@ -424,51 +424,29 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 
 	prefix := "images"
 
-	tests := []struct {
-		name   string
-		prefix string
-	}{
-		{
-			name:   prefix,
-			prefix: prefix,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dataDir, err := os.MkdirTemp(tmpDir, "")
-			require.NoError(t, err)
+	t.Run(prefix, func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
-			vars["LOCAL_DIR"] = dataDir
-			vars["PREFIX"] = ""
-			vars["BRANCH"] = tt.name
-			vars["REF"] = tt.name
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = prefix
+		vars["REF"] = prefix
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			idx := local.Index{}
-			indexDir := os.DirFS(dataDir)
-			yamlFile, err := fs.ReadFile(indexDir, ".lakefs_ref.yaml")
+		idx, err := local.ReadIndex(dataDir)
+		require.NoError(t, err)
+		_, err = local.WriteIndex(idx.LocalPath(), idx.GetCurrentURI(), idx.AtHead, "commit")
+		require.NoError(t, err)
 
-			require.NoError(t, err)
-
-			err = yaml.Unmarshal(yamlFile, &idx)
-			require.NoError(t, err)
-
-			idx.ActiveOperation = "commit"
-			updatedYAML, err := yaml.Marshal(&idx)
-			require.NoError(t, err)
-
-			err = os.WriteFile(dataDir+"/.lakefs_ref.yaml", updatedYAML, 0644)
-			require.NoError(t, err)
-
-			// Pull without force flag
-			expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
+		// Pull without force flag
+		expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
 Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
-			sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-			require.Contains(t, sanitizedResult, expectedRaw)
-		})
-	}
+		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+		require.Contains(t, sanitizedResult, expectedRaw)
+	})
 }
 
 func TestLakectlLocal_interruptedPull(t *testing.T) {
