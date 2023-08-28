@@ -43,7 +43,7 @@ See below for detailed instructions for using different technologies with lakeFS
         <td width="25%" align=center><a href="./presto_trino.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/trino_presto.png" alt="presto and trino logos"/><br/>Presto / Trino</a></td>
         <td width="25%" align=center><a href="./python.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/python.png" alt="python logo"/><br/>Python</a></td>
         <td width="25%" align=center><a href="./r.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/r.png" alt="r logo"/><br/>R</a></td>
-        <td width="25%" align=center>&nbsp;</td>
+        <td width="25%" align=center><a href="./vertex_ai.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/vertex_ai.png" alt="Vertex AI Logo"/><br/>Vertex AI</a></td>
     </tr>
 </table>
 

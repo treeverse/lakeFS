@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
+	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
 	"github.com/treeverse/lakefs/pkg/actions/lua/time"
 	"github.com/treeverse/lakefs/pkg/actions/lua/uuid"
@@ -37,6 +38,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	parquet.Open(l)
 	path.Open(l)
 	aws.Open(l, ctx)
+	gcloud.Open(l, ctx)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}
