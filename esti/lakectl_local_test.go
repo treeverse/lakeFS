@@ -407,7 +407,7 @@ func TestLakectlLocal_commit(t *testing.T) {
 	}
 }
 
-func TestLakectlLocal_interruptedCommit(t *testing.T) {
+func TestLakectlLocal_interrupted(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -424,159 +424,54 @@ func TestLakectlLocal_interruptedCommit(t *testing.T) {
 
 	prefix := "images"
 
-	t.Run(prefix, func(t *testing.T) {
-		dataDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
-
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-
-		vars["LOCAL_DIR"] = dataDir
-		vars["PREFIX"] = ""
-		vars["BRANCH"] = prefix
-		vars["REF"] = prefix
-		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
-
-		idx, err := local.ReadIndex(dataDir)
-		require.NoError(t, err)
-		uri, err := idx.GetCurrentURI()
-		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "commit")
-		require.NoError(t, err)
-
-		// Pull without force flag
-		expectedRaw := `Latest commit operation was interrupted, data may be incomplete.
-Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`
-		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-		require.Contains(t, sanitizedResult, expectedRaw)
-	})
-}
-
-func TestLakectlLocal_interruptedPull(t *testing.T) {
-	tmpDir := t.TempDir()
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
-	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
-		"REF":     mainBranch,
-		"PREFIX":  "",
+	tests := []struct {
+		action          string
+		expectedmessage string
+	}{
+		{
+			action: "clone",
+			expectedmessage: `Latest clone operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+		},
+		{
+			action: "checkout",
+			expectedmessage: `Latest checkout operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+		},
+		{
+			action: "commit",
+			expectedmessage: `Latest commit operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+		},
+		{
+			action: "pull",
+			expectedmessage: `Latest pull operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(prefix, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
 
-	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
-	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
-	prefix := "images"
-	t.Run(prefix, func(t *testing.T) {
-		dataDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
+			vars["LOCAL_DIR"] = dataDir
+			vars["PREFIX"] = ""
+			vars["BRANCH"] = prefix
+			vars["REF"] = prefix
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			idx, err := local.ReadIndex(dataDir)
+			require.NoError(t, err)
+			uri, err := idx.GetCurrentURI()
+			require.NoError(t, err)
+			_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, tt.action)
+			require.NoError(t, err)
 
-		vars["LOCAL_DIR"] = dataDir
-		vars["PREFIX"] = ""
-		vars["BRANCH"] = prefix
-		vars["REF"] = prefix
-		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
-
-		idx, err := local.ReadIndex(dataDir)
-		require.NoError(t, err)
-		uri, err := idx.GetCurrentURI()
-		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "pull")
-		require.NoError(t, err)
-
-		// Pull without force flag
-		expectedRaw := `Latest pull operation was interrupted, local data may be incomplete.
-Use "lakectl local pull... --force" to sync with the remote.`
-		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-		require.Contains(t, sanitizedResult, expectedRaw)
-	})
-}
-
-func TestLakectlLocal_interruptedClone(t *testing.T) {
-	tmpDir := t.TempDir()
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
-	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
-		"REF":     mainBranch,
-		"PREFIX":  "",
+			// Pull without force flag
+			sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
+			require.Contains(t, sanitizedResult, tt.expectedmessage)
+		})
 	}
-
-	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
-	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-
-	prefix := "images"
-
-	t.Run(prefix, func(t *testing.T) {
-		dataDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
-
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-
-		vars["LOCAL_DIR"] = dataDir
-		vars["PREFIX"] = ""
-		vars["BRANCH"] = prefix
-		vars["REF"] = prefix
-		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
-
-		idx, err := local.ReadIndex(dataDir)
-		require.NoError(t, err)
-		uri, err := idx.GetCurrentURI()
-		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "clone")
-		require.NoError(t, err)
-
-		// Pull without force flag
-		expectedRaw := `Latest clone operation was interrupted, local data may be incomplete.
-Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`
-		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-		require.Contains(t, sanitizedResult, expectedRaw)
-	})
-}
-
-func TestLakectlLocal_interruptedCheckout(t *testing.T) {
-	tmpDir := t.TempDir()
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
-	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
-		"REF":     mainBranch,
-		"PREFIX":  "",
-	}
-
-	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
-	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-
-	prefix := "images"
-	t.Run(prefix, func(t *testing.T) {
-		dataDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
-
-		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+prefix+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-
-		vars["LOCAL_DIR"] = dataDir
-		vars["PREFIX"] = ""
-		vars["BRANCH"] = prefix
-		vars["REF"] = prefix
-		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" --pre-sign=false "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
-
-		idx, err := local.ReadIndex(dataDir)
-		require.NoError(t, err)
-		uri, err := idx.GetCurrentURI()
-		require.NoError(t, err)
-		_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, "checkout")
-		require.NoError(t, err)
-
-		// Pull without force flag
-		expectedRaw := `Latest checkout operation was interrupted, local data may be incomplete.
-Use "lakectl local checkout..." to sync with the remote.`
-		sanitizedResult := runCmd(t, Lakectl()+" local pull "+dataDir, true, false, vars)
-		require.Contains(t, sanitizedResult, expectedRaw)
-	})
 }
