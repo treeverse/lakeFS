@@ -60,10 +60,10 @@ local ref
 local ref_type
 if tag_events[action.event_type] then
     ref = action.tag_id
-    ref_type = "tag"
+    ref_type = "tags"
 elseif branch_events[action.event_type] then
     ref = action.branch_id
-    ref_type = "branch"
+    ref_type = "branches"
 else
     error("unsupported event type: " .. action.event_type)
 end
@@ -72,7 +72,7 @@ print("using ref_type = " .. ref_type .. ", ref = " .. ref)
 local total = 0
 local after = ""
 local has_more = true
-local out = path.join("/", args.destination, ref_type, ref, current_commit)
+local out = path.join("/", args.destination, "commits", current_commit)
 
 while has_more do
     local code, resp = lakefs.list_objects(action.repository_id, current_commit, after, args.prefix, "") -- without delimiter
@@ -94,6 +94,6 @@ end
 print("-- done writing object symlinks (" .. total .. " total symlinks created) --")
 
 if args["write_current_marker"] ~= false then
-    local marker = path.join("/", args.destination, ref_type, ref, "current")
-    gs.write_fuse_symlink(current_commit, marker, {})
+    local marker = path.join("/", args.destination, ref_type, ref)
+    gs.write_fuse_symlink("../commits/" .. current_commit, marker, {})
 end

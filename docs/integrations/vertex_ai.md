@@ -8,7 +8,7 @@ parent: Integrations
 
 Vertex AI lets Google Cloud users Build, deploy, and scale machine learning (ML) models faster, with fully managed ML tools for any use case.
 
-lakeFS Works with Vertex AI by allowing users to create repositories on [GCS Buckets](../howto/deploy/gcp.md), then use either the Dataset API to create managed Datasets on top of lakeFS version, or by automatically exporting lakeFS versions in a way readable by [Cloud Storage Mounts](https://cloud.google.com/blog/products/ai-machine-learning/cloud-storage-file-system-ai-training). 
+lakeFS Works with Vertex AI by allowing users to create repositories on [GCS Buckets](../howto/deploy/gcp.md), then use either the Dataset API to create managed Datasets on top of lakeFS version, or by automatically exporting lakeFS object versions in a way readable by [Cloud Storage Mounts](https://cloud.google.com/blog/products/ai-machine-learning/cloud-storage-file-system-ai-training). 
 
 {% include toc.html %}
 
@@ -16,9 +16,9 @@ lakeFS Works with Vertex AI by allowing users to create repositories on [GCS Buc
 
 Vertex's [ImageDataset](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.ImageDataset) and [VideoDataset](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.VideoDataset) allow creating a dataset by importing a CSV file from gcs (see [`gcs_source`](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.ImageDataset#google_cloud_aiplatform_ImageDataset_create)).
 
-This CSV file contains gcs addresses of image files and their corresponding labels.
+This CSV file contains GCS addresses of image files and their corresponding labels.
 
-Since the lakeFS API supports exporting the underlying gcs address of versioned objects, we can generate such a CSV file when creating the dataset:  
+Since the lakeFS API supports exporting the underlying GCS address of versioned objects, we can generate such a CSV file when creating the dataset:  
 
 ```python
 #!/usr/bin/env python
@@ -27,7 +27,9 @@ Since the lakeFS API supports exporting the underlying gcs address of versioned 
 # google-cloud-aiplatform>=1.31.0
 # lakefs-client>=0.107.0
 
+import csv
 from pathlib import PosixPath
+from io import StringIO
 
 import lakefs_client
 from lakefs_client.client import LakeFSClient
@@ -50,22 +52,30 @@ img_dataset = 'datasets/my-images/'
 import_bucket = 'underlying-gcs-bucket'
 
 # produce import file for Vertex's SDK
-files = client.objects.list_objects(lakefs_repo, lakefs_ref, prefix=img_dataset)
-rows = []
-for r in files.get('results'):
-    p = PosixPath(r.path)
-    rows.append((r.physical_address, p.parent.name))
+buf = StringIO()
+csv_writer = csv.writer(buf)
+has_more = True
+next_offset = ""
+while has_more:
+    files = client.objects_api.list_objects(
+        lakefs_repo, lakefs_ref, prefix=img_dataset, after=next_offset)
+    for r in files.get('results'):
+        p = PosixPath(r.path)
+        csv_writer.writerow((r.physical_address, p.parent.name))
+    has_more = files.get('pagination').get('has_more')
+    next_offset = files.get('pagination').get('next_offset')
 
 # spit out CSV
-csv = '\n'.join([','.join(row) for row in rows])
 print('generated path and labels CSV')
+buf.seek(0)
 
 # Write it to storage
 storage_client = storage.Client()
 bucket = storage_client.bucket(import_bucket)
 blob = bucket.blob(f'vertex/imports/{lakefs_repo}/{lakefs_ref}/labels.csv')
 with blob.open('w') as out:
-    out.write(csv)
+    out.write(buf.read())
+
 print(f'wrote csv to gs: gs://{import_bucket}/vertex/imports/{lakefs_repo}/{lakefs_ref}/labels.csv')
 
 # import in vertex, as dataset
@@ -134,16 +144,16 @@ Done! On the next tag creation or update to the `main` branch, we'll automatical
 To consume the symlink-ed files, we can read them normally from the mount:
 
 ```python
-with open('/gcs/my-bucket/exports/my-repo/branches/main/current/datasets/images/001.jpg') as f:
+with open('/gcs/my-bucket/exports/my-repo/branches/main/datasets/images/001.jpg') as f:
     image_data = f.read()
 
 ```
 
-Previously exported commits are also readble, if we exported them in the past:
+Previously exported commits are also readable, if we exported them in the past:
 
 ```python
 commit_id = 'abcdef123deadbeef567'
-with open(f'/gcs/my-bucket/exports/my-repo/branches/main/{commit_id}/datasets/images/001.jpg') as f:
+with open(f'/gcs/my-bucket/exports/my-repo/commits/{commit_id}/datasets/images/001.jpg') as f:
     image_data = f.read()
 
 ```

@@ -59,13 +59,11 @@ type GSClient struct {
 }
 
 func (c *GSClient) client() (*storage.Client, error) {
-	var opts []option.ClientOption
 	cred, err := google.CredentialsFromJSON(c.ctx, []byte(c.JSON), googleAuthCloudPlatform)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, option.WithCredentials(cred))
-	return storage.NewClient(c.ctx, opts...)
+	return storage.NewClient(c.ctx, option.WithCredentials(cred))
 }
 
 var functions = map[string]func(client *GSClient) lua.Function{
@@ -104,10 +102,6 @@ func writeFuseSymlink(c *GSClient) lua.Function {
 		w := obj.NewWriter(c.ctx)
 		w.ObjectAttrs.Metadata = map[string]string{
 			"gcsfuse_symlink_target": physicalAddress,
-		}
-		_, err = w.Write([]byte{})
-		if err != nil {
-			lua.Errorf(l, "could not write object \"%s\": %s", outputAddress, err.Error())
 		}
 		err = w.Close()
 		if err != nil {
