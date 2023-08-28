@@ -45,7 +45,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		}
 		accessKeyID := authContext.GetAccessKeyID()
 		creds, err := authService.GetCredentials(ctx, accessKeyID)
-		logger := o.Log(req).WithField("key", accessKeyID)
+		logger := o.Log(req)
 		if err != nil {
 			if !errors.Is(err, auth.ErrNotFound) {
 				logger.WithError(err).Warn("error getting access key")
@@ -57,7 +57,6 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			return
 		}
 		err = authenticator.Verify(creds)
-		logger = logger.WithField("authenticator", authenticator)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
 			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
