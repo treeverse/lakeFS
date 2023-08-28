@@ -44,7 +44,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	viper.SetDefault("setup_lakefs", true)
 	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
 	viper.SetDefault("endpoint_url", "http://localhost:8000")
-	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
+	viper.SetDefault("s3_endpoint", "http://s3.local.lakefs.io:8000")
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
 	viper.SetDefault(config.BlockstoreTypeKey, block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
