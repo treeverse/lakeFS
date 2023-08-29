@@ -96,4 +96,12 @@ public class StorageConfigTest {
         // TODO: test importSupport
     }
 
+    /**
+     * Test the property 'importValidityRegex'
+     */
+    @Test
+    public void importValidityRegexTest() {
+        // TODO: test importValidityRegex
+    }
+
 }
