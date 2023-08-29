@@ -302,6 +302,7 @@ type Config struct {
 		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
 	} `mapstructure:"ugc"`
 	Graveler struct {
+		EnsureReadableRootNamespace bool `mapstructure:"ensure_readable_root_namespace"`
 		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
 		RepositoryCache             struct {
 			Size   int           `mapstructure:"size"`
