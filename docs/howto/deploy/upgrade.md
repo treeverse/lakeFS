@@ -136,3 +136,7 @@ To do so, add the following to your configuration (relevant **only** for 0.30.0)
 cataloger:
   type: rocks
 ```
+
+## Data Migration for Version v0.50.0
+
+If you are using a version before 0.50.0, you must first perform the [previous upgrade to that version](https://docs.lakefs.io/v0.50/reference/upgrade.html#data-migration-for-version-v0500). {: note: .note-warning }
