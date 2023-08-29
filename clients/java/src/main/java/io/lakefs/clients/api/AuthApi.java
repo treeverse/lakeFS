@@ -28,7 +28,6 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.ACL;
-import io.lakefs.clients.api.model.;
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.Credentials;
 import io.lakefs.clients.api.model.CredentialsList;
@@ -1832,7 +1831,6 @@ public class AuthApi {
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
-
     /**
      * Build call for getCredentials
      * @param userId  (required)

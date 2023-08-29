@@ -265,8 +265,6 @@ public class AuthApiTest {
         // TODO: test validations
     }
     
-
-    
     /**
      * get credentials
      *
@@ -529,7 +527,7 @@ public class AuthApiTest {
                 api.setGroupACL(groupId, ACL);
         // TODO: test validations
     }
-
+    
     /**
      * update policy
      *

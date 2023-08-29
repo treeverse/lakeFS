@@ -4,7 +4,7 @@ import {Route, Routes} from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
 import {AuthLayout} from "../../../lib/components/auth/layout";
-import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../lib/components/modals";
@@ -77,8 +77,8 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                         setRefresh(!refresh);
                     });
                 }}
-                title={canInviteUsers ? "Create Integration User" : "Create User"}
-                placeholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
+                title={"Create Integration User"}
+                placeholder={"Integration Name (e.g. Spark)"}
                 actionName={"Create"}
                 validationFunction={disallowPercentSign(INVALID_USER_NAME_ERROR_MESSAGE)}
             />

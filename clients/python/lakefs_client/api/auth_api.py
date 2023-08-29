@@ -3936,7 +3936,6 @@ class AuthApi(object):
             acl
         return self.set_group_acl_endpoint.call_with_http_info(**kwargs)
 
-
     def update_policy(
         self,
         policy_id,

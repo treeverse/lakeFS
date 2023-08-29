@@ -65,6 +65,12 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_client.Configuration(
+    username = 'YOUR_USERNAME',
+    password = 'YOUR_PASSWORD'
+)
+
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 

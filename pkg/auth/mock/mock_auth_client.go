@@ -696,46 +696,6 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) ListUsersWithResponse(ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUsersWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ListUsersWithResponse), varargs...)
 }
 
-// UpdatePasswordWithBodyWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) UpdatePasswordWithBodyWithResponse(arg0 context.Context, arg1, arg2 string, arg3 io.Reader, arg4 ...auth.RequestEditorFn) (*auth.UpdatePasswordResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1, arg2, arg3}
-	for _, a := range arg4 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdatePasswordWithBodyWithResponse", varargs...)
-	ret0, _ := ret[0].(*auth.UpdatePasswordResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdatePasswordWithBodyWithResponse indicates an expected call of UpdatePasswordWithBodyWithResponse.
-func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdatePasswordWithBodyWithResponse(arg0, arg1, arg2, arg3 interface{}, arg4 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1, arg2, arg3}, arg4...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePasswordWithBodyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).UpdatePasswordWithBodyWithResponse), varargs...)
-}
-
-// UpdatePasswordWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) UpdatePasswordWithResponse(arg0 context.Context, arg1 string, arg2 auth.UpdatePasswordJSONRequestBody, arg3 ...auth.RequestEditorFn) (*auth.UpdatePasswordResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1, arg2}
-	for _, a := range arg3 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdatePasswordWithResponse", varargs...)
-	ret0, _ := ret[0].(*auth.UpdatePasswordResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdatePasswordWithResponse indicates an expected call of UpdatePasswordWithResponse.
-func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdatePasswordWithResponse(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePasswordWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).UpdatePasswordWithResponse), varargs...)
-}
-
 // UpdatePolicyWithBodyWithResponse mocks base method.
 func (m *MockClientWithResponsesInterface) UpdatePolicyWithBodyWithResponse(arg0 context.Context, arg1, arg2 string, arg3 io.Reader, arg4 ...auth.RequestEditorFn) (*auth.UpdatePolicyResponse, error) {
 	m.ctrl.T.Helper()

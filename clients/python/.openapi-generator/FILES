@@ -137,7 +137,6 @@ lakefs_client/model/access_key_credentials.py
 lakefs_client/model/acl.py
 lakefs_client/model/action_run.py
 lakefs_client/model/action_run_list.py
-lakefs_client/model/auth_capabilities.py
 lakefs_client/model/authentication_token.py
 lakefs_client/model/branch_creation.py
 lakefs_client/model/branch_protection_rule.py
@@ -236,7 +235,6 @@ test/test_action_run.py
 test/test_action_run_list.py
 test/test_actions_api.py
 test/test_auth_api.py
-test/test_auth_capabilities.py
 test/test_authentication_token.py
 test/test_branch_creation.py
 test/test_branch_protection_rule.py
@@ -332,7 +330,6 @@ test/test_tag_creation.py
 test/test_tags_api.py
 test/test_templates_api.py
 test/test_underlying_object_properties.py
-test/test_update_password_by_token.py
 test/test_update_token.py
 test/test_user.py
 test/test_user_creation.py
