@@ -1662,7 +1662,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 
 	if s, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
 		s.Close()
-		return fmt.Errorf("found lakeFS objects in the storage namespace(%s/%s): %w",
+		return fmt.Errorf("found lakeFS objects in the storage namespace(%s) key(%s): %w",
 			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
