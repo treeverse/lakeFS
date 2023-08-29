@@ -7036,6 +7036,7 @@ components:
         blockstore_type: blockstore_type
         pre_sign_support_ui: true
         import_support: true
+        import_validity_regex: import_validity_regex
         default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
       properties:
@@ -7053,11 +7054,14 @@ components:
           type: boolean
         import_support:
           type: boolean
+        import_validity_regex:
+          type: string
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
       - blockstore_type
       - import_support
+      - import_validity_regex
       - pre_sign_support
       - pre_sign_support_ui
       type: object

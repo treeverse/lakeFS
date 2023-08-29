@@ -51,6 +51,7 @@ type StorageNamespaceInfo struct {
 	PreSignSupport         bool
 	PreSignSupportUI       bool
 	ImportSupport          bool
+	ImportValidityRegex    string
 }
 
 type QualifiedKey interface {
@@ -189,9 +190,10 @@ func DefaultValidationRegex(scheme string) string {
 
 func DefaultStorageNamespaceInfo(scheme string) StorageNamespaceInfo {
 	return StorageNamespaceInfo{
-		ValidityRegex:  DefaultValidationRegex(scheme),
-		Example:        DefaultExample(scheme),
-		PreSignSupport: true,
-		ImportSupport:  true,
+		ValidityRegex:       DefaultValidationRegex(scheme),
+		Example:             DefaultExample(scheme),
+		PreSignSupport:      true,
+		ImportSupport:       true,
+		ImportValidityRegex: DefaultValidationRegex(scheme),
 	}
 }

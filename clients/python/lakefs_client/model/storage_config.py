@@ -88,6 +88,7 @@ class StorageConfig(ModelNormal):
             'pre_sign_support': (bool,),  # noqa: E501
             'pre_sign_support_ui': (bool,),  # noqa: E501
             'import_support': (bool,),  # noqa: E501
+            'import_validity_regex': (str,),  # noqa: E501
             'default_namespace_prefix': (str,),  # noqa: E501
         }
 
@@ -103,6 +104,7 @@ class StorageConfig(ModelNormal):
         'pre_sign_support': 'pre_sign_support',  # noqa: E501
         'pre_sign_support_ui': 'pre_sign_support_ui',  # noqa: E501
         'import_support': 'import_support',  # noqa: E501
+        'import_validity_regex': 'import_validity_regex',  # noqa: E501
         'default_namespace_prefix': 'default_namespace_prefix',  # noqa: E501
     }
 
@@ -113,7 +115,7 @@ class StorageConfig(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, blockstore_type, blockstore_namespace_example, blockstore_namespace_validity_regex, pre_sign_support, pre_sign_support_ui, import_support, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, blockstore_type, blockstore_namespace_example, blockstore_namespace_validity_regex, pre_sign_support, pre_sign_support_ui, import_support, import_validity_regex, *args, **kwargs):  # noqa: E501
         """StorageConfig - a model defined in OpenAPI
 
         Args:
@@ -123,6 +125,7 @@ class StorageConfig(ModelNormal):
             pre_sign_support (bool):
             pre_sign_support_ui (bool):
             import_support (bool):
+            import_validity_regex (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -189,6 +192,7 @@ class StorageConfig(ModelNormal):
         self.pre_sign_support = pre_sign_support
         self.pre_sign_support_ui = pre_sign_support_ui
         self.import_support = import_support
+        self.import_validity_regex = import_validity_regex
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -209,7 +213,7 @@ class StorageConfig(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, blockstore_type, blockstore_namespace_example, blockstore_namespace_validity_regex, pre_sign_support, pre_sign_support_ui, import_support, *args, **kwargs):  # noqa: E501
+    def __init__(self, blockstore_type, blockstore_namespace_example, blockstore_namespace_validity_regex, pre_sign_support, pre_sign_support_ui, import_support, import_validity_regex, *args, **kwargs):  # noqa: E501
         """StorageConfig - a model defined in OpenAPI
 
         Args:
@@ -219,6 +223,7 @@ class StorageConfig(ModelNormal):
             pre_sign_support (bool):
             pre_sign_support_ui (bool):
             import_support (bool):
+            import_validity_regex (str):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -283,6 +288,7 @@ class StorageConfig(ModelNormal):
         self.pre_sign_support = pre_sign_support
         self.pre_sign_support_ui = pre_sign_support_ui
         self.import_support = import_support
+        self.import_validity_regex = import_validity_regex
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
