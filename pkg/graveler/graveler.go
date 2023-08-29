@@ -2498,9 +2498,10 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		return "", err
 	}
 
-	if commitParams.Metadata == nil {
-		// Need metadata to place the merge strategy
-		commitParams.Metadata = make(map[string]string, 1)
+	// Ensure a copy of metadata: it will be modified to add the strategy key.
+	metadata := make(map[string]string, len(commitParams.Metadata)+1)
+	for k, v := range commitParams.Metadata {
+		metadata[k] = v
 	}
 
 	lg := g.log(ctx).WithFields(logging.Fields{
@@ -2561,8 +2562,8 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		} else {
 			commit.Generation = fromCommit.Generation + 1
 		}
-		commit.Metadata = commitParams.Metadata
-		commit.Metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
+		metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
+		commit.Metadata = metadata
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
