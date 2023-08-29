@@ -57,6 +57,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_IMPORT_SUPPORT)
   private Boolean importSupport;
 
+  public static final String SERIALIZED_NAME_IMPORT_VALIDITY_REGEX = "import_validity_regex";
+  @SerializedName(SERIALIZED_NAME_IMPORT_VALIDITY_REGEX)
+  private String importValidityRegex;
+
 
   public StorageConfig blockstoreType(String blockstoreType) {
     
@@ -219,6 +223,29 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig importValidityRegex(String importValidityRegex) {
+    
+    this.importValidityRegex = importValidityRegex;
+    return this;
+  }
+
+   /**
+   * Get importValidityRegex
+   * @return importValidityRegex
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public String getImportValidityRegex() {
+    return importValidityRegex;
+  }
+
+
+  public void setImportValidityRegex(String importValidityRegex) {
+    this.importValidityRegex = importValidityRegex;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -234,12 +261,13 @@ public class StorageConfig {
         Objects.equals(this.defaultNamespacePrefix, storageConfig.defaultNamespacePrefix) &&
         Objects.equals(this.preSignSupport, storageConfig.preSignSupport) &&
         Objects.equals(this.preSignSupportUi, storageConfig.preSignSupportUi) &&
-        Objects.equals(this.importSupport, storageConfig.importSupport);
+        Objects.equals(this.importSupport, storageConfig.importSupport) &&
+        Objects.equals(this.importValidityRegex, storageConfig.importValidityRegex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex);
   }
 
   @Override
@@ -253,6 +281,7 @@ public class StorageConfig {
     sb.append("    preSignSupport: ").append(toIndentedString(preSignSupport)).append("\n");
     sb.append("    preSignSupportUi: ").append(toIndentedString(preSignSupportUi)).append("\n");
     sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
+    sb.append("    importValidityRegex: ").append(toIndentedString(importValidityRegex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

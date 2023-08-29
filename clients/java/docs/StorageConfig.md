@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **preSignSupport** | **Boolean** |  | 
 **preSignSupportUi** | **Boolean** |  | 
 **importSupport** | **Boolean** |  | 
+**importValidityRegex** | **String** |  | 
 
 
 

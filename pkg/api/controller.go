@@ -1452,6 +1452,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		PreSignSupport:                   info.PreSignSupport,
 		PreSignSupportUi:                 info.PreSignSupportUI,
 		ImportSupport:                    info.ImportSupport,
+		ImportValidityRegex:              info.ImportValidityRegex,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
