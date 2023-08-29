@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestDoctor(t *testing.T) {
+func TestLakectlDoctor(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
