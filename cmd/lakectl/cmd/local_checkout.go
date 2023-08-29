@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -17,13 +16,11 @@ var localCheckoutCmd = &cobra.Command{
 	Short: "Sync local directory with the remote state.",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
-		localSendStats(cmd.Context(), client, "checkout")
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
 		all := Must(cmd.Flags().GetBool("all"))
 		_, localPath := getLocalArgs(args, false, all)
 		if !all {
-			localCheckout(cmd, client, localPath, specifiedRef, true)
+			localCheckout(cmd, localPath, specifiedRef, true)
 			return
 		}
 		fmt.Println("the operation will revert all changes in all directories that are linked with lakeFS.")
@@ -36,12 +33,13 @@ var localCheckoutCmd = &cobra.Command{
 			DieErr(err)
 		}
 		for _, d := range dirs {
-			localCheckout(cmd, client, filepath.Join(localPath, d), specifiedRef, false)
+			localCheckout(cmd, filepath.Join(localPath, d), specifiedRef, false)
 		}
 	},
 }
 
-func localCheckout(cmd *cobra.Command, client *api.ClientWithResponses, localPath string, specifiedRef string, confirmByFlag bool) {
+func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, confirmByFlag bool) {
+	client := getClient()
 	locaSyncFlags := getLocalSyncFlags(cmd, client)
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {

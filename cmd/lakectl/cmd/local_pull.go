@@ -18,7 +18,6 @@ var localPullCmd = &cobra.Command{
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		localSendStats(cmd.Context(), client, "pull")
 		_, localPath := getLocalArgs(args, false, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		syncFlags := getLocalSyncFlags(cmd, client)

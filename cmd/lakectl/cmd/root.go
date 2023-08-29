@@ -144,6 +144,13 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			DieFmt("error unmarshal configuration: %v", err)
 		}
+
+		if cmd.Parent() != nil {
+			// Don't send statistics if command doesn't have parent so to not spam statistics
+			cmdName := fmt.Sprintf("%s_%s", cmd.Parent().Name(), cmd.Name())
+			sendStats(cmd.Context(), getClient(), cmdName)
+		}
+
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -193,6 +200,23 @@ var rootCmd = &cobra.Command{
 
 		Write(versionTemplate, info)
 	},
+}
+
+func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
+	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
+		Events: []api.StatsEvent{
+			{
+				Class: "lakectl",
+				Count: 1,
+			},
+		},
+	})
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error sending statistics: %s\n", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		_, _ = fmt.Fprintf(os.Stderr, "Failure sending statistics: Status Code: %d\n", resp.StatusCode())
+	}
 }
 
 func getClient() *api.ClientWithResponses {

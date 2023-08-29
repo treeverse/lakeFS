@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -20,7 +19,7 @@ const (
 	localInitMaxArgs = 2
 )
 
-func localInit(ctx context.Context, client *api.ClientWithResponses, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
+func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		DieErr(err)
 	}
@@ -33,7 +32,7 @@ func localInit(ctx context.Context, client *api.ClientWithResponses, dir string,
 	}
 
 	// dereference
-	head := resolveCommitOrDie(ctx, client, remote.Repository, remote.Ref)
+	head := resolveCommitOrDie(ctx, getClient(), remote.Repository, remote.Ref)
 	_, err = local.WriteIndex(dir, remote, head, "")
 	if err != nil {
 		return "", err
@@ -56,12 +55,10 @@ var localInitCmd = &cobra.Command{
 	Short: "set a local directory to sync with a lakeFS path.",
 	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := getClient()
-		localSendStats(cmd.Context(), client, "init")
 		remote, localPath := getLocalArgs(args, true, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
-		_, err := localInit(cmd.Context(), client, localPath, remote, force, updateIgnore)
+		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)
 		if err != nil {
 			if errors.Is(err, fs.ErrExist) {
 				DieFmt("directory '%s' already linked to a lakeFS path, run command with --force to overwrite", localPath)

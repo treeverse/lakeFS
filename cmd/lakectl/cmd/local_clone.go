@@ -27,7 +27,6 @@ var localCloneCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		localSendStats(cmd.Context(), client, "clone")
 		remote, localPath := getLocalArgs(args, true, false)
 		syncFlags := getLocalSyncFlags(cmd, client)
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
@@ -40,7 +39,7 @@ var localCloneCmd = &cobra.Command{
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
-		head, err := localInit(cmd.Context(), client, localPath, remote, false, updateIgnore)
+		head, err := localInit(cmd.Context(), localPath, remote, false, updateIgnore)
 		if err != nil {
 			DieErr(err)
 		}
