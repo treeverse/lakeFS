@@ -233,10 +233,9 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	}
 
 	client := a.clients.Get(ctx, bucket)
-	resp, err := client.PutObject(ctx, &putObject)
-	//s3.WithAPIOptions(
-	//	v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware,
-	//))
+	resp, err := client.PutObject(ctx, &putObject, s3.WithAPIOptions(
+		v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware,
+	))
 	if err != nil {
 		return err
 	}
@@ -271,7 +270,9 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}
 
 	client := a.clients.Get(ctx, bucket)
-	resp, err := client.UploadPart(ctx, uploadPartInput)
+	resp, err := client.UploadPart(ctx, uploadPartInput, s3.WithAPIOptions(
+		v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware,
+	))
 	if err != nil {
 		return nil, err
 	}
