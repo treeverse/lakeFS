@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
@@ -256,6 +257,11 @@ func TestGravelerMerge(t *testing.T) {
 
 	t.Run("merge successful with branchUpdate retry", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
+
+		// upgrade graveler branch update back-off to shorten test duration
+		const updateRetryDuration = 200 * time.Millisecond
+		test.Sut.BranchUpdateBackOff = backoff.NewConstantBackOff(updateRetryDuration)
+
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
