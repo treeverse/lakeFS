@@ -2,8 +2,23 @@
 
 ## UNRELEASED
 
-- When creating Repository: `dummy` file location changed from `<storage-namespace>/dummy` to `<storage-namespace>/_lakefs/dummy`
-- Removed support for migration from lakeFS version < `v0.50.0`
+# v0.108.0
+
+:new: What's new:
+- Support vertex AI (Datasets + Fuse) (#6492)
+- A better way to handle interrupts in lakectl local (#6455) 
+- When creating Repository: `dummy` file location changed from `<storage-namespace>/dummy` to `<storage-namespace>/_lakefs/dummy` (#6497)
+- Removed support for migration from lakeFS version < v0.50.0 (#6497)
+- Deprecate lakectl fs "--direct" flag (#6480)
+
+:bug: Bug fixed:
+- Fix: Ensure that metadata is included in merge operations (#6500)
+- Fix: Increase DynamoDB concurrent requests (#6489)
+- Fix: UI ignores presigned URL configuration for GetObject requests (#6477)
+- Fix: lakectl local sync parallelism (#6485)
+- Fix: UI object information slides outside the modal dialog (#6501)
+- Fix: CosmosDB SeekGE query from iterator start key (#6503)
+- Fix: UI ADLS import validity regex (#6509)
 
 # v0.107.1
 
