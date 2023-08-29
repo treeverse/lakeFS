@@ -328,6 +328,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	}
 	return nil
 }
+
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
@@ -384,6 +385,7 @@ func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
 	}
 	return key, value
 }
+
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
