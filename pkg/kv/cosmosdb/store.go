@@ -422,7 +422,8 @@ func (e *EntriesIterator) Next() bool {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
-	if !e.isInRange(key) {
+	e.startKey = key
+	if !e.isInRange() {
 		e.runQuery()
 		return
 	}
@@ -462,11 +463,11 @@ func (e *EntriesIterator) runQuery() {
 	e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
 }
 
-func (e *EntriesIterator) isInRange(key []byte) bool {
+func (e *EntriesIterator) isInRange() bool {
 	if len(e.currPage.Items) == 0 {
 		return false
 	}
 	minKey, _ := e.getKeyValue(0)
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
-	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
+	return minKey != nil && maxKey != nil && bytes.Compare(e.startKey, minKey) >= 0 && bytes.Compare(e.startKey, maxKey) <= 0
 }
