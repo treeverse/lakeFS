@@ -126,47 +126,6 @@ export class RepositoryDeletionError extends Error {
 
 // actual actions:
 class Auth {
-    async getAuthCapabilities() {
-        const response = await apiRequest('/auth/capabilities', {
-            method: 'GET',
-        });
-        switch (response.status) {
-            case 200:
-                return await response.json();
-            default:
-                throw new Error('Unknown');
-        }
-    }
-
-    async updatePasswordByToken(token, newPassword, email) {
-        const response = await fetch(`${API_ENDPOINT}/auth/password`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-            body: JSON.stringify({token: token, newPassword: newPassword, email: email})
-        });
-
-        if (response.status === 401) {
-            throw new AuthorizationError('user unauthorized');
-        }
-        if (response.status !== 201) {
-            throw new Error('failed to update password');
-        }
-    }
-
-    async passwordForgot(email) {
-        const response = await fetch(`${API_ENDPOINT}/auth/password/forgot`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-            body: JSON.stringify({email: email})
-        });
-
-        if (response.status === 400) {
-            throw new BadRequestError("invalid email");
-        }
-        if (response.status !== 204) {
-            throw new Error('failed to request password reset');
-        }
-    }
 
     async login(accessKeyId, secretAccessKey) {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {

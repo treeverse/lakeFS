@@ -28,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -114,7 +113,6 @@ type Service interface {
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
 	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
-	HashAndUpdatePassword(ctx context.Context, username string, password string) error
 
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
@@ -988,31 +986,6 @@ func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*
 	})
 }
 
-func (s *AuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
-	user, err := s.GetUser(ctx, username)
-	if err != nil {
-		return err
-	}
-	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	userKey := model.UserPath(user.Username)
-	userUpdatePassword := model.User{
-		CreatedAt:         user.CreatedAt,
-		Username:          user.Username,
-		FriendlyName:      user.FriendlyName,
-		Email:             user.Email,
-		EncryptedPassword: pw,
-		Source:            user.Source,
-	}
-	err = kv.SetMsgIf(ctx, s.store, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
-	if err != nil {
-		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
-	}
-	return err
-}
-
 func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
@@ -1349,20 +1322,6 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 		}
 	}
 	return users, toPagination(pagination), nil
-}
-
-func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
-	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	resp, err := a.apiClient.UpdatePasswordWithResponse(ctx, username, UpdatePasswordJSONRequestBody{EncryptedPassword: encryptedPassword})
-	if err != nil {
-		a.logger.WithField("username", username).WithError(err).Error("failed to update password")
-		return err
-	}
-
-	return a.validateResponse(resp, http.StatusOK)
 }
 
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {

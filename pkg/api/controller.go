@@ -155,15 +155,6 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	})
 }
 
-func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	inviteSupported := c.Auth.IsInviteSupported()
-	emailSupported := c.Emailer.Params.SMTPHost != ""
-	writeResponse(w, r, http.StatusOK, AuthCapabilities{
-		InviteUser:     &inviteSupported,
-		ForgotPassword: &emailSupported,
-	})
-}
-
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body DeleteObjectsJSONRequestBody, repository, branch string) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
@@ -4240,51 +4231,6 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	}
 	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
 	return nil
-}
-
-func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body ForgotPasswordJSONRequestBody) {
-	addr, err := mail.ParseAddress(body.Email)
-	if err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid email")
-		return
-	}
-	err = c.resetPasswordRequest(r.Context(), addr.Address)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
-func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body UpdatePasswordJSONRequestBody) {
-	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
-	if err != nil {
-		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
-
-	// verify provided email matched the token
-	requestEmail := StringValue(body.Email)
-	if requestEmail != "" && requestEmail != claims.Subject {
-		c.Logger.WithError(err).WithFields(logging.Fields{
-			"token":         body.Token,
-			"request_email": requestEmail,
-		}).Debug("requested email doesn't match the email provided in verified token")
-	}
-
-	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
-		writeError(w, r, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		return
-	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
-	if err != nil {
-		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
-		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, nil)
 }
 
 func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {

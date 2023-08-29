@@ -50,13 +50,6 @@ const CreateUserWithPasswordForm = ({token, email}) => {
                     <Card.Body>
                         <Form id='activate-user' onSubmit={async (e) => {
                             e.preventDefault();
-                            try {
-                                await auth.updatePasswordByToken(token, e.target.password.value, email);
-                                setReqActivateUserError(null);
-                                router.push("/auth/login");
-                            } catch (err) {
-                                setReqActivateUserError(err);
-                            }
                         }}>
                             <Form.Group controlId="email">
                                 <Form.Control type="text" placeholder={email} disabled={true}/>

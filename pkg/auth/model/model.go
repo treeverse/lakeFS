@@ -192,20 +192,6 @@ type CredentialKeys struct {
 	SecretAccessKey string `json:"secret_access_key"`
 }
 
-func (u *User) UpdatePassword(password string) error {
-	pw, err := HashPassword(password)
-	if err != nil {
-		return err
-	}
-	u.EncryptedPassword = pw
-	return nil
-}
-
-// HashPassword generates a hashed password from a plaintext string
-func HashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-}
-
 // Authenticate a user from a password Returns nil on success, or an error on failure.
 func (u *User) Authenticate(password string) error {
 	return bcrypt.CompareHashAndPassword(u.EncryptedPassword, []byte(password))

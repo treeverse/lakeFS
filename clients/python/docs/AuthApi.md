@@ -18,8 +18,6 @@ Method | HTTP request | Description
 [**delete_user**](AuthApi.md#delete_user) | **DELETE** /auth/users/{userId} | delete user
 [**detach_policy_from_group**](AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detach_policy_from_user**](AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-[**forgot_password**](AuthApi.md#forgot_password) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
-[**get_auth_capabilities**](AuthApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**get_credentials**](AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**get_current_user**](AuthApi.md#get_current_user) | **GET** /user | get current user
 [**get_group**](AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
@@ -36,7 +34,6 @@ Method | HTTP request | Description
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
 [**set_group_acl**](AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
-[**update_password**](AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
 
@@ -70,11 +67,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -177,11 +170,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -284,11 +273,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -392,11 +377,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -500,11 +481,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -610,11 +587,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -731,11 +704,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -842,11 +811,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -949,11 +914,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1054,11 +1015,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1161,11 +1118,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1266,11 +1219,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1371,11 +1320,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1478,11 +1423,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1555,246 +1496,6 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **forgot_password**
-> forgot_password(forgot_password_request)
-
-forgot password request initiates the password reset process
-
-### Example
-
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient() as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    forgot_password_request = ForgotPasswordRequest(
-        email="email_example",
-    ) # ForgotPasswordRequest | 
-
-    # example passing only required values which don't have defaults set
-    try:
-        # forgot password request initiates the password reset process
-        api_instance.forgot_password(forgot_password_request)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->forgot_password: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **forgot_password_request** | [**ForgotPasswordRequest**](ForgotPasswordRequest.md)|  |
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**204** | No content |  -  |
-**400** | Bad Request |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **get_auth_capabilities**
-> AuthCapabilities get_auth_capabilities()
-
-list authentication capabilities supported
-
-### Example
-
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
-from lakefs_client.model.auth_capabilities import AuthCapabilities
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient() as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-
-    # example, this endpoint has no required or optional parameters
-    try:
-        # list authentication capabilities supported
-        api_response = api_instance.get_auth_capabilities()
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->get_auth_capabilities: %s\n" % e)
-```
-
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-[**AuthCapabilities**](AuthCapabilities.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | auth capabilities |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **get_credentials**
-> Credentials get_credentials(user_id, access_key_id)
-
-get credentials
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.credentials import Credentials
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    access_key_id = "accessKeyId_example" # str | 
-
-    # example passing only required values which don't have defaults set
-    try:
-        # get credentials
-        api_response = api_instance.get_credentials(user_id, access_key_id)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->get_credentials: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **access_key_id** | **str**|  |
-
-### Return type
-
-[**Credentials**](Credentials.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | credentials |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_current_user**
 > CurrentUser get_current_user()
@@ -1826,11 +1527,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -1926,11 +1623,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2034,11 +1727,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2141,11 +1830,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2248,11 +1933,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2355,11 +2036,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2476,11 +2153,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2598,11 +2271,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2709,11 +2378,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2820,11 +2485,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -2942,11 +2603,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -3064,11 +2721,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -3188,11 +2841,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -3372,11 +3021,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
@@ -3451,87 +3096,6 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **update_password**
-> update_password(update_password_by_token)
-
-Update user password by reset_password token
-
-### Example
-
-* Api Key Authentication (cookie_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    update_password_by_token = UpdatePasswordByToken(
-        token="token_example",
-        new_password="new_password_example",
-        email="email_example",
-    ) # UpdatePasswordByToken | 
-
-    # example passing only required values which don't have defaults set
-    try:
-        # Update user password by reset_password token
-        api_instance.update_password(update_password_by_token)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->update_password: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **update_password_by_token** | [**UpdatePasswordByToken**](UpdatePasswordByToken.md)|  |
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-[cookie_auth](../README.md#cookie_auth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**201** | successful reset |  -  |
-**401** | Unauthorized |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **update_policy**
 > Policy update_policy(policy_id, policy)
@@ -3564,11 +3128,7 @@ configuration = lakefs_client.Configuration(
 # Examples for each auth method are provided below, use the example that
 # satisfies your auth use case.
 
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
+
 
 # Configure API key authorization: cookie_auth
 configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'

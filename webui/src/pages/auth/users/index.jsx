@@ -45,17 +45,10 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
 
     useEffect(() => { setSelected([]); }, [refresh, after]);
 
-    const authCapabilities = useAPI(() => auth.getAuthCapabilities());
-    if (error) return <AlertError error={error}/>;
-    if (loading) return <Loading/>;
-    if (authCapabilities.loading) return <Loading/>;
-
-    const canInviteUsers = !authCapabilities.error && authCapabilities.response && authCapabilities.response.invite_user;
-
     return (
         <>
             <ActionsBar>
-                <UserActionsActionGroup canInviteUsers={canInviteUsers} selected={selected}
+                <UserActionsActionGroup canInviteUsers={true} selected={selected}
                                         onClickInvite={() => setShowInvite(true)} onClickCreate={() => setShowCreate(true)}
                                         onConfirmDelete={() => {
                                             auth.deleteUsers(selected.map(u => u.id))
