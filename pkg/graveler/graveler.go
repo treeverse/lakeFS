@@ -2503,7 +2503,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		commitParams.Metadata = make(map[string]string, 1)
 	}
 
-	lg = g.log(ctx).WithFields(logging.Fields{
+	lg := g.log(ctx).WithFields(logging.Fields{
 		"repository":  repository.RepositoryID,
 		"source":      source,
 		"destination": destination,
