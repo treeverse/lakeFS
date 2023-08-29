@@ -107,6 +107,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories.
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
    The user may still change it to something else.
+* `blockstore.ensure_root_namespace_rw_access` `(bool: true)` - When creating a new repository use this to verify that lakeFS has R/W access to the storage namespace root. Set `false` only if lakeFS should not have access (i.e pre-sign mode only).
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.

@@ -228,9 +228,10 @@ type Config struct {
 		} `mapstructure:"ui_config"`
 	} `mapstructure:"auth"`
 	Blockstore struct {
-		Type                   string  `mapstructure:"type" validate:"required"`
-		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
-		Local                  *struct {
+		Type                        string  `mapstructure:"type" validate:"required"`
+		DefaultNamespacePrefix      *string `mapstructure:"default_namespace_prefix"`
+		EnsureRootNamespaceRWAccess bool    `mapstructure:"ensure_root_namespace_rw_access"`
+		Local                       *struct {
 			Path                    string   `mapstructure:"path"`
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
 			ImportHidden            bool     `mapstructure:"import_hidden"`
