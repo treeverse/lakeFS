@@ -122,6 +122,7 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("database.postgres.max_idle_connections", 25)
 	viper.SetDefault("database.postgres.connection_max_lifetime", "5m")
 
+	viper.SetDefault("graveler.ensure_readable_root_namespace", true)
 	viper.SetDefault("graveler.repository_cache.size", 1000)
 	viper.SetDefault("graveler.repository_cache.expiry", 5*time.Second)
 	viper.SetDefault("graveler.repository_cache.jitter", 2*time.Second)

@@ -2,6 +2,9 @@
 
 ## UNRELEASED
 
+- When creating Repository: `dummy` file location changed from `<storage-namespace>/dummy` to `<storage-namespace>/_lakefs/dummy`
+- Removed support for migration from lakeFS version < `v0.50.0`
+
 # v0.107.1
 
 :bug: Bug fixed:

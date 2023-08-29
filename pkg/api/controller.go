@@ -1627,19 +1627,43 @@ func (c *Controller) validateStorageNamespace(storageNamespace string) error {
 
 func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
 	const (
-		dummyKey  = "dummy"
-		dummyData = "this is dummy data - created by lakeFS in order to check accessibility"
+		dummyData    = "this is dummy data - created by lakeFS to check accessibility"
+		dummyObjName = "dummy"
 	)
+	dummyKey := fmt.Sprintf("%s/%s", c.Config.Committed.BlockStoragePrefix, dummyObjName)
 
+	objLen := int64(len(dummyData))
+
+	// check if the dummy file exist in the root of the storage namespace
+	// this serves 2 purposes, first, we maintain safety check for older lakeFS version.
+	// second, in scenarios where lakeFS shouldn't have access to the root namespace (i.e pre-sign URL only).
+	if c.Config.Graveler.EnsureReadableRootNamespace {
+		rootObj := block.ObjectPointer{
+			StorageNamespace: storageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       dummyObjName,
+		}
+
+		if s, err := c.BlockAdapter.Get(ctx, rootObj, objLen); err == nil {
+			s.Close()
+			return fmt.Errorf("found lakeFS objects in the storage namespace root(%s): %w",
+				storageNamespace, ErrStorageNamespaceInUse)
+		} else if !errors.Is(err, block.ErrDataNotFound) {
+			return err
+		}
+	}
+
+	// check if the dummy file exists
 	obj := block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       dummyKey,
 	}
-	objLen := int64(len(dummyData))
-	if _, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
-		return fmt.Errorf("found lakeFS objects in the storage namespace(%s): %w",
-			storageNamespace, ErrStorageNamespaceInUse)
+
+	if s, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
+		s.Close()
+		return fmt.Errorf("found lakeFS objects in the storage namespace(%s) key(%s): %w",
+			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}
