@@ -228,10 +228,9 @@ type Config struct {
 		} `mapstructure:"ui_config"`
 	} `mapstructure:"auth"`
 	Blockstore struct {
-		Type                        string  `mapstructure:"type" validate:"required"`
-		DefaultNamespacePrefix      *string `mapstructure:"default_namespace_prefix"`
-		EnsureRootNamespaceRWAccess bool    `mapstructure:"ensure_root_namespace_rw_access"`
-		Local                       *struct {
+		Type                   string  `mapstructure:"type" validate:"required"`
+		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
+		Local                  *struct {
 			Path                    string   `mapstructure:"path"`
 			ImportEnabled           bool     `mapstructure:"import_enabled"`
 			ImportHidden            bool     `mapstructure:"import_hidden"`
@@ -303,6 +302,7 @@ type Config struct {
 		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
 	} `mapstructure:"ugc"`
 	Graveler struct {
+		EnsureReadableRootNamespace bool `mapstructure:"ensure_readable_root_namespace"`
 		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
 		RepositoryCache             struct {
 			Size   int           `mapstructure:"size"`

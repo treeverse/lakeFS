@@ -1637,7 +1637,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	// check if the dummy file exist in the root of the storage namespace
 	// this serves 2 purposes, first, we maintain safety check for older lakeFS version.
 	// second, in scenarios where lakeFS shouldn't have access to the root namespace (i.e pre-sign URL only).
-	if c.Config.Blockstore.EnsureRootNamespaceRWAccess {
+	if c.Config.Graveler.EnsureReadableRootNamespace {
 		rootObj := block.ObjectPointer{
 			StorageNamespace: storageNamespace,
 			IdentifierType:   block.IdentifierTypeRelative,
@@ -1645,7 +1645,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		}
 
 		if s, err := c.BlockAdapter.Get(ctx, rootObj, objLen); err == nil {
-			defer s.Close()
+			s.Close()
 			return fmt.Errorf("found lakeFS objects in the storage namespace root(%s): %w",
 				storageNamespace, ErrStorageNamespaceInUse)
 		} else if !errors.Is(err, block.ErrDataNotFound) {
@@ -1653,7 +1653,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		}
 	}
 
-	// check if the dummy file exist
+	// check if the dummy file exists
 	obj := block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -1661,7 +1661,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	}
 
 	if s, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
-		defer s.Close()
+		s.Close()
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s/%s): %w",
 			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {

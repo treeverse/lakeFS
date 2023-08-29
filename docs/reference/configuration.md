@@ -107,7 +107,6 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories.
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
    The user may still change it to something else.
-* `blockstore.ensure_root_namespace_rw_access` `(bool: true)` - When creating a new repository use this to verify that lakeFS has R/W access to the storage namespace root. Set `false` only if lakeFS should not have access (i.e pre-sign mode only).
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.
@@ -142,6 +141,7 @@ This reference uses `.` to denote the nesting of values.
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
 * `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
+* `graveler.ensure_readable_root_namespace` `(bool: true)` - When creating a new repository use this to verify that lakeFS has access to the root of the underlying storage namespace. Set `false` only if lakeFS should not have access (i.e pre-sign mode only).
 * `graveler.commit_cache.size` `(int : 50000)` - How many items to store in the commit cache.
 * `graveler.commit_cache.ttl` `(time duration : "10m")` - How long to store an item in the commit cache.
 * `graveler.commit_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.

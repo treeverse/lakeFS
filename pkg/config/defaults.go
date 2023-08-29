@@ -60,7 +60,6 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("auth.remote_authenticator.default_user_group", "Viewers")
 	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
 
-	viper.SetDefault("blockstore.ensure_root_namespace_rw_access", true)
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk
@@ -123,6 +122,7 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("database.postgres.max_idle_connections", 25)
 	viper.SetDefault("database.postgres.connection_max_lifetime", "5m")
 
+	viper.SetDefault("graveler.ensure_readable_root_namespace", true)
 	viper.SetDefault("graveler.repository_cache.size", 1000)
 	viper.SetDefault("graveler.repository_cache.expiry", 5*time.Second)
 	viper.SetDefault("graveler.repository_cache.jitter", 2*time.Second)
