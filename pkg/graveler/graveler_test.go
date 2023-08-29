@@ -1827,6 +1827,10 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 	const commitCommitter = "committer"
 	const mergeMessage = "message"
 	mergeMetadata := graveler.Metadata{"key1": "val1"}
+	expectedMergeMetadata := graveler.Metadata{
+		"key1":                   "val1",
+		".lakefs.merge.strategy": "default",
+	}
 	tests := []struct {
 		name string
 		hook bool
@@ -1900,7 +1904,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if h.Commit.Message != mergeMessage {
 				t.Errorf("Hook merge message '%s', expected '%s'", h.Commit.Message, mergeMessage)
 			}
-			if diff := deep.Equal(h.Commit.Metadata, mergeMetadata); diff != nil {
+			if diff := deep.Equal(h.Commit.Metadata, expectedMergeMetadata); diff != nil {
 				t.Error("Hook merge metadata diff:", diff)
 			}
 		})
