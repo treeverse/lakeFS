@@ -2498,6 +2498,19 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		return "", err
 	}
 
+	// Ensure a copy of metadata: it will be modified to add the strategy key.
+	metadata := make(map[string]string, len(commitParams.Metadata)+1)
+	for k, v := range commitParams.Metadata {
+		metadata[k] = v
+	}
+
+	lg := g.log(ctx).WithFields(logging.Fields{
+		"repository":  repository.RepositoryID,
+		"source":      source,
+		"destination": destination,
+		"strategy":    strategy,
+	})
+
 	var tokensToDrop []StagingToken
 	// No retries on any failure during the merge. If the branch changed, it's either that commit is in progress, commit occurred,
 	// or some other branch changing operation. If commit is in-progress, then staging area wasn't empty after we checked so not retrying is ok.
@@ -2514,14 +2527,10 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		if err != nil {
 			return nil, err
 		}
-		g.log(ctx).WithFields(logging.Fields{
-			"repository":             repository.RepositoryID,
-			"source":                 source,
-			"destination":            destination,
+		lg.WithFields(logging.Fields{
 			"source_meta_range":      fromCommit.MetaRangeID,
 			"destination_meta_range": toCommit.MetaRangeID,
 			"base_meta_range":        baseCommit.MetaRangeID,
-			"strategy":               strategy,
 		}).Trace("Merge")
 
 		var mergeStrategy MergeStrategy
@@ -2553,8 +2562,8 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		} else {
 			commit.Generation = fromCommit.Generation + 1
 		}
-		commit.Metadata = commitParams.Metadata
-		commit.Metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
+		metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
+		commit.Metadata = metadata
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreMergeHook(ctx, HookRecord{
 			EventType:        EventTypePreMerge,
