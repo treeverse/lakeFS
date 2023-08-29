@@ -16,6 +16,7 @@ type StorageConfigContextType = {
   blockstore_type: string | null;
   default_namespace_prefix: string | null;
   import_support: boolean;
+  import_ValidityRegex: string | null;
   pre_sign_support: boolean;
   pre_sign_support_ui: boolean;
 };
@@ -28,6 +29,7 @@ const storageConfigInitialState: StorageConfigContextType = {
   blockstore_type: null,
   default_namespace_prefix: null,
   import_support: false,
+  import_ValidityRegex: null,
   pre_sign_support: false,
   pre_sign_support_ui: false,
 };

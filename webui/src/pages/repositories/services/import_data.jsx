@@ -97,8 +97,8 @@ const ImportForm = ({
 
                     }) => {
     const [isSourceValid, setIsSourceValid] = useState(true);
-    const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
-    const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
+    const importValidityRegexStr = config.import_ValidityRegex;
+    const storageNamespaceValidityRegex = RegExp(importValidityRegexStr);
     const updateSourceURLValidity = () => {
         if (!sourceRef.current.value) {
             updateSrcValidity(true);
@@ -124,7 +124,7 @@ const ImportForm = ({
                               onChange={updateSourceURLValidity}/>
                 {isSourceValid === false &&
                     <Form.Text className="text-danger">
-                        {`Import source should match the following pattern: "${storageNamespaceValidityRegexStr}"`}
+                        {`Import source should match the following pattern: "${importValidityRegexStr}"`}
                     </Form.Text>
                 }
                 {isSourceValid &&
