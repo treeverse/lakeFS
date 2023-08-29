@@ -214,8 +214,7 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 	})
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Error sending statistics: %s\n", err)
-	}
-	if resp.StatusCode() != http.StatusNoContent {
+	} else if resp.StatusCode() != http.StatusNoContent {
 		_, _ = fmt.Fprintf(os.Stderr, "Failure sending statistics: Status Code: %d\n", resp.StatusCode())
 	}
 }
