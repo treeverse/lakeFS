@@ -165,12 +165,12 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
 
 const StatModal = ({ show, onHide, entry }) => {
   return (
-    <Modal show={show} onHide={onHide} size={"lg"}>
+    <Modal show={show} onHide={onHide} size={"xl"}>
       <Modal.Header closeButton>
         <Modal.Title>Object Information</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Table hover>
+        <Table responsive hover>
           <tbody>
             <tr>
               <td>
