@@ -144,30 +144,30 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 	})
 
-	t.Run("seekGE past end", func(t *testing.T) {
+	t.Run("SeekGE seek back", func(t *testing.T) {
 		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
 		if itr == nil {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		itr.SeekGE([]byte("b"))
+		itr.SeekGE([]byte("z"))
+		if itr.Next() {
+			t.Fatal("expected Next to be false")
+		}
+		if err := itr.Err(); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		itr.SeekGE([]byte("a"))
 		if !itr.Next() {
-			t.Fatal("expected Next to be true")
+			t.Fatalf("expected Next to be true")
+		}
+		if err := itr.Err(); err != nil {
+			t.Fatalf("unexpected error: %s", err)
 		}
 		e := itr.Entry()
-		model, ok := e.Value.(*TestModel)
-		if !ok {
-			t.Fatalf("Failed to cast entry to TestModel")
-		}
-		if string(model.Name) != "b" {
-			t.Fatalf("expected value b from iterator")
-		}
-		itr.SeekGE(graveler.UpperBoundForPrefix([]byte("d1")))
-		if itr.Next() {
-			t.Fatalf("expected Next to be false")
-		}
-		if itr.Err() != nil {
-			t.Fatalf("unexpected error: %v", itr.Err())
+		model := e.Value.(*TestModel)
+		if string(model.Name) != "a" {
+			t.Fatalf("expected value a from iterator")
 		}
 	})
 }
