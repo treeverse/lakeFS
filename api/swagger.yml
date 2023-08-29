@@ -1027,7 +1027,7 @@ components:
         - pre_sign_support
         - pre_sign_support_ui
         - import_support
-        - import_ValidityRegex
+        - import_validity_regex
       properties:
         blockstore_type:
           type: string
@@ -1043,7 +1043,7 @@ components:
           type: boolean
         import_support:
           type: boolean
-        import_ValidityRegex:
+        import_validity_regex:
           type: string
 
     VersionConfig:

@@ -97,8 +97,7 @@ const ImportForm = ({
 
                     }) => {
     const [isSourceValid, setIsSourceValid] = useState(true);
-    const importValidityRegexStr = config.import_ValidityRegex;
-    const storageNamespaceValidityRegex = RegExp(importValidityRegexStr);
+    const storageNamespaceValidityRegex = RegExp(config.import_validity_regex);
     const updateSourceURLValidity = () => {
         if (!sourceRef.current.value) {
             updateSrcValidity(true);
