@@ -207,6 +207,7 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 		Events: []api.StatsEvent{
 			{
 				Class: "lakectl",
+				Name:  cmd,
 				Count: 1,
 			},
 		},
