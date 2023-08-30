@@ -279,7 +279,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    For example, assume the following scenario: 
    - lakeFS is deployed outside the company (i.e lakeFS cloud or other VPC **not** `vpc-123`)
    - We don't want lakeFS to be able to access the data, so we use presign URL, we still need lakeFS role to be able to sign the URL.
-   - We want to allow access from the internal company VPC: `vpc-123`.  
+   - We want to allow access from the internal company VPC: `vpc-123`.
 
    ```json
          {
@@ -325,5 +325,5 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 [integration-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [understand-commits]:  {% link understand/how/versioning-internals.md %}
 [presigned-url]:  {% link reference/security/presigned-url.md %}
-[lakefs-actions]: {% link docs/howto/hooks/index.md %}#actions-and-hooks-in-lakefs
+[lakefs-actions]: {% link howto/hooks/index.md %}#actions-and-hooks-in-lakefs
 #constructing-a-consistent-view-of-the-keyspace-ie-a-commit
