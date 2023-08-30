@@ -19,6 +19,7 @@ import (
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -144,6 +145,22 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			DieFmt("error unmarshal configuration: %v", err)
 		}
+
+		if cmd.HasParent() {
+			// Don't send statistics for root command or if one of the excluding
+			var cmdName string
+			for curr := cmd; curr.HasParent(); curr = curr.Parent() {
+				if cmdName != "" {
+					cmdName = curr.Name() + "_" + cmdName
+				} else {
+					cmdName = curr.Name()
+				}
+			}
+			if !slices.Contains(excludeStatsCmds, cmdName) {
+				sendStats(cmd.Context(), getClient(), cmdName)
+			}
+		}
+
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -193,6 +210,33 @@ var rootCmd = &cobra.Command{
 
 		Write(versionTemplate, info)
 	},
+}
+
+var excludeStatsCmds = []string{
+	"doctor",
+	"config",
+}
+
+func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
+	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
+		Events: []api.StatsEvent{
+			{
+				Class: "lakectl",
+				Name:  cmd,
+				Count: 1,
+			},
+		},
+	})
+
+	var errStr string
+	if err != nil {
+		errStr = err.Error()
+	} else if resp.StatusCode() != http.StatusNoContent {
+		errStr = resp.Status()
+	}
+	if errStr != "" {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
+	}
 }
 
 func getClient() *api.ClientWithResponses {

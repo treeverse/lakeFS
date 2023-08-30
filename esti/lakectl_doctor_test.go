@@ -1,18 +1,23 @@
 package esti
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 )
 
-func TestDoctor(t *testing.T) {
+func TestLakectlDoctor(t *testing.T) {
 	SkipTestIfAskedTo(t)
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	endPointURL := viper.GetString("endpoint_url") + "/api/v1"
+	u, err := url.Parse(endpointURL)
+	require.NoError(t, err)
 	vars := map[string]string{
 		"LAKEFS_ENDPOINT": endPointURL,
+		"HOST":            u.Host,
 	}
 
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", vars)

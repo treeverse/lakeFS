@@ -9,4 +9,4 @@ Couldn't find a problem with access key format.
 Trying to validate secret access key format.
 Couldn't find a problem with secret access key format.
 Trying to validate endpoint URL format.
-Suspicious URI format for server.endpoint_url: http://lakefs:8000/api/v11
+Suspicious URI format for server.endpoint_url: http://${HOST}/api/v11
