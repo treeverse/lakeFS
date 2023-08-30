@@ -273,7 +273,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    }
    ```
 
-   We can use [presigned URLs mode](presigned-url) without allowing access to the data from the lakeFS server directly. 
+   We can use [presigned URLs mode][presigned-url] without allowing access to the data from the lakeFS server directly. 
    We can achieve this by using [condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) such as [aws:referer](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-referer), [aws:SourceVpc](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourcevpc) and [aws:SourceIp](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourceip).
 
    For example, assume the following scenario: 
@@ -324,4 +324,4 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 [understand-repository]:  {% link understand/model.md %}#repository
 [integration-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [understand-commits]:  {% link understand/how/versioning-internals.md %}#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
-[presigned-url]:  {% link reference/security/presigned-url.md %}
+[presigned-url]:  {% link reference/security/presigned-url.md %}#
