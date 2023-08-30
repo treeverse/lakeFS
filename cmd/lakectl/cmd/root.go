@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -212,7 +213,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-var statsNoErr = []string{
+var excludeStatsCmds = []string{
 	"lakectl_doctor",
 	"lakectl_config",
 }
@@ -228,13 +229,18 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 		},
 	})
 
-	if slices.Contains(statsNoErr, cmd) {
-		return
-	}
+	var (
+		errStr     string
+		statusCode string
+	)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error sending statistics: %s\n", err)
-	} else if resp.StatusCode() != http.StatusNoContent {
-		_, _ = fmt.Fprintf(os.Stderr, "Failure sending statistics: Status Code: %d\n", resp.StatusCode())
+		errStr = err.Error()
+	}
+	if resp != nil && resp.StatusCode() != http.StatusNoContent {
+		statusCode = strconv.Itoa(resp.StatusCode())
+	}
+	if errStr != "" || statusCode != "" {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics! status code: %s error: %s\n", statusCode, errStr)
 	}
 }
 

@@ -1,11 +1,11 @@
 package esti
 
 import (
-	"github.com/stretchr/testify/require"
 	"net/url"
 	"testing"
 
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLakectlDoctor(t *testing.T) {
