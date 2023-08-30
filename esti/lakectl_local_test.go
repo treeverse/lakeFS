@@ -199,8 +199,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["LOCAL_DIR"] = dataDir
-		vars["PREFIX"] = "images"
-		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+		vars["PREFIX"] = prefix + uri.PathSeparator
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 		relPath, err := filepath.Rel(tmpDir, dataDir)
 		require.NoError(t, err)
@@ -501,9 +501,9 @@ Use "lakectl local pull... --force" to sync with the remote.`,
 
 			idx, err := local.ReadIndex(dataDir)
 			require.NoError(t, err)
-			uri, err := idx.GetCurrentURI()
+			u, err := idx.GetCurrentURI()
 			require.NoError(t, err)
-			_, err = local.WriteIndex(idx.LocalPath(), uri, idx.AtHead, tt.action)
+			_, err = local.WriteIndex(idx.LocalPath(), u, idx.AtHead, tt.action)
 			require.NoError(t, err)
 
 			// Pull without force flag
