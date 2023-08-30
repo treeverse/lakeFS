@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"net/http"
 	"net/url"
 	"os"
@@ -202,6 +203,11 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var statsNoErr = []string{
+	"lakectl_doctor",
+	"lakectl_config",
+}
+
 func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
 	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
 		Events: []api.StatsEvent{
@@ -212,6 +218,10 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 			},
 		},
 	})
+
+	if slices.Contains(statsNoErr, cmd) {
+		return
+	}
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Error sending statistics: %s\n", err)
 	} else if resp.StatusCode() != http.StatusNoContent {
