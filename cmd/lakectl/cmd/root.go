@@ -214,8 +214,8 @@ var rootCmd = &cobra.Command{
 }
 
 var excludeStatsCmds = []string{
-	"lakectl_doctor",
-	"lakectl_config",
+	"doctor",
+	"config",
 }
 
 func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
