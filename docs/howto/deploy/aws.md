@@ -225,17 +225,18 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
       * lakeFS will try to assume the role `[IAM_ROLE]`.
    </div>
    <div markdown="1" id="bucket-policy-minimal">
-   This permission is useful if you are using the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
+   If required lakeFS can operate without accessing the data itself, this permission section is useful if you are using [presigned URLs mode](presigned-url) or the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
    Since this FileSystem performs many operations directly on the storage, lakeFS requires less permissive permissions, resulting in increased security.
    
    lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, in which metadata
    is stored ([learn more][understand-commits]).
-   By setting this policy you'll be able to perform only metadata operations through lakeFS, meaning that you'll **not** be able
+
+   By setting this policy **without** presign mode you'll be able to perform only metadata operations through lakeFS, meaning that you'll **not** be able
    to use lakeFS to upload or download objects. Specifically you won't be able to:
-      * Upload objects using the lakeFS GUI
+      * Upload objects using the lakeFS GUI (**Works with presign mode**)
       * Upload objects through Spark using the S3 gateway
-      * Run `lakectl fs` commands (unless using the `--direct` flag)
-   
+      * Run `lakectl fs` commands (unless using the `--direct` flag or using **presign mode** with `--pre-sign` flag)
+      * Use [Actions and Hooks](lakefs-actions)
    
    ```json
    {
@@ -272,6 +273,37 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    }
    ```
 
+   We can use [presigned URLs mode](presigned-url) without allowing access to the data from the lakeFS server directly. 
+   We can achieve this by using [condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) such as [aws:referer](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-referer), [aws:SourceVpc](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourcevpc) and [aws:SourceIp](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourceip).
+
+   For example, assume the following scenario: 
+   - lakeFS is deployed outside the company (i.e lakeFS cloud or other VPC **not** `vpc-123`)
+   - We don't want lakeFS to be able to access the data, so we use presign URL, we still need lakeFS role to be able to sign the URL.
+   - We want to allow access from the internal company VPC: `vpc-123`.  
+
+   ```json
+         {
+            "Sid": "allowLakeFSRoleFromCompanyOnly",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"
+            },
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+            ],
+            "Resource": [
+               "arn:aws:s3:::[BUCKET]/*",
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceVpc": "vpc-123"
+                }
+            }
+        }
+   ```
+
+
    </div>
    </div>
 
@@ -291,4 +323,7 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 [s3-gateway]:  {% link understand/architecture.md %}#s3-gateway
 [understand-repository]:  {% link understand/model.md %}#repository
 [integration-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
-[understand-commits]:  {% link understand/how/versioning-internals.md %}#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
+[understand-commits]:  {% link understand/how/versioning-internals.md %}
+[presigned-url]:  {% link reference/security/presigned-url.md %}
+[lakefs-actions]: {% link docs/howto/hooks/index.md %}#actions-hand-hooks-in-lakefs
+#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
