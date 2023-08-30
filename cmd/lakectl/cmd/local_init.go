@@ -4,16 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
+	"io/fs"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -24,8 +22,7 @@ const (
 func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	client := getClient()
 	remotePath := remote.GetPath()
-
-	if len(remotePath) > 0 && !strings.HasSuffix(remotePath, uri.PathSeparator) { // Verify path is not an existing object
+	if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) { // Verify path is not an existing object
 		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
 			Path: *remote.Path,
 		})
