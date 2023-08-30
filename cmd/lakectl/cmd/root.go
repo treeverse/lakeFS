@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
