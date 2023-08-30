@@ -23,7 +23,7 @@ const (
 
 func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	client := getClient()
-	if len(remote.GetPath()) > 0 { // Verify path is not an existing object
+	if remote.GetPath() != "" { // Verify path is not an existing object
 		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
 			Path: *remote.Path,
 		})
