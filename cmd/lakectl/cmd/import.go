@@ -169,10 +169,10 @@ func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientW
 	if storageConfig == nil {
 		Die("Bad response from server", 1)
 	}
-	if storageConfig.BlockstoreNamespaceValidityRegex == "" {
+	if storageConfig.ImportValidityRegex == "" {
 		return
 	}
-	matched, err := regexp.MatchString(storageConfig.BlockstoreNamespaceValidityRegex, source)
+	matched, err := regexp.MatchString(storageConfig.ImportValidityRegex, source)
 	if err != nil {
 		DieErr(err)
 	}
