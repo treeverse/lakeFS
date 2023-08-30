@@ -23,7 +23,9 @@ const (
 
 func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	client := getClient()
-	if len(remote.GetPath()) > 0 { // Verify path is not an existing object
+	remotePath := remote.GetPath()
+
+	if len(remotePath) > 0 && !strings.HasSuffix(remotePath, uri.PathSeparator) { // Verify path is not an existing object
 		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
 			Path: *remote.Path,
 		})
@@ -34,9 +36,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 			DieFmt("lakeFS path %s is an existing object and cannot be used as a reference source", remote.String())
 		case stat.JSON404 == nil:
 			dieOnResponseError(stat, err)
-		}
-
-		if !strings.HasSuffix(remote.GetPath(), uri.PathSeparator) { // Ensure we treat this path as a directory
+		default: // Ensure we treat this path as a directory
 			*remote.Path += uri.PathSeparator
 		}
 	}

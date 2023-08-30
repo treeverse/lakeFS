@@ -195,6 +195,21 @@ func TestLakectlLocal_clone(t *testing.T) {
 		RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone "+vars["PATH"]+" "+dataDir, false, "lakectl_local_init_is_object", vars)
 	})
 
+	t.Run("clone existing directory marker", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["PREFIX"] = "dir_marker/"
+		vars["LOCAL_DIR"] = dataDir
+		localCreateTestData(t, vars, []string{vars["PREFIX"]})
+		require.NoError(t, err)
+		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		relPath, err := filepath.Rel(tmpDir, dataDir)
+		require.NoError(t, err)
+		vars["LIST_DIR"] = relPath
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
+	})
+
 	t.Run("clone existing path", func(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
@@ -202,10 +217,6 @@ func TestLakectlLocal_clone(t *testing.T) {
 		vars["PREFIX"] = prefix + uri.PathSeparator
 		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+prefix+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-		relPath, err := filepath.Rel(tmpDir, dataDir)
-		require.NoError(t, err)
-		vars["LIST_DIR"] = relPath
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
 		vars["LIST_DIR"] = "."
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+dataDir, false, "lakectl_local_list", vars)
 
