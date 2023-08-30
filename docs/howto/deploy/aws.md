@@ -225,7 +225,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
       * lakeFS will try to assume the role `[IAM_ROLE]`.
    </div>
    <div markdown="1" id="bucket-policy-minimal">
-   If required lakeFS can operate without accessing the data itself, this permission section is useful if you are using [presigned URLs mode](presigned-url) or the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
+   If required lakeFS can operate without accessing the data itself, this permission section is useful if you are using [presigned URLs mode][presigned-url] or the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
    Since this FileSystem performs many operations directly on the storage, lakeFS requires less permissive permissions, resulting in increased security.
    
    lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, in which metadata
