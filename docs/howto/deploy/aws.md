@@ -236,7 +236,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
       * Upload objects using the lakeFS GUI (**Works with presign mode**)
       * Upload objects through Spark using the S3 gateway
       * Run `lakectl fs` commands (unless using the `--direct` flag or using **presign mode** with `--pre-sign` flag)
-      * Use [Actions and Hooks](lakefs-actions)
+      * Use [Actions and Hooks](/howto/hooks/)
    
    ```json
    {
@@ -324,6 +324,5 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 [understand-repository]:  {% link understand/model.md %}#repository
 [integration-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [understand-commits]:  {% link understand/how/versioning-internals.md %}
-[presigned-url]:  {% link reference/security/presigned-url.md %}
-[lakefs-actions]: {% link howto/hooks/index.md %}#actions-and-hooks-in-lakefs
+[presigned-url]:  {% link /reference/presigned-url.html %}
 #constructing-a-consistent-view-of-the-keyspace-ie-a-commit
