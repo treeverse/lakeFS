@@ -229,18 +229,14 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 		},
 	})
 
-	var (
-		errStr     string
-		statusCode string
-	)
+	var errStr string
 	if err != nil {
 		errStr = err.Error()
+	} else if resp.StatusCode() != http.StatusNoContent {
+		errStr = resp.Status()
 	}
-	if resp != nil && resp.StatusCode() != http.StatusNoContent {
-		statusCode = strconv.Itoa(resp.StatusCode())
-	}
-	if errStr != "" || statusCode != "" {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics! status code: %s error: %s\n", statusCode, errStr)
+	if errStr != "" {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
 	}
 }
 
