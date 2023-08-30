@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -69,11 +70,13 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 		return ObjectStats{}, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
 	}
 
+	key := strings.TrimPrefix(physicalAddress.Path, "/")
+	bucket := physicalAddress.Hostname()
 	uploader := manager.NewUploader(s.svc)
 	out, err := uploader.Upload(ctx, &s3.PutObjectInput{
 		Body:   contents,
-		Bucket: aws.String(physicalAddress.Hostname()),
-		Key:    &physicalAddress.Path,
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 	})
 	if err != nil {
 		return ObjectStats{}, err
@@ -94,9 +97,11 @@ func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.
 		return nil, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
 	}
 	// TODO(ariels): Allow customization of request
+	bucket := physicalAddress.Hostname()
+	key := strings.TrimPrefix(physicalAddress.Path, "/")
 	getObjectResponse, err := s.svc.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(physicalAddress.Hostname()),
-		Key:    &physicalAddress.Path,
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 	})
 	if err != nil {
 		return nil, err
