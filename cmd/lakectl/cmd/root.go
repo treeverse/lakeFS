@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,6 +19,7 @@ import (
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/exp/slices"
 )
 
 const (
