@@ -146,10 +146,19 @@ var rootCmd = &cobra.Command{
 			DieFmt("error unmarshal configuration: %v", err)
 		}
 
-		if cmd.Parent() != nil {
-			// Don't send statistics if command doesn't have parent so to not spam statistics
-			cmdName := fmt.Sprintf("%s_%s", cmd.Parent().Name(), cmd.Name())
-			sendStats(cmd.Context(), getClient(), cmdName)
+		if cmd.HasParent() {
+			// Don't send statistics for root command or if one of the excluding
+			var cmdName string
+			for curr := cmd; curr.HasParent(); curr = curr.Parent() {
+				if cmdName != "" {
+					cmdName = curr.Name() + "_" + cmdName
+				} else {
+					cmdName = curr.Name()
+				}
+			}
+			if !slices.Contains(excludeStatsCmds, cmdName) {
+				sendStats(cmd.Context(), getClient(), cmdName)
+			}
 		}
 
 	},
