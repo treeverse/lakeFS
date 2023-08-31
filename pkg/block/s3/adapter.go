@@ -222,6 +222,9 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		Body:          reader,
 		ContentLength: sizeBytes,
 	}
+	if sizeBytes == 0 {
+		putObject.Body = http.NoBody
+	}
 	if opts.StorageClass != nil {
 		putObject.StorageClass = types.StorageClass(*opts.StorageClass)
 	}
