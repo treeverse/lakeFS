@@ -294,7 +294,7 @@ Name | Type | Description  | Notes
 
 <a name="deleteBranchProtectionRule"></a>
 # **deleteBranchProtectionRule**
-> deleteBranchProtectionRule(repository, inlineObject)
+> deleteBranchProtectionRule(repository, inlineObject1)
 
 
 
@@ -342,9 +342,9 @@ public class Example {
 
     RepositoriesApi apiInstance = new RepositoriesApi(defaultClient);
     String repository = "repository_example"; // String | 
-    InlineObject inlineObject = new InlineObject(); // InlineObject | 
+    InlineObject1 inlineObject1 = new InlineObject1(); // InlineObject1 | 
     try {
-      apiInstance.deleteBranchProtectionRule(repository, inlineObject);
+      apiInstance.deleteBranchProtectionRule(repository, inlineObject1);
     } catch (ApiException e) {
       System.err.println("Exception when calling RepositoriesApi#deleteBranchProtectionRule");
       System.err.println("Status code: " + e.getCode());
@@ -361,7 +361,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
- **inlineObject** | [**InlineObject**](InlineObject.md)|  |
+ **inlineObject1** | [**InlineObject1**](InlineObject1.md)|  |
 
 ### Return type
 

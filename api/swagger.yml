@@ -3731,10 +3731,6 @@ paths:
       x-validation-exclude-body: true
       requestBody:
         content:
-          application/octet-stream:
-            schema:
-              type: string
-              format: binary
           multipart/form-data:
             schema:
               type: object
@@ -3743,6 +3739,10 @@ paths:
                   description: Only a single file per upload which must be named "content".
                   type: string
                   format: binary
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
 
       parameters:
         - in: query

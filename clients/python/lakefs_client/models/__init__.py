@@ -50,6 +50,7 @@ from lakefs_client.model.import_pagination import ImportPagination
 from lakefs_client.model.import_status_resp import ImportStatusResp
 from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
 from lakefs_client.model.inline_object import InlineObject
+from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge

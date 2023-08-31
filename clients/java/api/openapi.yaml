@@ -4103,11 +4103,8 @@ paths:
           type: string
         style: simple
       requestBody:
+        $ref: '#/components/requestBodies/inline_object'
         content:
-          application/octet-stream:
-            schema:
-              format: binary
-              type: string
           multipart/form-data:
             schema:
               properties:
@@ -4116,6 +4113,10 @@ paths:
                   format: binary
                   type: string
               type: object
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
       responses:
         "201":
           content:
@@ -4162,7 +4163,7 @@ paths:
       tags:
       - objects
       x-validation-exclude-body: true
-      x-contentType: application/octet-stream
+      x-contentType: multipart/form-data
       x-accepts: application/json
     put:
       operationId: stageObject
@@ -5305,7 +5306,7 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object'
+        $ref: '#/components/requestBodies/inline_object_1'
         content:
           application/json:
             schema:
@@ -5625,12 +5626,20 @@ components:
         type: string
       style: form
   requestBodies:
-    inline_object:
+    inline_object_1:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/inline_object'
+            $ref: '#/components/schemas/inline_object_1'
       required: true
+    inline_object:
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/inline_object'
+        application/octet-stream:
+          schema:
+            $ref: '#/components/schemas/inline_object'
   responses:
     NotFoundOrNoACL:
       content:
@@ -7579,6 +7588,13 @@ components:
       - events
       type: object
     inline_object:
+      properties:
+        content:
+          description: Only a single file per upload which must be named "content".
+          format: binary
+          type: string
+      type: object
+    inline_object_1:
       properties:
         pattern:
           type: string

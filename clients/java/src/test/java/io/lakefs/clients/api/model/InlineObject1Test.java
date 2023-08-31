@@ -20,7 +20,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.io.File;
 import java.io.IOException;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -28,25 +27,25 @@ import org.junit.Test;
 
 
 /**
- * Model tests for InlineObject
+ * Model tests for InlineObject1
  */
-public class InlineObjectTest {
-    private final InlineObject model = new InlineObject();
+public class InlineObject1Test {
+    private final InlineObject1 model = new InlineObject1();
 
     /**
-     * Model tests for InlineObject
+     * Model tests for InlineObject1
      */
     @Test
-    public void testInlineObject() {
-        // TODO: test InlineObject
+    public void testInlineObject1() {
+        // TODO: test InlineObject1
     }
 
     /**
-     * Test the property 'content'
+     * Test the property 'pattern'
      */
     @Test
-    public void contentTest() {
-        // TODO: test content
+    public void patternTest() {
+        // TODO: test pattern
     }
 
 }

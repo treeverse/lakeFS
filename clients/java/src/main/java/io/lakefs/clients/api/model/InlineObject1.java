@@ -22,39 +22,38 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.io.File;
 import java.io.IOException;
 
 /**
- * InlineObject
+ * InlineObject1
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class InlineObject {
-  public static final String SERIALIZED_NAME_CONTENT = "content";
-  @SerializedName(SERIALIZED_NAME_CONTENT)
-  private File content;
+public class InlineObject1 {
+  public static final String SERIALIZED_NAME_PATTERN = "pattern";
+  @SerializedName(SERIALIZED_NAME_PATTERN)
+  private String pattern;
 
 
-  public InlineObject content(File content) {
+  public InlineObject1 pattern(String pattern) {
     
-    this.content = content;
+    this.pattern = pattern;
     return this;
   }
 
    /**
-   * Only a single file per upload which must be named \&quot;content\&quot;.
-   * @return content
+   * Get pattern
+   * @return pattern
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Only a single file per upload which must be named \"content\".")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
 
-  public File getContent() {
-    return content;
+  public String getPattern() {
+    return pattern;
   }
 
 
-  public void setContent(File content) {
-    this.content = content;
+  public void setPattern(String pattern) {
+    this.pattern = pattern;
   }
 
 
@@ -66,20 +65,20 @@ public class InlineObject {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InlineObject inlineObject = (InlineObject) o;
-    return Objects.equals(this.content, inlineObject.content);
+    InlineObject1 inlineObject1 = (InlineObject1) o;
+    return Objects.equals(this.pattern, inlineObject1.pattern);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(content);
+    return Objects.hash(pattern);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InlineObject {\n");
-    sb.append("    content: ").append(toIndentedString(content)).append("\n");
+    sb.append("class InlineObject1 {\n");
+    sb.append("    pattern: ").append(toIndentedString(pattern)).append("\n");
     sb.append("}");
     return sb.toString();
   }

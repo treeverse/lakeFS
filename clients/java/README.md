@@ -286,6 +286,7 @@ Class | Method | HTTP request | Description
  - [ImportStatusResp](docs/ImportStatusResp.md)
  - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
  - [InlineObject](docs/InlineObject.md)
+ - [InlineObject1](docs/InlineObject1.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
