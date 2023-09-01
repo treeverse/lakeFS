@@ -61,6 +61,9 @@ const bisectStartCmdArgs = 2
 func resolveCommitOrDie(ctx context.Context, client api.ClientWithResponsesInterface, repository, ref string) string {
 	response, err := client.GetCommitWithResponse(ctx, repository, ref)
 	DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusOK)
+	if response.JSON200 == nil {
+		Die("Bad response from server", 1)
+	}
 	return response.JSON200.Id
 }
 
