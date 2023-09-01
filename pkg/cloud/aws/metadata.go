@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/credentials"
-
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/block/params"
@@ -50,6 +51,22 @@ func NewMetadataProvider(logger logging.Logger, params params.S3) (*MetadataProv
 			),
 		))
 	}
+	if params.WebIdentity != nil {
+		if params.WebIdentity.SessionDuration > 0 {
+			opts = append(opts, config.WithWebIdentityRoleCredentialOptions(
+				func(options *stscreds.WebIdentityRoleOptions) {
+					options.Duration = params.WebIdentity.SessionDuration
+				}),
+			)
+		}
+		if params.WebIdentity.SessionExpiryWindow > 0 {
+			opts = append(opts, config.WithCredentialsCacheOptions(
+				func(options *aws.CredentialsCacheOptions) {
+					options.ExpiryWindow = params.WebIdentity.SessionExpiryWindow
+				}),
+			)
+		}
+	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), opts...)
 	if err != nil {
@@ -75,8 +92,9 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = maxInterval
 	bo.MaxElapsedTime = maxElapsedTime
+	ctx := context.Background()
 	identity, err := backoff.RetryWithData(func() (*sts.GetCallerIdentityOutput, error) {
-		identity, err := m.stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+		identity, err := m.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 		if err != nil {
 			m.logger.WithError(err).Warn("Tried to to get AWS account ID for BI")
 			return nil, err
