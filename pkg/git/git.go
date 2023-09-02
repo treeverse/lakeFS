@@ -137,6 +137,10 @@ func updateIgnoreFileSection(contents []byte, marker string, entries []string) [
 	newContent = append(newContent, "# End "+marker)
 	lines = slices.Insert(lines, startIdx, newContent...)
 
+	// join lines make sure content ends with new line
+	if lines[len(lines)-1] != "" {
+		lines = append(lines, "")
+	}
 	result := strings.Join(lines, "\n")
 	return []byte(result)
 }
