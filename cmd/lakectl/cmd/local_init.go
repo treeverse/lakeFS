@@ -48,11 +48,8 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 	if updateIgnore {
 		if _, err := os.Stat(dir); !os.IsNotExist(err) {
 			gitDir, err := git.GetRepositoryPath(dir)
-			if err != nil {
-				return "", err
-			}
-			if gitDir == dir {
-				DieFmt("directory '%s' is a git repository, please specify a sub-directory", dir)
+			if err == nil && gitDir == dir {
+				DieFmt("Directory '%s' is a git repository, please specify a sub-directory", dir)
 			}
 		}
 	}
