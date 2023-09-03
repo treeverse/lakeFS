@@ -49,6 +49,7 @@ var localCloneCmd = &cobra.Command{
 		c := make(chan *local.Change, filesChanSize)
 		go func() {
 			defer close(c)
+			remotePath := remote.GetPath()
 			var after string
 			for {
 				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
@@ -62,7 +63,7 @@ var localCloneCmd = &cobra.Command{
 				}
 
 				for _, o := range listResp.JSON200.Results {
-					relPath := strings.TrimPrefix(o.Path, remote.GetPath())
+					relPath := strings.TrimPrefix(o.Path, remotePath)
 					relPath = strings.TrimPrefix(relPath, uri.PathSeparator)
 
 					// skip directory markers
