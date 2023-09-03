@@ -1,0 +1,3 @@
+# Files to ignore (skip) when generating Java client
+maven.yml
+.github/
