@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"path"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -63,16 +62,16 @@ var localCloneCmd = &cobra.Command{
 				}
 
 				for _, o := range listResp.JSON200.Results {
-					realPath := strings.TrimPrefix(o.Path, remote.GetPath())
-					realPath = strings.TrimPrefix(realPath, uri.PathSeparator)
+					relPath := strings.TrimPrefix(o.Path, remote.GetPath())
+					relPath = strings.TrimPrefix(relPath, uri.PathSeparator)
 
 					// skip directory markers
-					if base := path.Base(realPath); base == "" {
+					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
 					c <- &local.Change{
 						Source: local.ChangeSourceRemote,
-						Path:   realPath,
+						Path:   relPath,
 						Type:   local.ChangeTypeAdded,
 					}
 				}
