@@ -16,7 +16,6 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Commit;
 import io.lakefs.clients.api.model.CommitCreation;
-import io.lakefs.clients.api.model.CommitList;
 import io.lakefs.clients.api.model.Error;
 import org.junit.Test;
 import org.junit.Ignore;
@@ -66,24 +65,6 @@ public class CommitsApiTest {
         String repository = null;
         String commitId = null;
                 Commit response = api.getCommit(repository, commitId);
-        // TODO: test validations
-    }
-    
-    /**
-     * get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void logBranchCommitsTest() throws ApiException {
-        String repository = null;
-        String branch = null;
-        String after = null;
-        Integer amount = null;
-                CommitList response = api.logBranchCommits(repository, branch, after, amount);
         // TODO: test validations
     }
     
