@@ -28,7 +28,8 @@ public class LakeFSLinker {
                 new StagingMetadata().checksum(eTag).sizeBytes(byteSize).staging(stagingLocation);
         try {
             staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(),
-                    objectLoc.getPath(), stagingMetadata);
+                    objectLoc.getPath(), stagingMetadata)
+                .execute();
         } catch (ApiException e) {
             throw new IOException("link lakeFS path to physical address", e);
         }

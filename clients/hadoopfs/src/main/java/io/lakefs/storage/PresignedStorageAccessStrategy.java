@@ -34,8 +34,9 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
             CreateOutputStreamParams params) throws ApiException, IOException {
         StagingApi stagingApi = lfsClient.getStagingApi();
         StagingLocation stagingLocation =
-                stagingApi.getPhysicalAddress(objectLocation.getRepository(),
-                        objectLocation.getRef(), objectLocation.getPath(), true);
+            stagingApi.getPhysicalAddress(objectLocation.getRepository(),
+                                          objectLocation.getRef(), objectLocation.getPath())
+            .presign(true).execute();
         URL presignedUrl = new URL(stagingLocation.getPresignedUrl());
         HttpURLConnection connection = (HttpURLConnection) presignedUrl.openConnection();
         connection.setDoOutput(true);
@@ -52,7 +53,10 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
             throws ApiException, IOException {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         ObjectStats stats = objectsApi.statObject(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false, true);
+                                                  objectLocation.getRef(),
+                                                  objectLocation.getPath())
+            .userMetadata(false).presign(true)
+            .execute();
         return new FSDataInputStream(new HttpRangeInputStream(stats.getPhysicalAddress(), bufSize));
     }
 }

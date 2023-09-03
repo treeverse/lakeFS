@@ -39,8 +39,11 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
             CreateOutputStreamParams params) throws ApiException, IOException {
         StagingApi staging = lfsClient.getStagingApi();
-        StagingLocation stagingLocation = staging.getPhysicalAddress(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false);
+        StagingLocation stagingLocation =
+            staging.getPhysicalAddress(objectLocation.getRepository(),
+                                       objectLocation.getRef(), objectLocation.getPath())
+            .presign(false)
+            .execute();
         Path physicalPath;
         try {
             physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stagingLocation.getPhysicalAddress()));
@@ -67,7 +70,9 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
             throws ApiException, IOException {
         ObjectsApi objects = lfsClient.getObjectsApi();
         ObjectStats stats = objects.statObject(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false, false);
+                                               objectLocation.getRef(), objectLocation.getPath())
+            .userMetadata(false).presign(false)
+            .execute();
         Path physicalPath;
         try {
             physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stats.getPhysicalAddress()));

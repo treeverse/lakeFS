@@ -136,7 +136,7 @@ public class LakeFSFileSystem extends FileSystem {
         } else if (accessMode == AccessMode.SIMPLE) {
             // setup address translator for simple storage access strategy
             try {
-                StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig();
+                StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig().execute();
                 physicalAddressTranslator = new PhysicalAddressTranslator(storageConfig.getBlockstoreType(),
                         storageConfig.getBlockstoreNamespaceValidityRegex());
             } catch (ApiException e) {
@@ -159,7 +159,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectLocation objectLoc = pathToObjectLocation(path);
         RepositoriesApi repositoriesApi = lfsClient.getRepositoriesApi();
         try {
-            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
+            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository()).execute();
             String storageNamespace = repository.getStorageNamespace();
             URI storageURI = URI.create(storageNamespace);
             Path physicalPath = physicalAddressTranslator.translate(storageNamespace);
@@ -462,7 +462,8 @@ public class LakeFSFileSystem extends FileSystem {
                         .srcRef(srcObjectLoc.getRef())
                         .srcPath(srcObjectLoc.getPath());
                 objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                        creationReq);
+                        creationReq)
+                    .execute();
             } catch (ApiException e) {
                 if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
                         e.getResponseBody() == null ||
@@ -482,7 +483,8 @@ public class LakeFSFileSystem extends FileSystem {
                     .physicalAddress(srcStatus.getPhysicalAddress());
             try {
                 objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                        stageCreationReq);
+                        stageCreationReq)
+                    .execute();
             } catch (ApiException e) {
                 throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                         ", failed to stage object", e);
@@ -491,7 +493,7 @@ public class LakeFSFileSystem extends FileSystem {
 
         // delete src path
         try {
-            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
+            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath()).execute();
         } catch (ApiException e) {
             throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                     ", failed to delete src", e);
@@ -570,7 +572,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = clientFactory.newClient().getObjectsApi();
         return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
-                    return objectsApi.deleteObjects(repository, branch, pathList);
+                    return objectsApi.deleteObjects(repository, branch, pathList).execute();
                 }
             }, repository, branch, conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0));
     }
@@ -578,7 +580,7 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean deleteHelper(ObjectLocation loc) throws IOException {
         try {
             ObjectsApi objectsApi = lfsClient.getObjectsApi();
-            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
+            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath()).execute();
         } catch (ApiException e) {
             // This condition mimics s3a behaviour in
             // https://github.com/apache/hadoop/blob/874c055e73293e0f707719ebca1819979fb211d8/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
@@ -644,7 +646,9 @@ public class LakeFSFileSystem extends FileSystem {
         }
         try {
             ObjectsApi objects = lfsClient.getObjectsApi();
-            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
+            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath())
+                .ifNoneMatch("*").content(emptyFile)
+                .execute();
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
                 LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
@@ -660,7 +664,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()).userMetadata(false).presign(false).execute();
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             return new FileStatus[]{fileStatus};
         } catch (ApiException e) {
@@ -680,8 +684,11 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // nothing to list - check if it is an empty directory marker
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(),
-                    objectLoc.getPath() + SEPARATOR, false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(),
+                                                           objectLoc.getRef(),
+                                                           objectLoc.getPath() + SEPARATOR)
+                .userMetadata(false).presign(false)
+                .execute();
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             if (fileStatus.isEmptyDirectory()) {
                 return new FileStatus[0];
@@ -776,8 +783,12 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         // get object status on path
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
-            return convertObjectStatsToFileStatus(objectLoc, objectStat);
+            ObjectsApi.APIstatObjectRequest objectStat = objectsApi.statObject(objectLoc.getRepository(),
+                                                           objectLoc.getRef(),
+                                                           objectLoc.getPath());
+            objectStat = objectStat.userMetadata(false).presign(false);
+            ObjectStats os = objectStat.execute();
+            return convertObjectStatsToFileStatus(objectLoc, os);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
                 throw new IOException("statObject", e);
@@ -785,7 +796,11 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // get object status on path + "/" for directory marker directory
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR, false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(),
+                                                           objectLoc.getRef(),
+                                                           objectLoc.getPath() + SEPARATOR)
+                .userMetadata(false).presign(false)
+                .execute();
             return convertObjectStatsToFileStatus(objectLoc, objectStat);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -873,7 +888,9 @@ public class LakeFSFileSystem extends FileSystem {
             // TODO(ariels,itaiad200): configure the "5" to the right value.
             // "Right" being: the number of objects that costs about the same to list as 1.
             // 5 is a good guess for now since that in DynamoDB backends listing 5 objects cost the same as 1.
-            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 5, "", objectLoc.getPath());
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef())
+                .userMetadata(false).presign(false).amount(5).prefix(objectLoc.getPath())
+                .execute();
             List<ObjectStats> l = osl.getResults();
             if (l.isEmpty()) {
                 // No object with any name that starts with objectLoc.
@@ -915,7 +932,9 @@ public class LakeFSFileSystem extends FileSystem {
         // just check if path+"/" or something below it exist.
 
         try {
-            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 1, "", directoryPath);
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef())
+                .userMetadata(false).presign(false).amount(1).prefix(directoryPath)
+                .execute();
             List<ObjectStats> l = osl.getResults();
             return ! l.isEmpty();
         } catch (ApiException e) {
@@ -927,7 +946,7 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean isBranchExists(String repository, String branch) throws IOException {
         try {
             BranchesApi branches = lfsClient.getBranchesApi();
-            branches.getBranch(repository, branch);
+            branches.getBranch(repository, branch).execute();
             return true;
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -994,7 +1013,9 @@ public class LakeFSFileSystem extends FileSystem {
             do {
                 try {
                     ObjectsApi objectsApi = lfsClient.getObjectsApi();
-                    ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef(), false, false, nextOffset, amount, delimiter, objectLocation.getPath());
+                    ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef())
+                        .userMetadata(false).presign(false).after(nextOffset).amount(amount).delimiter(delimiter).prefix(objectLocation.getPath())
+                        .execute();
                     chunk = resp.getResults();
                     pos = 0;
                     Pagination pagination = resp.getPagination();

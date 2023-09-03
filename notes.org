@@ -1,0 +1,7 @@
+* Run https://j-00f9g07kdvej7p09.dashboard.emr-serverless.us-east-1.amazonaws.com/executors/
+
+** 3 executors (12 threads)
+** First failure on executor 3
+** Extrapolated after 10m to complete in 48h
+
+   10 min	331/93709 (13 failed) 
