@@ -12,7 +12,9 @@ PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
+OPENAPI_LEGACY_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
+OPENAPI_LEGACY_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_LEGACY_GENERATOR_IMAGE)
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.0.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3
@@ -113,7 +115,7 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
 		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
-	$(OPENAPI_GENERATOR) generate \
+	$(OPENAPI_LEGACY_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
 		-t /mnt/clients/python/templates \
@@ -124,18 +126,32 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		-c /mnt/clients/python-codegen-config.yaml \
 		-o /mnt/clients/python
 
-client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
-	rm -rf clients/java
-	$(OPENAPI_GENERATOR) generate \
+client-java-legacy: api/swagger.yml api/java-gen-ignore  ## Generate legacy SDK for Java (and Scala) client
+	rm -rf clients/java-legacy
+	$(OPENAPI_LEGACY_GENERATOR) generate \
 		-i /mnt/$< \
+		--ignore-file-override /mnt/api/java-gen-ignore \
 		-g java \
 		--invoker-package io.lakefs.clients.api \
-		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)" \
-		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
+		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)-legacy" \
+		--additional-properties hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client legacy SDK',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
+		-o /mnt/clients/java-legacy
+
+client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and Scala) client
+	rm -rf clients/java
+	mkdir -p clients/java
+	cp api/java-gen-ignore clients/java/.openapi-generator-ignore
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/api/swagger.yml \
+		-g java \
+		--invoker-package io.lakefs.clients.api.v1 \
+		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)-v1" \
+		--additional-properties useSingleRequestParameter=true,hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python client-java
-clients: client-python client-java
+
+.PHONY: clients client-python client-java client-java-legacy
+clients: client-python client-java client-java-legacy
 
 package-python: client-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
