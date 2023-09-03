@@ -2810,30 +2810,6 @@ paths:
         required: true
         schema:
           type: string
-    get:
-      deprecated: true
-      tags:
-        - commits
-      operationId: logBranchCommits
-      summary: |
-        get commit log from branch.
-        Deprecated: replaced by logCommits by passing branch name as ref
-      parameters:
-        - $ref: "#/components/parameters/PaginationAfter"
-        - $ref: "#/components/parameters/PaginationAmount"
-      responses:
-        200:
-          description: commit log
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommitList"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
     post:
       parameters:
         - in: query

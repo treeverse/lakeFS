@@ -3489,19 +3489,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-// LogBranchCommits deprecated replaced by LogCommits
-func (c *Controller) LogBranchCommits(w http.ResponseWriter, r *http.Request, repository, branch string, params LogBranchCommitsParams) {
-	c.logCommitsHelper(w, r, repository, branch, LogCommitsParams{
-		After:  params.After,
-		Amount: params.Amount,
-	})
-}
-
 func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository, ref string, params LogCommitsParams) {
-	c.logCommitsHelper(w, r, repository, ref, params)
-}
-
-func (c *Controller) logCommitsHelper(w http.ResponseWriter, r *http.Request, repository, ref string, params LogCommitsParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadBranchAction,
