@@ -24,7 +24,6 @@ from lakefs_client.model_utils import (  # noqa: F401
 )
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
-from lakefs_client.model.commit_list import CommitList
 from lakefs_client.model.error import Error
 
 
@@ -161,83 +160,6 @@ class CommitsApi(object):
                 'location_map': {
                     'repository': 'path',
                     'commit_id': 'path',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client
-        )
-        self.log_branch_commits_endpoint = _Endpoint(
-            settings={
-                'response_type': (CommitList,),
-                'auth': [
-                    'basic_auth',
-                    'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth',
-                    'saml_auth'
-                ],
-                'endpoint_path': '/repositories/{repository}/branches/{branch}/commits',
-                'operation_id': 'log_branch_commits',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'repository',
-                    'branch',
-                    'after',
-                    'amount',
-                ],
-                'required': [
-                    'repository',
-                    'branch',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                    'amount',
-                ]
-            },
-            root_map={
-                'validations': {
-                    ('amount',): {
-
-                        'inclusive_maximum': 1000,
-                        'inclusive_minimum': -1,
-                    },
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'repository':
-                        (str,),
-                    'branch':
-                        (str,),
-                    'after':
-                        (str,),
-                    'amount':
-                        (int,),
-                },
-                'attribute_map': {
-                    'repository': 'repository',
-                    'branch': 'branch',
-                    'after': 'after',
-                    'amount': 'amount',
-                },
-                'location_map': {
-                    'repository': 'path',
-                    'branch': 'path',
-                    'after': 'query',
-                    'amount': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -393,75 +315,4 @@ class CommitsApi(object):
         kwargs['commit_id'] = \
             commit_id
         return self.get_commit_endpoint.call_with_http_info(**kwargs)
-
-    def log_branch_commits(
-        self,
-        repository,
-        branch,
-        **kwargs
-    ):
-        """get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref   # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.log_branch_commits(repository, branch, async_req=True)
-        >>> result = thread.get()
-
-        Args:
-            repository (str):
-            branch (str):
-
-        Keyword Args:
-            after (str): return items after this value. [optional]
-            amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
-            _return_http_data_only (bool): response data without head status
-                code and headers. Default is True.
-            _preload_content (bool): if False, the urllib3.HTTPResponse object
-                will be returned without reading/decoding response data.
-                Default is True.
-            _request_timeout (int/float/tuple): timeout setting for this request. If
-                one number provided, it will be total request timeout. It can also
-                be a pair (tuple) of (connection, read) timeouts.
-                Default is None.
-            _check_input_type (bool): specifies if type checking
-                should be done one the data sent to the server.
-                Default is True.
-            _check_return_type (bool): specifies if type checking
-                should be done one the data received from the server.
-                Default is True.
-            _host_index (int/None): specifies the index of the server
-                that we want to use.
-                Default is read from the configuration.
-            async_req (bool): execute request asynchronously
-
-        Returns:
-            CommitList
-                If the method is called asynchronously, returns the request
-                thread.
-        """
-        kwargs['async_req'] = kwargs.get(
-            'async_req', False
-        )
-        kwargs['_return_http_data_only'] = kwargs.get(
-            '_return_http_data_only', True
-        )
-        kwargs['_preload_content'] = kwargs.get(
-            '_preload_content', True
-        )
-        kwargs['_request_timeout'] = kwargs.get(
-            '_request_timeout', None
-        )
-        kwargs['_check_input_type'] = kwargs.get(
-            '_check_input_type', True
-        )
-        kwargs['_check_return_type'] = kwargs.get(
-            '_check_return_type', True
-        )
-        kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['repository'] = \
-            repository
-        kwargs['branch'] = \
-            branch
-        return self.log_branch_commits_endpoint.call_with_http_info(**kwargs)
 
