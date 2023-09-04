@@ -121,7 +121,7 @@ The lakeFS community is important to us. Our **guiding principles** are:
 * We learn and grow together
 * Compassion and respect in every interaction
 
-We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#say-hello`. Or just lurk and soak up the vibes 😎
+We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#announcements-and-more`. Or just lurk and soak up the vibes 😎
 
 If you're interested in getting involved in the development of lakeFS, head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing]({% link project/contributing.md %}) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help. 
 
