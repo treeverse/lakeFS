@@ -23,6 +23,10 @@ const (
 
 func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIgnore bool) (string, error) {
 	client := getClient()
+
+	// dereference first in case remote doesn't exist or not reachable
+	head := resolveCommitOrDie(ctx, client, remote.Repository, remote.Ref)
+
 	remotePath := remote.GetPath()
 	if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) { // Verify path is not an existing object
 		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
@@ -40,6 +44,21 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 		}
 	}
 
+	// when updating git, we need to verify that we are not trying to work on the git root directory
+	if updateIgnore {
+		if _, err := os.Stat(dir); !os.IsNotExist(err) {
+			gitDir, err := git.GetRepositoryPath(dir)
+			if err != nil {
+				// report an error only if it's not a git repository
+				if !errors.Is(err, git.ErrNotARepository) && !errors.Is(err, git.ErrNoGit) {
+					return "", err
+				}
+			} else if gitDir == dir {
+				DieFmt("Directory '%s' is a git repository, please specify a sub-directory", dir)
+			}
+		}
+	}
+
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		DieErr(err)
 	}
@@ -51,8 +70,6 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 		return "", fs.ErrExist
 	}
 
-	// dereference
-	head := resolveCommitOrDie(ctx, getClient(), remote.Repository, remote.Ref)
 	_, err = local.WriteIndex(dir, remote, head, "")
 	if err != nil {
 		return "", err

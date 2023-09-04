@@ -39,7 +39,8 @@ var localCloneCmd = &cobra.Command{
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
-		head, err := localInit(cmd.Context(), localPath, remote, false, updateIgnore)
+		ctx := cmd.Context()
+		head, err := localInit(ctx, localPath, remote, false, updateIgnore)
 		if err != nil {
 			DieErr(err)
 		}
@@ -48,30 +49,36 @@ var localCloneCmd = &cobra.Command{
 		c := make(chan *local.Change, filesChanSize)
 		go func() {
 			defer close(c)
-			hasMore := true
+			remotePath := remote.GetPath()
 			var after string
-			for hasMore {
-				listResp, err := client.ListObjectsWithResponse(cmd.Context(), remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
+			for {
+				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
 					After:        (*api.PaginationAfter)(swag.String(after)),
 					Prefix:       (*api.PaginationPrefix)(remote.Path),
 					UserMetadata: swag.Bool(true),
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
+				if listResp.JSON200 == nil {
+					Die("Bad response from server during list objects", 1)
+				}
 
 				for _, o := range listResp.JSON200.Results {
-					path := strings.TrimPrefix(o.Path, remote.GetPath())
+					relPath := strings.TrimPrefix(o.Path, remotePath)
+					relPath = strings.TrimPrefix(relPath, uri.PathSeparator)
+
 					// skip directory markers
-					if path == "" || (strings.HasSuffix(path, uri.PathSeparator) && swag.Int64Value(o.SizeBytes) == 0) {
+					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					path = strings.TrimPrefix(path, uri.PathSeparator)
 					c <- &local.Change{
 						Source: local.ChangeSourceRemote,
-						Path:   path,
+						Path:   relPath,
 						Type:   local.ChangeTypeAdded,
 					}
 				}
-				hasMore = listResp.JSON200.Pagination.HasMore
+				if !listResp.JSON200.Pagination.HasMore {
+					break
+				}
 				after = listResp.JSON200.Pagination.NextOffset
 			}
 		}()
@@ -79,7 +86,7 @@ var localCloneCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(cloneOperation))
+		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
 		err = s.Sync(localPath, stableRemote, c)
 		if err != nil {

@@ -163,7 +163,7 @@ func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expe
 	t.Helper()
 	s := sanitize(expectedRaw, vars)
 	expected, err := expandVariables(s, vars)
-	require.NoError(t, err, "Variable embed failed - %s", err)
+	require.NoErrorf(t, err, "Variable embed failed - %s", err)
 	sanitizedResult := runCmd(t, cmd, false, isTerminal, vars)
 	require.Contains(t, sanitizedResult, expected)
 }
@@ -172,7 +172,7 @@ func RunCmdAndVerifyContainsTextWithTimeout(t *testing.T, cmd string, expectFail
 	t.Helper()
 	s := sanitize(expectedRaw, vars)
 	expected, err := expandVariables(s, vars)
-	require.NoError(t, err, "Variable embed failed - %s", err)
+	require.NoErrorf(t, err, "Variable embed failed - %s", err)
 	sanitizedResult := runCmdWithTimeout(t, cmd, expectFail, isTerminal, vars, timeout)
 	require.Contains(t, sanitizedResult, expected)
 }
@@ -203,9 +203,9 @@ func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile stri
 	result, _ := runShellCommand(t, cmd, isTerminal)
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
-	require.NoError(t, err, "Variable embed failed - %s", err)
+	require.NoError(t, err, "Variable embed failed")
 	err = os.WriteFile(goldenFile, []byte(s), 0o600) //nolint: gomnd
-	require.NoError(t, err, "Failed to write file %s", goldenFile)
+	require.NoErrorf(t, err, "Failed to write file %s", goldenFile)
 }
 
 func RunCmdAndVerifySuccess(t *testing.T, cmd string, isTerminal bool, expected string, vars map[string]string) {
@@ -222,9 +222,9 @@ func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map
 	t.Helper()
 	result, err := runShellCommand(t, cmd, isTerminal)
 	if expectFail {
-		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
+		require.Errorf(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {
-		require.NoError(t, err, "Failed to run '%s' command - %s", cmd, string(result))
+		require.NoErrorf(t, err, "Failed to run '%s' command - %s", cmd, string(result))
 	}
 	return sanitize(string(result), vars)
 }
@@ -233,9 +233,9 @@ func runCmdWithTimeout(t *testing.T, cmd string, expectFail bool, isTerminal boo
 	t.Helper()
 	result, err := runShellCommandWithTimeout(t, cmd, isTerminal, timeout)
 	if expectFail {
-		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
+		require.Errorf(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {
-		require.NoError(t, err, "Failed to run '%s' command - %s", cmd, string(result))
+		require.NoErrorf(t, err, "Failed to run '%s' command - %s", cmd, string(result))
 	}
 	return sanitize(string(result), vars)
 }
@@ -248,7 +248,7 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	}
 	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
 
-	require.Equal(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
+	require.Equalf(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
 }
 
 func normalizeProgramTimestamp(output string) string {

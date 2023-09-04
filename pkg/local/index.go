@@ -15,8 +15,8 @@ import (
 
 const (
 	IndexFileName = ".lakefs_ref.yaml"
-	IgnoreMarker  = "ignored by lakectl local:"
-	IndexFileMode = 0644
+	IgnoreMarker  = "ignored by lakectl local"
+	IndexFileMode = 0o644
 )
 
 // Index defines the structure of the lakefs local reference file
