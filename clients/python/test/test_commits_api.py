@@ -38,13 +38,6 @@ class TestCommitsApi(unittest.TestCase):
         """
         pass
 
-    def test_log_branch_commits(self):
-        """Test case for log_branch_commits
-
-        get commit log from branch. Deprecated: replaced by logCommits by passing branch name as ref   # noqa: E501
-        """
-        pass
-
 
 if __name__ == '__main__':
     unittest.main()
