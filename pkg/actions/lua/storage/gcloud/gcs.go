@@ -71,12 +71,6 @@ var functions = map[string]func(client *GSClient) lua.Function{
 func writeFuseSymlink(c *GSClient) lua.Function {
 	return func(l *lua.State) int {
 		// convert the relative physical address with the mount point
-		client, err := c.client()
-		if err != nil {
-			lua.Errorf(l, "could not initialize google storage client: %s", err.Error())
-		}
-		defer func() { _ = client.Close() }()
-
 		physicalAddress := lua.CheckString(l, 1)
 		outputAddress := lua.CheckString(l, 2)
 		mountInfo, err := util.PullStringTable(l, 3)
@@ -88,12 +82,17 @@ func writeFuseSymlink(c *GSClient) lua.Function {
 		if fromValue, removeFrom := mountInfo["from"]; removeFrom {
 			physicalAddress = strings.TrimPrefix(physicalAddress, fromValue)
 		}
-
 		if toValue, prependTo := mountInfo["to"]; prependTo {
 			physicalAddress = path.Join("/", toValue, physicalAddress)
 		}
 
 		// write the object
+		client, err := c.client()
+		if err != nil {
+			lua.Errorf(l, "could not initialize google storage client: %s", err.Error())
+		}
+		defer func() { _ = client.Close() }()
+
 		obj, err := asObject(client, outputAddress)
 		if err != nil {
 			lua.Errorf(l, "could not parse destination object \"%s\": %s", outputAddress, err.Error())
