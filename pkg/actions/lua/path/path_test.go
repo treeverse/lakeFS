@@ -91,6 +91,10 @@ func TestJoin(t *testing.T) {
 			Expected: "foo/bar/baz",
 		},
 		{
+			Input:    []string{"foo/", "bar", "/baz"},
+			Expected: "foo/bar/baz",
+		},
+		{
 			Input:    []string{"a", "b", "c"},
 			Expected: "a/b/c",
 		},
@@ -104,7 +108,7 @@ func TestJoin(t *testing.T) {
 		t.Run(fmt.Sprintf("join_%d", i), func(t *testing.T) {
 			got := path.Join(path.SEPARATOR, cas.Input...)
 			if got != cas.Expected {
-				t.Errorf("Expected %s got %s", cas.Expected, got)
+				t.Errorf("Expected '%s' got '%s'", cas.Expected, got)
 			}
 		})
 	}
@@ -146,11 +150,13 @@ func TestParse(t *testing.T) {
 	for _, cas := range tbl {
 		t.Run(cas.Input, func(t *testing.T) {
 			got := path.Parse(cas.Input, path.SEPARATOR)
-			if got["base_name"] != cas.ExpectedBasename {
-				t.Errorf("base_name: expected '%s' got '%s'", cas.ExpectedBasename, got["base_name"])
+			baseName := got["base_name"]
+			if baseName != cas.ExpectedBasename {
+				t.Errorf("base_name: expected '%s' got '%s'", cas.ExpectedBasename, baseName)
 			}
-			if got["parent"] != cas.ExpectedParent {
-				t.Errorf("parent: expected '%s' got '%s'", cas.ExpectedParent, got["parent"])
+			parent := got["parent"]
+			if parent != cas.ExpectedParent {
+				t.Errorf("parent: expected '%s' got '%s'", cas.ExpectedParent, parent)
 			}
 		})
 	}
