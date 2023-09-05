@@ -13,7 +13,7 @@ import (
 )
 
 func getS3BlockAdapter(t *testing.T) *s3.Adapter {
-	s3adapter := params.S3{
+	s3params := params.S3{
 		Region:               "us-east-1",
 		Endpoint:             blockURL,
 		ForcePathStyle:       true,
@@ -23,7 +23,7 @@ func getS3BlockAdapter(t *testing.T) *s3.Adapter {
 			SecretAccessKey: minioTestSecretAccessKey,
 		},
 	}
-	adapter, err := s3.NewAdapter(context.Background(), s3adapter)
+	adapter, err := s3.NewAdapter(context.Background(), s3params)
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}

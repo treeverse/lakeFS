@@ -463,7 +463,6 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 		return err
 	}
 
-	// TODO(barak): check if wait for delete is needed here
 	headInput := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
