@@ -160,7 +160,6 @@ var rootCmd = &cobra.Command{
 				sendStats(cmd.Context(), getClient(), cmdName)
 			}
 		}
-
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -218,6 +217,10 @@ var excludeStatsCmds = []string{
 }
 
 func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
+	if version.IsVersionUnreleased() {
+		return
+	}
+
 	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
 		Events: []api.StatsEvent{
 			{
