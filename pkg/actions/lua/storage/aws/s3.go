@@ -30,12 +30,13 @@ func Open(l *lua.State, ctx context.Context) {
 
 func newS3Client(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
-		var accessKeyID, secretAccessKey, endpoint, region string
-		accessKeyID = lua.CheckString(l, 1)
-		secretAccessKey = lua.CheckString(l, 2)
+		accessKeyID := lua.CheckString(l, 1)
+		secretAccessKey := lua.CheckString(l, 2)
+		var region string
 		if !l.IsNone(3) {
 			region = lua.CheckString(l, 3)
 		}
+		var endpoint string
 		if !l.IsNone(4) {
 			endpoint = lua.CheckString(l, 4)
 		}
@@ -43,7 +44,8 @@ func newS3Client(ctx context.Context) lua.Function {
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
 			Endpoint:        endpoint,
-			Region:          region, ctx: ctx,
+			Region:          region,
+			ctx:             ctx,
 		}
 
 		l.NewTable()
