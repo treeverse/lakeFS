@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/block/params"
@@ -50,22 +48,6 @@ func NewMetadataProvider(logger logging.Logger, params params.S3) (*MetadataProv
 				params.Credentials.SessionToken,
 			),
 		))
-	}
-	if params.WebIdentity != nil {
-		if params.WebIdentity.SessionDuration > 0 {
-			opts = append(opts, config.WithWebIdentityRoleCredentialOptions(
-				func(options *stscreds.WebIdentityRoleOptions) {
-					options.Duration = params.WebIdentity.SessionDuration
-				}),
-			)
-		}
-		if params.WebIdentity.SessionExpiryWindow > 0 {
-			opts = append(opts, config.WithCredentialsCacheOptions(
-				func(options *aws.CredentialsCacheOptions) {
-					options.ExpiryWindow = params.WebIdentity.SessionExpiryWindow
-				}),
-			)
-		}
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), opts...)

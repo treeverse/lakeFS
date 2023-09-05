@@ -346,7 +346,7 @@ func (s *BufferedCollector) Stop() {
 		return
 	}
 
-	// wait until no new  in-flight requests
+	// wait until no new in-flight requests
 	s.inFlight.Wait()
 
 	// close update channel as no more updates will arrive,
