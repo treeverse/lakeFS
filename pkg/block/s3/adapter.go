@@ -97,7 +97,7 @@ func WithServerSideEncryptionKmsKeyID(s string) func(a *Adapter) {
 
 type AdapterOption func(a *Adapter)
 
-func NewAdapterFromParams(ctx context.Context, params params.S3, opts ...AdapterOption) (*Adapter, error) {
+func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*Adapter, error) {
 	cfg, err := LoadConfig(ctx, params)
 	if err != nil {
 		return nil, err
@@ -110,17 +110,6 @@ func NewAdapterFromParams(ctx context.Context, params params.S3, opts ...Adapter
 		opt(a)
 	}
 	return a, nil
-}
-
-func NewAdapter(awsConfig aws.Config, params params.S3, opts ...AdapterOption) *Adapter {
-	a := &Adapter{
-		clients:         NewClientCache(awsConfig, params),
-		preSignedExpiry: block.DefaultPreSignExpiryDuration,
-	}
-	for _, opt := range opts {
-		opt(a)
-	}
-	return a
 }
 
 func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {

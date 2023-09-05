@@ -91,10 +91,6 @@ func BuildS3Client(ctx context.Context, params params.S3) (*s3.Client, error) {
 }
 
 func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
-	cfg, err := s3a.LoadConfig(ctx, params)
-	if err != nil {
-		return nil, err
-	}
 	opts := []s3a.AdapterOption{
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
@@ -111,7 +107,10 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.WebIdentity != nil && params.WebIdentity.SessionExpiryWindow > 0 {
 		opts = append(opts, s3a.WithPreSignedRefreshWindow(params.WebIdentity.SessionExpiryWindow))
 	}
-	adapter := s3a.NewAdapter(cfg, params, opts...)
+	adapter, err := s3a.NewAdapter(ctx, params, opts...)
+	if err != nil {
+		return nil, err
+	}
 	logging.FromContext(ctx).WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil
 }

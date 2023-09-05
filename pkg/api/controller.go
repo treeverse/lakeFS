@@ -1634,7 +1634,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	objLen := int64(len(dummyData))
 
 	// check if the dummy file exist in the root of the storage namespace
-	// this serves 2 purposes, first, we maintain safety check for older lakeFS version.
+	// this serves two purposes, first, we maintain safety check for older lakeFS version.
 	// second, in scenarios where lakeFS shouldn't have access to the root namespace (i.e pre-sign URL only).
 	if c.Config.Graveler.EnsureReadableRootNamespace {
 		rootObj := block.ObjectPointer{
@@ -1644,7 +1644,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		}
 
 		if s, err := c.BlockAdapter.Get(ctx, rootObj, objLen); err == nil {
-			s.Close()
+			_ = s.Close()
 			return fmt.Errorf("found lakeFS objects in the storage namespace root(%s): %w",
 				storageNamespace, ErrStorageNamespaceInUse)
 		} else if !errors.Is(err, block.ErrDataNotFound) {
@@ -2514,7 +2514,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 			PathType: pathType,
 		}
 		if !d.CommonLevel {
-			diff.SizeBytes = &d.Size
+			diff.SizeBytes = swag.Int64(d.Size)
 		}
 		results = append(results, diff)
 	}
@@ -2619,6 +2619,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	var blob *upload.Blob
 	if mediaType != "multipart/form-data" {
+		// handle non-multipart, direct content upload
 		address := c.PathProvider.NewPath()
 		blob, err = upload.WriteBlob(ctx, c.BlockAdapter, repo.StorageNamespace, address, r.Body, r.ContentLength,
 			block.PutOpts{StorageClass: params.StorageClass})
@@ -2626,10 +2627,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-
-		// writeError(w, r, http.StatusInternalServerError, http.ErrNotMultipart)
-		// return
 	} else {
+		// handle multipart upload
 		boundary, ok := p["boundary"]
 		if !ok {
 			writeError(w, r, http.StatusInternalServerError, http.ErrMissingBoundary)

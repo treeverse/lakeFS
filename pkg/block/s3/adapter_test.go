@@ -23,7 +23,7 @@ func getS3BlockAdapter(t *testing.T) *s3.Adapter {
 			SecretAccessKey: minioTestSecretAccessKey,
 		},
 	}
-	adapter, err := s3.NewAdapterFromParams(context.Background(), s3adapter)
+	adapter, err := s3.NewAdapter(context.Background(), s3adapter)
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}

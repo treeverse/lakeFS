@@ -175,7 +175,7 @@ func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 			s3Params.Credentials.AccessKeyID = awsKey
 			s3Params.Credentials.SecretAccessKey = awsSecret
 		}
-		blockAdapter, err := blocks3.NewAdapterFromParams(ctx, s3Params)
+		blockAdapter, err := blocks3.NewAdapter(ctx, s3Params)
 		if err != nil {
 			t.Fatal("Failed to create S3 block adapter", err)
 		}

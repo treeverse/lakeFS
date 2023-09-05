@@ -35,8 +35,8 @@ import (
 
 // Streaming AWS Signature Version '4' constants.
 const (
-	emptySHA256            = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	signV4ChunkedAlgorithm = "AWS4-HMAC-SHA256-PAYLOAD"
+	emptySHA256            = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" //nolint:gosec
+	signV4ChunkedAlgorithm = "AWS4-HMAC-SHA256-PAYLOAD"                                         //nolint:gosec
 	SlashSeparator         = "/"
 )
 
@@ -76,7 +76,7 @@ var (
 	// lineTooLong is generated as chunk header is bigger than 4KiB.
 	errLineTooLong = errors.New("header line too long")
 
-	// Malformed encoding is generated when chunk header is wrongly formed.
+	// Malformed encoding is generated when a chunk header is wrongly formed.
 	errMalformedEncoding = errors.New("malformed chunked encoding")
 
 	ErrInvalidByte   = errors.New("invalid byte in chunk length")

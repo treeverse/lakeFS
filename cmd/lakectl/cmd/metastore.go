@@ -61,8 +61,8 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 		return hiveClient, deferFunc
 
 	case "glue":
-		awsConfig := getGlueClient(cfg)
-		client, err := metastoreglue.NewMSClient(awsConfig, cfg.Metastore.Glue.CatalogID.String(), cfg.Metastore.Glue.DBLocationURI.String())
+		glueClient := getGlueClient(cfg)
+		client, err := metastoreglue.NewMSClient(glueClient, cfg.Metastore.Glue.CatalogID.String(), cfg.Metastore.Glue.DBLocationURI.String())
 		if err != nil {
 			DieErr(err)
 		}
