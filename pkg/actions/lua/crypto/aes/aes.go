@@ -73,7 +73,7 @@ func decryptCBC(l *lua.State) int {
 }
 
 func PKCS5Padding(ciphertext []byte, blockSize int, after int) []byte {
-	block := (blockSize - len(ciphertext)%blockSize)
+	block := blockSize - len(ciphertext)%blockSize
 	padding := bytes.Repeat([]byte{byte(block)}, block)
 	return append(ciphertext, padding...)
 }

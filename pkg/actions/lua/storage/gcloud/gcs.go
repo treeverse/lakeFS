@@ -20,9 +20,7 @@ const (
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
-var (
-	ErrInvalidGCSURI = errors.New("invalid Google Cloud Storage URI")
-)
+var ErrInvalidGCSURI = errors.New("invalid Google Cloud Storage URI")
 
 func Open(l *lua.State, ctx context.Context) {
 	open := func(l *lua.State) int {
@@ -77,6 +75,8 @@ func writeFuseSymlink(c *GSClient) lua.Function {
 		if err != nil {
 			lua.Errorf(l, "could not initialize google storage client: %s", err.Error())
 		}
+		defer func() { _ = client.Close() }()
+
 		physicalAddress := lua.CheckString(l, 1)
 		outputAddress := lua.CheckString(l, 2)
 		mountInfo, err := util.PullStringTable(l, 3)
