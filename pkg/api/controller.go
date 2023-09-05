@@ -413,7 +413,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
-		ContentType:     &entry.ContentType,
+		ContentType:     StringPtr(entry.ContentType),
 		Metadata:        &metadata,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
@@ -1660,7 +1660,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	}
 
 	if s, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
-		s.Close()
+		_ = s.Close()
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s) key(%s): %w",
 			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
@@ -2783,7 +2783,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       apiutil.Ptr(entry.Size),
-		ContentType:     &entry.ContentType,
+		ContentType:     apiutil.Ptr(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3481,7 +3481,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 			PathType: pathType,
 		}
 		if !d.CommonLevel {
-			diff.SizeBytes = &d.Size
+			diff.SizeBytes = swag.Int64(d.Size)
 		}
 		results = append(results, diff)
 	}
@@ -3745,7 +3745,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
 				SizeBytes:       apiutil.Ptr(entry.Size),
-				ContentType:     &entry.ContentType,
+				ContentType:     apiutil.Ptr(entry.ContentType),
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -3831,7 +3831,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       apiutil.Ptr(entry.Size),
-		ContentType:     &entry.ContentType,
+		ContentType:     apiutil.Ptr(entry.ContentType),
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 		objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
