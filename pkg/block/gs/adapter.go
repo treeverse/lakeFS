@@ -529,10 +529,6 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 	return targetAttrs, nil
 }
 
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
-}
-
 func (a *Adapter) Close() error {
 	return a.client.Close()
 }

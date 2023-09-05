@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type mockAdapter struct {
@@ -94,10 +93,6 @@ func (a *mockAdapter) UploadCopyPart(_ context.Context, _, _ block.ObjectPointer
 
 func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPointer, _ string, _ int, _, _ int64) (*block.UploadPartResponse, error) {
 	panic("try to upload copy part range in mock adapter")
-}
-
-func (a *mockAdapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, nil
 }
 
 func (a *mockAdapter) BlockstoreType() string {

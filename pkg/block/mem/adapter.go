@@ -17,7 +17,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var (
@@ -336,10 +335,6 @@ func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 		ETag:          hexCode,
 		ContentLength: int64(len(data)),
 	}, nil
-}
-
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, ErrInventoryNotImplemented
 }
 
 func (a *Adapter) BlockstoreType() string {

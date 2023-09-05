@@ -130,7 +130,6 @@ type Properties struct {
 }
 
 type Adapter interface {
-	InventoryGenerator
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(ctx context.Context, obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
 	GetWalker(uri *url.URL) (Walker, error)
