@@ -11,7 +11,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 )
@@ -32,7 +32,7 @@ func TestCopyObject(t *testing.T) {
 	t.Run("copy_large_size_file", func(t *testing.T) {
 		importPath := getImportPath(t)
 		importTestData(t, ctx, client, repo, importPath)
-		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
+		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
 			Path: largeObject,
 		})
 		require.NoError(t, err)
@@ -41,9 +41,9 @@ func TestCopyObject(t *testing.T) {
 		objStat := res.JSON200
 		destPath := "foo"
 		srcBranch := ingestionBranch
-		copyResp, err := client.CopyObjectWithResponse(ctx, repo, "main", &api.CopyObjectParams{
+		copyResp, err := client.CopyObjectWithResponse(ctx, repo, "main", &apigen.CopyObjectParams{
 			DestPath: destPath,
-		}, api.CopyObjectJSONRequestBody{
+		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: largeObject,
 			SrcRef:  &srcBranch,
 		})
@@ -63,7 +63,7 @@ func TestCopyObject(t *testing.T) {
 		require.Nil(t, deep.Equal(objStat, copyStat))
 
 		// get back info
-		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
+		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, statResp.StatusCode())
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
@@ -74,7 +74,7 @@ func TestCopyObject(t *testing.T) {
 		requireBlockstoreType(t, block.BlockstoreTypeAzure)
 		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
 		importTestData(t, ctx, client, repo, importPath)
-		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &api.StatObjectParams{
+		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
 			Path: largeObject,
 		})
 		require.NoError(t, err)
@@ -86,16 +86,16 @@ func TestCopyObject(t *testing.T) {
 		defer cancel()
 		var (
 			wg       sync.WaitGroup
-			copyResp *api.CopyObjectResponse
+			copyResp *apigen.CopyObjectResponse
 			copyErr  error
 		)
 		// Run copy object async and cancel context after 5 seconds
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &api.CopyObjectParams{
+			copyResp, copyErr = client.CopyObjectWithResponse(cancelCtx, repo, "main", &apigen.CopyObjectParams{
 				DestPath: destPath,
-			}, api.CopyObjectJSONRequestBody{
+			}, apigen.CopyObjectJSONRequestBody{
 				SrcPath: largeObject,
 				SrcRef:  &srcBranch,
 			})
@@ -108,7 +108,7 @@ func TestCopyObject(t *testing.T) {
 		require.Nil(t, copyResp)
 
 		// Verify object doesn't exist
-		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &api.StatObjectParams{Path: destPath})
+		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusNotFound, statResp.StatusCode())
 	})
@@ -131,14 +131,14 @@ func getImportPath(t *testing.T) string {
 	return importPath
 }
 
-func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResponsesInterface, repoName, importPath string) {
+func importTestData(t *testing.T, ctx context.Context, client apigen.ClientWithResponsesInterface, repoName, importPath string) {
 	var (
 		after  = ""
 		token  *string
-		ranges []api.RangeMetadata
+		ranges []apigen.RangeMetadata
 	)
 	for {
-		resp, err := client.IngestRangeWithResponse(ctx, repoName, api.IngestRangeJSONRequestBody{
+		resp, err := client.IngestRangeWithResponse(ctx, repoName, apigen.IngestRangeJSONRequestBody{
 			After:             after,
 			ContinuationToken: token,
 			FromSourceURI:     importPath,
@@ -154,7 +154,7 @@ func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResp
 		token = resp.JSON201.Pagination.ContinuationToken
 	}
 
-	metarangeResp, err := client.CreateMetaRangeWithResponse(ctx, repoName, api.CreateMetaRangeJSONRequestBody{
+	metarangeResp, err := client.CreateMetaRangeWithResponse(ctx, repoName, apigen.CreateMetaRangeJSONRequestBody{
 		Ranges: ranges,
 	})
 
@@ -162,17 +162,17 @@ func importTestData(t *testing.T, ctx context.Context, client api.ClientWithResp
 	require.NotNil(t, metarangeResp.JSON201)
 	require.NotNil(t, metarangeResp.JSON201.Id)
 
-	_, err = client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+	_, err = client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
 		Name:   ingestionBranch,
 		Source: "main",
 	})
 	require.NoError(t, err, "failed to create branch")
 
-	commitResp, err := client.CommitWithResponse(ctx, repoName, ingestionBranch, &api.CommitParams{
+	commitResp, err := client.CommitWithResponse(ctx, repoName, ingestionBranch, &apigen.CommitParams{
 		SourceMetarange: metarangeResp.JSON201.Id,
-	}, api.CommitJSONRequestBody{
+	}, apigen.CommitJSONRequestBody{
 		Message: "created by import",
-		Metadata: &api.CommitCreation_Metadata{
+		Metadata: &apigen.CommitCreation_Metadata{
 			AdditionalProperties: map[string]string{"created_by": "import"},
 		},
 	})

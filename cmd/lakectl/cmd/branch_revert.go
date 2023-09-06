@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -43,7 +43,7 @@ var branchRevertCmd = &cobra.Command{
 		clt := getClient()
 		for i := 1; i < len(args); i++ {
 			commitRef := args[i]
-			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.RevertBranchJSONRequestBody{
+			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, apigen.RevertBranchJSONRequestBody{
 				ParentNumber: parentNumber,
 				Ref:          commitRef,
 			})

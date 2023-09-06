@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -37,7 +37,7 @@ var branchProtectListCmd = &cobra.Command{
 		for i, rule := range *resp.JSON200 {
 			patterns[i] = []interface{}{rule.Pattern}
 		}
-		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &api.Pagination{
+		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &apigen.Pagination{
 			HasMore: false,
 			Results: len(patterns),
 		}, len(patterns))
@@ -54,7 +54,7 @@ var branchProtectAddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.CreateBranchProtectionRuleJSONRequestBody{
+		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, apigen.CreateBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
@@ -72,7 +72,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
+		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, apigen.DeleteBranchProtectionRuleJSONRequestBody{
 			Pattern: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

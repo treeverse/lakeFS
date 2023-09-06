@@ -8,7 +8,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/sync/errgroup"
@@ -46,7 +46,7 @@ var localStatusCmd = &cobra.Command{
 		// compare both
 		if !localOnly {
 			fmt.Printf("diff '%s' <--> '%s'...\n", remoteBase, remote)
-			d := make(chan api.Diff, maxDiffPageSize)
+			d := make(chan apigen.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
 				return diff.StreamRepositoryDiffs(cmd.Context(), client, remoteBase, remote, swag.StringValue(remoteBase.Path), d, false)

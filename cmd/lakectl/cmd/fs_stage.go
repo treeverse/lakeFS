@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var fsStageCmd = &cobra.Command{
@@ -29,7 +29,7 @@ var fsStageCmd = &cobra.Command{
 			mtime = &mtimeSeconds
 		}
 
-		obj := api.ObjectStageCreation{
+		obj := apigen.ObjectStageCreation{
 			Checksum:        checksum,
 			Mtime:           mtime,
 			PhysicalAddress: location,
@@ -37,15 +37,15 @@ var fsStageCmd = &cobra.Command{
 			ContentType:     &contentType,
 		}
 		if metaErr == nil {
-			metadata := api.ObjectUserMetadata{
+			metadata := apigen.ObjectUserMetadata{
 				AdditionalProperties: meta,
 			}
 			obj.Metadata = &metadata
 		}
 
-		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StageObjectParams{
+		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StageObjectParams{
 			Path: *pathURI.Path,
-		}, api.StageObjectJSONRequestBody(obj))
+		}, apigen.StageObjectJSONRequestBody(obj))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
 			Die("Bad response from server", 1)

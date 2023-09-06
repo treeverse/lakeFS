@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 type Detailed interface {
@@ -132,7 +133,7 @@ func ListRepositoriesAndAnalyze(ctx context.Context) error {
 	}
 	client := getClient()
 	WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to run a sanity command using current configuration."})
-	resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 
 	switch {
 	case err != nil:

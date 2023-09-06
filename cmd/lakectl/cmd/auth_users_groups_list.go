@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var authUsersGroupsList = &cobra.Command{
@@ -18,7 +19,7 @@ var authUsersGroupsList = &cobra.Command{
 
 		clt := getClient()
 
-		resp, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &api.ListUserGroupsParams{
+		resp, err := clt.ListUserGroupsWithResponse(cmd.Context(), id, &apigen.ListUserGroupsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})

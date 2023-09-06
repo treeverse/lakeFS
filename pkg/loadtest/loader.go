@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/schollz/progressbar/v3"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 
 	"github.com/treeverse/lakefs/pkg/api"
@@ -106,14 +107,14 @@ func (t *Loader) Run() error {
 	return nil
 }
 
-func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string, error) {
+func (t *Loader) createRepo(apiClient apigen.ClientWithResponsesInterface) (string, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create one
 		return t.Config.RepoName, nil
 	}
 	t.NewRepoName = uuid.New().String()
 	ctx := context.Background()
-	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
+	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    api.StringPtr("main"),
 		Name:             t.NewRepoName,
 		StorageNamespace: t.Config.StorageNamespace,
@@ -127,7 +128,7 @@ func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string,
 	return t.NewRepoName, nil
 }
 
-func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
+func (t *Loader) getClient() (apigen.ClientWithResponsesInterface, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create a client
 		return nil, nil
@@ -138,10 +139,10 @@ func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
 	}
 
 	serverEndpoint := t.Config.ServerAddress + api.BaseURL
-	apiClient, err := api.NewClientWithResponses(
+	apiClient, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
-		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			req.Header.Set("User-Agent", "lakefs-loadtest/"+version.Version)
 			return nil
 		}),

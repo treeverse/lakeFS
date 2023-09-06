@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -50,7 +50,7 @@ var findMergeBaseCmd = &cobra.Command{
 
 		Write(findMergeBaseTemplate, struct {
 			Merge  FromToBase
-			Result *api.FindMergeBaseResult
+			Result *apigen.FindMergeBaseResult
 		}{
 			Merge: FromToBase{
 				FromRef: resp.JSON200.SourceCommitId,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var tagListCmd = &cobra.Command{
@@ -21,7 +22,7 @@ var tagListCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		client := getClient()
-		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
+		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &apigen.ListTagsParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})

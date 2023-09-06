@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
@@ -28,7 +28,7 @@ var metastoreCreateSymlinkCmd = &cobra.Command{
 		defer fromClientDeferFunc()
 		defer toClientDeferFunc()
 
-		resp, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
+		resp, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &apigen.CreateSymlinkFileParams{Location: &path})
 		if err != nil {
 			DieErr(err)
 		}

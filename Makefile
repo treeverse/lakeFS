@@ -64,7 +64,7 @@ clean:
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
-		pkg/api/lakefs.gen.go \
+		pkg/api/apigen/lakefs.gen.go \
 		pkg/auth/client.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm

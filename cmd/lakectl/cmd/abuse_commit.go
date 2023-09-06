@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
@@ -52,8 +52,8 @@ var abuseCommitCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &api.CommitParams{},
-					api.CommitJSONRequestBody(api.CommitCreation{Message: work}))
+				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
+					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work}))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}

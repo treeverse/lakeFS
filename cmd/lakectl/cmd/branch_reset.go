@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 // lakectl branch reset lakefs://myrepo/main --commit commitId --prefix path --object path
@@ -32,24 +32,24 @@ var branchResetCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		var reset api.ResetCreation
+		var reset apigen.ResetCreation
 		var confirmationMsg string
 		switch {
 		case len(prefix) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes from path: %s", prefix)
-			reset = api.ResetCreation{
+			reset = apigen.ResetCreation{
 				Path: &prefix,
 				Type: "common_prefix",
 			}
 		case len(object) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes for object: %s", object)
-			reset = api.ResetCreation{
+			reset = apigen.ResetCreation{
 				Path: &object,
 				Type: "object",
 			}
 		default:
 			confirmationMsg = "Are you sure you want to reset all uncommitted changes"
-			reset = api.ResetCreation{
+			reset = apigen.ResetCreation{
 				Type: "reset",
 			}
 		}
@@ -59,7 +59,7 @@ var branchResetCmd = &cobra.Command{
 			Die("Reset aborted", 1)
 			return
 		}
-		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, api.ResetBranchJSONRequestBody(reset))
+		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, apigen.ResetBranchJSONRequestBody(reset))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

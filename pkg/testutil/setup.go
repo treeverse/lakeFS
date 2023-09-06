@@ -16,6 +16,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -32,7 +33,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientWithResponsesInterface, *s3.S3, string) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.ClientWithResponsesInterface, *s3.S3, string) {
 	logger := logging.ContextUnavailable()
 	viper.AddConfigPath(".")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
@@ -64,7 +65,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 
 	endpointURL := ParseEndpointURL(logger, viper.GetString("endpoint_url"))
 
-	client, err := api.NewClientWithResponses(endpointURL)
+	client, err := apigen.NewClientWithResponses(endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize API client")
 	}
@@ -77,7 +78,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 	if setupLakeFS {
 		// first setup of lakeFS
 		mockEmail := "test@acme.co"
-		_, err := client.SetupCommPrefsWithResponse(context.Background(), api.SetupCommPrefsJSONRequestBody{
+		_, err := client.SetupCommPrefsWithResponse(context.Background(), apigen.SetupCommPrefsJSONRequestBody{
 			Email:           &mockEmail,
 			FeatureUpdates:  false,
 			SecurityUpdates: false,
@@ -86,11 +87,11 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, api.ClientW
 			logger.WithError(err).Fatal("Failed to setup lakeFS")
 		}
 		adminUserName := params.Name
-		requestBody := api.SetupJSONRequestBody{
+		requestBody := apigen.SetupJSONRequestBody{
 			Username: adminUserName,
 		}
 		if params.AdminAccessKeyID != "" || params.AdminSecretAccessKey != "" {
-			requestBody.Key = &api.AccessKeyCredentials{
+			requestBody.Key = &apigen.AccessKeyCredentials{
 				AccessKeyId:     params.AdminAccessKeyID,
 				SecretAccessKey: params.AdminSecretAccessKey,
 			}
@@ -156,18 +157,18 @@ func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
 }
 
 // NewClientFromCreds creates a client using the credentials of a user
-func NewClientFromCreds(logger logging.Logger, accessKeyID string, secretAccessKey string, endpointURL string) (*api.ClientWithResponses, error) {
+func NewClientFromCreds(logger logging.Logger, accessKeyID string, secretAccessKey string, endpointURL string) (*apigen.ClientWithResponses, error) {
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(accessKeyID, secretAccessKey)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize basic auth security provider")
 	}
 
-	return api.NewClientWithResponses(endpointURL, api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	return apigen.NewClientWithResponses(endpointURL, apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 }
 
 const checkIteration = 5 * time.Second
 
-func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl api.ClientWithResponsesInterface) error {
+func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl apigen.ClientWithResponsesInterface) error {
 	setupCtx, cancel := context.WithTimeout(ctx, viper.GetDuration("setup_lakefs_timeout"))
 	defer cancel()
 	for {

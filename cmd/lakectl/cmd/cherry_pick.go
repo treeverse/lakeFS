@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -44,7 +44,7 @@ var cherryPick = &cobra.Command{
 		}
 
 		clt := getClient()
-		resp, err := clt.CherryPickWithResponse(cmd.Context(), branch.Repository, branch.Ref, api.CherryPickJSONRequestBody{
+		resp, err := clt.CherryPickWithResponse(cmd.Context(), branch.Repository, branch.Ref, apigen.CherryPickJSONRequestBody{
 			Ref:          ref.Ref,
 			ParentNumber: &parentNumber,
 		})
@@ -52,7 +52,7 @@ var cherryPick = &cobra.Command{
 
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
-			Commit *api.Commit
+			Commit *apigen.Commit
 		}{Branch: branch, Commit: resp.JSON201})
 	},
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -289,11 +289,11 @@ func TestS3CopyObject(t *testing.T) {
 		}
 		require.Equal(t, objContent, content.String())
 
-		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
+		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "data/source-file"})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON200)
 
-		resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
+		resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "data/dest-file"})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON200)
 
@@ -330,12 +330,12 @@ func TestS3CopyObject(t *testing.T) {
 		// compere files content
 		require.Equal(t, contents.String(), objContent)
 
-		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: "data/source-file"})
+		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "data/source-file"})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON200)
 		sourceObjectStats := resp.JSON200
 
-		resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &api.StatObjectParams{Path: "data/dest-file"})
+		resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &apigen.StatObjectParams{Path: "data/dest-file"})
 		if err != nil {
 			t.Fatalf("client.StatObject(%s): %s", destPath, err)
 		}

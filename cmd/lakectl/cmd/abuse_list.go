@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
@@ -36,14 +36,14 @@ var abuseListCmd = &cobra.Command{
 			}
 		})
 
-		listPrefix := api.PaginationPrefix(prefix)
+		listPrefix := apigen.PaginationPrefix(prefix)
 		// execute the things!
 		generator.Run(func(input chan string, output chan stress.Result) {
 			ctx := cmd.Context()
 			client := getClient()
 			for range input {
 				start := time.Now()
-				resp, err := client.ListObjectsWithResponse(ctx, u.Repository, u.Ref, &api.ListObjectsParams{
+				resp, err := client.ListObjectsWithResponse(ctx, u.Repository, u.Ref, &apigen.ListObjectsParams{
 					Prefix: &listPrefix,
 				})
 				if err == nil && resp.StatusCode() != http.StatusOK {

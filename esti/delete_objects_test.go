@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 func TestDeleteObjects(t *testing.T) {
@@ -68,7 +69,7 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 
 	// setup user with only view rights - create user, add to group, generate credentials
 	uid := "del-viewer"
-	resCreateUser, err := client.CreateUserWithResponse(ctx, api.CreateUserJSONRequestBody{
+	resCreateUser, err := client.CreateUserWithResponse(ctx, apigen.CreateUserJSONRequestBody{
 		Id: uid,
 	})
 	require.NoError(t, err, "Admin failed while creating user")

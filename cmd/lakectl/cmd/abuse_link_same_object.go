@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
@@ -43,7 +43,7 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 
-				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &api.GetPhysicalAddressParams{Path: work})
+				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &apigen.GetPhysicalAddressParams{Path: work})
 				if err == nil && getResponse.JSON200 == nil {
 					err = helpers.ResponseAsError(getResponse)
 				}
@@ -57,12 +57,12 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 
 				stagingLocation := getResponse.JSON200
 				linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
-					&api.LinkPhysicalAddressParams{
+					&apigen.LinkPhysicalAddressParams{
 						Path: work,
 					},
-					api.LinkPhysicalAddressJSONRequestBody{
+					apigen.LinkPhysicalAddressJSONRequestBody{
 						Checksum: "00695c7307b0480c7b6bdc873cf05c15",
-						Staging: api.StagingLocation{
+						Staging: apigen.StagingLocation{
 							PhysicalAddress: stagingLocation.PhysicalAddress,
 							Token:           stagingLocation.Token,
 						},

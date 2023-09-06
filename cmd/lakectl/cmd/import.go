@@ -13,6 +13,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const importSummaryTemplate = `Import of {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
@@ -51,11 +52,11 @@ var importCmd = &cobra.Command{
 
 		// setup progress bar - based on `progressbar.Default` defaults + control visibility
 		bar := newImportProgressBar(!noProgress)
-		body := api.ImportStartJSONRequestBody{
-			Commit: api.CommitCreation{
+		body := apigen.ImportStartJSONRequestBody{
+			Commit: apigen.CommitCreation{
 				Message: message,
 			},
-			Paths: []api.ImportLocation{
+			Paths: []apigen.ImportLocation{
 				{
 					Destination: api.StringValue(toURI.Path),
 					Path:        from,
@@ -64,7 +65,7 @@ var importCmd = &cobra.Command{
 			},
 		}
 		if len(metadata) > 0 {
-			body.Commit.Metadata = &api.CommitCreation_Metadata{AdditionalProperties: metadata}
+			body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}
 		}
 
 		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, body)
@@ -82,7 +83,7 @@ var importCmd = &cobra.Command{
 			maxUpdateFailures  = 5
 		)
 		var (
-			statusResp     *api.ImportStatusResponse
+			statusResp     *apigen.ImportStatusResponse
 			updateFailures int
 			updatedAt      time.Time
 		)
@@ -93,11 +94,11 @@ var importCmd = &cobra.Command{
 			case <-sigCtx.Done():
 				fmt.Println()
 				fmt.Println("Canceling import")
-				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportCancelParams{Id: importID})
+				resp, err := client.ImportCancelWithResponse(ctx, toURI.Repository, toURI.Ref, &apigen.ImportCancelParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 				Die("Import Canceled", 1)
 			case <-ticker.C:
-				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &api.ImportStatusParams{Id: importID})
+				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &apigen.ImportStatusParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
 				status := statusResp.JSON200
 				if status == nil {
@@ -126,7 +127,7 @@ var importCmd = &cobra.Command{
 			Objects     int64
 			MetaRangeID string
 			Branch      string
-			Commit      *api.Commit
+			Commit      *apigen.Commit
 		}{
 			Objects:     api.Int64Value(statusResp.JSON200.IngestedObjects),
 			MetaRangeID: api.StringValue(statusResp.JSON200.MetarangeId),
@@ -162,7 +163,7 @@ func newImportProgressBar(visible bool) *progressbar.ProgressBar {
 	return bar
 }
 
-func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientWithResponses, source string) {
+func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.ClientWithResponses, source string) {
 	storageConfResp, err := client.GetStorageConfigWithResponse(ctx)
 	DieOnErrorOrUnexpectedStatusCode(storageConfResp, err, http.StatusOK)
 	storageConfig := storageConfResp.JSON200
@@ -181,7 +182,7 @@ func verifySourceMatchConfiguredStorage(ctx context.Context, client *api.ClientW
 	}
 }
 
-func branchExists(ctx context.Context, client *api.ClientWithResponses, repository string, branch string) (error, bool) {
+func branchExists(ctx context.Context, client *apigen.ClientWithResponses, repository string, branch string) (error, bool) {
 	resp, err := client.GetBranchWithResponse(ctx, repository, branch)
 	if err != nil {
 		return err, false

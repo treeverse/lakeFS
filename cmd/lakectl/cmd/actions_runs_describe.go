@@ -8,6 +8,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
@@ -29,7 +30,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
 		u := MustParseRepoURI("repository", args[0])
-		pagination := api.Pagination{HasMore: true}
+		pagination := apigen.Pagination{HasMore: true}
 
 		fmt.Println("Repository:", u)
 		runID := args[1]
@@ -52,7 +53,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 				amountForPagination = internalPageSize
 			}
 			// iterator over hooks - print information and output
-			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &api.ListRunHooksParams{
+			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &apigen.ListRunHooksParams{
 				After:  api.PaginationAfterPtr(after),
 				Amount: api.PaginationAmountPtr(amountForPagination),
 			})
@@ -62,7 +63,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 			}
 			pagination = runHooksRes.JSON200.Pagination
 			data := struct {
-				Hooks      []api.HookRun
+				Hooks      []apigen.HookRun
 				HooksTable []*Table
 				HookLog    func(hookRunID string) (string, error)
 				Pagination *Pagination
@@ -86,7 +87,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 	},
 }
 
-func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, repositoryID string, runID string) func(hookRunID string) (string, error) {
+func makeHookLog(ctx context.Context, client apigen.ClientWithResponsesInterface, repositoryID string, runID string) func(hookRunID string) (string, error) {
 	return func(hookRunID string) (string, error) {
 		resp, err := client.GetRunHookOutputWithResponse(ctx, repositoryID, runID, hookRunID)
 		if err != nil {
@@ -99,7 +100,7 @@ func makeHookLog(ctx context.Context, client api.ClientWithResponsesInterface, r
 	}
 }
 
-func convertRunResultTable(r *api.ActionRun) *Table {
+func convertRunResultTable(r *apigen.ActionRun) *Table {
 	runID := text.FgYellow.Sprint(r.RunId)
 	statusColor := text.FgRed
 	if r.Status == "completed" {
@@ -114,7 +115,7 @@ func convertRunResultTable(r *api.ActionRun) *Table {
 	}
 }
 
-func convertHookResultsTables(results []api.HookRun) []*Table {
+func convertHookResultsTables(results []apigen.HookRun) []*Table {
 	tables := make([]*Table, len(results))
 	for i, r := range results {
 		hookRunID := text.FgYellow.Sprint(r.HookRunId)

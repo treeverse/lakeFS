@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -17,7 +18,7 @@ const (
 
 type objectCommitData struct {
 	Object        string
-	Commit        api.Commit
+	Commit        apigen.Commit
 	CommitMessage string
 }
 
@@ -32,21 +33,21 @@ var annotateCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool("recursive"))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		client := getClient()
-		pfx := api.PaginationPrefix(*pathURI.Path)
+		pfx := apigen.PaginationPrefix(*pathURI.Path)
 		context := cmd.Context()
-		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &api.ListObjectsParams{Prefix: &pfx})
+		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &apigen.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		var listObjectsDelimiter api.PaginationDelimiter
+		var listObjectsDelimiter apigen.PaginationDelimiter
 		if !recursive {
 			listObjectsDelimiter = PathDelimiter
 		}
 		var from string
 		limit := true
 		for {
-			params := &api.ListObjectsParams{
+			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
 				After:     api.PaginationAfterPtr(from),
 				Delimiter: &listObjectsDelimiter,
@@ -57,7 +58,7 @@ var annotateCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 			for _, obj := range listObjectsResp.JSON200.Results {
-				logCommitsParams := &api.LogCommitsParams{
+				logCommitsParams := &apigen.LogCommitsParams{
 					Amount:      api.PaginationAmountPtr(1),
 					Limit:       &limit,
 					FirstParent: &firstParent,

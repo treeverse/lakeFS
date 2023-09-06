@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const userCreatedTemplate = `{{ "User created successfully." | green }}
@@ -19,7 +19,7 @@ var authUsersCreate = &cobra.Command{
 		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
-		resp, err := clt.CreateUserWithResponse(cmd.Context(), api.CreateUserJSONRequestBody{
+		resp, err := clt.CreateUserWithResponse(cmd.Context(), apigen.CreateUserJSONRequestBody{
 			Id: id,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -24,10 +25,10 @@ func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string
 	}
 
 	// extract repository name written so far
-	var prefix api.PaginationPrefix
+	var prefix apigen.PaginationPrefix
 	if strings.HasPrefix(toComplete, uriPrefix) {
 		if !strings.Contains(toComplete[len(uriPrefix):], uri.PathSeparator) {
-			prefix = api.PaginationPrefix(toComplete[len(uriPrefix):])
+			prefix = apigen.PaginationPrefix(toComplete[len(uriPrefix):])
 		}
 	}
 
@@ -38,7 +39,7 @@ func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string
 		after       string
 	)
 	for {
-		params := &api.ListRepositoriesParams{
+		params := &apigen.ListRepositoriesParams{
 			Prefix: &prefix,
 			After:  api.PaginationAfterPtr(after),
 		}

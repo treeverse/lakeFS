@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var authUsersPoliciesList = &cobra.Command{
@@ -20,7 +21,7 @@ var authUsersPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &api.ListUserPoliciesParams{
+		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &apigen.ListUserPoliciesParams{
 			After:     api.PaginationAfterPtr(after),
 			Amount:    api.PaginationAmountPtr(amount),
 			Effective: &effective,

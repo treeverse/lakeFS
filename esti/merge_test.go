@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -24,12 +25,12 @@ func TestMergeAndList(t *testing.T) {
 	}
 
 	logger.WithField("branch", mainBranch).Info("Commit initial content")
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Initial content"})
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	logger.WithField("branch", branch).Info("Create branch")
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: mainBranch,
 	})
@@ -50,7 +51,7 @@ func TestMergeAndList(t *testing.T) {
 	}
 }
 
-func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Context, repo, branch, strategy string, checksums map[string]string, iteration int) []api.ObjectStats {
+func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Context, repo, branch, strategy string, checksums map[string]string, iteration int) []apigen.ObjectStats {
 	const addedFiles = 10
 	for i := 0; i < addedFiles; i++ {
 		p := fmt.Sprintf("%d.txt", i)
@@ -61,13 +62,13 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	const totalFiles = addedFiles + 1
 
 	logger.WithField("iteration", iteration).Info("Commit uploaded files")
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: fmt.Sprintf("Adding %d files", addedFiles),
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
+	mergeRes, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
 	require.NoError(t, err, "failed to merge branches")
 	require.Equal(t, http.StatusOK, mergeRes.StatusCode())
 	logger.WithFields(logging.Fields{"iteration": iteration, "mergeResult": mergeRes}).Info("Merged successfully")
@@ -80,7 +81,7 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	require.True(t, ok)
 	require.Equal(t, strategy, val)
 
-	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &api.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
+	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
 	require.NoError(t, err, "failed to list objects")
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	payload := resp.JSON200

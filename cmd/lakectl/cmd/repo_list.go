@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var repoListCmd = &cobra.Command{
@@ -20,7 +21,7 @@ var repoListCmd = &cobra.Command{
 		after := Must(cmd.Flags().GetString("after"))
 		clt := getClient()
 
-		resp, err := clt.ListRepositoriesWithResponse(cmd.Context(), &api.ListRepositoriesParams{
+		resp, err := clt.ListRepositoriesWithResponse(cmd.Context(), &apigen.ListRepositoriesParams{
 			After:  api.PaginationAfterPtr(after),
 			Amount: api.PaginationAmountPtr(amount),
 		})

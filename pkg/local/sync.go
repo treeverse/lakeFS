@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -28,7 +29,7 @@ const (
 	ClientMtimeMetadataKey = api.LakeFSMetadataPrefix + "client-mtime"
 )
 
-func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
+func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
 	}
@@ -48,7 +49,7 @@ type Tasks struct {
 
 type SyncManager struct {
 	ctx            context.Context
-	client         *api.ClientWithResponses
+	client         *apigen.ClientWithResponses
 	httpClient     *http.Client
 	progressBar    *ProgressPool
 	maxParallelism int
@@ -56,7 +57,7 @@ type SyncManager struct {
 	tasks          Tasks
 }
 
-func NewSyncManager(ctx context.Context, client *api.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
 	return &SyncManager{
 		ctx:            ctx,
 		client:         client,
@@ -146,7 +147,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 
-	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
+	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
 		Presign:      swag.Bool(s.presign),
 		UserMetadata: swag.Bool(true),
@@ -155,7 +156,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 	if statResp.StatusCode() != http.StatusOK {
-		httpErr := api.Error{Message: "no content"}
+		httpErr := apigen.Error{Message: "no content"}
 		_ = json.Unmarshal(statResp.Body, &httpErr)
 		return fmt.Errorf("(stat: HTTP %d, message: %s): %w", statResp.StatusCode(), httpErr.Message, ErrDownloadingFile)
 	}
@@ -205,7 +206,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 			}
 			body = resp.Body
 		} else {
-			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &api.GetObjectParams{
+			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
 				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
 			})
 			if err != nil {
@@ -321,7 +322,7 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		}
 	}()
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
-	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.DeleteObjectParams{
+	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DeleteObjectParams{
 		Path: dest,
 	})
 	if err != nil {

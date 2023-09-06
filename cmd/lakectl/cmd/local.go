@@ -12,7 +12,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -82,7 +82,7 @@ type syncFlags struct {
 	presign     bool
 }
 
-func getLocalSyncFlags(cmd *cobra.Command, client *api.ClientWithResponses) syncFlags {
+func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
 	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
 	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
 	if !presignFlag.Changed {
@@ -125,9 +125,9 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 	return
 }
 
-func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
+func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
 	fmt.Printf("\ndiff 'local://%s' <--> '%s'...\n", path, remote)
-	currentRemoteState := make(chan api.ObjectStats, maxDiffPageSize)
+	currentRemoteState := make(chan apigen.ObjectStats, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {
 		return local.ListRemote(ctx, client, remote, currentRemoteState)
