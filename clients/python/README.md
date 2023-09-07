@@ -192,8 +192,6 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *ObjectsApi* | [**upload_object_preflight**](docs/ObjectsApi.md#upload_object_preflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
-*OtfDiffApi* | [**get_otf_diffs**](docs/OtfDiffApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
-*OtfDiffApi* | [**otf_diff**](docs/OtfDiffApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *RefsApi* | [**diff_refs**](docs/RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 *RefsApi* | [**dump_refs**](docs/RefsApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**find_merge_base**](docs/RefsApi.md#find_merge_base) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references

@@ -13,7 +13,6 @@ from lakefs_client.api import health_check_api
 from lakefs_client.api import import_api
 from lakefs_client.api import metadata_api
 from lakefs_client.api import objects_api
-from lakefs_client.api import otf_diff_api
 from lakefs_client.api import refs_api
 from lakefs_client.api import repositories_api
 from lakefs_client.api import retention_api
@@ -56,7 +55,6 @@ class LakeFSClient:
         self.import_api = import_api.ImportApi(self._api)
         self.metadata_api = metadata_api.MetadataApi(self._api)
         self.objects_api = objects_api.ObjectsApi(self._api)
-        self.otf_diff_api = otf_diff_api.OtfDiffApi(self._api)
         self.refs_api = refs_api.RefsApi(self._api)
         self.repositories_api = repositories_api.RepositoriesApi(self._api)
         self.retention_api = retention_api.RetentionApi(self._api)
