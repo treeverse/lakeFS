@@ -152,7 +152,7 @@ func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperati
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req)
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := authorize(w, req, sc.authService, perms)
@@ -171,7 +171,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		perms, err := handler.RequiredPermissions(req, repo.Name)
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		authOp := authorize(w, req, sc.authService, perms)
@@ -202,9 +202,9 @@ func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHan
 		perms, err := handler.RequiredPermissions(req, repo.Name, refID, path)
 		if err != nil {
 			if errors.Is(err, gatewayerrors.ErrInvalidCopySource) {
-				_ = o.EncodeError(w, req, gatewayerrors.ErrInvalidCopySource.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrInvalidCopySource.ToAPIErr())
 			} else {
-				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
@@ -242,7 +242,7 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to authorize, get user")
-		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+		_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 		return nil
 	}
 	username := user.Username
@@ -265,7 +265,7 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 	})
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to authorize")
-		_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+		_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 		return nil
 	}
 	if authResp.Error != nil || !authResp.Allowed {
@@ -274,7 +274,7 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 			l = l.WithField("key", accessKeyID)
 		}
 		l.Warn("no permission")
-		_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+		_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 		return nil
 	}
 	return &operations.AuthorizedOperation{
@@ -315,6 +315,6 @@ func setDefaultContentType(w http.ResponseWriter, req *http.Request) {
 func unsupportedOperationHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := &operations.Operation{}
-		_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 	})
 }

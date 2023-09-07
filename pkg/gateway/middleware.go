@@ -39,7 +39,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		authContext, err := authenticator.Parse(req.Context())
 		if err != nil {
 			o.Log(req).WithError(err).Warn("failed to parse signature")
-			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 		accessKeyID := authContext.GetAccessKeyID()
@@ -48,10 +48,10 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		if err != nil {
 			if !errors.Is(err, auth.ErrNotFound) {
 				logger.WithError(err).Warn("error getting access key")
-				_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 			} else {
 				logger.WithError(err).Warn("could not find access key")
-				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			}
 			return
 		}
@@ -59,14 +59,14 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		logger = logger.WithField("authenticator", authenticator)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
-			_ = o.EncodeError(w, req, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 			return
 		}
 
 		user, err = authService.GetUser(ctx, creds.Username)
 		if err != nil {
 			logger.WithError(err).Warn("could not get user for credentials key")
-			_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
 		ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
@@ -175,18 +175,18 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 				},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
-				_ = o.EncodeError(w, req, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
 				return
 			}
 			if fallbackProxy != nil {
 				fallbackProxy.ServeHTTP(w, req)
 				return
 			}
-			_ = o.EncodeError(w, req, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
 		if repo == nil {
-			_ = o.EncodeError(w, req, gatewayerrors.ErrInternalError.ToAPIErr())
+			_ = o.EncodeError(w, req, err, gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
 		req = req.WithContext(context.WithValue(ctx, ContextKeyRepository, repo))
@@ -204,7 +204,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 			if req.Method == http.MethodGet {
 				o.OperationID = operations.OperationIDListBuckets
 			} else {
-				_ = o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+				_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 				return
 			}
 		} else {

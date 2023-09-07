@@ -142,7 +142,7 @@ func (m *Manager) DropKey(ctx context.Context, st graveler.StagingToken, key gra
 }
 
 // List returns an iterator of staged values on the staging token st
-func (m *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
+func (m *Manager) List(ctx context.Context, st graveler.StagingToken, batchSize int) graveler.ValueIterator {
 	return NewStagingIterator(ctx, m.kvStore, st, batchSize)
 }
 

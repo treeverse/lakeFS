@@ -2640,12 +2640,11 @@ func (mr *MockStagingManagerMockRecorder) Get(ctx, st, key interface{}) *gomock.
 }
 
 // List mocks base method.
-func (m *MockStagingManager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
+func (m *MockStagingManager) List(ctx context.Context, st graveler.StagingToken, batchSize int) graveler.ValueIterator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, st, batchSize)
 	ret0, _ := ret[0].(graveler.ValueIterator)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // List indicates an expected call of List.
