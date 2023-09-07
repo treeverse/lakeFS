@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
@@ -31,7 +31,7 @@ var fsCatCmd = &cobra.Command{
 		} else {
 			preSign := swag.Bool(transport == transportMethodPreSign)
 			var resp *http.Response
-			resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.GetObjectParams{
+			resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.GetObjectParams{
 				Path:    *pathURI.Path,
 				Presign: preSign,
 			})

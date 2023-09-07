@@ -8,7 +8,8 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -51,13 +52,13 @@ var fsRmCmd = &cobra.Command{
 		}
 
 		prefix := *pathURI.Path
-		var paramsDelimiter api.PaginationDelimiter = ""
+		var paramsDelimiter apigen.PaginationDelimiter = ""
 		var from string
-		pfx := api.PaginationPrefix(prefix)
+		pfx := apigen.PaginationPrefix(prefix)
 		for {
-			params := &api.ListObjectsParams{
+			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
@@ -92,7 +93,7 @@ var fsRmCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- error, wg *sync.WaitGroup) {
+func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for pathURI := range paths {
 		err := deleteObject(ctx, client, pathURI)
@@ -103,8 +104,8 @@ func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInter
 	}
 }
 
-func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI) error {
-	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
+func deleteObject(ctx context.Context, client apigen.ClientWithResponsesInterface, pathURI *uri.URI) error {
+	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &apigen.DeleteObjectParams{
 		Path: *pathURI.Path,
 	})
 

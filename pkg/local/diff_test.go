@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -22,13 +22,13 @@ func TestDiffLocal(t *testing.T) {
 	cases := []struct {
 		Name       string
 		LocalPath  string
-		RemoteList []api.ObjectStats
+		RemoteList []apigen.ObjectStats
 		Expected   []*local.Change
 	}{
 		{
 			Name:      "t1_no_diff",
 			LocalPath: "testdata/localdiff/t1",
-			RemoteList: []api.ObjectStats{
+			RemoteList: []apigen.ObjectStats{
 				{
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
@@ -45,7 +45,7 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:      "t1_modified",
 			LocalPath: "testdata/localdiff/t1",
-			RemoteList: []api.ObjectStats{
+			RemoteList: []apigen.ObjectStats{
 				{
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
@@ -71,7 +71,7 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:      "t1_local_before",
 			LocalPath: "testdata/localdiff/t1",
-			RemoteList: []api.ObjectStats{
+			RemoteList: []apigen.ObjectStats{
 				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
@@ -88,7 +88,7 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:      "t1_local_after",
 			LocalPath: "testdata/localdiff/t1",
-			RemoteList: []api.ObjectStats{
+			RemoteList: []apigen.ObjectStats{
 				{
 					Path:      "tub/r.txt",
 					SizeBytes: swag.Int64(6),
@@ -119,7 +119,7 @@ func TestDiffLocal(t *testing.T) {
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
 			})
-			lc := make(chan api.ObjectStats, len(left))
+			lc := make(chan apigen.ObjectStats, len(left))
 			makeChan(lc, left)
 			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath)
 			if err != nil {

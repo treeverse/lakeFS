@@ -10,7 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -46,7 +47,7 @@ func (d *dotWriter) End() {
 	_, _ = fmt.Fprint(d.w, "\n}\n")
 }
 
-func (d *dotWriter) Write(commits []api.Commit) {
+func (d *dotWriter) Write(commits []apigen.Commit) {
 	repoID := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
 		isMerge := len(commit.Parents) > 1
@@ -88,7 +89,7 @@ var logCmd = &cobra.Command{
 			Die("Prefixes list contains empty string!", 1)
 		}
 
-		pagination := api.Pagination{HasMore: true}
+		pagination := apigen.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
 		branchURI := MustParseRefURI("branch", args[0])
@@ -96,9 +97,9 @@ var logCmd = &cobra.Command{
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
 		}
-		logCommitsParams := &api.LogCommitsParams{
-			After:       api.PaginationAfterPtr(after),
-			Amount:      api.PaginationAmountPtr(amountForPagination),
+		logCommitsParams := &apigen.LogCommitsParams{
+			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount:      apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
 			Limit:       &limit,
 			FirstParent: &firstParent,
 		}
@@ -124,9 +125,9 @@ var logCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 			pagination = resp.JSON200.Pagination
-			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
+			logCommitsParams.After = apiutil.Ptr(apigen.PaginationAfter(pagination.NextOffset))
 			data := struct {
-				Commits         []api.Commit
+				Commits         []apigen.Commit
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{

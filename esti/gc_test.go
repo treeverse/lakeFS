@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -32,7 +32,7 @@ var (
 
 type testCase struct {
 	id           string
-	policy       api.GarbageCollectionRules
+	policy       apigen.GarbageCollectionRules
 	branches     []branchProperty
 	fileDeleted  bool
 	description  string
@@ -48,7 +48,7 @@ type branchProperty struct {
 var testCases = []testCase{
 	{
 		id:     "1",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{}, DefaultRetentionDays: 1},
 		branches: []branchProperty{
 			{name: "a1", deleteCommitDaysAgo: 2}, {name: "b1", deleteCommitDaysAgo: 2},
 		},
@@ -58,7 +58,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "2",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a2", RetentionDays: 1}, {BranchId: "b2", RetentionDays: 3}}, DefaultRetentionDays: 5},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{{BranchId: "a2", RetentionDays: 1}, {BranchId: "b2", RetentionDays: 3}}, DefaultRetentionDays: 5},
 		branches: []branchProperty{
 			{name: "a2", deleteCommitDaysAgo: 4}, {name: "b2", deleteCommitDaysAgo: 4},
 		},
@@ -68,7 +68,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "3",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a3", RetentionDays: 1}, {BranchId: "b3", RetentionDays: 3}}, DefaultRetentionDays: 5},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{{BranchId: "a3", RetentionDays: 1}, {BranchId: "b3", RetentionDays: 3}}, DefaultRetentionDays: 5},
 		branches: []branchProperty{
 			{name: "a3", deleteCommitDaysAgo: 4}, {name: "b3", deleteCommitDaysAgo: 2},
 		},
@@ -78,7 +78,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "4",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 5},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{}, DefaultRetentionDays: 5},
 		branches: []branchProperty{
 			{name: "a4", deleteCommitDaysAgo: 4}, {name: "b4", deleteCommitDaysAgo: 2},
 		},
@@ -88,7 +88,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "5",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a5", RetentionDays: 1}, {BranchId: "b5", RetentionDays: 3}}, DefaultRetentionDays: 5},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{{BranchId: "a5", RetentionDays: 1}, {BranchId: "b5", RetentionDays: 3}}, DefaultRetentionDays: 5},
 		branches: []branchProperty{
 			{name: "a5", deleteCommitDaysAgo: 1},
 		},
@@ -98,7 +98,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "6",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a6", RetentionDays: 1}}, DefaultRetentionDays: 5},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{{BranchId: "a6", RetentionDays: 1}}, DefaultRetentionDays: 5},
 		branches: []branchProperty{
 			{name: "a6", deleteCommitDaysAgo: 1}, {name: "b6", deleteCommitDaysAgo: 4},
 		},
@@ -108,7 +108,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "7",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a7", RetentionDays: 1}}, DefaultRetentionDays: 5},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{{BranchId: "a7", RetentionDays: 1}}, DefaultRetentionDays: 5},
 		branches: []branchProperty{
 			{name: "a7", deleteCommitDaysAgo: 1}, {name: "b7", deleteCommitDaysAgo: 5},
 		},
@@ -118,7 +118,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "8",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{{BranchId: "a8", RetentionDays: 3}}, DefaultRetentionDays: 1},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{{BranchId: "a8", RetentionDays: 3}}, DefaultRetentionDays: 1},
 		branches: []branchProperty{
 			{name: "a8", deleteCommitDaysAgo: 2}, {name: "b8", deleteCommitDaysAgo: -1},
 		},
@@ -128,7 +128,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "9",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{}, DefaultRetentionDays: 1},
 		branches: []branchProperty{
 			{name: "a9", deleteCommitDaysAgo: -1}, {name: "b9", deleteCommitDaysAgo: -1},
 		},
@@ -138,7 +138,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "10",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{}, DefaultRetentionDays: 1},
 		branches: []branchProperty{
 			{name: "a10", deleteCommitDaysAgo: -1}, {name: "b10", deleteCommitDaysAgo: -1},
 		},
@@ -149,7 +149,7 @@ var testCases = []testCase{
 	},
 	{
 		id:     "11",
-		policy: api.GarbageCollectionRules{Branches: []api.GarbageCollectionRule{}, DefaultRetentionDays: 1},
+		policy: apigen.GarbageCollectionRules{Branches: []apigen.GarbageCollectionRule{}, DefaultRetentionDays: 1},
 		branches: []branchProperty{
 			{name: "a11", deleteCommitDaysAgo: -1}, {name: "b11", deleteCommitDaysAgo: -1},
 		},
@@ -232,13 +232,13 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file3", direct)
 
 	commitTime := int64(0)
-	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "add three files not to be deleted", Date: &commitTime})
+	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "add three files not to be deleted", Date: &commitTime})
 	if err != nil {
 		t.Fatalf("Commit some data %s", err)
 	}
 
 	newBranch := "a" + testCase.id
-	_, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: newBranch, Source: mainBranch})
+	_, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: newBranch, Source: mainBranch})
 	if err != nil {
 		t.Fatalf("Create new branch %s", err)
 	}
@@ -248,37 +248,37 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 	commitTime = int64(10)
 
 	// get commit id after commit for validation step in the tests
-	commitRes, err := client.CommitWithResponse(ctx, repo, newBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Uploaded file" + testCase.id, Date: &commitTime})
+	commitRes, err := client.CommitWithResponse(ctx, repo, newBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Uploaded file" + testCase.id, Date: &commitTime})
 	if err != nil || commitRes.StatusCode() != 201 {
 		t.Fatalf("Commit some data %s", err)
 	}
 	commit := commitRes.JSON201
 	commitId := commit.Id
 
-	_, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "b" + testCase.id, Source: newBranch})
+	_, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: "b" + testCase.id, Source: newBranch})
 	if err != nil {
 		t.Fatalf("Create new branch %s", err)
 	}
 
-	_, err = client.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{Branches: testCase.policy.Branches, DefaultRetentionDays: testCase.policy.DefaultRetentionDays})
+	_, err = client.SetGarbageCollectionRulesWithResponse(ctx, repo, apigen.SetGarbageCollectionRulesJSONRequestBody{Branches: testCase.policy.Branches, DefaultRetentionDays: testCase.policy.DefaultRetentionDays})
 	if err != nil {
 		t.Fatalf("Set GC rules %s", err)
 	}
 
 	for _, branch := range testCase.branches {
 		if branch.deleteCommitDaysAgo > -1 {
-			_, err = client.DeleteObjectWithResponse(ctx, repo, branch.name, &api.DeleteObjectParams{Path: "file" + testCase.id})
+			_, err = client.DeleteObjectWithResponse(ctx, repo, branch.name, &apigen.DeleteObjectParams{Path: "file" + testCase.id})
 			if err != nil {
 				t.Fatalf("DeleteObject %s", err)
 			}
 			epochCommitDateInSeconds := currentEpochInSeconds - (dayInSeconds * branch.deleteCommitDaysAgo)
-			_, err = client.CommitWithResponse(ctx, repo, branch.name, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Deleted file" + testCase.id, Date: &epochCommitDateInSeconds})
+			_, err = client.CommitWithResponse(ctx, repo, branch.name, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Deleted file" + testCase.id, Date: &epochCommitDateInSeconds})
 			if err != nil {
 				t.Fatalf("Commit some data %s", err)
 			}
 			_, _ = uploadFileRandomData(ctx, t, repo, branch.name, "file"+testCase.id+"not_deleted", false)
 			// This is for the previous commit to be the HEAD of the branch outside the retention time (according to GC https://github.com/treeverse/lakeFS/issues/1932)
-			_, err = client.CommitWithResponse(ctx, repo, branch.name, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "not deleted file commit: " + testCase.id, Date: &epochCommitDateInSeconds})
+			_, err = client.CommitWithResponse(ctx, repo, branch.name, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "not deleted file commit: " + testCase.id, Date: &epochCommitDateInSeconds})
 			if err != nil {
 				t.Fatalf("Commit some data %s", err)
 			}
@@ -295,7 +295,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existingRef string) {
 	repo := committedGCRepoName + testCase.id
 
-	res, _ := client.GetObjectWithResponse(ctx, repo, existingRef, &api.GetObjectParams{Path: "file" + testCase.id})
+	res, _ := client.GetObjectWithResponse(ctx, repo, existingRef, &apigen.GetObjectParams{Path: "file" + testCase.id})
 	fileExists := res.StatusCode() == 200
 
 	if fileExists && testCase.fileDeleted {
@@ -305,7 +305,7 @@ func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existi
 	}
 	locations := []string{"not_deleted_file1", "not_deleted_file2", "not_deleted_file3"}
 	for _, location := range locations {
-		res, _ = client.GetObjectWithResponse(ctx, repo, "main", &api.GetObjectParams{Path: location})
+		res, _ = client.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{Path: location})
 		if res.StatusCode() != 200 {
 			t.Errorf("expected '%s' to exist. Test case '%s', Test description '%s'", location, testCase.id, testCase.description)
 		}

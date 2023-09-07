@@ -1,7 +1,5 @@
 package api
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
-
 import (
 	"errors"
 	"io"
@@ -14,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/email"
@@ -32,7 +32,6 @@ import (
 const (
 	RequestIDHeaderName = "X-Request-ID"
 	LoggerServiceName   = "rest_api"
-	BaseURL             = "/api/v1"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
@@ -58,7 +57,7 @@ func Serve(
 	otfService *tablediff.Service,
 ) http.Handler {
 	logger.Info("initialize OpenAPI server")
-	swagger, err := GetSwagger()
+	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		panic(err)
 	}
@@ -97,13 +96,13 @@ func Serve(
 		pathProvider,
 		otfService,
 	)
-	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
+	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
@@ -125,7 +124,7 @@ func Serve(
 }
 
 func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
-	reader, err := GetSwaggerSpecReader()
+	reader, err := apigen.GetSwaggerSpecReader()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

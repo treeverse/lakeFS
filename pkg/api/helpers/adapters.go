@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 // ObjectStats metadata of an object stored on a backing store.
@@ -77,7 +77,7 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 	manager := s3manager.NewUploader(s.sess)
 	out, err := manager.UploadWithContext(ctx, &s3manager.UploadInput{
 		Body:   contents,
-		Bucket: api.StringPtr(physicalAddress.Hostname()),
+		Bucket: apiutil.Ptr(physicalAddress.Hostname()),
 		Key:    &physicalAddress.Path,
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 	}
 	return ObjectStats{
 		Size: size,
-		ETag: api.StringValue(out.ETag),
+		ETag: apiutil.Value(out.ETag),
 		// S3Manager Upload does not return creation time.
 	}, nil
 }
@@ -100,7 +100,7 @@ func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.
 	}
 	// TODO(ariels): Allow customization of request
 	getObjectResponse, err := s.svc.GetObjectWithContext(ctx, &s3.GetObjectInput{
-		Bucket: api.StringPtr(physicalAddress.Hostname()),
+		Bucket: apiutil.Ptr(physicalAddress.Hostname()),
 		Key:    &physicalAddress.Path,
 	})
 	if err != nil {

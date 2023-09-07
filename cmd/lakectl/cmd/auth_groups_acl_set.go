@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var authGroupsACLSet = &cobra.Command{
@@ -17,7 +17,7 @@ var authGroupsACLSet = &cobra.Command{
 
 		clt := getClient()
 
-		acl := api.SetGroupACLJSONRequestBody{
+		acl := apigen.SetGroupACLJSONRequestBody{
 			Permission: permission,
 		}
 

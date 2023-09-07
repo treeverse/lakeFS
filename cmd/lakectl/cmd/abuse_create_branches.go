@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
@@ -34,10 +34,10 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		const paginationAmount = 1000
 		deleteGen.Setup(func(add stress.GeneratorAddFn) {
-			currentOffset := api.PaginationAfter(branchPrefix)
-			amount := api.PaginationAmount(paginationAmount)
+			currentOffset := apigen.PaginationAfter(branchPrefix)
+			amount := apigen.PaginationAmount(paginationAmount)
 			for {
-				resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &api.ListBranchesParams{
+				resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &apigen.ListBranchesParams{
 					After:  &currentOffset,
 					Amount: &amount,
 				})
@@ -56,7 +56,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 				if !pagination.HasMore {
 					return
 				}
-				currentOffset = api.PaginationAfter(pagination.NextOffset)
+				currentOffset = apigen.PaginationAfter(pagination.NextOffset)
 			}
 		})
 
@@ -91,7 +91,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 			for branch := range input {
 				start := time.Now()
 				resp, err := client.CreateBranchWithResponse(
-					ctx, u.Repository, api.CreateBranchJSONRequestBody{
+					ctx, u.Repository, apigen.CreateBranchJSONRequestBody{
 						Name:   branch,
 						Source: u.Ref,
 					})

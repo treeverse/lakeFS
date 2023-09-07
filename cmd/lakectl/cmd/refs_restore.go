@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const refsRestoreSuccess = `
@@ -38,14 +38,14 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		if err != nil {
 			DieErr(err)
 		}
-		var manifest api.RefsDump
+		var manifest apigen.RefsDump
 		err = json.Unmarshal(data, &manifest)
 		if err != nil {
 			DieErr(err)
 		}
 		// execute the restore operation
 		client := getClient()
-		resp, err := client.RestoreRefsWithResponse(cmd.Context(), repoURI.Repository, api.RestoreRefsJSONRequestBody(manifest))
+		resp, err := client.RestoreRefsWithResponse(cmd.Context(), repoURI.Repository, apigen.RestoreRefsJSONRequestBody(manifest))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		Write(refsRestoreSuccess, nil)
 	},

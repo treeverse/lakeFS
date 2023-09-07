@@ -15,7 +15,8 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 //go:embed action_files/*.yaml
@@ -41,7 +42,7 @@ func TestHooksSuccess(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
@@ -75,14 +76,14 @@ func TestHooksSuccess(t *testing.T) {
 	}
 }
 
-func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *api.ActionRunList {
-	var runs *api.ActionRunList
+func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
+	var runs *apigen.ActionRunList
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = 5 * time.Second
 	bo.MaxElapsedTime = 30 * time.Second
 	listFunc := func() error {
-		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &api.ListRepositoryRunsParams{
-			Commit: api.StringPtr(ref),
+		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
+			Commit: apiutil.Ptr(ref),
 		})
 		require.NoError(t, err)
 		runs = runsResp.JSON200
@@ -101,7 +102,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	const branch = "feature-1"
 
 	t.Log("Create branch", branch)
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: mainBranch,
 	})
@@ -115,7 +116,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
 	t.Log("Commit content", branch)
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
@@ -168,7 +169,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		Metadata:      commitRecord.Metadata.AdditionalProperties,
 	}, postCommitEvent)
 
-	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, api.MergeIntoBranchJSONRequestBody{})
+	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err)
 
 	webhookData, err = responseWithTimeout(server, 1*time.Minute)
@@ -233,7 +234,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 
 func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	const testBranch = "test_branch_delete"
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   testBranch,
 		Source: mainBranch,
 	})
@@ -338,7 +339,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string) {
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	commitID := resp.JSON200.CommitId
 
-	createTagResp, err := client.CreateTagWithResponse(ctx, repo, api.CreateTagJSONRequestBody{
+	createTagResp, err := client.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{
 		Id:  tagID,
 		Ref: commitID,
 	})

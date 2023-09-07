@@ -13,6 +13,7 @@ import (
 	"github.com/getkin/kin-openapi/routers/legacy"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	oidc_encoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
@@ -58,7 +59,7 @@ type CookieAuthConfig struct {
 }
 
 func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
-	swagger, err := GetSwagger()
+	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		return nil, err
 	}
