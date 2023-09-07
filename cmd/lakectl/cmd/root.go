@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -15,8 +14,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -261,14 +260,9 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Server.EndpointURL.String()
-	u, err := url.Parse(serverEndpoint)
+	serverEndpoint, err := apiutil.NormalizeLakeFSEndpoint(cfg.Server.EndpointURL.String())
 	if err != nil {
 		DieErr(err)
-	}
-	// if no uri to api is set in configuration - set the default
-	if u.Path == "" || u.Path == "/" {
-		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
 	}
 
 	client, err := apigen.NewClientWithResponses(

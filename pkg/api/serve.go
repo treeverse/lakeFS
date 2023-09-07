@@ -15,6 +15,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/email"
@@ -33,7 +34,6 @@ import (
 const (
 	RequestIDHeaderName = "X-Request-ID"
 	LoggerServiceName   = "rest_api"
-	BaseURL             = "/api/v1"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
@@ -98,13 +98,13 @@ func Serve(
 		pathProvider,
 		otfService,
 	)
-	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
+	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served

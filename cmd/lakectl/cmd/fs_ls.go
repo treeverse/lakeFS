@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var fsLsCmd = &cobra.Command{
@@ -35,7 +35,7 @@ var fsLsCmd = &cobra.Command{
 			pfx := apigen.PaginationPrefix(prefix)
 			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)

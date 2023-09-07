@@ -15,8 +15,8 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 //go:embed action_files/*.yaml
@@ -83,7 +83,7 @@ func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 	bo.MaxElapsedTime = 30 * time.Second
 	listFunc := func() error {
 		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
-			Commit: api.StringPtr(ref),
+			Commit: apiutil.Ptr(ref),
 		})
 		require.NoError(t, err)
 		runs = runsResp.JSON200

@@ -15,8 +15,8 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 // ClientUpload uploads contents as a file via lakeFS
@@ -65,10 +65,10 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 		var metaKey string
 		for k, v := range metadata {
 			lowerKey := strings.ToLower(k)
-			if strings.HasPrefix(lowerKey, api.LakeFSMetadataPrefix) {
-				metaKey = api.LakeFSHeaderInternalPrefix + lowerKey[len(api.LakeFSMetadataPrefix):]
+			if strings.HasPrefix(lowerKey, apiutil.LakeFSMetadataPrefix) {
+				metaKey = apiutil.LakeFSHeaderInternalPrefix + lowerKey[len(apiutil.LakeFSMetadataPrefix):]
 			} else {
-				metaKey = api.LakeFSHeaderMetadataPrefix + lowerKey
+				metaKey = apiutil.LakeFSHeaderMetadataPrefix + lowerKey
 			}
 			req.Header.Set(metaKey, v)
 		}
@@ -95,7 +95,7 @@ func ClientUploadDirect(ctx context.Context, client apigen.ClientWithResponsesIn
 	}
 
 	for { // Return from inside loop
-		physicalAddress := api.StringValue(stagingLocation.PhysicalAddress)
+		physicalAddress := apiutil.Value(stagingLocation.PhysicalAddress)
 		parsedAddress, err := url.Parse(physicalAddress)
 		if err != nil {
 			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
@@ -210,7 +210,7 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 		UserMetadata: &apigen.StagingMetadata_UserMetadata{
 			AdditionalProperties: metadata,
 		},
-		ContentType: api.StringPtr(contentType),
+		ContentType: apiutil.Ptr(contentType),
 	}
 	linkResp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID,
 		&apigen.LinkPhysicalAddressParams{

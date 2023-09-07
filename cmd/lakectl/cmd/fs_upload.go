@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -86,7 +86,7 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 	defer func() {
 		_ = fp.Close()
 	}()
-	objectPath := api.StringValue(destURI.Path)
+	objectPath := apiutil.Value(destURI.Path)
 	switch method {
 	case transportMethodDefault:
 		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)

@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -58,7 +58,7 @@ var fsRmCmd = &cobra.Command{
 		for {
 			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)

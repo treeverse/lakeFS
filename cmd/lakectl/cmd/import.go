@@ -12,8 +12,8 @@ import (
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const importSummaryTemplate = `Import of {{ .Objects | yellow }} object(s) into "{{.Branch}}" completed.
@@ -58,7 +58,7 @@ var importCmd = &cobra.Command{
 			},
 			Paths: []apigen.ImportLocation{
 				{
-					Destination: api.StringValue(toURI.Path),
+					Destination: apiutil.Value(toURI.Path),
 					Path:        from,
 					Type:        "common_prefix",
 				},
@@ -129,8 +129,8 @@ var importCmd = &cobra.Command{
 			Branch      string
 			Commit      *apigen.Commit
 		}{
-			Objects:     api.Int64Value(statusResp.JSON200.IngestedObjects),
-			MetaRangeID: api.StringValue(statusResp.JSON200.MetarangeId),
+			Objects:     apiutil.Value(statusResp.JSON200.IngestedObjects),
+			MetaRangeID: apiutil.Value(statusResp.JSON200.MetarangeId),
 			Branch:      toURI.Ref,
 			Commit:      statusResp.JSON200.Commit,
 		})

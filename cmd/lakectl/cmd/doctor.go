@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 type Detailed interface {
@@ -110,7 +110,7 @@ var doctorCmd = &cobra.Command{
 
 		WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Trying to validate endpoint URL format."})
 		serverEndpoint := string(cfg.Server.EndpointURL)
-		if !strings.HasSuffix(serverEndpoint, api.BaseURL) {
+		if !strings.HasSuffix(serverEndpoint, apiutil.BaseURL) {
 			Write(analyzingMessageTemplate, &UserMessage{Message: "Suspicious URI format for server.endpoint_url: " + serverEndpoint})
 		} else {
 			WriteIfVerbose(analyzingMessageTemplate, &UserMessage{Message: "Couldn't find a problem with endpoint URL format."})

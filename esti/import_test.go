@@ -15,8 +15,8 @@ import (
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -181,7 +181,7 @@ func ingestRange(t testing.TB, ctx context.Context, repoName, importPath string)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 		require.NotNil(t, resp.JSON201)
 		ranges = append(ranges, *resp.JSON201.Range)
-		stagingToken = api.StringValue(resp.JSON201.Pagination.StagingToken)
+		stagingToken = apiutil.Value(resp.JSON201.Pagination.StagingToken)
 		if !resp.JSON201.Pagination.HasMore {
 			break
 		}

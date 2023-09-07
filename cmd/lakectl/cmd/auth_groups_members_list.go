@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var authGroupsMembersList = &cobra.Command{
@@ -19,8 +19,8 @@ var authGroupsMembersList = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.ListGroupMembersWithResponse(cmd.Context(), id, &apigen.ListGroupMembersParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

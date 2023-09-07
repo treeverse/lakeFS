@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -41,7 +41,7 @@ func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string
 	for {
 		params := &apigen.ListRepositoriesParams{
 			Prefix: &prefix,
-			After:  api.PaginationAfterPtr(after),
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 		}
 		resp, err := clt.ListRepositoriesWithResponse(ctx, params)
 		result := resp.JSON200

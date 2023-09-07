@@ -13,8 +13,8 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -52,7 +52,7 @@ var fsDownloadCmd = &cobra.Command{
 		// list the files
 		client := getClient()
 		downloadCh := make(chan string)
-		sourcePath := api.StringValue(pathURI.Path)
+		sourcePath := apiutil.Value(pathURI.Path)
 
 		// recursive assume the source is directory
 		if recursive && len(sourcePath) > 0 && !strings.HasSuffix(sourcePath, uri.PathSeparator) {
@@ -71,7 +71,7 @@ var fsDownloadCmd = &cobra.Command{
 			if recursive {
 				listRecursiveHelper(ctx, client, pathURI.Repository, pathURI.Ref, sourcePath, downloadCh)
 			} else {
-				downloadCh <- api.StringValue(pathURI.Path)
+				downloadCh <- apiutil.Value(pathURI.Path)
 			}
 		}()
 
@@ -118,7 +118,7 @@ func listRecursiveHelper(ctx context.Context, client *apigen.ClientWithResponses
 	for {
 		params := &apigen.ListObjectsParams{
 			Prefix: &pfx,
-			After:  api.PaginationAfterPtr(from),
+			After:  apiutil.Ptr(apigen.PaginationAfter(from)),
 		}
 		resp, err := client.ListObjectsWithResponse(ctx, repo, ref, params)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

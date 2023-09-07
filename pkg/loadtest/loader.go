@@ -15,12 +15,11 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/schollz/progressbar/v3"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	vegeta "github.com/tsenart/vegeta/v12/lib"
-
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 type Loader struct {
@@ -115,7 +114,7 @@ func (t *Loader) createRepo(apiClient apigen.ClientWithResponsesInterface) (stri
 	t.NewRepoName = uuid.New().String()
 	ctx := context.Background()
 	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr("main"),
+		DefaultBranch:    apiutil.Ptr("main"),
 		Name:             t.NewRepoName,
 		StorageNamespace: t.Config.StorageNamespace,
 	})
@@ -138,7 +137,7 @@ func (t *Loader) getClient() (apigen.ClientWithResponsesInterface, error) {
 		return nil, err
 	}
 
-	serverEndpoint := t.Config.ServerAddress + api.BaseURL
+	serverEndpoint := t.Config.ServerAddress + apiutil.BaseURL
 	apiClient, err := apigen.NewClientWithResponses(
 		serverEndpoint,
 		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),

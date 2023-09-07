@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 func TestDeleteObjects(t *testing.T) {
@@ -101,7 +101,7 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	deleteOut, err := svcViewer.DeleteObjects(&s3.DeleteObjectsInput{
 		Bucket: aws.String(repo),
 		Delete: &s3.Delete{
-			Objects: []*s3.ObjectIdentifier{{Key: api.StringPtr(mainBranch + "/" + filename)}},
+			Objects: []*s3.ObjectIdentifier{{Key: apiutil.Ptr(mainBranch + "/" + filename)}},
 		},
 	})
 	// make sure we got an error we fail to delete the file

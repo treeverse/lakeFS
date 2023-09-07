@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -89,8 +89,8 @@ func printDiffBranch(ctx context.Context, client apigen.ClientWithResponsesInter
 	pageSize := pageSize(minDiffPageSize)
 	for {
 		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &apigen.DiffBranchParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(int(pageSize)),
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

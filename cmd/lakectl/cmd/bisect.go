@@ -12,8 +12,8 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const bisectCommitTemplate = `{{ range $val := . }}
@@ -149,7 +149,7 @@ func (b *Bisect) Update(ctx context.Context, client apigen.ClientWithResponsesIn
 	b.Commits = nil
 	const amountPerCall = 500
 	params := &apigen.LogCommitsParams{
-		Amount: api.PaginationAmountPtr(amountPerCall),
+		Amount: apiutil.Ptr(apigen.PaginationAmount(amountPerCall)),
 	}
 	var commits []*apigen.Commit
 	for {
@@ -169,7 +169,7 @@ func (b *Bisect) Update(ctx context.Context, client apigen.ClientWithResponsesIn
 		if !logResponse.JSON200.Pagination.HasMore {
 			break
 		}
-		params.After = api.PaginationAfterPtr(logResponse.JSON200.Pagination.NextOffset)
+		params.After = apiutil.Ptr(apigen.PaginationAfter(logResponse.JSON200.Pagination.NextOffset))
 	}
 	return fmt.Errorf("good %w", ErrCommitNotFound)
 }

@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -116,7 +116,7 @@ func createRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		"name":              name,
 	}).Debug("Create repository for test")
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr(mainBranch),
+		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             name,
 		StorageNamespace: repoStorage,
 	})
@@ -202,8 +202,8 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 	var after string
 	for {
 		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &apigen.ListObjectsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		require.NoError(t, err, "listing objects")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
@@ -233,8 +233,8 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 	var listedRepos []apigen.Repository
 	for {
 		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(repoPerPage),
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(repoPerPage)),
 		})
 		require.NoError(t, err, "list repositories")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
@@ -250,7 +250,7 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 	return listedRepos
 }
 
-// requireBlockstoreType Skips test if blockstore type doesn't match required type
+// requireBlockstoreType Skips test if blockstore type doesn't match the required type
 func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if !slices.Contains(requiredTypes, blockstoreType) {

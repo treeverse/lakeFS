@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
@@ -237,7 +238,7 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 		}
 		opts = append(opts, apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 	}
-	clt, err := apigen.NewClientWithResponses(endpointURL+api.BaseURL, opts...)
+	clt, err := apigen.NewClientWithResponses(endpointURL+apiutil.BaseURL, opts...)
 	if err != nil {
 		t.Fatal("failed to create lakefs api client:", err)
 	}
@@ -293,7 +294,7 @@ func TestInvalidRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal("basic auth security provider", err)
 	}
-	clt, err = apigen.NewClientWithResponses(server.URL+api.BaseURL+"//", apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
+	clt, err = apigen.NewClientWithResponses(server.URL+apiutil.BaseURL+"//", apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 	if err != nil {
 		t.Fatal("failed to create api client:", err)
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/email"
@@ -69,10 +70,6 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
-
-	LakeFSHeaderMetadataPrefix = "x-lakefs-meta-"
-	LakeFSHeaderInternalPrefix = "x-lakefs-internal-"
-	LakeFSMetadataPrefix       = "::lakefs::"
 )
 
 type actionsHandler interface {
@@ -118,7 +115,7 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
 
-	continuationToken := StringValue(body.ContinuationToken)
+	continuationToken := apiutil.Value(body.ContinuationToken)
 	mark, err := decodeGCUncommittedMark(continuationToken)
 	if err != nil {
 		c.Logger.WithError(err).
@@ -188,7 +185,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			},
 		}) {
 			errs = append(errs, apigen.ObjectError{
-				Path:       StringPtr(objectPath),
+				Path:       apiutil.Ptr(objectPath),
 				StatusCode: http.StatusUnauthorized,
 				Message:    http.StatusText(http.StatusUnauthorized),
 			})
@@ -212,7 +209,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			lg.WithError(err).Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			errs = append(errs, apigen.ObjectError{
-				Path:       StringPtr(objectPath),
+				Path:       apiutil.Ptr(objectPath),
 				StatusCode: http.StatusForbidden,
 				Message:    err.Error(),
 			})
@@ -224,7 +221,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		case err != nil:
 			lg.WithError(err).Error("failed deleting object")
 			errs = append(errs, apigen.ObjectError{
-				Path:       StringPtr(objectPath),
+				Path:       apiutil.Ptr(objectPath),
 				StatusCode: http.StatusInternalServerError,
 				Message:    err.Error(),
 			})
@@ -267,7 +264,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	}
 	response := apigen.AuthenticationToken{
 		Token:           tokenString,
-		TokenExpiration: Int64Ptr(expires.Unix()),
+		TokenExpiration: apiutil.Ptr(expires.Unix()),
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -318,8 +315,8 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	response := &apigen.StagingLocation{
-		PhysicalAddress: StringPtr(qk.Format()),
-		Token:           StringValue(token),
+		PhysicalAddress: apiutil.Ptr(qk.Format()),
+		Token:           apiutil.Value(token),
 	}
 
 	if swag.BoolValue(params.Presign) {
@@ -335,7 +332,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		}
 		response.PresignedUrl = &preSignedURL
 		if !expiry.IsZero() {
-			response.PresignedUrlExpiry = Int64Ptr(expiry.Unix())
+			response.PresignedUrlExpiry = apiutil.Ptr(expiry.Unix())
 		}
 	}
 
@@ -383,7 +380,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, StringValue(body.Staging.PhysicalAddress))
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, apiutil.Value(body.Staging.PhysicalAddress))
 
 	// validate token
 	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
@@ -402,7 +399,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
 		Checksum(body.Checksum).
-		ContentType(StringValue(body.ContentType))
+		ContentType(apiutil.Value(body.ContentType))
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
@@ -422,7 +419,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: entry.PhysicalAddress,
-		SizeBytes:       Int64Ptr(entry.Size),
+		SizeBytes:       apiutil.Ptr(entry.Size),
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -1528,7 +1525,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	defaultBranch := StringValue(body.DefaultBranch)
+	defaultBranch := apiutil.Value(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
@@ -1764,8 +1761,8 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	branchName := StringValue(params.Branch)
-	commitID := StringValue(params.Commit)
+	branchName := apiutil.Value(params.Branch)
+	commitID := apiutil.Value(params.Commit)
 	runsIter, err := c.Actions.ListRunResults(ctx, repository, branchName, commitID, paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2160,11 +2157,11 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 	var err error
 	switch body.Type {
 	case entryTypeCommonPrefix:
-		err = c.Catalog.ResetEntries(ctx, repository, branch, StringValue(body.Path))
+		err = c.Catalog.ResetEntries(ctx, repository, branch, apiutil.Value(body.Path))
 	case "reset":
 		err = c.Catalog.ResetBranch(ctx, repository, branch)
 	case entryTypeObject:
-		err = c.Catalog.ResetEntry(ctx, repository, branch, StringValue(body.Path))
+		err = c.Catalog.ResetEntry(ctx, repository, branch, apiutil.Value(body.Path))
 	default:
 		writeError(w, r, http.StatusNotFound, "reset type not found")
 	}
@@ -2349,8 +2346,8 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body ap
 	ctx := r.Context()
 	c.LogAction(ctx, "ingest_range", r, repository, "", "")
 
-	contToken := StringValue(body.ContinuationToken)
-	stagingToken := StringValue(body.StagingToken)
+	contToken := apiutil.Value(body.ContinuationToken)
+	stagingToken := apiutil.Value(body.StagingToken)
 	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
 		SourceURI:         body.FromSourceURI,
 		Prepend:           body.Prepend,
@@ -2407,7 +2404,7 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 		return
 	}
 	writeResponse(w, r, http.StatusCreated, apigen.MetaRangeCreationResponse{
-		Id: StringPtr(string(info.ID)),
+		Id: apiutil.Ptr(string(info.ID)),
 	})
 }
 
@@ -2595,7 +2592,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
-		if StringValue(params.IfNoneMatch) != "*" {
+		if apiutil.Value(params.IfNoneMatch) != "*" {
 			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
 			return
 		}
@@ -2710,7 +2707,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Path:            params.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       Int64Ptr(blob.Size),
+		SizeBytes:       apiutil.Ptr(blob.Size),
 		ContentType:     &contentType,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -2763,7 +2760,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
 		Checksum(body.Checksum).
-		ContentType(StringValue(body.ContentType))
+		ContentType(apiutil.Value(body.ContentType))
 	if body.Metadata != nil {
 		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
 	}
@@ -2779,7 +2776,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       Int64Ptr(entry.Size),
+		SizeBytes:       apiutil.Ptr(entry.Size),
 		ContentType:     &entry.ContentType,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -2850,8 +2847,8 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       Int64Ptr(entry.Size),
-		ContentType:     StringPtr(entry.ContentType),
+		SizeBytes:       apiutil.Ptr(entry.Size),
+		ContentType:     apiutil.Ptr(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3050,7 +3047,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
-	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, StringValue(body.PreviousRunId))
+	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, apiutil.Value(body.PreviousRunId))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3381,7 +3378,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 			ctx,
 			repository,
 			branch,
-			StringValue(params.Location),
+			apiutil.Value(params.Location),
 			after,
 			"",
 			-1)
@@ -3742,7 +3739,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				Path:            entry.Path,
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
-				SizeBytes:       Int64Ptr(entry.Size),
+				SizeBytes:       apiutil.Ptr(entry.Size),
 				ContentType:     &entry.ContentType,
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
@@ -3773,7 +3770,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 						return
 					}
 					if !expiry.IsZero() {
-						objStat.PhysicalAddressExpiry = Int64Ptr(expiry.Unix())
+						objStat.PhysicalAddressExpiry = apiutil.Ptr(expiry.Unix())
 					}
 				}
 			}
@@ -3828,7 +3825,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       Int64Ptr(entry.Size),
+		SizeBytes:       apiutil.Ptr(entry.Size),
 		ContentType:     &entry.ContentType,
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
@@ -3849,7 +3846,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		}
 		objStat.PhysicalAddress = preSignedURL
 		if !expiry.IsZero() {
-			objStat.PhysicalAddressExpiry = Int64Ptr(expiry.Unix())
+			objStat.PhysicalAddressExpiry = apiutil.Ptr(expiry.Unix())
 		}
 	}
 	writeResponse(w, r, code, objStat)
@@ -3919,9 +3916,9 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
-		StringValue(body.Message),
+		apiutil.Value(body.Message),
 		metadata,
-		StringValue(body.Strategy))
+		apiutil.Value(body.Strategy))
 
 	var hookAbortErr *graveler.HookAbortError
 	switch {
@@ -4238,7 +4235,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	if err != nil {
 		return err
 	}
-	emailAddr = StringValue(user.Email)
+	emailAddr = apiutil.Value(user.Email)
 	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
@@ -4278,7 +4275,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	}
 
 	// verify provided email matched the token
-	requestEmail := StringValue(body.Email)
+	requestEmail := apiutil.Value(body.Email)
 	if requestEmail != "" && requestEmail != claims.Subject {
 		c.Logger.WithError(err).WithFields(logging.Fields{
 			"token":         body.Token,
@@ -4563,42 +4560,6 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) apigen.OtfDi
 	}
 }
 
-func IsStatusCodeOK(statusCode int) bool {
-	return statusCode >= 200 && statusCode <= 299
-}
-
-func StringPtr(s string) *string {
-	return &s
-}
-
-func StringValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-func Int64Value(p *int64) int64 {
-	if p == nil {
-		return 0
-	}
-	return *p
-}
-
-func Int64Ptr(n int64) *int64 {
-	return &n
-}
-
-func PaginationAmountPtr(a int) *apigen.PaginationAmount {
-	amount := apigen.PaginationAmount(a)
-	return &amount
-}
-
-func PaginationAfterPtr(a string) *apigen.PaginationAfter {
-	after := apigen.PaginationAfter(a)
-	return &after
-}
-
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 	apiErr := apigen.Error{
 		Message: fmt.Sprint(v),
@@ -4672,7 +4633,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 			if path != "" {
 				path := path
 				pathRecords = append(pathRecords, catalog.PathRecord{
-					Path:     catalog.Path(StringValue(&path)),
+					Path:     catalog.Path(apiutil.Value(&path)),
 					IsPrefix: false,
 				})
 			}
@@ -4683,7 +4644,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 			if path != "" {
 				path := path
 				pathRecords = append(pathRecords, catalog.PathRecord{
-					Path:     catalog.Path(StringValue(&path)),
+					Path:     catalog.Path(apiutil.Value(&path)),
 					IsPrefix: true,
 				})
 			}
@@ -4859,10 +4820,10 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 		lowerKey := strings.ToLower(k)
 		metaKey := ""
 		switch {
-		case strings.HasPrefix(lowerKey, LakeFSHeaderMetadataPrefix):
-			metaKey = lowerKey[len(LakeFSHeaderMetadataPrefix):]
-		case strings.HasPrefix(lowerKey, LakeFSHeaderInternalPrefix):
-			metaKey = LakeFSMetadataPrefix + lowerKey[len(LakeFSHeaderInternalPrefix):]
+		case strings.HasPrefix(lowerKey, apiutil.LakeFSHeaderMetadataPrefix):
+			metaKey = lowerKey[len(apiutil.LakeFSHeaderMetadataPrefix):]
+		case strings.HasPrefix(lowerKey, apiutil.LakeFSHeaderInternalPrefix):
+			metaKey = apiutil.LakeFSMetadataPrefix + lowerKey[len(apiutil.LakeFSHeaderInternalPrefix):]
 		default:
 			continue
 		}

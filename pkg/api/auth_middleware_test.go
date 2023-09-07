@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 )
@@ -18,7 +19,7 @@ import (
 func TestAuthMiddleware(t *testing.T) {
 	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
-	apiEndpoint := server.URL + api.BaseURL
+	apiEndpoint := server.URL + apiutil.BaseURL
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 	cred := createDefaultAdminUser(t, clt)
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const (
@@ -49,7 +49,7 @@ var annotateCmd = &cobra.Command{
 		for {
 			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &listObjectsDelimiter,
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)
@@ -59,7 +59,7 @@ var annotateCmd = &cobra.Command{
 			}
 			for _, obj := range listObjectsResp.JSON200.Results {
 				logCommitsParams := &apigen.LogCommitsParams{
-					Amount:      api.PaginationAmountPtr(1),
+					Amount:      apiutil.Ptr(apigen.PaginationAmount(1)),
 					Limit:       &limit,
 					FirstParent: &firstParent,
 				}

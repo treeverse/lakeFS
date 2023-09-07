@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -81,7 +81,7 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	require.True(t, ok)
 	require.Equal(t, strategy, val)
 
-	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{Amount: api.PaginationAmountPtr(100)})
+	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(100))})
 	require.NoError(t, err, "failed to list objects")
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	payload := resp.JSON200

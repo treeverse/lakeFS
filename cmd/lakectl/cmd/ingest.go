@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
@@ -117,7 +117,7 @@ var ingestCmd = &cobra.Command{
 		elapsed := time.Now()
 		for response := range responses {
 			summary.Objects += 1
-			summary.Bytes += api.Int64Value(response.JSON201.SizeBytes)
+			summary.Bytes += apiutil.Value(response.JSON201.SizeBytes)
 
 			if verbose {
 				Write("Staged "+fsStatTemplate+"\n", response.JSON201)

@@ -19,6 +19,7 @@ type LogLine struct {
 	Level  string
 	Msg    string
 }
+
 type MemLogger struct {
 	log    []*LogLine
 	fields logging.Fields

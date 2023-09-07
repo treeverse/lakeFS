@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 func TestSanityAPI(t *testing.T) {
@@ -122,7 +122,7 @@ func TestSanityAPI(t *testing.T) {
 
 	log.Debug("branch1 - diff changes with main")
 	diffResp, err = client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &apigen.DiffRefsParams{
-		Amount: api.PaginationAmountPtr(-1),
+		Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
 	})
 	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())

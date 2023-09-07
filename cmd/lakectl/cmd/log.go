@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -98,8 +98,8 @@ var logCmd = &cobra.Command{
 			amountForPagination = internalPageSize
 		}
 		logCommitsParams := &apigen.LogCommitsParams{
-			After:       api.PaginationAfterPtr(after),
-			Amount:      api.PaginationAmountPtr(amountForPagination),
+			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount:      apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
 			Limit:       &limit,
 			FirstParent: &firstParent,
 		}
@@ -125,7 +125,7 @@ var logCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 			pagination = resp.JSON200.Pagination
-			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
+			logCommitsParams.After = apiutil.Ptr(apigen.PaginationAfter(pagination.NextOffset))
 			data := struct {
 				Commits         []apigen.Commit
 				Pagination      *Pagination

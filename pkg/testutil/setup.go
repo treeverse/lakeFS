@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -150,7 +150,7 @@ func ParseEndpointURL(logger logging.Logger, endpointURL string) string {
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 	if u.Path == "" || u.Path == "/" {
-		endpointURL = strings.TrimRight(endpointURL, "/") + api.BaseURL
+		endpointURL = strings.TrimRight(endpointURL, "/") + apiutil.BaseURL
 	}
 
 	return endpointURL

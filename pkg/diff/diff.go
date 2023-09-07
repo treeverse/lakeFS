@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -22,7 +22,7 @@ func StreamRepositoryDiffs(ctx context.Context, client apigen.ClientWithResponse
 	}()
 	var diffType *string
 	if twoDot {
-		diffType = api.StringPtr(diffTypeTwoDot)
+		diffType = apiutil.Ptr(diffTypeTwoDot)
 	}
 
 	hasMore := true

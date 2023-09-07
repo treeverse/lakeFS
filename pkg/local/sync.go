@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -26,7 +26,7 @@ import (
 
 const (
 	DefaultDirectoryMask   = 0o755
-	ClientMtimeMetadataKey = api.LakeFSMetadataPrefix + "client-mtime"
+	ClientMtimeMetadataKey = apiutil.LakeFSMetadataPrefix + "client-mtime"
 )
 
 func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
