@@ -137,7 +137,7 @@ func (o *Operation) SetHeaders(w http.ResponseWriter, headers http.Header) {
 func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
 	err := fallbackError
 	if errors.Is(originalError, kv.ErrSlowDown) {
-		//err = gwerrors.ErrSlowDown.ToAPIErr()
+		err = gwerrors.ErrSlowDown.ToAPIErr()
 	}
 	req, rid := httputil.RequestID(req)
 	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
@@ -175,7 +175,7 @@ type RepoOperation struct {
 func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
 	err := fallbackError
 	if errors.Is(originalError, kv.ErrSlowDown) {
-		//err = gwerrors.ErrSlowDown.ToAPIErr()
+		err = gwerrors.ErrSlowDown.ToAPIErr()
 	}
 	req, rid := httputil.RequestID(req)
 	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
@@ -207,7 +207,7 @@ type PathOperation struct {
 func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
 	err := fallbackError
 	if errors.Is(originalError, kv.ErrSlowDown) {
-		//err = gwerrors.ErrSlowDown.ToAPIErr()
+		err = gwerrors.ErrSlowDown.ToAPIErr()
 	}
 	req, rid := httputil.RequestID(req)
 	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
