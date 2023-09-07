@@ -1,7 +1,5 @@
 package api
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package apigen -generate "types,client,chi-server,spec" -templates tmpl -o apigen/lakefs.gen.go ../../api/swagger.yml
-
 import (
 	"errors"
 	"io"

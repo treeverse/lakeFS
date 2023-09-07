@@ -147,7 +147,7 @@ package: package-python
 gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
 	rm -f pkg/api/lakefs.gen.go
 	$(GOGENERATE) \
-		./pkg/api \
+		./pkg/api/apigen \
 		./pkg/auth
 
 .PHONY: gen-code
