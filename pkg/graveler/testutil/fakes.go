@@ -206,10 +206,7 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 	return nil
 }
 
-func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (graveler.ValueIterator, error) {
-	if s.Err != nil {
-		return nil, s.Err
-	}
+func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) graveler.ValueIterator {
 	if s.Values != nil && s.Values[st.String()] != nil {
 		keys := make([]string, 0)
 		for k := range s.Values[st.String()] {
@@ -223,9 +220,9 @@ func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (
 				Value: s.Values[st.String()][k],
 			})
 		}
-		return NewValueIteratorFake(values), nil
+		return NewValueIteratorFake(values)
 	}
-	return s.ValueIterator, nil
+	return s.ValueIterator
 }
 
 type AddedCommitData struct {
