@@ -380,6 +380,7 @@ func (s *Store) DropTable() error {
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
 		e.startKey = key
+		e.exclusiveStartKey = nil
 		e.runQuery()
 		return
 	}
