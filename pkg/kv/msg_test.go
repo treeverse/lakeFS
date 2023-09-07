@@ -146,7 +146,7 @@ func BenchmarkDrivers(b *testing.B) {
 	defer closer()
 
 	dynamoStore := testutil.GetDynamoDBProd(ctx, b)
-	postgresStore := kvtest.MakeStoreByName(postgres.DriverName, kvparams.Config{Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})(b, ctx)
+	postgresStore, err := kv.Open(ctx, kvparams.Config{Type: postgres.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
 	defer postgresStore.Close()
 
 	tests := []struct {
