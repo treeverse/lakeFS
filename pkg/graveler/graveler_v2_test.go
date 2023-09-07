@@ -178,12 +178,12 @@ func TestGravelerMerge(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	t.Run("merge successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -237,15 +237,15 @@ func TestGravelerMerge(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
+		}}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key2,
 			Value: value2,
-		}}), nil)
+		}}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 
@@ -333,20 +333,20 @@ func TestGravelerRevert(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	dirtyStagingTokenCombo := func(test *testutil.GravelerTest) {
-		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	t.Run("revert successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -434,12 +434,12 @@ func TestGravelerCherryPick(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	t.Run("cherry-pick successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -512,9 +512,9 @@ func TestGravelerCommit_v2(t *testing.T) {
 			}).Times(1)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).Return(graveler.CommitID(""), nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Return(nil)
@@ -554,9 +554,9 @@ func TestGravelerCommit_v2(t *testing.T) {
 			}).Times(1).Return(graveler.ErrNoChanges)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
 
 		val, err := test.Sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
@@ -610,12 +610,12 @@ func TestGravelerImport(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 
 	t.Run("import successful", func(t *testing.T) {

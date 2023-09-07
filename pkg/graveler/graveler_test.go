@@ -1188,28 +1188,6 @@ func TestGravelerCommit(t *testing.T) {
 			expectedErr: graveler.ErrCommitMetaRangeDirtyBranch,
 		},
 		{
-			name: "fail on staging",
-			fields: fields{
-				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
-				StagingManager:   &testutil.StagingFake{ValueIterator: values, Err: graveler.ErrNotFound},
-				RefManager: &testutil.RefsFake{
-					CommitID: expectedCommitID,
-					Branch:   &graveler.Branch{CommitID: expectedCommitID},
-					Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
-				},
-			},
-			args: args{
-				ctx:       nil,
-				branchID:  "branch",
-				committer: "committer",
-				message:   "a message",
-				metadata:  nil,
-			},
-			want:        expectedCommitID,
-			values:      values,
-			expectedErr: graveler.ErrNotFound,
-		},
-		{
 			name: "fail on apply",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID, Err: graveler.ErrConflictFound},

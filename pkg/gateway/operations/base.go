@@ -3,6 +3,7 @@ package operations
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,9 +12,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
+	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -132,20 +134,24 @@ func (o *Operation) SetHeaders(w http.ResponseWriter, headers http.Header) {
 	}
 }
 
-func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, e errors.APIError) *http.Request {
+func (o *Operation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	err := fallbackError
+	if errors.Is(originalError, kv.ErrSlowDown) {
+		err = gwerrors.ErrSlowDown.ToAPIErr()
+	}
 	req, rid := httputil.RequestID(req)
-	err := EncodeResponse(w, errors.APIErrorResponse{
-		Code:       e.Code,
-		Message:    e.Description,
+	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
+		Code:       err.Code,
+		Message:    err.Description,
 		BucketName: "",
 		Key:        "",
 		Resource:   "",
 		Region:     o.Region,
 		RequestID:  rid,
 		HostID:     generateHostID(), // just for compatibility, meaningless in our case
-	}, e.HTTPStatusCode)
-	if err != nil {
-		o.Log(req).WithError(err).Error("encoding response failed")
+	}, err.HTTPStatusCode)
+	if writeErr != nil {
+		o.Log(req).WithError(writeErr).Error("encoding response failed")
 	}
 	return req
 }
@@ -166,9 +172,13 @@ type RepoOperation struct {
 	MatchedHost bool
 }
 
-func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+func (o *RepoOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	err := fallbackError
+	if errors.Is(originalError, kv.ErrSlowDown) {
+		err = gwerrors.ErrSlowDown.ToAPIErr()
+	}
 	req, rid := httputil.RequestID(req)
-	writeErr := EncodeResponse(w, errors.APIErrorResponse{
+	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
@@ -194,9 +204,13 @@ type PathOperation struct {
 	Path string
 }
 
-func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, err errors.APIError) *http.Request {
+func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, originalError error, fallbackError gwerrors.APIError) *http.Request {
+	err := fallbackError
+	if errors.Is(originalError, kv.ErrSlowDown) {
+		err = gwerrors.ErrSlowDown.ToAPIErr()
+	}
 	req, rid := httputil.RequestID(req)
-	writeErr := EncodeResponse(w, errors.APIErrorResponse{
+	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repository.Name,

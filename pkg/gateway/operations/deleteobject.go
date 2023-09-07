@@ -31,12 +31,12 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	mpu, err := o.MultipartTracker.Get(ctx, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("upload id not found in tracker")
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if mpu.Path != o.Path {
 		o.Log(req).Error("could not match multipart upload with multipart tracker record")
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 
@@ -48,7 +48,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 	}, uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not abort multipart upload")
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -75,10 +75,10 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 	case errors.Is(err, graveler.ErrNotFound):
 		lg.WithError(err).Debug("could not delete object, it doesn't exist")
 	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrWriteToProtectedBranch))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrWriteToProtectedBranch))
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	default:
 		lg.Debug("object set for deletion")

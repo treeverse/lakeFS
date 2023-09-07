@@ -50,15 +50,15 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if errors.Is(err, graveler.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if errors.Is(err, catalog.ErrExpired) {
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 		return
 	}
 	if err != nil {
-		_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
@@ -77,7 +77,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		if err != nil {
 			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 			if errors.Is(err, httputil.ErrUnsatisfiableRange) {
-				_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidRange))
+				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidRange))
 				return
 			}
 		}
@@ -93,7 +93,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			Identifier:       entry.PhysicalAddress,
 		}, entry.Size)
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 	} else {
@@ -106,7 +106,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			Identifier:       entry.PhysicalAddress,
 		}, rng.StartOffset, rng.EndOffset)
 		if err != nil {
-			_ = o.EncodeError(w, req, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 		w.WriteHeader(http.StatusPartialContent)

@@ -80,7 +80,7 @@ func handleGatewayRequest(w http.ResponseWriter, r *http.Request, gatewayDomains
 	err := gwerrors.Codes[gwerrors.ERRLakeFSWrongEndpoint]
 	err.Description = fmt.Sprintf("%s (%v)", err.Description, gatewayDomains)
 	o := operations.Operation{}
-	o.EncodeError(w, r, err)
+	o.EncodeError(w, r, nil, err)
 }
 
 func isGatewayRequest(r *http.Request) bool {

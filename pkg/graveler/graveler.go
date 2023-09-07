@@ -936,7 +936,7 @@ type StagingManager interface {
 	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
-	List(ctx context.Context, st StagingToken, batchSize int) (ValueIterator, error)
+	List(ctx context.Context, st StagingToken, batchSize int) ValueIterator
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -1797,45 +1797,25 @@ func (g *Graveler) listStagingArea(ctx context.Context, b *Branch, batchSize int
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
-	it, err := g.StagingManager.List(ctx, b.StagingToken, batchSize)
-	if err != nil {
-		return nil, err
-	}
+	it := g.StagingManager.List(ctx, b.StagingToken, batchSize)
 
 	if len(b.SealedTokens) == 0 { // Only staging token exists -> return its iterator
 		return it, nil
 	}
-
-	itrs, err := g.listSealedTokens(ctx, b, batchSize)
-	if err != nil {
-		it.Close()
-		return nil, err
-	}
-	itrs = append([]ValueIterator{it}, itrs...)
+	itrs := append([]ValueIterator{it}, g.listSealedTokens(ctx, b, batchSize)...)
 	return NewCombinedIterator(itrs...), nil
 }
 
-func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) ([]ValueIterator, error) {
+func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) []ValueIterator {
 	iterators := make([]ValueIterator, 0, len(b.SealedTokens))
 	for _, st := range b.SealedTokens {
-		it, err := g.StagingManager.List(ctx, st, batchSize)
-		if err != nil {
-			// close the iterators we managed to open
-			for _, iter := range iterators {
-				iter.Close()
-			}
-			return nil, err
-		}
-		iterators = append(iterators, it)
+		iterators = append(iterators, g.StagingManager.List(ctx, st, batchSize))
 	}
-	return iterators, nil
+	return iterators
 }
 
 func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
-	itrs, err := g.listSealedTokens(ctx, b, batchSize)
-	if err != nil {
-		return nil, err
-	}
+	itrs := g.listSealedTokens(ctx, b, batchSize)
 	if len(itrs) == 0 {
 		return nil, ErrNoChanges
 	}
