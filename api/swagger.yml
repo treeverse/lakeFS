@@ -2454,7 +2454,6 @@ paths:
     get:
       tags:
         - experimental
-        - otf diff
       operationId: getOtfDiffs
       summary: get the available Open Table Format diffs
       responses:
@@ -2501,7 +2500,6 @@ paths:
     get:
       tags:
         - experimental
-        - otf diff
       operationId: otfDiff
       summary: perform otf diff
       responses:

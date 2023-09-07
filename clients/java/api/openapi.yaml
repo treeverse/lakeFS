@@ -1864,7 +1864,6 @@ paths:
       summary: get the available Open Table Format diffs
       tags:
       - experimental
-      - otf diff
       x-accepts: application/json
   /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
     get:
@@ -1941,7 +1940,6 @@ paths:
       summary: perform otf diff
       tags:
       - experimental
-      - otf diff
       x-accepts: application/json
   /repositories/{repository}/refs/dump:
     put:
