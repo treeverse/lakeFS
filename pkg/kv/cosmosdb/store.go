@@ -328,8 +328,11 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
 	_, err := s.containerClient.DeleteItem(ctx, pk, s.hashID(key), nil)
-	if err != nil && errStatusCode(err) != http.StatusNotFound {
-		return convertError(err)
+	if err != nil {
+		err = convertError(err)
+	}
+	if !errors.Is(err, kv.ErrNotFound) {
+		return err
 	}
 	return nil
 }
