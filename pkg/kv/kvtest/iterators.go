@@ -78,13 +78,10 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("failed to create partition iterator")
 		}
 		defer itr.Close()
-		for _, seekValue := range []string{"b", "aaa", "b", "z"} {
-			itr.SeekGE([]byte(seekValue))
-			names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
-			if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
-				t.Fatalf("got wrong list of names: %v", diffs)
-			}
-		}
+		seekValues := []string{"b", "aaa", "b"}
+		seekAndCompare(t, seekValues, itr, []string{"b", "c", "d"})
+		seekAndCompare(t, []string{"z"}, itr, []string{"z"})
+		seekAndCompare(t, seekValues, itr, []string{"b", "c", "d"})
 	})
 
 	t.Run("count scans on successive SeekGE operations", func(t *testing.T) {
@@ -184,6 +181,16 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 			t.Fatalf("expected value a from iterator")
 		}
 	})
+}
+
+func seekAndCompare(t *testing.T, seekValues []string, itr *kv.PartitionIterator, expected []string) {
+	for _, seekValue := range seekValues {
+		itr.SeekGE([]byte(seekValue))
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
+		if diffs := deep.Equal(names, expected); diffs != nil {
+			t.Fatalf("got wrong list of names: %v", diffs)
+		}
+	}
 }
 
 // scanPartitionIterator scans the iterator and returns a slice of the results of applying fn to each model.
