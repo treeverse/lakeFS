@@ -12,8 +12,13 @@ PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
+OPENAPI_GENERATOR_VERSION=v5.3.0
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:$(OPENAPI_GENERATOR_VERSION)
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+
+OPENAPI_GENERATOR_VERSION_ADVANCED=v7.0.0
+OPENAPI_GENERATOR_IMAGE_ADVANCED=openapitools/openapi-generator-cli:$(OPENAPI_GENERATOR_VERSION_ADVANCED)
+OPENAPI_GENERATOR_ADVANCED=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE_ADVANCED)
 
 GOLANGCI_LINT_VERSION=v1.53.3
 
@@ -108,8 +113,9 @@ tools: ## Install tools
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
+client-python: python-client python-sdk
 
-client-python: api/swagger.yml  ## Generate SDK for Python client
+python-client: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 5.3.0
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
 		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
@@ -124,6 +130,23 @@ client-python: api/swagger.yml  ## Generate SDK for Python client
 		-c /mnt/clients/python-codegen-config.yaml \
 		-o /mnt/clients/python
 
+python-sdk: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
+	# remove the build folder as it also holds lakefs_sdk folder which keeps because we skip it during find
+	rm -rf clients/python/sdk/build; cd clients/python/sdk && \
+		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
+	$(OPENAPI_GENERATOR_ADVANCED) generate \
+		-i /mnt/$< \
+		-g python \
+		-t /mnt/clients/python/templates/sdk \
+		--package-name lakefs_sdk \
+		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
+		--git-user-id treeverse --git-repo-id lakeFS \
+		--additional-properties=packageVersion=$(PACKAGE_VERSION) \
+		-c /mnt/clients/python-sdk-codegen-config.yaml \
+		-o /mnt/clients/python/sdk \
+		-t /mnt/clients/python/templates/sdk \
+		--ignore-file-override /mnt/clients/python/sdk/.openapi-generator-ignore
+
 client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 	rm -rf clients/java
 	$(OPENAPI_GENERATOR) generate \
@@ -134,11 +157,17 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python client-java
+.PHONY: clients client-python python-client python-sdk client-java
 clients: client-python client-java
 
-package-python: client-python
+package-python: package-python-client package-python-sdk
+
+package-python-client: client-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
+
+package-python-sdk: python-sdk
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python/sdk $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package: package-python
