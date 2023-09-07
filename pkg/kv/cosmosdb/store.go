@@ -328,8 +328,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
 	_, err := s.containerClient.DeleteItem(ctx, pk, s.hashID(key), nil)
-	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
+	if err != nil && errStatusCode(err) != http.StatusNotFound {
 		return convertError(err)
 	}
 	return nil
@@ -347,10 +346,8 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		queryCtx:     ctx,
 		encoding:     encoding,
 	}
-	it.runQuery()
-	err := it.Err()
-	if err != nil {
-		return nil, err
+	if err := it.runQuery(); err != nil {
+		return nil, convertError(err)
 	}
 	return it, nil
 }
@@ -405,7 +402,7 @@ func (e *EntriesIterator) Next() bool {
 		var err error
 		e.currPage, err = e.queryPager.NextPage(e.queryCtx)
 		if err != nil {
-			e.err = fmt.Errorf("getting next page: %w", err)
+			e.err = fmt.Errorf("getting next page: %w", convertError(err))
 			return false
 		}
 		if len(e.currPage.Items) == 0 {
@@ -431,7 +428,9 @@ func (e *EntriesIterator) Next() bool {
 func (e *EntriesIterator) SeekGE(key []byte) {
 	e.startKey = key
 	if !e.isInRange() {
-		e.runQuery()
+		if err := e.runQuery(); err != nil {
+			e.err = convertError(err)
+		}
 		return
 	}
 	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
@@ -448,14 +447,14 @@ func (e *EntriesIterator) Entry() *kv.Entry {
 }
 
 func (e *EntriesIterator) Err() error {
-	return convertError(e.err)
+	return e.err
 }
 
 func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }
 
-func (e *EntriesIterator) runQuery() {
+func (e *EntriesIterator) runQuery() error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
 	e.queryPager = e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
@@ -465,9 +464,14 @@ func (e *EntriesIterator) runQuery() {
 			Value: encoding.EncodeToString(e.startKey),
 		}},
 	})
+	currPage, err := e.queryPager.NextPage(e.queryCtx)
+	if err != nil {
+		return err
+	}
 	e.currEntryIdx = -1
 	e.entry = nil
-	e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
+	e.currPage = currPage
+	return nil
 }
 
 func (e *EntriesIterator) isInRange() bool {
