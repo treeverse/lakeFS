@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/rs/xid"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 	s3Adapter "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -33,7 +33,7 @@ const (
 type UncommittedFindings struct {
 	All            []Object
 	Deleted        []string
-	preLinkAddress api.StagingLocation
+	preLinkAddress apigen.StagingLocation
 }
 
 func TestUncommittedGC(t *testing.T) {
@@ -87,7 +87,7 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-"+strconv.Itoa(i), false)
 		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-direct-"+strconv.Itoa(i), true)
 	}
-	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
+	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Commit initial data"})
 	if err != nil {
 		t.Fatal("Commit some data", err)
 	}
@@ -106,7 +106,7 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 		if err != nil {
 			t.Fatalf("Failed to upload double-or-nothing II: %s", err)
 		}
-		_, err = client.CommitWithResponse(ctx, repo, mainBranch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "Commit initial data"})
+		_, err = client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Commit initial data"})
 		if err != nil {
 			t.Fatal("Commit single file uploaded twice", err)
 		}
@@ -124,7 +124,7 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 
 		gone = append(gone, objectPhysicalAddress(t, ctx, repo, objPath))
 
-		delResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &api.DeleteObjectParams{Path: objPath})
+		delResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &apigen.DeleteObjectParams{Path: objPath})
 		if err != nil {
 			t.Fatalf("Delete object '%s' failed: %s", objPath, err)
 		}
@@ -134,7 +134,7 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 	}
 
 	// getting physical address before the ugc run and linking it after
-	getPhysicalResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{Path: "foo/bar"})
+	getPhysicalResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.GetPhysicalAddressParams{Path: "foo/bar"})
 	if err != nil {
 		t.Fatalf("Failed to get physical address %s", err)
 	}
@@ -148,7 +148,7 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 		UncommittedFindings{
 			All:     objects,
 			Deleted: gone,
-			preLinkAddress: api.StagingLocation{
+			preLinkAddress: apigen.StagingLocation{
 				PhysicalAddress: getPhysicalResp.JSON200.PhysicalAddress,
 				Token:           getPhysicalResp.JSON200.Token,
 			},
@@ -169,7 +169,7 @@ func findingFilePath() string {
 }
 
 func objectPhysicalAddress(t *testing.T, ctx context.Context, repo, objPath string) string {
-	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{Path: objPath})
+	resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: objPath})
 	if err != nil {
 		t.Fatalf("Failed to stat object '%s': %s", objPath, err)
 	}
@@ -196,12 +196,12 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 
 	// link the pre physical address
 	const expectedSizeBytes = 38
-	_, err = client.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &api.LinkPhysicalAddressParams{
+	_, err = client.LinkPhysicalAddressWithResponse(ctx, "repo1", "main", &apigen.LinkPhysicalAddressParams{
 		Path: "foo/bar",
-	}, api.LinkPhysicalAddressJSONRequestBody{
+	}, apigen.LinkPhysicalAddressJSONRequestBody{
 		Checksum:  "afb0689fe58b82c5f762991453edbbec",
 		SizeBytes: expectedSizeBytes,
-		Staging: api.StagingLocation{
+		Staging: apigen.StagingLocation{
 			PhysicalAddress: findings.preLinkAddress.PhysicalAddress,
 			Token:           findings.preLinkAddress.Token,
 		},
@@ -351,7 +351,7 @@ func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository s
 
 	addr := objectPhysicalAddress(t, ctx, repository, name)
 
-	_, err := client.DeleteObjectWithResponse(ctx, repository, mainBranch, &api.DeleteObjectParams{Path: name})
+	_, err := client.DeleteObjectWithResponse(ctx, repository, mainBranch, &apigen.DeleteObjectParams{Path: name})
 	if err != nil {
 		t.Fatalf("Failed to delete object %s", err)
 	}

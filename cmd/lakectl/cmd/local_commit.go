@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
@@ -72,7 +72,7 @@ var localCommitCmd = &cobra.Command{
 		if branchCommit != idx.AtHead { // check for changes and conflicts with new head
 			newRemote := remote.WithRef(branchCommit)
 			fmt.Printf("\ndiff '%s' <--> '%s'...\n", newRemote, remote)
-			d := make(chan api.Diff, maxDiffPageSize)
+			d := make(chan apigen.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
 				return diff.StreamRepositoryDiffs(cmd.Context(), client, baseRemote, newRemote, swag.StringValue(remote.Path), d, false)
@@ -151,9 +151,9 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		// commit!
-		response, err := client.CommitWithResponse(cmd.Context(), remote.Repository, remote.Ref, &api.CommitParams{}, api.CommitJSONRequestBody{
+		response, err := client.CommitWithResponse(cmd.Context(), remote.Repository, remote.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message: message,
-			Metadata: &api.CommitCreation_Metadata{
+			Metadata: &apigen.CommitCreation_Metadata{
 				AdditionalProperties: kvPairs,
 			},
 		})
@@ -170,7 +170,7 @@ var localCommitCmd = &cobra.Command{
 
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
-			Commit *api.Commit
+			Commit *apigen.Commit
 		}{Branch: branchURI, Commit: commit})
 
 		newHead := response.JSON201.Id

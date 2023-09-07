@@ -17,7 +17,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -114,8 +115,8 @@ func createRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		"storage_namespace": repoStorage,
 		"name":              name,
 	}).Debug("Create repository for test")
-	resp, err := client.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr(mainBranch),
+	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             name,
 		StorageNamespace: repoStorage,
 	})
@@ -168,7 +169,7 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 	}
 }
 
-func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*api.UploadObjectResponse, error) {
+func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*apigen.UploadObjectResponse, error) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
@@ -183,7 +184,7 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
-	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &api.UploadObjectParams{
+	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
 }
@@ -194,15 +195,15 @@ func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPa
 	return checksum, content
 }
 
-func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []api.ObjectStats {
+func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []apigen.ObjectStats {
 	t.Helper()
 	const amount = 5
-	var entries []api.ObjectStats
+	var entries []apigen.ObjectStats
 	var after string
 	for {
-		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &api.ListObjectsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &apigen.ListObjectsParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		require.NoError(t, err, "listing objects")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
@@ -226,14 +227,14 @@ func listRepositoriesIDs(t *testing.T, ctx context.Context) []string {
 	return ids
 }
 
-func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
+func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 	var after string
 	const repoPerPage = 2
-	var listedRepos []api.Repository
+	var listedRepos []apigen.Repository
 	for {
-		resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(repoPerPage),
+		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(repoPerPage)),
 		})
 		require.NoError(t, err, "list repositories")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
@@ -249,7 +250,7 @@ func listRepositories(t *testing.T, ctx context.Context) []api.Repository {
 	return listedRepos
 }
 
-// requireBlockstoreType Skips test if blockstore type doesn't match required type
+// requireBlockstoreType Skips test if blockstore type doesn't match the required type
 func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if !slices.Contains(requiredTypes, blockstoreType) {

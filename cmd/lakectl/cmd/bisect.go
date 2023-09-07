@@ -12,7 +12,8 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const bisectCommitTemplate = `{{ range $val := . }}
@@ -49,16 +50,16 @@ var bisectCmd = &cobra.Command{
 }
 
 type Bisect struct {
-	Created    time.Time     `json:"created"`
-	Repository string        `json:"repository"`
-	BadCommit  string        `json:"badCommit,omitempty"`
-	GoodCommit string        `json:"goodCommit,omitempty"`
-	Commits    []*api.Commit `json:"commits,omitempty"`
+	Created    time.Time        `json:"created"`
+	Repository string           `json:"repository"`
+	BadCommit  string           `json:"badCommit,omitempty"`
+	GoodCommit string           `json:"goodCommit,omitempty"`
+	Commits    []*apigen.Commit `json:"commits,omitempty"`
 }
 
 const bisectStartCmdArgs = 2
 
-func resolveCommitOrDie(ctx context.Context, client api.ClientWithResponsesInterface, repository, ref string) string {
+func resolveCommitOrDie(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, ref string) string {
 	response, err := client.GetCommitWithResponse(ctx, repository, ref)
 	DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusOK)
 	if response.JSON200 == nil {
@@ -138,7 +139,7 @@ func (b *Bisect) Save() error {
 	return os.WriteFile(expand, data, fileMode)
 }
 
-func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInterface) error {
+func (b *Bisect) Update(ctx context.Context, client apigen.ClientWithResponsesInterface) error {
 	if b.GoodCommit == "" || b.BadCommit == "" {
 		b.Commits = nil
 		return nil
@@ -147,10 +148,10 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 	// scan commit log from bad to good (not included) and save them into state
 	b.Commits = nil
 	const amountPerCall = 500
-	params := &api.LogCommitsParams{
-		Amount: api.PaginationAmountPtr(amountPerCall),
+	params := &apigen.LogCommitsParams{
+		Amount: apiutil.Ptr(apigen.PaginationAmount(amountPerCall)),
 	}
-	var commits []*api.Commit
+	var commits []*apigen.Commit
 	for {
 		logResponse, err := client.LogCommitsWithResponse(ctx, b.Repository, b.BadCommit, params)
 		DieOnErrorOrUnexpectedStatusCode(logResponse, err, http.StatusOK)
@@ -168,7 +169,7 @@ func (b *Bisect) Update(ctx context.Context, client api.ClientWithResponsesInter
 		if !logResponse.JSON200.Pagination.HasMore {
 			break
 		}
-		params.After = api.PaginationAfterPtr(logResponse.JSON200.Pagination.NextOffset)
+		params.After = apiutil.Ptr(apigen.PaginationAfter(logResponse.JSON200.Pagination.NextOffset))
 	}
 	return fmt.Errorf("good %w", ErrCommitNotFound)
 }

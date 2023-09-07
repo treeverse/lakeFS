@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const groupCreatedTemplate = `{{ "Group created successfully." | green }}
@@ -19,7 +19,7 @@ var authGroupsCreateCmd = &cobra.Command{
 		id := Must(cmd.Flags().GetString("id"))
 		clt := getClient()
 
-		resp, err := clt.CreateGroupWithResponse(cmd.Context(), api.CreateGroupJSONRequestBody{
+		resp, err := clt.CreateGroupWithResponse(cmd.Context(), apigen.CreateGroupJSONRequestBody{
 			Id: id,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)

@@ -13,7 +13,8 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -51,7 +52,7 @@ var fsDownloadCmd = &cobra.Command{
 		// list the files
 		client := getClient()
 		downloadCh := make(chan string)
-		sourcePath := api.StringValue(pathURI.Path)
+		sourcePath := apiutil.Value(pathURI.Path)
 
 		// recursive assume the source is directory
 		if recursive && len(sourcePath) > 0 && !strings.HasSuffix(sourcePath, uri.PathSeparator) {
@@ -70,7 +71,7 @@ var fsDownloadCmd = &cobra.Command{
 			if recursive {
 				listRecursiveHelper(ctx, client, pathURI.Repository, pathURI.Ref, sourcePath, downloadCh)
 			} else {
-				downloadCh <- api.StringValue(pathURI.Path)
+				downloadCh <- apiutil.Value(pathURI.Path)
 			}
 		}()
 
@@ -111,13 +112,13 @@ var fsDownloadCmd = &cobra.Command{
 	},
 }
 
-func listRecursiveHelper(ctx context.Context, client *api.ClientWithResponses, repo, ref, prefix string, ch chan string) {
-	pfx := api.PaginationPrefix(prefix)
+func listRecursiveHelper(ctx context.Context, client *apigen.ClientWithResponses, repo, ref, prefix string, ch chan string) {
+	pfx := apigen.PaginationPrefix(prefix)
 	var from string
 	for {
-		params := &api.ListObjectsParams{
+		params := &apigen.ListObjectsParams{
 			Prefix: &pfx,
-			After:  api.PaginationAfterPtr(from),
+			After:  apiutil.Ptr(apigen.PaginationAfter(from)),
 		}
 		resp, err := client.ListObjectsWithResponse(ctx, repo, ref, params)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -132,7 +133,7 @@ func listRecursiveHelper(ctx context.Context, client *api.ClientWithResponses, r
 	}
 }
 
-func downloadHelper(ctx context.Context, client *api.ClientWithResponses, method transportMethod, src uri.URI, dst string) error {
+func downloadHelper(ctx context.Context, client *apigen.ClientWithResponses, method transportMethod, src uri.URI, dst string) error {
 	body, err := getObjectHelper(ctx, client, method, src)
 	if err != nil {
 		return err
@@ -153,7 +154,7 @@ func downloadHelper(ctx context.Context, client *api.ClientWithResponses, method
 	return err
 }
 
-func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, method transportMethod, src uri.URI) (io.ReadCloser, error) {
+func getObjectHelper(ctx context.Context, client *apigen.ClientWithResponses, method transportMethod, src uri.URI) (io.ReadCloser, error) {
 	if method == transportMethodDirect {
 		// download directly from storage
 		_, body, err := helpers.ClientDownload(ctx, client, src.Repository, src.Ref, *src.Path)
@@ -165,7 +166,7 @@ func getObjectHelper(ctx context.Context, client *api.ClientWithResponses, metho
 
 	// download from lakefs
 	preSign := swag.Bool(method == transportMethodPreSign)
-	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &api.GetObjectParams{
+	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
 		Path:    *src.Path,
 		Presign: preSign,
 	})

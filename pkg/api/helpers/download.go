@@ -6,14 +6,14 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 // ClientDownload downloads a file using client-side ("direct") access to underlying storage.
 // It requires credentials both to lakeFS and to underlying storage, but considerably reduces
 // the load on the lakeFS server.
-func ClientDownload(ctx context.Context, client api.ClientWithResponsesInterface, repoID, ref, filePath string) (*api.ObjectStats, io.ReadCloser, error) {
-	resp, err := client.StatObjectWithResponse(ctx, repoID, ref, &api.StatObjectParams{
+func ClientDownload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, ref, filePath string) (*apigen.ObjectStats, io.ReadCloser, error) {
+	resp, err := client.StatObjectWithResponse(ctx, repoID, ref, &apigen.StatObjectParams{
 		Path: filePath,
 	})
 	if err != nil {

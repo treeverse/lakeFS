@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -15,7 +14,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -216,13 +216,13 @@ var excludeStatsCmds = []string{
 	"config",
 }
 
-func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
+func sendStats(ctx context.Context, client apigen.ClientWithResponsesInterface, cmd string) {
 	if version.IsVersionUnreleased() {
 		return
 	}
 
-	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
-		Events: []api.StatsEvent{
+	resp, err := client.PostStatsEventsWithResponse(ctx, apigen.PostStatsEventsJSONRequestBody{
+		Events: []apigen.StatsEvent{
 			{
 				Class: "lakectl",
 				Name:  cmd,
@@ -242,7 +242,7 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 	}
 }
 
-func getClient() *api.ClientWithResponses {
+func getClient() *apigen.ClientWithResponses {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -260,21 +260,16 @@ func getClient() *api.ClientWithResponses {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Server.EndpointURL.String()
-	u, err := url.Parse(serverEndpoint)
+	serverEndpoint, err := apiutil.NormalizeLakeFSEndpoint(cfg.Server.EndpointURL.String())
 	if err != nil {
 		DieErr(err)
 	}
-	// if no uri to api is set in configuration - set the default
-	if u.Path == "" || u.Path == "/" {
-		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
-	}
 
-	client, err := api.NewClientWithResponses(
+	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		api.WithHTTPClient(httpClient),
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
-		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		apigen.WithHTTPClient(httpClient),
+		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			req.Header.Set("User-Agent", "lakectl/"+version.Version)
 			return nil
 		}),

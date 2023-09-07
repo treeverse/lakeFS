@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -48,7 +48,7 @@ var mergeCmd = &cobra.Command{
 			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
 
-		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, api.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
+		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
 		if resp != nil && resp.JSON409 != nil {
 			Die("Conflict found.", 1)
 		}
@@ -59,7 +59,7 @@ var mergeCmd = &cobra.Command{
 
 		Write(mergeCreateTemplate, struct {
 			Merge  FromTo
-			Result *api.MergeResult
+			Result *apigen.MergeResult
 		}{
 			Merge: FromTo{
 				FromRef: sourceRef.Ref,

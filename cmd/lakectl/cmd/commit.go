@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -59,11 +59,11 @@ var commitCmd = &cobra.Command{
 		fmt.Println("Branch:", branchURI)
 
 		// do commit
-		metadata := api.CommitCreation_Metadata{
+		metadata := apigen.CommitCreation_Metadata{
 			AdditionalProperties: kvPairs,
 		}
 		client := getClient()
-		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &api.CommitParams{}, api.CommitJSONRequestBody{
+		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message:  message,
 			Metadata: &metadata,
 			Date:     datePtr,
@@ -76,7 +76,7 @@ var commitCmd = &cobra.Command{
 		commit := resp.JSON201
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
-			Commit *api.Commit
+			Commit *apigen.Commit
 		}{Branch: branchURI, Commit: commit})
 	},
 }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const tagCreateRequiredArgs = 2
@@ -48,7 +48,7 @@ var tagCreateCmd = &cobra.Command{
 			}
 		}
 
-		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, api.CreateTagJSONRequestBody{
+		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, apigen.CreateTagJSONRequestBody{
 			Id:  tagURI.Ref,
 			Ref: commitURI.Ref,
 		})

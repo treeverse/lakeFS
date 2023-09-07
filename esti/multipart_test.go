@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -48,7 +48,7 @@ func TestMultipartUpload(t *testing.T) {
 
 	logger.WithField("key", aws.StringValue(completeResponse.Key)).Info("Completed multipart request successfully")
 
-	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{Path: file})
+	getResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: file})
 	require.NoError(t, err, "failed to get object")
 	require.Equal(t, http.StatusOK, getResp.StatusCode())
 	if !bytes.Equal(partsConcat, getResp.Body) {

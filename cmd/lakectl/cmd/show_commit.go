@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 // showCommitCmd represents the show command
@@ -27,11 +27,11 @@ var showCommitCmd = &cobra.Command{
 
 		commit := resp.JSON200
 		commits := struct {
-			Commits         []*api.Commit
+			Commits         []*apigen.Commit
 			Pagination      *Pagination
 			ShowMetaRangeID bool
 		}{
-			Commits:         []*api.Commit{commit},
+			Commits:         []*apigen.Commit{commit},
 			ShowMetaRangeID: showMetaRangeID,
 		}
 

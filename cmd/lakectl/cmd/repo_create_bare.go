@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 // repoCreateBareCmd represents the create repo command
@@ -26,9 +26,9 @@ var repoCreateBareCmd = &cobra.Command{
 			DieErr(err)
 		}
 		bareRepo := true
-		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &api.CreateRepositoryParams{
+		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &apigen.CreateRepositoryParams{
 			Bare: &bareRepo,
-		}, api.CreateRepositoryJSONRequestBody{
+		}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    &defaultBranch,
 			Name:             u.Repository,
 			StorageNamespace: args[1],

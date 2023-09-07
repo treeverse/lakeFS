@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var bisectRunCmd = &cobra.Command{
@@ -44,7 +44,7 @@ var bisectRunCmd = &cobra.Command{
 	},
 }
 
-func bisectRunCommand(ctx context.Context, commit *api.Commit, name string, args []string) *exec.Cmd {
+func bisectRunCommand(ctx context.Context, commit *apigen.Commit, name string, args []string) *exec.Cmd {
 	// prepare args
 	replacer := strings.NewReplacer(
 		":BISECT_ID:", commit.Id,

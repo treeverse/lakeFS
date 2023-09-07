@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var fsStatCmd = &cobra.Command{
@@ -17,7 +17,7 @@ var fsStatCmd = &cobra.Command{
 		pathURI := MustParsePathURI("path", args[0])
 		preSign := Must(cmd.Flags().GetBool("pre-sign"))
 		client := getClient()
-		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
+		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StatObjectParams{
 			Path:         *pathURI.Path,
 			Presign:      swag.Bool(preSign),
 			UserMetadata: swag.Bool(true),

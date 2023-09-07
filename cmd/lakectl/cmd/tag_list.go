@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var tagListCmd = &cobra.Command{
@@ -21,9 +22,9 @@ var tagListCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		client := getClient()
-		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &apigen.ListTagsParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

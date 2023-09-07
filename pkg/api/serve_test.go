@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/email"
@@ -86,9 +88,9 @@ func (m *memCollector) CollectCommPrefs(email, installationID string, featureUpd
 
 func (m *memCollector) Close() {}
 
-func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
+func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
-	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
+	res, err := clt.SetupWithResponse(context.Background(), apigen.SetupJSONRequestBody{
 		Username: "admin",
 	})
 	testutil.Must(t, err)
@@ -102,10 +104,10 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-func createUserWithDefaultGroup(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
+func createUserWithDefaultGroup(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
 	// create the user
-	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{
+	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), apigen.CreateUserJSONRequestBody{
 		Id:         "test@example.com",
 		InviteUser: swag.Bool(false),
 	})
@@ -226,7 +228,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
 }
 
-func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string, opts ...api.ClientOption) api.ClientWithResponsesInterface {
+func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string, opts ...apigen.ClientOption) apigen.ClientWithResponsesInterface {
 	t.Helper()
 
 	if accessKeyID != "" {
@@ -234,9 +236,9 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
 		}
-		opts = append(opts, api.WithRequestEditorFn(basicAuthProvider.Intercept))
+		opts = append(opts, apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 	}
-	clt, err := api.NewClientWithResponses(endpointURL+api.BaseURL, opts...)
+	clt, err := apigen.NewClientWithResponses(endpointURL+apiutil.BaseURL, opts...)
 	if err != nil {
 		t.Fatal("failed to create lakefs api client:", err)
 	}
@@ -265,12 +267,12 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-func setupClientWithAdmin(t testing.TB) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB) (apigen.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
 	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil))
 }
 
-func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (apigen.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
 	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
@@ -292,13 +294,13 @@ func TestInvalidRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal("basic auth security provider", err)
 	}
-	clt, err = api.NewClientWithResponses(server.URL+api.BaseURL+"//", api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	clt, err = apigen.NewClientWithResponses(server.URL+apiutil.BaseURL+"//", apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 	if err != nil {
 		t.Fatal("failed to create api client:", err)
 	}
 
 	ctx := context.Background()
-	resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 	if err != nil {
 		t.Fatalf("failed to get lakefs server version")
 	}

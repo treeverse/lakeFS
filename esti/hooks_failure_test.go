@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(
@@ -43,7 +43,7 @@ func hookFailToCommit(t *testing.T, path string) {
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")
-	resp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
+	resp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: mainBranch,
 	})
@@ -75,7 +75,7 @@ func hookFailToCommit(t *testing.T, path string) {
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
 
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err)

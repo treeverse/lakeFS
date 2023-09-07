@@ -18,7 +18,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/pflag"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
@@ -184,7 +184,7 @@ func DieFmt(msg string, args ...interface{}) {
 }
 
 type APIError interface {
-	GetPayload() *api.Error
+	GetPayload() *apigen.Error
 }
 
 func DieErr(err error) {
@@ -250,7 +250,7 @@ func DieOnHTTPError(httpResponse *http.Response) {
 	}
 }
 
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *apigen.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination
