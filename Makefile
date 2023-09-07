@@ -64,7 +64,6 @@ clean:
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
-		pkg/api/api/lakefs.gen.go \
 		pkg/api/apigen/lakefs.gen.go \
 		pkg/auth/client.gen.go
 
@@ -146,6 +145,7 @@ package: package-python
 
 .PHONY: gen-api
 gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
+	rm -f pkg/api/lakefs.gen.go
 	$(GOGENERATE) \
 		./pkg/api \
 		./pkg/auth
