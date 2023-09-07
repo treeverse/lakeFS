@@ -29,7 +29,7 @@ func (controller *PutBucket) Handle(w http.ResponseWriter, req *http.Request, o 
 	if o.Repository == nil {
 		// No repo, would have to create it, but not enough
 		// information -- so not supported.
-		o.EncodeError(w, req, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
+		o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
 	}
-	o.EncodeError(w, req, gatewayerrors.ErrBucketAlreadyExists.ToAPIErr())
+	o.EncodeError(w, req, nil, gatewayerrors.ErrBucketAlreadyExists.ToAPIErr())
 }

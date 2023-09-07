@@ -31,11 +31,11 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 	decodedXML := &serde.Delete{}
 	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {
-		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, err, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 		return
 	}
 	if len(decodedXML.Object) == 0 || len(decodedXML.Object) > maxDeleteObjects {
-		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
+		_ = o.EncodeError(w, req, err, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
 		return
 	}
 

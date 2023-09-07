@@ -188,10 +188,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	// Read an item
 	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.ID, nil)
 	if err != nil {
-		if isErrStatusCode(err, http.StatusNotFound) {
-			return nil, kv.ErrNotFound
-		}
-		return nil, err
+		return nil, convertError(err)
 	}
 
 	var itemResponseBody Document
@@ -220,6 +217,21 @@ func errStatusCode(err error) int {
 
 func isErrStatusCode(err error, code int) bool {
 	return errStatusCode(err) == code
+}
+
+func convertError(err error) error {
+	statusCode := errStatusCode(err)
+	switch statusCode {
+	case http.StatusTooManyRequests:
+		return kv.ErrSlowDown
+	case http.StatusPreconditionFailed:
+		return kv.ErrPredicateFailed
+	case http.StatusNotFound:
+		return kv.ErrNotFound
+	case http.StatusConflict:
+		return kv.ErrPredicateFailed
+	}
+	return err
 }
 
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
@@ -251,7 +263,7 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
 	_, err = s.containerClient.UpsertItem(ctx, pk, b, &itemOptions)
-	return err
+	return convertError(err)
 }
 
 func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
@@ -285,9 +297,6 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	switch valuePredicate {
 	case nil:
 		_, err = s.containerClient.CreateItem(ctx, pk, b, &itemOptions)
-		if isErrStatusCode(err, http.StatusConflict) {
-			return kv.ErrPredicateFailed
-		}
 	case kv.PrecondConditionalExists:
 		patch := azcosmos.PatchOperations{}
 		patch.AppendReplace("/value", item.Value)
@@ -305,11 +314,8 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		etag := azcore.ETag(valuePredicate.([]byte))
 		itemOptions.IfMatchEtag = &etag
 		_, err = s.containerClient.UpsertItem(ctx, pk, b, &itemOptions)
-		if isErrStatusCode(err, http.StatusPreconditionFailed) {
-			return kv.ErrPredicateFailed
-		}
 	}
-	return err
+	return convertError(err)
 }
 
 func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
@@ -324,7 +330,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	_, err := s.containerClient.DeleteItem(ctx, pk, s.hashID(key), nil)
 	var respErr *azcore.ResponseError
 	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
-		return err
+		return convertError(err)
 	}
 	return nil
 }
@@ -342,8 +348,9 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		encoding:     encoding,
 	}
 	it.runQuery()
-	if it.err != nil {
-		return nil, it.err
+	err := it.Err()
+	if err != nil {
+		return nil, err
 	}
 	return it, nil
 }
@@ -441,7 +448,7 @@ func (e *EntriesIterator) Entry() *kv.Entry {
 }
 
 func (e *EntriesIterator) Err() error {
-	return e.err
+	return convertError(e.err)
 }
 
 func (e *EntriesIterator) Close() {
