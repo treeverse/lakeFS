@@ -8,9 +8,10 @@ import (
 )
 
 var metastoreCopyAllCmd = &cobra.Command{
-	Use:   "copy-all",
-	Short: "Copy from one metastore to another",
-	Long:  "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
+	Use:        "copy-all",
+	Short:      "Copy from one metastore to another",
+	Long:       "copy or merge requested tables between hive metastores. the destination tables will point to the selected branch",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
 		fromAddress := Must(cmd.Flags().GetString("from-address"))

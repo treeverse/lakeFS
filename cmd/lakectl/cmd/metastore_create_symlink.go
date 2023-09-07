@@ -10,9 +10,10 @@ import (
 )
 
 var metastoreCreateSymlinkCmd = &cobra.Command{
-	Use:   "create-symlink",
-	Short: "Create symlink table and data",
-	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
+	Use:        "create-symlink",
+	Short:      "Create symlink table and data",
+	Long:       "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		repo := Must(cmd.Flags().GetString("repo"))
 		branch := Must(cmd.Flags().GetString("branch"))

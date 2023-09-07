@@ -10,9 +10,10 @@ import (
 )
 
 var metastoreCopyCmd = &cobra.Command{
-	Use:   "copy",
-	Short: "Copy or merge table",
-	Long:  "Copy or merge table. the destination table will point to the selected branch",
+	Use:        "copy",
+	Short:      "Copy or merge table",
+	Long:       "Copy or merge table. the destination table will point to the selected branch",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
 		fromDB := Must(cmd.Flags().GetString("from-schema"))

@@ -9,9 +9,10 @@ import (
 )
 
 var dbtGenerateSchemaMacro = &cobra.Command{
-	Use:     "generate-schema-macro",
-	Short:   "generates the a macro allowing lakectl to run dbt on dynamic schemas",
-	Example: "lakectl dbt generate-schema-macro",
+	Use:        "generate-schema-macro",
+	Short:      "generates the a macro allowing lakectl to run dbt on dynamic schemas",
+	Example:    "lakectl dbt generate-schema-macro",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		projectRoot := Must(cmd.Flags().GetString("project-root"))
 
