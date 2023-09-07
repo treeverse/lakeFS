@@ -227,6 +227,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.PutObject(ctx, &putObject,
+		func(o *s3.Options) { o.RetryMaxAttempts = 1 },
 		s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
 		a.registerCaptureServerMiddleware(),
 	)
@@ -279,6 +280,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.UploadPart(ctx, uploadPartInput,
+		func(o *s3.Options) { o.RetryMaxAttempts = 1 },
 		s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
 		a.registerCaptureServerMiddleware(),
 	)
