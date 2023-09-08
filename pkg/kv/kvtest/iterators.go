@@ -3,11 +3,11 @@ package kvtest
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/require"
 	"sync/atomic"
 	"testing"
 
 	"github.com/go-test/deep"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
@@ -47,132 +47,17 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		}
 	}
 
-	t.Run("listing all values of partition", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
-		if itr == nil {
-			t.Fatalf("failed to create partition iterator")
-		}
-		defer itr.Close()
-		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
-		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
-			t.Fatalf("got wrong list of names: %v", diffs)
-		}
-	})
+	t.Run("listing all values of partition", testPartitionIteratorListAll(ctx, store))
+	t.Run("listing values SeekGE", listPartitionIteratorWithSeekGE(ctx, store))
+	t.Run("count scans on successive SeekGE operations", testPartitionIteratorCountScansOnSeekGE(store, ctx))
+	t.Run("failed SeekGE partition not found", testPartitionIteratorSeekGEOnPartitionNotFound(ctx, store))
+	t.Run("SeekGE past end", testPartitionIteratorSeekGEPastEnd(ctx, store))
+	t.Run("SeekGE seek back", testPartitionIteratorSeekGESeekBack(ctx, store))
+	t.Run("listing values SeekGE with pagination", testPartitionIteratorSeekGEWithPagination(ctx, store))
+}
 
-	t.Run("listing values SeekGE", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey, 0)
-		if itr == nil {
-			t.Fatalf("failed to create partition iterator")
-		}
-		defer itr.Close()
-		for _, seekValue := range []string{"b", "aaa", "b"} {
-			itr.SeekGE([]byte(seekValue))
-			names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
-			if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
-				t.Fatalf("got wrong list of names: %v", diffs)
-			}
-		}
-	})
-
-	t.Run("count scans on successive SeekGE operations", func(t *testing.T) {
-		store := NewStoreWithCounter(store)
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey, 0)
-		if itr == nil {
-			t.Fatalf("failed to create partition iterator")
-		}
-		defer itr.Close()
-		for _, seekValue := range []string{"b", "c", "d"} {
-			itr.SeekGE([]byte(seekValue))
-			if !itr.Next() {
-				t.Fatalf("Expected iterator to have a value")
-			}
-			if err := itr.Err(); err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			k := itr.Entry().Key
-			if string(k) != seekValue {
-				t.Fatalf("Expected to find value %s. Found %s", seekValue, k)
-			}
-		}
-		scanCalls := atomic.LoadInt64(&store.ScanCalls)
-		if scanCalls != 1 {
-			t.Fatalf("Expected exactly 1 call to Scan. got: %d", scanCalls)
-		}
-	})
-
-	t.Run("failed SeekGE partition not found", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), "", 0)
-		if itr == nil {
-			t.Fatalf("failed to create partition iterator")
-		}
-		defer itr.Close()
-		itr.SeekGE([]byte("d"))
-		if itr.Next() {
-			t.Fatalf("next after seekGE expected to be false")
-		}
-
-		itr.SeekGE([]byte("d"))
-		if itr.Next() {
-			t.Fatalf("next after seekGE expected to be false")
-		}
-
-		if err := itr.Err(); !errors.Is(err, kv.ErrMissingPartitionKey) {
-			t.Fatalf("expected error: %s, got %v", kv.ErrMissingPartitionKey, err)
-		}
-	})
-
-	t.Run("SeekGE past end", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
-		if itr == nil {
-			t.Fatalf("failed to create partition iterator")
-		}
-		defer itr.Close()
-		itr.SeekGE([]byte("b"))
-		if !itr.Next() {
-			t.Fatal("expected Next to be true")
-		}
-		e := itr.Entry()
-		model := e.Value.(*TestModel)
-		if string(model.Name) != "b" {
-			t.Fatalf("expected value b from iterator")
-		}
-		itr.SeekGE(graveler.UpperBoundForPrefix([]byte("d1")))
-		if itr.Next() {
-			t.Fatalf("expected Next to be false")
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("SeekGE seek back", func(t *testing.T) {
-		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
-		if itr == nil {
-			t.Fatalf("failed to create partition iterator")
-		}
-		defer itr.Close()
-		itr.SeekGE([]byte("z"))
-		if itr.Next() {
-			t.Fatal("expected Next to be false")
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
-		itr.SeekGE([]byte("a"))
-		if !itr.Next() {
-			t.Fatalf("expected Next to be true")
-		}
-		if err := itr.Err(); err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
-		e := itr.Entry()
-		model := e.Value.(*TestModel)
-		if string(model.Name) != "a" {
-			t.Fatalf("expected value a from iterator")
-		}
-	})
-
-	t.Run("listing values SeekGE with pagination", func(t *testing.T) {
+func testPartitionIteratorSeekGEWithPagination(ctx context.Context, store kv.Store) func(t *testing.T) {
+	return func(t *testing.T) {
 		// load much more data
 		moreModelNames := []string{
 			"da", "db", "dc", "dd", "de", "df", "dg", "dh", "di", "dj",
@@ -216,7 +101,144 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 		if diffs := deep.Equal(names, moreModelNames); diffs != nil {
 			t.Fatalf("got wrong list of names: %v", diffs)
 		}
-	})
+	}
+}
+
+func testPartitionIteratorSeekGESeekBack(ctx context.Context, store kv.Store) func(t *testing.T) {
+	return func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		itr.SeekGE([]byte("z"))
+		if itr.Next() {
+			t.Fatal("expected Next to be false")
+		}
+		if err := itr.Err(); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		itr.SeekGE([]byte("a"))
+		if !itr.Next() {
+			t.Fatalf("expected Next to be true")
+		}
+		if err := itr.Err(); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		e := itr.Entry()
+		model := e.Value.(*TestModel)
+		if string(model.Name) != "a" {
+			t.Fatalf("expected value a from iterator")
+		}
+	}
+}
+
+func testPartitionIteratorSeekGEPastEnd(ctx context.Context, store kv.Store) func(t *testing.T) {
+	return func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		itr.SeekGE([]byte("b"))
+		if !itr.Next() {
+			t.Fatal("expected Next to be true")
+		}
+		e := itr.Entry()
+		model := e.Value.(*TestModel)
+		if string(model.Name) != "b" {
+			t.Fatalf("expected value b from iterator")
+		}
+		itr.SeekGE(graveler.UpperBoundForPrefix([]byte("d1")))
+		if itr.Next() {
+			t.Fatalf("expected Next to be false")
+		}
+		if err := itr.Err(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+}
+
+func testPartitionIteratorSeekGEOnPartitionNotFound(ctx context.Context, store kv.Store) func(t *testing.T) {
+	return func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), "", 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		itr.SeekGE([]byte("d"))
+		if itr.Next() {
+			t.Fatalf("next after seekGE expected to be false")
+		}
+
+		itr.SeekGE([]byte("d"))
+		if itr.Next() {
+			t.Fatalf("next after seekGE expected to be false")
+		}
+
+		if err := itr.Err(); !errors.Is(err, kv.ErrMissingPartitionKey) {
+			t.Fatalf("expected error: %s, got %v", kv.ErrMissingPartitionKey, err)
+		}
+	}
+}
+
+func testPartitionIteratorCountScansOnSeekGE(store kv.Store, ctx context.Context) func(t *testing.T) {
+	return func(t *testing.T) {
+		store := NewStoreWithCounter(store)
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		for _, seekValue := range []string{"b", "c", "d"} {
+			itr.SeekGE([]byte(seekValue))
+			if !itr.Next() {
+				t.Fatalf("Expected iterator to have a value")
+			}
+			if err := itr.Err(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			k := itr.Entry().Key
+			if string(k) != seekValue {
+				t.Fatalf("Expected to find value %s. Found %s", seekValue, k)
+			}
+		}
+		scanCalls := atomic.LoadInt64(&store.ScanCalls)
+		if scanCalls != 1 {
+			t.Fatalf("Expected exactly 1 call to Scan. got: %d", scanCalls)
+		}
+	}
+}
+
+func listPartitionIteratorWithSeekGE(ctx context.Context, store kv.Store) func(t *testing.T) {
+	return func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), secondPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		for _, seekValue := range []string{"b", "aaa", "b"} {
+			itr.SeekGE([]byte(seekValue))
+			names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
+			if diffs := deep.Equal(names, []string{"b", "c", "d"}); diffs != nil {
+				t.Fatalf("got wrong list of names: %v", diffs)
+			}
+		}
+	}
+}
+
+func testPartitionIteratorListAll(ctx context.Context, store kv.Store) func(t *testing.T) {
+	return func(t *testing.T) {
+		itr := kv.NewPartitionIterator(ctx, store, (&TestModel{}).ProtoReflect().Type(), firstPartitionKey, 0)
+		if itr == nil {
+			t.Fatalf("failed to create partition iterator")
+		}
+		defer itr.Close()
+		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })
+		if diffs := deep.Equal(names, []string{"a", "aa", "b", "c", "d"}); diffs != nil {
+			t.Fatalf("got wrong list of names: %v", diffs)
+		}
+	}
 }
 
 // scanPartitionIterator scans the iterator and returns a slice of the results of applying fn to each model.

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"net/http"
 	"os"
 	"testing"
@@ -16,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
