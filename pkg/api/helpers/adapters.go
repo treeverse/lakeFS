@@ -87,7 +87,7 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 	}
 	return ObjectStats{
 		Size: size,
-		ETag: aws.String(out.ETag),
+		ETag: aws.StringValue(out.ETag),
 		// S3Manager Upload does not return creation time.
 	}, nil
 }
