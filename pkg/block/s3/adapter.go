@@ -227,7 +227,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.PutObject(ctx, &putObject,
-		func(o *s3.Options) { o.RetryMaxAttempts = 1 },
+		retryMaxAttemptsByReader(reader),
 		s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
 		a.registerCaptureServerMiddleware(),
 	)
@@ -239,6 +239,16 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return ErrMissingETag
 	}
 	return nil
+}
+
+// retryMaxAttemptsByReader return s3 options function
+// setup RetryMaxAttempts - if the reader is not seekable, we can't retry the request
+func retryMaxAttemptsByReader(reader io.Reader) func(*s3.Options) {
+	return func(o *s3.Options) {
+		if _, ok := reader.(io.Seeker); !ok {
+			o.RetryMaxAttempts = 1
+		}
+	}
 }
 
 // captureServerDeserializeMiddleware extracts the server name from the response and sets it on the block adapter
@@ -280,7 +290,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.UploadPart(ctx, uploadPartInput,
-		func(o *s3.Options) { o.RetryMaxAttempts = 1 },
+		retryMaxAttemptsByReader(reader),
 		s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
 		a.registerCaptureServerMiddleware(),
 	)
