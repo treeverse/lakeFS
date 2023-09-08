@@ -37,7 +37,6 @@ type UncommittedFindings struct {
 }
 
 func TestUncommittedGC(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx := context.Background()
 	prepareForUncommittedGC(t, ctx)

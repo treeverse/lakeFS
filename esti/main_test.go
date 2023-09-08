@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,8 +45,6 @@ var (
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
 	policiesToKeep     arrayFlags
-
-	testsToSkipRegex *regexp.Regexp
 )
 
 var (
@@ -257,7 +254,6 @@ func TestMain(m *testing.M) {
 	adminAccessKeyID := flag.String("admin-access-key-id", DefaultAdminAccessKeyID, "lakeFS Admin access key ID")
 	adminSecretAccessKey := flag.String("admin-secret-access-key", DefaultAdminSecretAccessKey, "lakeFS Admin secret access key")
 	cleanupEnv := flag.Bool("cleanup-env-pre-run", false, "Clean repositories, groups, users and polices before running esti tests")
-	testsToSkip := flag.String("skip", "", "Tests to skip in a regex format")
 	flag.Var(&repositoriesToKeep, "repository-to-keep", "Repositories to keep in case of pre-run cleanup")
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")
@@ -290,10 +286,6 @@ func TestMain(m *testing.M) {
 	azureStorageAccount = viper.GetString("azure_storage_account")
 	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 
-	if *testsToSkip != "" {
-		testsToSkipRegex = regexp.MustCompile(*testsToSkip)
-	}
-
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {
 		logger.
@@ -318,10 +310,4 @@ func TestMain(m *testing.M) {
 
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
-}
-
-func SkipTestIfAskedTo(t testing.TB) {
-	if testsToSkipRegex != nil && testsToSkipRegex.MatchString(t.Name()) {
-		t.SkipNow()
-	}
 }
