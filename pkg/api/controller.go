@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
@@ -115,7 +114,7 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
 
-	continuationToken := apiutil.Value(body.ContinuationToken)
+	continuationToken := swag.StringValue(body.ContinuationToken)
 	mark, err := decodeGCUncommittedMark(continuationToken)
 	if err != nil {
 		c.Logger.WithError(err).
@@ -185,7 +184,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			},
 		}) {
 			errs = append(errs, apigen.ObjectError{
-				Path:       apiutil.Ptr(objectPath),
+				Path:       swag.String(objectPath),
 				StatusCode: http.StatusUnauthorized,
 				Message:    http.StatusText(http.StatusUnauthorized),
 			})
@@ -209,7 +208,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 			lg.WithError(err).Debug("tried to delete a non-existent object")
 		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 			errs = append(errs, apigen.ObjectError{
-				Path:       apiutil.Ptr(objectPath),
+				Path:       swag.String(objectPath),
 				StatusCode: http.StatusForbidden,
 				Message:    err.Error(),
 			})
@@ -221,7 +220,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		case err != nil:
 			lg.WithError(err).Error("failed deleting object")
 			errs = append(errs, apigen.ObjectError{
-				Path:       apiutil.Ptr(objectPath),
+				Path:       swag.String(objectPath),
 				StatusCode: http.StatusInternalServerError,
 				Message:    err.Error(),
 			})
@@ -264,7 +263,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	}
 	response := apigen.AuthenticationToken{
 		Token:           tokenString,
-		TokenExpiration: apiutil.Ptr(expires.Unix()),
+		TokenExpiration: swag.Int64(expires.Unix()),
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -315,8 +314,8 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	}
 
 	response := &apigen.StagingLocation{
-		PhysicalAddress: apiutil.Ptr(qk.Format()),
-		Token:           apiutil.Value(token),
+		PhysicalAddress: swag.String(qk.Format()),
+		Token:           swag.StringValue(token),
 	}
 
 	if swag.BoolValue(params.Presign) {
@@ -332,7 +331,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		}
 		response.PresignedUrl = &preSignedURL
 		if !expiry.IsZero() {
-			response.PresignedUrlExpiry = apiutil.Ptr(expiry.Unix())
+			response.PresignedUrlExpiry = swag.Int64(expiry.Unix())
 		}
 	}
 
@@ -380,7 +379,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, apiutil.Value(body.Staging.PhysicalAddress))
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
 
 	// validate token
 	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
@@ -399,7 +398,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
 		Checksum(body.Checksum).
-		ContentType(apiutil.Value(body.ContentType))
+		ContentType(swag.StringValue(body.ContentType))
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
@@ -413,13 +412,13 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
-		ContentType:     StringPtr(entry.ContentType),
+		ContentType:     swag.String(entry.ContentType),
 		Metadata:        &metadata,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: entry.PhysicalAddress,
-		SizeBytes:       apiutil.Ptr(entry.Size),
+		SizeBytes:       swag.Int64(entry.Size),
 	}
 
 	writeResponse(w, r, http.StatusOK, response)
@@ -1525,7 +1524,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	defaultBranch := apiutil.Value(body.DefaultBranch)
+	defaultBranch := swag.StringValue(body.DefaultBranch)
 	if defaultBranch == "" {
 		defaultBranch = "main"
 	}
@@ -1761,8 +1760,8 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	branchName := apiutil.Value(params.Branch)
-	commitID := apiutil.Value(params.Commit)
+	branchName := swag.StringValue(params.Branch)
+	commitID := swag.StringValue(params.Commit)
 	runsIter, err := c.Actions.ListRunResults(ctx, repository, branchName, commitID, paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2157,11 +2156,11 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 	var err error
 	switch body.Type {
 	case entryTypeCommonPrefix:
-		err = c.Catalog.ResetEntries(ctx, repository, branch, apiutil.Value(body.Path))
+		err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path))
 	case "reset":
 		err = c.Catalog.ResetBranch(ctx, repository, branch)
 	case entryTypeObject:
-		err = c.Catalog.ResetEntry(ctx, repository, branch, apiutil.Value(body.Path))
+		err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path))
 	default:
 		writeError(w, r, http.StatusNotFound, "reset type not found")
 	}
@@ -2346,8 +2345,8 @@ func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body ap
 	ctx := r.Context()
 	c.LogAction(ctx, "ingest_range", r, repository, "", "")
 
-	contToken := apiutil.Value(body.ContinuationToken)
-	stagingToken := apiutil.Value(body.StagingToken)
+	contToken := swag.StringValue(body.ContinuationToken)
+	stagingToken := swag.StringValue(body.StagingToken)
 	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
 		SourceURI:         body.FromSourceURI,
 		Prepend:           body.Prepend,
@@ -2404,7 +2403,7 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 		return
 	}
 	writeResponse(w, r, http.StatusCreated, apigen.MetaRangeCreationResponse{
-		Id: apiutil.Ptr(string(info.ID)),
+		Id: swag.String(string(info.ID)),
 	})
 }
 
@@ -2592,7 +2591,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
-		if apiutil.Value(params.IfNoneMatch) != "*" {
+		if swag.StringValue(params.IfNoneMatch) != "*" {
 			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
 			return
 		}
@@ -2713,7 +2712,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		Path:            params.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       apiutil.Ptr(blob.Size),
+		SizeBytes:       swag.Int64(blob.Size),
 		ContentType:     &contentType,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -2766,7 +2765,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
 		Checksum(body.Checksum).
-		ContentType(apiutil.Value(body.ContentType))
+		ContentType(swag.StringValue(body.ContentType))
 	if body.Metadata != nil {
 		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
 	}
@@ -2782,8 +2781,8 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       apiutil.Ptr(entry.Size),
-		ContentType:     apiutil.Ptr(entry.ContentType),
+		SizeBytes:       swag.Int64(entry.Size),
+		ContentType:     swag.String(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -2853,8 +2852,8 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       apiutil.Ptr(entry.Size),
-		ContentType:     apiutil.Ptr(entry.ContentType),
+		SizeBytes:       swag.Int64(entry.Size),
+		ContentType:     swag.String(entry.ContentType),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3053,7 +3052,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
-	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, apiutil.Value(body.PreviousRunId))
+	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3384,7 +3383,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 			ctx,
 			repository,
 			branch,
-			apiutil.Value(params.Location),
+			swag.StringValue(params.Location),
 			after,
 			"",
 			-1)
@@ -3744,8 +3743,8 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				Path:            entry.Path,
 				PhysicalAddress: qk.Format(),
 				PathType:        entryTypeObject,
-				SizeBytes:       apiutil.Ptr(entry.Size),
-				ContentType:     apiutil.Ptr(entry.ContentType),
+				SizeBytes:       swag.Int64(entry.Size),
+				ContentType:     swag.String(entry.ContentType),
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 				objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -3775,7 +3774,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 						return
 					}
 					if !expiry.IsZero() {
-						objStat.PhysicalAddressExpiry = apiutil.Ptr(expiry.Unix())
+						objStat.PhysicalAddressExpiry = swag.Int64(expiry.Unix())
 					}
 				}
 			}
@@ -3830,8 +3829,8 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
-		SizeBytes:       apiutil.Ptr(entry.Size),
-		ContentType:     apiutil.Ptr(entry.ContentType),
+		SizeBytes:       swag.Int64(entry.Size),
+		ContentType:     swag.String(entry.ContentType),
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
 		objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
@@ -3851,7 +3850,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		}
 		objStat.PhysicalAddress = preSignedURL
 		if !expiry.IsZero() {
-			objStat.PhysicalAddressExpiry = apiutil.Ptr(expiry.Unix())
+			objStat.PhysicalAddressExpiry = swag.Int64(expiry.Unix())
 		}
 	}
 	writeResponse(w, r, code, objStat)
@@ -3921,9 +3920,9 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
 		user.Username,
-		apiutil.Value(body.Message),
+		swag.StringValue(body.Message),
 		metadata,
-		apiutil.Value(body.Strategy))
+		swag.StringValue(body.Strategy))
 
 	var hookAbortErr *graveler.HookAbortError
 	switch {
@@ -4240,7 +4239,7 @@ func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string)
 	if err != nil {
 		return err
 	}
-	emailAddr = apiutil.Value(user.Email)
+	emailAddr = swag.StringValue(user.Email)
 	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
 	if err != nil {
 		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
@@ -4280,7 +4279,7 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	}
 
 	// verify provided email matched the token
-	requestEmail := apiutil.Value(body.Email)
+	requestEmail := swag.StringValue(body.Email)
 	if requestEmail != "" && requestEmail != claims.Subject {
 		c.Logger.WithError(err).WithFields(logging.Fields{
 			"token":         body.Token,
@@ -4403,7 +4402,7 @@ func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.R
 	}
 
 	writeResponse(w, r, http.StatusOK, apigen.GarbageCollectionConfig{
-		GracePeriod: aws.Int(int(ref.LinkAddressTime.Seconds())),
+		GracePeriod: swag.Int(int(ref.LinkAddressTime.Seconds())),
 	})
 }
 
@@ -4634,22 +4633,20 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 		return make([]catalog.PathRecord, 0)
 	}
 	if objects != nil {
-		for _, path := range *objects {
-			if path != "" {
-				path := path
+		for _, p := range *objects {
+			if p != "" {
 				pathRecords = append(pathRecords, catalog.PathRecord{
-					Path:     catalog.Path(apiutil.Value(&path)),
+					Path:     catalog.Path(p),
 					IsPrefix: false,
 				})
 			}
 		}
 	}
 	if prefixes != nil {
-		for _, path := range *prefixes {
-			if path != "" {
-				path := path
+		for _, p := range *prefixes {
+			if p != "" {
 				pathRecords = append(pathRecords, catalog.PathRecord{
-					Path:     catalog.Path(apiutil.Value(&path)),
+					Path:     catalog.Path(p),
 					IsPrefix: true,
 				})
 			}
