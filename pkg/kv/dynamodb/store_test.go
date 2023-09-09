@@ -16,7 +16,7 @@ func TestDynamoKV(t *testing.T) {
 		t.Helper()
 		testParams = &kvparams.DynamoDB{
 			TableName:          testutil.UniqueKVTableName(),
-			ScanLimit:          10,
+			ScanLimit:          kvtest.MaxPageSize,
 			Endpoint:           databaseURI,
 			AwsRegion:          "us-east-1",
 			AwsAccessKeyID:     "fakeMyKeyId",

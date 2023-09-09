@@ -22,6 +22,9 @@ type StoreWithCounter struct {
 	ScanCalls int64
 }
 
+// MaxPageSize is the maximum page size for pagination tests
+const MaxPageSize = 10
+
 func NewStoreWithCounter(store kv.Store) *StoreWithCounter {
 	return &StoreWithCounter{Store: store}
 }
@@ -63,15 +66,6 @@ func testPartitionIteratorSeekGEWithPagination(ctx context.Context, store kv.Sto
 			"da", "db", "dc", "dd", "de", "df", "dg", "dh", "di", "dj",
 			"dk", "dl", "dm", "dn", "do", "dp", "dq", "dr", "ds", "dt",
 			"du", "dv", "dw", "dx", "dy", "dz",
-			"ea", "eb", "ec", "ed", "ee", "ef", "eg", "eh", "ei", "ej",
-			"ek", "el", "em", "en", "eo", "ep", "eq", "er", "es", "et",
-			"eu", "ev", "ew", "ex", "ey", "ez",
-			"fa", "fb", "fc", "fd", "fe", "ff", "fg", "fh", "fi", "fj",
-			"fk", "fl", "fm", "fn", "fo", "fp", "fq", "fr", "fs", "ft",
-			"fu", "fv", "fw", "fx", "fy", "fz",
-			"ga", "gb", "gc", "gd", "ge", "gf", "gg", "gh", "gi", "gj",
-			"gk", "gl", "gm", "gn", "go", "gp", "gq", "gr", "gs", "gt",
-			"gu", "gv", "gw", "gx", "gy", "gz",
 			"z",
 		}
 		for _, name := range moreModelNames {
@@ -90,8 +84,13 @@ func testPartitionIteratorSeekGEWithPagination(ctx context.Context, store kv.Sto
 		}
 		defer itr.Close()
 
-		itr.SeekGE([]byte("b"))
 		require.True(t, itr.Next())
+
+		itr.SeekGE([]byte("b"))
+		for i := 0; i < MaxPageSize+1; i++ {
+			// force
+			require.True(t, itr.Next())
+		}
 
 		itr.SeekGE([]byte("z"))
 		require.True(t, itr.Next())
