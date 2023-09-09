@@ -66,7 +66,6 @@ func makeRepositoryName(name string) string {
 }
 
 func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
-	SkipTestIfAskedTo(t)
 	ctx := context.Background()
 	name := makeRepositoryName(t.Name())
 	logger := logger.WithField("testName", name)
