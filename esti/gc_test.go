@@ -193,7 +193,6 @@ func newSubmitConfig(repo string, blockstoreType string, doMark bool, doSweep bo
 }
 
 func TestCommittedGC(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	logger.Infof("Got blockstore type %s", blockstoreType)
 	ctx := context.Background()
