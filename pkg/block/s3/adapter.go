@@ -349,14 +349,25 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	return NewS3Walker(a.clients.GetDefault()), nil
 }
 
+type CaptureExpiresPresigner struct {
+	Presigner            s3.HTTPPresignerV4
+	CredentialsCanExpire bool
+	CredentialsExpireAt  time.Time
+}
+
+func (c *CaptureExpiresPresigner) PresignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4.SignerOptions)) (url string, signedHeader http.Header, err error) {
+	// capture credentials expiry
+	c.CredentialsCanExpire = credentials.CanExpire
+	c.CredentialsExpireAt = credentials.Expires
+	return c.Presigner.PresignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
+}
+
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
 	if a.disablePreSigned {
 		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
-	// TODO(barak): handle expiry window of the client credentials when pre-signed
-	// support enabled
-	expiry := time.Now().Add(a.preSignedExpiry)
+	expiry := time.Now().UTC().Add(a.preSignedExpiry)
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPreSignedURL",
@@ -371,27 +382,38 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	}
 
 	client := a.clients.Get(ctx, bucket)
-	presigner := s3.NewPresignClient(client, func(options *s3.PresignOptions) {
-		options.Expires = a.preSignedExpiry
-	})
+	presigner := s3.NewPresignClient(client,
+		func(options *s3.PresignOptions) {
+			options.Expires = a.preSignedExpiry
+		})
 
+	captureExpiresPresigner := &CaptureExpiresPresigner{}
 	var req *v4.PresignedHTTPRequest
 	if mode == block.PreSignModeWrite {
 		putObjectInput := &s3.PutObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		}
-		req, err = presigner.PresignPutObject(ctx, putObjectInput)
+		req, err = presigner.PresignPutObject(ctx, putObjectInput, func(o *s3.PresignOptions) {
+			captureExpiresPresigner.Presigner = o.Presigner
+			o.Presigner = captureExpiresPresigner
+		})
 	} else {
 		getObjectInput := &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		}
-		req, err = presigner.PresignGetObject(ctx, getObjectInput)
+		req, err = presigner.PresignGetObject(ctx, getObjectInput, func(o *s3.PresignOptions) {
+			captureExpiresPresigner.Presigner = o.Presigner
+			o.Presigner = captureExpiresPresigner
+		})
 	}
 	if err != nil {
 		log.WithError(err).Error("could not pre-sign request")
 		return "", time.Time{}, err
+	}
+	if captureExpiresPresigner.CredentialsCanExpire && captureExpiresPresigner.CredentialsExpireAt.Before(expiry) {
+		expiry = captureExpiresPresigner.CredentialsExpireAt
 	}
 	return req.URL, expiry, nil
 }
