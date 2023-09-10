@@ -92,7 +92,7 @@ lakectl [flags]
       --log-format string    set logging output format
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
-      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --no-color             don't use fancy output colors (default value can be set by NO_COLOR environment variable)
       --verbose              run in verbose mode
   -v, --version              version for lakectl
 ```
