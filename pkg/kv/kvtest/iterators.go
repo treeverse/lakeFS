@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 )
@@ -84,16 +83,22 @@ func testPartitionIteratorSeekGEWithPagination(ctx context.Context, store kv.Sto
 		}
 		defer itr.Close()
 
-		require.True(t, itr.Next())
+		if !itr.Next() {
+			t.Fatal("expected Next to be true")
+		}
 
 		itr.SeekGE([]byte("b"))
 		for i := 0; i < MaxPageSize+1; i++ {
-			// force
-			require.True(t, itr.Next())
+			// force pagination
+			if !itr.Next() {
+				t.Fatal("expected Next to be true")
+			}
 		}
 
 		itr.SeekGE([]byte("z"))
-		require.True(t, itr.Next())
+		if !itr.Next() {
+			t.Fatal("expected Next to be true")
+		}
 
 		itr.SeekGE([]byte("d1"))
 		names := scanPartitionIterator(t, itr, func(_ []byte, model *TestModel) string { return string(model.Name) })

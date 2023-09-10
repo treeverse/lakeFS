@@ -2,9 +2,9 @@ package mem_test
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
