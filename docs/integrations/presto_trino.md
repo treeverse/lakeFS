@@ -116,6 +116,9 @@ WITH (
 
 ### Example of copying a table with [metastore tools](glue_hive_metastore.md):
 
+{: .warning }
+**Deprecated Feature:** This feature is being phased out. A superior replacement will be introduced soon.
+
 Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
 ```shell
 lakectl metastore copy --from-schema main --from-table page_views --to-branch example_branch 

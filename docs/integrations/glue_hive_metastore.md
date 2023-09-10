@@ -7,6 +7,9 @@ redirect_from: /using/glue_hive_metastore.html
 
 # Using lakeFS with the Glue/Hive Metastore
 
+{: .warning }
+**Deprecated Feature:** This feature is being phased out. A superior replacement will be introduced soon.
+
 {% include toc_2-3.html %}
 
 ## About Glue / Hive Metastore
