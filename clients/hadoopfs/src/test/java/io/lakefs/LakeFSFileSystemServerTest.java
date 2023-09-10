@@ -47,6 +47,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 
+import org.mockserver.matchers.TimeToLive;
 import static org.mockserver.model.HttpResponse.response;
 
 import com.google.common.base.Optional;
@@ -194,6 +195,15 @@ public class LakeFSFileSystemServerTest {
                      .withBody(gson.toJson(ImmutableMap.of("blockstore_type", "s3",
                                                            // TODO(ariels): Change for presigned?
                                                            "pre_sign_support", false))));
+
+        // Don't return 404s for unknown paths - they will be emitted for
+        // many bad requests or mocks, and make our life difficult.  Instead
+        // fail using a unique error code.  This has very low priority.
+        mockServerClient.when(request(), Times.unlimited(), TimeToLive.unlimited(), -10000)
+            .respond(response().withStatusCode(418));
+        // TODO(ariels): No tests mock "get underlying filesystem", so this
+        //     also catches its "get repo" call.  Nothing bad happens, but
+        //     this response does show up in logs.
 
         fs.initialize(new URI("lakefs://repo/main/file.txt"), conf);
     }
