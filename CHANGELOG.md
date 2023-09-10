@@ -2,6 +2,26 @@
 
 ## UNRELEASED
 
+# v0.109.0
+
+:new: What's new:
+- Restrict lakectl local to common prefixes only (#6510)
+- lakectl local gitignore end marker (#6522)
+- Remove logBranchCommits (#6528)
+- Lua package for yaml support (#6545)
+- lakectl skip stats for unrelased version (#6551)
+- Remove OTF diff APIs from non experimental tag/category (#6563)
+- S3 API: Propogate slowdown response from cosmosdb to client (#6556)
+- logging and lakectl NO_COLOR support (#6569)
+ 
+:bug: Bug fixed:
+- Fix: lakectl import with Azure Data Lake Storage (#6515)
+- Fix: UI pdf viewer by X-Frame-Options set to SAMEORIGIN (#6520)
+- Fix: Lua gs client close (#6547)
+- Fix: Lua path.Join to handle concatenation of two separators (#6549)
+- Fix latest version cache and remove the use of go-github (#6572)
+- Fix: DynamoDB SeekGE bug (#6561)
+
 # v0.108.0
 
 :new: What's new:
