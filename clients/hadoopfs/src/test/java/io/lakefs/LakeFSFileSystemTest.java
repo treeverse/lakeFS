@@ -85,7 +85,7 @@ public abstract class LakeFSFileSystemTest {
         withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
         withEnv("MINIO_UPDATE", "off").
         withExposedPorts(9000);
-    
+
     abstract void initConfiguration();
     
     abstract void mockStatObject(String repo, String branch, String key, String physicalKey, Long sizeBytes) throws ApiException;
