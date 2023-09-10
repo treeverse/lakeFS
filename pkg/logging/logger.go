@@ -152,12 +152,18 @@ func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 	var formatter logrus.Formatter
 	switch strings.ToLower(format) {
 	case "text":
+		disableColors := false
+		noColor := os.Getenv("NO_COLOR")
+		if noColor != "" && noColor != "0" {
+			disableColors = true
+		}
 		formatter = &logrus.TextFormatter{
 			FullTimestamp:          true,
 			DisableLevelTruncation: true,
 			PadLevelText:           true,
 			QuoteEmptyFields:       true,
 			CallerPrettyfier:       options.CallerPrettyfier,
+			DisableColors:          disableColors,
 		}
 	case "json":
 		formatter = &logrus.JSONFormatter{
