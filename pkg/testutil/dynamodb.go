@@ -78,7 +78,11 @@ func GetDynamoDBInstance() (string, func(), error) {
 }
 
 func UniqueKVTableName() string {
-	return "kvstore_" + nanoid.MustGenerate(chars, charsSize)
+	return "kvstore_" + UniqueName()
+}
+
+func UniqueName() string {
+	return nanoid.MustGenerate(chars, charsSize)
 }
 
 func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {

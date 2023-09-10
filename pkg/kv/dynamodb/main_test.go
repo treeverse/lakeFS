@@ -10,22 +10,15 @@ import (
 )
 
 var testParams *kvparams.DynamoDB
+var databaseURI string
 
 func TestMain(m *testing.M) {
-	databaseURI, cleanupFunc, err := testutil.GetDynamoDBInstance()
+	var err error
+	var cleanupFunc func()
+	databaseURI, cleanupFunc, err = testutil.GetDynamoDBInstance()
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-
-	testParams = &kvparams.DynamoDB{
-		TableName:          testutil.UniqueKVTableName(),
-		ScanLimit:          10,
-		Endpoint:           databaseURI,
-		AwsRegion:          "us-east-1",
-		AwsAccessKeyID:     "fakeMyKeyId",
-		AwsSecretAccessKey: "fakeSecretAccessKey",
-	}
-
 	code := m.Run()
 	cleanupFunc()
 	os.Exit(code)

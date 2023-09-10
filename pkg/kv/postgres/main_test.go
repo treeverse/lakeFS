@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"testing"
 
@@ -17,16 +18,15 @@ const (
 )
 
 var (
-	pool        *dockertest.Pool
-	databaseURI string
+	pool *dockertest.Pool
 )
 
-func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
+func runDBInstance(dockerPool *dockertest.Pool, dbName string) (string, func()) {
 	ctx := context.Background()
 	resource, err := dockerPool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
-		"POSTGRES_DB=lakefs_db",
+		"POSTGRES_DB=" + dbName,
 	})
 	if err != nil {
 		panic("Could not start postgresql: " + err.Error())
@@ -49,7 +49,7 @@ func runDBInstance(dockerPool *dockertest.Pool) (string, func()) {
 	// create connection
 	var pgPool *pgxpool.Pool
 	port := resource.GetPort("5432/tcp")
-	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable", port)
+	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/%s?sslmode=disable", port, url.PathEscape(dbName))
 	err = dockerPool.Retry(func() error {
 		var err error
 		pgPool, err = pgxpool.New(ctx, uri)
@@ -73,9 +73,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-	var cleanup func()
-	databaseURI, cleanup = runDBInstance(pool)
 	code := m.Run()
-	cleanup()
 	os.Exit(code)
 }
