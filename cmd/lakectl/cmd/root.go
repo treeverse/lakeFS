@@ -25,16 +25,25 @@ import (
 const (
 	DefaultMaxIdleConnsPerHost = 100
 	// version templates
-	getLakeFSVersionErrorTemplate = `{{ print "Failed getting lakeFS server version:" | red }} {{ . }}
+	getLakeFSVersionErrorTemplate = `{{ "Failed getting lakeFS server version:" | red }} {{ . }}
 `
-	getLatestVersionErrorTemplate = `{{ print "Failed getting latest lakectl version:" | red }} {{ . }}
+	getLatestVersionErrorTemplate = `{{ "Failed getting latest lakectl version:" | red }} {{ . }}
 `
 	versionTemplate = `lakectl version: {{.LakectlVersion }}
-{{- if .LakeFSVersion }}{{ "\n" }}lakeFS version: {{.LakeFSVersion}}{{ "\n" }}{{ end -}}
+{{- if .LakeFSVersion }}
+lakeFS version: {{.LakeFSVersion}}
+{{- end }}
 {{- if .UpgradeURL }}{{ "\n" }}{{ end -}}
-{{- if .LakectlLatestVersion }}{{ print "lakectl out of date!"| yellow }} (Available: {{ .LakectlLatestVersion }}){{ "\n" }}{{ end -}}
-{{- if .LakeFSLatestVersion }}{{ print "lakeFS out of date!"| yellow }} (Available: {{ .LakeFSLatestVersion }}){{ "\n" }}{{ end -}}
-{{- if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }}{{ "\n" }}{{ end -}}`
+{{- if .LakectlLatestVersion }}
+{{ "lakectl out of date!" | yellow }} (Available: {{ .LakectlLatestVersion }})
+{{- end }}
+{{- if .LakeFSLatestVersion }}
+{{ "lakeFS out of date!" | yellow }} (Available: {{ .LakeFSLatestVersion }})
+{{- end }}
+{{- if .UpgradeURL }}
+Get the latest release {{ .UpgradeURL|blue }}
+{{- end }}
+`
 )
 
 // Configuration is the user-visible configuration structure in Golang form.
@@ -186,8 +195,9 @@ var rootCmd = &cobra.Command{
 			if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
 				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
 			}
-			if swag.StringValue(lakefsVersion.UpgradeUrl) != "" {
-				info.UpgradeURL = swag.StringValue(lakefsVersion.UpgradeUrl)
+			upgradeURL := swag.StringValue(lakefsVersion.UpgradeUrl)
+			if upgradeURL != "" {
+				info.UpgradeURL = upgradeURL
 			}
 		}
 		// get lakectl latest version
