@@ -3,6 +3,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -28,14 +29,15 @@ func TestPostgresKV(t *testing.T) {
 
 		// create a new schema per test
 		schemaName := "test_schema" + testutil.UniqueName()
+		_, err = conn.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+url.PathEscape(schemaName))
 		_, err = conn.Exec(context.Background(), fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", schemaName))
 		if err != nil {
-			t.Fatalf("Error creating schema: %v", err)
+			t.Fatalf("Error creating schema '%s': %s", schemaName, err)
 		}
 
 		store, err := kv.Open(ctx, kvparams.Config{
 			Type:     postgres.DriverName,
-			Postgres: &kvparams.Postgres{ConnectionString: fmt.Sprintf("%s&search_path=%s", databaseURI, schemaName), ScanPageSize: kvtest.MaxPageSize},
+			Postgres: &kvparams.Postgres{ConnectionString: fmt.Sprintf("%s&search_path=%s", databaseURI, url.PathEscape(schemaName)), ScanPageSize: kvtest.MaxPageSize},
 		})
 		if err != nil {
 			t.Fatalf("failed to open kv '%s' store: %s", postgres.DriverName, err)

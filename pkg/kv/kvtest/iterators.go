@@ -55,7 +55,7 @@ func testPartitionIterator(t *testing.T, ms MakeStore) {
 	t.Run("failed SeekGE partition not found", testPartitionIteratorSeekGEOnPartitionNotFound(ctx, store))
 	t.Run("SeekGE past end", testPartitionIteratorSeekGEPastEnd(ctx, store))
 	t.Run("SeekGE seek back", testPartitionIteratorSeekGESeekBack(ctx, store))
-	t.Run("listing values SeekGE with pagination", testPartitionIteratorSeekGEWithPagination(ctx, store))
+	t.Run("listing values SeekGE after pagination", testPartitionIteratorSeekGEWithPagination(ctx, store))
 }
 
 func testPartitionIteratorSeekGEWithPagination(ctx context.Context, store kv.Store) func(t *testing.T) {

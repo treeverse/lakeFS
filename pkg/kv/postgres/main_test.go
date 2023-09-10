@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"testing"
 
@@ -48,7 +49,7 @@ func runDBInstance(dockerPool *dockertest.Pool, dbName string) (string, func()) 
 	// create connection
 	var pgPool *pgxpool.Pool
 	port := resource.GetPort("5432/tcp")
-	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/%s?sslmode=disable", port, dbName)
+	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/%s?sslmode=disable", port, url.PathEscape(dbName))
 	err = dockerPool.Retry(func() error {
 		var err error
 		pgPool, err = pgxpool.New(ctx, uri)
