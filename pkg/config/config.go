@@ -233,8 +233,6 @@ type Config struct {
 			S3AuthInfo                    `mapstructure:",squash"`
 			Region                        string        `mapstructure:"region"`
 			Endpoint                      string        `mapstructure:"endpoint"`
-			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`    // deprecated
-			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"` // deprecated
 			MaxRetries                    int           `mapstructure:"max_retries"`
 			ForcePathStyle                bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
