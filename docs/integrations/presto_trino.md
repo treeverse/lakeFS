@@ -117,7 +117,8 @@ WITH (
 ### Example of copying a table with [metastore tools](glue_hive_metastore.md):
 
 {: .warning }
-**Deprecated Feature:** This feature is being phased out. A superior replacement will be introduced soon.
+**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
 
 Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
 ```shell

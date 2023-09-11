@@ -8,7 +8,8 @@ redirect_from: /using/athena.html
 # Using lakeFS with Amazon Athena
 
 {: .warning }
-**Deprecated Feature:** This feature is being phased out. A superior replacement will be introduced soon.
+**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
 
 [Amazon Athena](https://aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL.
 {:.pb-5 }
