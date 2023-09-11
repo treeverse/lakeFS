@@ -367,7 +367,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
-	expiry := time.Now().UTC().Add(a.preSignedExpiry)
+	expiry := time.Now().Add(a.preSignedExpiry)
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPreSignedURL",
