@@ -39,7 +39,7 @@ type Adapter struct {
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
-	preSignedRefreshWindow       time.Duration
+	sessionExpiryWindow          time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
 }
@@ -53,12 +53,6 @@ func WithStatsCollector(s stats.Collector) func(a *Adapter) {
 func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.clients.DiscoverBucketRegion(b)
-	}
-}
-
-func WithPreSignedRefreshWindow(v time.Duration) func(a *Adapter) {
-	return func(a *Adapter) {
-		a.preSignedRefreshWindow = v
 	}
 }
 
@@ -103,9 +97,14 @@ func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*
 	if err != nil {
 		return nil, err
 	}
+	var sessionExpiryWindow time.Duration
+	if params.WebIdentity != nil {
+		sessionExpiryWindow = params.WebIdentity.SessionExpiryWindow
+	}
 	a := &Adapter{
-		clients:         NewClientCache(cfg, params),
-		preSignedExpiry: block.DefaultPreSignExpiryDuration,
+		clients:             NewClientCache(cfg, params),
+		preSignedExpiry:     block.DefaultPreSignExpiryDuration,
+		sessionExpiryWindow: sessionExpiryWindow,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -412,8 +411,11 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		log.WithError(err).Error("could not pre-sign request")
 		return "", time.Time{}, err
 	}
+
+	// in case the credentials can expire, we need to use the earliest expiry time
+	// we assume that session expiry window is used and adjust the expiry time accordingly
 	if captureExpiresPresigner.CredentialsCanExpire && captureExpiresPresigner.CredentialsExpireAt.Before(expiry) {
-		expiry = captureExpiresPresigner.CredentialsExpireAt
+		expiry = captureExpiresPresigner.CredentialsExpireAt.Add(a.sessionExpiryWindow)
 	}
 	return req.URL, expiry, nil
 }
