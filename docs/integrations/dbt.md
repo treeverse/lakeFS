@@ -7,6 +7,9 @@ redirect_from: /using/dbt.html
 
 # Integrating dbt and lakeFS
 
+{: .warning }
+**Deprecated Feature:** This feature is being phased out.
+
 [dbt](https://www.getdbt.com/) can run on lakeFS with a Spark adapter or Presto/Trino adapter. 
 Both Spark and Presto use Hive metastore or Glue to manage tables and views.
 When creating a branch in lakeFS, you receive a logical copy of the data that can be accessed by `s3://my-repo/branch/...` 

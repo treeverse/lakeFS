@@ -26,8 +26,9 @@ func ExecuteCommand(cmd *exec.Cmd) ([]byte, error) {
 }
 
 var dbtCmd = &cobra.Command{
-	Use:   "dbt",
-	Short: "Integration with dbt commands",
+	Use:        "dbt",
+	Short:      "Integration with dbt commands",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 }
 
 //nolint:gochecknoinits
