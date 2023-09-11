@@ -11,13 +11,13 @@ from lakefs_client.api import config_api
 from lakefs_client.api import experimental_api
 from lakefs_client.api import health_check_api
 from lakefs_client.api import import_api
+from lakefs_client.api import internal_api
 from lakefs_client.api import metadata_api
 from lakefs_client.api import objects_api
 from lakefs_client.api import refs_api
 from lakefs_client.api import repositories_api
 from lakefs_client.api import retention_api
 from lakefs_client.api import staging_api
-from lakefs_client.api import statistics_api
 from lakefs_client.api import tags_api
 from lakefs_client.api import templates_api
 
@@ -53,13 +53,13 @@ class LakeFSClient:
         self.experimental_api = experimental_api.ExperimentalApi(self._api)
         self.health_check_api = health_check_api.HealthCheckApi(self._api)
         self.import_api = import_api.ImportApi(self._api)
+        self.internal_api = internal_api.InternalApi(self._api)
         self.metadata_api = metadata_api.MetadataApi(self._api)
         self.objects_api = objects_api.ObjectsApi(self._api)
         self.refs_api = refs_api.RefsApi(self._api)
         self.repositories_api = repositories_api.RepositoriesApi(self._api)
         self.retention_api = retention_api.RetentionApi(self._api)
         self.staging_api = staging_api.StagingApi(self._api)
-        self.statistics_api = statistics_api.StatisticsApi(self._api)
         self.tags_api = tags_api.TagsApi(self._api)
         self.templates_api = templates_api.TemplatesApi(self._api)
 

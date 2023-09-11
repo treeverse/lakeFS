@@ -1,21 +1,22 @@
-# lakefs_client.RepositoriesApi
+# lakefs_client.InternalApi
 
 All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_branch_protection_rule**](RepositoriesApi.md#create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection | 
-[**create_repository**](RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
-[**delete_branch_protection_rule**](RepositoriesApi.md#delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection | 
-[**delete_repository**](RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
-[**get_branch_protection_rules**](RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
-[**get_repository**](RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
-[**get_repository_metadata**](RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
-[**list_repositories**](RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
+[**create_branch_protection_rule_preflight**](InternalApi.md#create_branch_protection_rule_preflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
+[**get_auth_capabilities**](InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+[**get_setup_state**](InternalApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+[**post_stats_events**](InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+[**set_garbage_collection_rules_preflight**](InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+[**setup**](InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+[**setup_comm_prefs**](InternalApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
+[**update_branch_token**](InternalApi.md#update_branch_token) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
+[**upload_object_preflight**](InternalApi.md#upload_object_preflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 
 
-# **create_branch_protection_rule**
-> create_branch_protection_rule(repository, branch_protection_rule)
+# **create_branch_protection_rule_preflight**
+> create_branch_protection_rule_preflight(repository)
 
 
 
@@ -30,9 +31,8 @@ Method | HTTP request | Description
 ```python
 import time
 import lakefs_client
-from lakefs_client.api import repositories_api
+from lakefs_client.api import internal_api
 from lakefs_client.model.error import Error
-from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -77,17 +77,14 @@ configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
+    api_instance = internal_api.InternalApi(api_client)
     repository = "repository_example" # str | 
-    branch_protection_rule = BranchProtectionRule(
-        pattern="stable_*",
-    ) # BranchProtectionRule | 
 
     # example passing only required values which don't have defaults set
     try:
-        api_instance.create_branch_protection_rule(repository, branch_protection_rule)
+        api_instance.create_branch_protection_rule_preflight(repository)
     except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->create_branch_protection_rule: %s\n" % e)
+        print("Exception when calling InternalApi->create_branch_protection_rule_preflight: %s\n" % e)
 ```
 
 
@@ -96,7 +93,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
- **branch_protection_rule** | [**BranchProtectionRule**](BranchProtectionRule.md)|  |
 
 ### Return type
 
@@ -108,7 +104,7 @@ void (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 
@@ -116,142 +112,144 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | branch protection rule created successfully |  -  |
+**204** | User has permissions to create a branch protection rule in this repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **create_repository**
-> Repository create_repository(repository_creation)
-
-create repository
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import repositories_api
-from lakefs_client.model.repository import Repository
-from lakefs_client.model.error import Error
-from lakefs_client.model.repository_creation import RepositoryCreation
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
-    repository_creation = RepositoryCreation(
-        name="wr1c2v7s6djuy1zmeto",
-        storage_namespace="s3://example-bucket/",
-        default_branch="main",
-        sample_data=True,
-    ) # RepositoryCreation | 
-    bare = False # bool | If true, create a bare repository with no initial commit and branch (optional) if omitted the server will use the default value of False
-
-    # example passing only required values which don't have defaults set
-    try:
-        # create repository
-        api_response = api_instance.create_repository(repository_creation)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->create_repository: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
-    try:
-        # create repository
-        api_response = api_instance.create_repository(repository_creation, bare=bare)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->create_repository: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository_creation** | [**RepositoryCreation**](RepositoryCreation.md)|  |
- **bare** | **bool**| If true, create a bare repository with no initial commit and branch | [optional] if omitted the server will use the default value of False
-
-### Return type
-
-[**Repository**](Repository.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**201** | repository |  -  |
-**400** | Validation Error |  -  |
-**401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_branch_protection_rule**
-> delete_branch_protection_rule(repository, inline_object1)
+# **get_auth_capabilities**
+> AuthCapabilities get_auth_capabilities()
+
+list authentication capabilities supported
+
+### Example
 
 
+```python
+import time
+import lakefs_client
+from lakefs_client.api import internal_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.auth_capabilities import AuthCapabilities
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = internal_api.InternalApi(api_client)
+
+    # example, this endpoint has no required or optional parameters
+    try:
+        # list authentication capabilities supported
+        api_response = api_instance.get_auth_capabilities()
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling InternalApi->get_auth_capabilities: %s\n" % e)
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**AuthCapabilities**](AuthCapabilities.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | auth capabilities |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_setup_state**
+> SetupState get_setup_state()
+
+check if the lakeFS installation is already set up
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import internal_api
+from lakefs_client.model.error import Error
+from lakefs_client.model.setup_state import SetupState
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = internal_api.InternalApi(api_client)
+
+    # example, this endpoint has no required or optional parameters
+    try:
+        # check if the lakeFS installation is already set up
+        api_response = api_instance.get_setup_state()
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling InternalApi->get_setup_state: %s\n" % e)
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**SetupState**](SetupState.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | lakeFS setup state |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **post_stats_events**
+> post_stats_events(stats_events_list)
+
+post stats events, this endpoint is meant for internal use only
 
 ### Example
 
@@ -264,9 +262,9 @@ Name | Type | Description  | Notes
 ```python
 import time
 import lakefs_client
-from lakefs_client.api import repositories_api
+from lakefs_client.api import internal_api
 from lakefs_client.model.error import Error
-from lakefs_client.model.inline_object1 import InlineObject1
+from lakefs_client.model.stats_events_list import StatsEventsList
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -311,17 +309,23 @@ configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
-    repository = "repository_example" # str | 
-    inline_object1 = InlineObject1(
-        pattern="pattern_example",
-    ) # InlineObject1 | 
+    api_instance = internal_api.InternalApi(api_client)
+    stats_events_list = StatsEventsList(
+        events=[
+            StatsEvent(
+                _class="_class_example",
+                name="name_example",
+                count=1,
+            ),
+        ],
+    ) # StatsEventsList | 
 
     # example passing only required values which don't have defaults set
     try:
-        api_instance.delete_branch_protection_rule(repository, inline_object1)
+        # post stats events, this endpoint is meant for internal use only
+        api_instance.post_stats_events(stats_events_list)
     except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->delete_branch_protection_rule: %s\n" % e)
+        print("Exception when calling InternalApi->post_stats_events: %s\n" % e)
 ```
 
 
@@ -329,8 +333,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **repository** | **str**|  |
- **inline_object1** | [**InlineObject1**](InlineObject1.md)|  |
+ **stats_events_list** | [**StatsEventsList**](StatsEventsList.md)|  |
 
 ### Return type
 
@@ -350,17 +353,17 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | branch protection rule deleted successfully |  -  |
+**204** | reported successfully |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_repository**
-> delete_repository(repository)
+# **set_garbage_collection_rules_preflight**
+> set_garbage_collection_rules_preflight(repository)
 
-delete repository
+
 
 ### Example
 
@@ -373,7 +376,7 @@ delete repository
 ```python
 import time
 import lakefs_client
-from lakefs_client.api import repositories_api
+from lakefs_client.api import internal_api
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -419,15 +422,14 @@ configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
+    api_instance = internal_api.InternalApi(api_client)
     repository = "repository_example" # str | 
 
     # example passing only required values which don't have defaults set
     try:
-        # delete repository
-        api_instance.delete_repository(repository)
+        api_instance.set_garbage_collection_rules_preflight(repository)
     except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->delete_repository: %s\n" % e)
+        print("Exception when calling InternalApi->set_garbage_collection_rules_preflight: %s\n" % e)
 ```
 
 
@@ -455,17 +457,165 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | repository deleted successfully |  -  |
+**204** | User has permissions to set garbage collection rules on this repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_branch_protection_rules**
-> [BranchProtectionRule] get_branch_protection_rules(repository)
+# **setup**
+> CredentialsWithSecret setup(setup)
 
-get branch protection rules
+setup lakeFS and create a first user
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import internal_api
+from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
+from lakefs_client.model.setup import Setup
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = internal_api.InternalApi(api_client)
+    setup = Setup(
+        username="username_example",
+        key=AccessKeyCredentials(
+            access_key_id="AKIAIOSFODNN7EXAMPLE",
+            secret_access_key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        ),
+    ) # Setup | 
+
+    # example passing only required values which don't have defaults set
+    try:
+        # setup lakeFS and create a first user
+        api_response = api_instance.setup(setup)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling InternalApi->setup: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **setup** | [**Setup**](Setup.md)|  |
+
+### Return type
+
+[**CredentialsWithSecret**](CredentialsWithSecret.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | user created successfully |  -  |
+**400** | Bad Request |  -  |
+**409** | setup was already called |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **setup_comm_prefs**
+> setup_comm_prefs(comm_prefs_input)
+
+setup communications preferences
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import internal_api
+from lakefs_client.model.comm_prefs_input import CommPrefsInput
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = internal_api.InternalApi(api_client)
+    comm_prefs_input = CommPrefsInput(
+        email="email_example",
+        feature_updates=True,
+        security_updates=True,
+    ) # CommPrefsInput | 
+
+    # example passing only required values which don't have defaults set
+    try:
+        # setup communications preferences
+        api_instance.setup_comm_prefs(comm_prefs_input)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling InternalApi->setup_comm_prefs: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **comm_prefs_input** | [**CommPrefsInput**](CommPrefsInput.md)|  |
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | communication preferences saved successfully |  -  |
+**409** | setup was already completed |  -  |
+**412** | wrong setup state for this operation |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **update_branch_token**
+> update_branch_token(repository, branch, update_token)
+
+modify branch staging token
 
 ### Example
 
@@ -478,9 +628,9 @@ get branch protection rules
 ```python
 import time
 import lakefs_client
-from lakefs_client.api import repositories_api
+from lakefs_client.api import internal_api
+from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.error import Error
-from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -525,16 +675,19 @@ configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
+    api_instance = internal_api.InternalApi(api_client)
     repository = "repository_example" # str | 
+    branch = "branch_example" # str | 
+    update_token = UpdateToken(
+        staging_token="staging_token_example",
+    ) # UpdateToken | 
 
     # example passing only required values which don't have defaults set
     try:
-        # get branch protection rules
-        api_response = api_instance.get_branch_protection_rules(repository)
-        pprint(api_response)
+        # modify branch staging token
+        api_instance.update_branch_token(repository, branch, update_token)
     except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->get_branch_protection_rules: %s\n" % e)
+        print("Exception when calling InternalApi->update_branch_token: %s\n" % e)
 ```
 
 
@@ -543,10 +696,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
+ **branch** | **str**|  |
+ **update_token** | [**UpdateToken**](UpdateToken.md)|  |
 
 ### Return type
 
-[**[BranchProtectionRule]**](BranchProtectionRule.md)
+void (empty response body)
 
 ### Authorization
 
@@ -554,7 +709,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
@@ -562,17 +717,19 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | branch protection rules |  -  |
+**204** | branch updated successfully |  -  |
+**400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_repository**
-> Repository get_repository(repository)
+# **upload_object_preflight**
+> upload_object_preflight(repository, branch, path)
 
-get repository
+
 
 ### Example
 
@@ -585,8 +742,7 @@ get repository
 ```python
 import time
 import lakefs_client
-from lakefs_client.api import repositories_api
-from lakefs_client.model.repository import Repository
+from lakefs_client.api import internal_api
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -632,16 +788,16 @@ configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
 # Enter a context with an instance of the API client
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
+    api_instance = internal_api.InternalApi(api_client)
     repository = "repository_example" # str | 
+    branch = "branch_example" # str | 
+    path = "path_example" # str | relative to the branch
 
     # example passing only required values which don't have defaults set
     try:
-        # get repository
-        api_response = api_instance.get_repository(repository)
-        pprint(api_response)
+        api_instance.upload_object_preflight(repository, branch, path)
     except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->get_repository: %s\n" % e)
+        print("Exception when calling InternalApi->upload_object_preflight: %s\n" % e)
 ```
 
 
@@ -650,10 +806,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
+ **branch** | **str**|  |
+ **path** | **str**| relative to the branch |
 
 ### Return type
 
-[**Repository**](Repository.md)
+void (empty response body)
 
 ### Authorization
 
@@ -669,227 +827,10 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | repository |  -  |
+**204** | User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **get_repository_metadata**
-> RepositoryMetadata get_repository_metadata(repository)
-
-get repository metadata
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import repositories_api
-from lakefs_client.model.repository_metadata import RepositoryMetadata
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
-    repository = "repository_example" # str | 
-
-    # example passing only required values which don't have defaults set
-    try:
-        # get repository metadata
-        api_response = api_instance.get_repository_metadata(repository)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->get_repository_metadata: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **str**|  |
-
-### Return type
-
-[**RepositoryMetadata**](RepositoryMetadata.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | repository metadata |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **list_repositories**
-> RepositoryList list_repositories()
-
-list repositories
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import repositories_api
-from lakefs_client.model.repository_list import RepositoryList
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = repositories_api.RepositoriesApi(api_client)
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
-
-    # example passing only required values which don't have defaults set
-    # and optional values
-    try:
-        # list repositories
-        api_response = api_instance.list_repositories(prefix=prefix, after=after, amount=amount)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling RepositoriesApi->list_repositories: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
-
-### Return type
-
-[**RepositoryList**](RepositoryList.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | repository list |  -  |
-**401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -27,12 +27,14 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 
 
-import io.lakefs.clients.api.model.BranchProtectionRule;
+import io.lakefs.clients.api.model.AuthCapabilities;
+import io.lakefs.clients.api.model.CommPrefsInput;
+import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.InlineObject1;
-import io.lakefs.clients.api.model.Repository;
-import io.lakefs.clients.api.model.RepositoryCreation;
-import io.lakefs.clients.api.model.RepositoryList;
+import io.lakefs.clients.api.model.Setup;
+import io.lakefs.clients.api.model.SetupState;
+import io.lakefs.clients.api.model.StatsEventsList;
+import io.lakefs.clients.api.model.UpdateToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -40,14 +42,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RepositoriesApi {
+public class InternalApi {
     private ApiClient localVarApiClient;
 
-    public RepositoriesApi() {
+    public InternalApi() {
         this(Configuration.getDefaultApiClient());
     }
 
-    public RepositoriesApi(ApiClient apiClient) {
+    public InternalApi(ApiClient apiClient) {
         this.localVarApiClient = apiClient;
     }
 
@@ -60,27 +62,361 @@ public class RepositoriesApi {
     }
 
     /**
-     * Build call for createBranchProtectionRule
+     * Build call for createBranchProtectionRulePreflight
      * @param repository  (required)
-     * @param branchProtectionRule  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> User has permissions to create a branch protection rule in this repository </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createBranchProtectionRuleCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = branchProtectionRule;
+    public okhttp3.Call createBranchProtectionRulePreflightCall(String repository, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
+        String localVarPath = "/repositories/{repository}/branch_protection/set_allowed"
             .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call createBranchProtectionRulePreflightValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling createBranchProtectionRulePreflight(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = createBranchProtectionRulePreflightCall(repository, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to create a branch protection rule in this repository </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void createBranchProtectionRulePreflight(String repository) throws ApiException {
+        createBranchProtectionRulePreflightWithHttpInfo(repository);
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to create a branch protection rule in this repository </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> createBranchProtectionRulePreflightWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = createBranchProtectionRulePreflightValidateBeforeCall(repository, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     *  (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to create a branch protection rule in this repository </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call createBranchProtectionRulePreflightAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = createBranchProtectionRulePreflightValidateBeforeCall(repository, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for getAuthCapabilities
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getAuthCapabilitiesCall(final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/capabilities";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getAuthCapabilitiesValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        
+
+        okhttp3.Call localVarCall = getAuthCapabilitiesCall(_callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * list authentication capabilities supported
+     * 
+     * @return AuthCapabilities
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public AuthCapabilities getAuthCapabilities() throws ApiException {
+        ApiResponse<AuthCapabilities> localVarResp = getAuthCapabilitiesWithHttpInfo();
+        return localVarResp.getData();
+    }
+
+    /**
+     * list authentication capabilities supported
+     * 
+     * @return ApiResponse&lt;AuthCapabilities&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AuthCapabilities> getAuthCapabilitiesWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getAuthCapabilitiesValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<AuthCapabilities>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * list authentication capabilities supported (asynchronously)
+     * 
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> auth capabilities </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getAuthCapabilitiesAsync(final ApiCallback<AuthCapabilities> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getAuthCapabilitiesValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<AuthCapabilities>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for getSetupState
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getSetupStateCall(final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/setup_lakefs";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getSetupStateValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        
+
+        okhttp3.Call localVarCall = getSetupStateCall(_callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * check if the lakeFS installation is already set up
+     * 
+     * @return SetupState
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public SetupState getSetupState() throws ApiException {
+        ApiResponse<SetupState> localVarResp = getSetupStateWithHttpInfo();
+        return localVarResp.getData();
+    }
+
+    /**
+     * check if the lakeFS installation is already set up
+     * 
+     * @return ApiResponse&lt;SetupState&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<SetupState> getSetupStateWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getSetupStateValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<SetupState>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * check if the lakeFS installation is already set up (asynchronously)
+     * 
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS setup state </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getSetupStateAsync(final ApiCallback<SetupState> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getSetupStateValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<SetupState>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postStatsEvents
+     * @param statsEventsList  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postStatsEventsCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = statsEventsList;
+
+        // create path and map variables
+        String localVarPath = "/statistics";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -107,109 +443,100 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call createBranchProtectionRuleValidateBeforeCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call postStatsEventsValidateBeforeCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
         
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling createBranchProtectionRule(Async)");
-        }
-        
-        // verify the required parameter 'branchProtectionRule' is set
-        if (branchProtectionRule == null) {
-            throw new ApiException("Missing the required parameter 'branchProtectionRule' when calling createBranchProtectionRule(Async)");
+        // verify the required parameter 'statsEventsList' is set
+        if (statsEventsList == null) {
+            throw new ApiException("Missing the required parameter 'statsEventsList' when calling postStatsEvents(Async)");
         }
         
 
-        okhttp3.Call localVarCall = createBranchProtectionRuleCall(repository, branchProtectionRule, _callback);
+        okhttp3.Call localVarCall = postStatsEventsCall(statsEventsList, _callback);
         return localVarCall;
 
     }
 
     /**
+     * post stats events, this endpoint is meant for internal use only
      * 
-     * 
-     * @param repository  (required)
-     * @param branchProtectionRule  (required)
+     * @param statsEventsList  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void createBranchProtectionRule(String repository, BranchProtectionRule branchProtectionRule) throws ApiException {
-        createBranchProtectionRuleWithHttpInfo(repository, branchProtectionRule);
+    public void postStatsEvents(StatsEventsList statsEventsList) throws ApiException {
+        postStatsEventsWithHttpInfo(statsEventsList);
     }
 
     /**
+     * post stats events, this endpoint is meant for internal use only
      * 
-     * 
-     * @param repository  (required)
-     * @param branchProtectionRule  (required)
+     * @param statsEventsList  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> createBranchProtectionRuleWithHttpInfo(String repository, BranchProtectionRule branchProtectionRule) throws ApiException {
-        okhttp3.Call localVarCall = createBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, null);
+    public ApiResponse<Void> postStatsEventsWithHttpInfo(StatsEventsList statsEventsList) throws ApiException {
+        okhttp3.Call localVarCall = postStatsEventsValidateBeforeCall(statsEventsList, null);
         return localVarApiClient.execute(localVarCall);
     }
 
     /**
-     *  (asynchronously)
+     * post stats events, this endpoint is meant for internal use only (asynchronously)
      * 
-     * @param repository  (required)
-     * @param branchProtectionRule  (required)
+     * @param statsEventsList  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> reported successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createBranchProtectionRuleAsync(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call postStatsEventsAsync(StatsEventsList statsEventsList, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = createBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, _callback);
+        okhttp3.Call localVarCall = postStatsEventsValidateBeforeCall(statsEventsList, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
     /**
-     * Build call for createRepository
-     * @param repositoryCreation  (required)
-     * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
+     * Build call for setGarbageCollectionRulesPreflight
+     * @param repository  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createRepositoryCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = repositoryCreation;
+    public okhttp3.Call setGarbageCollectionRulesPreflightCall(String repository, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories";
+        String localVarPath = "/repositories/{repository}/gc/rules/set_allowed"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -217,9 +544,124 @@ public class RepositoriesApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-        if (bare != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("bare", bare));
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call setGarbageCollectionRulesPreflightValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling setGarbageCollectionRulesPreflight(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = setGarbageCollectionRulesPreflightCall(repository, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void setGarbageCollectionRulesPreflight(String repository) throws ApiException {
+        setGarbageCollectionRulesPreflightWithHttpInfo(repository);
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> setGarbageCollectionRulesPreflightWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = setGarbageCollectionRulesPreflightValidateBeforeCall(repository, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     *  (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call setGarbageCollectionRulesPreflightAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = setGarbageCollectionRulesPreflightValidateBeforeCall(repository, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for setup
+     * @param setup  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call setupCall(Setup setup, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = setup;
+
+        // create path and map variables
+        String localVarPath = "/setup_lakefs";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
         final String[] localVarAccepts = {
             "application/json"
@@ -235,116 +677,233 @@ public class RepositoriesApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] {  };
         return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call createRepositoryValidateBeforeCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call setupValidateBeforeCall(Setup setup, final ApiCallback _callback) throws ApiException {
         
-        // verify the required parameter 'repositoryCreation' is set
-        if (repositoryCreation == null) {
-            throw new ApiException("Missing the required parameter 'repositoryCreation' when calling createRepository(Async)");
+        // verify the required parameter 'setup' is set
+        if (setup == null) {
+            throw new ApiException("Missing the required parameter 'setup' when calling setup(Async)");
         }
         
 
-        okhttp3.Call localVarCall = createRepositoryCall(repositoryCreation, bare, _callback);
+        okhttp3.Call localVarCall = setupCall(setup, _callback);
         return localVarCall;
 
     }
 
     /**
-     * create repository
+     * setup lakeFS and create a first user
      * 
-     * @param repositoryCreation  (required)
-     * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
-     * @return Repository
+     * @param setup  (required)
+     * @return CredentialsWithSecret
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public Repository createRepository(RepositoryCreation repositoryCreation, Boolean bare) throws ApiException {
-        ApiResponse<Repository> localVarResp = createRepositoryWithHttpInfo(repositoryCreation, bare);
+    public CredentialsWithSecret setup(Setup setup) throws ApiException {
+        ApiResponse<CredentialsWithSecret> localVarResp = setupWithHttpInfo(setup);
         return localVarResp.getData();
     }
 
     /**
-     * create repository
+     * setup lakeFS and create a first user
      * 
-     * @param repositoryCreation  (required)
-     * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
-     * @return ApiResponse&lt;Repository&gt;
+     * @param setup  (required)
+     * @return ApiResponse&lt;CredentialsWithSecret&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Repository> createRepositoryWithHttpInfo(RepositoryCreation repositoryCreation, Boolean bare) throws ApiException {
-        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, null);
-        Type localVarReturnType = new TypeToken<Repository>(){}.getType();
+    public ApiResponse<CredentialsWithSecret> setupWithHttpInfo(Setup setup) throws ApiException {
+        okhttp3.Call localVarCall = setupValidateBeforeCall(setup, null);
+        Type localVarReturnType = new TypeToken<CredentialsWithSecret>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
-     * create repository (asynchronously)
+     * setup lakeFS and create a first user (asynchronously)
      * 
-     * @param repositoryCreation  (required)
-     * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
+     * @param setup  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> user created successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already called </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createRepositoryAsync(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback<Repository> _callback) throws ApiException {
+    public okhttp3.Call setupAsync(Setup setup, final ApiCallback<CredentialsWithSecret> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, _callback);
-        Type localVarReturnType = new TypeToken<Repository>(){}.getType();
+        okhttp3.Call localVarCall = setupValidateBeforeCall(setup, _callback);
+        Type localVarReturnType = new TypeToken<CredentialsWithSecret>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
     /**
-     * Build call for deleteBranchProtectionRule
-     * @param repository  (required)
-     * @param inlineObject1  (required)
+     * Build call for setupCommPrefs
+     * @param commPrefsInput  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> communication preferences saved successfully </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already completed </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> wrong setup state for this operation </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call setupCommPrefsCall(CommPrefsInput commPrefsInput, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = commPrefsInput;
+
+        // create path and map variables
+        String localVarPath = "/setup_comm_prefs";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call setupCommPrefsValidateBeforeCall(CommPrefsInput commPrefsInput, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'commPrefsInput' is set
+        if (commPrefsInput == null) {
+            throw new ApiException("Missing the required parameter 'commPrefsInput' when calling setupCommPrefs(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = setupCommPrefsCall(commPrefsInput, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * setup communications preferences
+     * 
+     * @param commPrefsInput  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> communication preferences saved successfully </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already completed </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> wrong setup state for this operation </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void setupCommPrefs(CommPrefsInput commPrefsInput) throws ApiException {
+        setupCommPrefsWithHttpInfo(commPrefsInput);
+    }
+
+    /**
+     * setup communications preferences
+     * 
+     * @param commPrefsInput  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> communication preferences saved successfully </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already completed </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> wrong setup state for this operation </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> setupCommPrefsWithHttpInfo(CommPrefsInput commPrefsInput) throws ApiException {
+        okhttp3.Call localVarCall = setupCommPrefsValidateBeforeCall(commPrefsInput, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * setup communications preferences (asynchronously)
+     * 
+     * @param commPrefsInput  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> communication preferences saved successfully </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> setup was already completed </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> wrong setup state for this operation </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call setupCommPrefsAsync(CommPrefsInput commPrefsInput, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = setupCommPrefsValidateBeforeCall(commPrefsInput, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for updateBranchToken
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param updateToken  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch updated successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteBranchProtectionRuleCall(String repository, InlineObject1 inlineObject1, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = inlineObject1;
+    public okhttp3.Call updateBranchTokenCall(String repository, String branch, UpdateToken updateToken, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = updateToken;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
+        String localVarPath = "/repositories/{repository}/branches/{branch}/update_token"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -367,24 +926,179 @@ public class RepositoriesApi {
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
         String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteBranchProtectionRuleValidateBeforeCall(String repository, InlineObject1 inlineObject1, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call updateBranchTokenValidateBeforeCall(String repository, String branch, UpdateToken updateToken, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling deleteBranchProtectionRule(Async)");
+            throw new ApiException("Missing the required parameter 'repository' when calling updateBranchToken(Async)");
         }
         
-        // verify the required parameter 'inlineObject1' is set
-        if (inlineObject1 == null) {
-            throw new ApiException("Missing the required parameter 'inlineObject1' when calling deleteBranchProtectionRule(Async)");
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling updateBranchToken(Async)");
+        }
+        
+        // verify the required parameter 'updateToken' is set
+        if (updateToken == null) {
+            throw new ApiException("Missing the required parameter 'updateToken' when calling updateBranchToken(Async)");
         }
         
 
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleCall(repository, inlineObject1, _callback);
+        okhttp3.Call localVarCall = updateBranchTokenCall(repository, branch, updateToken, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * modify branch staging token
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param updateToken  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch updated successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void updateBranchToken(String repository, String branch, UpdateToken updateToken) throws ApiException {
+        updateBranchTokenWithHttpInfo(repository, branch, updateToken);
+    }
+
+    /**
+     * modify branch staging token
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param updateToken  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch updated successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> updateBranchTokenWithHttpInfo(String repository, String branch, UpdateToken updateToken) throws ApiException {
+        okhttp3.Call localVarCall = updateBranchTokenValidateBeforeCall(repository, branch, updateToken, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * modify branch staging token (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param updateToken  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch updated successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call updateBranchTokenAsync(String repository, String branch, UpdateToken updateToken, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = updateBranchTokenValidateBeforeCall(repository, branch, updateToken, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for uploadObjectPreflight
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param path relative to the branch (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call uploadObjectPreflightCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects/stage_allowed"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (path != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call uploadObjectPreflightValidateBeforeCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling uploadObjectPreflight(Async)");
+        }
+        
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling uploadObjectPreflight(Async)");
+        }
+        
+        // verify the required parameter 'path' is set
+        if (path == null) {
+            throw new ApiException("Missing the required parameter 'path' when calling uploadObjectPreflight(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = uploadObjectPreflightCall(repository, branch, path, _callback);
         return localVarCall;
 
     }
@@ -393,39 +1107,43 @@ public class RepositoriesApi {
      * 
      * 
      * @param repository  (required)
-     * @param inlineObject1  (required)
+     * @param branch  (required)
+     * @param path relative to the branch (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void deleteBranchProtectionRule(String repository, InlineObject1 inlineObject1) throws ApiException {
-        deleteBranchProtectionRuleWithHttpInfo(repository, inlineObject1);
+    public void uploadObjectPreflight(String repository, String branch, String path) throws ApiException {
+        uploadObjectPreflightWithHttpInfo(repository, branch, path);
     }
 
     /**
      * 
      * 
      * @param repository  (required)
-     * @param inlineObject1  (required)
+     * @param branch  (required)
+     * @param path relative to the branch (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> deleteBranchProtectionRuleWithHttpInfo(String repository, InlineObject1 inlineObject1) throws ApiException {
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject1, null);
+    public ApiResponse<Void> uploadObjectPreflightWithHttpInfo(String repository, String branch, String path) throws ApiException {
+        okhttp3.Call localVarCall = uploadObjectPreflightValidateBeforeCall(repository, branch, path, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -433,649 +1151,25 @@ public class RepositoriesApi {
      *  (asynchronously)
      * 
      * @param repository  (required)
-     * @param inlineObject1  (required)
+     * @param branch  (required)
+     * @param path relative to the branch (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteBranchProtectionRuleAsync(String repository, InlineObject1 inlineObject1, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call uploadObjectPreflightAsync(String repository, String branch, String path, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject1, _callback);
+        okhttp3.Call localVarCall = uploadObjectPreflightValidateBeforeCall(repository, branch, path, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for deleteRepository
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository deleted successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call deleteRepositoryCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteRepositoryValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling deleteRepository(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = deleteRepositoryCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * delete repository
-     * 
-     * @param repository  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository deleted successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void deleteRepository(String repository) throws ApiException {
-        deleteRepositoryWithHttpInfo(repository);
-    }
-
-    /**
-     * delete repository
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository deleted successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> deleteRepositoryWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     * delete repository (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository deleted successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call deleteRepositoryAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for getBranchProtectionRules
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getBranchProtectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call getBranchProtectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling getBranchProtectionRules(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = getBranchProtectionRulesCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * get branch protection rules
-     * 
-     * @param repository  (required)
-     * @return List&lt;BranchProtectionRule&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public List<BranchProtectionRule> getBranchProtectionRules(String repository) throws ApiException {
-        ApiResponse<List<BranchProtectionRule>> localVarResp = getBranchProtectionRulesWithHttpInfo(repository);
-        return localVarResp.getData();
-    }
-
-    /**
-     * get branch protection rules
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;List&lt;BranchProtectionRule&gt;&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<List<BranchProtectionRule>> getBranchProtectionRulesWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = getBranchProtectionRulesValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<List<BranchProtectionRule>>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    /**
-     * get branch protection rules (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getBranchProtectionRulesAsync(String repository, final ApiCallback<List<BranchProtectionRule>> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = getBranchProtectionRulesValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<List<BranchProtectionRule>>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for getRepository
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getRepositoryCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call getRepositoryValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling getRepository(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = getRepositoryCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * get repository
-     * 
-     * @param repository  (required)
-     * @return Repository
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public Repository getRepository(String repository) throws ApiException {
-        ApiResponse<Repository> localVarResp = getRepositoryWithHttpInfo(repository);
-        return localVarResp.getData();
-    }
-
-    /**
-     * get repository
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;Repository&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Repository> getRepositoryWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = getRepositoryValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<Repository>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    /**
-     * get repository (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getRepositoryAsync(String repository, final ApiCallback<Repository> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = getRepositoryValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<Repository>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for getRepositoryMetadata
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository metadata </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getRepositoryMetadataCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/metadata"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call getRepositoryMetadataValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling getRepositoryMetadata(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = getRepositoryMetadataCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * get repository metadata
-     * 
-     * @param repository  (required)
-     * @return Map&lt;String, String&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository metadata </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public Map<String, String> getRepositoryMetadata(String repository) throws ApiException {
-        ApiResponse<Map<String, String>> localVarResp = getRepositoryMetadataWithHttpInfo(repository);
-        return localVarResp.getData();
-    }
-
-    /**
-     * get repository metadata
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;Map&lt;String, String&gt;&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository metadata </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Map<String, String>> getRepositoryMetadataWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = getRepositoryMetadataValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<Map<String, String>>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    /**
-     * get repository metadata (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository metadata </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getRepositoryMetadataAsync(String repository, final ApiCallback<Map<String, String>> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = getRepositoryMetadataValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<Map<String, String>>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for listRepositories
-     * @param prefix return items prefixed with this value (optional)
-     * @param after return items after this value (optional)
-     * @param amount how many items to return (optional, default to 100)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call listRepositoriesCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories";
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        if (prefix != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("prefix", prefix));
-        }
-
-        if (after != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("after", after));
-        }
-
-        if (amount != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
-        }
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call listRepositoriesValidateBeforeCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        
-
-        okhttp3.Call localVarCall = listRepositoriesCall(prefix, after, amount, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * list repositories
-     * 
-     * @param prefix return items prefixed with this value (optional)
-     * @param after return items after this value (optional)
-     * @param amount how many items to return (optional, default to 100)
-     * @return RepositoryList
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public RepositoryList listRepositories(String prefix, String after, Integer amount) throws ApiException {
-        ApiResponse<RepositoryList> localVarResp = listRepositoriesWithHttpInfo(prefix, after, amount);
-        return localVarResp.getData();
-    }
-
-    /**
-     * list repositories
-     * 
-     * @param prefix return items prefixed with this value (optional)
-     * @param after return items after this value (optional)
-     * @param amount how many items to return (optional, default to 100)
-     * @return ApiResponse&lt;RepositoryList&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<RepositoryList> listRepositoriesWithHttpInfo(String prefix, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = listRepositoriesValidateBeforeCall(prefix, after, amount, null);
-        Type localVarReturnType = new TypeToken<RepositoryList>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    /**
-     * list repositories (asynchronously)
-     * 
-     * @param prefix return items prefixed with this value (optional)
-     * @param after return items after this value (optional)
-     * @param amount how many items to return (optional, default to 100)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> repository list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call listRepositoriesAsync(String prefix, String after, Integer amount, final ApiCallback<RepositoryList> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = listRepositoriesValidateBeforeCall(prefix, after, amount, _callback);
-        Type localVarReturnType = new TypeToken<RepositoryList>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 }

@@ -14,12 +14,8 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.CommPrefsInput;
-import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
-import io.lakefs.clients.api.model.Setup;
-import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StorageConfig;
 import io.lakefs.clients.api.model.VersionConfig;
 import org.junit.Test;
@@ -68,20 +64,6 @@ public class ConfigApiTest {
     }
     
     /**
-     * check if the lakeFS installation is already set up
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getSetupStateTest() throws ApiException {
-                SetupState response = api.getSetupState();
-        // TODO: test validations
-    }
-    
-    /**
      * 
      *
      * retrieve lakeFS storage configuration
@@ -92,36 +74,6 @@ public class ConfigApiTest {
     @Test
     public void getStorageConfigTest() throws ApiException {
                 StorageConfig response = api.getStorageConfig();
-        // TODO: test validations
-    }
-    
-    /**
-     * setup lakeFS and create a first user
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setupTest() throws ApiException {
-        Setup setup = null;
-                CredentialsWithSecret response = api.setup(setup);
-        // TODO: test validations
-    }
-    
-    /**
-     * setup communications preferences
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setupCommPrefsTest() throws ApiException {
-        CommPrefsInput commPrefsInput = null;
-                api.setupCommPrefs(commPrefsInput);
         // TODO: test validations
     }
     

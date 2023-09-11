@@ -1470,7 +1470,7 @@ paths:
   /setup_comm_prefs:
     post:
       tags:
-        - config
+        - internal
       operationId: setupCommPrefs
       summary: setup communications preferences
       security: []
@@ -1501,7 +1501,7 @@ paths:
   /setup_lakefs:
     get:
       tags:
-        - config
+        - internal
       operationId: getSetupState
       summary: check if the lakeFS installation is already set up
       security: []
@@ -1516,7 +1516,7 @@ paths:
           $ref: "#/components/responses/ServerError"
     post:
       tags:
-        - config
+        - internal
       operationId: setup
       summary: setup lakeFS and create a first user
       security: []
@@ -1633,7 +1633,7 @@ paths:
   /auth/capabilities:
     get:
       tags:
-        - auth
+        - internal
       operationId: getAuthCapabilities
       summary: list authentication capabilities supported
       security: []
@@ -3620,7 +3620,7 @@ paths:
           type: string
     put:
       tags:
-        - staging
+        - internal
       operationId: updateBranchToken
       summary: modify branch staging token
       requestBody:
@@ -3663,7 +3663,7 @@ paths:
           type: string
     get:
       tags:
-        - objects
+        - internal
       operationId: uploadObjectPreflight
       responses:
         204:
@@ -4269,7 +4269,7 @@ paths:
           type: string
     get:
       tags:
-        - retention
+        - internal
       operationId: setGarbageCollectionRulesPreflight
       responses:
         204:
@@ -4412,7 +4412,7 @@ paths:
           type: string
     get:
       tags:
-        - repositories
+        - internal
       operationId: createBranchProtectionRulePreflight
       responses:
         204:
@@ -4593,7 +4593,7 @@ paths:
   /statistics:
     post:
       tags:
-        - statistics
+        - internal
       operationId: postStatsEvents
       summary: post stats events, this endpoint is meant for internal use only
       requestBody:
