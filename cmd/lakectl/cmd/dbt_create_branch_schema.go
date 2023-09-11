@@ -13,9 +13,10 @@ import (
 )
 
 var dbtCreateBranchSchema = &cobra.Command{
-	Use:     "create-branch-schema",
-	Short:   "Creates a new schema dedicated for branch and clones all dbt models to new schema",
-	Example: "lakectl dbt create-branch-schema --branch <branch-name>",
+	Use:        "create-branch-schema",
+	Short:      "Creates a new schema dedicated for branch and clones all dbt models to new schema",
+	Example:    "lakectl dbt create-branch-schema --branch <branch-name>",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		clientType := Must(cmd.Flags().GetString("from-client-type"))
 		branchName := Must(cmd.Flags().GetString("branch"))

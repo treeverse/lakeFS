@@ -10,8 +10,9 @@ import (
 )
 
 var metastoreCmd = &cobra.Command{
-	Use:   "metastore",
-	Short: "Manage metastore commands",
+	Use:        "metastore",
+	Short:      "Manage metastore commands",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 }
 
 func getMetastoreAwsConfig(c *Configuration) *aws.Config {

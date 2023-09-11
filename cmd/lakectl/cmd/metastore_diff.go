@@ -9,8 +9,9 @@ import (
 )
 
 var metastoreDiffCmd = &cobra.Command{
-	Use:   "diff",
-	Short: "Show column and partition differences between two tables",
+	Use:        "diff",
+	Short:      "Show column and partition differences between two tables",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		toAddress := Must(cmd.Flags().GetString("to-address"))
 		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
