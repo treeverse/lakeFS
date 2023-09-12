@@ -412,8 +412,10 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", time.Time{}, err
 	}
 
-	// in case the credentials can expire, we need to use the earliest expiry time
-	// we assume that session expiry window is used and adjust the expiry time accordingly
+	// In case the credentials can expire, we need to use the earliest expiry time
+	// we assume that session expiry window is used and adjust the expiry time accordingly.
+	// AWS Go SDK v2 stores the time to renew credentials in `CredentialsExpireAt`.  This is
+	// a.sessionExpiryWindow before actual credentials expiry.
 	if captureExpiresPresigner.CredentialsCanExpire && captureExpiresPresigner.CredentialsExpireAt.Before(expiry) {
 		expiry = captureExpiresPresigner.CredentialsExpireAt.Add(a.sessionExpiryWindow)
 	}
