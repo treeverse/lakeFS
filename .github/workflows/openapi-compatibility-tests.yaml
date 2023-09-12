@@ -1,0 +1,42 @@
+name: lakeFS OpenAPI Compatibility Tests
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+  push:
+    branches:
+      - master
+  workflow_dispatch: {}
+
+# These permissions are needed to interact with GitHub's OIDC Token endpoint.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  swagger-backward-compatibility:
+    name: Run Swagger compatibility tests
+    runs-on: ubuntu-20.04
+    steps:
+        - name: Check-out revision code
+          uses: actions/checkout@v4
+          with:
+            path: 'revision'
+        - name: Check-out base code
+          uses: actions/checkout@v4
+          with:
+            ref: 'master'
+            path: 'base'
+        - name: Running OpenAPI Spec check breaking action over swagger YAML
+          id: test_swagger_breaking_changes
+          uses: ./.github/actions/api/breaking-change
+          with:
+            base: base/api/swagger.yml
+            revision: revision/api/swagger.yml
+        - name: Running OpenAPI Spec check breaking action over authorization YAML
+          id: test_authorization_breaking_changes
+          uses: ./.github/actions/api/breaking-change
+          with:
+            base: base/api/authorization.yml
+            revision: revision/api/authorization.yml

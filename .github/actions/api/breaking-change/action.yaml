@@ -1,0 +1,24 @@
+name: 'OpenAPI Spec: check for breaking API changes'
+description: 'Detect breaking changes in OpenAPI Specification 3'
+inputs:
+  base:
+    description: 'Path of original OpenAPI spec in YAML or JSON format'
+    required: true
+  revision:
+    description: 'Path of revised OpenAPI spec in YAML or JSON format'
+    required: true
+  fail-on-diff:
+    description: 'Fail with exit code 1 if any breaking changes are found'
+    required: false
+    default: 'true'
+  include-checks:
+    description: 'Include any of the defined optional breaking changes checks'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.base }}
+    - ${{ inputs.revision }}
+    - ${{ inputs.fail-on-diff }}
+    - ${{ inputs.include-checks }}
