@@ -2395,25 +2395,6 @@ func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, bod
 	})
 }
 
-func (c *Controller) UpdateBranchToken(w http.ResponseWriter, r *http.Request, body apigen.UpdateBranchTokenJSONRequestBody, repository, branch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action: permissions.WriteObjectAction,
-			// This API writes an entire staging area to a branch and therefore requires permission to write to the entire repository space
-			Resource: permissions.ObjectArn(repository, "*"),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "update_branch_token", r, repository, branch, "")
-	err := c.Catalog.UpdateBranchToken(ctx, repository, branch, body.StagingToken)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.CommitJSONRequestBody, repository, branch string, params apigen.CommitParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

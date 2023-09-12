@@ -3821,68 +3821,6 @@ paths:
       - import
       x-contentType: application/json
       x-accepts: application/json
-  /repositories/{repository}/branches/{branch}/update_token:
-    put:
-      operationId: updateBranchToken
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: false
-        in: path
-        name: branch
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateToken'
-        required: true
-      responses:
-        "204":
-          description: branch updated successfully
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Forbidden
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: modify branch staging token
-      tags:
-      - internal
-      x-contentType: application/json
-      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/stage_allowed:
     get:
       operationId: uploadObjectPreflight
@@ -7390,8 +7328,6 @@ components:
           type: string
       type: object
     UpdateToken:
-      example:
-        staging_token: staging_token
       properties:
         staging_token:
           type: string

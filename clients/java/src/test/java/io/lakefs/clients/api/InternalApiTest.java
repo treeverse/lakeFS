@@ -21,7 +21,6 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StatsEventsList;
-import io.lakefs.clients.api.model.UpdateToken;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -139,23 +138,6 @@ public class InternalApiTest {
     public void setupCommPrefsTest() throws ApiException {
         CommPrefsInput commPrefsInput = null;
                 api.setupCommPrefs(commPrefsInput);
-        // TODO: test validations
-    }
-    
-    /**
-     * modify branch staging token
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void updateBranchTokenTest() throws ApiException {
-        String repository = null;
-        String branch = null;
-        UpdateToken updateToken = null;
-                api.updateBranchToken(repository, branch, updateToken);
         // TODO: test validations
     }
     

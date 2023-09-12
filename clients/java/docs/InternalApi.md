@@ -11,7 +11,6 @@ Method | HTTP request | Description
 [**setGarbageCollectionRulesPreflight**](InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 [**setup**](InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 [**setupCommPrefs**](InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
-[**updateBranchToken**](InternalApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
 [**uploadObjectPreflight**](InternalApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 
 
@@ -523,102 +522,6 @@ No authorization required
 **200** | communication preferences saved successfully |  -  |
 **409** | setup was already completed |  -  |
 **412** | wrong setup state for this operation |  -  |
-**0** | Internal Server Error |  -  |
-
-<a name="updateBranchToken"></a>
-# **updateBranchToken**
-> updateBranchToken(repository, branch, updateToken)
-
-modify branch staging token
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.InternalApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-    
-    // Configure HTTP basic authorization: basic_auth
-    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-    basic_auth.setUsername("YOUR USERNAME");
-    basic_auth.setPassword("YOUR PASSWORD");
-
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
-    // Configure API key authorization: saml_auth
-    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
-    saml_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //saml_auth.setApiKeyPrefix("Token");
-
-    InternalApi apiInstance = new InternalApi(defaultClient);
-    String repository = "repository_example"; // String | 
-    String branch = "branch_example"; // String | 
-    UpdateToken updateToken = new UpdateToken(); // UpdateToken | 
-    try {
-      apiInstance.updateBranchToken(repository, branch, updateToken);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling InternalApi#updateBranchToken");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**|  |
- **updateToken** | [**UpdateToken**](UpdateToken.md)|  |
-
-### Return type
-
-null (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**204** | branch updated successfully |  -  |
-**400** | Validation Error |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="uploadObjectPreflight"></a>
