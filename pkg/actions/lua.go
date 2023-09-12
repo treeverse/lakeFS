@@ -67,7 +67,7 @@ func injectHookContext(l *lua.State, ctx context.Context, user *model.User, endp
 	luautil.DeepPush(l, args)
 	l.SetGlobal("args")
 	lakefs.OpenClient(l, ctx, user, endpoint)
-	catalogexport.OpenLuaPackage(l, ctx, user, endpoint)
+	catalogexport.OpenLuaPackage(l, ctx)
 }
 
 type loggingBuffer struct {

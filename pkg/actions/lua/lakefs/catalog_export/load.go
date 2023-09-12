@@ -4,22 +4,23 @@ import (
 	"context"
 	"embed"
 	"io/fs"
-	"net/http"
 
 	"github.com/Shopify/go-lua"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 )
 
 //go:embed *.lua
 var modulePath embed.FS
 
-func OpenLuaPackage(l *lua.State, ctx context.Context, user *model.User, server *http.Server) {
-	loadLuaAsPackage(l, ctx, "lakefs/catalog_export/common", "common.lua", user, server)
-	loadLuaAsPackage(l, ctx, "lakefs/catalog_export/table_extractor", "table_extractor.lua", user, server)
-	loadLuaAsPackage(l, ctx, "lakefs/catalog_export", "lib.lua", user, server)
+// OpenLuaPackage load lua code as a package in the runtime
+func OpenLuaPackage(l *lua.State, ctx context.Context) {
+	// order here matters each when packages rely on each other
+	loadLuaAsPackage(l, ctx, "lakefs/catalog_export/common", "common.lua")
+	loadLuaAsPackage(l, ctx, "lakefs/catalog_export/table_extractor", "table_extractor.lua")
+	// lib.lua is high level facade for users
+	loadLuaAsPackage(l, ctx, "lakefs/catalog_export", "lib.lua")
 }
 
-func loadLuaAsPackage(l *lua.State, ctx context.Context, importAlias, scriptName string, user *model.User, server *http.Server) {
+func loadLuaAsPackage(l *lua.State, ctx context.Context, importAlias, scriptName string) {
 	lua.Require(l, importAlias, func(l *lua.State) int {
 		data, err := fs.ReadFile(modulePath, scriptName)
 		if err != nil {
@@ -31,7 +32,6 @@ func loadLuaAsPackage(l *lua.State, ctx context.Context, importAlias, scriptName
 			panic("unreachable")
 		}
 		return 1
-		// TODO(isan) we want it global or not? (the `true`)
 	}, true)
 	l.Pop(1)
 }

@@ -8,7 +8,6 @@ function lakefs_object_it(lakefs_client, repo_id, commit_id, after, prefix, page
         end
         local code, resp = lakefs_client.list_objects(repo_id, commit_id, next_offset, prefix, delimiter, page_size)
         if code ~= 200 then
-            -- TODO(isan) return error to the caller
             error("lakeFS: could not list objects in: " .. prefix .. ", error: " .. resp.message)
         end
         local objects = resp.results
@@ -21,4 +20,5 @@ end
 return {
     lakefs_object_it=lakefs_object_it,
     SHORT_DIGEST_LEN=6,
+    LAKEFS_DEFAULT_PAGE_SIZE=30,
 }
