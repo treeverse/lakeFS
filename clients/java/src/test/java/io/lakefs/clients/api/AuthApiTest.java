@@ -15,7 +15,6 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.ACL;
-import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.Credentials;
 import io.lakefs.clients.api.model.CredentialsList;
@@ -280,20 +279,6 @@ public class AuthApiTest {
     public void forgotPasswordTest() throws ApiException {
         ForgotPasswordRequest forgotPasswordRequest = null;
                 api.forgotPassword(forgotPasswordRequest);
-        // TODO: test validations
-    }
-    
-    /**
-     * list authentication capabilities supported
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getAuthCapabilitiesTest() throws ApiException {
-                AuthCapabilities response = api.getAuthCapabilities();
         // TODO: test validations
     }
     

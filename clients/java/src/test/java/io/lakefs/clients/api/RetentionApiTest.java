@@ -115,19 +115,4 @@ public class RetentionApiTest {
         // TODO: test validations
     }
     
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setGarbageCollectionRulesPreflightTest() throws ApiException {
-        String repository = null;
-                api.setGarbageCollectionRulesPreflight(repository);
-        // TODO: test validations
-    }
-    
 }

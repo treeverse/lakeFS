@@ -1,19 +1,23 @@
-# RetentionApi
+# InternalApi
 
 All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**deleteGarbageCollectionRules**](RetentionApi.md#deleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
-[**getGarbageCollectionRules**](RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
-[**prepareGarbageCollectionCommits**](RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
-[**prepareGarbageCollectionUncommitted**](RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
-[**setGarbageCollectionRules**](RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
+[**createBranchProtectionRulePreflight**](InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
+[**getAuthCapabilities**](InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+[**getSetupState**](InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+[**postStatsEvents**](InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+[**setGarbageCollectionRulesPreflight**](InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+[**setup**](InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+[**setupCommPrefs**](InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
+[**updateBranchToken**](InternalApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
+[**uploadObjectPreflight**](InternalApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 
 
-<a name="deleteGarbageCollectionRules"></a>
-# **deleteGarbageCollectionRules**
-> deleteGarbageCollectionRules(repository)
+<a name="createBranchProtectionRulePreflight"></a>
+# **createBranchProtectionRulePreflight**
+> createBranchProtectionRulePreflight(repository)
 
 
 
@@ -25,7 +29,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.Configuration;
 import io.lakefs.clients.api.auth.*;
 import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.RetentionApi;
+import io.lakefs.clients.api.InternalApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -59,12 +63,12 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
-    RetentionApi apiInstance = new RetentionApi(defaultClient);
+    InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
     try {
-      apiInstance.deleteGarbageCollectionRules(repository);
+      apiInstance.createBranchProtectionRulePreflight(repository);
     } catch (ApiException e) {
-      System.err.println("Exception when calling RetentionApi#deleteGarbageCollectionRules");
+      System.err.println("Exception when calling InternalApi#createBranchProtectionRulePreflight");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -96,16 +100,131 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | deleted garbage collection rules successfully |  -  |
+**204** | User has permissions to create a branch protection rule in this repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **0** | Internal Server Error |  -  |
 
-<a name="getGarbageCollectionRules"></a>
-# **getGarbageCollectionRules**
-> GarbageCollectionRules getGarbageCollectionRules(repository)
+<a name="getAuthCapabilities"></a>
+# **getAuthCapabilities**
+> AuthCapabilities getAuthCapabilities()
 
+list authentication capabilities supported
 
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    try {
+      AuthCapabilities result = apiInstance.getAuthCapabilities();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#getAuthCapabilities");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**AuthCapabilities**](AuthCapabilities.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | auth capabilities |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="getSetupState"></a>
+# **getSetupState**
+> SetupState getSetupState()
+
+check if the lakeFS installation is already set up
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    try {
+      SetupState result = apiInstance.getSetupState();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#getSetupState");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**SetupState**](SetupState.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | lakeFS setup state |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="postStatsEvents"></a>
+# **postStatsEvents**
+> postStatsEvents(statsEventsList)
+
+post stats events, this endpoint is meant for internal use only
 
 ### Example
 ```java
@@ -115,7 +234,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.Configuration;
 import io.lakefs.clients.api.auth.*;
 import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.RetentionApi;
+import io.lakefs.clients.api.InternalApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -149,13 +268,102 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
-    RetentionApi apiInstance = new RetentionApi(defaultClient);
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    StatsEventsList statsEventsList = new StatsEventsList(); // StatsEventsList | 
+    try {
+      apiInstance.postStatsEvents(statsEventsList);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#postStatsEvents");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **statsEventsList** | [**StatsEventsList**](StatsEventsList.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | reported successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="setGarbageCollectionRulesPreflight"></a>
+# **setGarbageCollectionRulesPreflight**
+> setGarbageCollectionRulesPreflight(repository)
+
+
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
     try {
-      GarbageCollectionRules result = apiInstance.getGarbageCollectionRules(repository);
-      System.out.println(result);
+      apiInstance.setGarbageCollectionRulesPreflight(repository);
     } catch (ApiException e) {
-      System.err.println("Exception when calling RetentionApi#getGarbageCollectionRules");
+      System.err.println("Exception when calling InternalApi#setGarbageCollectionRulesPreflight");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -173,7 +381,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**GarbageCollectionRules**](GarbageCollectionRules.md)
+null (empty response body)
 
 ### Authorization
 
@@ -187,16 +395,141 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | gc rule list |  -  |
+**204** | User has permissions to set garbage collection rules on this repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
-<a name="prepareGarbageCollectionCommits"></a>
-# **prepareGarbageCollectionCommits**
-> GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest)
+<a name="setup"></a>
+# **setup**
+> CredentialsWithSecret setup(setup)
 
-save lists of active and expired commits for garbage collection
+setup lakeFS and create a first user
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    Setup setup = new Setup(); // Setup | 
+    try {
+      CredentialsWithSecret result = apiInstance.setup(setup);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#setup");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **setup** | [**Setup**](Setup.md)|  |
+
+### Return type
+
+[**CredentialsWithSecret**](CredentialsWithSecret.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | user created successfully |  -  |
+**400** | Bad Request |  -  |
+**409** | setup was already called |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="setupCommPrefs"></a>
+# **setupCommPrefs**
+> setupCommPrefs(commPrefsInput)
+
+setup communications preferences
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    CommPrefsInput commPrefsInput = new CommPrefsInput(); // CommPrefsInput | 
+    try {
+      apiInstance.setupCommPrefs(commPrefsInput);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#setupCommPrefs");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **commPrefsInput** | [**CommPrefsInput**](CommPrefsInput.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | communication preferences saved successfully |  -  |
+**409** | setup was already completed |  -  |
+**412** | wrong setup state for this operation |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="updateBranchToken"></a>
+# **updateBranchToken**
+> updateBranchToken(repository, branch, updateToken)
+
+modify branch staging token
 
 ### Example
 ```java
@@ -206,7 +539,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.Configuration;
 import io.lakefs.clients.api.auth.*;
 import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.RetentionApi;
+import io.lakefs.clients.api.InternalApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -240,14 +573,14 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
-    RetentionApi apiInstance = new RetentionApi(defaultClient);
+    InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
-    GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = new GarbageCollectionPrepareRequest(); // GarbageCollectionPrepareRequest | 
+    String branch = "branch_example"; // String | 
+    UpdateToken updateToken = new UpdateToken(); // UpdateToken | 
     try {
-      GarbageCollectionPrepareResponse result = apiInstance.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
-      System.out.println(result);
+      apiInstance.updateBranchToken(repository, branch, updateToken);
     } catch (ApiException e) {
-      System.err.println("Exception when calling RetentionApi#prepareGarbageCollectionCommits");
+      System.err.println("Exception when calling InternalApi#updateBranchToken");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -262,11 +595,12 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
- **garbageCollectionPrepareRequest** | [**GarbageCollectionPrepareRequest**](GarbageCollectionPrepareRequest.md)|  | [optional]
+ **branch** | **String**|  |
+ **updateToken** | [**UpdateToken**](UpdateToken.md)|  |
 
 ### Return type
 
-[**GarbageCollectionPrepareResponse**](GarbageCollectionPrepareResponse.md)
+null (empty response body)
 
 ### Authorization
 
@@ -280,108 +614,16 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | paths to commit dataset |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
-
-<a name="prepareGarbageCollectionUncommitted"></a>
-# **prepareGarbageCollectionUncommitted**
-> PrepareGCUncommittedResponse prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest)
-
-save repository uncommitted metadata for garbage collection
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.RetentionApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-    
-    // Configure HTTP basic authorization: basic_auth
-    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-    basic_auth.setUsername("YOUR USERNAME");
-    basic_auth.setPassword("YOUR PASSWORD");
-
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
-    // Configure API key authorization: saml_auth
-    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
-    saml_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //saml_auth.setApiKeyPrefix("Token");
-
-    RetentionApi apiInstance = new RetentionApi(defaultClient);
-    String repository = "repository_example"; // String | 
-    PrepareGCUncommittedRequest prepareGCUncommittedRequest = new PrepareGCUncommittedRequest(); // PrepareGCUncommittedRequest | 
-    try {
-      PrepareGCUncommittedResponse result = apiInstance.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling RetentionApi#prepareGarbageCollectionUncommitted");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **prepareGCUncommittedRequest** | [**PrepareGCUncommittedRequest**](PrepareGCUncommittedRequest.md)|  | [optional]
-
-### Return type
-
-[**PrepareGCUncommittedResponse**](PrepareGCUncommittedResponse.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**201** | paths to commit dataset |  -  |
+**204** | branch updated successfully |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
-<a name="setGarbageCollectionRules"></a>
-# **setGarbageCollectionRules**
-> setGarbageCollectionRules(repository, garbageCollectionRules)
+<a name="uploadObjectPreflight"></a>
+# **uploadObjectPreflight**
+> uploadObjectPreflight(repository, branch, path)
 
 
 
@@ -393,7 +635,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.Configuration;
 import io.lakefs.clients.api.auth.*;
 import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.RetentionApi;
+import io.lakefs.clients.api.InternalApi;
 
 public class Example {
   public static void main(String[] args) {
@@ -427,13 +669,14 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
-    RetentionApi apiInstance = new RetentionApi(defaultClient);
+    InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
-    GarbageCollectionRules garbageCollectionRules = new GarbageCollectionRules(); // GarbageCollectionRules | 
+    String branch = "branch_example"; // String | 
+    String path = "path_example"; // String | relative to the branch
     try {
-      apiInstance.setGarbageCollectionRules(repository, garbageCollectionRules);
+      apiInstance.uploadObjectPreflight(repository, branch, path);
     } catch (ApiException e) {
-      System.err.println("Exception when calling RetentionApi#setGarbageCollectionRules");
+      System.err.println("Exception when calling InternalApi#uploadObjectPreflight");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -448,7 +691,8 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
- **garbageCollectionRules** | [**GarbageCollectionRules**](GarbageCollectionRules.md)|  |
+ **branch** | **String**|  |
+ **path** | **String**| relative to the branch |
 
 ### Return type
 
@@ -460,14 +704,15 @@ null (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | set garbage collection rules successfully |  -  |
+**204** | User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |
 
