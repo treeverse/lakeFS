@@ -44,10 +44,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -204,8 +202,6 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		templater := templater.NewService(templates.Content, cfg, authService)
-
 		actionsService := actions.NewService(
 			ctx,
 			actionsStore,
@@ -254,26 +250,7 @@ var runCmd = &cobra.Command{
 		defer closeOtfService()
 
 		// start API server
-		apiHandler := api.Serve(
-			cfg,
-			c,
-			middlewareAuthenticator,
-			authService,
-			blockStore,
-			authMetadataManager,
-			migrator,
-			bufferedCollector,
-			cloudMetadataProvider,
-			actionsService,
-			auditChecker,
-			logger.WithField("service", "api_gateway"),
-			emailer,
-			templater,
-			cfg.Gateways.S3.DomainNames,
-			cfg.UISnippets(),
-			upload.DefaultPathProvider,
-			otfDiffService,
-		)
+		apiHandler := api.Serve(cfg, c, middlewareAuthenticator, authService, blockStore, authMetadataManager, migrator, bufferedCollector, cloudMetadataProvider, actionsService, auditChecker, logger.WithField("service", "api_gateway"), emailer, cfg.Gateways.S3.DomainNames, cfg.UISnippets(), upload.DefaultPathProvider, otfDiffService)
 
 		// init gateway server
 		var s3FallbackURL *url.URL
