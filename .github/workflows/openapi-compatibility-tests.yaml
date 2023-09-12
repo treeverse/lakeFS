@@ -2,8 +2,6 @@ name: lakeFS OpenAPI Compatibility Tests
 
 on:
   pull_request:
-    paths:
-      - "api/**"
   push:
     branches:
       - master
