@@ -19,8 +19,6 @@ jobs:
     steps:
         - name: Check-out revision code
           uses: actions/checkout@v4
-          with:
-            path: 'revision'
         - name: Check-out base code
           uses: actions/checkout@v4
           with:
@@ -31,10 +29,10 @@ jobs:
           uses: ./.github/actions/api/breaking-change
           with:
             base: base/api/swagger.yml
-            revision: revision/api/swagger.yml
+            revision: api/swagger.yml
         - name: Running OpenAPI Spec check breaking action over authorization YAML
           id: test_authorization_breaking_changes
           uses: ./.github/actions/api/breaking-change
           with:
             base: base/api/authorization.yml
-            revision: revision/api/authorization.yml
+            revision: api/authorization.yml
