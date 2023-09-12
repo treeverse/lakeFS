@@ -7,7 +7,7 @@ redirect_from: /using/aws_cli.html
 
 # Using lakeFS with AWS CLI
 {: .no_toc}
-Since lakeFS exposes an S3-compatible API, you can use te [AWS S3 CLI](https://docs.aws.amazon.com/cli/latest/reference/s3/) to list, copy or delete objects in lakeFS.
+lakeFS exposes an S3-compatible API, so you can use the [AWS S3 CLI](https://docs.aws.amazon.com/cli/latest/reference/s3/) to list, copy or delete objects in lakeFS.
 {:.pb-5 }
 
 ## Table of contents
