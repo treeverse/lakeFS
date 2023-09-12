@@ -147,6 +147,9 @@ func BenchmarkDrivers(b *testing.B) {
 
 	dynamoStore := testutil.GetDynamoDBProd(ctx, b)
 	postgresStore, err := kv.Open(ctx, kvparams.Config{Type: postgres.DriverName, Postgres: &kvparams.Postgres{ConnectionString: databaseURI}})
+	if err != nil {
+		b.Fatal("failed to open postgres store", err)
+	}
 	defer postgresStore.Close()
 
 	tests := []struct {
