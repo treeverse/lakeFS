@@ -346,7 +346,7 @@ func (s *BufferedCollector) Stop() {
 		return
 	}
 
-	// wait until no new  in-flight requests
+	// wait until no new in-flight requests
 	s.inFlight.Wait()
 
 	// close update channel as no more updates will arrive,
@@ -407,15 +407,16 @@ func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featu
 	}
 	ctx := context.Background()
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
-	eventName := "update_comm_prefs_success"
+	ev := Event{
+		Class: "global",
+	}
 	if err != nil {
 		s.log.WithError(err).Info("could not update comm prefs")
-		eventName = "update_comm_prefs_failed"
+		ev.Name = "update_comm_prefs_failed"
+	} else {
+		ev.Name = "update_comm_prefs_success"
 	}
-	s.CollectEvent(Event{
-		Class: "global",
-		Name:  eventName,
-	})
+	s.CollectEvent(ev)
 }
 
 func (s *BufferedCollector) SetInstallationID(installationID string) {

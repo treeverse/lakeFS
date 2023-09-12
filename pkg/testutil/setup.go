@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -33,7 +33,7 @@ type SetupTestingEnvParams struct {
 	AdminSecretAccessKey string
 }
 
-func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.ClientWithResponsesInterface, *s3.S3, string) {
+func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.ClientWithResponsesInterface, *s3.Client, string) {
 	logger := logging.ContextUnavailable()
 	viper.AddConfigPath(".")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
@@ -112,35 +112,38 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		viper.Set("secret_access_key", params.AdminSecretAccessKey)
 	}
 
-	client, err = NewClientFromCreds(logger, viper.GetString("access_key_id"), viper.GetString("secret_access_key"), endpointURL)
+	key := viper.GetString("access_key_id")
+	secret := viper.GetString("secret_access_key")
+	client, err = NewClientFromCreds(logger, key, secret, endpointURL)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize API client with security provider")
 	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
-	key := viper.GetString("access_key_id")
-	secret := viper.GetString("secret_access_key")
-	svc := SetupTestS3Client(s3Endpoint, key, secret)
+	svc, err := SetupTestS3Client(s3Endpoint, key, secret)
+	if err != nil {
+		logger.WithError(err).Fatal("could not initialize S3 client")
+	}
 	return logger, client, svc, endpointURL
 }
 
-func SetupTestS3Client(endpoint, key, secret string) *s3.S3 {
-	awsSession := session.Must(session.NewSession())
+func SetupTestS3Client(endpoint, key, secret string) (*s3.Client, error) {
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = "http://" + endpoint
+	}
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion("us-east-1"),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(key, secret, "")),
+	)
+	if err != nil {
+		return nil, err
+	}
 	forcePathStyleS3Client := viper.GetBool("force_path_style")
-	svc := s3.New(awsSession,
-		aws.NewConfig().
-			WithRegion("us-east-1").
-			WithEndpoint(endpoint).
-			WithS3ForcePathStyle(forcePathStyleS3Client).
-			WithDisableSSL(true).
-			WithCredentials(credentials.NewCredentials(
-				&credentials.StaticProvider{
-					Value: credentials.Value{
-						AccessKeyID:     key,
-						SecretAccessKey: secret,
-					},
-				})))
-	return svc
+	svc := s3.NewFromConfig(cfg, func(options *s3.Options) {
+		options.BaseEndpoint = aws.String(endpoint)
+		options.UsePathStyle = forcePathStyleS3Client
+	})
+	return svc, nil
 }
 
 // ParseEndpointURL parses the given endpoint string

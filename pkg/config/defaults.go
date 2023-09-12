@@ -62,8 +62,6 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
-	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk
-	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", time.Second) // or 1 seconds, whatever comes first
 	viper.SetDefault("blockstore.s3.max_retries", 5)
 	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
 	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)

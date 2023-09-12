@@ -3739,6 +3739,10 @@ paths:
                   description: Only a single file per upload which must be named "content".
                   type: string
                   format: binary
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
 
       parameters:
         - in: query

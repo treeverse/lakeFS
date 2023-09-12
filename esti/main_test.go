@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -34,7 +34,7 @@ var (
 	logger      logging.Logger
 	client      apigen.ClientWithResponsesInterface
 	endpointURL string
-	svc         *s3.S3
+	svc         *s3.Client
 	server      *webhookServer
 
 	testDirectDataAccess = Booleans{false}
@@ -288,13 +288,12 @@ func TestMain(m *testing.M) {
 
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {
-		logger.
-			WithFields(logging.Fields{
-				"repositories": repositoriesToKeep,
-				"groups":       groupsToKeep,
-				"users":        usersToKeep,
-				"policies":     policiesToKeep,
-			}).Info("Deleting repositories, groups, users and policies before Esti run")
+		logger.WithFields(logging.Fields{
+			"repositories": repositoriesToKeep,
+			"groups":       groupsToKeep,
+			"users":        usersToKeep,
+			"policies":     policiesToKeep,
+		}).Info("Deleting repositories, groups, users and policies before Esti run")
 		err := envCleanup(client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
 		if err != nil {
 			logger.WithError(err).Fatal("env cleanup")

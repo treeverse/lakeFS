@@ -1,26 +1,27 @@
 package aws
 
 import (
+	"context"
 	"crypto/md5" //nolint:gosec
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/sts"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type MetadataProvider struct {
 	logger    logging.Logger
-	stsClient *sts.STS
+	stsClient *sts.Client
 }
 
-func NewMetadataProvider(logger logging.Logger, awsConfig *aws.Config) *MetadataProvider {
+func NewMetadataProvider(logger logging.Logger, params params.S3) (*MetadataProvider, error) {
 	// set up a session with a shorter timeout and no retries
 	const sessionMaxRetries = 0 // max number of retries on the client operation
 
@@ -28,23 +29,38 @@ func NewMetadataProvider(logger logging.Logger, awsConfig *aws.Config) *Metadata
 	// because the service can be inaccessible from networks
 	// which don't have an internet connection
 	const sessionTimeout = 5 * time.Second
-	metaConfig := &aws.Config{
-		HTTPClient: &http.Client{
-			Timeout: sessionTimeout,
-		},
-		MaxRetries: aws.Int(sessionMaxRetries),
+	/// params
+	var opts []func(*config.LoadOptions) error
+	if params.Region != "" {
+		opts = append(opts, config.WithRegion(params.Region))
+	}
+	if params.Profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(params.Profile))
+	}
+	if params.CredentialsFile != "" {
+		opts = append(opts, config.WithSharedCredentialsFiles([]string{params.CredentialsFile}))
+	}
+	if params.Credentials.AccessKeyID != "" {
+		opts = append(opts, config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				params.Credentials.AccessKeyID,
+				params.Credentials.SecretAccessKey,
+				params.Credentials.SessionToken,
+			),
+		))
 	}
 
-	var stsClient *sts.STS
-	sess, err := session.NewSession(awsConfig.Copy(metaConfig))
+	cfg, err := config.LoadDefaultConfig(context.Background(), opts...)
 	if err != nil {
-		logger.WithError(err).Warn("Failed to create AWS session for BI")
-	} else {
-		sess.ClientConfig(s3.ServiceName)
-		stsClient = sts.New(sess)
+		return nil, err
 	}
 
-	return &MetadataProvider{logger: logger, stsClient: stsClient}
+	stsClient := sts.NewFromConfig(cfg, func(options *sts.Options) {
+		options.RetryMaxAttempts = sessionMaxRetries
+		options.HTTPClient = awshttp.NewBuildableClient().
+			WithTimeout(sessionTimeout)
+	})
+	return &MetadataProvider{logger: logger, stsClient: stsClient}, nil
 }
 
 func (m *MetadataProvider) GetMetadata() map[string]string {
@@ -58,8 +74,9 @@ func (m *MetadataProvider) GetMetadata() map[string]string {
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = maxInterval
 	bo.MaxElapsedTime = maxElapsedTime
+	ctx := context.Background()
 	identity, err := backoff.RetryWithData(func() (*sts.GetCallerIdentityOutput, error) {
-		identity, err := m.stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+		identity, err := m.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 		if err != nil {
 			m.logger.WithError(err).Warn("Tried to to get AWS account ID for BI")
 			return nil, err

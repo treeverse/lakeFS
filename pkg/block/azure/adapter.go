@@ -143,10 +143,6 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 	return ResolveBlobURLInfoFromURL(parsedKey)
 }
 
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
-}
-
 func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamOptions {
 	res := azblob.UploadStreamOptions{}
 	if opts.StorageClass == nil {

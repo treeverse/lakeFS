@@ -20,8 +20,8 @@ func TestCommitSingle(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, _, repo := setupTest(t)
 			defer tearDownTest(repo)
-			objPath := "1.txt"
 
+			const objPath = "1.txt"
 			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
 			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 				Message: "singleCommit",
@@ -36,7 +36,7 @@ func TestCommitSingle(t *testing.T) {
 				"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
 
 			body := string(getObjResp.Body)
-			require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
+			require.Equalf(t, objContent, body, "path: %s, expected: %s, actual:%s", objPath, objContent, body)
 		})
 	}
 }

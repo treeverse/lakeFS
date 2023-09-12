@@ -2,20 +2,23 @@ package aws
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/Shopify/go-lua"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
+
+var errDeleteObject = errors.New("delete object failed")
 
 func Open(l *lua.State, ctx context.Context) {
 	open := func(l *lua.State) int {
@@ -68,17 +71,17 @@ type S3Client struct {
 	ctx             context.Context
 }
 
-func (c *S3Client) client() *s3.S3 {
-	cfg := &aws.Config{}
-	if c.Region != "" {
-		cfg.Region = aws.String(c.Region)
+func (c *S3Client) client() *s3.Client {
+	cfg, err := config.LoadDefaultConfig(c.ctx,
+		config.WithRegion(c.Region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, "")),
+	)
+	if err != nil {
+		panic(err)
 	}
-	if c.Endpoint != "" {
-		cfg.Endpoint = aws.String(c.Endpoint)
-	}
-	cfg.Credentials = credentials.NewStaticCredentials(c.AccessKeyID, c.SecretAccessKey, "")
-	sess, _ := session.NewSession(cfg)
-	return s3.New(sess)
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = &c.Endpoint
+	})
 }
 
 var functions = map[string]func(client *S3Client) lua.Function{
@@ -91,14 +94,49 @@ var functions = map[string]func(client *S3Client) lua.Function{
 
 func deleteRecursive(c *S3Client) lua.Function {
 	return func(l *lua.State) int {
+		bucketName := lua.CheckString(l, 1)
+		prefix := lua.CheckString(l, 2)
+
 		client := c.client()
-		iter := s3manager.NewDeleteListIterator(client, &s3.ListObjectsInput{
-			Bucket: aws.String(lua.CheckString(l, 1)),
-			Prefix: aws.String(lua.CheckString(l, 2)),
-		})
-		err := s3manager.NewBatchDeleteWithClient(client).Delete(c.ctx, iter)
-		if err != nil {
-			lua.Errorf(l, err.Error())
+		input := &s3.ListObjectsV2Input{
+			Bucket: aws.String(bucketName),
+			Prefix: aws.String(prefix),
+		}
+
+		var errs error
+		for {
+			// list objects to delete and delete them
+			listObjects, err := client.ListObjectsV2(c.ctx, input)
+			if err != nil {
+				lua.Errorf(l, err.Error())
+				panic("unreachable")
+			}
+
+			deleteInput := &s3.DeleteObjectsInput{
+				Bucket: &bucketName,
+				Delete: &types.Delete{},
+			}
+			for _, content := range listObjects.Contents {
+				deleteInput.Delete.Objects = append(deleteInput.Delete.Objects, types.ObjectIdentifier{Key: content.Key})
+			}
+			deleteObjects, err := client.DeleteObjects(c.ctx, deleteInput)
+			if err != nil {
+				errs = errors.Join(errs, err)
+				break
+			}
+			for _, deleteError := range deleteObjects.Errors {
+				errDel := fmt.Errorf("%w '%s', %s",
+					errDeleteObject, aws.ToString(deleteError.Key), aws.ToString(deleteError.Message))
+				errs = errors.Join(errs, errDel)
+			}
+
+			if !listObjects.IsTruncated {
+				break
+			}
+			input.ContinuationToken = listObjects.NextContinuationToken
+		}
+		if errs != nil {
+			lua.Errorf(l, errs.Error())
 			panic("unreachable")
 		}
 		return 0
@@ -110,18 +148,19 @@ func getObject(c *S3Client) lua.Function {
 		client := c.client()
 		key := lua.CheckString(l, 2)
 		bucket := lua.CheckString(l, 1)
-		resp, err := client.GetObjectWithContext(c.ctx, &s3.GetObjectInput{
+		resp, err := client.GetObject(c.ctx, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		})
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				case s3.ErrCodeNoSuchBucket, s3.ErrCodeNoSuchKey:
-					l.PushString("")
-					l.PushBoolean(false) // exists
-					return 2
-				}
+			var (
+				noSuchBucket *types.NoSuchBucket
+				noSuchKey    *types.NoSuchKey
+			)
+			if errors.As(err, &noSuchBucket) || errors.As(err, &noSuchKey) {
+				l.PushString("")
+				l.PushBoolean(false) // exists
+				return 2
 			}
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
@@ -141,7 +180,7 @@ func putObject(c *S3Client) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
 		buf := strings.NewReader(lua.CheckString(l, 3))
-		_, err := client.PutObjectWithContext(c.ctx, &s3.PutObjectInput{
+		_, err := client.PutObject(c.ctx, &s3.PutObjectInput{
 			Body:   buf,
 			Bucket: aws.String(lua.CheckString(l, 1)),
 			Key:    aws.String(lua.CheckString(l, 2)),
@@ -157,7 +196,7 @@ func putObject(c *S3Client) lua.Function {
 func deleteObject(c *S3Client) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
-		_, err := client.DeleteObjectWithContext(c.ctx, &s3.DeleteObjectInput{
+		_, err := client.DeleteObject(c.ctx, &s3.DeleteObjectInput{
 			Bucket: aws.String(lua.CheckString(l, 1)),
 			Key:    aws.String(lua.CheckString(l, 2)),
 		})
@@ -186,7 +225,7 @@ func listObjects(c *S3Client) lua.Function {
 			delimiter = aws.String("/")
 		}
 
-		resp, err := client.ListObjectsV2WithContext(c.ctx, &s3.ListObjectsV2Input{
+		resp, err := client.ListObjectsV2(c.ctx, &s3.ListObjectsV2Input{
 			Bucket:            aws.String(lua.CheckString(l, 1)),
 			ContinuationToken: continuationToken,
 			Delimiter:         delimiter,
@@ -208,7 +247,7 @@ func listObjects(c *S3Client) lua.Function {
 				"key":           *obj.Key,
 				"type":          "object",
 				"etag":          *obj.ETag,
-				"size":          *obj.Size,
+				"size":          obj.Size,
 				"last_modified": obj.LastModified.Format(time.RFC3339),
 			})
 		}
@@ -219,8 +258,8 @@ func listObjects(c *S3Client) lua.Function {
 		})
 
 		response := map[string]interface{}{
-			"is_truncated":            aws.BoolValue(resp.IsTruncated),
-			"next_continuation_token": aws.StringValue(resp.NextContinuationToken),
+			"is_truncated":            resp.IsTruncated,
+			"next_continuation_token": aws.ToString(resp.NextContinuationToken),
 			"results":                 results,
 		}
 

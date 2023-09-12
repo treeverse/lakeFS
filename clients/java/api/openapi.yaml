@@ -4113,6 +4113,10 @@ paths:
                   format: binary
                   type: string
               type: object
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
       responses:
         "201":
           content:
@@ -5631,6 +5635,9 @@ components:
     inline_object:
       content:
         multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/inline_object'
+        application/octet-stream:
           schema:
             $ref: '#/components/schemas/inline_object'
   responses:
