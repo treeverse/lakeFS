@@ -7,7 +7,7 @@ readonly fail_on_diff="$3"
 readonly include_checks="$4"
 echo "running oasdiff breaking base: $base, revision: $revision, fail_on_diff: $fail_on_diff, include_checks: $include_checks"
 
-go install github.com/treeverse/oasdiff@v1.8.1
+go install github.com/treeverse/oasdiff@v1.8.2
 # Build flags to pass in command
 flags=""
 if [ "$fail_on_diff" = "true" ]; then
