@@ -815,7 +815,8 @@ class ObjectsApi(object):
                     'application/json'
                 ],
                 'content_type': [
-                    'multipart/form-data'
+                    'multipart/form-data',
+                    'application/octet-stream'
                 ]
             },
             api_client=api_client

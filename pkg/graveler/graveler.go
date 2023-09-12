@@ -1024,15 +1024,20 @@ type Graveler struct {
 	// logger *without context* to be used for logging.  It should be
 	// avoided in favour of g.log(ctx) in any operation where context is
 	// available.
-	logger logging.Logger
+	logger              logging.Logger
+	BranchUpdateBackOff backoff.BackOff
 }
 
 func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
+	branchUpdateBackOff := backoff.NewExponentialBackOff()
+	branchUpdateBackOff.MaxInterval = BranchUpdateMaxInterval
+
 	return &Graveler{
 		hooks:                    &HooksNoOp{},
 		CommittedManager:         committedManager,
 		RefManager:               refManager,
 		StagingManager:           stagingManager,
+		BranchUpdateBackOff:      branchUpdateBackOff,
 		protectedBranchesManager: protectedBranchesManager,
 		garbageCollectionManager: gcManager,
 		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
@@ -1645,7 +1650,8 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 // if the staging token changes during the write.  It never backs off.  It
 // returns the number of times it tried -- between 1 and options.MaxTries.
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
-	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string) error {
+	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string,
+) error {
 	if options.MaxTries == 0 {
 		options.MaxTries = BranchWriteMaxTries
 	}
@@ -1997,9 +2003,6 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 // BranchUpdateMaxInterval.  It returns the number of times it tried --
 // between 1 and BranchUpdateMaxTries.
 func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc, operation string) error {
-	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = BranchUpdateMaxInterval
-
 	tries := 0
 	defer g.monitorRetries(ctx, tries, repository.RepositoryID, branchID, operation)
 	err := backoff.Retry(func() error {
@@ -2016,7 +2019,7 @@ func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *Repository
 			return backoff.Permanent(err)
 		}
 		return nil
-	}, bo)
+	}, g.BranchUpdateBackOff)
 	if errors.Is(err, kv.ErrPredicateFailed) && tries >= BranchUpdateMaxTries {
 		return fmt.Errorf("update branch: %w (last %s)", ErrTooManyTries, err)
 	}

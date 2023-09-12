@@ -997,7 +997,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: multipart/form-data
+ - **Content-Type**: multipart/form-data, application/octet-stream
  - **Accept**: application/json
 
 ### HTTP response details

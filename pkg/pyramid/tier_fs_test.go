@@ -3,8 +3,8 @@ package pyramid
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"io"
-	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
@@ -145,7 +145,10 @@ func testEviction(t *testing.T, namespaces ...string) {
 	content := make([]byte, fileBytes)
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
-		rand.Read(content)
+		_, err := rand.Read(content)
+		if err != nil {
+			t.Fatal("rand.Read", err)
+		}
 		writeToFile(t, ctx, namespaces[i%len(namespaces)], filename, content)
 	}
 
@@ -169,7 +172,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 
 	defer func() { _ = os.RemoveAll(baseDir) }()
 
-	// write a single file to lookup later
+	// write a single file to look up later
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 	content := []byte("hello world!")
@@ -183,7 +186,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 		return nil
 	})
 	require.NoError(t, err)
-	// try to read that file - only a single access to block storage is expected
+	// try to read that file - only single access to block storage is expected
 	const concurrencyLevel = 50
 	adapter.wait = make(chan struct{})
 	var wg sync.WaitGroup

@@ -1584,7 +1584,7 @@ public class ObjectsApi {
         }
 
         final String[] localVarContentTypes = {
-            "multipart/form-data"
+            "multipart/form-data", "application/octet-stream"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);

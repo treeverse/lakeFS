@@ -14,9 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/config"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -236,10 +238,10 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 	}
 
 	bucket, key := s3Adapter.ExtractParamsFromQK(qk)
-	s3Client := newDefaultS3Client()
+	s3Client := newDefaultS3Client(t)
 	runID := getLastUGCRunID(t, ctx, s3Client, bucket, key)
 	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", key, runID)
-	cutoffTime, err := getReportCutoffTime(s3Client, bucket, reportPath)
+	cutoffTime, err := getReportCutoffTime(ctx, s3Client, bucket, reportPath)
 	if err != nil {
 		t.Fatalf("Failed to get start list time from ugc report %s", err)
 	}
@@ -284,17 +286,17 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 	}
 
 	bucket, key := s3Adapter.ExtractParamsFromQK(qk)
-	s3Client := newDefaultS3Client()
+	s3Client := newDefaultS3Client(t)
 	objects := listUnderlyingStorage(t, ctx, s3Client, bucket, key)
 	return objects, qk
 }
 
-func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) []Object {
+func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.Client, bucket, prefix string) []Object {
 	listInput := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(prefix),
 	}
-	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
+	listOutput, err := s3Client.ListObjects(ctx, listInput)
 	if err != nil {
 		t.Fatalf("Failed to list objects (bucket: %s, prefix: %s): %s", bucket, prefix, err)
 	}
@@ -303,8 +305,8 @@ func listUnderlyingStorage(t *testing.T, ctx context.Context, s3Client *s3.S3, b
 	var objects []Object
 	for _, obj := range listOutput.Contents {
 		objects = append(objects, Object{
-			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.StringValue(obj.Key)),
-			LastModified: aws.TimeValue(obj.LastModified),
+			Key:          fmt.Sprintf("s3://%s/%s", bucket, aws.ToString(obj.Key)),
+			LastModified: aws.ToTime(obj.LastModified),
 		})
 	}
 	return objects
@@ -315,23 +317,25 @@ type Object struct {
 	LastModified time.Time
 }
 
-func newDefaultS3Client() *s3.S3 {
-	// setup new s3 client for direct access to the underlying storage
-	mySession := session.Must(session.NewSession())
-	s3Client := s3.New(mySession, aws.NewConfig().WithRegion("us-east-1"))
-	return s3Client
+// newDefaultS3Client setup new s3 client for direct access to the underlying storage
+func newDefaultS3Client(t *testing.T) *s3.Client {
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("us-east-1"))
+	if err != nil {
+		t.Fatalf("Failed to create aws config: %s", err)
+	}
+	return s3.NewFromConfig(cfg)
 }
 
-func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.S3, bucket, prefix string) string {
+func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.Client, bucket, prefix string) string {
 	runIDPrefix := prefix + "_lakefs/retention/gc/uncommitted/"
 	listSize := int64(1)
 	listInput := &s3.ListObjectsInput{
 		Bucket:    aws.String(bucket),
 		Prefix:    aws.String(runIDPrefix),
 		Delimiter: aws.String("/"),
-		MaxKeys:   aws.Int64(listSize),
+		MaxKeys:   int32(listSize),
 	}
-	listOutput, err := s3Client.ListObjectsWithContext(ctx, listInput)
+	listOutput, err := s3Client.ListObjects(ctx, listInput)
 	if err != nil {
 		t.Fatalf("Failed to list objects (bucket: %s, prefix: %s): %s", bucket, runIDPrefix, err)
 	}
@@ -357,8 +361,8 @@ func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository s
 	return addr
 }
 
-func getReportCutoffTime(s3Client *s3.S3, bucket, reportPath string) (time.Time, error) {
-	res, err := s3Client.GetObject(&s3.GetObjectInput{
+func getReportCutoffTime(ctx context.Context, s3Client *s3.Client, bucket, reportPath string) (time.Time, error) {
+	res, err := s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(reportPath),
 	})

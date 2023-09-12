@@ -1,31 +1,32 @@
 package s3_test
 
 import (
+	"context"
 	"net/url"
 	"regexp"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/block/s3"
 )
 
-func getAdapter() *s3.Adapter {
-	sess := session.Must(session.NewSession(
-		aws.NewConfig().WithCredentials(credentials.NewCredentials(
-			&credentials.StaticProvider{
-				Value: credentials.Value{
-					AccessKeyID:     minioTestAccessKeyID,
-					SecretAccessKey: minioTestSecretAccessKey,
-				},
-			})).WithEndpoint(blockURL).
-			WithRegion("us-east-1").
-			WithS3ForcePathStyle(true)),
-	)
-	adapter := s3.NewAdapter(sess, s3.WithDiscoverBucketRegion(false))
+func getS3BlockAdapter(t *testing.T) *s3.Adapter {
+	s3params := params.S3{
+		Region:               "us-east-1",
+		Endpoint:             blockURL,
+		ForcePathStyle:       true,
+		DiscoverBucketRegion: false,
+		Credentials: params.S3Credentials{
+			AccessKeyID:     minioTestAccessKeyID,
+			SecretAccessKey: minioTestSecretAccessKey,
+		},
+	}
+	adapter, err := s3.NewAdapter(context.Background(), s3params)
+	if err != nil {
+		t.Fatal("cannot create s3 adapter: ", err)
+	}
 	return adapter
 }
 
@@ -37,12 +38,12 @@ func TestS3Adapter(t *testing.T) {
 	externalPath, err := url.JoinPath(basePath, "external")
 	require.NoError(t, err)
 
-	adapter := getAdapter()
+	adapter := getS3BlockAdapter(t)
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
 
 func TestAdapterNamespace(t *testing.T) {
-	adapter := getAdapter()
+	adapter := getS3BlockAdapter(t)
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
 	require.NoError(t, err)
 

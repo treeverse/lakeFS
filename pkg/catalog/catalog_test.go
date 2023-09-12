@@ -734,8 +734,7 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 
 	data, err := io.ReadAll(objReader)
 	require.NoError(t, err)
-	bufferFile, err := buffer.NewBufferFile(data)
-	require.NoError(t, err)
+	bufferFile := buffer.NewBufferFileFromBytes(data)
 	defer func() { _ = bufferFile.Close() }()
 
 	pr, err := reader.NewParquetReader(bufferFile, new(catalog.UncommittedParquetObject), 4)

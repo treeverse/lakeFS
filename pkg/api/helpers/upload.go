@@ -1,4 +1,4 @@
-// Package helpers provides useful wrappers for clients using the lakeFS OpenAPI.
+// Package helpers provide useful wrappers for clients using the lakeFS OpenAPI.
 package helpers
 
 import (

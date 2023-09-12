@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -29,7 +28,6 @@ var abuseListCmd = &cobra.Command{
 		generator := stress.NewGenerator("list", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				add(strconv.Itoa(i + 1))

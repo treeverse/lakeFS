@@ -35,8 +35,9 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		authenticator := sig.ChainedAuthenticator(
 			sig.NewV4Authenticator(req),
-			sig.NewV2SigAuthenticator(req))
-		authContext, err := authenticator.Parse(req.Context())
+			sig.NewV2SigAuthenticator(req, o.FQDN),
+		)
+		authContext, err := authenticator.Parse()
 		if err != nil {
 			o.Log(req).WithError(err).Warn("failed to parse signature")
 			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))
@@ -44,7 +45,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		}
 		accessKeyID := authContext.GetAccessKeyID()
 		creds, err := authService.GetCredentials(ctx, accessKeyID)
-		logger := o.Log(req).WithField("key", accessKeyID)
+		logger := o.Log(req)
 		if err != nil {
 			if !errors.Is(err, auth.ErrNotFound) {
 				logger.WithError(err).Warn("error getting access key")
@@ -55,8 +56,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 			}
 			return
 		}
-		err = authenticator.Verify(creds, o.FQDN)
-		logger = logger.WithField("authenticator", authenticator)
+		err = authenticator.Verify(creds)
 		if err != nil {
 			logger.WithError(err).Warn("error verifying credentials for key")
 			_ = o.EncodeError(w, req, err, getAPIErrOrDefault(err, gatewayerrors.ErrAccessDenied))

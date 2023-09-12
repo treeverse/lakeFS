@@ -2,6 +2,10 @@ package sig_test
 
 import (
 	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,18 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
-
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-
+	gtwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-
-	"github.com/treeverse/lakefs/pkg/gateway/errors"
 )
-
-const sigV4NoDomain = ""
 
 var mockCreds = &model.Credential{
 	BaseCredential: model.BaseCredential{
@@ -90,7 +88,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 			// Do the same for the headers.
 			req.Header = tc.Header
 			authenticator := sig.NewV4Authenticator(req)
-			_, err := authenticator.Parse(req.Context())
+			_, err := authenticator.Parse()
 			if err != nil {
 				if !tc.ExpectedParseError {
 					t.Fatal(err)
@@ -98,7 +96,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 				return
 			}
 
-			err = authenticator.Verify(mockCreds, sigV4NoDomain)
+			err = authenticator.Verify(mockCreds)
 			if err != nil {
 				if !tc.ExpectedError {
 					t.Fatal(err)
@@ -126,7 +124,7 @@ func TestSingleChunkPut(t *testing.T) {
 			Name:              "amazon example should fail",
 			RequestBody:       "Welcome to Amazon S3",
 			SignBody:          "Welcome to Amazon S3.",
-			ExpectedReadError: errors.ErrSignatureDoesNotMatch,
+			ExpectedReadError: gtwerrors.ErrSignatureDoesNotMatch,
 		},
 		{
 			Name:        "empty body",
@@ -135,49 +133,57 @@ func TestSingleChunkPut(t *testing.T) {
 		},
 	}
 	const (
-		PATH   = "http://example.test/foo"
-		ID     = "AKIAIOSFODNN7EXAMPLE"
-		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		testURL             = "https://example.test/foo"
+		testAccessKeyID     = "AKIAIOSFODNN7EXAMPLE"
+		testSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
+	ctx := context.Background()
+	creds := aws.Credentials{
+		AccessKeyID:     testAccessKeyID,
+		SecretAccessKey: testSecretAccessKey,
+	}
+
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
 			// build request with amazons sdk
-			creds := credentials.NewStaticCredentials(ID, SECRET, "")
-			signer := v4.NewSigner(creds)
-
-			req, err := http.NewRequest(http.MethodPut, PATH, nil)
+			req, err := http.NewRequest(http.MethodPut, testURL, nil)
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
-			_, err = signer.Sign(req, strings.NewReader(tc.SignBody), "s3", "us-east-1", time.Now())
+			h := sha256.Sum256([]byte(tc.SignBody))
+			payloadHash := hex.EncodeToString(h[:])
+			req.Header.Set("X-Amz-Content-Sha256", payloadHash)
+
+			sigTime := time.Now()
+			signer := v4.NewSigner()
+			err = signer.SignHTTP(ctx, creds, req, payloadHash, "s3", "us-east-1", sigTime)
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
-			req.Body = io.NopCloser(strings.NewReader(tc.RequestBody))
 			// verify request with our authenticator
-
+			req.Body = io.NopCloser(strings.NewReader(tc.RequestBody))
 			authenticator := sig.NewV4Authenticator(req)
-			_, err = authenticator.Parse(req.Context())
+			_, err = authenticator.Parse()
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
 			err = authenticator.Verify(&model.Credential{
 				BaseCredential: model.BaseCredential{
-					AccessKeyID:     ID,
-					SecretAccessKey: SECRET,
-					IssuedDate:      time.Now(),
+					AccessKeyID:     testAccessKeyID,
+					SecretAccessKey: testSecretAccessKey,
+					IssuedDate:      sigTime,
 				},
-			}, sigV4NoDomain)
+			})
 			if err != nil {
-				t.Errorf("expect not no error, got %v", err)
+				t.Fatalf("expect not no error, got %v", err)
 			}
 
 			// read all
 			_, err = io.ReadAll(req.Body)
-			if err != tc.ExpectedReadError {
+			if !errors.Is(err, tc.ExpectedReadError) {
 				t.Errorf("expect Error %v error, got %s", tc.ExpectedReadError, err)
 			}
 		})
@@ -221,7 +227,7 @@ func TestStreaming(t *testing.T) {
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse(req.Context())
+	_, err = authenticator.Parse()
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -232,7 +238,7 @@ func TestStreaming(t *testing.T) {
 			SecretAccessKey: SECRET,
 			IssuedDate:      time.Now(),
 		},
-	}, sigV4NoDomain)
+	})
 	if err != nil {
 		t.Error(err)
 	}
@@ -279,7 +285,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse(req.Context())
+	_, err = authenticator.Parse()
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -290,14 +296,14 @@ func TestStreamingLastByteWrong(t *testing.T) {
 			SecretAccessKey: SECRET,
 			IssuedDate:      time.Now(),
 		},
-	}, sigV4NoDomain)
+	})
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
 
 	_, err = io.ReadAll(req.Body)
-	if err != errors.ErrSignatureDoesNotMatch {
-		t.Errorf("expect %v, got %v", errors.ErrSignatureDoesNotMatch, err)
+	if err != gtwerrors.ErrSignatureDoesNotMatch {
+		t.Errorf("expect %v, got %v", gtwerrors.ErrSignatureDoesNotMatch, err)
 	}
 }
 
@@ -326,7 +332,7 @@ func TestUnsignedPayload(t *testing.T) {
 	}
 
 	authenticator := sig.NewV4Authenticator(req)
-	_, err = authenticator.Parse(req.Context())
+	_, err = authenticator.Parse()
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}
@@ -337,7 +343,7 @@ func TestUnsignedPayload(t *testing.T) {
 			SecretAccessKey: testSecret,
 			IssuedDate:      time.Now(),
 		},
-	}, sigV4NoDomain)
+	})
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
 	}

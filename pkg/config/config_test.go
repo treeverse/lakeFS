@@ -168,29 +168,3 @@ func TestConfig_JSONLogger(t *testing.T) {
 		t.Fatalf("expected a msg field, could not find one")
 	}
 }
-
-func verifyAWSConfig(t *testing.T, c *config.Config) {
-	s3Params, err := c.BlockstoreS3Params()
-	testutil.Must(t, err)
-	credentials, err := s3Params.AwsConfig.Credentials.Get()
-	testutil.Must(t, err)
-	if credentials.AccessKeyID != "my-key-id" {
-		t.Fatalf("unexpected key id in credentials. expected %s got %s", "my-key-id", credentials.AccessKeyID)
-	}
-	if credentials.SecretAccessKey != "my-secret-key" {
-		t.Fatalf("unexpected secret access key in credentials. expected %s got %s", "my-secret-key", credentials.SecretAccessKey)
-	}
-}
-
-func TestConfig_AWSConfig(t *testing.T) {
-	t.Run("use secret_access_key configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/aws_credentials.yaml")
-		testutil.Must(t, err)
-		verifyAWSConfig(t, c)
-	})
-	t.Run("use alias access_secret_key configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
-		testutil.Must(t, err)
-		verifyAWSConfig(t, c)
-	})
-}
