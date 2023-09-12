@@ -54,21 +54,6 @@ public class RepositoriesApiTest {
     }
     
     /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void createBranchProtectionRulePreflightTest() throws ApiException {
-        String repository = null;
-                api.createBranchProtectionRulePreflight(repository);
-        // TODO: test validations
-    }
-    
-    /**
      * create repository
      *
      * 

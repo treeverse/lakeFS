@@ -154,7 +154,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**detachPolicyFromGroup**](docs/AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detachPolicyFromUser**](docs/AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
 *AuthApi* | [**forgotPassword**](docs/AuthApi.md#forgotPassword) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
-*AuthApi* | [**getAuthCapabilities**](docs/AuthApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**getCurrentUser**](docs/AuthApi.md#getCurrentUser) | **GET** /user | get current user
 *AuthApi* | [**getGroup**](docs/AuthApi.md#getGroup) | **GET** /auth/groups/{groupId} | get group
@@ -185,10 +184,7 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *ConfigApi* | [**getGarbageCollectionConfig**](docs/ConfigApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
 *ConfigApi* | [**getLakeFSVersion**](docs/ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
-*ConfigApi* | [**getSetupState**](docs/ConfigApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
-*ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
-*ConfigApi* | [**setupCommPrefs**](docs/ConfigApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
 *ExperimentalApi* | [**getOtfDiffs**](docs/ExperimentalApi.md#getOtfDiffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *ExperimentalApi* | [**otfDiff**](docs/ExperimentalApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
@@ -197,6 +193,15 @@ Class | Method | HTTP request | Description
 *ImportApi* | [**importStart**](docs/ImportApi.md#importStart) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
 *ImportApi* | [**importStatus**](docs/ImportApi.md#importStatus) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
 *ImportApi* | [**ingestRange**](docs/ImportApi.md#ingestRange) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
+*InternalApi* | [**createBranchProtectionRulePreflight**](docs/InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
+*InternalApi* | [**getAuthCapabilities**](docs/InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+*InternalApi* | [**getSetupState**](docs/InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+*InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+*InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+*InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+*InternalApi* | [**setupCommPrefs**](docs/InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
+*InternalApi* | [**updateBranchToken**](docs/InternalApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
+*InternalApi* | [**uploadObjectPreflight**](docs/InternalApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 *MetadataApi* | [**createSymlinkFile**](docs/MetadataApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
@@ -210,7 +215,6 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stageObject**](docs/ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
-*ObjectsApi* | [**uploadObjectPreflight**](docs/ObjectsApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
 *RefsApi* | [**dumpRefs**](docs/RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**findMergeBase**](docs/RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
@@ -218,7 +222,6 @@ Class | Method | HTTP request | Description
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
 *RefsApi* | [**restoreRefs**](docs/RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 *RepositoriesApi* | [**createBranchProtectionRule**](docs/RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
-*RepositoriesApi* | [**createBranchProtectionRulePreflight**](docs/RepositoriesApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**deleteBranchProtectionRule**](docs/RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
@@ -231,11 +234,8 @@ Class | Method | HTTP request | Description
 *RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
 *RetentionApi* | [**prepareGarbageCollectionUncommitted**](docs/RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**setGarbageCollectionRulesPreflight**](docs/RetentionApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-*StagingApi* | [**updateBranchToken**](docs/StagingApi.md#updateBranchToken) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
-*StatisticsApi* | [**postStatsEvents**](docs/StatisticsApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**deleteTag**](docs/TagsApi.md#deleteTag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**getTag**](docs/TagsApi.md#getTag) | **GET** /repositories/{repository}/tags/{tag} | get tag
