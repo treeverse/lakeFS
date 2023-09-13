@@ -36,11 +36,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -190,31 +188,11 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
 	emailer, err := email.NewEmailer(email.Params(cfg.Email))
-	tmpl := templater.NewService(templates.Content, cfg, authService)
 
 	otfDiffService := tablediff.NewMockService()
 
 	testutil.Must(t, err)
-	handler := api.Serve(
-		cfg,
-		c,
-		authenticator,
-		authService,
-		c.BlockAdapter,
-		meta,
-		migrator,
-		collector,
-		nil,
-		actionsService,
-		auditChecker,
-		logging.ContextUnavailable(),
-		emailer,
-		tmpl,
-		nil,
-		nil,
-		upload.DefaultPathProvider,
-		otfDiffService,
-	)
+	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), emailer, nil, nil, upload.DefaultPathProvider, otfDiffService)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

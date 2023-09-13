@@ -25,7 +25,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
 
@@ -36,26 +35,7 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(
-	cfg *config.Config,
-	catalog catalog.Interface,
-	middlewareAuthenticator auth.Authenticator,
-	authService auth.Service,
-	blockAdapter block.Adapter,
-	metadataManager auth.MetadataManager,
-	migrator Migrator,
-	collector stats.Collector,
-	cloudMetadataProvider cloud.MetadataProvider,
-	actions actionsHandler,
-	auditChecker AuditChecker,
-	logger logging.Logger,
-	emailer *email.Emailer,
-	templater templater.Service,
-	gatewayDomains []string,
-	snippets []params.CodeSnippet,
-	pathProvider upload.PathProvider,
-	otfService *tablediff.Service,
-) http.Handler {
+func Serve(cfg *config.Config, catalog catalog.Interface, middlewareAuthenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, emailer *email.Emailer, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, otfService *tablediff.Service) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
 	if err != nil {
@@ -77,25 +57,7 @@ func Serve(
 		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
-	controller := NewController(
-		cfg,
-		catalog,
-		middlewareAuthenticator,
-		authService,
-		blockAdapter,
-		metadataManager,
-		migrator,
-		collector,
-		cloudMetadataProvider,
-		actions,
-		auditChecker,
-		logger,
-		emailer,
-		templater,
-		sessionStore,
-		pathProvider,
-		otfService,
-	)
+	controller := NewController(cfg, catalog, middlewareAuthenticator, authService, blockAdapter, metadataManager, migrator, collector, cloudMetadataProvider, actions, auditChecker, logger, emailer, sessionStore, pathProvider, otfService)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())

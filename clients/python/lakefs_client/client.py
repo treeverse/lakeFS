@@ -19,7 +19,6 @@ from lakefs_client.api import repositories_api
 from lakefs_client.api import retention_api
 from lakefs_client.api import staging_api
 from lakefs_client.api import tags_api
-from lakefs_client.api import templates_api
 
 
 class _WrappedApiClient(lakefs_client.ApiClient):
@@ -61,7 +60,6 @@ class LakeFSClient:
         self.retention_api = retention_api.RetentionApi(self._api)
         self.staging_api = staging_api.StagingApi(self._api)
         self.tags_api = tags_api.TagsApi(self._api)
-        self.templates_api = templates_api.TemplatesApi(self._api)
 
     @staticmethod
     def _ensure_endpoint(configuration):

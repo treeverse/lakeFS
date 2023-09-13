@@ -102,7 +102,6 @@ docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
-docs/TemplatesApi.md
 docs/UnderlyingObjectProperties.md
 docs/UpdatePasswordByToken.md
 docs/UpdateToken.md
@@ -128,7 +127,6 @@ lakefs_client/api/repositories_api.py
 lakefs_client/api/retention_api.py
 lakefs_client/api/staging_api.py
 lakefs_client/api/tags_api.py
-lakefs_client/api/templates_api.py
 lakefs_client/api_client.py
 lakefs_client/apis/__init__.py
 lakefs_client/client.py
@@ -336,7 +334,6 @@ test/test_storage_config.py
 test/test_storage_uri.py
 test/test_tag_creation.py
 test/test_tags_api.py
-test/test_templates_api.py
 test/test_underlying_object_properties.py
 test/test_update_password_by_token.py
 test/test_update_token.py
