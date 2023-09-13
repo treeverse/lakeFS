@@ -17,10 +17,10 @@ func Open(l *lua.State) {
 }
 
 var library = []lua.RegistryFunction{
-	{Name: "parse", Function: Parse},
+	{Name: "parse", Function: parse},
 }
 
-func Parse(l *lua.State) int {
+func parse(l *lua.State) int {
 	rawURL := lua.CheckString(l, 1)
 	u, err := neturl.Parse(rawURL)
 	if err != nil {
