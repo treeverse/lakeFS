@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+:new: What's new:
+- Restrict lakectl local to common prefixes only (#6510)
+- Added URL parser to lua runtime (#6597)
+  
 # v0.109.0
 
 :new: What's new:
