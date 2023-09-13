@@ -422,9 +422,7 @@ Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: 
 
 ### `net/url`
 
-Provides a `parse` function that parses a raw url into a URL structure.
-The url may be relative (a path, without a host) or absolute (starting with a scheme). Trying to parse a hostname and path without a scheme is invalid but may not necessarily return an error, due to parsing ambiguities.
-
+Provides a `parse` function parse a URL string into parts, returns a table with the URL's host, path, scheme, query and fragment.
 
 ```lua
 > local url = require("net/url")
