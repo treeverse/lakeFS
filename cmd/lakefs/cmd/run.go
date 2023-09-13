@@ -250,7 +250,25 @@ var runCmd = &cobra.Command{
 		defer closeOtfService()
 
 		// start API server
-		apiHandler := api.Serve(cfg, c, middlewareAuthenticator, authService, blockStore, authMetadataManager, migrator, bufferedCollector, cloudMetadataProvider, actionsService, auditChecker, logger.WithField("service", "api_gateway"), emailer, cfg.Gateways.S3.DomainNames, cfg.UISnippets(), upload.DefaultPathProvider, otfDiffService)
+		apiHandler := api.Serve(
+			cfg,
+			c,
+			middlewareAuthenticator,
+			authService,
+			blockStore,
+			authMetadataManager,
+			migrator,
+			bufferedCollector,
+			cloudMetadataProvider,
+			actionsService,
+			auditChecker,
+			logger.WithField("service", "api_gateway"),
+			emailer,
+			cfg.Gateways.S3.DomainNames,
+			cfg.UISnippets(),
+			upload.DefaultPathProvider,
+			otfDiffService,
+		)
 
 		// init gateway server
 		var s3FallbackURL *url.URL
