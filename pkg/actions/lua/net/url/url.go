@@ -28,9 +28,10 @@ func parse(l *lua.State) int {
 		panic("unreachable")
 	}
 	return util.DeepPush(l, map[string]string{
-		"host":   u.Host,
-		"path":   u.Path,
-		"scheme": u.Scheme,
-		"query":  u.RawQuery,
+		"host":     u.Host,
+		"path":     u.Path,
+		"scheme":   u.Scheme,
+		"query":    u.RawQuery,
+		"fragment": u.Fragment,
 	})
 }
