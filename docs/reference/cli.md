@@ -41,7 +41,7 @@ lakectl config
 # Config file /home/janedoe/.lakectl.yaml will be used
 # Access key ID: AKIAIOSFODNN7EXAMPLE
 # Secret access key: ****************************************
-# Server endpoint URL: http://localhost:8000/api/v1
+# Server endpoint URL: http://localhost:8000
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.

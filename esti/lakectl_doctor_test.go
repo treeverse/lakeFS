@@ -6,12 +6,13 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 func TestLakectlDoctor(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	endPointURL := viper.GetString("endpoint_url") + "/api/v1"
+	endPointURL := viper.GetString("endpoint_url") + apiutil.BaseURL
 	u, err := url.Parse(endpointURL)
 	require.NoError(t, err)
 	vars := map[string]string{

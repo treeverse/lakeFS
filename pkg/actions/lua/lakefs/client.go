@@ -14,6 +14,7 @@ import (
 	"github.com/Shopify/go-lua"
 	"github.com/go-chi/chi/v5"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -31,12 +32,12 @@ func check(l *lua.State, err error) {
 
 func newLakeFSRequest(ctx context.Context, user *model.User, method, url string, data []byte) (*http.Request, error) {
 	if !strings.HasPrefix(url, "/api/") {
-		if strings.HasPrefix(url, "/") {
-			url = fmt.Sprintf("/api/v1%s", url)
-		} else {
-			url = fmt.Sprintf("/api/v1/%s", url)
+		url, err = url.JoinPath(apiutil.BaseURL, url)
+		if err != nil {
+			return nil, err
 		}
 	}
+
 	var body io.Reader
 	if data == nil {
 		body = bytes.NewReader(data)
