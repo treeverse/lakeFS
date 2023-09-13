@@ -1,7 +1,6 @@
-package catalog_export
+package catalogexport
 
 import (
-	"context"
 	"embed"
 	"io/fs"
 
@@ -12,15 +11,15 @@ import (
 var modulePath embed.FS
 
 // OpenLuaPackage load lua code as a package in the runtime
-func OpenLuaPackage(l *lua.State, ctx context.Context) {
+func OpenLuaPackage(l *lua.State) {
 	// order here matters each when packages rely on each other
-	loadLuaAsPackage(l, ctx, "lakefs/catalog_export/common", "common.lua")
-	loadLuaAsPackage(l, ctx, "lakefs/catalog_export/table_extractor", "table_extractor.lua")
+	loadLuaAsPackage(l, "lakefs/catalog_export/common", "common.lua")
+	loadLuaAsPackage(l, "lakefs/catalog_export/table_extractor", "table_extractor.lua")
 	// lib.lua is high level facade for users
-	loadLuaAsPackage(l, ctx, "lakefs/catalog_export", "lib.lua")
+	loadLuaAsPackage(l, "lakefs/catalog_export", "lib.lua")
 }
 
-func loadLuaAsPackage(l *lua.State, ctx context.Context, importAlias, scriptName string) {
+func loadLuaAsPackage(l *lua.State, importAlias, scriptName string) {
 	lua.Require(l, importAlias, func(l *lua.State) int {
 		data, err := fs.ReadFile(modulePath, scriptName)
 		if err != nil {

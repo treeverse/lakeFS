@@ -13,7 +13,7 @@ import (
 	"github.com/Shopify/go-lua"
 	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
-	catalogexport "github.com/treeverse/lakefs/pkg/actions/lua/lakefs/catalog_export"
+	catalogexport "github.com/treeverse/lakefs/pkg/actions/lua/lakefs/catalogexport"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -67,7 +67,7 @@ func injectHookContext(l *lua.State, ctx context.Context, user *model.User, endp
 	luautil.DeepPush(l, args)
 	l.SetGlobal("args")
 	lakefs.OpenClient(l, ctx, user, endpoint)
-	catalogexport.OpenLuaPackage(l, ctx)
+	catalogexport.OpenLuaPackage(l)
 }
 
 type loggingBuffer struct {
