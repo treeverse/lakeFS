@@ -3,7 +3,6 @@ package api_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +13,6 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -3690,79 +3688,6 @@ func TestController_CherryPick(t *testing.T) {
 		testutil.Must(t, err)
 		if resp.JSON409 == nil {
 			t.Error("expected to get a conflict")
-		}
-	})
-}
-
-func TestController_ExpandTemplate(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
-	ctx := context.Background()
-
-	t.Run("not-found", func(t *testing.T) {
-		resp, err := clt.ExpandTemplateWithResponse(ctx, "no/template/here", &apigen.ExpandTemplateParams{})
-		testutil.Must(t, err)
-		if resp.HTTPResponse.StatusCode != http.StatusNotFound {
-			t.Errorf("Expanding a nonexistent template should fail with status %d got %d\n\t%s\n\t%+v", http.StatusNotFound, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
-		}
-	})
-
-	t.Run("spark.conf", func(t *testing.T) {
-		const lfsURL = "https://lakefs.example.test"
-		expected := []struct {
-			name    string
-			pattern string
-		}{
-			{"impl", `spark\.hadoop\.fs\.s3a\.impl=org\.apache\.hadoop\.fs\.s3a\.S3AFileSystem`},
-			{"access.key", `spark\.hadoop\.fs\.s3a\.access.key=AKIA.*`},
-			{"secret.key", `spark\.hadoop\.fs\.s3a\.secret.key=`},
-			{"s3a_endpoint", `spark\.hadoop\.fs\.s3a\.endpoint=` + lfsURL},
-		}
-
-		// OpenAPI places additional query params in the wrong
-		// place.  Use a request editor to place them directly as a
-		// query string.
-		resp, err := clt.ExpandTemplateWithResponse(ctx, "spark.submit.conf.tt", &apigen.ExpandTemplateParams{},
-			func(_ context.Context, req *http.Request) error {
-				values := req.URL.Query()
-				values.Add("lakefs_url", lfsURL)
-				req.URL.RawQuery = values.Encode()
-				return nil
-			})
-		testutil.Must(t, err)
-		if resp.HTTPResponse.StatusCode != http.StatusOK {
-			t.Errorf("Expansion failed with status %d\n\t%s\n\t%+v", resp.HTTPResponse.StatusCode, string(resp.Body), resp)
-		}
-
-		contentType := resp.HTTPResponse.Header.Values("Content-Type")
-		if len(contentType) != 1 {
-			t.Errorf("Expansion returned %d content types: %v", len(contentType), contentType)
-		}
-		if contentType[0] != "application/x-conf" {
-			t.Errorf("Expansion returned content type %s not application/x-conf", contentType[0])
-		}
-
-		for _, e := range expected {
-			re := regexp.MustCompile(e.pattern)
-			if !re.Match(resp.Body) {
-				t.Errorf("Expansion result has no %s: /%s/\n\t%s", e.name, e.pattern, string(resp.Body))
-			}
-		}
-	})
-
-	t.Run("fail", func(t *testing.T) {
-		resp, err := clt.ExpandTemplateWithResponse(ctx, "fail.tt", &apigen.ExpandTemplateParams{})
-		testutil.Must(t, err)
-		if resp.HTTPResponse.StatusCode != http.StatusInternalServerError {
-			t.Errorf("Expansion should fail with status %d got %d\n\t%s\n\t%+v", http.StatusInternalServerError, resp.HTTPResponse.StatusCode, string(resp.Body), resp)
-		}
-
-		parsed := make(map[string]string, 0)
-		err = json.Unmarshal(resp.Body, &parsed)
-		if err != nil {
-			t.Errorf("Unmarshal body: %s", err)
-		}
-		if parsed["message"] != "expansion failed" {
-			t.Errorf("Expected \"expansion failed\" message, got %+v", parsed)
 		}
 	})
 }

@@ -43,7 +43,6 @@ import (
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -96,7 +95,6 @@ type Controller struct {
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
 	Emailer               *email.Emailer
-	Templater             templater.Service
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
@@ -4302,52 +4300,6 @@ func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
-func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p apigen.ExpandTemplateParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadObjectAction,
-			Resource: permissions.TemplateArn(templateLocation),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-
-	u, err := auth.GetUser(ctx)
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, "request performed with no user")
-	}
-
-	// Override bug in OpenAPI generated code: parameters do not show up
-	// in p.Params.AdditionalProperties, so force them in there.
-	if len(p.Params.AdditionalProperties) == 0 && len(r.URL.Query()) > 0 {
-		p.Params.AdditionalProperties = make(map[string]string, len(r.Header))
-		for k, v := range r.URL.Query() {
-			p.Params.AdditionalProperties[k] = v[0]
-		}
-	}
-
-	c.LogAction(ctx, "expand_template", r, "", "", "")
-	err = c.Templater.Expand(ctx, w, u, templateLocation, p.Params.AdditionalProperties)
-	if err != nil {
-		c.Logger.WithError(err).WithField("location", templateLocation).Error("Template expansion failed")
-	}
-
-	if errors.Is(err, templater.ErrNotAuthorized) {
-		writeError(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-		return
-	}
-	if errors.Is(err, templater.ErrNotFound) {
-		writeError(w, r, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		return
-	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, "expansion failed")
-		return
-	}
-	// Response already written during expansion.
-}
-
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)
@@ -4655,25 +4607,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(
-	cfg *config.Config,
-	catalog catalog.Interface,
-	authenticator auth.Authenticator,
-	authService auth.Service,
-	blockAdapter block.Adapter,
-	metadataManager auth.MetadataManager,
-	migrator Migrator,
-	collector stats.Collector,
-	cloudMetadataProvider cloud.MetadataProvider,
-	actions actionsHandler,
-	auditChecker AuditChecker,
-	logger logging.Logger,
-	emailer *email.Emailer,
-	templater templater.Service,
-	sessionStore sessions.Store,
-	pathProvider upload.PathProvider,
-	otfDiffService *tablediff.Service,
-) *Controller {
+func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, emailer *email.Emailer, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -4688,7 +4622,6 @@ func NewController(
 		AuditChecker:          auditChecker,
 		Logger:                logger,
 		Emailer:               emailer,
-		Templater:             templater,
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
 		otfDiffService:        otfDiffService,
