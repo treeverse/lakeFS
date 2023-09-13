@@ -1,18 +1,28 @@
 package lua
 
 import (
+	"bytes"
+	"embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/Shopify/go-lua"
+	"github.com/hashicorp/go-multierror"
 )
 
 const (
 	pathListSeparator = ';'
-	defaultPath       = "./?.lua"
+	defaultPath       = "?.lua"
 )
+
+//go:embed lakefs/catalogexport/*.lua
+var luaEmbeddedCode embed.FS
+
+var ErrNoFile = errors.New("no file")
 
 func findLoader(l *lua.State, name string) {
 	var msg string
@@ -35,6 +45,61 @@ func findLoader(l *lua.State, name string) {
 	}
 }
 
+func findFile(l *lua.State, name, field, dirSep string) (string, error) {
+	l.Field(lua.UpValueIndex(1), field)
+	path, ok := l.ToString(-1)
+	if !ok {
+		lua.Errorf(l, "'package.%s' must be a string", field)
+	}
+	return searchPath(name, path, ".", dirSep)
+}
+
+func checkLoad(l *lua.State, loaded bool, fileName string) int {
+	if loaded { // Module loaded successfully?
+		l.PushString(fileName) // Second argument to module.
+		return 2               // Return open function & file name.
+	}
+	m := lua.CheckString(l, 1)
+	e := lua.CheckString(l, -1)
+	lua.Errorf(l, "error loading module '%s' from file '%s':\n\t%s", m, fileName, e)
+	panic("unreachable")
+}
+
+func searcherLua(l *lua.State) int {
+	name := lua.CheckString(l, 1)
+	filename, err := findFile(l, name, "path", string(filepath.Separator))
+	if err != nil {
+		return 1 // Module isn't found in this path.
+	}
+
+	return checkLoad(l, loadFile(l, filename, "") == nil, filename)
+}
+
+func loadFile(l *lua.State, fileName, mode string) error {
+	fileNameIndex := l.Top() + 1
+	fileError := func(what string) error {
+		fileName, _ := l.ToString(fileNameIndex)
+		l.PushFString("cannot %s %s", what, fileName[1:])
+		l.Remove(fileNameIndex)
+		return lua.FileError
+	}
+	l.PushString("@" + fileName)
+	data, err := luaEmbeddedCode.ReadFile(fileName)
+	if err != nil {
+		return fileError("open")
+	}
+	s, _ := l.ToString(-1)
+	err = l.Load(bytes.NewReader(data), s, mode)
+	switch {
+	case err == nil, errors.Is(err, lua.SyntaxError), errors.Is(err, lua.MemoryError): // do nothing
+	default:
+		l.SetTop(fileNameIndex)
+		return fileError("read")
+	}
+	l.Remove(fileNameIndex)
+	return err
+}
+
 func searcherPreload(l *lua.State) int {
 	name := lua.CheckString(l, 1)
 	l.Field(lua.RegistryIndex, "_PRELOAD")
@@ -46,13 +111,40 @@ func searcherPreload(l *lua.State) int {
 }
 
 func createSearchersTable(l *lua.State) {
-	searchers := []lua.Function{searcherPreload}
+	searchers := []lua.Function{searcherPreload, searcherLua}
 	l.CreateTable(len(searchers), 0)
 	for i, s := range searchers {
 		l.PushValue(-2)
 		l.PushGoClosure(s, 1)
 		l.RawSetInt(-2, i+1)
 	}
+}
+
+func searchPath(name, path, sep, dirSep string) (string, error) {
+	var err error
+	if sep != "" {
+		name = strings.ReplaceAll(name, sep, dirSep) // Replace sep by dirSep.
+	}
+	path = strings.ReplaceAll(path, string(pathListSeparator), string(filepath.ListSeparator))
+	for _, template := range filepath.SplitList(path) {
+		if template == "" {
+			continue
+		}
+		filename := strings.ReplaceAll(template, "?", name)
+		if readable(filename) {
+			return filename, nil
+		}
+		err = multierror.Append(err, fmt.Errorf("%w %s", ErrNoFile, filename))
+	}
+	return "", err
+}
+
+func readable(name string) bool {
+	if !fs.ValidPath(name) {
+		return false
+	}
+	info, err := fs.Stat(luaEmbeddedCode, name)
+	return err == nil && !info.IsDir()
 }
 
 func noEnv(l *lua.State) bool {
@@ -84,15 +176,18 @@ var packageLibrary = []lua.RegistryFunction{
 		return 3 // Return nil, error message, and where.
 	}},
 	{Name: "searchpath", Function: func(l *lua.State) int {
-		_ = lua.CheckString(l, 1)
-		_ = lua.CheckString(l, 2)
-		_ = lua.OptString(l, 3, ".")
-		_ = lua.OptString(l, 4, string(filepath.Separator))
-
-		l.PushNil()
-		l.PushString("searchpath not enabled; check your Lua installation")
-		l.PushString("absent")
-		return 3 // Return nil, error message, and where.
+		name := lua.CheckString(l, 1)
+		path := lua.CheckString(l, 2)
+		sep := lua.OptString(l, 3, ".")
+		dirSep := lua.OptString(l, 4, string(filepath.Separator))
+		f, err := searchPath(name, path, sep, dirSep)
+		if err != nil {
+			l.PushNil()
+			l.PushString(err.Error())
+			return 2
+		}
+		l.PushString(f)
+		return 1
 	}},
 }
 

@@ -1,4 +1,3 @@
-
 function lakefs_object_it(lakefs_client, repo_id, commit_id, after, prefix, page_size, delimiter)
     local next_offset = after
     local has_more = true
