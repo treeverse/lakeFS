@@ -30,9 +30,10 @@ func check(l *lua.State, err error) {
 	}
 }
 
-func newLakeFSRequest(ctx context.Context, user *model.User, method, url string, data []byte) (*http.Request, error) {
-	if !strings.HasPrefix(url, "/api/") {
-		url, err = url.JoinPath(apiutil.BaseURL, url)
+func newLakeFSRequest(ctx context.Context, user *model.User, method, reqURL string, data []byte) (*http.Request, error) {
+	if !strings.HasPrefix(reqURL, "/api/") {
+		var err error
+		reqURL, err = url.JoinPath(apiutil.BaseURL, reqURL)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +49,7 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, url string,
 	ctx = context.WithValue(ctx, chi.RouteCtxKey, nil)
 	// Add user to the request context
 	ctx = auth.WithUser(ctx, user)
-	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +57,8 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, url string,
 	return req, nil
 }
 
-func newLakeFSJSONRequest(ctx context.Context, user *model.User, method, url string, data []byte) (*http.Request, error) {
-	req, err := newLakeFSRequest(ctx, user, method, url, data)
+func newLakeFSJSONRequest(ctx context.Context, user *model.User, method, reqURL string, data []byte) (*http.Request, error) {
+	req, err := newLakeFSRequest(ctx, user, method, reqURL, data)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +88,11 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 				if err != nil {
 					check(l, err)
 				}
-
-				path := fmt.Sprintf("/repositories/%s/tags", url.PathEscape(repo))
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, path, data)
+				reqURL, err := url.JoinPath("/repositories", repo, "tags")
+				if err != nil {
+					check(l, err)
+				}
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, reqURL, data)
 				if err != nil {
 					check(l, err)
 				}
@@ -99,7 +102,10 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 				repo := lua.CheckString(l, 1)
 				leftRef := lua.CheckString(l, 2)
 				rightRef := lua.CheckString(l, 3)
-				reqURL := fmt.Sprintf("/repositories/%s/refs/%s/diff/%s", url.PathEscape(repo), url.PathEscape(leftRef), url.PathEscape(rightRef))
+				reqURL, err := url.JoinPath("/repositories", repo, "refs", leftRef, "diff", rightRef)
+				if err != nil {
+					check(l, err)
+				}
 				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)
@@ -124,7 +130,10 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 			{Name: "list_objects", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				ref := lua.CheckString(l, 2)
-				reqURL := fmt.Sprintf("/repositories/%s/refs/%s/objects/ls", url.PathEscape(repo), url.PathEscape(ref))
+				reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects/ls")
+				if err != nil {
+					check(l, err)
+				}
 				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)
@@ -156,7 +165,10 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 			{Name: "get_object", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				ref := lua.CheckString(l, 2)
-				reqURL := fmt.Sprintf("/repositories/%s/refs/%s/objects", url.PathEscape(repo), url.PathEscape(ref))
+				reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects")
+				if err != nil {
+					check(l, err)
+				}
 				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)
@@ -174,7 +186,10 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 			{Name: "diff_branch", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				branch := lua.CheckString(l, 2)
-				reqURL := fmt.Sprintf("/repositories/%s/branches/%s/diff", url.PathEscape(repo), url.PathEscape(branch))
+				reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "diff")
+				if err != nil {
+					check(l, err)
+				}
 				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
 				if err != nil {
 					check(l, err)

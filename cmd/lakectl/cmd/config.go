@@ -35,11 +35,14 @@ var configCmd = &cobra.Command{
 			{Key: "credentials.access_key_id", Prompt: &promptui.Prompt{Label: "Access key ID"}},
 			{Key: "credentials.secret_access_key", Prompt: &promptui.Prompt{Label: "Secret access key", Mask: '*'}},
 			{Key: "server.endpoint_url", Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawURL string) error {
-				_, err := url.ParseRequestURI(rawURL)
+				u, err := url.ParseRequestURI(rawURL)
 				if err != nil {
-					return fmt.Errorf("invalid URL: %w", err)
+					return err
 				}
-				return err
+				if u.Path != "" {
+					fmt.Printf("Warning: It's recommended to configure the endpoint without specifying a path (%s)\n", u.Path)
+				}
+				return nil
 			}}},
 		}
 		for _, question := range questions {
