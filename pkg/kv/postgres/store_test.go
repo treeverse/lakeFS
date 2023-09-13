@@ -30,7 +30,6 @@ func TestPostgresKV(t *testing.T) {
 		// create a new schema per test
 		schemaName := "test_schema" + testutil.UniqueName()
 		_, err = conn.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+url.PathEscape(schemaName))
-		_, err = conn.Exec(context.Background(), fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", schemaName))
 		if err != nil {
 			t.Fatalf("Error creating schema '%s': %s", schemaName, err)
 		}
