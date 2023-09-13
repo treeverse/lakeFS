@@ -3,7 +3,7 @@ local strings = require("strings")
 local yaml = require("encoding/yaml")
 local lakefs = require("lakefs")
 local json = require("encoding/json")
-local common = require("lakefs/catalog_export/common")
+local common = require("lakefs/catalogexport/common")
 
 -- return partition table from path by based on columns in partition_cols
 function get_partition_values(partition_cols, path)

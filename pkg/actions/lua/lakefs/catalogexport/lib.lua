@@ -1,5 +1,5 @@
-local extractor = require("lakefs/catalog_export/table_extractor") 
-local common = require("lakefs/catalog_export/common") 
+local extractor = require("lakefs/catalogexport/table_extractor") 
+local common = require("lakefs/catalogexport/common") 
 
 -- resolve ref value from action.action.event_type 
 function ref_from_branch_or_tag() 
@@ -18,7 +18,5 @@ end
 
 return {
     TableExtractor = extractor.TableExtractor,
-    ref_from_branch_or_tag=ref_from_branch_or_tag, 
-    lakefs_object_it=common.lakefs_object_it,
-    lakefs_hive_partition_it=extractor.lakefs_hive_partition_it,
+    ref_from_branch_or_tag=ref_from_branch_or_tag,
 }
