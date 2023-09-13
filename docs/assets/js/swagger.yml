@@ -691,7 +691,7 @@ components:
       properties:
         id:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user.
         creation_date:
           type: integer
           format: int64
@@ -709,20 +709,13 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
-    ForgotPasswordRequest:
-      type: object
-      required:
-        - email
-      properties:
-        email:
-          type: string
 
     UserCreation:
       type: object
       properties:
         id:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user.
         invite_user:
           type: boolean
       required:
@@ -820,22 +813,6 @@ components:
       required:
         - featureUpdates
         - securityUpdates
-
-    UpdatePasswordByToken:
-      type: object
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-        - token
-        - newPassword
 
     Credentials:
       type: object
@@ -1587,48 +1564,6 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/password:
-    post:
-      tags:
-        - auth
-      operationId: updatePassword
-      summary: Update user password by reset_password token
-      security:
-        - cookie_auth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdatePasswordByToken"
-      responses:
-        201:
-          description: successful reset
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /auth/password/forgot:
-    post:
-      tags:
-        - auth
-      operationId: forgotPassword
-      summary: forgot password request initiates the password reset process
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ForgotPasswordRequest"
-      responses:
-        204:
-          description: No content
-        400:
-          $ref: "#/components/responses/BadRequest"
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /auth/capabilities:
     get:

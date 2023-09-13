@@ -122,13 +122,6 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
-    def test_forgot_password(self):
-        """Test case for forgot_password
-
-        forgot password request initiates the password reset process  # noqa: E501
-        """
-        pass
-
     def test_get_credentials(self):
         """Test case for get_credentials
 
@@ -238,13 +231,6 @@ class TestAuthApi(unittest.TestCase):
         """Test case for set_group_acl
 
         set ACL of group  # noqa: E501
-        """
-        pass
-
-    def test_update_password(self):
-        """Test case for update_password
-
-        Update user password by reset_password token  # noqa: E501
         """
         pass
 
