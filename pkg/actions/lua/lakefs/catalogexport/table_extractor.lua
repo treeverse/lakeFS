@@ -33,7 +33,7 @@ function extract_partition_prefix_from_path(partition_cols, path)
 end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
-function lakefs_hive_partition_it(client, repo_id, commit_id, base_path, page_size, delimiter, partition_cols)
+function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, delimiter, partition_cols)
     local after = ""
     local has_more = true
     local prefix = base_path
@@ -43,7 +43,7 @@ function lakefs_hive_partition_it(client, repo_id, commit_id, base_path, page_si
             return nil
         end
         local partition_entries = {}
-        local iter = common.lakefs_object_it(client, repo_id, commit_id, after, prefix, page_size, delimiter)
+        local iter = common.lakefs_object_pager(client, repo_id, commit_id, after, prefix, page_size, delimiter)
         for entries in iter do
             for _, entry in ipairs(entries) do
                 is_hidden = pathlib.is_hidden(pathlib.parse(entry.path).base_name)
@@ -123,8 +123,8 @@ function HiveTable:version()
     return 0
 end
 
-function HiveTable:partition_iterator()
-    return lakefs_hive_partition_it(lakefs, self.repo_id, self.commit_id, self._path, self._iter_page_size, "",
+function HiveTable:partition_pager()
+    return lakefs_hive_partition_pager(lakefs, self.repo_id, self.commit_id, self._path, self._iter_page_size, "",
         self.partition_cols)
 end
 
@@ -133,7 +133,7 @@ TableExtractor.__index = TableExtractor
 
 function TableExtractor.new(repository_id, ref, commit_id, tables_iter_page_size, export_iter_page_size)
     local self = setmetatable({}, TableExtractor)
-    self.tables_registry_base = pathlib.join(pathlib.default_separator(), '_lakefs_tables/')
+    self.tables_registry_base = '_lakefs_tables/'
     self.repository_id = repository_id
     self.commit_id = commit_id
     self.ref = ref
@@ -147,7 +147,7 @@ end
 -- list all YAML files in _lakefs_tables
 function TableExtractor:list_table_definitions()
     local table_entries = {}
-    local iter = common.lakefs_object_it(lakefs, self.repository_id, self.commit_id, "", self.tables_registry_base,
+    local iter = common.lakefs_object_pager(lakefs, self.repository_id, self.commit_id, "", self.tables_registry_base,
         self._iter_page_size, "")
     for entries in iter do
         for _, entry in ipairs(entries) do
@@ -182,5 +182,5 @@ end
 
 return {
     TableExtractor = TableExtractor,
-    lakefs_hive_partition_it = lakefs_hive_partition_it
+    lakefs_hive_partition_pager = lakefs_hive_partition_pager
 }
