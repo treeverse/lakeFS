@@ -86,26 +86,7 @@ func TestLocalLoad(t *testing.T) {
 	auditChecker := version.NewDefaultAuditChecker(conf.Security.AuditCheckURL, "", nil)
 	emailer, err := email.NewEmailer(email.Params(conf.Email))
 	testutil.Must(t, err)
-	handler := api.Serve(
-		conf,
-		c,
-		authenticator,
-		authService,
-		blockAdapter,
-		meta,
-		migrator,
-		&stats.NullCollector{},
-		nil,
-		actionsService,
-		auditChecker,
-		logging.ContextUnavailable(),
-		emailer,
-		nil,
-		nil,
-		nil,
-		upload.DefaultPathProvider,
-		nil,
-	)
+	handler := api.Serve(conf, c, authenticator, authService, blockAdapter, meta, migrator, &stats.NullCollector{}, nil, actionsService, auditChecker, logging.ContextUnavailable(), emailer, nil, nil, upload.DefaultPathProvider, nil)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
