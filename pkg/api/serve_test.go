@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -106,8 +105,7 @@ func createUserWithDefaultGroup(t testing.TB, clt api.ClientWithResponsesInterfa
 	t.Helper()
 	// create the user
 	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{
-		Id:         "test@example.com",
-		InviteUser: swag.Bool(false),
+		Id: "test@example.com",
 	})
 	testutil.Must(t, err)
 	if createUsrRes.JSON201 == nil {

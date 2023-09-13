@@ -178,7 +178,7 @@ class Auth {
 
     async createUser(userId, inviteUser = false) {
         const response = await apiRequest(`/auth/users`,
-            {method: 'POST', body: JSON.stringify({id: userId, invite_user: inviteUser})});
+            {method: 'POST', body: JSON.stringify({id: userId})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }

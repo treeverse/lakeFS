@@ -62,8 +62,6 @@ const (
 
 	DefaultMaxDeleteObjects = 1000
 
-	DefaultResetPasswordExpiration = 20 * time.Minute
-
 	// httpStatusClientClosedRequest used as internal status code when request context is cancelled
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
@@ -1067,14 +1065,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params Li
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
-	secret := c.Auth.SecretStore().SharedSecret()
-	currentTime := time.Now()
-	return auth.GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
-}
-
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
-	invite := swag.BoolValue(body.InviteUser)
 	username := body.Id
 
 	// Check that username is valid
@@ -1085,16 +1076,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 
 	var parsedEmail *string
-	if invite {
-		addr, err := mail.ParseAddress(username)
-		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
-			writeError(w, r, http.StatusBadRequest, "Invalid email format")
-			return
-		}
-		username = strings.ToLower(addr.Address)
-		parsedEmail = &addr.Address
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
@@ -1105,15 +1086,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body Cre
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user", r, "", "", "")
-	if invite {
-		err := c.Auth.InviteUser(ctx, *parsedEmail)
-		if c.handleAPIError(ctx, w, r, err) {
-			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
-			return
-		}
-		writeResponse(w, r, http.StatusCreated, User{Id: *parsedEmail})
-		return
-	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     username,
@@ -4208,29 +4180,6 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string) error {
-	user, err := c.Auth.GetUserByEmail(ctx, emailAddr)
-	if err != nil {
-		return err
-	}
-	emailAddr = StringValue(user.Email)
-	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
-		return err
-	}
-	params := map[string]string{
-		"token": token,
-	}
-	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
-		return err
-	}
-	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
-	return nil
 }
 
 func (c *Controller) ExpandTemplate(w http.ResponseWriter, r *http.Request, templateLocation string, p ExpandTemplateParams) {

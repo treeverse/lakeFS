@@ -180,10 +180,9 @@ type AuthService struct {
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
-	*EmailInviteHandler
 }
 
-func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
+func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -197,7 +196,6 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *emai
 		cache:       cache,
 		log:         logger,
 	}
-	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
 	return res
 }
 
@@ -1148,26 +1146,6 @@ type APIAuthService struct {
 	delegatedInviteHandler *EmailInviteHandler
 }
 
-func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
-	if a.delegatedInviteHandler != nil {
-		return a.delegatedInviteHandler.InviteUser(ctx, email)
-	}
-	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
-		Email:    swag.String(email),
-		Invite:   swag.Bool(true),
-		Username: email,
-	})
-	if err != nil {
-		a.logger.WithError(err).Error("failed to create user")
-		return err
-	}
-	return a.validateResponse(resp, http.StatusCreated)
-}
-
-func (a *APIAuthService) IsInviteSupported() bool {
-	return true
-}
-
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
 	return a.secretStore
 }
@@ -1178,7 +1156,6 @@ func (a *APIAuthService) Cache() Cache {
 
 func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
-		Email:        user.Email,
 		FriendlyName: user.FriendlyName,
 		Source:       &user.Source,
 		Username:     user.Username,
