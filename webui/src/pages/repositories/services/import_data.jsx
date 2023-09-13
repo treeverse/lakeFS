@@ -138,7 +138,7 @@ const ImportForm = ({
                     <Form.Label><strong>Destination:</strong></Form.Label>
                         <Form.Control type="text" autoFocus name="destination" ref={destRef} defaultValue={path}/>
                     <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
-                        Leave empty to import to the repository&apos;s root.
+                        Leave empty to import to the repository&apos;s root. Destination should not start with &lsquo;&sol;&rsquo;
                     </Form.Text>
                 </Form.Group>
             }
