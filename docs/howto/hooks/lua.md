@@ -420,6 +420,23 @@ The `value` string should be in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601
 
 Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: target="_blank" } in string representation.
 
+### `net/url`
+
+Provides a `parse` function parse a URL string into parts, returns a table with the URL's host, path, scheme, query and fragment.
+
+```lua
+> local url = require("net/url")
+> url.parse("https://example.com/path?p1=a#section")
+{
+    ["host"] = "example.com"
+    ["path"] = "/path"
+    ["scheme"] = "https"
+    ["query"] = "p1=a"
+    ["fragment"] = "section"
+}
+```
+
+
 ### `net/http` (optional)
 
 Provides a `request` function that performs an HTTP request.
