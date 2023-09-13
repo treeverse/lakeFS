@@ -1,3 +1,9 @@
+local SHORT_DIGEST_LEN=6
+
+function short_digest(digest)
+    return digest:sub(1, SHORT_DIGEST_LEN)
+end 
+
 function lakefs_object_it(lakefs_client, repo_id, commit_id, after, prefix, page_size, delimiter)
     local next_offset = after
     local has_more = true
@@ -18,6 +24,5 @@ end
 
 return {
     lakefs_object_it=lakefs_object_it,
-    SHORT_DIGEST_LEN=6,
-    LAKEFS_DEFAULT_PAGE_SIZE=30,
+    short_digest=short_digest,
 }

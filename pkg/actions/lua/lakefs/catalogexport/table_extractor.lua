@@ -80,7 +80,7 @@ local HiveTable = {}
 HiveTable.__index = HiveTable
 
 -- Factory function to create new instances
-function HiveTable.new(repo_id, ref_id, commit_id, path, name, partition_cols, schema)
+function HiveTable.new(repo_id, ref_id, commit_id, path, name, partition_cols, schema, iter_page_size)
     local self = setmetatable({}, HiveTable)
     self.repo_id = repo_id
     self.ref_id = ref_id
@@ -89,7 +89,7 @@ function HiveTable.new(repo_id, ref_id, commit_id, path, name, partition_cols, s
     self._name = name
     self.schema = schema
     self.partition_cols = partition_cols
-    self._iter_page_size = common.LAKEFS_DEFAULT_PAGE_SIZE
+    self._iter_page_size = iter_page_size
     return self
 end
 
@@ -100,7 +100,7 @@ end
 
 function HiveTable:description()
     return string.format('Hive table representation for `lakefs://%s/%s/%s` digest: %s', self.repo_id, self.ref_id,
-        tostring(self._path), self.commit_id:sub(1, common.SHORT_DIGEST_LEN))
+        tostring(self._path), common.short_digest(self.commit_id))
 end
 
 function HiveTable:path()
@@ -131,13 +131,16 @@ end
 local TableExtractor = {}
 TableExtractor.__index = TableExtractor
 
-function TableExtractor.new(repository_id, ref, commit_id)
+function TableExtractor.new(repository_id, ref, commit_id, tables_iter_page_size, export_iter_page_size)
     local self = setmetatable({}, TableExtractor)
     self.tables_registry_base = pathlib.join(pathlib.default_separator(), '_lakefs_tables/')
     self.repository_id = repository_id
     self.commit_id = commit_id
     self.ref = ref
-    self._iter_page_size = common.LAKEFS_DEFAULT_PAGE_SIZE
+    -- object iterator when listing _lakefs_tables/*
+    self._iter_page_size = tables_iter_page_size
+    -- object iteration when listing partitions to export (table objects)
+    self._export_iter_page_size = export_iter_page_size
     return self
 end
 
@@ -172,7 +175,7 @@ function TableExtractor:get_table(logical_path)
     -- TODO(isan) decide where to handle different table parsing? (delta table / glue table etc)
     if descriptor.type == 'hive' then
         return HiveTable.new(self.repository_id, self.ref, self.commit_id, descriptor.path, descriptor.name,
-            descriptor.partition_columns or {}, descriptor.schema), nil
+            descriptor.partition_columns or {}, descriptor.schema, self._export_iter_page_size), nil
     end
     return nil, "NotImplemented: table type: " .. descriptor.type .. " path: " .. logical_path
 end
