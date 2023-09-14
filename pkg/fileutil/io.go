@@ -153,7 +153,7 @@ func VerifyAbsPath(absPath, basePath string) error {
 }
 
 func VerifyRelPath(relPath, basePath string) error {
-	abs := basePath + string(os.PathSeparator) + relPath
+	abs := filepath.Join(basePath, relPath)
 	return VerifyAbsPath(abs, basePath)
 }
 
