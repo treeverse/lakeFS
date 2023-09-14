@@ -16,6 +16,7 @@ description: lakeFS comes with its own native CLI client. Here you can see the c
 parent: Reference
 redirect_from:
   - /reference/commands.html
+  - /quickstart/lakefs_cli.html
 ---
 
 {% comment %}
