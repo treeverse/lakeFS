@@ -5,8 +5,8 @@
 # v0.110.0
 
 :new: What's new:
-- Removed and detracted: expand template API- (#6587)
-- Removed and detracted: remove the update and forgot password APIs (#6591)
+- Removed deprecated: expand template API (#6587)
+- Removed deprecated: remove the update and forgot password APIs (#6591)
 - lakectl: dbt and metastore commands marked as deprecated (#6565)
 - API: Update APIs tag for internal use (#6582)
 - Upgrade code to use AWS SDK go v2 (#6486)
