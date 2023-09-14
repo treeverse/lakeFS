@@ -27,9 +27,8 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
         return null;
     }
 
-    const showResetPwd = !error && response && response.forgot_password;
-    const usernamePlaceholder = showResetPwd ? "Email / Access Key ID" : "Access Key ID"
-    const passwordPlaceholder = showResetPwd ? "Password / Secret Access Key" : "Secret Access Key"
+    const usernamePlaceholder = "Access Key ID"
+    const passwordPlaceholder = "Secret Access Key"
     const { next } = router.query;
 
     return (
@@ -65,10 +64,6 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>
                         <div className={"mt-2 mb-1"}>
-                            { showResetPwd ?
-                                <Button variant="link" className={"text-secondary mt-2"}  onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
-                                : ""
-                            }
                             { loginConfig.fallback_login_url ?
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
                                     loginConfig.login_cookie_names?.forEach(

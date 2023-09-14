@@ -62,8 +62,6 @@ const (
 
 	DefaultMaxDeleteObjects = 1000
 
-	DefaultResetPasswordExpiration = 20 * time.Minute
-
 	// httpStatusClientClosedRequest used as internal status code when request context is cancelled
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
@@ -705,7 +703,6 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
-			Email:        u.Email,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1065,16 +1062,9 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
-			Email:        u.Email,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
-	secret := c.Auth.SecretStore().SharedSecret()
-	currentTime := time.Now()
-	return auth.GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
@@ -4230,74 +4220,6 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string) error {
-	user, err := c.Auth.GetUserByEmail(ctx, emailAddr)
-	if err != nil {
-		return err
-	}
-	emailAddr = swag.StringValue(user.Email)
-	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
-		return err
-	}
-	params := map[string]string{
-		"token": token,
-	}
-	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
-		return err
-	}
-	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
-	return nil
-}
-
-func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body apigen.ForgotPasswordJSONRequestBody) {
-	addr, err := mail.ParseAddress(body.Email)
-	if err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid email")
-		return
-	}
-	err = c.resetPasswordRequest(r.Context(), addr.Address)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
-func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body apigen.UpdatePasswordJSONRequestBody) {
-	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
-	if err != nil {
-		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
-
-	// verify provided email matched the token
-	requestEmail := swag.StringValue(body.Email)
-	if requestEmail != "" && requestEmail != claims.Subject {
-		c.Logger.WithError(err).WithFields(logging.Fields{
-			"token":         body.Token,
-			"request_email": requestEmail,
-		}).Debug("requested email doesn't match the email provided in verified token")
-	}
-
-	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
-		writeError(w, r, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		return
-	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
-	if err != nil {
-		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
-		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, nil)
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {

@@ -85,7 +85,6 @@ class User(ModelNormal):
             'id': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
             'friendly_name': (str,),  # noqa: E501
-            'email': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -97,7 +96,6 @@ class User(ModelNormal):
         'id': 'id',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
         'friendly_name': 'friendly_name',  # noqa: E501
-        'email': 'email',  # noqa: E501
     }
 
     read_only_vars = {
@@ -111,7 +109,7 @@ class User(ModelNormal):
         """User - a model defined in OpenAPI
 
         Args:
-            id (str): a unique identifier for the user. In password-based authentication, this is the email.
+            id (str): a unique identifier for the user.
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -146,7 +144,6 @@ class User(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             friendly_name (str): [optional]  # noqa: E501
-            email (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -200,7 +197,7 @@ class User(ModelNormal):
         """User - a model defined in OpenAPI
 
         Args:
-            id (str): a unique identifier for the user. In password-based authentication, this is the email.
+            id (str): a unique identifier for the user.
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -235,7 +232,6 @@ class User(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             friendly_name (str): [optional]  # noqa: E501
-            email (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
