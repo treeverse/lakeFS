@@ -5,11 +5,11 @@ local common = require("lakefs/catalogexport/common")
 function ref_from_branch_or_tag(action_info)
     event = action_info.event_type
     if event == "pre-create-tag" or event == "post-create-tag" then
-        return action_info.tag_id, nil
+        return action_info.tag_id
     elseif event == "pre-create-branch" or event == "post-create-branch" or "post-commit" or "post-merge" then
-        return action_info.branch_id, nil
+        return action_info.branch_id
     else
-        return nil, "unsupported event type: " .. action_info.event_type
+        error("unsupported event type: " .. action_info.event_type)
     end
 end
 

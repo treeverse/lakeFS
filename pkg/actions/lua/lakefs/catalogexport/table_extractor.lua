@@ -107,14 +107,6 @@ function HiveTable:path()
     return self._path
 end
 
-function HiveTable:min_reader_version()
-    return 1
-end
-
-function HiveTable:schema_string()
-    return json.marshal(self.schema)
-end
-
 function HiveTable:partition_columns()
     return self.partition_cols
 end
@@ -144,6 +136,11 @@ function TableExtractor.new(repository_id, ref, commit_id, tables_iter_page_size
     return self
 end
 
+function TableExtractor:_is_table_obj(entry)
+    local is_hidden = pathlib.is_hidden(pathlib.parse(entry.path).base_name)
+    local is_yaml = strings.has_suffix(entry.path, ".yaml")
+    return not is_hidden and is_yaml and entry.path_type == "object"
+end 
 -- list all YAML files in _lakefs_tables
 function TableExtractor:list_table_definitions()
     local table_entries = {}
@@ -151,9 +148,7 @@ function TableExtractor:list_table_definitions()
         self._iter_page_size, "")
     for entries in iter do
         for _, entry in ipairs(entries) do
-            is_hidden = pathlib.is_hidden(pathlib.parse(entry.path).base_name)
-            is_yaml = strings.has_suffix(entry.path, ".yaml")
-            if not is_hidden and is_yaml and entry.path_type == "object" then
+            if self:_is_table_obj(entry) then
                 table.insert(table_entries, {
                     physical_address = entry.physical_address,
                     path = entry.path
