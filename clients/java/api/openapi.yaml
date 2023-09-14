@@ -166,67 +166,6 @@ paths:
       - auth
       x-contentType: application/json
       x-accepts: application/json
-  /auth/password:
-    post:
-      operationId: updatePassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePasswordByToken'
-        required: true
-      responses:
-        "201":
-          description: successful reset
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security:
-      - cookie_auth: []
-      summary: Update user password by reset_password token
-      tags:
-      - auth
-      x-contentType: application/json
-      x-accepts: application/json
-  /auth/password/forgot:
-    post:
-      operationId: forgotPassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ForgotPasswordRequest'
-        required: true
-      responses:
-        "204":
-          description: No content
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      summary: forgot password request initiates the password reset process
-      tags:
-      - auth
-      x-contentType: application/json
-      x-accepts: application/json
   /auth/capabilities:
     get:
       operationId: getAuthCapabilities
@@ -6431,19 +6370,15 @@ components:
         friendly_name: friendly_name
         id: id
         creation_date: 0
-        email: email
       properties:
         id:
-          description: a unique identifier for the user. In password-based authentication,
-            this is the email.
+          description: a unique identifier for the user.
           type: string
         creation_date:
           description: Unix Epoch in seconds
           format: int64
           type: integer
         friendly_name:
-          type: string
-        email:
           type: string
       required:
       - creation_date
@@ -6455,21 +6390,11 @@ components:
           friendly_name: friendly_name
           id: id
           creation_date: 0
-          email: email
       properties:
         user:
           $ref: '#/components/schemas/User'
       required:
       - user
-      type: object
-    ForgotPasswordRequest:
-      example:
-        email: email
-      properties:
-        email:
-          type: string
-      required:
-      - email
       type: object
     UserCreation:
       example:
@@ -6477,8 +6402,7 @@ components:
         id: id
       properties:
         id:
-          description: a unique identifier for the user. In password-based authentication,
-            this is the email.
+          description: a unique identifier for the user.
           type: string
         invite_user:
           type: boolean
@@ -6611,25 +6535,6 @@ components:
       - featureUpdates
       - securityUpdates
       type: object
-    UpdatePasswordByToken:
-      example:
-        newPassword: newPassword
-        email: email
-        token: token
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-      - newPassword
-      - token
-      type: object
     Credentials:
       example:
         access_key_id: access_key_id
@@ -6746,11 +6651,9 @@ components:
         - friendly_name: friendly_name
           id: id
           creation_date: 0
-          email: email
         - friendly_name: friendly_name
           id: id
           creation_date: 0
-          email: email
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'

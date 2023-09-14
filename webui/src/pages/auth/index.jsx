@@ -6,7 +6,6 @@ import GroupsIndexPage from "./groups";
 import UsersIndexPage from "./users";
 import PoliciesIndexPage from "./policies";
 import LoginPage from "./login";
-import ResetPasswordPage from "./reset-password";
 import ActivateInvitedUserPage from "./users/create-user-with-password";
 
 const Auth = () => {
@@ -14,7 +13,6 @@ const Auth = () => {
         <Routes>
             <Route path="" element={<Navigate to="credentials"/>} />
             <Route path="login" element={<LoginPage/>} />
-            <Route path="resetpassword" element={<ResetPasswordPage/>} />
             <Route path="credentials" element={<CredentialsPage/>} />
             <Route path="users/create" element={<ActivateInvitedUserPage/>} />
             <Route path="users/*" element={<UsersIndexPage/>} />

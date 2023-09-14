@@ -134,7 +134,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**delete_user**](docs/AuthApi.md#delete_user) | **DELETE** /auth/users/{userId} | delete user
 *AuthApi* | [**detach_policy_from_group**](docs/AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detach_policy_from_user**](docs/AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-*AuthApi* | [**forgot_password**](docs/AuthApi.md#forgot_password) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
 *AuthApi* | [**get_credentials**](docs/AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**get_current_user**](docs/AuthApi.md#get_current_user) | **GET** /user | get current user
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
@@ -151,7 +150,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**set_group_acl**](docs/AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
-*AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherry_pick**](docs/BranchesApi.md#cherry_pick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
@@ -248,7 +246,6 @@ Class | Method | HTTP request | Description
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
- - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)
  - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)
@@ -311,7 +308,6 @@ Class | Method | HTTP request | Description
  - [StorageURI](docs/StorageURI.md)
  - [TagCreation](docs/TagCreation.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
- - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)

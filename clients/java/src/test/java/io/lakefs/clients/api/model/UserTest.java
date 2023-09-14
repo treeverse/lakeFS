@@ -64,12 +64,4 @@ public class UserTest {
         // TODO: test friendlyName
     }
 
-    /**
-     * Test the property 'email'
-     */
-    @Test
-    public void emailTest() {
-        // TODO: test email
-    }
-
 }
