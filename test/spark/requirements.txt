@@ -1,3 +1,0 @@
-lakefs_client==0.104.0
-python-on-whales==0.62.0
-tenacity==8.2.2

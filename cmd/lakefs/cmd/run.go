@@ -124,17 +124,11 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
 		if cfg.IsAuthTypeAPI() {
-			var apiEmailer *email.Emailer
-			if !cfg.Auth.API.SupportsInvites {
-				// invites not supported by API - delegate it to emailer
-				apiEmailer = emailer
-			}
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
-				apiEmailer,
 				logger.WithField("service", "auth_api"),
 			)
 			if err != nil {

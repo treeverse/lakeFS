@@ -1,9 +1,0 @@
-*.class
-.settings/
-.cache/
-.history/
-.lib/
-target/
-project/boot/
-project/plugins/project/
-.bsp

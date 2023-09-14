@@ -885,8 +885,6 @@ components:
       properties:
         invite_user:
           type: boolean
-        forgot_password:
-          type: boolean
 
     UserList:
       type: object

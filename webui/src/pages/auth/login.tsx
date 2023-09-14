@@ -22,10 +22,6 @@ interface LoginConfig {
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
-    const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
-    if (loading) {
-        return null;
-    }
 
     const usernamePlaceholder = "Access Key ID"
     const passwordPlaceholder = "Secret Access Key"
