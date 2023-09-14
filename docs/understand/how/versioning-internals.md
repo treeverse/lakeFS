@@ -6,6 +6,7 @@ description: This section explains how versioning works in lakeFS.
 redirect_from: 
   - /understand/architecture/data-model.html
   - /understand/understand/data-model.html
+  - /understand/data-model.html
   - /understand/versioning-internals.html
 --- 
 
