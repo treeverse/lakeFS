@@ -143,7 +143,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	kvStore := kvtest.GetStore(ctx, t)
 	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
-	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
