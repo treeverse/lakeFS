@@ -13,7 +13,11 @@ function ref_from_branch_or_tag(action_info)
     end
 end
 
+
 return {
-    TableExtractor = extractor.TableExtractor,
+    -- for testing purposes with scripts 
+    internal = {
+        extractor = extractor
+    },
     ref_from_branch_or_tag = ref_from_branch_or_tag
 }
