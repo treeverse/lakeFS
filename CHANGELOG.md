@@ -11,6 +11,7 @@
 - API: Update APIs tag for internal use (#6582)
 - Upgrade code to use AWS SDK go v2 (#6486)
 - Actions: Lua package to parse URL (#6597)
+- UI: Commit info consistent across screens (#6593)
 
 :bug: Bug fixed:
 - Fix lakectl local verify bad path error on Windows (#6602)
