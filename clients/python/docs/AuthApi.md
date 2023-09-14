@@ -763,7 +763,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = auth_api.AuthApi(api_client)
     user_creation = UserCreation(
         id="id_example",
-        invite_user=True,
     ) # UserCreation |  (optional)
 
     # example passing only required values which don't have defaults set

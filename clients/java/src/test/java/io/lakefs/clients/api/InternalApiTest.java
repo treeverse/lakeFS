@@ -14,7 +14,6 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
@@ -51,20 +50,6 @@ public class InternalApiTest {
     public void createBranchProtectionRulePreflightTest() throws ApiException {
         String repository = null;
                 api.createBranchProtectionRulePreflight(repository);
-        // TODO: test validations
-    }
-    
-    /**
-     * list authentication capabilities supported
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getAuthCapabilitiesTest() throws ApiException {
-                AuthCapabilities response = api.getAuthCapabilities();
         // TODO: test validations
     }
     

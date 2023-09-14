@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -20,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -106,8 +104,7 @@ func createUserWithDefaultGroup(t testing.TB, clt apigen.ClientWithResponsesInte
 	t.Helper()
 	// create the user
 	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), apigen.CreateUserJSONRequestBody{
-		Id:         "test@example.com",
-		InviteUser: swag.Bool(false),
+		Id: "test@example.com",
 	})
 	testutil.Must(t, err)
 	if createUsrRes.JSON201 == nil {
@@ -187,12 +184,11 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	})
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
-	emailer, err := email.NewEmailer(email.Params(cfg.Email))
 
 	otfDiffService := tablediff.NewMockService()
 
 	testutil.Must(t, err)
-	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), emailer, nil, nil, upload.DefaultPathProvider, otfDiffService)
+	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, otfDiffService)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

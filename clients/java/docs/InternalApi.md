@@ -5,7 +5,6 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createBranchProtectionRulePreflight**](InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
-[**getAuthCapabilities**](InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**getSetupState**](InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**postStatsEvents**](InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 [**setGarbageCollectionRulesPreflight**](InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -104,63 +103,6 @@ null (empty response body)
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
-**0** | Internal Server Error |  -  |
-
-<a name="getAuthCapabilities"></a>
-# **getAuthCapabilities**
-> AuthCapabilities getAuthCapabilities()
-
-list authentication capabilities supported
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.InternalApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-
-    InternalApi apiInstance = new InternalApi(defaultClient);
-    try {
-      AuthCapabilities result = apiInstance.getAuthCapabilities();
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling InternalApi#getAuthCapabilities");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-[**AuthCapabilities**](AuthCapabilities.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | auth capabilities |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getSetupState"></a>

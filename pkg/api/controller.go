@@ -27,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -92,7 +91,6 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
-	Emailer               *email.Emailer
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
@@ -145,13 +143,6 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 		RunId:                 uncommittedInfo.RunID,
 		GcUncommittedLocation: uncommittedInfo.Location,
 		ContinuationToken:     nextContinuationToken,
-	})
-}
-
-func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	inviteSupported := c.Auth.IsInviteSupported()
-	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser: &inviteSupported,
 	})
 }
 
@@ -1066,7 +1057,6 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
-	invite := swag.BoolValue(body.InviteUser)
 	username := body.Id
 
 	// Check that username is valid
@@ -1077,16 +1067,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	var parsedEmail *string
-	if invite {
-		addr, err := mail.ParseAddress(username)
-		if err != nil {
-			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
-			writeError(w, r, http.StatusBadRequest, "Invalid email format")
-			return
-		}
-		username = strings.ToLower(addr.Address)
-		parsedEmail = &addr.Address
-	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateUserAction,
@@ -1097,15 +1077,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user", r, "", "", "")
-	if invite {
-		err := c.Auth.InviteUser(ctx, *parsedEmail)
-		if c.handleAPIError(ctx, w, r, err) {
-			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
-			return
-		}
-		writeResponse(w, r, http.StatusCreated, apigen.User{Id: *parsedEmail})
-		return
-	}
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     username,
@@ -4527,7 +4498,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, emailer *email.Emailer, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
+func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -4541,7 +4512,6 @@ func NewController(cfg *config.Config, catalog catalog.Interface, authenticator 
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
-		Emailer:               emailer,
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
 		otfDiffService:        otfDiffService,

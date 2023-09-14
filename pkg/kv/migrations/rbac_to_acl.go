@@ -73,7 +73,6 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 	authService := auth.NewAuthService(
 		kvStore,
 		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-		nil,
 		authparams.ServiceCache(cfg.Auth.Cache),
 		logger.WithField("service", "auth_service"),
 	)

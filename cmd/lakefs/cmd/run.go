@@ -22,7 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -106,11 +105,6 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
 
-		emailer, err := email.NewEmailer(email.Params(cfg.Email))
-		if err != nil {
-			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
-		}
-
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
@@ -138,7 +132,6 @@ var runCmd = &cobra.Command{
 			authService = auth.NewAuthService(
 				kvStore,
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-				emailer,
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
@@ -257,7 +250,6 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
-			emailer,
 			cfg.Gateways.S3.DomainNames,
 			cfg.UISnippets(),
 			upload.DefaultPathProvider,

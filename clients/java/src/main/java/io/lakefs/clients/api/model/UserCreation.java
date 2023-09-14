@@ -33,10 +33,6 @@ public class UserCreation {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
-  public static final String SERIALIZED_NAME_INVITE_USER = "invite_user";
-  @SerializedName(SERIALIZED_NAME_INVITE_USER)
-  private Boolean inviteUser;
-
 
   public UserCreation id(String id) {
     
@@ -61,29 +57,6 @@ public class UserCreation {
   }
 
 
-  public UserCreation inviteUser(Boolean inviteUser) {
-    
-    this.inviteUser = inviteUser;
-    return this;
-  }
-
-   /**
-   * Get inviteUser
-   * @return inviteUser
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-
-  public Boolean getInviteUser() {
-    return inviteUser;
-  }
-
-
-  public void setInviteUser(Boolean inviteUser) {
-    this.inviteUser = inviteUser;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -93,13 +66,12 @@ public class UserCreation {
       return false;
     }
     UserCreation userCreation = (UserCreation) o;
-    return Objects.equals(this.id, userCreation.id) &&
-        Objects.equals(this.inviteUser, userCreation.inviteUser);
+    return Objects.equals(this.id, userCreation.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, inviteUser);
+    return Objects.hash(id);
   }
 
   @Override
@@ -107,7 +79,6 @@ public class UserCreation {
     StringBuilder sb = new StringBuilder();
     sb.append("class UserCreation {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    inviteUser: ").append(toIndentedString(inviteUser)).append("\n");
     sb.append("}");
     return sb.toString();
   }

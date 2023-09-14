@@ -713,8 +713,6 @@ components:
         id:
           type: string
           description: a unique identifier for the user.
-        invite_user:
-          type: boolean
       required:
         - id
 
@@ -879,12 +877,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Group"
-
-    AuthCapabilities:
-      type: object
-      properties:
-        invite_user:
-          type: boolean
 
     UserList:
       type: object
@@ -1557,25 +1549,6 @@ paths:
                 $ref: "#/components/schemas/AuthenticationToken"
         401:
           $ref: "#/components/responses/Unauthorized"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-
-
-  /auth/capabilities:
-    get:
-      tags:
-        - internal
-      operationId: getAuthCapabilities
-      summary: list authentication capabilities supported
-      security: []
-      responses:
-        200:
-          description: auth capabilities
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthCapabilities"
         default:
           $ref: "#/components/responses/ServerError"
 

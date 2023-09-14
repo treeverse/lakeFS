@@ -166,27 +166,6 @@ paths:
       - auth
       x-contentType: application/json
       x-accepts: application/json
-  /auth/capabilities:
-    get:
-      operationId: getAuthCapabilities
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthCapabilities'
-          description: auth capabilities
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      summary: list authentication capabilities supported
-      tags:
-      - internal
-      x-accepts: application/json
   /auth/users:
     get:
       operationId: listUsers
@@ -6398,14 +6377,11 @@ components:
       type: object
     UserCreation:
       example:
-        invite_user: true
         id: id
       properties:
         id:
           description: a unique identifier for the user.
           type: string
-        invite_user:
-          type: boolean
       required:
       - id
       type: object
@@ -6629,13 +6605,6 @@ components:
       required:
       - pagination
       - results
-      type: object
-    AuthCapabilities:
-      example:
-        invite_user: true
-      properties:
-        invite_user:
-          type: boolean
       type: object
     UserList:
       example:

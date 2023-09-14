@@ -4,7 +4,7 @@ import {Route, Routes} from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
 import {AuthLayout} from "../../../lib/components/auth/layout";
-import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
+import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../lib/components/modals";
@@ -45,12 +45,10 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
 
     useEffect(() => { setSelected([]); }, [refresh, after]);
 
-    const authCapabilities = useAPI(() => auth.getAuthCapabilities());
     if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
-    if (authCapabilities.loading) return <Loading/>;
 
-    const canInviteUsers = !authCapabilities.error && authCapabilities.response && authCapabilities.response.invite_user;
+    const canInviteUsers = true;
 
     return (
         <>

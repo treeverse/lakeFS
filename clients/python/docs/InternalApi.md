@@ -5,7 +5,6 @@ All URIs are relative to *http://localhost/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**create_branch_protection_rule_preflight**](InternalApi.md#create_branch_protection_rule_preflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
-[**get_auth_capabilities**](InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**get_setup_state**](InternalApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**post_stats_events**](InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 [**set_garbage_collection_rules_preflight**](InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
@@ -116,69 +115,6 @@ void (empty response body)
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **get_auth_capabilities**
-> AuthCapabilities get_auth_capabilities()
-
-list authentication capabilities supported
-
-### Example
-
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import internal_api
-from lakefs_client.model.error import Error
-from lakefs_client.model.auth_capabilities import AuthCapabilities
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient() as api_client:
-    # Create an instance of the API class
-    api_instance = internal_api.InternalApi(api_client)
-
-    # example, this endpoint has no required or optional parameters
-    try:
-        # list authentication capabilities supported
-        api_response = api_instance.get_auth_capabilities()
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling InternalApi->get_auth_capabilities: %s\n" % e)
-```
-
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-[**AuthCapabilities**](AuthCapabilities.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | auth capabilities |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
