@@ -5,13 +5,13 @@
 # v0.110.0
 
 :new: What's new:
-- Removed deprecated: expand template API (#6587)
-- Removed deprecated: remove the update and forgot password APIs (#6591)
-- lakectl: dbt and metastore commands marked as deprecated (#6565)
-- API: Update APIs tag for internal use (#6582)
 - Upgrade code to use AWS SDK go v2 (#6486)
 - Actions: Lua package to parse URL (#6597)
 - UI: Commit info consistent across screens (#6593)
+- API: Update APIs tag for internal use (#6582)
+- lakectl: dbt and metastore commands marked as deprecated (#6565)
+- Removed deprecated: expand template API (#6587)
+- Removed deprecated: remove the update and forgot password APIs (#6591)
 
 :bug: Bug fixed:
 - Fix lakectl local verify bad path error on Windows (#6602)
