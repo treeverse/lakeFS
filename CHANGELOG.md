@@ -5,16 +5,16 @@
 # v0.110.0
 
 :new: What's new:
-- lakectl: deprecate dbt and metastore commands (#6565)
-- API: move specific API to internal tag (#6582)
+- Removed and detracted: expand template API- (#6587)
+- Removed and detracted: remove the update and forgot password APIs (#6591)
+- lakectl: dbt and metastore commands marked as deprecated (#6565)
+- API: Update APIs tag for internal use (#6582)
 - Upgrade code to use AWS SDK go v2 (#6486)
-- Deprecate: remove expand template API (#6587)
-- Add URL parser to lua runtime (#6597)
-- Deprecate: remove the update and forgot password APIs (#6591)
+- Actions: Lua package to parse URL (#6597)
 
 :bug: Bug fixed:
 - Fix lakectl local verify bad path error on Windows (#6602)
-- Fix Azure pre-signed URL for blob from different account (#6594)
+- Fix Azure pre-signed URL for blob imported from different account (#6594)
   
 # v0.109.0
 
