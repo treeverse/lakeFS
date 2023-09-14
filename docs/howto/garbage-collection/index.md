@@ -7,6 +7,7 @@ redirect_from:
   - /reference/garbage-collection.html
   - /howto/garbage-collection-index.html
   - /howto/garbage-collection.html
+  - /reference/retention.html
 ---
 
 # Garbage Collection
