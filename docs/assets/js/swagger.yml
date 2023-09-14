@@ -698,8 +698,6 @@ components:
           description: Unix Epoch in seconds
         friendly_name:
           type: string
-        email:
-          type: string
 
     CurrentUser:
       type: object
@@ -708,7 +706,6 @@ components:
       properties:
         user:
           $ref: "#/components/schemas/User"
-
 
     UserCreation:
       type: object
@@ -814,6 +811,7 @@ components:
         - featureUpdates
         - securityUpdates
 
+
     Credentials:
       type: object
       required:
@@ -886,8 +884,6 @@ components:
       type: object
       properties:
         invite_user:
-          type: boolean
-        forgot_password:
           type: boolean
 
     UserList:
@@ -1563,6 +1559,7 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
 
 
   /auth/capabilities:

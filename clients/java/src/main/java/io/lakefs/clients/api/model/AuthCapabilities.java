@@ -33,10 +33,6 @@ public class AuthCapabilities {
   @SerializedName(SERIALIZED_NAME_INVITE_USER)
   private Boolean inviteUser;
 
-  public static final String SERIALIZED_NAME_FORGOT_PASSWORD = "forgot_password";
-  @SerializedName(SERIALIZED_NAME_FORGOT_PASSWORD)
-  private Boolean forgotPassword;
-
 
   public AuthCapabilities inviteUser(Boolean inviteUser) {
     
@@ -61,29 +57,6 @@ public class AuthCapabilities {
   }
 
 
-  public AuthCapabilities forgotPassword(Boolean forgotPassword) {
-    
-    this.forgotPassword = forgotPassword;
-    return this;
-  }
-
-   /**
-   * Get forgotPassword
-   * @return forgotPassword
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-
-  public Boolean getForgotPassword() {
-    return forgotPassword;
-  }
-
-
-  public void setForgotPassword(Boolean forgotPassword) {
-    this.forgotPassword = forgotPassword;
-  }
-
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -93,13 +66,12 @@ public class AuthCapabilities {
       return false;
     }
     AuthCapabilities authCapabilities = (AuthCapabilities) o;
-    return Objects.equals(this.inviteUser, authCapabilities.inviteUser) &&
-        Objects.equals(this.forgotPassword, authCapabilities.forgotPassword);
+    return Objects.equals(this.inviteUser, authCapabilities.inviteUser);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(inviteUser, forgotPassword);
+    return Objects.hash(inviteUser);
   }
 
   @Override
@@ -107,7 +79,6 @@ public class AuthCapabilities {
     StringBuilder sb = new StringBuilder();
     sb.append("class AuthCapabilities {\n");
     sb.append("    inviteUser: ").append(toIndentedString(inviteUser)).append("\n");
-    sb.append("    forgotPassword: ").append(toIndentedString(forgotPassword)).append("\n");
     sb.append("}");
     return sb.toString();
   }

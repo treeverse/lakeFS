@@ -1879,7 +1879,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, emailer *email.Emailer, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1916,9 +1916,6 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		secretStore: secretStore,
 		logger:      logger,
 		cache:       cache,
-	}
-	if emailer != nil {
-		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.ContextUnavailable(), emailer)
 	}
 	return res, nil
 }

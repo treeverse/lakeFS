@@ -83,7 +83,6 @@ class AuthCapabilities(ModelNormal):
         """
         return {
             'invite_user': (bool,),  # noqa: E501
-            'forgot_password': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -93,7 +92,6 @@ class AuthCapabilities(ModelNormal):
 
     attribute_map = {
         'invite_user': 'invite_user',  # noqa: E501
-        'forgot_password': 'forgot_password',  # noqa: E501
     }
 
     read_only_vars = {
@@ -138,7 +136,6 @@ class AuthCapabilities(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             invite_user (bool): [optional]  # noqa: E501
-            forgot_password (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -221,7 +218,6 @@ class AuthCapabilities(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             invite_user (bool): [optional]  # noqa: E501
-            forgot_password (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

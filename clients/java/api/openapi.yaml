@@ -6633,11 +6633,8 @@ components:
     AuthCapabilities:
       example:
         invite_user: true
-        forgot_password: true
       properties:
         invite_user:
-          type: boolean
-        forgot_password:
           type: boolean
       type: object
     UserList:

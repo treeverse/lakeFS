@@ -48,12 +48,4 @@ public class AuthCapabilitiesTest {
         // TODO: test inviteUser
     }
 
-    /**
-     * Test the property 'forgotPassword'
-     */
-    @Test
-    public void forgotPasswordTest() {
-        // TODO: test forgotPassword
-    }
-
 }

@@ -150,10 +150,8 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
 	inviteSupported := c.Auth.IsInviteSupported()
-	emailSupported := c.Emailer.Params.SMTPHost != ""
 	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser:     &inviteSupported,
-		ForgotPassword: &emailSupported,
+		InviteUser: &inviteSupported,
 	})
 }
 

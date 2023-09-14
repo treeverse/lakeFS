@@ -8,7 +8,6 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **inviteUser** | **Boolean** |  |  [optional]
-**forgotPassword** | **Boolean** |  |  [optional]
 
 
 
