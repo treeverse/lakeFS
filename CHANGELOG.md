@@ -2,9 +2,17 @@
 
 ## UNRELEASED
 
+# v0.110.0
+
 :new: What's new:
-- Restrict lakectl local to common prefixes only (#6510)
-- Added URL parser to lua runtime (#6597)
+- lakectl: deprecate dbt and metastore commands (#6565)
+- API: move specific api to internal tag (#6582)
+- Upgrade code to use aws sdk go v2 (#6486)
+- Remove expand template API (#6587)
+- Add URL parser to lua runtime (#6597)
+- Remove update and forgot password APIs (#6591)
+- Fix lakectl local verify bad path error on Windows (#6602)
+- Fix azure pre-signed url for blob from different account (#6594)
   
 # v0.109.0
 
