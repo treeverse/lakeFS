@@ -4,20 +4,16 @@ local common = require("lakefs/catalogexport/common")
 
 -- extract partition prefix from full path
 function extract_partitions_path(partition_cols, path)
-    local idx = 0
-    for _, partition in ipairs(partition_cols) do
-        local pattern = partition .. "=[^/]*"
-        local re = regexp.compile(pattern)
-        local match = re.find(path, pattern)
-        if match == "" then
-            return nil
-        end
-        -- expanding the pattern to a match regex because string.find() does not implement pattern matching https://github.com/Shopify/go-lua/blob/main/string.go#L37  
-        local i, j = string.find(path, match, idx)
-        idx = j + 1
+    -- list of columns to pattern {a,b,c} -> a=*/b=*/c=*/
+    local partition_pattern = table.concat(partition_cols,  "=[^/]*/") .. "=[^/]*/"
+    local re = regexp.compile(partition_pattern)
+    local match = re.find(path, partition_pattern)
+    if match == "" then
+        return nil
     end
-    return path:sub(1, idx)
+    return match
 end
+
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
 function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, partition_cols)
