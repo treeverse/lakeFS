@@ -6,15 +6,17 @@ local hive = require("lakefs/catalogexport/hive")
 
 local LAKEFS_TABLES_BASE = "_lakefs_tables/"
 
+-- check if lakefs entry is a table spec under _lakefs_tables/
 function _is_table_obj(entry, tables_base)
-    if entry == nil or entry.path_type ~= "object" then
+    if entry.path_type ~= "object" then
         return false
     end
-    -- remove _lakefs_tables/ from path 
-    local suffix = entry.path:sub(#tables_base, #entry.path)
-    local is_hidden = pathlib.is_hidden(suffix)
-    local is_yaml = strings.has_suffix(entry.path, ".yaml")
-    return not is_hidden and is_yaml
+    local path = entry.path
+    if strings.has_prefix(path, tables_base) then 
+        -- remove _lakefs_tables/ from path
+        path = entry.path:sub(#tables_base, #path)
+    end
+    return not pathlib.is_hidden(path) and strings.has_suffix(path, ".yaml")
 end
 
 -- list all YAML files under _lakefs_tables/*
