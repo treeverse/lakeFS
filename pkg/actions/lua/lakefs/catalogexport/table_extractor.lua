@@ -1,3 +1,4 @@
+local regexp = require("regexp")
 local pathlib = require("path")
 local strings = require("strings")
 local yaml = require("encoding/yaml")
@@ -5,35 +6,25 @@ local lakefs = require("lakefs")
 local json = require("encoding/json")
 local common = require("lakefs/catalogexport/common")
 
--- return partition table from path by based on columns in partition_cols
-function get_partition_values(partition_cols, path)
-    local vals = {}
-    splitted_path = strings.split(path, pathlib.default_separator())
-    for _, part in pairs(splitted_path) do
-        for _, col in ipairs(partition_cols) do
-            local prefix = col .. "="
-            if strings.has_prefix(part, prefix) then
-                vals[col] = part:sub(#prefix + 1)
-            end
+-- extract partition prefix from full path
+function extract_partitions_path(partition_cols, path)
+    local idx = 0
+    for _, partition in ipairs(partition_cols) do
+        local pattern = partition .. "=[^/]*"
+        local re = regexp.compile(pattern)
+        local match = re.find(path, pattern)
+        if match == "" then
+            return nil
         end
+        -- expanding the pattern to a match regex because string.find() does not implement pattern matching https://github.com/Shopify/go-lua/blob/main/string.go#L37  
+        local i, j = string.find(path, match, idx)
+        idx = j + 1
     end
-    return vals
-end
-
--- extract partition substr from full path
-function extract_partition_prefix_from_path(partition_cols, path)
-    local partitions = get_partition_values(partition_cols, path)
-    local partitions_list = {}
-    -- iterate partition_cols to maintain order  
-    for _, col in pairs(partition_cols) do
-        table.insert(partitions_list, col .. "=" .. partitions[col])
-    end
-    local partition_key = table.concat(partitions_list, pathlib.default_separator())
-    return partition_key
+    return path:sub(1, idx)
 end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
-function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, delimiter, partition_cols)
+function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, partition_cols)
     local after = ""
     local has_more = true
     local prefix = base_path
@@ -43,12 +34,11 @@ function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page
             return nil
         end
         local partition_entries = {}
-        local iter = common.lakefs_object_pager(client, repo_id, commit_id, after, prefix, page_size, delimiter)
+        local iter = common.lakefs_object_pager(client, repo_id, commit_id, after, prefix, page_size, "")
         for entries in iter do
             for _, entry in ipairs(entries) do
-                is_hidden = pathlib.is_hidden(pathlib.parse(entry.path).base_name)
-                if not is_hidden and entry.path_type == "object" then
-                    local partition_key = extract_partition_prefix_from_path(partition_cols, entry.path)
+                if not pathlib.is_hidden(pathlib.parse(entry.path).base_name) then
+                    local partition_key = extract_partitions_path(partition_cols, entry.path)
                     -- first time: if not set, assign current object partition as the target_partition key 
                     if target_partition == "" then
                         target_partition = partition_key
@@ -116,7 +106,7 @@ function HiveTable:version()
 end
 
 function HiveTable:partition_pager()
-    return lakefs_hive_partition_pager(lakefs, self.repo_id, self.commit_id, self._path, self._iter_page_size, "",
+    return lakefs_hive_partition_pager(lakefs, self.repo_id, self.commit_id, self._path, self._iter_page_size,
         self.partition_cols)
 end
 
@@ -137,10 +127,15 @@ function TableExtractor.new(repository_id, ref, commit_id, tables_iter_page_size
 end
 
 function TableExtractor:_is_table_obj(entry)
-    local is_hidden = pathlib.is_hidden(pathlib.parse(entry.path).base_name)
+    if entry == nil or entry.path_type ~= "object" then
+        return false 
+    end
+    -- remove _lakefs_tables/ from path 
+    local suffix = entry.path:sub(#self.tables_registry_base, #entry.path)
+    local is_hidden = pathlib.is_hidden(suffix)
     local is_yaml = strings.has_suffix(entry.path, ".yaml")
-    return not is_hidden and is_yaml and entry.path_type == "object"
-end 
+    return not is_hidden and is_yaml
+end
 -- list all YAML files in _lakefs_tables
 function TableExtractor:list_table_definitions()
     local table_entries = {}
@@ -170,9 +165,9 @@ function TableExtractor:get_table(logical_path)
     -- TODO(isan) decide where to handle different table parsing? (delta table / glue table etc)
     if descriptor.type == 'hive' then
         return HiveTable.new(self.repository_id, self.ref, self.commit_id, descriptor.path, descriptor.name,
-            descriptor.partition_columns or {}, descriptor.schema, self._export_iter_page_size), nil
+            descriptor.partition_columns or {}, descriptor.schema, self._export_iter_page_size)
     end
-    return nil, "NotImplemented: table type: " .. descriptor.type .. " path: " .. logical_path
+    error("NotImplemented: table type: " .. descriptor.type .. " path: " .. logical_path)
 end
 
 return {
