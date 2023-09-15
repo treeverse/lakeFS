@@ -259,29 +259,6 @@ const EntryMetadata = ({ metadata }) => {
     )
 };
 
-
-const CommitMetadata = ({ metadata }) => {
-  const entries = Object.entries(metadata);
-  if (entries.length === 0) {
-    // empty state
-    return <small>No metadata fields</small>;
-  }
-  return (
-    <Table striped size="sm" responsive>
-      <tbody>
-        {entries.map(([key, value]) => (
-          <tr key={`blame-commit-md-${key}`}>
-            <td>{key}</td>
-            <td>
-              <code>{value}</code>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  );
-};
-
 const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   const {
     response: commit,
