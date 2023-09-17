@@ -5,8 +5,8 @@ info:
   title: lakeFS API
   license:
     name: "Apache 2.0"
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  version: 0.1.0
+    url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+  version: "0.1.0"
 
 servers:
   - url: "/api/v1"
@@ -698,8 +698,6 @@ components:
           description: Unix Epoch in seconds
         friendly_name:
           type: string
-        email:
-          type: string
 
     CurrentUser:
       type: object
@@ -708,7 +706,6 @@ components:
       properties:
         user:
           $ref: "#/components/schemas/User"
-
 
     UserCreation:
       type: object
@@ -813,6 +810,7 @@ components:
       required:
         - featureUpdates
         - securityUpdates
+
 
     Credentials:
       type: object
@@ -1563,6 +1561,7 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
 
 
   /auth/capabilities:
