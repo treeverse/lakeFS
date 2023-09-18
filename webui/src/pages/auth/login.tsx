@@ -22,13 +22,6 @@ interface LoginConfig {
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
-    const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
-    if (loading) {
-        return null;
-    }
-
-    const usernamePlaceholder = "Access Key ID"
-    const passwordPlaceholder = "Secret Access Key"
     const { next } = router.query;
 
     return (
@@ -52,11 +45,11 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             }
                         }}>
                             <Form.Group controlId="username" className="mb-3">
-                                <Form.Control type="text" placeholder={usernamePlaceholder} autoFocus/>
+                                <Form.Control type="text" placeholder={"Access Key ID"} autoFocus/>
                             </Form.Group>
 
                             <Form.Group controlId="password" className="mb-3">
-                                <Form.Control type="password" placeholder={passwordPlaceholder}/>
+                                <Form.Control type="password" placeholder={"Secret Access Key"}/>
                             </Form.Group>
 
                             {(!!loginError) && <AlertError error={loginError}/>}
@@ -103,6 +96,7 @@ const LoginPage = () => {
             return null;
         }
         delete router.query.redirected;
+
         router.push({pathname: '/auth/login', query: router.query})
     }
     return (
