@@ -45,9 +45,7 @@ from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.import_creation import ImportCreation
 from lakefs_client.model.import_creation_response import ImportCreationResponse
 from lakefs_client.model.import_location import ImportLocation
-from lakefs_client.model.import_pagination import ImportPagination
-from lakefs_client.model.import_status_resp import ImportStatusResp
-from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
+from lakefs_client.model.import_status import ImportStatus
 from lakefs_client.model.inline_object import InlineObject
 from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_config import LoginConfig
@@ -84,7 +82,6 @@ from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
-from lakefs_client.model.stage_range_creation import StageRangeCreation
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement

@@ -168,7 +168,7 @@ class ObjectStats(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            physical_address_expiry (int): If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
+            physical_address_expiry (int): If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
             size_bytes (int): [optional]  # noqa: E501
             metadata (ObjectUserMetadata): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
@@ -265,7 +265,7 @@ class ObjectStats(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            physical_address_expiry (int): If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
+            physical_address_expiry (int): If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
             size_bytes (int): [optional]  # noqa: E501
             metadata (ObjectUserMetadata): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501

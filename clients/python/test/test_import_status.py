@@ -17,11 +17,11 @@ from lakefs_client.model.commit import Commit
 from lakefs_client.model.error import Error
 globals()['Commit'] = Commit
 globals()['Error'] = Error
-from lakefs_client.model.import_status_resp import ImportStatusResp
+from lakefs_client.model.import_status import ImportStatus
 
 
-class TestImportStatusResp(unittest.TestCase):
-    """ImportStatusResp unit test stubs"""
+class TestImportStatus(unittest.TestCase):
+    """ImportStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -29,10 +29,10 @@ class TestImportStatusResp(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testImportStatusResp(self):
-        """Test ImportStatusResp"""
+    def testImportStatus(self):
+        """Test ImportStatus"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = ImportStatusResp()  # noqa: E501
+        # model = ImportStatus()  # noqa: E501
         pass
 
 
