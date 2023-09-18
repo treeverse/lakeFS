@@ -1,0 +1,45 @@
+name: lakeFS OpenAPI Compatibility Tests
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+  push:
+    branches:
+      - master
+  workflow_dispatch: {}
+
+jobs:
+  swagger-backward-compatibility:
+    name: Swagger compatibility tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check-out revised code
+        uses: actions/checkout@v4
+        with:
+          path: 'changed'
+          sparse-checkout: |
+            api/swagger.yml
+            api/authorization.yml
+          sparse-checkout-cone-mode: false
+      - name: Check-out base code
+        uses: actions/checkout@v4
+        with:
+          ref: 'master'
+          path: 'base'
+          sparse-checkout: |
+            api/swagger.yml
+            api/authorization.yml
+          sparse-checkout-cone-mode: false
+      - name: Check lakeFS swagger YAML
+        id: test_swagger_breaking_changes
+        uses: oasdiff/oasdiff-action/diff@main
+        with:
+          base: base/api/swagger.yml
+          revision: changed/api/swagger.yml
+      - name: Check authorization YAML
+        id: test_authorization_breaking_changes
+        uses: oasdiff/oasdiff-action/diff@main
+        with:
+          base: base/api/authorization.yml
+          revision: changed/api/authorization.yml
