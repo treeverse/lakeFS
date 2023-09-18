@@ -16,52 +16,47 @@ end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
 function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, partition_cols)
-    local after = ""
-    local has_more = true
+    -- local has_more = true
     local prefix = base_path
     local target_partition = ""
-    local page = {}
+    local pager = common.lakefs_object_pager(client, repo_id, commit_id, "", prefix, page_size, "")
+    local page = pager()
     return function()
-        if not has_more then
+        if page == nil then
             return nil
         end
         local partition_entries = {}
         repeat
             if #page == 0 then
-                local nextPage = common.lakefs_object_pager(client, repo_id, commit_id, after, prefix, page_size, "")
-                page = nextPage()
-                if page == nil or #page == 0 then -- no more records
-                    has_more = false
+                page = pager()
+                if page == nil then -- no more records
                     return target_partition, partition_entries
-                else -- set next offset
-                    after = page[#page].path
                 end
             end
-            repeat
-                local entry = page[1]
-                if not pathlib.is_hidden(entry.path) then
-                    local partition_key = extract_partitions_path(partition_cols, entry.path)
-                    -- first time: if not set, assign current object partition as the target_partition key
-                    if target_partition == "" then
-                        target_partition = partition_key
-                    end
-                    -- break if current entry does not belong to the target_partition
-                    if partition_key ~= target_partition then
-                        local partition_result = target_partition
-                        target_partition = partition_key
-                        return partition_result, partition_entries
-                    end
-                    table.insert(partition_entries, {
-                        physical_address = entry.physical_address,
-                        path = entry.path,
-                        size = entry.size_bytes,
-                        checksum = entry.checksum
-                    })
-                    -- remove entry only if its part of the current partition
-                    table.remove(page, 1)
+            -- repeat
+            local entry = page[1]
+            if not pathlib.is_hidden(entry.path) then
+                local partition_key = extract_partitions_path(partition_cols, entry.path)
+                -- first time: if not set, assign current object partition as the target_partition key
+                if target_partition == "" then
+                    target_partition = partition_key
                 end
-            until page == nil or #page == 0
-        until not has_more
+                -- break if current entry does not belong to the target_partition
+                if partition_key ~= target_partition then
+                    local partition_result = target_partition
+                    target_partition = partition_key
+                    return partition_result, partition_entries
+                end
+                table.insert(partition_entries, {
+                    physical_address = entry.physical_address,
+                    path = entry.path,
+                    size = entry.size_bytes,
+                    checksum = entry.checksum
+                })
+                -- remove entry only if its part of the current partition
+                table.remove(page, 1)
+            end
+        until not true -- check if has while True 
     end
 end
 
