@@ -33,13 +33,15 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: Check lakeFS swagger YAML
         id: test_swagger_breaking_changes
-        uses: oasdiff/oasdiff-action/diff@main
+        uses: oasdiff/oasdiff-action/breaking@main
         with:
           base: base/api/swagger.yml
           revision: changed/api/swagger.yml
+          fail-on-diff: true
       - name: Check authorization YAML
         id: test_authorization_breaking_changes
-        uses: oasdiff/oasdiff-action/diff@main
+        uses: oasdiff/oasdiff-action/breaking@main
         with:
           base: base/api/authorization.yml
           revision: changed/api/authorization.yml
+          fail-on-diff: true
