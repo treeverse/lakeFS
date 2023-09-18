@@ -23,7 +23,6 @@ import {
     RefreshButton
 } from "../../../lib/components/controls";
 import UserPage from "./user";
-import validator from "validator/es";
 import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
 
 const USER_NOT_FOUND = "unknown";
@@ -39,8 +38,6 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
-    const [showInvite, setShowInvite] = useState(false);
-    
     
 
     useEffect(() => { setSelected([]); }, [refresh, after]);
@@ -48,13 +45,11 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
     if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
 
-    const canInviteUsers = true;
-
     return (
         <>
             <ActionsBar>
-                <UserActionsActionGroup canInviteUsers={canInviteUsers} selected={selected}
-                                        onClickInvite={() => setShowInvite(true)} onClickCreate={() => setShowCreate(true)}
+                <UserActionsActionGroup selected={selected}
+                                        onClickCreate={() => setShowCreate(true)}
                                         onConfirmDelete={() => {
                                             auth.deleteUsers(selected.map(u => u.id))
                                                 .catch(err => setDeleteError(err))
@@ -82,27 +77,10 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                         setRefresh(!refresh);
                     });
                 }}
-                title={canInviteUsers ? "Create Integration User" : "Create User"}
-                placeholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
+                title={"Create Integration User"}
+                placeholder={"Integration Name (e.g. Spark)"}
                 actionName={"Create"}
                 validationFunction={disallowPercentSign(INVALID_USER_NAME_ERROR_MESSAGE)}
-            />
-
-            <EntityActionModal
-                show={showInvite}
-                onHide={() => setShowInvite(false)}
-                onAction={async (userEmail) => {
-                    if (!validator.isEmail(userEmail)) {
-                    throw new Error("Invalid email address");
-                }
-                    await auth.createUser(userEmail, true);
-                    setSelected([]);
-                    setShowInvite(false);
-                    setRefresh(!refresh);
-                }}
-                title={"Invite User"}
-                placeholder={"Email"}
-                actionName={"Invite"}
             />
 
             <DataTable
@@ -131,21 +109,14 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
     );
 };
 
-const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClickCreate, onConfirmDelete }) => {
+const UserActionsActionGroup = ({selected, onClickCreate, onConfirmDelete }) => {
 
     return (
         <ActionGroup orientation="left">
             <Button
-                hidden={!canInviteUsers}
-                variant="primary"
-                onClick={onClickInvite}>
-                Invite User
-            </Button>
-
-            <Button
                 variant="success"
                 onClick={onClickCreate}>
-                {canInviteUsers ? "Create Integration User" : "Create User"}
+                {"Create Integration User"}
             </Button>
             <ConfirmationButton
                 onConfirm={onConfirmDelete}
