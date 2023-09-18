@@ -3,15 +3,18 @@ local pathlib = require("path")
 local common = require("lakefs/catalogexport/common")
 
 -- extract partition prefix from full path
-function extract_partitions_path(partition_cols, path)
-    -- list of columns to pattern {a,b,c} -> a=*/b=*/c=*/
-    local partition_pattern = table.concat(partition_cols, "=[^/]*/") .. "=[^/]*/"
-    local re = regexp.compile(partition_pattern)
-    local match = re.find(path, partition_pattern)
-    if match == "" then
-        return nil
+function extract_partitions_path(partitions, path)
+    local idx = 0
+    for _, partition in ipairs(partitions) do
+        local col_substr = partition .. "="
+        local i, j = string.find(path, col_substr, idx)
+        if i == nil then
+            return "nil"
+        end
+        local start_val, end_val = string.find(path, "/", j+1)
+        idx = end_val 
     end
-    return match
+    return string.sub(path, 1, idx)
 end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
