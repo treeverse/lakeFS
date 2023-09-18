@@ -1059,22 +1059,6 @@ class MetaRanges {
     }
 }
 
-class Templates {
-    async expandTemplate(templateLocation, params) {
-        const urlParams = new URLSearchParams();
-        for (const [k, v] of Object.entries(params)) {
-            urlParams.set(k, v);
-        }
-        const response = await apiRequest(
-            `/templates/${encodeURI(templateLocation)}?${urlParams.toString()}`,
-            {method: 'GET'});
-        if (!response.ok) {
-            throw new Error(await extractError(response));
-        }
-        return response.text();
-    }
-}
-
 class Statistics {
     async postStatsEvents(statsEvents) {
         const request = {
@@ -1191,7 +1175,6 @@ export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
 export const ranges = new Ranges();
 export const metaRanges = new MetaRanges();
-export const templates = new Templates();
 export const statistics = new Statistics();
 export const staging = new Staging();
 export const otfDiffs = new OTFDiffs();
