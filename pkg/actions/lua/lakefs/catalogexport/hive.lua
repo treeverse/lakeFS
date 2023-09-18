@@ -28,14 +28,13 @@ function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page
             return nil
         end
         local partition_entries = {}
-        repeat
+        while(true) do
             if #page == 0 then
                 page = pager()
                 if page == nil then -- no more records
                     return target_partition, partition_entries
                 end
             end
-            -- repeat
             local entry = page[1]
             if not pathlib.is_hidden(entry.path) then
                 local partition_key = extract_partitions_path(partition_cols, entry.path)
@@ -58,7 +57,7 @@ function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page
                 -- remove entry only if its part of the current partition
                 table.remove(page, 1)
             end
-        until not true -- check if has while True 
+        end
     end
 end
 
