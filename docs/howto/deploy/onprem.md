@@ -9,6 +9,7 @@ redirect_from:
    - /integrations/minio.html
    - /using/minio.html
    - /deploy/onprem.html
+   - /deploying/install.html
 next:  ["Import data into your installation", "/howto/import.html"]
 ---
 

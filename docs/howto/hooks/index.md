@@ -10,6 +10,7 @@ redirect_from:
   - /hooks/overview.html
   - /hooks/index.html
   - /hooks/
+  - /setup/hooks.html
 ---
 
 # Actions and Hooks in lakeFS

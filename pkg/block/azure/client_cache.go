@@ -122,7 +122,7 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	if params.TestEndpointURL != "" { // For testing purposes - override default url template
 		url = params.TestEndpointURL
 	} else {
-		url = fmt.Sprintf(URLTemplate, params.StorageAccount)
+		url = fmt.Sprintf(BlobEndpointFormat, params.StorageAccount)
 	}
 
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
