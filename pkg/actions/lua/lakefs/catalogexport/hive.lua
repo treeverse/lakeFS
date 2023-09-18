@@ -19,7 +19,6 @@ end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
 function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, partition_cols)
-    -- local has_more = true
     local prefix = base_path
     local target_partition = ""
     local pager = common.lakefs_object_pager(client, repo_id, commit_id, "", prefix, page_size, "")
