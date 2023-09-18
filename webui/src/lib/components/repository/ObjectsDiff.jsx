@@ -65,12 +65,9 @@ function readableObject(path) {
 
 const NoContentDiff = ({left, right, diffType}) => {
     const supportedFileExtensions = supportedReadableFormats.map((fileType) => `.${fileType}`);
-    // use the list formatter in place of manual formatting
-    // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/ListFormat
-    const formatter = new Intl.ListFormat('en', { style: "long", type: "conjunction" });
     return <div>
         <span><StatDiff left={left} right={right} diffType={diffType}/></span>
-        <span><Alert variant="light"><InfoIcon/> {`lakeFS supports content diff for ${formatter.format(supportedFileExtensions)} file formats only`}</Alert></span>
+        <span><Alert variant="light"><InfoIcon/> {`lakeFS supports content diff for ${supportedFileExtensions.join(',')} file formats only`}</Alert></span>
     </div>;
 }
 
