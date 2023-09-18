@@ -265,7 +265,8 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 	}
 
 	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, body)
-	require.NotNil(t, importResp.JSON202, "failed to start import", err)
+	require.NoError(t, err, "failed to start import", importBranch)
+	require.NotNil(t, importResp.JSON202, "failed to start import", importResp.Status())
 	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
 
 	var (

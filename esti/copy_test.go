@@ -21,7 +21,6 @@ const (
 	gsCopyDataPath    = "gs://esti-system-testing-data/copy-test-data/"
 	azureCopyDataPath = "https://esti.blob.core.windows.net/esti-system-testing-data/copy-test-data/"
 	azureAbortAccount = "esti4multipleaccounts"
-	ingestionBranch   = "test-data"
 	largeObject       = "squash.tar"
 )
 
@@ -32,7 +31,9 @@ func TestCopyObject(t *testing.T) {
 	t.Run("copy_large_size_file", func(t *testing.T) {
 		importPath := getImportPath(t)
 
-		testImportNew(t, ctx, repo, ingestionBranch,
+		const ingestionBranch = "test-copy"
+
+		_ = testImportNew(t, ctx, repo, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
 		)
@@ -78,8 +79,8 @@ func TestCopyObject(t *testing.T) {
 	t.Run("copy_large_size_file_abort", func(t *testing.T) {
 		requireBlockstoreType(t, block.BlockstoreTypeAzure)
 		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
-
-		testImportNew(t, ctx, repo, ingestionBranch,
+		const ingestionBranch = "test-copy-abort"
+		_ = testImportNew(t, ctx, repo, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
 		)
