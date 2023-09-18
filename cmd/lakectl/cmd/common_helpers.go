@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -313,6 +315,17 @@ func MustParsePathURI(name, s string) *uri.URI {
 		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
 	}
 	return u
+}
+
+func MustGetContentType(flagSet *pflag.FlagSet, sourcePathname string) string {
+	contentType, err := flagSet.GetString("content-type")
+	if err != nil {
+		DieErr(err)
+	}
+	if len(contentType) != 0 {
+		return contentType
+	}
+	return mime.TypeByExtension(filepath.Ext(sourcePathname))
 }
 
 const (

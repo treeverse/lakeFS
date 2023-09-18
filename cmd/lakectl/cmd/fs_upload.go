@@ -32,7 +32,7 @@ var fsUploadCmd = &cobra.Command{
 		recursive := Must(flagSet.GetBool("recursive"))
 		direct := Must(flagSet.GetBool("direct"))
 		preSignMode := Must(flagSet.GetBool("pre-sign"))
-		contentType := Must(flagSet.GetString("content-type"))
+		contentType := MustGetContentType(flagSet, source)
 
 		ctx := cmd.Context()
 		transport := transportMethodFromFlags(direct, preSignMode)
