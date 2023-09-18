@@ -7,7 +7,7 @@ local hive = require("lakefs/catalogexport/hive")
 local LAKEFS_TABLES_BASE = "_lakefs_tables/"
 
 -- check if lakefs entry is a table spec under _lakefs_tables/
-function _is_table_obj(entry, tables_base)
+function is_table_obj(entry, tables_base)
     if entry.path_type ~= "object" then
         return false
     end
@@ -26,7 +26,7 @@ function list_table_descriptor_files(client, repo_id, commit_id)
     local iter = common.lakefs_object_pager(client, repo_id, commit_id, "", LAKEFS_TABLES_BASE, page_size, "")
     for entries in iter do
         for _, entry in ipairs(entries) do
-            if _is_table_obj(entry, LAKEFS_TABLES_BASE) then
+            if is_table_obj(entry, LAKEFS_TABLES_BASE) then
                 table.insert(table_entries, {
                     physical_address = entry.physical_address,
                     path = entry.path
