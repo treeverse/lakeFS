@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestLakectlDoctor(t *testing.T) {
 	require.NoError(t, err)
 	vars := map[string]string{
 		"LAKEFS_ENDPOINT": endPointURL,
-		"HOST":            u.Host,
+		"HOST":            fmt.Sprintf("%s://%s", u.Scheme, u.Host),
 	}
 
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", vars)
