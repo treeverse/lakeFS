@@ -40,7 +40,7 @@ function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, part
             return nil
         end
         local partition_entries = {}
-        while(true) do
+        while true do
             if #page == 0 then
                 page = pager()
                 if page == nil then -- no more records
