@@ -2,7 +2,6 @@ local pathlib = require("path")
 local strings = require("strings")
 local yaml = require("encoding/yaml")
 local utils = require("lakefs/catalogexport/internal")
-local HiveTableExtractor = require("lakefs/catalogexport/hive")
 
 local LAKEFS_TABLES_BASE = "_lakefs_tables/"
 
