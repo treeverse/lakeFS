@@ -1,4 +1,4 @@
-package helpers
+package esti
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -42,7 +44,7 @@ type AdapterFactory map[string]func() (ClientAdapter, error)
 func NewAdapter(protocol string) (ClientAdapter, error) {
 	factory, ok := adapterFactory[protocol]
 	if !ok {
-		return nil, ErrUnsupportedProtocol
+		return nil, helpers.ErrUnsupportedProtocol
 	}
 	return factory()
 }
@@ -67,7 +69,7 @@ func newS3Adapter() (ClientAdapter, error) {
 
 func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error) {
 	if physicalAddress.Scheme != s3Scheme {
-		return ObjectStats{}, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
+		return ObjectStats{}, fmt.Errorf("%s: %w", s3Scheme, helpers.ErrUnsupportedProtocol)
 	}
 
 	key := strings.TrimPrefix(physicalAddress.Path, "/")
@@ -94,7 +96,7 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 
 func (s *s3Adapter) Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error) {
 	if physicalAddress.Scheme != s3Scheme {
-		return nil, fmt.Errorf("%s: %w", s3Scheme, ErrUnsupportedProtocol)
+		return nil, fmt.Errorf("%s: %w", s3Scheme, helpers.ErrUnsupportedProtocol)
 	}
 	// TODO(ariels): Allow customization of request
 	bucket := physicalAddress.Hostname()

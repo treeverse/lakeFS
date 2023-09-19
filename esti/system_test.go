@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -151,7 +152,7 @@ func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath st
 
 func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
 	if direct {
-		stats, err := helpers.ClientUploadDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
+		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
 		if err != nil {
 			return "", err
 		}
@@ -165,6 +166,65 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 			return "", err
 		}
 		return resp.JSON201.Checksum, nil
+	}
+}
+
+// uploadContentDirect uploads contents as a file using client-side ("direct") access to underlying storage.
+// It requires credentials both to lakeFS and to underlying storage, but considerably reduces the load on the lakeFS
+// server.
+func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
+	resp, err := client.GetPhysicalAddressWithResponse(ctx, repoID, branchID, &apigen.GetPhysicalAddressParams{
+		Path: objPath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get physical address to upload object: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, fmt.Errorf("%w: %s (status code %d)", helpers.ErrRequestFailed, resp.Status(), resp.StatusCode())
+	}
+	stagingLocation := resp.JSON200
+
+	for { // Return from inside loop
+		physicalAddress := apiutil.Value(stagingLocation.PhysicalAddress)
+		parsedAddress, err := url.Parse(physicalAddress)
+		if err != nil {
+			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
+		}
+
+		adapter, err := NewAdapter(parsedAddress.Scheme)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", parsedAddress.Scheme, err)
+		}
+
+		stats, err := adapter.Upload(ctx, parsedAddress, contents)
+		if err != nil {
+			return nil, fmt.Errorf("upload to backing store: %w", err)
+		}
+
+		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &apigen.LinkPhysicalAddressParams{
+			Path: objPath,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  stats.ETag,
+			SizeBytes: stats.Size,
+			Staging:   *stagingLocation,
+			UserMetadata: &apigen.StagingMetadata_UserMetadata{
+				AdditionalProperties: metadata,
+			},
+			ContentType: &contentType,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("link object to backing store: %w", err)
+		}
+		if resp.JSON200 != nil {
+			return resp.JSON200, nil
+		}
+		if resp.JSON409 == nil {
+			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", helpers.ErrRequestFailed, resp.StatusCode())
+		}
+		// Try again!
+		if _, err = contents.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("rewind: %w", err)
+		}
 	}
 }
 
@@ -188,9 +248,15 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	}, w.FormDataContentType(), &b)
 }
 
-func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, direct bool) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, direct)
-	require.NoError(t, err, "failed to upload file", repo, branch, objPath, "direct:", direct)
+func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false)
+	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
+	return checksum, content
+}
+
+func uploadFileRandomDataDirect(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, true)
+	require.NoError(t, err, "failed to direct upload file", repo, branch, objPath)
 	return checksum, content
 }
 

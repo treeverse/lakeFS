@@ -48,7 +48,7 @@ func TestPreSign(t *testing.T) {
 		t.Skipf("Only GS, S3 and Azure Blob supported for pre-signed urls. Got: %s", blockStoreType)
 	}
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", false)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar")
 
 	objContent := randstr.String(randomDataContentLength)
 	_, err = uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false)
