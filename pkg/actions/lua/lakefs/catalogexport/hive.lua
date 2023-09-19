@@ -1,5 +1,6 @@
 local pathlib = require("path")
 local utils = require("lakefs/catalogexport/internal")
+local strings = require("strings")
 local DEFAULT_PAGE_SIZE = 30 
 
 -- extract partition prefix from full path
@@ -8,8 +9,13 @@ function extract_partitions_path(partitions, path)
         return ""
     end
     local idx = 1
-    for _, partition in ipairs(partitions) do
-        local col_substr = partition .. "="
+    local is_partition_prefix = strings.has_prefix(path, partitions[1])
+    for part_idx, partition in ipairs(partitions) do
+        local col_substr = "/" ..  partition .. "="
+        -- if partition is the path prefix and we are the that first partition remove /
+        if part_idx == 1 and is_partition_prefix then
+            col_substr = partition .. "="
+        end
         local i, j = string.find(path, col_substr, idx)
         if i == nil then
             return nil
