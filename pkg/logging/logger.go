@@ -131,13 +131,6 @@ type OutputFormatOptions struct {
 
 type OutputFormatOptionFunc func(options *OutputFormatOptions)
 
-// WithOutputFormatCallerPrettyfier allows overriding the default caller prettyfier function
-func WithOutputFormatCallerPrettyfier(callerPrettyfier func(*runtime.Frame) (function string, file string)) func(options *OutputFormatOptions) {
-	return func(options *OutputFormatOptions) {
-		options.CallerPrettyfier = callerPrettyfier
-	}
-}
-
 func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 	// setup options
 	var options OutputFormatOptions

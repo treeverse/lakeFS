@@ -25,7 +25,7 @@ func TestPostgresKV(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unable to connect to database: %v", err)
 		}
-		defer conn.Close(ctx)
+		defer func() { _ = conn.Close(ctx) }()
 
 		// create a new schema per test
 		schemaName := "test_schema" + testutil.UniqueName()

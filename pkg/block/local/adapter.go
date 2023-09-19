@@ -34,7 +34,6 @@ type Adapter struct {
 
 var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
-	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
 )
