@@ -4,7 +4,7 @@ local strings = require("strings")
 local DEFAULT_PAGE_SIZE = 30 
 
 -- extract partition prefix from full path
-function extract_partitions_path(partitions, path)
+local function extract_partitions_path(partitions, path)
     if partitions == nil or #partitions == 0 then
         return ""
     end
@@ -31,7 +31,7 @@ function extract_partitions_path(partitions, path)
 end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
-function extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)
+local function extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)
     local target_partition = ""
     local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", base_path,"", page_size or DEFAULT_PAGE_SIZE)
     local page = pager()

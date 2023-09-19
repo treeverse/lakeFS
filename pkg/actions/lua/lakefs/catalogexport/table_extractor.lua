@@ -6,7 +6,7 @@ local utils = require("lakefs/catalogexport/internal")
 local LAKEFS_TABLES_BASE = "_lakefs_tables/"
 
 -- check if lakefs entry is a table spec under _lakefs_tables/
-function is_table_obj(entry, tables_base)
+local function is_table_obj(entry, tables_base)
     if entry.path_type ~= "object" then
         return false
     end
@@ -19,7 +19,7 @@ function is_table_obj(entry, tables_base)
 end
 
 -- list all YAML files under _lakefs_tables/*
-function list_table_descriptor_entries(client, repo_id, commit_id)
+local function list_table_descriptor_entries(client, repo_id, commit_id)
     local table_entries = {}
     local page_size = 30
     local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", LAKEFS_TABLES_BASE,"", page_size)
@@ -37,7 +37,7 @@ function list_table_descriptor_entries(client, repo_id, commit_id)
 end
 
 -- table as parsed YAML object
-function get_table_descriptor(client, repo_id, commit_id, logical_path)
+local function get_table_descriptor(client, repo_id, commit_id, logical_path)
     local code, content = client.get_object(repo_id, commit_id, logical_path)
     if code ~= 200 then
         error("could not fetch data file: HTTP " .. tostring(code))

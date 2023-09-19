@@ -1,11 +1,11 @@
 local DEFAULT_SHORT_DIGEST_LEN=6
 
-function short_digest(digest, len)
+local function short_digest(digest, len)
     return digest:sub(1, len or DEFAULT_SHORT_DIGEST_LEN)
 end 
 
 -- paginate lakefs api 
-function lakefs_paginiated_api(api_call, after)
+local function lakefs_paginiated_api(api_call, after)
     local next_offset = after
     local has_more = true
     return function()
@@ -23,14 +23,14 @@ function lakefs_paginiated_api(api_call, after)
 end
 
 -- paginage over lakefs objects 
-function lakefs_object_pager(lakefs_client, repo_id, commit_id, after, prefix, delimiter, page_size)
+local function lakefs_object_pager(lakefs_client, repo_id, commit_id, after, prefix, delimiter, page_size)
     return lakefs_paginiated_api(function(next_offset)
         return lakefs_client.list_objects(repo_id, commit_id, next_offset, prefix, delimiter, page_size or 30)
     end, after)
 end
 
 -- resolve ref value from action global, used as part of setting default table name
-function ref_from_branch_or_tag(action_info)
+local function ref_from_branch_or_tag(action_info)
     local event = action_info.event_type
     if event == "pre-create-tag" or event == "post-create-tag" then
         return action_info.tag_id
