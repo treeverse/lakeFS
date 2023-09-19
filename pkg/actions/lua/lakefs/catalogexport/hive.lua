@@ -1,5 +1,6 @@
 local pathlib = require("path")
 local utils = require("lakefs/catalogexport/internal/utils")
+local DEFAULT_PAGE_SIZE = 30 
 
 -- extract partition prefix from full path
 function extract_partitions_path(partitions, path)
@@ -17,10 +18,10 @@ function extract_partitions_path(partitions, path)
 end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
-function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, page_size, partition_cols)
+function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)
     local prefix = base_path
     local target_partition = ""
-    local pager = utils.api.lakefs_object_pager(client, repo_id, commit_id, "", prefix, page_size, "")
+    local pager = utils.api.lakefs_object_pager(client, repo_id, commit_id, "", prefix, page_size or DEFAULT_PAGE_SIZE)
     local page = pager()
     return function()
         if page == nil then
@@ -62,7 +63,6 @@ end
 
 return {
     TableExtractor = {
-        DEFAULT_PAGE_SIZE_PARTITION = 30,
         lakefs_hive_partition_pager=lakefs_hive_partition_pager,
     }
 }
