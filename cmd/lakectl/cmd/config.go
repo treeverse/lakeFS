@@ -30,15 +30,33 @@ var configCmd = &cobra.Command{
 		// get user input
 		questions := []struct {
 			Key    string
-			Prompt *promptui.Prompt
+			Prompt promptui.Prompt
 		}{
-			{Key: "credentials.access_key_id", Prompt: &promptui.Prompt{Label: "Access key ID"}},
-			{Key: "credentials.secret_access_key", Prompt: &promptui.Prompt{Label: "Secret access key", Mask: '*'}},
-			{Key: "server.endpoint_url", Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawURL string) error {
-				_, err := url.ParseRequestURI(rawURL)
-				return err
-			}}},
+			{
+				Key: "credentials.access_key_id",
+				Prompt: promptui.Prompt{
+					Label: "Access key ID",
+				},
+			},
+			{
+				Key: "credentials.secret_access_key",
+				Prompt: promptui.Prompt{
+					Label: "Secret access key",
+					Mask:  '*',
+				},
+			},
+			{
+				Key: "server.endpoint_url",
+				Prompt: promptui.Prompt{
+					Label: "Server endpoint URL (e.g. http://localhost:8000)",
+					Validate: func(rawURL string) error {
+						_, err := url.ParseRequestURI(rawURL)
+						return err
+					},
+				},
+			},
 		}
+
 		for _, question := range questions {
 			question.Prompt.Default = viper.GetString(question.Key)
 			val, err := question.Prompt.Run()
