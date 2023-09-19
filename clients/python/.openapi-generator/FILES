@@ -30,7 +30,6 @@ docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
 docs/FindMergeBaseResult.md
-docs/ForgotPasswordRequest.md
 docs/GarbageCollectionConfig.md
 docs/GarbageCollectionPrepareRequest.md
 docs/GarbageCollectionPrepareResponse.md
@@ -46,9 +45,7 @@ docs/ImportApi.md
 docs/ImportCreation.md
 docs/ImportCreationResponse.md
 docs/ImportLocation.md
-docs/ImportPagination.md
-docs/ImportStatusResp.md
-docs/IngestRangeCreationResponse.md
+docs/ImportStatus.md
 docs/InlineObject.md
 docs/InlineObject1.md
 docs/InternalApi.md
@@ -91,7 +88,6 @@ docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
 docs/SetupState.md
-docs/StageRangeCreation.md
 docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
@@ -103,7 +99,6 @@ docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/UnderlyingObjectProperties.md
-docs/UpdatePasswordByToken.md
 docs/UpdateToken.md
 docs/User.md
 docs/UserCreation.md
@@ -156,7 +151,6 @@ lakefs_client/model/diff_properties.py
 lakefs_client/model/error.py
 lakefs_client/model/error_no_acl.py
 lakefs_client/model/find_merge_base_result.py
-lakefs_client/model/forgot_password_request.py
 lakefs_client/model/garbage_collection_config.py
 lakefs_client/model/garbage_collection_prepare_request.py
 lakefs_client/model/garbage_collection_prepare_response.py
@@ -170,9 +164,7 @@ lakefs_client/model/hook_run_list.py
 lakefs_client/model/import_creation.py
 lakefs_client/model/import_creation_response.py
 lakefs_client/model/import_location.py
-lakefs_client/model/import_pagination.py
-lakefs_client/model/import_status_resp.py
-lakefs_client/model/ingest_range_creation_response.py
+lakefs_client/model/import_status.py
 lakefs_client/model/inline_object.py
 lakefs_client/model/inline_object1.py
 lakefs_client/model/login_config.py
@@ -209,7 +201,6 @@ lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
 lakefs_client/model/setup.py
 lakefs_client/model/setup_state.py
-lakefs_client/model/stage_range_creation.py
 lakefs_client/model/staging_location.py
 lakefs_client/model/staging_metadata.py
 lakefs_client/model/statement.py
@@ -219,7 +210,6 @@ lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/underlying_object_properties.py
-lakefs_client/model/update_password_by_token.py
 lakefs_client/model/update_token.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
@@ -262,7 +252,6 @@ test/test_error.py
 test/test_error_no_acl.py
 test/test_experimental_api.py
 test/test_find_merge_base_result.py
-test/test_forgot_password_request.py
 test/test_garbage_collection_config.py
 test/test_garbage_collection_prepare_request.py
 test/test_garbage_collection_prepare_response.py
@@ -278,9 +267,7 @@ test/test_import_api.py
 test/test_import_creation.py
 test/test_import_creation_response.py
 test/test_import_location.py
-test/test_import_pagination.py
-test/test_import_status_resp.py
-test/test_ingest_range_creation_response.py
+test/test_import_status.py
 test/test_inline_object.py
 test/test_inline_object1.py
 test/test_internal_api.py
@@ -323,7 +310,6 @@ test/test_retention_api.py
 test/test_revert_creation.py
 test/test_setup.py
 test/test_setup_state.py
-test/test_stage_range_creation.py
 test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py
@@ -335,7 +321,6 @@ test/test_storage_uri.py
 test/test_tag_creation.py
 test/test_tags_api.py
 test/test_underlying_object_properties.py
-test/test_update_password_by_token.py
 test/test_update_token.py
 test/test_user.py
 test/test_user_creation.py

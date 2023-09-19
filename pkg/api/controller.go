@@ -62,8 +62,6 @@ const (
 
 	DefaultMaxDeleteObjects = 1000
 
-	DefaultResetPasswordExpiration = 20 * time.Minute
-
 	// httpStatusClientClosedRequest used as internal status code when request context is cancelled
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
@@ -705,7 +703,6 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
-			Email:        u.Email,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1065,16 +1062,9 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
 			CreationDate: u.CreatedAt.Unix(),
-			Email:        u.Email,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) generateResetPasswordToken(email string, duration time.Duration) (string, error) {
-	secret := c.Auth.SecretStore().SharedSecret()
-	currentTime := time.Now()
-	return auth.GenerateJWTResetPassword(secret, email, currentTime, currentTime.Add(duration))
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
@@ -2250,8 +2240,8 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatusResp {
-	resp := apigen.ImportStatusResp{
+func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
+	resp := apigen.ImportStatus{
 		Completed:       status.Completed,
 		IngestedObjects: &status.Progress,
 		UpdateTime:      status.UpdatedAt,
@@ -2316,111 +2306,6 @@ func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
-func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body apigen.IngestRangeJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Type: permissions.NodeTypeAnd,
-		Nodes: []permissions.Node{
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ImportFromStorageAction,
-					Resource: permissions.StorageNamespace(body.FromSourceURI),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, body.Prepend),
-				},
-			},
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "ingest_range", r, repository, "", "")
-
-	contToken := swag.StringValue(body.ContinuationToken)
-	stagingToken := swag.StringValue(body.StagingToken)
-	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
-		SourceURI:         body.FromSourceURI,
-		Prepend:           body.Prepend,
-		After:             body.After,
-		StagingToken:      stagingToken,
-		ContinuationToken: contToken,
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	writeResponse(w, r, http.StatusCreated, apigen.IngestRangeCreationResponse{
-		Range: &apigen.RangeMetadata{
-			Id:            string(info.ID),
-			MinKey:        string(info.MinKey),
-			MaxKey:        string(info.MaxKey),
-			Count:         info.Count,
-			EstimatedSize: int(info.EstimatedRangeSizeBytes),
-		},
-		Pagination: &apigen.ImportPagination{
-			HasMore:           mark.HasMore,
-			ContinuationToken: &mark.ContinuationToken,
-			LastKey:           mark.LastKey,
-			StagingToken:      &mark.StagingToken,
-		},
-	})
-}
-
-func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body apigen.CreateMetaRangeJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateMetaRangeAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "create_metarange", r, repository, "", "")
-
-	ranges := make([]*graveler.RangeInfo, 0, len(body.Ranges))
-	for _, r := range body.Ranges {
-		ranges = append(ranges, &graveler.RangeInfo{
-			ID:                      graveler.RangeID(r.Id),
-			MinKey:                  graveler.Key(r.MinKey),
-			MaxKey:                  graveler.Key(r.MaxKey),
-			Count:                   r.Count,
-			EstimatedRangeSizeBytes: uint64(r.EstimatedSize),
-		})
-	}
-	info, err := c.Catalog.WriteMetaRange(r.Context(), repository, ranges)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, apigen.MetaRangeCreationResponse{
-		Id: swag.String(string(info.ID)),
-	})
-}
-
-func (c *Controller) UpdateBranchToken(w http.ResponseWriter, r *http.Request, body apigen.UpdateBranchTokenJSONRequestBody, repository, branch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action: permissions.WriteObjectAction,
-			// This API writes an entire staging area to a branch and therefore requires permission to write to the entire repository space
-			Resource: permissions.ObjectArn(repository, "*"),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "update_branch_token", r, repository, branch, "")
-	err := c.Catalog.UpdateBranchToken(ctx, repository, branch, body.StagingToken)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
@@ -4230,74 +4115,6 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	writeResponse(w, r, http.StatusOK, response)
-}
-
-func (c *Controller) resetPasswordRequest(ctx context.Context, emailAddr string) error {
-	user, err := c.Auth.GetUserByEmail(ctx, emailAddr)
-	if err != nil {
-		return err
-	}
-	emailAddr = swag.StringValue(user.Email)
-	token, err := c.generateResetPasswordToken(emailAddr, DefaultResetPasswordExpiration)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed generating token")
-		return err
-	}
-	params := map[string]string{
-		"token": token,
-	}
-	err = c.Emailer.SendResetPasswordEmail([]string{emailAddr}, params)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email_address", emailAddr).Error("reset password - failed sending email")
-		return err
-	}
-	c.Logger.WithField("email", emailAddr).Info("reset password email sent")
-	return nil
-}
-
-func (c *Controller) ForgotPassword(w http.ResponseWriter, r *http.Request, body apigen.ForgotPasswordJSONRequestBody) {
-	addr, err := mail.ParseAddress(body.Email)
-	if err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid email")
-		return
-	}
-	err = c.resetPasswordRequest(r.Context(), addr.Address)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", body.Email).Debug("failed sending reset password email")
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
-func (c *Controller) UpdatePassword(w http.ResponseWriter, r *http.Request, body apigen.UpdatePasswordJSONRequestBody) {
-	claims, err := VerifyResetPasswordToken(r.Context(), c.Auth, body.Token)
-	if err != nil {
-		c.Logger.WithError(err).WithField("token", body.Token).Debug("failed to verify token")
-		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
-		return
-	}
-
-	// verify provided email matched the token
-	requestEmail := swag.StringValue(body.Email)
-	if requestEmail != "" && requestEmail != claims.Subject {
-		c.Logger.WithError(err).WithFields(logging.Fields{
-			"token":         body.Token,
-			"request_email": requestEmail,
-		}).Debug("requested email doesn't match the email provided in verified token")
-	}
-
-	user, err := c.Auth.GetUserByEmail(r.Context(), claims.Subject)
-	if err != nil {
-		c.Logger.WithError(err).WithField("email", claims.Subject).Warn("failed to retrieve user by email")
-		writeError(w, r, http.StatusNotFound, http.StatusText(http.StatusNotFound))
-		return
-	}
-	err = c.Auth.HashAndUpdatePassword(r.Context(), user.Username, body.NewPassword)
-	if err != nil {
-		c.Logger.WithError(err).WithField("username", user.Username).Debug("failed to update password")
-		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, nil)
 }
 
 func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {

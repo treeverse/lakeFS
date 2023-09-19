@@ -71,13 +71,6 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
-    def test_update_branch_token(self):
-        """Test case for update_branch_token
-
-        modify branch staging token  # noqa: E501
-        """
-        pass
-
     def test_upload_object_preflight(self):
         """Test case for upload_object_preflight
 

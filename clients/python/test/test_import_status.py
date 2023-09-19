@@ -13,11 +13,15 @@ import sys
 import unittest
 
 import lakefs_client
-from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
+from lakefs_client.model.commit import Commit
+from lakefs_client.model.error import Error
+globals()['Commit'] = Commit
+globals()['Error'] = Error
+from lakefs_client.model.import_status import ImportStatus
 
 
-class TestForgotPasswordRequest(unittest.TestCase):
-    """ForgotPasswordRequest unit test stubs"""
+class TestImportStatus(unittest.TestCase):
+    """ImportStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,10 +29,10 @@ class TestForgotPasswordRequest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testForgotPasswordRequest(self):
-        """Test ForgotPasswordRequest"""
+    def testImportStatus(self):
+        """Test ImportStatus"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = ForgotPasswordRequest()  # noqa: E501
+        # model = ImportStatus()  # noqa: E501
         pass
 
 

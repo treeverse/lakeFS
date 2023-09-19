@@ -101,11 +101,11 @@ public class StagingLocation {
   }
 
    /**
-   * if presign&#x3D;true is passed in the request, this field will contain a presigned URL to use when uploading
+   * if presign&#x3D;true is passed in the request, this field will contain a pre-signed URL to use when uploading
    * @return presignedUrl
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "if presign=true is passed in the request, this field will contain a presigned URL to use when uploading")
+  @ApiModelProperty(value = "if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading")
 
   public String getPresignedUrl() {
     return presignedUrl;
@@ -124,11 +124,11 @@ public class StagingLocation {
   }
 
    /**
-   * If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. 
+   * If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. 
    * @return presignedUrlExpiry
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
+  @ApiModelProperty(value = "If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
 
   public Long getPresignedUrlExpiry() {
     return presignedUrlExpiry;

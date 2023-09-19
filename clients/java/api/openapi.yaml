@@ -3,7 +3,7 @@ info:
   description: lakeFS HTTP API
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: lakeFS API
   version: 0.1.0
 servers:
@@ -162,67 +162,6 @@ paths:
           description: Internal Server Error
       security: []
       summary: perform a login
-      tags:
-      - auth
-      x-contentType: application/json
-      x-accepts: application/json
-  /auth/password:
-    post:
-      operationId: updatePassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePasswordByToken'
-        required: true
-      responses:
-        "201":
-          description: successful reset
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security:
-      - cookie_auth: []
-      summary: Update user password by reset_password token
-      tags:
-      - auth
-      x-contentType: application/json
-      x-accepts: application/json
-  /auth/password/forgot:
-    post:
-      operationId: forgotPassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ForgotPasswordRequest'
-        required: true
-      responses:
-        "204":
-          description: No content
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      summary: forgot password request initiates the password reset process
       tags:
       - auth
       x-contentType: application/json
@@ -855,7 +794,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
-          description: group memeber list
+          description: group member list
         "401":
           content:
             application/json:
@@ -3687,7 +3626,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ImportStatusResp'
+                $ref: '#/components/schemas/ImportStatus'
           description: import status
         "401":
           content:
@@ -3768,180 +3707,6 @@ paths:
       summary: import data from object store
       tags:
       - import
-      x-contentType: application/json
-      x-accepts: application/json
-  /repositories/{repository}/branches/metaranges:
-    post:
-      operationId: createMetaRange
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MetaRangeCreation'
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetaRangeCreationResponse'
-          description: metarange metadata
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Forbidden
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: create a lakeFS metarange file from the given ranges
-      tags:
-      - import
-      x-contentType: application/json
-      x-accepts: application/json
-  /repositories/{repository}/branches/ranges:
-    post:
-      operationId: ingestRange
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StageRangeCreation'
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IngestRangeCreationResponse'
-          description: range metadata
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: create a lakeFS range file from the source uri
-      tags:
-      - import
-      x-contentType: application/json
-      x-accepts: application/json
-  /repositories/{repository}/branches/{branch}/update_token:
-    put:
-      operationId: updateBranchToken
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: false
-        in: path
-        name: branch
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateToken'
-        required: true
-      responses:
-        "204":
-          description: branch updated successfully
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Forbidden
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: modify branch staging token
-      tags:
-      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/stage_allowed:
@@ -5669,29 +5434,6 @@ components:
       - next_offset
       - results
       type: object
-    ImportPagination:
-      example:
-        continuation_token: continuation_token
-        staging_token: staging_token
-        has_more: true
-        last_key: last_key
-      properties:
-        has_more:
-          description: More keys to be ingested.
-          type: boolean
-        continuation_token:
-          description: Opaque. Token used to import the next range.
-          type: string
-        last_key:
-          description: Last object store key that was ingested.
-          type: string
-        staging_token:
-          description: Staging token for skipped objects during ingest
-          type: string
-      required:
-      - has_more
-      - last_key
-      type: object
     Repository:
       example:
         default_branch: default_branch
@@ -5844,9 +5586,9 @@ components:
           type: string
         physical_address_expiry:
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -6431,19 +6173,15 @@ components:
         friendly_name: friendly_name
         id: id
         creation_date: 0
-        email: email
       properties:
         id:
-          description: a unique identifier for the user. In password-based authentication,
-            this is the email.
+          description: a unique identifier for the user.
           type: string
         creation_date:
           description: Unix Epoch in seconds
           format: int64
           type: integer
         friendly_name:
-          type: string
-        email:
           type: string
       required:
       - creation_date
@@ -6455,21 +6193,11 @@ components:
           friendly_name: friendly_name
           id: id
           creation_date: 0
-          email: email
       properties:
         user:
           $ref: '#/components/schemas/User'
       required:
       - user
-      type: object
-    ForgotPasswordRequest:
-      example:
-        email: email
-      properties:
-        email:
-          type: string
-      required:
-      - email
       type: object
     UserCreation:
       example:
@@ -6477,8 +6205,7 @@ components:
         id: id
       properties:
         id:
-          description: a unique identifier for the user. In password-based authentication,
-            this is the email.
+          description: a unique identifier for the user.
           type: string
         invite_user:
           type: boolean
@@ -6611,25 +6338,6 @@ components:
       - featureUpdates
       - securityUpdates
       type: object
-    UpdatePasswordByToken:
-      example:
-        newPassword: newPassword
-        email: email
-        token: token
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-      - newPassword
-      - token
-      type: object
     Credentials:
       example:
         access_key_id: access_key_id
@@ -6746,11 +6454,9 @@ components:
         - friendly_name: friendly_name
           id: id
           creation_date: 0
-          email: email
         - friendly_name: friendly_name
           id: id
           creation_date: 0
-          email: email
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -7122,14 +6828,14 @@ components:
           type: string
         presigned_url:
           description: if presign=true is passed in the request, this field will contain
-            a presigned URL to use when uploading
+            a pre-signed URL to use when uploading
           nullable: true
           type: string
         presigned_url_expiry:
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -7288,7 +6994,7 @@ components:
           - object
           type: string
         path:
-          description: A source location to ingested path or to a single object. Must
+          description: A source location to import path or to a single object. Must
             match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
           type: string
@@ -7321,47 +7027,7 @@ components:
       - commit
       - paths
       type: object
-    StageRangeCreation:
-      example:
-        fromSourceURI: s3://my-bucket/production/collections/
-        continuation_token: continuation_token
-        staging_token: staging_token
-        prepend: collections/
-        after: production/collections/some/file.parquet
-      properties:
-        fromSourceURI:
-          description: The source location of the ingested files. Must match the lakeFS
-            installation blockstore type.
-          example: s3://my-bucket/production/collections/
-          type: string
-        after:
-          description: Only objects after this key would be ingested.
-          example: production/collections/some/file.parquet
-          type: string
-        prepend:
-          description: A prefix to prepend to ingested objects.
-          example: collections/
-          type: string
-        continuation_token:
-          description: Opaque. Client should pass the continuation_token received
-            from server to continue creation ranges from the same key.
-          type: string
-        staging_token:
-          description: Opaque. Client should pass staging_token if received from server
-            on previous request
-          type: string
-      required:
-      - after
-      - fromSourceURI
-      - prepend
-      type: object
     RangeMetadata:
-      example:
-        max_key: production/collections/some/file_8229.parquet
-        count: 0
-        estimated_size: 6
-        id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-        min_key: production/collections/some/file_1.parquet
       properties:
         id:
           description: ID of the range.
@@ -7388,26 +7054,7 @@ components:
       - max_key
       - min_key
       type: object
-    IngestRangeCreationResponse:
-      example:
-        pagination:
-          continuation_token: continuation_token
-          staging_token: staging_token
-          has_more: true
-          last_key: last_key
-        range:
-          max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
-      properties:
-        range:
-          $ref: '#/components/schemas/RangeMetadata'
-        pagination:
-          $ref: '#/components/schemas/ImportPagination'
-      type: object
-    ImportStatusResp:
+    ImportStatus:
       example:
         update_time: 2000-01-23T04:56:07.000+00:00
         metarange_id: metarange_id
@@ -7457,18 +7104,6 @@ components:
       - id
       type: object
     MetaRangeCreation:
-      example:
-        ranges:
-        - max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
-        - max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
       properties:
         ranges:
           items:
@@ -7479,16 +7114,12 @@ components:
       - ranges
       type: object
     MetaRangeCreationResponse:
-      example:
-        id: id
       properties:
         id:
           description: The id of the created metarange
           type: string
       type: object
     UpdateToken:
-      example:
-        staging_token: staging_token
       properties:
         staging_token:
           type: string

@@ -154,7 +154,6 @@ type Interface interface {
 	CancelImport(ctx context.Context, repositoryID, importID string) error
 	WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error)
 	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
-	UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error
 
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error

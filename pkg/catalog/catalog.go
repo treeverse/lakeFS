@@ -2063,14 +2063,6 @@ func (c *Catalog) WriteMetaRange(ctx context.Context, repositoryID string, range
 	return c.Store.WriteMetaRange(ctx, repository, ranges)
 }
 
-func (c *Catalog) UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.UpdateBranchToken(ctx, repository, branchID, stagingToken)
-}
-
 func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {

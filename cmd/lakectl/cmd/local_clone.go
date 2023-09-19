@@ -46,9 +46,9 @@ var localCloneCmd = &cobra.Command{
 		}
 		stableRemote := remote.WithRef(head)
 		// Dynamically construct changes
-		c := make(chan *local.Change, filesChanSize)
+		ch := make(chan *local.Change, filesChanSize)
 		go func() {
-			defer close(c)
+			defer close(ch)
 			remotePath := remote.GetPath()
 			var after string
 			for {
@@ -70,7 +70,7 @@ var localCloneCmd = &cobra.Command{
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					c <- &local.Change{
+					ch <- &local.Change{
 						Source: local.ChangeSourceRemote,
 						Path:   relPath,
 						Type:   local.ChangeTypeAdded,
@@ -88,7 +88,7 @@ var localCloneCmd = &cobra.Command{
 		}
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(localPath, stableRemote, c)
+		err = s.Sync(localPath, stableRemote, ch)
 		if err != nil {
 			DieErr(err)
 		}

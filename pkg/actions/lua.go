@@ -14,6 +14,7 @@ import (
 	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -95,8 +96,11 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		if h.Endpoint == nil {
 			return fmt.Errorf("no endpoint configured, cannot request object: %s: %w", h.ScriptPath, ErrInvalidAction)
 		}
-		reqURL := fmt.Sprintf("/api/v1/repositories/%s/refs/%s/objects",
-			url.PathEscape(string(record.RepositoryID)), url.PathEscape(string(record.SourceRef)))
+		reqURL, err := url.JoinPath(apiutil.BaseURL,
+			"repositories", string(record.RepositoryID), "refs", string(record.SourceRef), "objects")
+		if err != nil {
+			return err
+		}
 		req, err := http.NewRequest(http.MethodGet, reqURL, nil)
 		if err != nil {
 			return err

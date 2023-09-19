@@ -75,17 +75,16 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	wg.SetLimit(s.maxParallelism)
-	for change := range changeSet {
-		c := change
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+	for i := 0; i < s.maxParallelism; i++ {
 		wg.Go(func() error {
-			return s.apply(ctx, rootPath, remote, c)
+			for change := range changeSet {
+				if err := s.apply(ctx, rootPath, remote, change); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 	}
-
 	if err := wg.Wait(); err != nil {
 		return err
 	}
@@ -93,48 +92,41 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	return err
 }
 
-func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) (err error) {
+func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
 		case ChangeSourceRemote:
-			// remote changed something, download it!
-			err = s.download(ctx, rootPath, remote, change)
-			if err != nil {
-				err = fmt.Errorf("download %s failed: %w", change.Path, err)
+			// remotely changed something, download it!
+			if err := s.download(ctx, rootPath, remote, change); err != nil {
+				return fmt.Errorf("download %s failed: %w", change.Path, err)
 			}
-			return err
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
-			err = s.upload(ctx, rootPath, remote, change)
-			if err != nil {
-				err = fmt.Errorf("upload %s failed: %w", change.Path, err)
+			if err := s.upload(ctx, rootPath, remote, change); err != nil {
+				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
-			return err
 		default:
 			panic("invalid change source")
 		}
 	case ChangeTypeRemoved:
 		if change.Source == ChangeSourceRemote {
 			// remote deleted something, delete it locally!
-			err = s.deleteLocal(rootPath, change)
-			if err != nil {
-				err = fmt.Errorf("delete local %s failed: %w", change.Path, err)
+			if err := s.deleteLocal(rootPath, change); err != nil {
+				return fmt.Errorf("delete local %s failed: %w", change.Path, err)
 			}
-			return err
 		} else {
 			// we deleted something, delete it on remote!
-			err = s.deleteRemote(ctx, remote, change)
-			if err != nil {
-				err = fmt.Errorf("delete remote %s failed: %w", change.Path, err)
+			if err := s.deleteRemote(ctx, remote, change); err != nil {
+				return fmt.Errorf("delete remote %s failed: %w", change.Path, err)
 			}
-			return err
 		}
 	case ChangeTypeConflict:
 		return ErrConflict
 	default:
 		panic("invalid change type")
 	}
+	return nil
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
@@ -175,8 +167,8 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	sizeBytes := swag.Int64Value(statResp.JSON200.SizeBytes)
 	f, err := os.Create(destination)
 	if err != nil {
-		// sometimes we get a file that is actually a directory marker.
-		// spark loves writing those. If we already have the directory we can skip it.
+		// Sometimes we get a file that is actually a directory marker (Spark loves writing those).
+		// If we already have the directory, we can skip it.
 		if errors.Is(err, syscall.EISDIR) && sizeBytes == 0 {
 			return nil // no further action required!
 		}
@@ -187,7 +179,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}()
 
 	if sizeBytes == 0 { // if size is empty just create file
-		spinner := s.progressBar.AddSpinner(fmt.Sprintf("download %s", change.Path))
+		spinner := s.progressBar.AddSpinner("download " + change.Path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
 	} else { // Download file
@@ -239,7 +231,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	// set mtime to the server returned one
-	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in defer func
+	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in deferred func
 	return err
 }
 
@@ -292,7 +284,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 }
 
 func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
-	b := s.progressBar.AddSpinner(fmt.Sprintf("delete local: %s", change.Path))
+	b := s.progressBar.AddSpinner("delete local: " + change.Path)
 	defer func() {
 		defer func() {
 			if err != nil {
@@ -312,7 +304,7 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 }
 
 func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {
-	b := s.progressBar.AddSpinner(fmt.Sprintf("delete remote path: %s", change.Path))
+	b := s.progressBar.AddSpinner("delete remote path: " + change.Path)
 	defer func() {
 		if err != nil {
 			b.Error()

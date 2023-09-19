@@ -35,14 +35,12 @@ import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ErrorNoACL;
-import io.lakefs.clients.api.model.ForgotPasswordRequest;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
 import io.lakefs.clients.api.model.GroupList;
 import io.lakefs.clients.api.model.LoginInformation;
 import io.lakefs.clients.api.model.Policy;
 import io.lakefs.clients.api.model.PolicyList;
-import io.lakefs.clients.api.model.UpdatePasswordByToken;
 import io.lakefs.clients.api.model.User;
 import io.lakefs.clients.api.model.UserCreation;
 import io.lakefs.clients.api.model.UserList;
@@ -1834,121 +1832,6 @@ public class AuthApi {
         return localVarCall;
     }
     /**
-     * Build call for forgotPassword
-     * @param forgotPasswordRequest  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call forgotPasswordCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = forgotPasswordRequest;
-
-        // create path and map variables
-        String localVarPath = "/auth/password/forgot";
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            "application/json"
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] {  };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call forgotPasswordValidateBeforeCall(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'forgotPasswordRequest' is set
-        if (forgotPasswordRequest == null) {
-            throw new ApiException("Missing the required parameter 'forgotPasswordRequest' when calling forgotPassword(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = forgotPasswordCall(forgotPasswordRequest, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * forgot password request initiates the password reset process
-     * 
-     * @param forgotPasswordRequest  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void forgotPassword(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
-        forgotPasswordWithHttpInfo(forgotPasswordRequest);
-    }
-
-    /**
-     * forgot password request initiates the password reset process
-     * 
-     * @param forgotPasswordRequest  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> forgotPasswordWithHttpInfo(ForgotPasswordRequest forgotPasswordRequest) throws ApiException {
-        okhttp3.Call localVarCall = forgotPasswordValidateBeforeCall(forgotPasswordRequest, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     * forgot password request initiates the password reset process (asynchronously)
-     * 
-     * @param forgotPasswordRequest  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> No content </td><td>  -  </td></tr>
-        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call forgotPasswordAsync(ForgotPasswordRequest forgotPasswordRequest, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = forgotPasswordValidateBeforeCall(forgotPasswordRequest, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
      * Build call for getCredentials
      * @param userId  (required)
      * @param accessKeyId  (required)
@@ -2692,7 +2575,7 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> group memeber list </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -2766,7 +2649,7 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> group memeber list </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -2788,7 +2671,7 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> group memeber list </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -2812,7 +2695,7 @@ public class AuthApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> group memeber list </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> group member list </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -4066,121 +3949,6 @@ public class AuthApi {
     public okhttp3.Call setGroupACLAsync(String groupId, ACL ACL, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = setGroupACLValidateBeforeCall(groupId, ACL, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for updatePassword
-     * @param updatePasswordByToken  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call updatePasswordCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = updatePasswordByToken;
-
-        // create path and map variables
-        String localVarPath = "/auth/password";
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            "application/json"
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "cookie_auth" };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call updatePasswordValidateBeforeCall(UpdatePasswordByToken updatePasswordByToken, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'updatePasswordByToken' is set
-        if (updatePasswordByToken == null) {
-            throw new ApiException("Missing the required parameter 'updatePasswordByToken' when calling updatePassword(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = updatePasswordCall(updatePasswordByToken, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * Update user password by reset_password token
-     * 
-     * @param updatePasswordByToken  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void updatePassword(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
-        updatePasswordWithHttpInfo(updatePasswordByToken);
-    }
-
-    /**
-     * Update user password by reset_password token
-     * 
-     * @param updatePasswordByToken  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> updatePasswordWithHttpInfo(UpdatePasswordByToken updatePasswordByToken) throws ApiException {
-        okhttp3.Call localVarCall = updatePasswordValidateBeforeCall(updatePasswordByToken, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     * Update user password by reset_password token (asynchronously)
-     * 
-     * @param updatePasswordByToken  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> successful reset </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call updatePasswordAsync(UpdatePasswordByToken updatePasswordByToken, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = updatePasswordValidateBeforeCall(updatePasswordByToken, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
