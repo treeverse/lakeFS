@@ -209,7 +209,7 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook,
 			Args:   args,
 		}, nil
 	} else if !errors.Is(err, errMissingKey) {
-		// 'script' was provided but is empty or of the wrong type..
+		// 'script' was provided but is empty or of the wrong type.
 		return nil, err
 	}
 
