@@ -1,8 +1,8 @@
 local pathlib = require("path")
 local strings = require("strings")
 local yaml = require("encoding/yaml")
-local common = require("lakefs/catalogexport/common")
-local hive = require("lakefs/catalogexport/hive")
+local utils = require("lakefs/catalogexport/internal/utils")
+local HiveTableExtractor = require("lakefs/catalogexport/hive")
 
 local LAKEFS_TABLES_BASE = "_lakefs_tables/"
 
@@ -12,7 +12,7 @@ function is_table_obj(entry, tables_base)
         return false
     end
     local path = entry.path
-    if strings.has_prefix(path, tables_base) then 
+    if strings.has_prefix(path, tables_base) then
         -- remove _lakefs_tables/ from path
         path = entry.path:sub(#tables_base, #path)
     end
@@ -23,7 +23,7 @@ end
 function list_table_descriptor_files(client, repo_id, commit_id)
     local table_entries = {}
     local page_size = 30
-    local iter = common.lakefs_object_pager(client, repo_id, commit_id, "", LAKEFS_TABLES_BASE, page_size, "")
+    local iter = utils.api.lakefs_object_pager(client, repo_id, commit_id, "", LAKEFS_TABLES_BASE, page_size, "")
     for entries in iter do
         for _, entry in ipairs(entries) do
             if is_table_obj(entry, LAKEFS_TABLES_BASE) then
@@ -39,16 +39,16 @@ end
 
 -- table as parsed YAML object
 function get_table_descriptor(client, repo_id, commit_id, logical_path)
-    code, content = client.get_object(repo_id, commit_id, logical_path)
+    local code, content = client.get_object(repo_id, commit_id, logical_path)
     if code ~= 200 then
         error("could not fetch data file: HTTP " .. tostring(code))
     end
-    descriptor = yaml.unmarshal(content)
+    local descriptor = yaml.unmarshal(content)
+    descriptor.partition_columns = descriptor.partition_columns or {}
     return descriptor
 end
 
 return {
     list_table_descriptor_files = list_table_descriptor_files,
     get_table_descriptor = get_table_descriptor,
-    HiveTableExtractor = hive.HiveTableExtractor,
 }
