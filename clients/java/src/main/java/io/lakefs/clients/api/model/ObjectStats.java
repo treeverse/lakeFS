@@ -192,11 +192,11 @@ public class ObjectStats {
   }
 
    /**
-   * If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. 
+   * If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. 
    * @return physicalAddressExpiry
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
+  @ApiModelProperty(value = "If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
 
   public Long getPhysicalAddressExpiry() {
     return physicalAddressExpiry;

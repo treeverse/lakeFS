@@ -30,17 +30,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for ImportStatusResp
+ * Model tests for ImportStatus
  */
-public class ImportStatusRespTest {
-    private final ImportStatusResp model = new ImportStatusResp();
+public class ImportStatusTest {
+    private final ImportStatus model = new ImportStatus();
 
     /**
-     * Model tests for ImportStatusResp
+     * Model tests for ImportStatus
      */
     @Test
-    public void testImportStatusResp() {
-        // TODO: test ImportStatusResp
+    public void testImportStatus() {
+        // TODO: test ImportStatus
     }
 
     /**

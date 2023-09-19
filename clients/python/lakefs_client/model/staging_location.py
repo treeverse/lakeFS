@@ -145,8 +145,8 @@ class StagingLocation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             physical_address (str): [optional]  # noqa: E501
-            presigned_url (str, none_type): if presign=true is passed in the request, this field will contain a presigned URL to use when uploading. [optional]  # noqa: E501
-            presigned_url_expiry (int): If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
+            presigned_url (str, none_type): if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading. [optional]  # noqa: E501
+            presigned_url_expiry (int): If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -233,8 +233,8 @@ class StagingLocation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             physical_address (str): [optional]  # noqa: E501
-            presigned_url (str, none_type): if presign=true is passed in the request, this field will contain a presigned URL to use when uploading. [optional]  # noqa: E501
-            presigned_url_expiry (int): If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
+            presigned_url (str, none_type): if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading. [optional]  # noqa: E501
+            presigned_url_expiry (int): If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

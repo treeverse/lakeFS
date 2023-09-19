@@ -1,4 +1,4 @@
-# ImportStatusResp
+# ImportStatus
 
 
 ## Properties

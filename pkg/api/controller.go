@@ -2240,8 +2240,8 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	})
 }
 
-func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatusResp {
-	resp := apigen.ImportStatusResp{
+func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
+	resp := apigen.ImportStatus{
 		Completed:       status.Completed,
 		IngestedObjects: &status.Progress,
 		UpdateTime:      status.UpdatedAt,
@@ -2307,92 +2307,6 @@ func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, reposi
 	}
 
 	writeResponse(w, r, http.StatusNoContent, nil)
-}
-
-func (c *Controller) IngestRange(w http.ResponseWriter, r *http.Request, body apigen.IngestRangeJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Type: permissions.NodeTypeAnd,
-		Nodes: []permissions.Node{
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ImportFromStorageAction,
-					Resource: permissions.StorageNamespace(body.FromSourceURI),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, body.Prepend),
-				},
-			},
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "ingest_range", r, repository, "", "")
-
-	contToken := swag.StringValue(body.ContinuationToken)
-	stagingToken := swag.StringValue(body.StagingToken)
-	info, mark, err := c.Catalog.WriteRange(r.Context(), repository, catalog.WriteRangeRequest{
-		SourceURI:         body.FromSourceURI,
-		Prepend:           body.Prepend,
-		After:             body.After,
-		StagingToken:      stagingToken,
-		ContinuationToken: contToken,
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	writeResponse(w, r, http.StatusCreated, apigen.IngestRangeCreationResponse{
-		Range: &apigen.RangeMetadata{
-			Id:            string(info.ID),
-			MinKey:        string(info.MinKey),
-			MaxKey:        string(info.MaxKey),
-			Count:         info.Count,
-			EstimatedSize: int(info.EstimatedRangeSizeBytes),
-		},
-		Pagination: &apigen.ImportPagination{
-			HasMore:           mark.HasMore,
-			ContinuationToken: &mark.ContinuationToken,
-			LastKey:           mark.LastKey,
-			StagingToken:      &mark.StagingToken,
-		},
-	})
-}
-
-func (c *Controller) CreateMetaRange(w http.ResponseWriter, r *http.Request, body apigen.CreateMetaRangeJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateMetaRangeAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "create_metarange", r, repository, "", "")
-
-	ranges := make([]*graveler.RangeInfo, 0, len(body.Ranges))
-	for _, r := range body.Ranges {
-		ranges = append(ranges, &graveler.RangeInfo{
-			ID:                      graveler.RangeID(r.Id),
-			MinKey:                  graveler.Key(r.MinKey),
-			MaxKey:                  graveler.Key(r.MaxKey),
-			Count:                   r.Count,
-			EstimatedRangeSizeBytes: uint64(r.EstimatedSize),
-		})
-	}
-	info, err := c.Catalog.WriteMetaRange(r.Context(), repository, ranges)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, apigen.MetaRangeCreationResponse{
-		Id: swag.String(string(info.ID)),
-	})
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.CommitJSONRequestBody, repository, branch string, params apigen.CommitParams) {

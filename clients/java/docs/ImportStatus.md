@@ -1,6 +1,6 @@
 
 
-# ImportStatusResp
+# ImportStatus
 
 
 ## Properties
