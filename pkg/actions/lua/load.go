@@ -19,7 +19,7 @@ const (
 	defaultPath       = "?.lua"
 )
 
-//go:embed lakefs/catalogexport/*.lua lakefs/catalogexport/internal/*.lua
+//go:embed lakefs/catalogexport/*.lua
 var luaEmbeddedCode embed.FS
 
 var ErrNoFile = errors.New("no file")

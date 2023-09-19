@@ -1,7 +1,7 @@
 local pathlib = require("path")
 local strings = require("strings")
 local yaml = require("encoding/yaml")
-local utils = require("lakefs/catalogexport/internal/utils")
+local utils = require("lakefs/catalogexport/internal")
 local HiveTableExtractor = require("lakefs/catalogexport/hive")
 
 local LAKEFS_TABLES_BASE = "_lakefs_tables/"
@@ -20,11 +20,11 @@ function is_table_obj(entry, tables_base)
 end
 
 -- list all YAML files under _lakefs_tables/*
-function list_table_descriptor_files(client, repo_id, commit_id)
+function list_table_descriptor_entries(client, repo_id, commit_id)
     local table_entries = {}
     local page_size = 30
-    local iter = utils.api.lakefs_object_pager(client, repo_id, commit_id, "", LAKEFS_TABLES_BASE, page_size, "")
-    for entries in iter do
+    local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", LAKEFS_TABLES_BASE,"", page_size)
+    for entries in pager do
         for _, entry in ipairs(entries) do
             if is_table_obj(entry, LAKEFS_TABLES_BASE) then
                 table.insert(table_entries, {
@@ -49,6 +49,6 @@ function get_table_descriptor(client, repo_id, commit_id, logical_path)
 end
 
 return {
-    list_table_descriptor_files = list_table_descriptor_files,
+    list_table_descriptor_entries = list_table_descriptor_entries,
     get_table_descriptor = get_table_descriptor,
 }

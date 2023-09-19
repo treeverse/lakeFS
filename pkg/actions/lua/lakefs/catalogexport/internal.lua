@@ -14,7 +14,7 @@ function lakefs_paginiated_api(api_call, after)
         end
         local code, resp = api_call(next_offset)
         if code < 200 or code >= 300 then
-            error("lakeFS: api return non-2xx" .. code)
+            error("lakeFS: api return non-2xx" .. tostring(code))
         end
         has_more = resp.pagination.has_more
         next_offset = resp.pagination.next_offset
@@ -23,9 +23,9 @@ function lakefs_paginiated_api(api_call, after)
 end
 
 -- paginage over lakefs objects 
-function lakefs_object_pager(lakefs_client, repo_id, commit_id, after, prefix, page_size, delimiter)
+function lakefs_object_pager(lakefs_client, repo_id, commit_id, after, prefix, delimiter, page_size)
     return lakefs_paginiated_api(function(next_offset)
-        return lakefs_client.list_objects(repo_id, commit_id, next_offset, prefix, delimiter, page_size)
+        return lakefs_client.list_objects(repo_id, commit_id, next_offset, prefix, delimiter, page_size or 30)
     end, after)
 end
 
@@ -42,11 +42,8 @@ function ref_from_branch_or_tag(action_info)
 end
 
 return {
-    DEFAULT_SHORT_DIGEST_LEN=DEFAULT_SHORT_DIGEST_LEN,
     short_digest=short_digest,
     ref_from_branch_or_tag=ref_from_branch_or_tag,
-    api = {
-        lakefs_object_pager=lakefs_object_pager, 
-        lakefs_paginiated_api=lakefs_paginiated_api,
-    }
+    lakefs_object_pager=lakefs_object_pager, 
+    lakefs_paginiated_api=lakefs_paginiated_api,
 }

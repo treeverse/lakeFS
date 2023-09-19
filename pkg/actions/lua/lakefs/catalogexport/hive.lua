@@ -1,27 +1,33 @@
 local pathlib = require("path")
-local utils = require("lakefs/catalogexport/internal/utils")
+local utils = require("lakefs/catalogexport/internal")
 local DEFAULT_PAGE_SIZE = 30 
 
 -- extract partition prefix from full path
 function extract_partitions_path(partitions, path)
-    local idx = 0
+    if partitions == nil or #partitions == 0 then
+        return ""
+    end
+    local idx = 1
     for _, partition in ipairs(partitions) do
         local col_substr = partition .. "="
         local i, j = string.find(path, col_substr, idx)
         if i == nil then
             return nil
         end
-        local start_val, end_val = string.find(path, "/", j+1)
-        idx = end_val 
+        local separator_idx = string.find(path, "/", j+1)
+        -- verify / found and there is something in between = ... / 
+        if separator_idx == nil or separator_idx <= (j + 1) then
+            return nil
+        end
+        idx = separator_idx
     end
     return string.sub(path, 1, idx)
 end
 
 -- Hive format partition iterator each result set is a collection of files under the same partition
 function lakefs_hive_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)
-    local prefix = base_path
     local target_partition = ""
-    local pager = utils.api.lakefs_object_pager(client, repo_id, commit_id, "", prefix, page_size or DEFAULT_PAGE_SIZE)
+    local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", base_path,"", page_size or DEFAULT_PAGE_SIZE)
     local page = pager()
     return function()
         if page == nil then
