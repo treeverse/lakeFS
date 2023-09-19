@@ -986,20 +986,6 @@ func (mr *MockPlumbingMockRecorder) StageObject(ctx, stagingToken, object interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StageObject", reflect.TypeOf((*MockPlumbing)(nil).StageObject), ctx, stagingToken, object)
 }
 
-// UpdateBranchToken mocks base method.
-func (m *MockPlumbing) UpdateBranchToken(ctx context.Context, repository *graveler.RepositoryRecord, branchID, stagingToken string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBranchToken", ctx, repository, branchID, stagingToken)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateBranchToken indicates an expected call of UpdateBranchToken.
-func (mr *MockPlumbingMockRecorder) UpdateBranchToken(ctx, repository, branchID, stagingToken interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBranchToken", reflect.TypeOf((*MockPlumbing)(nil).UpdateBranchToken), ctx, repository, branchID, stagingToken)
-}
-
 // WriteMetaRange mocks base method.
 func (m *MockPlumbing) WriteMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	m.ctrl.T.Helper()

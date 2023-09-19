@@ -114,7 +114,7 @@ class ImportLocation(ModelNormal):
 
         Args:
             type (str): Path type, can either be 'common_prefix' or 'object'
-            path (str): A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+            path (str): A source location to import path or to a single object. Must match the lakeFS installation blockstore type.
             destination (str): Destination for the imported objects on the branch
 
         Keyword Args:
@@ -203,7 +203,7 @@ class ImportLocation(ModelNormal):
 
         Args:
             type (str): Path type, can either be 'common_prefix' or 'object'
-            path (str): A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+            path (str): A source location to import path or to a single object. Must match the lakeFS installation blockstore type.
             destination (str): Destination for the imported objects on the branch
 
         Keyword Args:

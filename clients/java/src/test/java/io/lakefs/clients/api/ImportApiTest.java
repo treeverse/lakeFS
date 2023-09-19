@@ -17,11 +17,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ImportCreation;
 import io.lakefs.clients.api.model.ImportCreationResponse;
-import io.lakefs.clients.api.model.ImportStatusResp;
-import io.lakefs.clients.api.model.IngestRangeCreationResponse;
-import io.lakefs.clients.api.model.MetaRangeCreation;
-import io.lakefs.clients.api.model.MetaRangeCreationResponse;
-import io.lakefs.clients.api.model.StageRangeCreation;
+import io.lakefs.clients.api.model.ImportStatus;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -38,22 +34,6 @@ public class ImportApiTest {
 
     private final ImportApi api = new ImportApi();
 
-    
-    /**
-     * create a lakeFS metarange file from the given ranges
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void createMetaRangeTest() throws ApiException {
-        String repository = null;
-        MetaRangeCreation metaRangeCreation = null;
-                MetaRangeCreationResponse response = api.createMetaRange(repository, metaRangeCreation);
-        // TODO: test validations
-    }
     
     /**
      * cancel ongoing import
@@ -102,23 +82,7 @@ public class ImportApiTest {
         String repository = null;
         String branch = null;
         String id = null;
-                ImportStatusResp response = api.importStatus(repository, branch, id);
-        // TODO: test validations
-    }
-    
-    /**
-     * create a lakeFS range file from the source uri
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void ingestRangeTest() throws ApiException {
-        String repository = null;
-        StageRangeCreation stageRangeCreation = null;
-                IngestRangeCreationResponse response = api.ingestRange(repository, stageRangeCreation);
+                ImportStatus response = api.importStatus(repository, branch, id);
         // TODO: test validations
     }
     

@@ -2304,7 +2304,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | group memeber list |  -  |
+**200** | group member list |  -  |
 **401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 
