@@ -35,7 +35,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -147,8 +146,8 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("paginate repos after", func(t *testing.T) {
 		// write some repos
 		resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter("foo2")),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+			After:  apiutil.Ptr[apigen.PaginationAfter]("foo2"),
+			Amount: apiutil.Ptr[apigen.PaginationAmount](2),
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -1194,7 +1193,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo2"), "main")
 		testutil.Must(t, err)
 
-		// create first dummy commit on main so that we can create branches from it
+		// create the first "dummy" commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
@@ -1213,8 +1212,8 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		}
 
 		resp, err = clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter("main1")),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+			After:  apiutil.Ptr[apigen.PaginationAfter]("main1"),
+			Amount: apiutil.Ptr[apigen.PaginationAmount](2),
 		})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -1334,7 +1333,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 	testutil.Must(t, err)
 
 	t.Run("get default branch", func(t *testing.T) {
-		// create first dummy commit on main so that we can create branches from it
+		// create the first "dummy" commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, testBranch, catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, repo, testBranch, "first commit", "test", nil, nil, nil)
 		testutil.Must(t, err)
@@ -1816,194 +1815,6 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		if resp.JSON404 == nil {
 			t.Fatal("DeleteBranch expected not found")
 		}
-	})
-}
-
-func TestController_IngestRangeHandler(t *testing.T) {
-	const (
-		fromSourceURI           = "https://valid.uri"
-		uriPrefix               = "take/from/here"
-		fromSourceURIWithPrefix = fromSourceURI + "/" + uriPrefix
-		after                   = "some/key/to/start/after"
-		prepend                 = "some/logical/prefix"
-	)
-
-	const continuationToken = "opaque"
-
-	t.Run("ingest directory marker", func(t *testing.T) {
-		ctx := context.Background()
-		w := testutils.NewFakeWalker(0, 1, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, nil)
-		w.Entries = []block.ObjectStoreEntry{
-			{
-				RelativeKey: "",
-				FullKey:     uriPrefix + "/",
-				Address:     fromSourceURIWithPrefix + "/",
-				ETag:        "dir_etag",
-				Size:        0,
-			},
-		}
-		clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
-		_, err := deps.catalog.CreateRepository(ctx, "repo-dir-marker", onBlock(deps, "foo2"), "main")
-		testutil.Must(t, err)
-
-		resp, err := clt.IngestRangeWithResponse(ctx, "repo-dir-marker", apigen.IngestRangeJSONRequestBody{
-			FromSourceURI:     fromSourceURIWithPrefix,
-			ContinuationToken: swag.String(continuationToken),
-			After:             after,
-		})
-		verifyResponseOK(t, resp, err)
-		require.NotNil(t, resp.JSON201.Range)
-		require.NotNil(t, resp.JSON201.Pagination)
-		require.Equal(t, 1, resp.JSON201.Range.Count)
-		require.Equal(t, resp.JSON201.Range.MinKey, "")
-		require.Equal(t, resp.JSON201.Range.MaxKey, "")
-		require.False(t, resp.JSON201.Pagination.HasMore)
-		require.Empty(t, resp.JSON201.Pagination.LastKey)
-		require.Empty(t, resp.JSON201.Pagination.ContinuationToken)
-	})
-
-	t.Run("successful ingestion no pagination", func(t *testing.T) {
-		ctx := context.Background()
-		repo := testUniqueRepoName()
-		count := 1000
-		clt, w := func(t *testing.T, count int, expectedErr error) (apigen.ClientWithResponsesInterface, *testutils.FakeWalker) {
-			t.Helper()
-			ctx := context.Background()
-
-			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
-
-			// setup test data
-			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
-			testutil.Must(t, err)
-
-			return clt, w
-		}(t, count, nil)
-
-		resp, err := clt.IngestRangeWithResponse(ctx, repo, apigen.IngestRangeJSONRequestBody{
-			After:             after,
-			FromSourceURI:     fromSourceURIWithPrefix,
-			Prepend:           prepend,
-			ContinuationToken: swag.String(continuationToken),
-		})
-
-		verifyResponseOK(t, resp, err)
-		require.NotNil(t, resp.JSON201.Range)
-		require.NotNil(t, resp.JSON201.Pagination)
-		require.Equal(t, count, resp.JSON201.Range.Count)
-		require.Equal(t, strings.Replace(w.Entries[0].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MinKey)
-		require.Equal(t, strings.Replace(w.Entries[count-1].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MaxKey)
-		require.False(t, resp.JSON201.Pagination.HasMore)
-		require.Empty(t, resp.JSON201.Pagination.LastKey)
-		require.Empty(t, resp.JSON201.Pagination.ContinuationToken)
-	})
-
-	t.Run("successful ingestion with pagination", func(t *testing.T) {
-		// force splitting the range before
-		ctx := context.Background()
-		repo := testUniqueRepoName()
-		count := 200_000
-		clt, w := func(t *testing.T, count int, expectedErr error) (apigen.ClientWithResponsesInterface, *testutils.FakeWalker) {
-			t.Helper()
-			ctx := context.Background()
-
-			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
-
-			// setup test data
-			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
-			testutil.Must(t, err)
-
-			return clt, w
-		}(t, count, nil)
-
-		resp, err := clt.IngestRangeWithResponse(ctx, repo, apigen.IngestRangeJSONRequestBody{
-			After:             after,
-			FromSourceURI:     fromSourceURIWithPrefix,
-			Prepend:           prepend,
-			ContinuationToken: swag.String(continuationToken),
-		})
-
-		verifyResponseOK(t, resp, err)
-		require.NotNil(t, resp.JSON201.Range)
-		require.NotNil(t, resp.JSON201.Pagination)
-		require.Less(t, resp.JSON201.Range.Count, count)
-		require.Equal(t, strings.Replace(w.Entries[0].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MinKey)
-		require.Equal(t, strings.Replace(w.Entries[resp.JSON201.Range.Count-1].FullKey, uriPrefix, prepend, 1), resp.JSON201.Range.MaxKey)
-		require.True(t, resp.JSON201.Pagination.HasMore)
-		require.Equal(t, w.Entries[resp.JSON201.Range.Count-1].FullKey, resp.JSON201.Pagination.LastKey)
-		require.Equal(t, testutils.ContinuationTokenOpaque, *resp.JSON201.Pagination.ContinuationToken)
-	})
-
-	t.Run("error during walk", func(t *testing.T) {
-		// force splitting the range before
-		ctx := context.Background()
-		repo := testUniqueRepoName()
-		count := 10
-		expectedErr := errors.New("failed reading for object store")
-		clt, _ := func(t *testing.T, count int, expectedErr error) (apigen.ClientWithResponsesInterface, *testutils.FakeWalker) {
-			t.Helper()
-			ctx := context.Background()
-
-			w := testutils.NewFakeWalker(count, count, uriPrefix, after, continuationToken, fromSourceURIWithPrefix, expectedErr)
-			clt, deps := setupClientWithAdminAndWalkerFactory(t, testutils.FakeFactory{Walker: w})
-
-			// setup test data
-			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
-			testutil.Must(t, err)
-
-			return clt, w
-		}(t, count, expectedErr)
-
-		resp, err := clt.IngestRangeWithResponse(ctx, repo, apigen.IngestRangeJSONRequestBody{
-			After:             after,
-			FromSourceURI:     fromSourceURIWithPrefix,
-			Prepend:           prepend,
-			ContinuationToken: swag.String(continuationToken),
-		})
-
-		require.NoError(t, err)
-		require.Equal(t, http.StatusInternalServerError, resp.StatusCode())
-		require.Contains(t, string(resp.Body), expectedErr.Error())
-	})
-}
-
-func TestController_WriteMetaRangeHandler(t *testing.T) {
-	ctx := context.Background()
-	clt, deps := setupClientWithAdmin(t)
-	repo := testUniqueRepoName()
-	// setup test data
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
-	testutil.Must(t, err)
-
-	t.Run("successful metarange creation", func(t *testing.T) {
-		resp, err := clt.CreateMetaRangeWithResponse(ctx, repo, apigen.CreateMetaRangeJSONRequestBody{
-			Ranges: []apigen.RangeMetadata{
-				{Count: 11355, EstimatedSize: 123465897, Id: "FirstRangeID", MaxKey: "1", MinKey: "2"},
-				{Count: 13123, EstimatedSize: 123465897, Id: "SecondRangeID", MaxKey: "3", MinKey: "4"},
-				{Count: 10123, EstimatedSize: 123465897, Id: "ThirdRangeID", MaxKey: "5", MinKey: "6"},
-			},
-		})
-
-		verifyResponseOK(t, resp, err)
-		require.NotNil(t, resp.JSON201)
-		require.NotNil(t, resp.JSON201.Id)
-		require.NotEmpty(t, *resp.JSON201.Id)
-
-		respMR, err := clt.GetMetaRangeWithResponse(ctx, repo, *resp.JSON201.Id)
-		verifyResponseOK(t, respMR, err)
-		require.NotNil(t, respMR.JSON200)
-		require.NotEmpty(t, respMR.JSON200.Location)
-	})
-
-	t.Run("missing ranges", func(t *testing.T) {
-		resp, err := clt.CreateMetaRangeWithResponse(ctx, repo, apigen.CreateMetaRangeJSONRequestBody{
-			Ranges: []apigen.RangeMetadata{},
-		})
-
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON400)
-		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 	})
 }
 
@@ -3466,7 +3277,7 @@ func TestController_Revert(t *testing.T) {
 	})
 
 	t.Run("dirty_branch", func(t *testing.T) {
-		// create branch with entry without commit
+		// create branch with entry without a commit
 		createBranch, err := deps.catalog.CreateBranch(ctx, repo, "dirty", "main")
 		testutil.Must(t, err)
 		err = deps.catalog.CreateEntry(ctx, repo, "dirty", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"})
@@ -3621,7 +3432,7 @@ func TestController_CherryPick(t *testing.T) {
 	})
 
 	t.Run("dirty branch", func(t *testing.T) {
-		// create branch with entry without commit
+		// create branch with entry without a commit
 		_, err := deps.catalog.CreateBranch(ctx, repo, "dirty", "main")
 		testutil.Must(t, err)
 		err = deps.catalog.CreateEntry(ctx, repo, "dirty", catalog.DBEntry{Path: "foo/bar5", PhysicalAddress: "bar50addr", CreationDate: time.Now(), Size: 5, Checksum: "cksum5"})
@@ -3991,7 +3802,7 @@ func TestController_ClientDisconnect(t *testing.T) {
 		t.Fatal("Expected to request complete without error, expected to fail")
 	}
 
-	// wait for server to identify we left and update the counter
+	// wait for the server to identify we left and update the counter
 	time.Sleep(time.Second)
 
 	// request for metrics
@@ -4270,7 +4081,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify creation path, date and physical address are different
+		// Verify the creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
@@ -4297,7 +4108,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify creation path, date and physical address are different
+		// Verify the creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
@@ -4337,7 +4148,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify creation path, date and physical address are different
+		// Verify the creation path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
@@ -4566,7 +4377,7 @@ func TestController_BranchProtectionRules(t *testing.T) {
 				t.Fatalf("CreateBranchProtectionRulePreflightWithResponse expected %d, got %d", tc.expectedHttpStatus, respPreflight.StatusCode())
 			}
 
-			// result of an actual call to the endpoint should have the same result
+			// the result of an actual call to the endpoint should have the same result
 			resp, err := tc.clt.CreateBranchProtectionRuleWithResponse(currCtx, repo, apigen.CreateBranchProtectionRuleJSONRequestBody{
 				Pattern: "main",
 			})
@@ -4625,7 +4436,7 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 				t.Fatalf("SetGarbageCollectionRulesPreflightWithResponse expected %d, got %d", tc.expectedHttpStatus, respPreflight.StatusCode())
 			}
 
-			// result of an actual call to the endpoint should have the same result
+			// the result of an actual call to the endpoint should have the same result
 			resp, err := tc.clt.SetGarbageCollectionRulesWithResponse(currCtx, repo, apigen.SetGarbageCollectionRulesJSONRequestBody{
 				Branches: []apigen.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
 			})

@@ -539,16 +539,6 @@ class Branches {
         }
         return response.json();
     }
-
-    async updateToken(repoId, branch, staging_token) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}/update_token`, {
-            method: 'PUT',
-            body: JSON.stringify({staging_token: staging_token}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-    }
 }
 
 
@@ -1002,10 +992,8 @@ class BranchProtectionRules {
 
     async createRulePreflight(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection/set_allowed`);
-        if (response.status !== 204) {
-            return false;
-        }
-        return true;
+        return response.status === 204;
+
     }
 
     async createRule(repoID, pattern) {
@@ -1031,32 +1019,6 @@ class BranchProtectionRules {
         }
     }
 
-}
-
-class Ranges {
-    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "", staging_token="") {
-        const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
-            method: 'POST',
-            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token, staging_token}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
-class MetaRanges {
-    async createMetaRange(repoID, ranges) {
-        const response = await apiRequest(`/repositories/${repoID}/branches/metaranges`, {
-            method: 'POST',
-            body: JSON.stringify({ranges}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
 }
 
 class Statistics {
@@ -1173,8 +1135,6 @@ export const actions = new Actions();
 export const retention = new Retention();
 export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
-export const ranges = new Ranges();
-export const metaRanges = new MetaRanges();
 export const statistics = new Statistics();
 export const staging = new Staging();
 export const otfDiffs = new OTFDiffs();

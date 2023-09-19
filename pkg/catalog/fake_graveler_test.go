@@ -23,12 +23,7 @@ type FakeGraveler struct {
 }
 
 func (g *FakeGraveler) StageObject(ctx context.Context, stagingToken string, object graveler.ValueRecord) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *FakeGraveler) UpdateBranchToken(_ context.Context, _ *graveler.RepositoryRecord, _, _ string) error {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

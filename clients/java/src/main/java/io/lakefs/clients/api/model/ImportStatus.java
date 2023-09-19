@@ -28,10 +28,10 @@ import java.io.IOException;
 import org.threeten.bp.OffsetDateTime;
 
 /**
- * ImportStatusResp
+ * ImportStatus
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ImportStatusResp {
+public class ImportStatus {
   public static final String SERIALIZED_NAME_COMPLETED = "completed";
   @SerializedName(SERIALIZED_NAME_COMPLETED)
   private Boolean completed;
@@ -57,7 +57,7 @@ public class ImportStatusResp {
   private Error error;
 
 
-  public ImportStatusResp completed(Boolean completed) {
+  public ImportStatus completed(Boolean completed) {
     
     this.completed = completed;
     return this;
@@ -80,7 +80,7 @@ public class ImportStatusResp {
   }
 
 
-  public ImportStatusResp updateTime(OffsetDateTime updateTime) {
+  public ImportStatus updateTime(OffsetDateTime updateTime) {
     
     this.updateTime = updateTime;
     return this;
@@ -103,7 +103,7 @@ public class ImportStatusResp {
   }
 
 
-  public ImportStatusResp ingestedObjects(Long ingestedObjects) {
+  public ImportStatus ingestedObjects(Long ingestedObjects) {
     
     this.ingestedObjects = ingestedObjects;
     return this;
@@ -126,7 +126,7 @@ public class ImportStatusResp {
   }
 
 
-  public ImportStatusResp metarangeId(String metarangeId) {
+  public ImportStatus metarangeId(String metarangeId) {
     
     this.metarangeId = metarangeId;
     return this;
@@ -149,7 +149,7 @@ public class ImportStatusResp {
   }
 
 
-  public ImportStatusResp commit(Commit commit) {
+  public ImportStatus commit(Commit commit) {
     
     this.commit = commit;
     return this;
@@ -172,7 +172,7 @@ public class ImportStatusResp {
   }
 
 
-  public ImportStatusResp error(Error error) {
+  public ImportStatus error(Error error) {
     
     this.error = error;
     return this;
@@ -203,13 +203,13 @@ public class ImportStatusResp {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ImportStatusResp importStatusResp = (ImportStatusResp) o;
-    return Objects.equals(this.completed, importStatusResp.completed) &&
-        Objects.equals(this.updateTime, importStatusResp.updateTime) &&
-        Objects.equals(this.ingestedObjects, importStatusResp.ingestedObjects) &&
-        Objects.equals(this.metarangeId, importStatusResp.metarangeId) &&
-        Objects.equals(this.commit, importStatusResp.commit) &&
-        Objects.equals(this.error, importStatusResp.error);
+    ImportStatus importStatus = (ImportStatus) o;
+    return Objects.equals(this.completed, importStatus.completed) &&
+        Objects.equals(this.updateTime, importStatus.updateTime) &&
+        Objects.equals(this.ingestedObjects, importStatus.ingestedObjects) &&
+        Objects.equals(this.metarangeId, importStatus.metarangeId) &&
+        Objects.equals(this.commit, importStatus.commit) &&
+        Objects.equals(this.error, importStatus.error);
   }
 
   @Override
@@ -220,7 +220,7 @@ public class ImportStatusResp {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ImportStatusResp {\n");
+    sb.append("class ImportStatus {\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    ingestedObjects: ").append(toIndentedString(ingestedObjects)).append("\n");
