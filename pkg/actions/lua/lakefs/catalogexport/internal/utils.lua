@@ -1,7 +1,7 @@
 local DEFAULT_SHORT_DIGEST_LEN=6
 
 function short_digest(digest, len)
-    return digest:sub(1, len)
+    return digest:sub(1, len or DEFAULT_SHORT_DIGEST_LEN)
 end 
 
 -- paginate lakefs api 
