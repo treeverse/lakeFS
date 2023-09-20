@@ -23,14 +23,18 @@ func TestAdapter(t *testing.T) {
 	require.NoError(t, err)
 
 	adapter := newAdapter()
-	defer require.NoError(t, adapter.Close())
+	defer func() {
+		require.NoError(t, adapter.Close())
+	}()
 
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
 
 func TestAdapterNamespace(t *testing.T) {
 	adapter := newAdapter()
-	defer require.NoError(t, adapter.Close())
+	defer func() {
+		require.NoError(t, adapter.Close())
+	}()
 
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
 	require.NoError(t, err)
