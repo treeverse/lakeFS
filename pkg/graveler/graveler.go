@@ -440,9 +440,9 @@ type CommitParams struct {
 
 type GarbageCollectionRunMetadata struct {
 	RunID string
-	// Location of expired commits CSV file on object store
+	// Location of active commits CSV file on object store
 	CommitsCSVLocation string
-	// Location of where to write expired addresses on object store
+	// Location of where to write active addresses on object store
 	AddressLocation string
 }
 

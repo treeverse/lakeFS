@@ -2827,9 +2827,9 @@ func (m *MockGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.
 }
 
 // SaveGarbageCollectionCommits indicates an expected call of SaveGarbageCollectionCommits.
-func (mr *MockGarbageCollectionManagerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits interface{}) *gomock.Call {
+func (mr *MockGarbageCollectionManagerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, rules interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).SaveGarbageCollectionCommits), ctx, repository, rules, previouslyExpiredCommits)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).SaveGarbageCollectionCommits), ctx, repository, rules)
 }
 
 // SaveGarbageCollectionUncommitted mocks base method.
