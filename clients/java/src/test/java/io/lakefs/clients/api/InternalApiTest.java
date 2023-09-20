@@ -21,6 +21,7 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StatsEventsList;
+import io.lakefs.clients.api.model.StorageURI;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -50,6 +51,23 @@ public class InternalApiTest {
     public void createBranchProtectionRulePreflightTest() throws ApiException {
         String repository = null;
                 api.createBranchProtectionRulePreflight(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * creates symlink files corresponding to the given directory
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void createSymlinkFileTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String location = null;
+                StorageURI response = api.createSymlinkFile(repository, branch, location);
         // TODO: test validations
     }
     

@@ -30,6 +30,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_create_symlink_file(self):
+        """Test case for create_symlink_file
+
+        creates symlink files corresponding to the given directory  # noqa: E501
+        """
+        pass
+
     def test_get_auth_capabilities(self):
         """Test case for get_auth_capabilities
 
