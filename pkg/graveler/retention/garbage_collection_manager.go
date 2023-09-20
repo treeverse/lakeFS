@@ -172,8 +172,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	// the expired field is always false and not in use any more by new versions of GC
-	// remained for backward compatibility
+	// (TODO) - remove expired column from the CSV file and from the GC logic
 	headers := []string{"commit_id", "expired", "metarange_id"}
 	if err = csvWriter.Write(headers); err != nil {
 		return "", err
