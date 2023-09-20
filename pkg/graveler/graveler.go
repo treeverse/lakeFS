@@ -440,9 +440,9 @@ type CommitParams struct {
 
 type GarbageCollectionRunMetadata struct {
 	RunID string
-	// Location of expired commits CSV file on object store
+	// Location of active commits CSV file on object store
 	CommitsCSVLocation string
-	// Location of where to write expired addresses on object store
+	// Location of where to write active addresses on object store
 	AddressLocation string
 }
 
@@ -602,7 +602,7 @@ type VersionController interface {
 	//	- location where the information of addresses to be removed should be saved
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
-	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
 	// GCGetUncommittedLocation returns full uri of the storage location of saved uncommitted files per runID
 	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
@@ -1461,17 +1461,13 @@ func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repository *Re
 	return g.garbageCollectionManager.SaveRules(ctx, repository.StorageNamespace, rules)
 }
 
-func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (*GarbageCollectionRunMetadata, error) {
+func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRunMetadata, error) {
 	rules, err := g.getGarbageCollectionRules(ctx, repository)
 	if err != nil {
 		return nil, fmt.Errorf("get gc rules: %w", err)
 	}
-	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repository.StorageNamespace, previousRunID)
-	if err != nil {
-		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
-	}
 
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits)
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repository, rules)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
@@ -3233,8 +3229,7 @@ type GarbageCollectionManager interface {
 	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
 	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
 
-	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
-	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
+	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) (string, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
 	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
 	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
