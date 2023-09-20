@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
-	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -33,11 +32,9 @@ var fsDownloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
-		direct := Must(flagSet.GetBool("direct"))
 		preSignMode := Must(flagSet.GetBool("pre-sign"))
 		recursive := Must(flagSet.GetBool("recursive"))
 		parallel := Must(flagSet.GetInt("parallel"))
-		transport := transportMethodFromFlags(direct, preSignMode)
 
 		if parallel < 1 {
 			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallel)
@@ -92,7 +89,7 @@ var fsDownloadCmd = &cobra.Command{
 					}
 					// destination is without the source URI
 					dst := filepath.Join(dest, strings.TrimPrefix(downloadPath, prefix))
-					err := downloadHelper(ctx, client, transport, src, dst)
+					err := downloadHelper(ctx, client, preSignMode, src, dst)
 					if err == nil {
 						fmt.Printf("Successfully downloaded %s to %s\n", src.String(), dst)
 					} else {
@@ -133,8 +130,8 @@ func listRecursiveHelper(ctx context.Context, client *apigen.ClientWithResponses
 	}
 }
 
-func downloadHelper(ctx context.Context, client *apigen.ClientWithResponses, method transportMethod, src uri.URI, dst string) error {
-	body, err := getObjectHelper(ctx, client, method, src)
+func downloadHelper(ctx context.Context, client *apigen.ClientWithResponses, preSign bool, src uri.URI, dst string) error {
+	body, err := getObjectHelper(ctx, client, preSign, src)
 	if err != nil {
 		return err
 	}
@@ -154,21 +151,11 @@ func downloadHelper(ctx context.Context, client *apigen.ClientWithResponses, met
 	return err
 }
 
-func getObjectHelper(ctx context.Context, client *apigen.ClientWithResponses, method transportMethod, src uri.URI) (io.ReadCloser, error) {
-	if method == transportMethodDirect {
-		// download directly from storage
-		_, body, err := helpers.ClientDownload(ctx, client, src.Repository, src.Ref, *src.Path)
-		if err != nil {
-			return nil, err
-		}
-		return body, nil
-	}
-
+func getObjectHelper(ctx context.Context, client *apigen.ClientWithResponses, preSign bool, src uri.URI) (io.ReadCloser, error) {
 	// download from lakefs
-	preSign := swag.Bool(method == transportMethodPreSign)
 	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
 		Path:    *src.Path,
-		Presign: preSign,
+		Presign: swag.Bool(preSign),
 	})
 	if err != nil {
 		return nil, err
@@ -182,11 +169,6 @@ func getObjectHelper(ctx context.Context, client *apigen.ClientWithResponses, me
 
 //nolint:gochecknoinits
 func init() {
-	fsDownloadCmd.Flags().BoolP("direct", "d", false, "read directly from backing store (requires credentials)")
-	err := fsDownloadCmd.Flags().MarkDeprecated("direct", "use --pre-sign instead")
-	if err != nil {
-		DieErr(err)
-	}
 	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
 	fsDownloadCmd.Flags().IntP("parallel", "p", fsDownloadParallelDefault, "max concurrent downloads")
 	fsDownloadCmd.Flags().Bool("pre-sign", false, "Request pre-sign link to access the data")

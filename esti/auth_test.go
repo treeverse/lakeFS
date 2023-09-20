@@ -17,7 +17,7 @@ func TestAdminPermissions(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	// creating new group should succeed
+	// creating a new group should succeed
 	const gid = "TestGroup"
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
 		Id: gid,
@@ -210,13 +210,13 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 
 // Tests merge with different clients
 func mergeAuthTest(t *testing.T, cli *apigen.ClientWithResponses, ctx context.Context, repo string, branch string) (*apigen.MergeIntoBranchResponse, error) {
-	uploadFileRandomData(ctx, t, repo, mainBranch, "README", false)
+	uploadFileRandomData(ctx, t, repo, mainBranch, "README")
 
 	resMainCommit, err := cli.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content in merge auth test")
 	require.Equal(t, http.StatusCreated, resMainCommit.StatusCode())
 
-	uploadFileRandomData(ctx, t, repo, branch, "foo.txt", false)
+	uploadFileRandomData(ctx, t, repo, branch, "foo.txt")
 
 	resBranchCommit, err := cli.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Additional content"})
 	require.NoError(t, err, "failed to commit additional content in merge auth test")

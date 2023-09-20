@@ -26,7 +26,6 @@ const (
 )
 
 var (
-	ErrNotImplemented      = errors.New("not implemented")
 	ErrMismatchPartETag    = errors.New("mismatch part ETag")
 	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")

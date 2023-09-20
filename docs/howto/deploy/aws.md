@@ -235,7 +235,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    to use lakeFS to upload or download objects. Specifically you won't be able to:
       * Upload objects using the lakeFS GUI (**Works with presign mode**)
       * Upload objects through Spark using the S3 gateway
-      * Run `lakectl fs` commands (unless using the `--direct` flag or using **presign mode** with `--pre-sign` flag)
+      * Run `lakectl fs` commands (unless using **presign mode** with `--pre-sign` flag)
       * Use [Actions and Hooks](/howto/hooks/)
    
    ```json

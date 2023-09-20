@@ -25,8 +25,6 @@ const (
 )
 
 var (
-	ACLPermissions = []model.ACLPermission{ACLRead, ACLWrite, ACLSuper, ACLAdmin}
-
 	ownUserARN = []string{permissions.UserArn("${user}")}
 	all        = []string{permissions.All}
 

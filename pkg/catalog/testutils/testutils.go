@@ -14,7 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -64,40 +63,6 @@ func NewFakeValueIterator(records []*graveler.ValueRecord) *FakeValueIterator {
 		index:   -1,
 	}
 }
-
-type FakeKVEntryIterator struct {
-	Entries []*kv.Entry
-	Error   error
-	index   int
-}
-
-func NewFakeKVEntryIterator(entries []*kv.Entry) *FakeKVEntryIterator {
-	return &FakeKVEntryIterator{
-		Entries: entries,
-		index:   -1,
-	}
-}
-
-func (f *FakeKVEntryIterator) Next() bool {
-	if f.Error != nil {
-		return false
-	}
-	f.index++
-	return f.index < len(f.Entries)
-}
-
-func (f *FakeKVEntryIterator) Entry() *kv.Entry {
-	if f.Error != nil || f.index < 0 || f.index >= len(f.Entries) {
-		return nil
-	}
-	return f.Entries[f.index]
-}
-
-func (f *FakeKVEntryIterator) Err() error {
-	return f.Error
-}
-
-func (f *FakeKVEntryIterator) Close() {}
 
 type FakeEntryIterator struct {
 	Entries []*catalog.EntryRecord

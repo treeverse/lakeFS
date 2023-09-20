@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,10 +19,9 @@ import (
 )
 
 var (
-	ErrNoDataForKey            = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
-	ErrMultiPartNotFound       = fmt.Errorf("multipart ID not found")
-	ErrNoPropertiesForKey      = fmt.Errorf("no properties for key")
-	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")
+	ErrNoDataForKey       = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
+	ErrMultiPartNotFound  = fmt.Errorf("multipart ID not found")
+	ErrNoPropertiesForKey = fmt.Errorf("no properties for key")
 )
 
 type mpu struct {

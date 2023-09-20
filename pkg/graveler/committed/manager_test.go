@@ -61,7 +61,7 @@ func TestManager_WriteRange(t *testing.T) {
 			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
 
 			times := 0
-			expectedTimes := min(len(tt.records), maxRecords)
+			expectedTimes := _min(len(tt.records), maxRecords)
 			rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
 			rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
 				DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
@@ -80,6 +80,15 @@ func TestManager_WriteRange(t *testing.T) {
 			}, rangeInfo)
 		})
 	}
+}
+
+// _min - helper function to return the minimum of two integers
+// TODO(barak): replace with builtin min function after upgrade to go 1.21
+func _min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func TestManager_WriteMetaRange(t *testing.T) {
@@ -135,11 +144,4 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			require.Equal(t, &graveler.MetaRangeInfo{ID: expectedMetarangeID}, actualMetarangeID)
 		})
 	}
-}
-
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
 }

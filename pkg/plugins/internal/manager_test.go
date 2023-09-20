@@ -128,8 +128,8 @@ func TestMain(m *testing.M) {
 		version := args[2]
 		v, err := strconv.Atoi(version)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			return
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
 		}
 		RunPluginServer(key, value, v)
 	} else {
