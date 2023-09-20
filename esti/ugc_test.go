@@ -377,7 +377,7 @@ func getReportCutoffTime(ctx context.Context, s3Client *s3.Client, bucket, repor
 	myFileContentAsString := buf.String()
 
 	type Report struct {
-		RunId             string    `json:"run_id"`
+		RunID             string    `json:"run_id"`
 		Success           bool      `json:"success"`
 		FirstSlice        string    `json:"first_slice"`
 		StartTime         time.Time `json:"start_time"`

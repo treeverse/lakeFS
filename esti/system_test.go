@@ -151,22 +151,23 @@ func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath st
 }
 
 func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
+	// Upload using direct access
 	if direct {
 		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
 		if err != nil {
 			return "", err
 		}
 		return stats.Checksum, nil
-	} else {
-		resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
-		if err != nil {
-			return "", err
-		}
-		if err := verifyResponse(resp.HTTPResponse, resp.Body); err != nil {
-			return "", err
-		}
-		return resp.JSON201.Checksum, nil
 	}
+	// Upload using API
+	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
+	if err != nil {
+		return "", err
+	}
+	if err := verifyResponse(resp.HTTPResponse, resp.Body); err != nil {
+		return "", err
+	}
+	return resp.JSON201.Checksum, nil
 }
 
 // uploadContentDirect uploads contents as a file using client-side ("direct") access to underlying storage.

@@ -255,7 +255,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 		t.Fatalf("Commit some data %s", err)
 	}
 	commit := commitRes.JSON201
-	commitId := commit.Id
+	commitID := commit.Id
 
 	_, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: "b" + testCase.id, Source: newBranch})
 	if err != nil {
@@ -291,7 +291,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 			}
 		}
 	}
-	return commitId
+	return commitID
 }
 
 func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existingRef string) {
