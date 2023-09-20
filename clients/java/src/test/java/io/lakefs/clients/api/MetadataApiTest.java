@@ -34,23 +34,6 @@ public class MetadataApiTest {
 
     
     /**
-     * creates symlink files corresponding to the given directory
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void createSymlinkFileTest() throws ApiException {
-        String repository = null;
-        String branch = null;
-        String location = null;
-                StorageURI response = api.createSymlinkFile(repository, branch, location);
-        // TODO: test validations
-    }
-    
-    /**
      * return URI to a meta-range file
      *
      * 

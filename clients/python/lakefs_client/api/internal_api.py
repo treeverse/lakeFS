@@ -29,6 +29,7 @@ from lakefs_client.model.error import Error
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.stats_events_list import StatsEventsList
+from lakefs_client.model.storage_uri import StorageURI
 
 
 class InternalApi(object):
@@ -85,6 +86,72 @@ class InternalApi(object):
                 },
                 'location_map': {
                     'repository': 'path',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.create_symlink_file_endpoint = _Endpoint(
+            settings={
+                'response_type': (StorageURI,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/refs/{branch}/symlink',
+                'operation_id': 'create_symlink_file',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'branch',
+                    'location',
+                ],
+                'required': [
+                    'repository',
+                    'branch',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'branch':
+                        (str,),
+                    'location':
+                        (str,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'branch': 'branch',
+                    'location': 'location',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'branch': 'path',
+                    'location': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -524,6 +591,76 @@ class InternalApi(object):
         kwargs['repository'] = \
             repository
         return self.create_branch_protection_rule_preflight_endpoint.call_with_http_info(**kwargs)
+
+    def create_symlink_file(
+        self,
+        repository,
+        branch,
+        **kwargs
+    ):
+        """creates symlink files corresponding to the given directory  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.create_symlink_file(repository, branch, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            branch (str):
+
+        Keyword Args:
+            location (str): path to the table data. [optional]
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            StorageURI
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['branch'] = \
+            branch
+        return self.create_symlink_file_endpoint.call_with_http_info(**kwargs)
 
     def get_auth_capabilities(
         self,
