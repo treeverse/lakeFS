@@ -2,7 +2,7 @@
 title: Managed Garbage Collection
 description: Reduce the operational overhead of running garbage collection manually.
 parent: Garbage Collection
-nav_order: 1
+nav_order: 5
 grand_parent: How-To
 redirect_from:
   - /cloud/managed-gc.html
