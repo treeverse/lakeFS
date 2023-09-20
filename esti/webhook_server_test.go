@@ -63,7 +63,7 @@ func startWebhookServer() (*webhookServer, error) {
 	}
 	go func() {
 		if err = s.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen:%s\n", err)
+			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 

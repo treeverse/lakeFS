@@ -2,13 +2,13 @@ package acl
 
 import "strings"
 
-const ACLPolicyPrefix = "ACL(_-_)"
+const PolicyPrefix = "ACL(_-_)"
 
-// ACLPolicyName returns the policy identifier for the ACL for groupID.
-func ACLPolicyName(groupID string) string {
-	return ACLPolicyPrefix + groupID
+// PolicyName returns the policy identifier for the ACL for groupID.
+func PolicyName(groupID string) string {
+	return PolicyPrefix + groupID
 }
 
-func IsACLPolicyName(policyName string) bool {
-	return strings.HasPrefix(policyName, ACLPolicyPrefix)
+func IsPolicyName(policyName string) bool {
+	return strings.HasPrefix(policyName, PolicyPrefix)
 }

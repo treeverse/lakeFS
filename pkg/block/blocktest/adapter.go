@@ -58,7 +58,9 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 
 			reader, err := adapter.Get(ctx, obj, size)
 			require.NoError(t, err)
-			defer func() { _ = reader.Close() }()
+			defer func() {
+				require.NoError(t, reader.Close())
+			}()
 			got, err := io.ReadAll(reader)
 			require.NoError(t, err)
 			require.Equal(t, contents, string(got))

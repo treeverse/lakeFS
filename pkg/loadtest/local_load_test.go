@@ -73,7 +73,7 @@ func TestLocalLoad(t *testing.T) {
 	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true})
 	c.SetHooksHandler(actionsService)
 
-	credentials, err := setup.SetupAdminUser(ctx, authService, conf, superuser)
+	credentials, err := setup.CreateAdminUser(ctx, authService, conf, superuser)
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
