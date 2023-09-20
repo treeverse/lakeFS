@@ -170,7 +170,19 @@ components:
         storage_namespace:
           type: string
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
-
+    RepositorySettings:
+      type: object
+      properties:
+        repository_metadata:
+          $ref: "#/components/schemas/RepositoryMetadata"
+        branch_protection_rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchProtectionRule"
+        garbage_collection_rules:
+          $ref: "#/components/schemas/GarbageCollectionRules"
+        garbage_collection_config:
+          $ref: "#/components/schemas/GarbageCollectionConfig"
     RepositoryMetadata:
       type: object
       additionalProperties:
@@ -2304,6 +2316,55 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+  /repositories/{repository}/settings:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getRepositorySettings
+      summary: get repository settings
+      responses:
+        200:
+          description: repository
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositorySettings"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    put:
+        tags:
+            - repositories
+        operationId: updateRepositorySettings
+        summary: update repository settings
+        requestBody:
+            required: true
+            content:
+              application/json:
+                  schema:
+                    $ref: "#/components/schemas/RepositorySettings"
+        responses:
+            200:
+              description: repository
+              content:
+                  application/json:
+                    schema:
+                        $ref: "#/components/schemas/RepositorySettings"
+            400:
+              $ref: "#/components/responses/ValidationError"
+            401:
+              $ref: "#/components/responses/Unauthorized"
+            default:
+              $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/metadata:
     parameters:
