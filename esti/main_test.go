@@ -37,8 +37,6 @@ var (
 	svc         *s3.Client
 	server      *webhookServer
 
-	testDirectDataAccess = Booleans{false}
-
 	metaClientJarPath  string
 	sparkImageTag      string
 	repositoriesToKeep arrayFlags
@@ -278,11 +276,6 @@ func TestMain(m *testing.M) {
 
 	logger, client, svc, endpointURL = testutil.SetupTestingEnv(&params)
 
-	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
-		if err := testDirectDataAccess.Parse(directs); err != nil {
-			logger.Fatalf("ESTI_TEST_DATA_ACCESS=\"%s\": %s", directs, err)
-		}
-	}
 	azureStorageAccount = viper.GetString("azure_storage_account")
 	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 

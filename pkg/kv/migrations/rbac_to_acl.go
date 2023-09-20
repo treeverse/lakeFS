@@ -401,7 +401,7 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 			}).Trace("Permission")
 		}
 	}
-	if permission == model.ACLPermission("") {
+	if permission == "" {
 		return permission, fmt.Errorf("%w actions", ErrEmpty)
 	}
 

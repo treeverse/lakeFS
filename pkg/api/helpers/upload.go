@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
-	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -38,7 +37,7 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 		const fieldName = "content"
 		var err error
 		var cw io.Writer
-		// when no content-type is specified we let 'CreateFromFile' add the part with the default content type.
+		// when no content-type is specified, we let 'CreateFromFile' add the part with the default content type.
 		// otherwise, we add a part and set the content-type.
 		if contentType != "" {
 			h := make(textproto.MIMEHeader)
@@ -81,61 +80,6 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 		return nil, ResponseAsError(resp)
 	}
 	return resp.JSON201, nil
-}
-
-// ClientUploadDirect uploads contents as a file using client-side ("direct") access to underlying
-// storage.  It requires credentials both to lakeFS and to underlying storage, but
-// considerably reduces the load on the lakeFS server.
-func ClientUploadDirect(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
-	stagingLocation, err := getPhysicalAddress(ctx, client, repoID, branchID, &apigen.GetPhysicalAddressParams{
-		Path: objPath,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for { // Return from inside loop
-		physicalAddress := apiutil.Value(stagingLocation.PhysicalAddress)
-		parsedAddress, err := url.Parse(physicalAddress)
-		if err != nil {
-			return nil, fmt.Errorf("parse physical address URL %s: %w", physicalAddress, err)
-		}
-
-		adapter, err := NewAdapter(parsedAddress.Scheme)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", parsedAddress.Scheme, err)
-		}
-
-		stats, err := adapter.Upload(ctx, parsedAddress, contents)
-		if err != nil {
-			return nil, fmt.Errorf("upload to backing store: %w", err)
-		}
-
-		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &apigen.LinkPhysicalAddressParams{
-			Path: objPath,
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  stats.ETag,
-			SizeBytes: stats.Size,
-			Staging:   *stagingLocation,
-			UserMetadata: &apigen.StagingMetadata_UserMetadata{
-				AdditionalProperties: metadata,
-			},
-			ContentType: &contentType,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("link object to backing store: %w", err)
-		}
-		if resp.JSON200 != nil {
-			return resp.JSON200, nil
-		}
-		if resp.JSON409 == nil {
-			return nil, fmt.Errorf("link object to backing store: %w (status code %d)", ErrRequestFailed, resp.StatusCode())
-		}
-		// Try again!
-		if _, err = contents.Seek(0, io.SeekStart); err != nil {
-			return nil, fmt.Errorf("rewind: %w", err)
-		}
-	}
 }
 
 func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {

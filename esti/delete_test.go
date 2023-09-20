@@ -28,7 +28,7 @@ func TestDeleteStaging(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 	f, err := found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestDeleteCommitted(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 	f, err := found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
@@ -72,7 +72,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 	f, err := found(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)

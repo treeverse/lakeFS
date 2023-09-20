@@ -30,17 +30,15 @@ var fsUploadCmd = &cobra.Command{
 		flagSet := cmd.Flags()
 		source := Must(flagSet.GetString("source"))
 		recursive := Must(flagSet.GetBool("recursive"))
-		direct := Must(flagSet.GetBool("direct"))
 		preSignMode := Must(flagSet.GetBool("pre-sign"))
 		contentType := Must(flagSet.GetString("content-type"))
 
 		ctx := cmd.Context()
-		transport := transportMethodFromFlags(direct, preSignMode)
 		if !recursive {
 			if pathURI.GetPath() == "" {
 				Die("target path is not a valid URI", 1)
 			}
-			stat, err := upload(ctx, client, source, pathURI, contentType, transport)
+			stat, err := upload(ctx, client, source, pathURI, contentType, preSignMode)
 			if err != nil {
 				DieErr(err)
 			}
@@ -64,7 +62,7 @@ var fsUploadCmd = &cobra.Command{
 			uri := *pathURI
 			p := filepath.ToSlash(filepath.Join(*uri.Path, relPath))
 			uri.Path = &p
-			stat, err := upload(ctx, client, path, &uri, contentType, transport)
+			stat, err := upload(ctx, client, path, &uri, contentType, preSignMode)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", path, err)
 			}
@@ -81,33 +79,22 @@ var fsUploadCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, method transportMethod) (*apigen.ObjectStats, error) {
+func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, preSign bool) (*apigen.ObjectStats, error) {
 	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
 	objectPath := apiutil.Value(destURI.Path)
-	switch method {
-	case transportMethodDefault:
-		return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
-	case transportMethodDirect:
-		return helpers.ClientUploadDirect(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
-	case transportMethodPreSign:
+	if preSign {
 		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
-	default:
-		panic("unsupported upload method")
 	}
+	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 }
 
 //nolint:gochecknoinits
 func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
-	fsUploadCmd.Flags().BoolP("direct", "d", false, "write directly to backing store (faster but requires more credentials)")
-	err := fsUploadCmd.Flags().MarkDeprecated("direct", "use --pre-sign instead")
-	if err != nil {
-		DieErr(err)
-	}
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")

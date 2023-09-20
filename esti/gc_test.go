@@ -225,10 +225,9 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 	repo := createRepositoryByName(ctx, t, committedGCRepoName+testCase.id)
 
 	// upload 3 files not to be deleted and commit
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file1", false)
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file2", false)
-	direct := blockstoreType == block.BlockstoreTypeS3
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file3", direct)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file1")
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file2")
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "not_deleted_file3")
 
 	commitTime := int64(0)
 	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "add three files not to be deleted", Date: &commitTime})
@@ -242,17 +241,21 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 		t.Fatalf("Create new branch %s", err)
 	}
 
-	direct = testCase.directUpload && blockstoreType == block.BlockstoreTypeS3
-	_, _ = uploadFileRandomData(ctx, t, repo, newBranch, "file"+testCase.id, direct)
+	objPath := "file" + testCase.id
+	if testCase.directUpload && blockstoreType == block.BlockstoreTypeS3 {
+		_, _ = uploadFileRandomDataDirect(ctx, t, repo, newBranch, objPath)
+	} else {
+		_, _ = uploadFileRandomData(ctx, t, repo, newBranch, objPath)
+	}
 	commitTime = int64(10)
 
-	// get commit id after commit for validation step in the tests
+	// get commit id after commit for the validation step in the tests
 	commitRes, err := client.CommitWithResponse(ctx, repo, newBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Uploaded file" + testCase.id, Date: &commitTime})
 	if err != nil || commitRes.StatusCode() != 201 {
 		t.Fatalf("Commit some data %s", err)
 	}
 	commit := commitRes.JSON201
-	commitId := commit.Id
+	commitID := commit.Id
 
 	_, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: "b" + testCase.id, Source: newBranch})
 	if err != nil {
@@ -266,7 +269,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 
 	for _, branch := range testCase.branches {
 		if branch.deleteCommitDaysAgo > -1 {
-			_, err = client.DeleteObjectWithResponse(ctx, repo, branch.name, &apigen.DeleteObjectParams{Path: "file" + testCase.id})
+			_, err = client.DeleteObjectWithResponse(ctx, repo, branch.name, &apigen.DeleteObjectParams{Path: objPath})
 			if err != nil {
 				t.Fatalf("DeleteObject %s", err)
 			}
@@ -275,7 +278,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 			if err != nil {
 				t.Fatalf("Commit some data %s", err)
 			}
-			_, _ = uploadFileRandomData(ctx, t, repo, branch.name, "file"+testCase.id+"not_deleted", false)
+			_, _ = uploadFileRandomData(ctx, t, repo, branch.name, objPath+"not_deleted")
 			// This is for the previous commit to be the HEAD of the branch outside the retention time (according to GC https://github.com/treeverse/lakeFS/issues/1932)
 			_, err = client.CommitWithResponse(ctx, repo, branch.name, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "not deleted file commit: " + testCase.id, Date: &epochCommitDateInSeconds})
 			if err != nil {
@@ -288,7 +291,7 @@ func prepareForGC(t *testing.T, ctx context.Context, testCase *testCase, blockst
 			}
 		}
 	}
-	return commitId
+	return commitID
 }
 
 func validateGCJob(t *testing.T, ctx context.Context, testCase *testCase, existingRef string) {

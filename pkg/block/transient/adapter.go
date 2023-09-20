@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,8 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 )
-
-var ErrInventoryNotImplemented = errors.New("inventory feature not implemented for transient storage adapter")
 
 type Adapter struct{}
 

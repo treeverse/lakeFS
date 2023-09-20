@@ -14,15 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
-
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
-	s3Adapter "github.com/treeverse/lakefs/pkg/block/s3"
+	blocks3 "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
 )
@@ -85,15 +83,15 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 
 	// upload some data and commit
 	for i := 0; i < 3; i++ {
-		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-"+strconv.Itoa(i), false)
-		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-direct-"+strconv.Itoa(i), true)
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "committed/data-"+strconv.Itoa(i))
+		_, _ = uploadFileRandomDataDirect(ctx, t, repo, mainBranch, "committed/data-direct-"+strconv.Itoa(i))
 	}
 	_, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Commit initial data"})
 	if err != nil {
 		t.Fatal("Commit some data", err)
 	}
 
-	// upload same file twice and commit, keep delete physical location
+	// upload the same file twice and commit, keep delete physical location
 	for _, direct := range []bool{false, true} {
 		objPath := fmt.Sprintf("committed/double-or-nothing-%t", direct)
 		_, err = uploadFileAndReport(ctx, repo, mainBranch, objPath, objPath+"1", direct)
@@ -117,11 +115,11 @@ func prepareForUncommittedGC(t *testing.T, ctx context.Context) {
 
 	for _, direct := range []bool{false, true} {
 		// just leave uncommitted data
-		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, fmt.Sprintf("uncommitted/data1-%t", direct), direct)
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, fmt.Sprintf("uncommitted/data1-%t", direct))
 
 		// delete uncommitted
 		objPath := fmt.Sprintf("uncommitted/data2-%t", direct)
-		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath, direct)
+		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 		gone = append(gone, objectPhysicalAddress(t, ctx, repo, objPath))
 
@@ -237,7 +235,7 @@ func validateUncommittedGC(t *testing.T, durObjects []string) {
 		}
 	}
 
-	bucket, key := s3Adapter.ExtractParamsFromQK(qk)
+	bucket, key := blocks3.ExtractParamsFromQK(qk)
 	s3Client := newDefaultS3Client(t)
 	runID := getLastUGCRunID(t, ctx, s3Client, bucket, key)
 	reportPath := fmt.Sprintf("%s_lakefs/retention/gc/uncommitted/%s/summary.json", key, runID)
@@ -285,7 +283,7 @@ func listRepositoryUnderlyingStorage(t *testing.T, ctx context.Context, repo str
 		t.Fatalf("Failed to resolve namespace '%s': %s", storageNamespace, err)
 	}
 
-	bucket, key := s3Adapter.ExtractParamsFromQK(qk)
+	bucket, key := blocks3.ExtractParamsFromQK(qk)
 	s3Client := newDefaultS3Client(t)
 	objects := listUnderlyingStorage(t, ctx, s3Client, bucket, key)
 	return objects, qk
@@ -350,7 +348,7 @@ func getLastUGCRunID(t *testing.T, ctx context.Context, s3Client *s3.Client, buc
 
 func uploadAndDeleteSafeTestData(t *testing.T, ctx context.Context, repository string) string {
 	name := xid.New().String()
-	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, name, false)
+	_, _ = uploadFileRandomData(ctx, t, repository, mainBranch, name)
 
 	addr := objectPhysicalAddress(t, ctx, repository, name)
 
@@ -369,7 +367,7 @@ func getReportCutoffTime(ctx context.Context, s3Client *s3.Client, bucket, repor
 	if err != nil {
 		return time.Time{}, err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(res.Body)
@@ -379,7 +377,7 @@ func getReportCutoffTime(ctx context.Context, s3Client *s3.Client, bucket, repor
 	myFileContentAsString := buf.String()
 
 	type Report struct {
-		RunId             string    `json:"run_id"`
+		RunID             string    `json:"run_id"`
 		Success           bool      `json:"success"`
 		FirstSlice        string    `json:"first_slice"`
 		StartTime         time.Time `json:"start_time"`
