@@ -2924,7 +2924,7 @@ func (c *Controller) DeleteGarbageCollectionRules(w http.ResponseWriter, r *http
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, body apigen.PrepareGarbageCollectionCommitsJSONRequestBody, repository string) {
+func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.PrepareGarbageCollectionCommitsAction,
@@ -2935,7 +2935,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
-	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository, swag.StringValue(body.PreviousRunId))
+	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

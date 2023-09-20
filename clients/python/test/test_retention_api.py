@@ -39,7 +39,7 @@ class TestRetentionApi(unittest.TestCase):
     def test_prepare_garbage_collection_commits(self):
         """Test case for prepare_garbage_collection_commits
 
-        save lists of active and expired commits for garbage collection  # noqa: E501
+        save lists of active commits for garbage collection  # noqa: E501
         """
         pass
 

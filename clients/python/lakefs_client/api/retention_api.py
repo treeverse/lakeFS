@@ -23,7 +23,6 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.error import Error
-from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_rules import GarbageCollectionRules
 from lakefs_client.model.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
@@ -169,7 +168,6 @@ class RetentionApi(object):
             params_map={
                 'all': [
                     'repository',
-                    'garbage_collection_prepare_request',
                 ],
                 'required': [
                     'repository',
@@ -189,15 +187,12 @@ class RetentionApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
-                    'garbage_collection_prepare_request':
-                        (GarbageCollectionPrepareRequest,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                 },
                 'location_map': {
                     'repository': 'path',
-                    'garbage_collection_prepare_request': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -206,9 +201,7 @@ class RetentionApi(object):
                 'accept': [
                     'application/json'
                 ],
-                'content_type': [
-                    'application/json'
-                ]
+                'content_type': [],
             },
             api_client=api_client
         )
@@ -471,7 +464,7 @@ class RetentionApi(object):
         repository,
         **kwargs
     ):
-        """save lists of active and expired commits for garbage collection  # noqa: E501
+        """save lists of active commits for garbage collection  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -483,7 +476,6 @@ class RetentionApi(object):
             repository (str):
 
         Keyword Args:
-            garbage_collection_prepare_request (GarbageCollectionPrepareRequest): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
