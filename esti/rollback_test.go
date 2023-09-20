@@ -14,7 +14,7 @@ func TestResetAll(t *testing.T) {
 	objPath := "1.txt"
 
 	// upload file
-	_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath, false)
+	_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 	f, err := found(ctx, repo, mainBranch, objPath)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -62,12 +62,12 @@ func TestResetPath(t *testing.T) {
 	objPath2 := "2.txt"
 
 	// upload files
-	_, objContent1 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath1, false)
+	_, objContent1 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
 	f, err := found(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
 
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath2, false)
+	uploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
 	f, err = found(ctx, repo, mainBranch, objPath2)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -129,12 +129,12 @@ func TestResetObject(t *testing.T) {
 	objPath2 := "2.txt"
 
 	// upload files
-	_, objContent1 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath1, false)
+	_, objContent1 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
 	f, err := found(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
 
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath2, false)
+	uploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
 	f, err = found(ctx, repo, mainBranch, objPath2)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -195,7 +195,7 @@ func TestRevert(t *testing.T) {
 	objPath2 := "2.txt"
 
 	// upload file1
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath1, false)
+	uploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
 	f, err := found(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -212,7 +212,7 @@ func TestRevert(t *testing.T) {
 	commitId := commitResp.JSON201.Id
 
 	// upload file2
-	_, objContent2 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath2, false)
+	_, objContent2 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
 	f, err = found(ctx, repo, mainBranch, objPath2)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")

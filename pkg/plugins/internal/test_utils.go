@@ -44,6 +44,7 @@ type TestGRPCServer struct {
 func (t *TestGRPCServer) Ping(ctx context.Context, request *PingRequest) (*PongResponse, error) {
 	return &PongResponse{Sound: Sound(t.Impl.Play(PingPongSound(request.Sound)))}, nil
 }
+
 func (t *TestGRPCServer) mustEmbedUnimplementedPingPongServer() {
 	panic("implement me")
 }
@@ -92,7 +93,7 @@ func (np NopGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroke
 
 func RunPluginServer(key, value string, v int) {
 	if key == "" || value == "" {
-		fmt.Fprintf(os.Stderr, "Missing args\n")
+		_, _ = fmt.Fprintf(os.Stderr, "Missing args\n")
 		os.Exit(1)
 	}
 	defer os.Exit(0)

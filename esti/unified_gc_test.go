@@ -23,7 +23,7 @@ type objectEvent struct {
 
 func gcTestCreateObject(t *testing.T, ctx context.Context, branch string, key string) string {
 	t.Helper()
-	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key, false)
+	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key)
 	res, err := client.StatObjectWithResponse(ctx, RepoName, branch, &apigen.StatObjectParams{
 		Path:    key,
 		Presign: swag.Bool(true),

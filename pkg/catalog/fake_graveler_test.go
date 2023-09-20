@@ -386,16 +386,6 @@ type FakeDiffIterator struct {
 	Index int
 }
 
-func NewFakeDiffIterator(data []*graveler.Diff) *FakeDiffIterator {
-	return &FakeDiffIterator{Data: data, Index: -1}
-}
-
-func NewFakeDiffIteratorFactory(data []*graveler.Diff) func() graveler.DiffIterator {
-	return func() graveler.DiffIterator {
-		return NewFakeDiffIterator(data)
-	}
-}
-
 func (m *FakeDiffIterator) Next() bool {
 	if m.Index >= len(m.Data) {
 		return false

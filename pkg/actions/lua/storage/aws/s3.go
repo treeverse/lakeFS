@@ -80,7 +80,9 @@ func (c *S3Client) client() *s3.Client {
 		panic(err)
 	}
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = &c.Endpoint
+		if c.Endpoint != "" {
+			o.BaseEndpoint = aws.String(c.Endpoint)
+		}
 	})
 }
 

@@ -154,7 +154,7 @@ func TestS3ReadObject(t *testing.T) {
 			if err != nil {
 				t.Errorf("client.GetObject(%s, %s): %s", repo, goodPath, err)
 			}
-			defer res.Close()
+			defer func() { _ = res.Close() }()
 			info, err := res.Stat()
 			if err != nil {
 				t.Errorf("client.GetObject(%s, %s) get: %s", repo, goodPath, err)
@@ -173,7 +173,7 @@ func TestS3ReadObject(t *testing.T) {
 			if err != nil {
 				t.Errorf("client.GetObject(%s, %s): %s", repo, badPath, err)
 			}
-			defer res.Close()
+			defer func() { _ = res.Close() }()
 			got, err := io.ReadAll(res)
 			if err == nil {
 				t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)

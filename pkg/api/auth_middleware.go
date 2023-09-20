@@ -11,7 +11,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -394,19 +393,4 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
-}
-
-func VerifyResetPasswordToken(ctx context.Context, authService auth.Service, token string) (*jwt.StandardClaims, error) {
-	secret := authService.SecretStore().SharedSecret()
-	claims, err := auth.VerifyTokenWithAudience(secret, token, auth.ResetPasswordAudience)
-	if err != nil {
-		return nil, err
-	}
-	tokenID := claims.Id
-	tokenExpiresAt := claims.ExpiresAt
-	err = authService.ClaimTokenIDOnce(ctx, tokenID, tokenExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-	return claims, nil
 }
