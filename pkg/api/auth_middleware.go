@@ -15,7 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	oidc_encoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
+	oidcencoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -202,7 +202,7 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
 func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *CookieAuthConfig) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidc_encoding.Claims)
+	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidcencoding.Claims)
 	if idTokenClaims == nil {
 		return nil, nil
 	}
@@ -291,7 +291,7 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
 func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *OIDCConfig) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc_encoding.Claims)
+	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidcencoding.Claims)
 	if idTokenClaims == nil {
 		return nil, nil
 	}

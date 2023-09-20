@@ -10,12 +10,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/gs"
 )
 
-func getAdapter() *gs.Adapter {
-	adapter := gs.NewAdapter(client)
-	return adapter
+func newAdapter() *gs.Adapter {
+	return gs.NewAdapter(client)
 }
 
-func TestS3Adapter(t *testing.T) {
+func TestAdapter(t *testing.T) {
 	basePath, err := url.JoinPath("gs://", bucketName)
 	require.NoError(t, err)
 	localPath, err := url.JoinPath(basePath, "lakefs")
@@ -23,12 +22,16 @@ func TestS3Adapter(t *testing.T) {
 	externalPath, err := url.JoinPath(basePath, "external")
 	require.NoError(t, err)
 
-	adapter := getAdapter()
+	adapter := newAdapter()
+	defer require.NoError(t, adapter.Close())
+
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
 
 func TestAdapterNamespace(t *testing.T) {
-	adapter := getAdapter()
+	adapter := newAdapter()
+	defer require.NoError(t, adapter.Close())
+
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
 	require.NoError(t, err)
 

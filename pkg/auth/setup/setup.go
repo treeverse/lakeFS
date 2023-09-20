@@ -114,7 +114,7 @@ func attachPolicies(ctx context.Context, authService auth.Service, groupID strin
 	return nil
 }
 
-func SetupRBACBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
+func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
 	err := createGroups(ctx, authService, []*model.Group{
 		{CreatedAt: ts, DisplayName: AdminsGroup},
 		{CreatedAt: ts, DisplayName: SuperUsersGroup},
@@ -150,43 +150,43 @@ func SetupRBACBaseGroups(ctx context.Context, authService auth.Service, ts time.
 	return nil
 }
 
-func SetupACLBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLAdminsGroup}); err != nil {
-		return fmt.Errorf("setup: create base ACL group %s: %w", acl.ACLAdminsGroup, err)
+func CreateACLBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.AdminsGroup}); err != nil {
+		return fmt.Errorf("setup: create base ACL group %s: %w", acl.AdminsGroup, err)
 	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.ACLAdminsGroup, model.ACL{Permission: acl.ACLAdmin}, ts, false); err != nil {
+	if err := acl.WriteGroupACL(ctx, authService, acl.AdminsGroup, model.ACL{Permission: acl.AdminPermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLSupersGroup}); err != nil {
-		return fmt.Errorf("setup: create base ACL group %s: %w", acl.ACLSupersGroup, err)
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.SupersGroup}); err != nil {
+		return fmt.Errorf("setup: create base ACL group %s: %w", acl.SupersGroup, err)
 	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.ACLSupersGroup, model.ACL{Permission: acl.ACLSuper}, ts, false); err != nil {
+	if err := acl.WriteGroupACL(ctx, authService, acl.SupersGroup, model.ACL{Permission: acl.SuperPermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLWritersGroup}); err != nil {
-		return fmt.Errorf("setup: create base ACL group %s: %w", acl.ACLWritersGroup, err)
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.WritersGroup}); err != nil {
+		return fmt.Errorf("setup: create base ACL group %s: %w", acl.WritersGroup, err)
 	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.ACLWritersGroup, model.ACL{Permission: acl.ACLWrite}, ts, false); err != nil {
+	if err := acl.WriteGroupACL(ctx, authService, acl.WritersGroup, model.ACL{Permission: acl.WritePermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ACLReadersGroup}); err != nil {
-		return fmt.Errorf("create base ACL group %s: %w", acl.ACLReadersGroup, err)
+	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ReadersGroup}); err != nil {
+		return fmt.Errorf("create base ACL group %s: %w", acl.ReadersGroup, err)
 	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.ACLReadersGroup, model.ACL{Permission: acl.ACLRead}, ts, false); err != nil {
+	if err := acl.WriteGroupACL(ctx, authService, acl.ReadersGroup, model.ACL{Permission: acl.ReadPermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
 	return nil
 }
 
-// SetupAdminUser setup base groups, policies and create admin user
-func SetupAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
+// CreateAdminUser setup base groups, policies and create admin user
+func CreateAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	// Set up the basic groups and policies
 	now := time.Now()
-	err := SetupBaseGroups(ctx, authService, cfg, now)
+	err := CreateBaseGroups(ctx, authService, cfg, now)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	}
 
 	// create first admin user
-	cred, err := SetupAdminUser(ctx, authService, cfg, adminUser)
+	cred, err := CreateAdminUser(ctx, authService, cfg, adminUser)
 	if err != nil {
 		return nil, err
 	}
@@ -257,9 +257,9 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	return cred, err
 }
 
-func SetupBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
+func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
 	if cfg.IsAuthUISimplified() {
-		return SetupACLBaseGroups(ctx, authService, ts)
+		return CreateACLBaseGroups(ctx, authService, ts)
 	}
-	return SetupRBACBaseGroups(ctx, authService, ts)
+	return CreateRBACBaseGroups(ctx, authService, ts)
 }
