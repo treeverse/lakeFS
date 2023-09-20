@@ -297,7 +297,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 
 	t.Run("predicate_empty_slice", func(t *testing.T) {
 		key := uniqueKey("predicate-empty-slice")
-		val1 := []byte{}
+		val1 := make([]byte, 0)
 		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
 		if err != nil {
 			t.Fatalf("Set while testing predicate empty slice - key=%s value=%s: %s", key, val1, err)
@@ -561,7 +561,7 @@ func testStoreContextCancelled(t *testing.T, ms MakeStore) {
 	// cancel the context for all requests
 	cancel()
 	t.Run("Set", func(t *testing.T) {
-		// set test key with value1
+		// set the test key with value1
 		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue1)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected context cancellation error, got: %s", err)

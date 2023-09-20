@@ -22,7 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/mock"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	auth_testutil "github.com/treeverse/lakefs/pkg/auth/testutil"
+	authtestutil "github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -212,7 +212,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -280,7 +280,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -364,7 +364,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are create and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -585,7 +585,7 @@ func describeAllowed(allowed bool) string {
 }
 
 func TestACL(t *testing.T) {
-	hierarchy := []model.ACLPermission{acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
+	hierarchy := []model.ACLPermission{acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
 
 	type PermissionFrom map[model.ACLPermission][]permissions.Permission
 	type TestCase struct {
@@ -604,25 +604,25 @@ func TestACL(t *testing.T) {
 			Name: "all repos",
 			ACL:  model.ACL{},
 			PermissionFrom: PermissionFrom{
-				acl.ACLRead: []permissions.Permission{
+				acl.ReadPermission: []permissions.Permission{
 					{Action: permissions.ReadObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("quux", "")},
 					{Action: permissions.CreateCredentialsAction, Resource: permissions.UserArn("${user}")},
 				},
-				acl.ACLWrite: []permissions.Permission{
+				acl.WritePermission: []permissions.Permission{
 					{Action: permissions.WriteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
-				acl.ACLSuper: []permissions.Permission{
+				acl.SuperPermission: []permissions.Permission{
 					{Action: permissions.AttachStorageNamespaceAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportFromStorageAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportCancelAction, Resource: permissions.BranchArn("foo", "twig")},
 				},
-				acl.ACLAdmin: []permissions.Permission{
+				acl.AdminPermission: []permissions.Permission{
 					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},
 				},
 			},
@@ -633,7 +633,7 @@ func TestACL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			s, _ := auth_testutil.SetupService(t, ctx, someSecret)
+			s, _ := authtestutil.SetupService(t, ctx, someSecret)
 			userID := make(map[model.ACLPermission]string, len(hierarchy))
 			for _, aclPermission := range hierarchy {
 				tt.ACL.Permission = aclPermission

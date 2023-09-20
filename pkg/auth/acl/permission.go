@@ -9,19 +9,19 @@ import (
 )
 
 const (
-	// ACLRead allows reading the specified repositories, as well as
+	// ReadPermission allows reading the specified repositories, as well as
 	// managing own credentials.
-	ACLRead model.ACLPermission = "Read"
-	// ACLWrite allows reading and writing the specified repositories,
+	ReadPermission model.ACLPermission = "Read"
+	// WritePermission allows reading and writing the specified repositories,
 	// as well as managing own credentials.
-	ACLWrite model.ACLPermission = "Write"
-	// ACLSuper allows reading, writing, and all other actions on the
+	WritePermission model.ACLPermission = "Write"
+	// SuperPermission allows reading, writing, and all other actions on the
 	// specified repositories, as well as managing own credentials.
-	ACLSuper model.ACLPermission = "Super"
-	// ACLAdmin allows all operations, including all reading, writing,
+	SuperPermission model.ACLPermission = "Super"
+	// AdminPermission allows all operations, including all reading, writing,
 	// and all other actions on all repositories, and managing
 	// authorization and credentials of all users.
-	ACLAdmin model.ACLPermission = "Admin"
+	AdminPermission model.ACLPermission = "Admin"
 )
 
 var (
@@ -38,7 +38,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 	)
 
 	switch acl.Permission {
-	case ACLRead:
+	case ReadPermission:
 		statements, err = auth.MakeStatementForPolicyType("FSRead", all)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
@@ -53,7 +53,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 			return nil, err
 		}
 		statements = append(append(statements, readConfigStatement...), ownCredentialsStatement...)
-	case ACLWrite:
+	case WritePermission:
 		statements, err = auth.MakeStatementForPolicyType("FSReadWrite", all)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)
@@ -70,7 +70,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 		}
 
 		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
-	case ACLSuper:
+	case SuperPermission:
 		statements, err = auth.MakeStatementForPolicyType("FSFullAccess", all)
 		if err != nil {
 			return nil, fmt.Errorf("%s: get FSFullAccess: %w", acl.Permission, ErrBadACLPermission)
@@ -87,7 +87,7 @@ func ACLToStatement(acl model.ACL) (model.Statements, error) {
 		}
 
 		statements = append(statements, append(ownCredentialsStatement, ciStatement...)...)
-	case ACLAdmin:
+	case AdminPermission:
 		statements, err = auth.MakeStatementForPolicyType("AllAccess", []string{permissions.All})
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", acl.Permission, ErrBadACLPermission)

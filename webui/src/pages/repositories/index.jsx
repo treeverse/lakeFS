@@ -26,6 +26,7 @@ import {useRouter} from "../../lib/hooks/router";
 import {Route, Routes} from "react-router-dom";
 import RepositoryPage from './repository';
 import Button from "react-bootstrap/Button";
+import Alert from "react-bootstrap/Alert";
 
 dayjs.extend(relativeTime);
 
@@ -95,7 +96,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
     );
 };
 
-const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo}) => {
+const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
     return (
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
@@ -113,16 +114,25 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo}) => {
                     } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
                 </Col>
             </Row>
+            {createRepoError &&
+                <Row>
+                    <Col sm={6}>
+                        <Alert className="mb-3" variant={"danger"}>{createRepoError.message}</Alert>
+                    </Col>
+                </Row>
+            }
+
             <div className="d-flex flex-direction-row align-items-center">
                 <span className="learn-more">Already working with lakeFS and just need an empty repository?</span>
                 <GettingStartedCreateRepoButton style={{ padding: 0, width: "auto", marginLeft: "8px", display: "inline-block" }} text="Click here" variant={"link"} enabled={true} onClick={onCreateEmptyRepo} />
             </div>
+
             <img src="/getting-started.png" alt="getting-started" className="getting-started-image" />
         </Card>
     );
 };
 
-const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo }) => {
+const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(prefix, after);
@@ -131,7 +141,7 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
     if (!after && !prefix && results.length === 0) {
-        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} />;
+        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} createRepoError={createRepoError}/>;
     }
 
     toggleShowActionsBar();
@@ -272,6 +282,7 @@ const RepositoriesPage = () => {
                     onCreateEmptyRepo={createRepositoryButtonCallback}
                     toggleShowActionsBar={toggleShowActionsBar}
                     creatingRepo={creatingRepo}
+                    createRepoError={createRepoError}
                     />
 
                 <CreateRepositoryModal
