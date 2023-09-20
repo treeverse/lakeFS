@@ -172,13 +172,14 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	headers := []string{"commit_id", "metarange_id"}
+	// the expired field is always false and not in use any more by new versions of GC
+	// remained for backward compatibility
+	headers := []string{"commit_id", "expired", "metarange_id"}
 	if err = csvWriter.Write(headers); err != nil {
 		return "", err
 	}
-
 	for commitID, metarangeID := range gcCommits {
-		err := csvWriter.Write([]string{string(commitID), string(metarangeID)})
+		err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID)})
 		if err != nil {
 			return "", err
 		}

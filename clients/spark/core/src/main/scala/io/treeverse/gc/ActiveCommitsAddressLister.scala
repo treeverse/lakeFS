@@ -42,7 +42,7 @@ class ActiveCommitsAddressLister(
       .option("header", value = true)
       .option("inferSchema", value = true)
       .csv(gcCommitsLocation.toString)
-    commitsDF = commitsDF.filter(commitsDF("expired") === false).select("commit_id")
+    commitsDF = commitsDF.select("commit_id")
     val df = LakeFSContext.newDF(spark,
                                  LakeFSJobParams.forCommits(repoName,
                                                             commitsDF.collect().map(_.getString(0)),
