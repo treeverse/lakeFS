@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**delete_garbage_collection_rules**](RetentionApi.md#delete_garbage_collection_rules) | **DELETE** /repositories/{repository}/gc/rules | 
 [**get_garbage_collection_rules**](RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
-[**prepare_garbage_collection_commits**](RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
+[**prepare_garbage_collection_commits**](RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
 [**prepare_garbage_collection_uncommitted**](RetentionApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**set_garbage_collection_rules**](RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 
@@ -224,7 +224,7 @@ Name | Type | Description  | Notes
 # **prepare_garbage_collection_commits**
 > GarbageCollectionPrepareResponse prepare_garbage_collection_commits(repository)
 
-save lists of active and expired commits for garbage collection
+save lists of active commits for garbage collection
 
 ### Example
 
@@ -240,7 +240,6 @@ import lakefs_client
 from lakefs_client.api import retention_api
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
-from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -287,23 +286,11 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = retention_api.RetentionApi(api_client)
     repository = "repository_example" # str | 
-    garbage_collection_prepare_request = GarbageCollectionPrepareRequest(
-        previous_run_id="64eaa103-d726-4a33-bcb8-7c0b4abfe09e",
-    ) # GarbageCollectionPrepareRequest |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
-        # save lists of active and expired commits for garbage collection
+        # save lists of active commits for garbage collection
         api_response = api_instance.prepare_garbage_collection_commits(repository)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling RetentionApi->prepare_garbage_collection_commits: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
-    try:
-        # save lists of active and expired commits for garbage collection
-        api_response = api_instance.prepare_garbage_collection_commits(repository, garbage_collection_prepare_request=garbage_collection_prepare_request)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RetentionApi->prepare_garbage_collection_commits: %s\n" % e)
@@ -315,7 +302,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
- **garbage_collection_prepare_request** | [**GarbageCollectionPrepareRequest**](GarbageCollectionPrepareRequest.md)|  | [optional]
 
 ### Return type
 
@@ -327,7 +313,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 

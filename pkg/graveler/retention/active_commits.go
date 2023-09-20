@@ -9,11 +9,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-type GarbageCollectionCommits struct {
-	expired map[graveler.CommitID]graveler.MetaRangeID
-	active  map[graveler.CommitID]graveler.MetaRangeID
-}
-
 type CommitNode struct {
 	CreationDate time.Time
 	MainParent   graveler.CommitID
@@ -33,18 +28,13 @@ var ErrCommitNotFound = errors.New("commit not found")
 // GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
 // Upon completion, the given startingPointIterator is closed.
-func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules, previouslyExpired []graveler.CommitID) (*GarbageCollectionCommits, error) {
+func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (map[graveler.CommitID]graveler.MetaRangeID, error) {
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
-	// All further commits in the ancestry are added to the expired set. The iteration stops upon reaching a commit which exists in the previouslyExpired set, or the DAG root.
 	processed := make(map[graveler.CommitID]time.Time)
 	// Mapping between previously expired commits to their direct children.
-	prevExpiredCommitsToChildrenMap := make(map[graveler.CommitID]map[graveler.CommitID]struct{})
-	for _, commitID := range previouslyExpired {
-		prevExpiredCommitsToChildrenMap[commitID] = make(map[graveler.CommitID]struct{})
-	}
+
 	activeMap := make(map[graveler.CommitID]struct{})
-	expiredMap := make(map[graveler.CommitID]struct{})
 
 	commitsIterator, err := commitGetter.ListCommits(ctx)
 	if err != nil {
@@ -89,7 +79,6 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			// set it as active (we don't delete branch HEADs), and remove it from the expired list if it was put there
 			// by some other commit path traversal.
 			activeMap[startingPoint.CommitID] = struct{}{}
-			delete(expiredMap, startingPoint.CommitID)
 		}
 		// Calculate the expiration time for the current commit
 		branchExpirationThreshold := now.AddDate(0, 0, -retentionDays)
@@ -98,7 +87,6 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			// (it will be optionally examined later on by different commit paths to get the longest expiration threshold for a given commit)
 			processed[startingPoint.CommitID] = branchExpirationThreshold
 		}
-		var currentCommitID = startingPoint.CommitID
 		// Start traversing the commit's ancestors (path):
 		for commitNode.MainParent != "" {
 			nextCommitID := commitNode.MainParent
@@ -114,25 +102,8 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 				// definition for 'active' is either creation time is after the threshold, or the first beyond
 				// the threshold. In either way, the PARENT is active.
 				activeMap[nextCommitID] = struct{}{}
-				delete(expiredMap, nextCommitID)
-				delete(prevExpiredCommitsToChildrenMap, nextCommitID)
-			} else if _, ok = activeMap[nextCommitID]; !ok {
-				// If the parent commit was expired in a previous GC run (incremental GC case) we can stop because it's
-				// both expired in this run and the previous (in this path)
-				if nextCommitChildren, ok := prevExpiredCommitsToChildrenMap[nextCommitID]; ok {
-					// Add current commit to previously expired commit's list of known children if it's not there.
-					if _, ok := nextCommitChildren[currentCommitID]; !ok {
-						nextCommitChildren[currentCommitID] = struct{}{}
-						prevExpiredCommitsToChildrenMap[nextCommitID] = nextCommitChildren
-					}
-					break
-				}
-				// Else, if the parent commit isn't in the active map, and the current commit's creation time isn't after the
-				// threshold, then the parent has expired.
-				expiredMap[nextCommitID] = struct{}{}
 			}
 			// Continue down the rabbit hole.
-			currentCommitID = nextCommitID
 			commitNode, ok = commitsMap[nextCommitID]
 			if !ok {
 				return nil, fmt.Errorf("%w: %s", ErrCommitNotFound, nextCommitID)
@@ -145,10 +116,7 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if startingPointIterator.Err() != nil {
 		return nil, startingPointIterator.Err()
 	}
-	for _, se := range getStillExpiredCommits(prevExpiredCommitsToChildrenMap, activeMap) {
-		expiredMap[se] = struct{}{}
-	}
-	return &GarbageCollectionCommits{active: makeCommitMap(commitsMap, activeMap), expired: makeCommitMap(commitsMap, expiredMap)}, nil
+	return makeCommitMap(commitsMap, activeMap), nil
 }
 
 func makeCommitMap(commitNodes map[graveler.CommitID]CommitNode, commitSet map[graveler.CommitID]struct{}) map[graveler.CommitID]graveler.MetaRangeID {
@@ -157,22 +125,4 @@ func makeCommitMap(commitNodes map[graveler.CommitID]CommitNode, commitSet map[g
 		res[commitID] = commitNodes[commitID].MetaRangeID
 	}
 	return res
-}
-
-func getStillExpiredCommits(previouslyExpired map[graveler.CommitID]map[graveler.CommitID]struct{},
-	currentlyActive map[graveler.CommitID]struct{}) []graveler.CommitID {
-	var stillExpiredCommitIDs []graveler.CommitID
-	for peci, children := range previouslyExpired {
-		stillExpired := false
-		for child := range children {
-			if _, ok := currentlyActive[child]; ok {
-				stillExpired = true
-				break
-			}
-		}
-		if stillExpired {
-			stillExpiredCommitIDs = append(stillExpiredCommitIDs, peci)
-		}
-	}
-	return stillExpiredCommitIDs
 }

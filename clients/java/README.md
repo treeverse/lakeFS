@@ -226,7 +226,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 *RetentionApi* | [**deleteGarbageCollectionRules**](docs/RetentionApi.md#deleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
 *RetentionApi* | [**getGarbageCollectionRules**](docs/RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
+*RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
 *RetentionApi* | [**prepareGarbageCollectionUncommitted**](docs/RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *RetentionApi* | [**setGarbageCollectionRules**](docs/RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
@@ -263,7 +263,6 @@ Class | Method | HTTP request | Description
  - [ErrorNoACL](docs/ErrorNoACL.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)
- - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)
  - [GarbageCollectionRule](docs/GarbageCollectionRule.md)
  - [GarbageCollectionRules](docs/GarbageCollectionRules.md)

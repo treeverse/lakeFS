@@ -148,41 +148,7 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespa
 	}, int64(len(rulesBytes)), bytes.NewReader(rulesBytes), block.PutOpts{})
 }
 
-func (m *GarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, runID string) ([]graveler.CommitID, error) {
-	if runID == "" {
-		return nil, nil
-	}
-	csvLocation, err := m.GetCommitsCSVLocation(runID, storageNamespace)
-	if err != nil {
-		return nil, err
-	}
-	previousRunReader, err := m.blockAdapter.Get(ctx, block.ObjectPointer{
-		Identifier:     csvLocation,
-		IdentifierType: block.IdentifierTypeFull,
-	}, -1)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = previousRunReader.Close() }()
-	csvReader := csv.NewReader(previousRunReader)
-	csvReader.ReuseRecord = true
-	var res []graveler.CommitID
-	for {
-		commitRow, err := csvReader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if commitRow[1] == "true" {
-			res = append(res, graveler.CommitID(commitRow[0]))
-		}
-	}
-	return res, nil
-}
-
-func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
 	commitGetter := &RepositoryCommitGetter{
 		refManager: m.refManager,
 		repository: repository,
@@ -200,24 +166,19 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	defer commitIterator.Close()
 	startingPointIterator := NewGCStartingPointIterator(commitIterator, branchIterator)
 	defer startingPointIterator.Close()
-	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules, previouslyExpiredCommits)
+	gcCommits, err := GetGarbageCollectionCommits(ctx, startingPointIterator, commitGetter, rules)
 	if err != nil {
 		return "", fmt.Errorf("find expired commits: %w", err)
 	}
 	b := &strings.Builder{}
 	csvWriter := csv.NewWriter(b)
-	headers := []string{"commit_id", "expired", "metarange_id"}
+	headers := []string{"commit_id", "metarange_id"}
 	if err = csvWriter.Write(headers); err != nil {
 		return "", err
 	}
-	for commitID, metarangeID := range gcCommits.expired {
-		err := csvWriter.Write([]string{string(commitID), "true", string(metarangeID)})
-		if err != nil {
-			return "", err
-		}
-	}
-	for commitID, metarangeID := range gcCommits.active {
-		err := csvWriter.Write([]string{string(commitID), "false", string(metarangeID)})
+
+	for commitID, metarangeID := range gcCommits {
+		err := csvWriter.Write([]string{string(commitID), string(metarangeID)})
 		if err != nil {
 			return "", err
 		}
