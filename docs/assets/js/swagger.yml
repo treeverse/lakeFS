@@ -3810,7 +3810,7 @@ paths:
         description: path to the table data
     post:
       tags:
-        - metadata
+        - internal
       operationId: createSymlinkFile
       summary: creates symlink files corresponding to the given directory
 

@@ -4418,7 +4418,7 @@ paths:
           description: Internal Server Error
       summary: creates symlink files corresponding to the given directory
       tags:
-      - metadata
+      - internal
       x-accepts: application/json
   /repositories/{repository}/actions/runs:
     get:
