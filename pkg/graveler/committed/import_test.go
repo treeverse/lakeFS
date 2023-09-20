@@ -2,11 +2,13 @@ package committed_test
 
 import (
 	"context"
+	"errors"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
-	"testing"
 )
 
 func Test_import(t *testing.T) {
@@ -371,8 +373,8 @@ func Test_import(t *testing.T) {
 				writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 				committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
 				_, err := committedManager.Import(ctx, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
-				if err != expectedResult.expectedErr {
-					t.Fatal(err)
+				if !errors.Is(err, expectedResult.expectedErr) {
+					t.Fatalf("Import error = '%v', expected '%v'", err, expectedResult.expectedErr)
 				}
 			})
 		}

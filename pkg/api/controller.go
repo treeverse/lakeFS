@@ -557,7 +557,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 }
 
 func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
-	aclPolicyName := acl.ACLPolicyName(groupID)
+	aclPolicyName := acl.PolicyName(groupID)
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -629,7 +629,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 }
 
 func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body apigen.SetGroupACLJSONRequestBody, groupID string) {
-	aclPolicyName := acl.ACLPolicyName(groupID)
+	aclPolicyName := acl.PolicyName(groupID)
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1583,7 +1583,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			return
 		}
 
-		err = samplerepo.SampleRepoAddBranchProtection(ctx, newRepo, c.Catalog)
+		err = samplerepo.AddBranchProtection(ctx, newRepo, c.Catalog)
 		if err != nil {
 			c.handleAPIError(ctx, w, r, fmt.Errorf("error adding branch protection to sample repository: %w", err))
 			return

@@ -208,7 +208,7 @@ func TestEmpty(t *testing.T) {
 	emptySettings := &settings.ExampleSettings{}
 	_, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	// the key was not set, an error should be returned
-	if err != graveler.ErrNotFound {
+	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
 	}
 	// when using Update on an unset key, the update function gets an empty setting object to operate on

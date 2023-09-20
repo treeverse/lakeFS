@@ -852,7 +852,7 @@ func TestManager_LogGraph(t *testing.T) {
 				nextCommitTS = nextCommitTS.Add(time.Minute)
 				parentIDs := make([]graveler.CommitID, 0, len(parentNames))
 				for _, parentName := range parentNames {
-					parentIDs = append(parentIDs, graveler.CommitID(commitNameToID[parentName]))
+					parentIDs = append(parentIDs, commitNameToID[parentName])
 				}
 				c := graveler.Commit{
 					Committer:    "user1",
