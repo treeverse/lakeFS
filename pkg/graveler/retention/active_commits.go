@@ -25,15 +25,13 @@ func NewCommitNode(creationDate time.Time, mainParent graveler.CommitID, metaRan
 
 var ErrCommitNotFound = errors.New("commit not found")
 
-// GetGarbageCollectionCommits returns the sets of expired and active commits, according to the repository's garbage collection rules.
+// GetGarbageCollectionCommits returns the sets of active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
 // Upon completion, the given startingPointIterator is closed.
 func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (map[graveler.CommitID]graveler.MetaRangeID, error) {
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	processed := make(map[graveler.CommitID]time.Time)
-	// Mapping between previously expired commits to their direct children.
-
 	activeMap := make(map[graveler.CommitID]struct{})
 
 	commitsIterator, err := commitGetter.ListCommits(ctx)
@@ -76,8 +74,6 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 			if branchRetentionDays, ok = rules.BranchRetentionDays[string(startingPoint.BranchID)]; ok {
 				retentionDays = int(branchRetentionDays)
 			}
-			// set it as active (we don't delete branch HEADs), and remove it from the expired list if it was put there
-			// by some other commit path traversal.
 			activeMap[startingPoint.CommitID] = struct{}{}
 		}
 		// Calculate the expiration time for the current commit

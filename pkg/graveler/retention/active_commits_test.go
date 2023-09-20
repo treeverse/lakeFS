@@ -119,22 +119,6 @@ func TestActiveCommits(t *testing.T) {
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"d", "e", "f"},
 		},
-		"many_previously_expired": {
-			commits: map[string]testCommit{
-				"e7": newTestCommit(6),
-				"e6": newTestCommit(6, "e7"),
-				"e5": newTestCommit(6, "e6"),
-				"e4": newTestCommit(6, "e5"),
-				"e3": newTestCommit(6, "e4"),
-				"e2": newTestCommit(6, "e3"),
-				"e1": newTestCommit(6, "e2"),
-				"a":  newTestCommit(6, "e1"),
-				"b":  newTestCommit(5, "a"),
-				"c":  newTestCommit(5, "a"),
-			},
-			headsRetentionDays: map[string]int32{"c": 6, "b": 6},
-			expectedActiveIDs:  []string{"a", "b", "c"},
-		},
 		"merge_in_history": {
 			// graph taken from git core tests
 			// E---D---C---B---A
@@ -185,20 +169,7 @@ func TestActiveCommits(t *testing.T) {
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
 		},
-		"dangling_from_previously_expired": {
-			commits: map[string]testCommit{
-				"a": newTestCommit(15),
-				"b": newTestCommit(10, "a"),
-				"c": newTestCommit(10, "a"),
-				"d": newTestCommit(5, "c"),
-				"e": newTestCommit(8, "b"),
-				"f": newTestCommit(1, "e"),
-				"g": newTestCommit(10, "a"), // dangling
-				"h": newTestCommit(6, "g"),  // dangling
-			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
-			expectedActiveIDs:  []string{"e", "d", "f"},
-		},
+
 		"dangling_from_before_expired": {
 			commits: map[string]testCommit{
 				"root":        newTestCommit(20),
@@ -225,25 +196,6 @@ func TestActiveCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"head1": 9, "head2": 12},
 			expectedActiveIDs:  []string{"head1", "head2", "x"},
-		},
-		/*
-			<A-4-previously_expired>--<B-3-previously_expired>--<D-2>--<HEAD1-0>
-					  \
-					 <C-4-previously_expired>--<E-3-previously_expired>--<F-2>--<HEAD2-1>
-		*/
-		"previously_expired_commits_become_active": {
-			commits: map[string]testCommit{
-				"A":     newTestCommit(4),
-				"B":     newTestCommit(3, "A"),
-				"C":     newTestCommit(4, "A"),
-				"D":     newTestCommit(2, "B"),
-				"E":     newTestCommit(3, "C"),
-				"F":     newTestCommit(2, "E"),
-				"HEAD1": newTestCommit(0, "D"),
-				"HEAD2": newTestCommit(1, "F"),
-			},
-			headsRetentionDays: map[string]int32{"HEAD1": 3, "HEAD2": 3},
-			expectedActiveIDs:  []string{"B", "D", "E", "F", "HEAD1", "HEAD2"},
 		},
 		/*
 			<ep1- 8 days>
