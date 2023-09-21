@@ -69,7 +69,7 @@ func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.Rep
 }
 
 func (m *ProtectionManager) Get(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) ([]graveler.BranchProtectionBlockedAction, error) {
-	rules, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	rules, _, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return nil, nil
 	}
@@ -83,19 +83,19 @@ func (m *ProtectionManager) Get(ctx context.Context, repository *graveler.Reposi
 	return actions.GetValue(), nil
 }
 
-func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, error) {
-	rules, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
+	rules, eTag, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
-		return &graveler.BranchProtectionRules{}, nil
+		return &graveler.BranchProtectionRules{}, "", nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return rules.(*graveler.BranchProtectionRules), nil
+	return rules.(*graveler.BranchProtectionRules), eTag, nil
 }
 
 func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
-	rules, err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	rules, _, err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return false, nil
 	}

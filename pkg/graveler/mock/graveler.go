@@ -509,12 +509,13 @@ func (mr *MockVersionControllerMockRecorder) GetBranch(ctx, repository, branchID
 }
 
 // GetBranchProtectionRules mocks base method.
-func (m *MockVersionController) GetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, error) {
+func (m *MockVersionController) GetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBranchProtectionRules", ctx, repository)
 	ret0, _ := ret[0].(*graveler.BranchProtectionRules)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetBranchProtectionRules indicates an expected call of GetBranchProtectionRules.
@@ -2927,12 +2928,13 @@ func (mr *MockProtectedBranchesManagerMockRecorder) Get(ctx, repository, branchN
 }
 
 // GetRules mocks base method.
-func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, error) {
+func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRules", ctx, repository)
 	ret0, _ := ret[0].(*graveler.BranchProtectionRules)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetRules indicates an expected call of GetRules.

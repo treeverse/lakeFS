@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -78,46 +79,55 @@ func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.Repositor
 	return pred, nil
 }
 
-func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, string, error) {
 	data := settingTemplate.ProtoReflect().Interface()
-	_, err := m.getWithPredicate(ctx, repository, key, data)
+	pred, err := m.getWithPredicate(ctx, repository, key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
 		}
-		return nil, err
+		return nil, "", err
 	}
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "got repository-level setting")
-	return data, nil
+	return data, base64.StdEncoding.EncodeToString(pred.([]byte)), nil
 }
 
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 // The settingTemplate parameter is used to determine the returned type.
-func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, string, error) {
 	k := cacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
 	}
+	eTag := ""
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		setting, err := m.GetLatest(ctx, repository, key, settingTemplate)
+		setting, et, err := m.GetLatest(ctx, repository, key, settingTemplate)
 		if errors.Is(err, graveler.ErrNotFound) {
+			eTag = ""
 			return nil, nil
+		}
+		if err == nil {
+			eTag = et
 		}
 		return setting, err
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if setting == nil {
-		return nil, graveler.ErrNotFound
+		return nil, "", graveler.ErrNotFound
 	}
-	return setting.(proto.Message), nil
+	return setting.(proto.Message), eTag, nil
+}
+func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc) error {
+	return m.UpdateIf(ctx, repository, key, settingTemplate, update, nil)
 }
 
-// Update atomically gets a setting, performs the update function, and persists the setting to the store.
+// UpdateIf atomically gets a setting, performs the update function, and persists the setting to the store.
 // The settingTemplate parameter is used to determine the type passed to the update function.
-func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc) error {
+// The ifMatchETag parameter is used to perform a conditional update. If the ETag does not match the current ETag of the setting, the update fails.
+func (m *Manager) UpdateIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc, ifMatchETag *string) error {
 	const (
 		maxIntervalSec = 2
 		maxElapsedSec  = 5
@@ -134,7 +144,13 @@ func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRec
 		} else if err != nil {
 			return backoff.Permanent(err)
 		}
-
+		if ifMatchETag != nil {
+			predBytes, err := base64.StdEncoding.DecodeString(*ifMatchETag)
+			if err != nil {
+				return backoff.Permanent(err)
+			}
+			pred = kv.Predicate(predBytes)
+		}
 		logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "update repository-level setting")
 		newData, err := update(data)
 		if err != nil {

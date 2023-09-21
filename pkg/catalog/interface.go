@@ -163,7 +163,7 @@ type Interface interface {
 	// Consecutive calls must be made using the returned run ID, upon completion mark will return nil
 	PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error)
 
-	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error)
+	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, string, error)
 	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
 	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
 

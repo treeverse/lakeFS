@@ -2964,7 +2964,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		return
 	}
 	ctx := r.Context()
-	rules, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
+	rules, _, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

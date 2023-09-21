@@ -610,7 +610,7 @@ type VersionController interface {
 	GCNewRunID() string
 
 	// GetBranchProtectionRules return all branch protection rules for the repository
-	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 
 	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
 	// or return ErrRuleNotExists if no such rule exists.
@@ -1495,7 +1495,7 @@ func (g *Graveler) GCNewRunID() string {
 	return g.garbageCollectionManager.NewID()
 }
 
-func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
+func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
@@ -3246,7 +3246,7 @@ type ProtectedBranchesManager interface {
 	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
 	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
 	// GetRules returns all branch protection rules for the repository
-	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

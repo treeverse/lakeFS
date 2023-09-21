@@ -2079,10 +2079,10 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	return c.Store.SetGarbageCollectionRules(ctx, repository, rules)
 }
 
-func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error) {
+func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	return c.Store.GetBranchProtectionRules(ctx, repository)
