@@ -4059,7 +4059,7 @@ paths:
           type: string
     get:
       tags:
-        - retention
+        - internal
       operationId: getGarbageCollectionRules
       responses:
         200:
@@ -4077,7 +4077,7 @@ paths:
     
     post:
       tags:
-        - retention
+        - internal
       operationId: set garbage collection rules
       requestBody:
         required: true
@@ -4096,7 +4096,7 @@ paths:
           $ref: "#/components/responses/ServerError"
     delete:
       tags:
-        - retention
+        - internal
       operationId: delete garbage collection rules
       responses:
         204:
@@ -4199,7 +4199,7 @@ paths:
           type: string
     get:
       tags:
-        - repositories
+        - internal
       operationId: getBranchProtectionRules
       summary: get branch protection rules
       responses:
@@ -4220,7 +4220,7 @@ paths:
 
     post:
       tags:
-        - repositories
+        - internal
       operationId: createBranchProtectionRule
       requestBody:
         required: true
@@ -4239,7 +4239,7 @@ paths:
           $ref: "#/components/responses/ServerError"
     delete:
       tags:
-        - repositories
+        - internal
       operationId: deleteBranchProtectionRule
       requestBody:
         required: true
@@ -4304,7 +4304,7 @@ paths:
   /config/garbage-collection:
     get:
       tags:
-        - config
+        - internal
       operationId: getGarbageCollectionConfig
       description: get information of gc settings
       responses:

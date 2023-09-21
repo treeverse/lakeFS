@@ -24,6 +24,12 @@ class TestInternalApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_create_branch_protection_rule(self):
+        """Test case for create_branch_protection_rule
+
+        """
+        pass
+
     def test_create_branch_protection_rule_preflight(self):
         """Test case for create_branch_protection_rule_preflight
 
@@ -37,10 +43,41 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_delete_branch_protection_rule(self):
+        """Test case for delete_branch_protection_rule
+
+        """
+        pass
+
+    def test_delete_garbage_collection_rules(self):
+        """Test case for delete_garbage_collection_rules
+
+        """
+        pass
+
     def test_get_auth_capabilities(self):
         """Test case for get_auth_capabilities
 
         list authentication capabilities supported  # noqa: E501
+        """
+        pass
+
+    def test_get_branch_protection_rules(self):
+        """Test case for get_branch_protection_rules
+
+        get branch protection rules  # noqa: E501
+        """
+        pass
+
+    def test_get_garbage_collection_config(self):
+        """Test case for get_garbage_collection_config
+
+        """
+        pass
+
+    def test_get_garbage_collection_rules(self):
+        """Test case for get_garbage_collection_rules
+
         """
         pass
 
@@ -55,6 +92,12 @@ class TestInternalApi(unittest.TestCase):
         """Test case for post_stats_events
 
         post stats events, this endpoint is meant for internal use only  # noqa: E501
+        """
+        pass
+
+    def test_set_garbage_collection_rules(self):
+        """Test case for set_garbage_collection_rules
+
         """
         pass
 

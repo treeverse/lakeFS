@@ -4838,7 +4838,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     get:
       operationId: getGarbageCollectionRules
@@ -4876,7 +4876,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     post:
       operationId: set garbage collection rules
@@ -4916,7 +4916,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_commits:
@@ -5098,7 +5098,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-contentType: application/json
       x-accepts: application/json
     get:
@@ -5140,7 +5140,7 @@ paths:
           description: Internal Server Error
       summary: get branch protection rules
       tags:
-      - repositories
+      - internal
       x-accepts: application/json
     post:
       operationId: createBranchProtectionRule
@@ -5180,7 +5180,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /healthcheck:
@@ -5252,7 +5252,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /statistics:
     post:

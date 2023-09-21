@@ -16,7 +16,6 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
-import io.lakefs.clients.api.model.GarbageCollectionRules;
 import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
 import org.junit.Test;
@@ -35,36 +34,6 @@ public class RetentionApiTest {
 
     private final RetentionApi api = new RetentionApi();
 
-    
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void deleteGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-                api.deleteGarbageCollectionRules(repository);
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-                GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
-        // TODO: test validations
-    }
     
     /**
      * save lists of active commits for garbage collection
@@ -94,22 +63,6 @@ public class RetentionApiTest {
         String repository = null;
         PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
                 PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-        GarbageCollectionRules garbageCollectionRules = null;
-                api.setGarbageCollectionRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
     
