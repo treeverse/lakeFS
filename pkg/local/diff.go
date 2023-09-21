@@ -173,7 +173,7 @@ func Undo(c Changes) Changes {
 			reversed[i] = &Change{
 				Source: switchSource(op.Source),
 				Path:   op.Path,
-				Type:   ChangeTypeModified, // mark as modified so it will trigger download
+				Type:   ChangeTypeModified, // mark as modified so it will trigger Download
 			}
 		case ChangeTypeConflict:
 		default:
