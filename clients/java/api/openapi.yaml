@@ -4930,11 +4930,6 @@ paths:
         schema:
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GarbageCollectionPrepareRequest'
       responses:
         "201":
           content:
@@ -4960,10 +4955,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: save lists of active and expired commits for garbage collection
+      summary: save lists of active commits for garbage collection
       tags:
       - retention
-      x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_uncommited:
     post:
@@ -6878,15 +6872,6 @@ components:
       - checksum
       - size_bytes
       - staging
-      type: object
-    GarbageCollectionPrepareRequest:
-      example:
-        previous_run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-      properties:
-        previous_run_id:
-          description: run id of a previous successful GC job
-          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-          type: string
       type: object
     GarbageCollectionPrepareResponse:
       example:

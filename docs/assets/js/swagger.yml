@@ -1149,14 +1149,6 @@ components:
         - checksum
         - size_bytes
 
-    GarbageCollectionPrepareRequest:
-      type: object
-      properties:
-        previous_run_id:
-          type: string
-          description: run id of a previous successful GC job
-          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-
     GarbageCollectionPrepareResponse:
       type: object
       properties:
@@ -4124,15 +4116,10 @@ paths:
         schema:
           type: string
     post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GarbageCollectionPrepareRequest"
       tags:
         - retention
       operationId: prepareGarbageCollectionCommits
-      summary: save lists of active and expired commits for garbage collection
+      summary: save lists of active commits for garbage collection
       responses:
         201:
           description: paths to commit dataset

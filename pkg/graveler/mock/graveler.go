@@ -821,18 +821,18 @@ func (mr *MockVersionControllerMockRecorder) Revert(ctx, repository, branchID, r
 }
 
 // SaveGarbageCollectionCommits mocks base method.
-func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {
+func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.GarbageCollectionRunMetadata, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, previousRunID)
+	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository)
 	ret0, _ := ret[0].(*graveler.GarbageCollectionRunMetadata)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveGarbageCollectionCommits indicates an expected call of SaveGarbageCollectionCommits.
-func (mr *MockVersionControllerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, previousRunID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) SaveGarbageCollectionCommits(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockVersionController)(nil).SaveGarbageCollectionCommits), ctx, repository, previousRunID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockVersionController)(nil).SaveGarbageCollectionCommits), ctx, repository)
 }
 
 // SetGarbageCollectionRules mocks base method.
@@ -2788,21 +2788,6 @@ func (mr *MockGarbageCollectionManagerMockRecorder) GetRules(ctx, storageNamespa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRules", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetRules), ctx, storageNamespace)
 }
 
-// GetRunExpiredCommits mocks base method.
-func (m *MockGarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, runID string) ([]graveler.CommitID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRunExpiredCommits", ctx, storageNamespace, runID)
-	ret0, _ := ret[0].([]graveler.CommitID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRunExpiredCommits indicates an expected call of GetRunExpiredCommits.
-func (mr *MockGarbageCollectionManagerMockRecorder) GetRunExpiredCommits(ctx, storageNamespace, runID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunExpiredCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetRunExpiredCommits), ctx, storageNamespace, runID)
-}
-
 // GetUncommittedLocation mocks base method.
 func (m *MockGarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	m.ctrl.T.Helper()
@@ -2833,18 +2818,18 @@ func (mr *MockGarbageCollectionManagerMockRecorder) NewID() *gomock.Call {
 }
 
 // SaveGarbageCollectionCommits mocks base method.
-func (m *MockGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (m *MockGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, rules, previouslyExpiredCommits)
+	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, rules)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveGarbageCollectionCommits indicates an expected call of SaveGarbageCollectionCommits.
-func (mr *MockGarbageCollectionManagerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits interface{}) *gomock.Call {
+func (mr *MockGarbageCollectionManagerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, rules interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).SaveGarbageCollectionCommits), ctx, repository, rules, previouslyExpiredCommits)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).SaveGarbageCollectionCommits), ctx, repository, rules)
 }
 
 // SaveGarbageCollectionUncommitted mocks base method.

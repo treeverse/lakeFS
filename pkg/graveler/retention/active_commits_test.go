@@ -58,13 +58,11 @@ func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[s
 	return res
 }
 
-func TestExpiredCommits(t *testing.T) {
+func TestActiveCommits(t *testing.T) {
 	tests := map[string]struct {
 		commits            map[string]testCommit
 		headsRetentionDays map[string]int32
-		previouslyExpired  []string
 		expectedActiveIDs  []string
-		expectedExpiredIDs []string
 	}{
 		"two_branches": {
 			commits: map[string]testCommit{
@@ -77,7 +75,6 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
-			expectedExpiredIDs: []string{"a", "c"},
 		},
 		"old_heads": {
 			commits: map[string]testCommit{
@@ -88,7 +85,6 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"b": 7, "c": 7, "d": 7},
 			expectedActiveIDs:  []string{"b", "c", "d"},
-			expectedExpiredIDs: []string{"a"},
 		},
 		"all_commits_active": {
 			commits: map[string]testCommit{
@@ -100,7 +96,6 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"d": 15, "e": 7, "c": 2},
 			expectedActiveIDs:  []string{"a", "b", "c", "d", "e"},
-			expectedExpiredIDs: []string{},
 		},
 		"merge": {
 			commits: map[string]testCommit{
@@ -111,7 +106,6 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"b": 3, "d": 10},
 			expectedActiveIDs:  []string{"b", "c", "d"},
-			expectedExpiredIDs: []string{"a"},
 		},
 		"two_branches_with_previously_expired": {
 			commits: map[string]testCommit{
@@ -123,27 +117,7 @@ func TestExpiredCommits(t *testing.T) {
 				"f": newTestCommit(1, "e"),
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
-			previouslyExpired:  []string{"a"},
 			expectedActiveIDs:  []string{"d", "e", "f"},
-			expectedExpiredIDs: []string{"c", "b"},
-		},
-		"many_previously_expired": {
-			commits: map[string]testCommit{
-				"e7": newTestCommit(6),
-				"e6": newTestCommit(6, "e7"),
-				"e5": newTestCommit(6, "e6"),
-				"e4": newTestCommit(6, "e5"),
-				"e3": newTestCommit(6, "e4"),
-				"e2": newTestCommit(6, "e3"),
-				"e1": newTestCommit(6, "e2"),
-				"a":  newTestCommit(6, "e1"),
-				"b":  newTestCommit(5, "a"),
-				"c":  newTestCommit(5, "a"),
-			},
-			headsRetentionDays: map[string]int32{"c": 6, "b": 6},
-			previouslyExpired:  []string{"e1", "e2", "e3", "e4", "e5", "e6", "e7"},
-			expectedActiveIDs:  []string{"a", "b", "c"},
-			expectedExpiredIDs: []string{"e1"}, // since it's still reachable from an active commit ('a')
 		},
 		"merge_in_history": {
 			// graph taken from git core tests
@@ -163,9 +137,7 @@ func TestExpiredCommits(t *testing.T) {
 				"h": newTestCommit(3, "a", "f"),
 			},
 			headsRetentionDays: map[string]int32{"h": 14, "g": 7, "f": 7},
-			previouslyExpired:  []string{},
 			expectedActiveIDs:  []string{"h", "a", "b", "c", "f", "g"},
-			expectedExpiredIDs: []string{"e", "d"},
 		},
 		"dangling_commits_active": {
 			commits: map[string]testCommit{
@@ -181,7 +153,6 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f", "h", "i"},
-			expectedExpiredIDs: []string{"a", "c", "g"},
 		},
 		"dangling_commits_expired": {
 			commits: map[string]testCommit{
@@ -197,24 +168,8 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
 			expectedActiveIDs:  []string{"b", "d", "e", "f"},
-			expectedExpiredIDs: []string{"a", "c", "g", "h", "i"},
 		},
-		"dangling_from_previously_expired": {
-			commits: map[string]testCommit{
-				"a": newTestCommit(15),
-				"b": newTestCommit(10, "a"),
-				"c": newTestCommit(10, "a"),
-				"d": newTestCommit(5, "c"),
-				"e": newTestCommit(8, "b"),
-				"f": newTestCommit(1, "e"),
-				"g": newTestCommit(10, "a"), // dangling
-				"h": newTestCommit(6, "g"),  // dangling
-			},
-			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
-			previouslyExpired:  []string{"a"},
-			expectedActiveIDs:  []string{"e", "d", "f"},
-			expectedExpiredIDs: []string{"c", "g", "h", "b"},
-		},
+
 		"dangling_from_before_expired": {
 			commits: map[string]testCommit{
 				"root":        newTestCommit(20),
@@ -229,9 +184,7 @@ func TestExpiredCommits(t *testing.T) {
 				"h":           newTestCommit(6, "g"),     // dangling
 			},
 			headsRetentionDays: map[string]int32{"f": 7, "d": 3},
-			previouslyExpired:  []string{"e1"},
 			expectedActiveIDs:  []string{"d", "e", "f"},
-			expectedExpiredIDs: []string{"c", "b", "g", "root", "h"},
 		},
 		"retained_by_non_leaf_head": {
 			// commit x is retained because of the rule of head2, and not the rule of head1.
@@ -243,28 +196,6 @@ func TestExpiredCommits(t *testing.T) {
 			},
 			headsRetentionDays: map[string]int32{"head1": 9, "head2": 12},
 			expectedActiveIDs:  []string{"head1", "head2", "x"},
-			expectedExpiredIDs: []string{"root"},
-		},
-		/*
-			<A-4-previously_expired>--<B-3-previously_expired>--<D-2>--<HEAD1-0>
-					  \
-					 <C-4-previously_expired>--<E-3-previously_expired>--<F-2>--<HEAD2-1>
-		*/
-		"previously_expired_commits_become_active": {
-			commits: map[string]testCommit{
-				"A":     newTestCommit(4),
-				"B":     newTestCommit(3, "A"),
-				"C":     newTestCommit(4, "A"),
-				"D":     newTestCommit(2, "B"),
-				"E":     newTestCommit(3, "C"),
-				"F":     newTestCommit(2, "E"),
-				"HEAD1": newTestCommit(0, "D"),
-				"HEAD2": newTestCommit(1, "F"),
-			},
-			headsRetentionDays: map[string]int32{"HEAD1": 3, "HEAD2": 3},
-			previouslyExpired:  []string{"A", "B", "C", "E"},
-			expectedActiveIDs:  []string{"B", "D", "E", "F", "HEAD1", "HEAD2"},
-			expectedExpiredIDs: []string{"A", "C"},
 		},
 		/*
 			<ep1- 8 days>
@@ -289,9 +220,7 @@ func TestExpiredCommits(t *testing.T) {
 				"h1":  newTestCommit(1, "e1"),
 			},
 			headsRetentionDays: map[string]int32{"h1": 5, "h2": 5, "h3": 5},
-			previouslyExpired:  []string{"ep1", "ep2"},
 			expectedActiveIDs:  []string{"h1", "h2", "h3", "e1", "e2", "e3"},
-			expectedExpiredIDs: []string{"e4", "ep2", "e5"}, // 'ep2' is reachable from active commit 'e2', thus it will remain in the expired list for the next round as well even though it was expired previously
 		},
 	}
 	for name, tst := range tests {
@@ -333,23 +262,17 @@ func TestExpiredCommits(t *testing.T) {
 
 			refManagerMock.EXPECT().ListCommits(ctx, repositoryRecord).Return(testutil.NewFakeCommitIterator(commitsRecords), nil).MaxTimes(1)
 
-			previouslyExpiredCommitIDs := make([]graveler.CommitID, len(tst.previouslyExpired))
-			for i := range tst.previouslyExpired {
-				previouslyExpiredCommitIDs[i] = graveler.CommitID(tst.previouslyExpired[i])
-			}
 			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
 				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetter{
 				refManager: refManagerMock,
 				repository: repositoryRecord,
-			}, garbageCollectionRules, previouslyExpiredCommitIDs)
+			}, garbageCollectionRules)
 			if err != nil {
 				t.Fatalf("failed to find expired commits: %v", err)
 			}
-			validateMetaRangeIDs(t, gcCommits.active)
-			validateMetaRangeIDs(t, gcCommits.expired)
-			activeCommitIDs := testMapToCommitIDs(gcCommits.active)
-			expiredCommitIDs := testMapToCommitIDs(gcCommits.expired)
+			validateMetaRangeIDs(t, gcCommits)
+			activeCommitIDs := testMapToCommitIDs(gcCommits)
 
 			sort.Strings(tst.expectedActiveIDs)
 			sort.Slice(activeCommitIDs, func(i, j int) bool {
@@ -357,14 +280,6 @@ func TestExpiredCommits(t *testing.T) {
 			})
 			if diff := deep.Equal(tst.expectedActiveIDs, testToStringArray(activeCommitIDs)); diff != nil {
 				t.Errorf("active commits ids diff=%s", diff)
-			}
-
-			sort.Strings(tst.expectedExpiredIDs)
-			sort.Slice(expiredCommitIDs, func(i, j int) bool {
-				return expiredCommitIDs[i].Ref() < expiredCommitIDs[j].Ref()
-			})
-			if diff := deep.Equal(tst.expectedExpiredIDs, testToStringArray(expiredCommitIDs)); diff != nil {
-				t.Errorf("expired commits ids diff=%s", diff)
 			}
 		})
 	}

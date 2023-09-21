@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**deleteGarbageCollectionRules**](RetentionApi.md#deleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
 [**getGarbageCollectionRules**](RetentionApi.md#getGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
-[**prepareGarbageCollectionCommits**](RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
+[**prepareGarbageCollectionCommits**](RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
 [**prepareGarbageCollectionUncommitted**](RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**setGarbageCollectionRules**](RetentionApi.md#setGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 
@@ -194,9 +194,9 @@ Name | Type | Description  | Notes
 
 <a name="prepareGarbageCollectionCommits"></a>
 # **prepareGarbageCollectionCommits**
-> GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest)
+> GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(repository)
 
-save lists of active and expired commits for garbage collection
+save lists of active commits for garbage collection
 
 ### Example
 ```java
@@ -242,9 +242,8 @@ public class Example {
 
     RetentionApi apiInstance = new RetentionApi(defaultClient);
     String repository = "repository_example"; // String | 
-    GarbageCollectionPrepareRequest garbageCollectionPrepareRequest = new GarbageCollectionPrepareRequest(); // GarbageCollectionPrepareRequest | 
     try {
-      GarbageCollectionPrepareResponse result = apiInstance.prepareGarbageCollectionCommits(repository, garbageCollectionPrepareRequest);
+      GarbageCollectionPrepareResponse result = apiInstance.prepareGarbageCollectionCommits(repository);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RetentionApi#prepareGarbageCollectionCommits");
@@ -262,7 +261,6 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
- **garbageCollectionPrepareRequest** | [**GarbageCollectionPrepareRequest**](GarbageCollectionPrepareRequest.md)|  | [optional]
 
 ### Return type
 
@@ -274,7 +272,7 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 ### HTTP response details
