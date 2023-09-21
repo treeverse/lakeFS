@@ -1,3 +1,4 @@
+local url = require("net/url")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
 local function short_digest(digest, len)
@@ -41,7 +42,17 @@ local function ref_from_branch_or_tag(action_info)
     end
 end
 
+local function parse_storage_uri(uri)
+    local u = url.parse(uri)
+    return { 
+        protocol = u.scheme,
+        bucket = u.host,
+        key = (u.path:sub(0, 1) == "/") and u.path:sub(2) or u.path,
+    }
+end
+
 return {
+    parse_storage_uri=parse_storage_uri,
     short_digest=short_digest,
     ref_from_branch_or_tag=ref_from_branch_or_tag,
     lakefs_object_pager=lakefs_object_pager, 
