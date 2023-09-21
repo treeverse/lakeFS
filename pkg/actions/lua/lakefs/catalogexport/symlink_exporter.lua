@@ -89,12 +89,12 @@ local function export_s3(s3_client, table_src_path, action_info, options)
     local base_prefix = opts.export_base_uri or action_info.storage_namespace
     local export_base_uri = get_storage_uri_prefix(base_prefix, commit_id, action_info)
     local location = utils.parse_storage_uri(export_base_uri)
-    local put_obj = opts.writer or s3_client.put_object
+    local put_object = opts.writer or s3_client.put_object
     local it = export_it(repo_id, commit_id, table_src_path, opts)
     for symlink in it do
         local key = pathlib.join("/", location.key, symlink.key_suffix)
         if opts.debug then
-            print("S3 writting bucket: " .. location.bucket .. " path: " .. key)
+            print("S3 writing bucket: " .. location.bucket .. " key: " .. key)
         end
         put_obj(location.bucket, key, symlink.data)
     end
