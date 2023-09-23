@@ -38,6 +38,7 @@ var localCommitCmd = &cobra.Command{
 		_, localPath := getLocalArgs(args, false, false)
 		syncFlags := getLocalSyncFlags(cmd, client)
 		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
+		contentType := Must(cmd.Flags().GetString("content-type"))
 		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
 		if message == "" && !allowEmptyMessage {
 			DieFmt("Commit message empty! To commit with empty message pass --%s flag", localCommitAllowEmptyMessage)
@@ -120,7 +121,7 @@ var localCommitCmd = &cobra.Command{
 		}()
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(idx.LocalPath(), remote, c)
+		err = s.Sync(idx.LocalPath(), remote, c, contentType)
 		if err != nil {
 			DieErr(err)
 		}
@@ -187,6 +188,7 @@ func init() {
 	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
 	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
 	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
+	localCommitCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 	withLocalSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }

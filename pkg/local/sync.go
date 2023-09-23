@@ -70,7 +70,7 @@ func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, max
 
 // Sync - sync changes between remote and local directory given the Changes channel.
 // For each change, will apply download, upload or delete according to the change type and change source
-func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change) error {
+func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change, contentType string) error {
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
 
@@ -78,7 +78,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	for i := 0; i < s.maxParallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
-				if err := s.apply(ctx, rootPath, remote, change); err != nil {
+				if err := s.apply(ctx, rootPath, remote, change, contentType); err != nil {
 					return err
 				}
 			}
@@ -92,7 +92,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	return err
 }
 
-func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
+func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change, contentType string) error {
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
@@ -103,7 +103,7 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			}
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
-			if err := s.upload(ctx, rootPath, remote, change); err != nil {
+			if err := s.upload(ctx, rootPath, remote, change, contentType); err != nil {
 				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
 		default:
@@ -235,7 +235,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	return err
 }
 
-func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
+func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change, contentType string) error {
 	source := filepath.Join(rootPath, change.Path)
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
@@ -274,12 +274,12 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}
 	if s.presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, contentType, reader)
 		return err
 	}
 	// not pre-signed
 	_, err = helpers.ClientUpload(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, contentType, reader)
 	return err
 }
 

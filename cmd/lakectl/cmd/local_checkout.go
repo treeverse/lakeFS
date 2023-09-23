@@ -100,7 +100,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 			}
 		}
 	}()
-	err = syncMgr.Sync(idx.LocalPath(), currentBase, c)
+	err = syncMgr.Sync(idx.LocalPath(), currentBase, c, "")
 	if err != nil {
 		DieErr(err)
 	}
