@@ -2528,6 +2528,7 @@ lakectl local commit [directory] [flags]
 
 ```
       --allow-empty-message   Allow commit with empty message
+      --content-type string   MIME type of contents
   -h, --help                  help for commit
   -m, --message string        Commit message
       --meta strings          key value pair in the form of key=value
