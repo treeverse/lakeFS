@@ -16,8 +16,10 @@ import (
 )
 
 const (
-	localCommitAllowEmptyMessage = "allow-empty-message"
-	localCommitMessageFlagName   = "message"
+	localCommitAllowEmptyMessage    = "allow-empty-message"
+	localCommitMessageFlagName      = "message"
+	localContentTypeFlagName        = "content-type"
+	localIncludeContentTypeFlagName = "include-content-type"
 )
 
 func findConflicts(changes local.Changes) (conflicts []string) {
@@ -38,7 +40,8 @@ var localCommitCmd = &cobra.Command{
 		_, localPath := getLocalArgs(args, false, false)
 		syncFlags := getLocalSyncFlags(cmd, client)
 		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
-		contentType := Must(cmd.Flags().GetString("content-type"))
+		contentType := Must(cmd.Flags().GetString(localContentTypeFlagName))
+		includeContentType := Must(cmd.Flags().GetBool(localIncludeContentTypeFlagName))
 		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
 		if message == "" && !allowEmptyMessage {
 			DieFmt("Commit message empty! To commit with empty message pass --%s flag", localCommitAllowEmptyMessage)
@@ -121,7 +124,7 @@ var localCommitCmd = &cobra.Command{
 		}()
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(idx.LocalPath(), remote, c, contentType)
+		err = s.Sync(idx.LocalPath(), remote, c, contentType, includeContentType)
 		if err != nil {
 			DieErr(err)
 		}
@@ -188,7 +191,8 @@ func init() {
 	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
 	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
 	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
-	localCommitCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
+	localCommitCmd.Flags().StringP(localContentTypeFlagName, "", "", "MIME type of contents")
+	localCommitCmd.Flags().Bool(localIncludeContentTypeFlagName, false, "Detects MIME type of contents")
 	withLocalSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }

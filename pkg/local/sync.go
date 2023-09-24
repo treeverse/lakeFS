@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -70,7 +71,7 @@ func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, max
 
 // Sync - sync changes between remote and local directory given the Changes channel.
 // For each change, will apply download, upload or delete according to the change type and change source
-func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change, contentType string) error {
+func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change, contentType string, includeContentType bool) error {
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
 
@@ -78,6 +79,9 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	for i := 0; i < s.maxParallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
+				if includeContentType {
+					contentType = mime.TypeByExtension(filepath.Ext(change.Path))
+				}
 				if err := s.apply(ctx, rootPath, remote, change, contentType); err != nil {
 					return err
 				}

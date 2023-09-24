@@ -67,7 +67,7 @@ var localPullCmd = &cobra.Command{
 		})
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(pullOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(idx.LocalPath(), newBase, c, "")
+		err = s.Sync(idx.LocalPath(), newBase, c, "", false)
 		if err != nil {
 			DieErr(err)
 		}
