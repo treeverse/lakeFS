@@ -61,10 +61,11 @@ following interfaces:
 
   If your program only uses such calls on the SDK, it will continue to
   compile and function across a minor version upgrade of the SDK.
-* Any objects created by a lakeFS server version will continue to work after
-  a minor version upgrade to the lakeFS server.  An upgrade script may be
-  required, but running this upgrade script on a cluster of more than a
-  single server should not require downtime.[^2]
+* Any objects that were uploaded to some branch on a lakeFS server and then
+  committed will continue to work after a minor version upgrade to the
+  lakeFS server.  Running an upgrade script may be required.  However
+  running this upgrade script on a cluster of more than a single server
+  should not require downtime.[^2]
 * The lakectl CLI flags will continue to work across minor version upgrades.
   However we do not currently guarantee the format of lakectl output.
 
