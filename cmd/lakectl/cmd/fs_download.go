@@ -96,7 +96,6 @@ var fsDownloadCmd = &cobra.Command{
 			if err != nil {
 				DieErr(err)
 			}
-
 			downloadRes := struct {
 				Path string
 				Dest string
