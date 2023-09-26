@@ -1789,7 +1789,7 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		// https://github.com/deepmap/oapi-codegen/issues/954
 		eTag = swag.String(base64.StdEncoding.EncodeToString([]byte("EMPTY")))
 	}
-	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, params.IfMatch)
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

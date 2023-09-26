@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
-	"github.com/gobwas/glob/syntax"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
@@ -34,24 +33,6 @@ type ProtectionManager struct {
 
 func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
 	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
-}
-
-func (m *ProtectionManager) Add(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	_, err := syntax.Parse(branchNamePattern)
-	if err != nil {
-		return fmt.Errorf("invalid branch pattern syntax: %w", err)
-	}
-	return m.settingManager.Update(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) (proto.Message, error) {
-		rules := message.(*graveler.BranchProtectionRules)
-		if rules.BranchPatternToBlockedActions == nil {
-			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
-		}
-		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; ok {
-			return nil, ErrRuleAlreadyExists
-		}
-		rules.BranchPatternToBlockedActions[branchNamePattern] = &graveler.BranchProtectionBlockedActions{Value: blockedActions}
-		return rules, nil
-	})
 }
 
 func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) error {
