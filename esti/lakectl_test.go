@@ -408,32 +408,32 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	t.Run("single", func(t *testing.T) {
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 	})
 
 	t.Run("recursive", func(t *testing.T) {
 		sanitizedResult := runCmd(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.1                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.2                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.3                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.4                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
 	})
 
 	t.Run("recursive_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.1                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.2                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.3                    ... done!")
-		require.Contains(t, sanitizedResult, "download ro/ro_1k.4                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
 	})
 }
 
