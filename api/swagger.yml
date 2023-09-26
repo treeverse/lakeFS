@@ -3843,11 +3843,6 @@ paths:
         required: false
         schema:
           type: boolean
-      - in: query
-        name: randy
-        required: false
-        schema:
-          type: string
     get:
       tags:
         - objects
