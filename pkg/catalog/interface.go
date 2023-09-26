@@ -164,8 +164,7 @@ type Interface interface {
 	PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error)
 
 	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, string, error)
-	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
-	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
+	SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, ifMatchETag *string) error
 
 	// SetLinkAddress to validate single use limited in time of a given physical address
 	SetLinkAddress(ctx context.Context, repository, token string) error

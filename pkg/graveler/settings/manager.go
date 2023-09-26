@@ -68,6 +68,21 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 	return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
 }
 
+// SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
+// The setting is persisted only if the given ETag matches the ETag of the current setting.
+// Otherwise, ErrPreconditionFailed is returned.
+func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, ifMatchETag *string) error {
+	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
+	if ifMatchETag == nil {
+		return m.Save(ctx, repository, key, setting)
+	}
+	decodedEtag, err := base64.StdEncoding.DecodeString(*ifMatchETag)
+	if err != nil {
+		return fmt.Errorf("decode etag: %w", err)
+	}
+	return kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, decodedEtag)
+}
+
 func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
 	pred, err := kv.GetMsg(ctx, m.store, graveler.RepoPartition(repo), []byte(graveler.SettingsPath(key)), data)
 	if err != nil {
@@ -120,14 +135,10 @@ func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord
 	}
 	return setting.(proto.Message), eTag, nil
 }
-func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc) error {
-	return m.UpdateIf(ctx, repository, key, settingTemplate, update, nil)
-}
 
-// UpdateIf atomically gets a setting, performs the update function, and persists the setting to the store.
+// Update atomically gets a setting, performs the update function, and persists the setting to the store.
 // The settingTemplate parameter is used to determine the type passed to the update function.
-// The ifMatchETag parameter is used to perform a conditional update. If the ETag does not match the current ETag of the setting, the update fails.
-func (m *Manager) UpdateIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc, ifMatchETag *string) error {
+func (m *Manager) Update(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message, update updateFunc) error {
 	const (
 		maxIntervalSec = 2
 		maxElapsedSec  = 5
@@ -144,13 +155,7 @@ func (m *Manager) UpdateIf(ctx context.Context, repository *graveler.RepositoryR
 		} else if err != nil {
 			return backoff.Permanent(err)
 		}
-		if ifMatchETag != nil {
-			predBytes, err := base64.StdEncoding.DecodeString(*ifMatchETag)
-			if err != nil {
-				return backoff.Permanent(err)
-			}
-			pred = kv.Predicate(predBytes)
-		}
+
 		logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "update repository-level setting")
 		newData, err := update(data)
 		if err != nil {

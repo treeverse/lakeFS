@@ -19,7 +19,7 @@ const SettingsContainer = () => {
     const [actionError, setActionError] = useState(null);
     const [deleteButtonDisabled, setDeleteButtonDisabled] = useState(false)
 
-    const {response: rules, error: rulesError, loading: rulesLoading} = useAPI(async () => {
+    const {response: rulesResponse, error: rulesError, loading: rulesLoading} = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
     if (error) return <AlertError error={error}/>;
@@ -47,7 +47,7 @@ const SettingsContainer = () => {
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
-                                {rules && rules.length > 0 ? rules.map((r) => {
+                                {rulesResponse && rulesResponse['rules'].length > 0 ? rulesResponse['rules'].map((r) => {
                                     return <ListGroup.Item key={r.pattern}>
                                         <div className="d-flex">
                                             <code>{r.pattern}</code>
@@ -69,13 +69,13 @@ const SettingsContainer = () => {
                     </Card>
                 </div>}
         </div>
-        <CreateRuleModal show={showCreateModal} hideFn={() => setShowCreateModal(false)} onSuccess={() => {
+        <CreateRuleModal show={showCreateModal} hideFn={() => setShowCreateModal(false)} currentRulesResponse={rulesResponse} onSuccess={() => {
             setRefresh(!refresh)
             setShowCreateModal(false)
         }} repoID={repo.id}/>
     </>);
 }
-const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
+const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}) => {
     const [error, setError] = useState(null);
     const [createButtonDisabled, setCreateButtonDisabled] = useState(true);
     const patternField = useRef(null);
@@ -86,7 +86,8 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
         }
         setError(null)
         setCreateButtonDisabled(true)
-        branchProtectionRules.createRule(repoID, pattern).then(onSuccess).catch(err => {
+        currentRulesResponse['rules'].push({pattern})
+        branchProtectionRules.setRules(repoID, currentRulesResponse['rules'], currentRulesResponse['ETag']).then(onSuccess).catch(err => {
             setError(err)
             setCreateButtonDisabled(false)
         })

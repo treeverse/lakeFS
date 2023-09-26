@@ -275,20 +275,6 @@ func (mr *MockVersionControllerMockRecorder) CreateBranch(ctx, repository, branc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranch", reflect.TypeOf((*MockVersionController)(nil).CreateBranch), ctx, repository, branchID, ref)
 }
 
-// CreateBranchProtectionRule mocks base method.
-func (m *MockVersionController) CreateBranchProtectionRule(ctx context.Context, repository *graveler.RepositoryRecord, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBranchProtectionRule", ctx, repository, pattern, blockedActions)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateBranchProtectionRule indicates an expected call of CreateBranchProtectionRule.
-func (mr *MockVersionControllerMockRecorder) CreateBranchProtectionRule(ctx, repository, pattern, blockedActions interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranchProtectionRule", reflect.TypeOf((*MockVersionController)(nil).CreateBranchProtectionRule), ctx, repository, pattern, blockedActions)
-}
-
 // CreateRepository mocks base method.
 func (m *MockVersionController) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
 	m.ctrl.T.Helper()
@@ -330,20 +316,6 @@ func (m *MockVersionController) DeleteBranch(ctx context.Context, repository *gr
 func (mr *MockVersionControllerMockRecorder) DeleteBranch(ctx, repository, branchID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranch", reflect.TypeOf((*MockVersionController)(nil).DeleteBranch), ctx, repository, branchID)
-}
-
-// DeleteBranchProtectionRule mocks base method.
-func (m *MockVersionController) DeleteBranchProtectionRule(ctx context.Context, repository *graveler.RepositoryRecord, pattern string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBranchProtectionRule", ctx, repository, pattern)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteBranchProtectionRule indicates an expected call of DeleteBranchProtectionRule.
-func (mr *MockVersionControllerMockRecorder) DeleteBranchProtectionRule(ctx, repository, pattern interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranchProtectionRule", reflect.TypeOf((*MockVersionController)(nil).DeleteBranchProtectionRule), ctx, repository, pattern)
 }
 
 // DeleteExpiredImports mocks base method.
@@ -834,6 +806,20 @@ func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context
 func (mr *MockVersionControllerMockRecorder) SaveGarbageCollectionCommits(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockVersionController)(nil).SaveGarbageCollectionCommits), ctx, repository)
+}
+
+// SetBranchProtectionRules mocks base method.
+func (m *MockVersionController) SetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBranchProtectionRules", ctx, repository, rules, ifMatchETag)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBranchProtectionRules indicates an expected call of SetBranchProtectionRules.
+func (mr *MockVersionControllerMockRecorder) SetBranchProtectionRules(ctx, repository, rules, ifMatchETag interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBranchProtectionRules", reflect.TypeOf((*MockVersionController)(nil).SetBranchProtectionRules), ctx, repository, rules, ifMatchETag)
 }
 
 // SetGarbageCollectionRules mocks base method.
@@ -2956,4 +2942,18 @@ func (m *MockProtectedBranchesManager) IsBlocked(ctx context.Context, repository
 func (mr *MockProtectedBranchesManagerMockRecorder) IsBlocked(ctx, repository, branchID, action interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBlocked", reflect.TypeOf((*MockProtectedBranchesManager)(nil).IsBlocked), ctx, repository, branchID, action)
+}
+
+// SetRules mocks base method.
+func (m *MockProtectedBranchesManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRules", ctx, repository, rules, ifMatchETag)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRules indicates an expected call of SetRules.
+func (mr *MockProtectedBranchesManagerMockRecorder) SetRules(ctx, repository, rules, ifMatchETag interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRules", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRules), ctx, repository, rules, ifMatchETag)
 }

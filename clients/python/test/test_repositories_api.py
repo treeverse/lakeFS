@@ -31,10 +31,30 @@ class TestRepositoriesApi(unittest.TestCase):
         """
         pass
 
+    def test_delete_gc_rules(self):
+        """Test case for delete_gc_rules
+
+        """
+        pass
+
     def test_delete_repository(self):
         """Test case for delete_repository
 
         delete repository  # noqa: E501
+        """
+        pass
+
+    def test_get_branch_protection_rules(self):
+        """Test case for get_branch_protection_rules
+
+        get branch protection rules  # noqa: E501
+        """
+        pass
+
+    def test_get_gc_rules(self):
+        """Test case for get_gc_rules
+
+        get repository GC rules  # noqa: E501
         """
         pass
 
@@ -56,6 +76,18 @@ class TestRepositoriesApi(unittest.TestCase):
         """Test case for list_repositories
 
         list repositories  # noqa: E501
+        """
+        pass
+
+    def test_set_branch_protection_rules(self):
+        """Test case for set_branch_protection_rules
+
+        """
+        pass
+
+    def test_set_gc_rules(self):
+        """Test case for set_gc_rules
+
         """
         pass
 

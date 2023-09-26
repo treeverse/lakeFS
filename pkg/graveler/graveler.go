@@ -612,13 +612,10 @@ type VersionController interface {
 	// GetBranchProtectionRules return all branch protection rules for the repository
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 
-	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
-	// or return ErrRuleNotExists if no such rule exists.
-	DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error
-
-	// CreateBranchProtectionRule creates a rule for the given name pattern,
-	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
-	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
+	// SetBranchProtectionRules sets the branch protection rules for the repository.
+	// If ifMatchETag is not nil, the update will only succeed if the current ETag matches the given one.
+	// Otherwise, ErrPreconditionFailed is returned.
+	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
 	// or return ErrAddressTokenAlreadyExists if a token already exists.
@@ -1499,12 +1496,12 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error {
-	return g.protectedBranchesManager.Delete(ctx, repository, pattern)
-}
-
-func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error {
-	return g.protectedBranchesManager.Add(ctx, repository, pattern, blockedActions)
+func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error {
+	err := g.protectedBranchesManager.SetRules(ctx, repository, rules, ifMatchETag)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		return ErrPreconditionFailed
+	}
+	return err
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -3247,6 +3244,9 @@ type ProtectedBranchesManager interface {
 	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
 	// GetRules returns all branch protection rules for the repository
 	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
+	// SetRules sets the branch protection rules for the repository.
+	// If the given ETag does not match the current ETag, returns ErrPreconditionFailed.
+	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

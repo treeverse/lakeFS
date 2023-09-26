@@ -14,7 +14,9 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.GarbageCollectionRules;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryList;
@@ -52,6 +54,21 @@ public class RepositoriesApiTest {
     }
     
     /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void deleteGCRulesTest() throws ApiException {
+        String repository = null;
+                api.deleteGCRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
      * delete repository
      *
      * 
@@ -63,6 +80,36 @@ public class RepositoriesApiTest {
     public void deleteRepositoryTest() throws ApiException {
         String repository = null;
                 api.deleteRepository(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * get branch protection rules
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getBranchProtectionRulesTest() throws ApiException {
+        String repository = null;
+                List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * get repository GC rules
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getGCRulesTest() throws ApiException {
+        String repository = null;
+                GarbageCollectionRules response = api.getGCRules(repository);
         // TODO: test validations
     }
     
@@ -110,6 +157,39 @@ public class RepositoriesApiTest {
         String after = null;
         Integer amount = null;
                 RepositoryList response = api.listRepositories(prefix, after, amount);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void setBranchProtectionRulesTest() throws ApiException {
+        String repository = null;
+        List<BranchProtectionRule> branchProtectionRule = null;
+        String ifMatch = null;
+                api.setBranchProtectionRules(repository, branchProtectionRule, ifMatch);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void setGCRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules garbageCollectionRules = null;
+                api.setGCRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
     

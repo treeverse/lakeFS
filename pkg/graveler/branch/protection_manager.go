@@ -84,14 +84,18 @@ func (m *ProtectionManager) Get(ctx context.Context, repository *graveler.Reposi
 }
 
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
-	rules, eTag, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
-	if errors.Is(err, graveler.ErrNotFound) {
-		return &graveler.BranchProtectionRules{}, "", nil
-	}
+	rulesMsg, eTag, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if err != nil {
 		return nil, "", err
 	}
-	return rules.(*graveler.BranchProtectionRules), eTag, nil
+	if proto.Size(rulesMsg) == 0 {
+		return &graveler.BranchProtectionRules{}, eTag, graveler.ErrNotFound
+	}
+	return rulesMsg.(*graveler.BranchProtectionRules), eTag, nil
+}
+
+func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+	return m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, ifMatchETag)
 }
 
 func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {

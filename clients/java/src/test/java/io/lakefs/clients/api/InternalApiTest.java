@@ -52,22 +52,6 @@ public class InternalApiTest {
      *          if the Api call fails
      */
     @Test
-    public void createBranchProtectionRuleTest() throws ApiException {
-        String repository = null;
-        BranchProtectionRule branchProtectionRule = null;
-                api.createBranchProtectionRule(repository, branchProtectionRule);
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
     public void createBranchProtectionRulePreflightTest() throws ApiException {
         String repository = null;
                 api.createBranchProtectionRulePreflight(repository);
@@ -92,37 +76,6 @@ public class InternalApiTest {
     }
     
     /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void deleteBranchProtectionRuleTest() throws ApiException {
-        String repository = null;
-        InlineObject1 inlineObject1 = null;
-                api.deleteBranchProtectionRule(repository, inlineObject1);
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void deleteGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-                api.deleteGarbageCollectionRules(repository);
-        // TODO: test validations
-    }
-    
-    /**
      * list authentication capabilities supported
      *
      * 
@@ -133,21 +86,6 @@ public class InternalApiTest {
     @Test
     public void getAuthCapabilitiesTest() throws ApiException {
                 AuthCapabilities response = api.getAuthCapabilities();
-        // TODO: test validations
-    }
-    
-    /**
-     * get branch protection rules
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getBranchProtectionRulesTest() throws ApiException {
-        String repository = null;
-                List<BranchProtectionRule> response = api.getBranchProtectionRules(repository);
         // TODO: test validations
     }
     
@@ -166,21 +104,6 @@ public class InternalApiTest {
     }
     
     /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-                GarbageCollectionRules response = api.getGarbageCollectionRules(repository);
-        // TODO: test validations
-    }
-    
-    /**
      * check if the lakeFS installation is already set up
      *
      * 
@@ -191,6 +114,99 @@ public class InternalApiTest {
     @Test
     public void getSetupStateTest() throws ApiException {
                 SetupState response = api.getSetupState();
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalCreateBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        BranchProtectionRule branchProtectionRule = null;
+                api.internalCreateBranchProtectionRule(repository, branchProtectionRule);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalDeleteBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        InlineObject1 inlineObject1 = null;
+                api.internalDeleteBranchProtectionRule(repository, inlineObject1);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalDeleteGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+                api.internalDeleteGarbageCollectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * get branch protection rules
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalGetBranchProtectionRulesTest() throws ApiException {
+        String repository = null;
+                List<BranchProtectionRule> response = api.internalGetBranchProtectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalGetGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+                GarbageCollectionRules response = api.internalGetGarbageCollectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalSetGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules garbageCollectionRules = null;
+                api.internalSetGarbageCollectionRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
     
@@ -206,22 +222,6 @@ public class InternalApiTest {
     public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
                 api.postStatsEvents(statsEventsList);
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-        GarbageCollectionRules garbageCollectionRules = null;
-                api.setGarbageCollectionRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
     
