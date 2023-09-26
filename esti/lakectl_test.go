@@ -416,7 +416,7 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "Successfully downloaded lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 to "+dest)
 	})
 
