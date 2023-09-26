@@ -2870,20 +2870,6 @@ func (m *MockProtectedBranchesManager) EXPECT() *MockProtectedBranchesManagerMoc
 	return m.recorder
 }
 
-// Add mocks base method.
-func (m *MockProtectedBranchesManager) Add(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, repository, branchNamePattern, blockedActions)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Add indicates an expected call of Add.
-func (mr *MockProtectedBranchesManagerMockRecorder) Add(ctx, repository, branchNamePattern, blockedActions interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Add), ctx, repository, branchNamePattern, blockedActions)
-}
-
 // Delete mocks base method.
 func (m *MockProtectedBranchesManager) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) error {
 	m.ctrl.T.Helper()
