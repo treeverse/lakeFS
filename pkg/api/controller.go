@@ -2996,10 +2996,7 @@ func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r
 }
 
 func (c *Controller) InternalSetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body apigen.InternalSetGarbageCollectionRulesJSONRequestBody, repository string) {
-	c.SetGCRules(w, r, apigen.SetGCRulesJSONRequestBody{
-		Branches:             body.Branches,
-		DefaultRetentionDays: body.DefaultRetentionDays,
-	}, repository)
+	c.SetGCRules(w, r, apigen.SetGCRulesJSONRequestBody(body), repository)
 }
 
 func (c *Controller) InternalDeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
@@ -3060,6 +3057,9 @@ func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r
 		if p == body.Pattern {
 			delete(rules.BranchPatternToBlockedActions, p)
 			err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
 			writeResponse(w, r, http.StatusNoContent, nil)
 			return
 		}
