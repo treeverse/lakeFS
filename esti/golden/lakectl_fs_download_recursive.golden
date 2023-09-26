@@ -1,5 +1,5 @@
-Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.0 to ${FILE_PREFIX}.0
-Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.1 to ${FILE_PREFIX}.1
-Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.2 to ${FILE_PREFIX}.2
-Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.3 to ${FILE_PREFIX}.3
-Successfully downloaded lakefs://${REPO}/${BRANCH}/${PATH}/${FILE_PREFIX}.4 to ${FILE_PREFIX}.4
+Download ${PATH}/${FILE}.0                      ... done! [1.02KB in 0s]
+Download ${PATH}/${FILE}.1                      ... done! [1.02KB in 0s]
+Download ${PATH}/${FILE}.2                      ... done! [1.02KB in 0s]
+Download ${PATH}/${FILE}.3                      ... done! [1.02KB in 0s]
+Download ${PATH}/${FILE}.4                      ... done! [1.02KB in 0s]

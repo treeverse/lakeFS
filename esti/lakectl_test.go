@@ -406,46 +406,32 @@ func TestLakectlFsDownload(t *testing.T) {
 	}
 
 	t.Run("single", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_fs_download", map[string]string{
-			"REPO":    repoName,
-			"STORAGE": storage,
-			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
-			"FILE":    "ro_1k.0",
+		RunCmdAndVerifyContainsText(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_fs_download", map[string]string{
+			"DIR":  "ro",
+			"FILE": "ro_1k.0",
 		})
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, "lakectl_fs_download_custom", map[string]string{
-			"REPO":    repoName,
-			"STORAGE": storage,
-			"BRANCH":  mainBranch,
-			"DEST":    dest,
-			"PATH":    "data/ro",
-			"FILE":    "ro_1k.1",
+		RunCmdAndVerifyContainsText(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, "lakectl_fs_download_custom", map[string]string{
+			"DIR":  "ro",
+			"FILE": "ro_1k.1",
 		})
 	})
 
 	t.Run("recursive", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "lakectl_fs_download_recursive", map[string]string{
-			"REPO":        repoName,
-			"STORAGE":     storage,
-			"BRANCH":      mainBranch,
-			"PATH":        "data",
-			"FILE_PREFIX": "ro/ro_1k",
+		RunCmdAndVerifyContainsText(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "lakectl_fs_download_recursive", map[string]string{
+			"DIR":  "ro",
+			"FILE": "ro_1k",
 		})
 	})
 
 	t.Run("recursive_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, "lakectl_fs_download_recursive_custom", map[string]string{
-			"REPO":        repoName,
-			"STORAGE":     storage,
-			"BRANCH":      mainBranch,
-			"DEST":        dest,
-			"PATH":        "data",
-			"FILE_PREFIX": "ro/ro_1k",
+			"DIR":  "ro",
+			"FILE": "ro_1k",
 		})
 	})
 }
