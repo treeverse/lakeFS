@@ -77,25 +77,22 @@ func createTable(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
 		database := lua.CheckString(l, 1)
-		tableInputStr := lua.CheckString(l, 1)
-
+		tableInputStr := lua.CheckString(l, 2)
 		var tableInput types.TableInput
 		err := json.Unmarshal([]byte(tableInputStr), &tableInput)
 		if err != nil {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
-
-		resp, err := client.CreateTable(c.ctx, &glue.CreateTableInput{
+		_, err = client.CreateTable(c.ctx, &glue.CreateTableInput{
 			DatabaseName: aws.String(database),
 			TableInput:   &tableInput,
 		})
-
 		if err != nil {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
-		return util.DeepPush(l, resp.ResultMetadata)
+		return 0
 	}
 }
 
