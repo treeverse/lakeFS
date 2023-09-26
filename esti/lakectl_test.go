@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -406,10 +407,11 @@ func TestLakectlFsDownload(t *testing.T) {
 		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
-
+	path, err := os.Getwd()
+	require.NoError(t, err)
 	t.Run("single", func(t *testing.T) {
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "Successfully downloaded lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 to ./")
+		require.Contains(t, sanitizedResult, "Successfully downloaded lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 to "+path)
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
