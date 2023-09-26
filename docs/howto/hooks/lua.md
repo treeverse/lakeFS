@@ -93,6 +93,10 @@ For more examples and configuration samples, check out the [examples/hooks/](htt
 
 The Lua runtime embedded in lakeFS is limited for security reasons. The provided APIs are shown below.
 
+### `array(table)`
+
+Helper function to mark a table object as an array for the runtime by setting `_is_array: true` metatable field.
+
 ### `aws/s3.get_object(bucket, key)`
 
 Returns the body (as a Lua string) of the requested object and a boolean value that is true if the requested object exists
