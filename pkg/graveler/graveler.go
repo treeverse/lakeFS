@@ -3233,8 +3233,6 @@ type GarbageCollectionManager interface {
 type ProtectedBranchesManager interface {
 	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
 	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
-	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
-	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
 	// GetRules returns all branch protection rules for the repository
 	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 	// SetRules sets the branch protection rules for the repository.
