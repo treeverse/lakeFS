@@ -14,6 +14,7 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.Config;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
 import io.lakefs.clients.api.model.StorageConfig;
@@ -34,6 +35,20 @@ public class ConfigApiTest {
 
     private final ConfigApi api = new ConfigApi();
 
+    
+    /**
+     * 
+     *
+     * retrieve lakeFS configuration
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getConfigTest() throws ApiException {
+                Config response = api.getConfig();
+        // TODO: test validations
+    }
     
     /**
      * 

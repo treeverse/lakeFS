@@ -22,6 +22,7 @@ from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
+from lakefs_client.model.config import Config
 from lakefs_client.model.credentials import Credentials
 from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret

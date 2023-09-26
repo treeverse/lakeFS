@@ -161,6 +161,7 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**revert_branch**](docs/BranchesApi.md#revert_branch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
+*ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
 *ConfigApi* | [**get_garbage_collection_config**](docs/ConfigApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
 *ConfigApi* | [**get_lake_fs_version**](docs/ConfigApi.md#get_lake_fs_version) | **GET** /config/version | 
 *ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config/storage | 
@@ -233,6 +234,7 @@ Class | Method | HTTP request | Description
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
+ - [Config](docs/Config.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)

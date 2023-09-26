@@ -18,6 +18,7 @@ docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitsApi.md
+docs/Config.md
 docs/ConfigApi.md
 docs/Credentials.md
 docs/CredentialsList.md
@@ -140,6 +141,7 @@ lakefs_client/model/comm_prefs_input.py
 lakefs_client/model/commit.py
 lakefs_client/model/commit_creation.py
 lakefs_client/model/commit_list.py
+lakefs_client/model/config.py
 lakefs_client/model/credentials.py
 lakefs_client/model/credentials_list.py
 lakefs_client/model/credentials_with_secret.py
@@ -238,6 +240,7 @@ test/test_commit.py
 test/test_commit_creation.py
 test/test_commit_list.py
 test/test_commits_api.py
+test/test_config.py
 test/test_config_api.py
 test/test_credentials.py
 test/test_credentials_list.py
