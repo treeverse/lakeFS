@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"net/http"
 	"path/filepath"
 	"strings"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )

@@ -69,7 +69,7 @@ func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, max
 }
 
 // Sync - sync changes between remote and local directory given the Changes channel.
-// For each change, will apply Download, Upload or delete according to the change type and change source
+// For each change, will apply download, upload or delete according to the change type and change source
 func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change) error {
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
@@ -97,14 +97,14 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
 		case ChangeSourceRemote:
-			// remotely changed something, Download it!
+			// remotely changed something, download it!
 			if err := s.Download(ctx, rootPath, remote, change.Path); err != nil {
-				return fmt.Errorf("Download %s failed: %w", change.Path, err)
+				return fmt.Errorf("download %s failed: %w", change.Path, err)
 			}
 		case ChangeSourceLocal:
 			// we wrote something, Upload it!
 			if err := s.Upload(ctx, rootPath, remote, change.Path); err != nil {
-				return fmt.Errorf("Upload %s failed: %w", change.Path, err)
+				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
 		default:
 			panic("invalid change source")
@@ -179,7 +179,7 @@ func (s *SyncManager) Download(ctx context.Context, rootPath string, remote *uri
 	}()
 
 	if sizeBytes == 0 { // if size is empty just create file
-		spinner := s.progressBar.AddSpinner("Download " + path)
+		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
 	} else { // Download file
@@ -213,7 +213,7 @@ func (s *SyncManager) Download(ctx context.Context, rootPath string, remote *uri
 			body = resp.Body
 		}
 
-		b := s.progressBar.AddReader(fmt.Sprintf("Download %s", path), sizeBytes)
+		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
 		barReader := b.Reader(body)
 		defer func() {
 			if err != nil {
@@ -255,7 +255,7 @@ func (s *SyncManager) Upload(ctx context.Context, rootPath string, remote *uri.U
 		return err
 	}
 
-	b := s.progressBar.AddReader(fmt.Sprintf("Upload %s", path), fileStat.Size())
+	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", path), fileStat.Size())
 	defer func() {
 		if err != nil {
 			b.Error()
