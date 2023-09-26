@@ -2,22 +2,14 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
-
-const fsRecursiveTemplate = `Files: {{.Count}}
-Total Size: {{.Bytes}} bytes
-Human Total Size: {{.Bytes|human_bytes}}
-`
 
 var fsUploadCmd = &cobra.Command{
 	Use:               "upload <path uri>",
@@ -46,36 +38,11 @@ var fsUploadCmd = &cobra.Command{
 			return
 		}
 
-		// copy recursively
-		var totals struct {
-			Bytes int64
-			Count int64
-		}
-		err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return fmt.Errorf("traverse %s: %w", path, err)
-			}
-			if info.IsDir() {
-				return nil
-			}
-			relPath := strings.TrimPrefix(path, source)
-			uri := *pathURI
-			p := filepath.ToSlash(filepath.Join(*uri.Path, relPath))
-			uri.Path = &p
-			stat, err := upload(ctx, client, path, &uri, contentType, preSignMode)
-			if err != nil {
-				return fmt.Errorf("upload %s: %w", path, err)
-			}
-			if stat.SizeBytes != nil {
-				totals.Bytes += *stat.SizeBytes
-			}
-			totals.Count++
-			return nil
-		})
+		s := local.NewSyncManager(ctx, client, 1, preSignMode)
+		err := s.Upload(ctx, source, pathURI, *pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
-		Write(fsRecursiveTemplate, totals)
 	},
 }
 
