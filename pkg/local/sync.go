@@ -134,16 +134,11 @@ func (s *SyncManager) Download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 	destination := filepath.Join(rootPath, path)
-	println(destination)
 	destinationDirectory := filepath.Dir(destination)
-	println(destinationDirectory)
 	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
 		return err
 	}
-	println(remote.Repository)
-	println(remote.Ref)
-	println(path)
-	println(remote.GetPath())
+
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
 		Presign:      swag.Bool(s.presign),
