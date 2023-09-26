@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,8 +23,7 @@ const (
 )
 
 var (
-	ErrRuleAlreadyExists = fmt.Errorf("branch protection rule already exists: %w", graveler.ErrNotUnique)
-	ErrRuleNotExists     = fmt.Errorf("branch protection rule does not exist: %w", graveler.ErrNotFound)
+	ErrRuleNotExists = fmt.Errorf("branch protection rule does not exist: %w", graveler.ErrNotFound)
 )
 
 type ProtectionManager struct {
@@ -49,21 +49,6 @@ func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.Rep
 	})
 }
 
-func (m *ProtectionManager) Get(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) ([]graveler.BranchProtectionBlockedAction, error) {
-	rules, _, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
-	if errors.Is(err, graveler.ErrNotFound) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	actions := rules.(*graveler.BranchProtectionRules).BranchPatternToBlockedActions[branchNamePattern]
-	if actions == nil {
-		return nil, nil
-	}
-	return actions.GetValue(), nil
-}
-
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
 	rulesMsg, eTag, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if err != nil {
@@ -76,7 +61,11 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 }
 
 func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
-	return m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, ifMatchETag)
+	err := m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, ifMatchETag)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		return graveler.ErrPreconditionFailed
+	}
+	return err
 }
 
 func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {

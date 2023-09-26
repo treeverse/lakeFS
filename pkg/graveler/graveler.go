@@ -1497,11 +1497,7 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error {
-	err := g.protectedBranchesManager.SetRules(ctx, repository, rules, ifMatchETag)
-	if errors.Is(err, kv.ErrPredicateFailed) {
-		return ErrPreconditionFailed
-	}
-	return err
+	return g.protectedBranchesManager.SetRules(ctx, repository, rules, ifMatchETag)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
