@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
 	"time"
@@ -406,33 +407,33 @@ func TestLakectlFsDownload(t *testing.T) {
 	}
 
 	t.Run("single", func(t *testing.T) {
-		RunCmdAndVerifyContainsText(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_fs_download", map[string]string{
-			"DIR":  "ro",
-			"FILE": "ro_1k.0",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		RunCmdAndVerifyContainsText(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, "lakectl_fs_download_custom", map[string]string{
-			"DIR":  "ro",
-			"FILE": "ro_1k.1",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
 	})
 
 	t.Run("recursive", func(t *testing.T) {
-		RunCmdAndVerifyContainsText(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "lakectl_fs_download_recursive", map[string]string{
-			"DIR":  "ro",
-			"FILE": "ro_1k",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.1                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.2                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.3                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.4                    ... done!")
 	})
 
 	t.Run("recursive_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, "lakectl_fs_download_recursive_custom", map[string]string{
-			"DIR":  "ro",
-			"FILE": "ro_1k",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.1                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.2                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.3                    ... done!")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.4                    ... done!")
 	})
 }
 
