@@ -101,7 +101,7 @@ var fsDownloadCmd = &cobra.Command{
 			downloadRes := struct {
 				Path string
 				Dest string
-			}{remotePath, dest}
+			}{remote.String() + ObjectName, dest}
 			Write(fsNonRecursiveDownloadTemplate, downloadRes)
 		}
 	},
