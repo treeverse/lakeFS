@@ -17,6 +17,8 @@ const (
 	fsDownloadCmdMaxArgs = 2
 
 	fsDownloadParallelDefault = 6
+
+	fsNonRecursiveDownloadTemplate = `Successfully downloaded {{.Path}} to {{.Dest}}`
 )
 
 var fsDownloadCmd = &cobra.Command{
@@ -94,6 +96,11 @@ var fsDownloadCmd = &cobra.Command{
 			if err != nil {
 				DieErr(err)
 			}
+			downloadRes := struct {
+				Path string
+				Dest string
+			}{remotePath, dest}
+			Write(fsNonRecursiveDownloadTemplate, downloadRes)
 		}
 	},
 }
