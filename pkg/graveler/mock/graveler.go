@@ -2884,21 +2884,6 @@ func (mr *MockProtectedBranchesManagerMockRecorder) Delete(ctx, repository, bran
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Delete), ctx, repository, branchNamePattern)
 }
 
-// Get mocks base method.
-func (m *MockProtectedBranchesManager) Get(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) ([]graveler.BranchProtectionBlockedAction, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, repository, branchNamePattern)
-	ret0, _ := ret[0].([]graveler.BranchProtectionBlockedAction)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockProtectedBranchesManagerMockRecorder) Get(ctx, repository, branchNamePattern interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Get), ctx, repository, branchNamePattern)
-}
-
 // GetRules mocks base method.
 func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
 	m.ctrl.T.Helper()
