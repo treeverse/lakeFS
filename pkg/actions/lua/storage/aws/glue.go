@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -56,6 +57,7 @@ type GlueClient struct {
 var glueFunctions = map[string]func(client *GlueClient) lua.Function{
 	"get_table":    getTable,
 	"create_table": createTable,
+	"update_table": updateTable,
 }
 
 func (c *GlueClient) client() *glue.Client {
@@ -72,21 +74,72 @@ func (c *GlueClient) client() *glue.Client {
 		}
 	})
 }
-
-func createTable(c *GlueClient) lua.Function {
+func updateTable(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
 		database := lua.CheckString(l, 1)
-		tableInputStr := lua.CheckString(l, 2)
+		tableInputJson := lua.CheckString(l, 2)
+
+		// parse table input JSON
 		var tableInput types.TableInput
-		err := json.Unmarshal([]byte(tableInputStr), &tableInput)
+		err := json.Unmarshal([]byte(tableInputJson), &tableInput)
 		if err != nil {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
+
+		// check if catalog ID provided
+		var catalogID *string
+		if !l.IsNone(3) {
+			catalogID = aws.String(lua.CheckString(l, 3))
+		}
+
+		// version Id optional
+		var versionID *string
+		if !l.IsNone(4) {
+			versionID = aws.String(lua.CheckString(l, 4))
+		}
+
+		// glue skip-archive optional
+		var skipArchive *bool
+		if !l.IsNone(5) {
+			lua.CheckType(l, 5, lua.TypeBoolean)
+			skipArchive = aws.Bool(l.ToBoolean(5))
+		}
+
+		client.UpdateTable(c.ctx, &glue.UpdateTableInput{
+			DatabaseName: &database,
+			TableInput:   &tableInput,
+			CatalogId:    catalogID,
+			VersionId:    versionID,
+			SkipArchive:  skipArchive,
+		})
+		return 0
+	}
+}
+func createTable(c *GlueClient) lua.Function {
+	return func(l *lua.State) int {
+		client := c.client()
+		database := lua.CheckString(l, 1)
+		tableInputJson := lua.CheckString(l, 2)
+		// parse table input JSON
+		var tableInput types.TableInput
+		err := json.Unmarshal([]byte(tableInputJson), &tableInput)
+		if err != nil {
+			lua.Errorf(l, err.Error())
+			panic("unreachable")
+		}
+		// check if catalog ID provided
+		var catalogID *string
+		if !l.IsNone(3) {
+			catalogID = aws.String(lua.CheckString(l, 3))
+		}
+		// TODO(isan) Additional input params: partition index and iceberg table format?
+		// AWS API call
 		_, err = client.CreateTable(c.ctx, &glue.CreateTableInput{
 			DatabaseName: aws.String(database),
 			TableInput:   &tableInput,
+			CatalogId:    catalogID,
 		})
 		if err != nil {
 			lua.Errorf(l, err.Error())
@@ -111,6 +164,12 @@ func getTable(c *GlueClient) lua.Function {
 			CatalogId:    catalogID,
 		})
 		if err != nil {
+			var notFoundErr *types.EntityNotFoundException
+			if errors.As(err, &notFoundErr) {
+				l.PushString("")
+				l.PushBoolean(false) // exists
+				return 2
+			}
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
@@ -127,7 +186,9 @@ func getTable(c *GlueClient) lua.Function {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
-
-		return util.DeepPush(l, itemMap)
+		// TODO(isan) consider if instead a table return a json string that a user can unmarshal, i think not because we return tables in lakefs for example
+		retArgs := util.DeepPush(l, itemMap)
+		l.PushBoolean(true)
+		return retArgs + 1
 	}
 }
