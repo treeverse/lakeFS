@@ -292,6 +292,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: minio123
           STORAGE_NAMESPACE: s3://test-bucket/data
           REPOSITORY: lakefsfs-contract-test
+
+      - name: Build current lakeFS SDK
+        # TODO(ariels): Remove this in favour of a single lakeFS client version
+        working-directory: clients/java
+        run: mvn -P'!treeverse-signing' install
+
       - name: Build and test hadoopfs (hadoop2)
         working-directory: clients/hadoopfs
         run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop2 verify
@@ -378,6 +384,10 @@ jobs:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
+      - name: Build current lakeFS SDK
+        # TODO(ariels): Remove this in favour of a single lakeFS client version
+        working-directory: clients/java
+        run: mvn -P'!treeverse-signing' install
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
