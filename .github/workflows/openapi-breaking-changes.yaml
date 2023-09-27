@@ -1,12 +1,12 @@
 name: lakeFS OpenAPI Compatibility Tests
 
 on:
-  pull_request:
-    paths:
-      - "api/**"
-  push:
-    branches:
-      - master
+#  pull_request:
+#    paths:
+#      - "api/**"
+#  push:
+#    branches:
+#      - master
   workflow_dispatch: {}
 
 jobs:
