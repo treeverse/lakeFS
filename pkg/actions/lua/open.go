@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
 	"github.com/treeverse/lakefs/pkg/actions/lua/time"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/treeverse/lakefs/pkg/actions/lua/uuid"
 )
 
@@ -29,6 +30,7 @@ import (
 func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	regexp.Open(l)
 	strings.Open(l)
+	util.Open(l)
 	json.Open(l)
 	yaml.Open(l)
 	time.Open(l)
