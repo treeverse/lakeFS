@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -80,14 +81,15 @@ var branchProtectDeleteCmd = &cobra.Command{
 		u := MustParseRepoURI("repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		rules := *resp.JSON200
-		for i, rule := range *resp.JSON200 {
+		found := false
+		rules := slices.DeleteFunc(*resp.JSON200, func(rule apigen.BranchProtectionRule) bool {
 			if rule.Pattern == args[1] {
-				rules = append(rules[:i], rules[i+1:]...)
-				break
+				found = true
+				return true
 			}
-		}
-		if len(rules) == len(*resp.JSON200) {
+			return false
+		})
+		if !found {
 			Die("Branch protection rule not found", 1)
 		}
 		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, &apigen.SetBranchProtectionRulesParams{

@@ -64,7 +64,6 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 }
 func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules) error {
 	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules)
-
 }
 
 func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag string) error {
