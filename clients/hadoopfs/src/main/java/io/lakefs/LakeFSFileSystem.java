@@ -38,19 +38,19 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.lakefs.Constants.AccessMode;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.BranchesApi;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.model.ObjectCopyCreation;
-import io.lakefs.clients.api.model.ObjectErrorList;
-import io.lakefs.clients.api.model.ObjectStageCreation;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Pagination;
-import io.lakefs.clients.api.model.PathList;
-import io.lakefs.clients.api.model.Repository;
-import io.lakefs.clients.api.model.StorageConfig;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.BranchesApi;
+import io.lakefs.clients.sdk.ObjectsApi;
+import io.lakefs.clients.sdk.RepositoriesApi;
+import io.lakefs.clients.sdk.model.ObjectCopyCreation;
+import io.lakefs.clients.sdk.model.ObjectErrorList;
+import io.lakefs.clients.sdk.model.ObjectStageCreation;
+import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.ObjectStatsList;
+import io.lakefs.clients.sdk.model.Pagination;
+import io.lakefs.clients.sdk.model.PathList;
+import io.lakefs.clients.sdk.model.Repository;
+import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.storage.CreateOutputStreamParams;
 import io.lakefs.storage.PhysicalAddressTranslator;
 import io.lakefs.storage.PresignedStorageAccessStrategy;
@@ -758,7 +758,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectLocation objectLoc = pathToObjectLocation(path).toDirectory();
             OutputStream out = storageAccessStrategy.createDataOutputStream(objectLoc, null);
             out.close();
-        } catch (io.lakefs.clients.api.ApiException e) {
+        } catch (io.lakefs.clients.sdk.ApiException e) {
             throw new IOException("createDirectoryMarker: " + e.getResponseBody(), e);
         }
     }

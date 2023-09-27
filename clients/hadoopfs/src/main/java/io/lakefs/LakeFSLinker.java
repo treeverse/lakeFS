@@ -2,10 +2,10 @@ package io.lakefs;
 
 import java.io.IOException;
 import org.apache.hadoop.fs.Path;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.StagingApi;
+import io.lakefs.clients.sdk.model.StagingLocation;
+import io.lakefs.clients.sdk.model.StagingMetadata;
 import io.lakefs.utils.ObjectLocation;
 
 public class LakeFSLinker {
