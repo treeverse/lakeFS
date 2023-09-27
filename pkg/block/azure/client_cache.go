@@ -96,12 +96,11 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 	// Check udcCache
 	res, ok := c.udcCache.Get(storageAccount)
 	if !ok {
-		// Otherwise assume using role based credentials and build signed URL using user delegation credentials
-		currentTime := time.Now().UTC().Add(-10 * time.Second)
+		baseTime := time.Now().UTC().Add(-10 * time.Second)
 		// UDC expiry time of PreSignedExpiry + hour
 		udcExpiry := expiry.Add(UDCCacheExpiry)
 		info := service.KeyInfo{
-			Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
+			Start:  to.Ptr(baseTime.UTC().Format(sas.TimeFormat)),
 			Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
 		}
 		svc, err := c.NewServiceClient(storageAccount)
