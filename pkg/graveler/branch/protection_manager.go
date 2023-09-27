@@ -51,11 +51,14 @@ func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.Rep
 
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
 	rulesMsg, eTag, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	if errors.Is(err, graveler.ErrNotFound) {
+		return &graveler.BranchProtectionRules{}, "", nil
+	}
 	if err != nil {
 		return nil, "", err
 	}
 	if proto.Size(rulesMsg) == 0 {
-		return &graveler.BranchProtectionRules{}, eTag, graveler.ErrNotFound
+		return &graveler.BranchProtectionRules{}, eTag, nil
 	}
 	return rulesMsg.(*graveler.BranchProtectionRules), eTag, nil
 }
@@ -69,7 +72,7 @@ func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.R
 }
 
 func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
-	rules, _, err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	rules, err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return false, nil
 	}

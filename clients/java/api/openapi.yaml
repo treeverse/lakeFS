@@ -5035,6 +5035,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
+      deprecated: true
       operationId: internalDeleteGarbageCollectionRules
       parameters:
       - explode: false
@@ -5069,6 +5070,7 @@ paths:
       - internal
       x-accepts: application/json
     get:
+      deprecated: true
       operationId: internalGetGarbageCollectionRules
       parameters:
       - explode: false
@@ -5107,6 +5109,7 @@ paths:
       - internal
       x-accepts: application/json
     post:
+      deprecated: true
       operationId: internalSetGarbageCollectionRules
       parameters:
       - explode: false
@@ -5283,6 +5286,7 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
+      deprecated: true
       operationId: internalDeleteBranchProtectionRule
       parameters:
       - explode: false
@@ -5330,6 +5334,7 @@ paths:
       x-contentType: application/json
       x-accepts: application/json
     get:
+      deprecated: true
       operationId: internalGetBranchProtectionRules
       parameters:
       - explode: false
@@ -5371,6 +5376,7 @@ paths:
       - internal
       x-accepts: application/json
     post:
+      deprecated: true
       operationId: internalCreateBranchProtectionRule
       parameters:
       - explode: false

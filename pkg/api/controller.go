@@ -1751,11 +1751,6 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Pattern: pattern,
 		})
 	}
-	if eTag == "" {
-		// workaround since swagger doesn't allow empty headers
-		// https://github.com/deepmap/oapi-codegen/issues/954
-		eTag = base64.StdEncoding.EncodeToString([]byte("EMPTY"))
-	}
 	w.Header().Set("ETag", eTag)
 	writeResponse(w, r, http.StatusOK, resp)
 }
@@ -1784,11 +1779,6 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		}
 	}
 	eTag := params.IfMatch
-	if swag.StringValue(eTag) == "" {
-		// workaround since swagger doesn't allow empty headers
-		// https://github.com/deepmap/oapi-codegen/issues/954
-		eTag = swag.String(base64.StdEncoding.EncodeToString([]byte("EMPTY")))
-	}
 	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
 	if c.handleAPIError(ctx, w, r, err) {
 		return

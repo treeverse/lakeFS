@@ -613,8 +613,8 @@ type VersionController interface {
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 
 	// SetBranchProtectionRules sets the branch protection rules for the repository.
-	// If ifMatchETag is not nil, the update will only succeed if the current ETag matches the given one.
-	// Otherwise, ErrPreconditionFailed is returned.
+	// If ifMatchETag is not nil, the update is performed only if the current ETag matches the given one.
+	// If ifMatchETag is nil, the update is always performed.
 	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
@@ -3233,10 +3233,12 @@ type GarbageCollectionManager interface {
 type ProtectedBranchesManager interface {
 	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
 	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
-	// GetRules returns all branch protection rules for the repository
+	// GetRules returns all branch protection rules for the repository.
+	// The returned ETag is used for conditional updates.
 	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 	// SetRules sets the branch protection rules for the repository.
 	// If the given ETag does not match the current ETag, returns ErrPreconditionFailed.
+	// If the given ETag is nil, the update is unconditional.
 	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)

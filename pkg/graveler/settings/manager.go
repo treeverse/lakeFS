@@ -69,8 +69,8 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 }
 
 // SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
-// The setting is persisted only if the given ETag matches the ETag of the current setting.
-// Otherwise, ErrPreconditionFailed is returned.
+// If ifMatchETag is not nil, the setting is persisted only if the current version of the setting matches the given ETag.
+// If ifMatchETag is nil, the setting is always persisted.
 func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, ifMatchETag *string) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
 	if ifMatchETag == nil {
@@ -94,6 +94,8 @@ func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.Repositor
 	return pred, nil
 }
 
+// GetLatest returns the latest setting under the given repository and key, without using the cache.
+// The returned checksum represents the version of the setting, and can be used in SaveIf to perform an atomic update.
 func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, string, error) {
 	data := settingTemplate.ProtoReflect().Interface()
 	pred, err := m.getWithPredicate(ctx, repository, key, data)
@@ -110,30 +112,26 @@ func (m *Manager) GetLatest(ctx context.Context, repository *graveler.Repository
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 // The settingTemplate parameter is used to determine the returned type.
-func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, string, error) {
+// The returned checksum represents the version of the setting, and can be used in SaveIf to perform an atomic update.
+func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
 	k := cacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
 	}
-	eTag := ""
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		setting, et, err := m.GetLatest(ctx, repository, key, settingTemplate)
+		setting, _, err := m.GetLatest(ctx, repository, key, settingTemplate)
 		if errors.Is(err, graveler.ErrNotFound) {
-			eTag = ""
 			return nil, nil
-		}
-		if err == nil {
-			eTag = et
 		}
 		return setting, err
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	if setting == nil {
-		return nil, "", graveler.ErrNotFound
+		return nil, graveler.ErrNotFound
 	}
-	return setting.(proto.Message), eTag, nil
+	return setting.(proto.Message), nil
 }
 
 // Update atomically gets a setting, performs the update function, and persists the setting to the store.

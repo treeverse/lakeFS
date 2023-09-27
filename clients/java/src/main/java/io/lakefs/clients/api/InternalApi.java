@@ -664,7 +664,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalCreateBranchProtectionRuleCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = branchProtectionRule;
 
@@ -696,6 +698,7 @@ public class InternalApi {
         return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call internalCreateBranchProtectionRuleValidateBeforeCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
         
@@ -729,7 +732,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public void internalCreateBranchProtectionRule(String repository, BranchProtectionRule branchProtectionRule) throws ApiException {
         internalCreateBranchProtectionRuleWithHttpInfo(repository, branchProtectionRule);
     }
@@ -749,7 +754,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<Void> internalCreateBranchProtectionRuleWithHttpInfo(String repository, BranchProtectionRule branchProtectionRule) throws ApiException {
         okhttp3.Call localVarCall = internalCreateBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, null);
         return localVarApiClient.execute(localVarCall);
@@ -771,7 +778,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalCreateBranchProtectionRuleAsync(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = internalCreateBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, _callback);
@@ -793,7 +802,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalDeleteBranchProtectionRuleCall(String repository, InlineObject1 inlineObject1, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = inlineObject1;
 
@@ -825,6 +836,7 @@ public class InternalApi {
         return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call internalDeleteBranchProtectionRuleValidateBeforeCall(String repository, InlineObject1 inlineObject1, final ApiCallback _callback) throws ApiException {
         
@@ -858,7 +870,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public void internalDeleteBranchProtectionRule(String repository, InlineObject1 inlineObject1) throws ApiException {
         internalDeleteBranchProtectionRuleWithHttpInfo(repository, inlineObject1);
     }
@@ -878,7 +892,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<Void> internalDeleteBranchProtectionRuleWithHttpInfo(String repository, InlineObject1 inlineObject1) throws ApiException {
         okhttp3.Call localVarCall = internalDeleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject1, null);
         return localVarApiClient.execute(localVarCall);
@@ -900,7 +916,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalDeleteBranchProtectionRuleAsync(String repository, InlineObject1 inlineObject1, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = internalDeleteBranchProtectionRuleValidateBeforeCall(repository, inlineObject1, _callback);
@@ -921,7 +939,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalDeleteGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
@@ -953,6 +973,7 @@ public class InternalApi {
         return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call internalDeleteGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
         
@@ -980,7 +1001,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public void internalDeleteGarbageCollectionRules(String repository) throws ApiException {
         internalDeleteGarbageCollectionRulesWithHttpInfo(repository);
     }
@@ -999,7 +1022,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<Void> internalDeleteGarbageCollectionRulesWithHttpInfo(String repository) throws ApiException {
         okhttp3.Call localVarCall = internalDeleteGarbageCollectionRulesValidateBeforeCall(repository, null);
         return localVarApiClient.execute(localVarCall);
@@ -1020,7 +1045,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalDeleteGarbageCollectionRulesAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = internalDeleteGarbageCollectionRulesValidateBeforeCall(repository, _callback);
@@ -1041,7 +1068,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalGetBranchProtectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
@@ -1073,6 +1102,7 @@ public class InternalApi {
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call internalGetBranchProtectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
         
@@ -1101,7 +1131,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public List<BranchProtectionRule> internalGetBranchProtectionRules(String repository) throws ApiException {
         ApiResponse<List<BranchProtectionRule>> localVarResp = internalGetBranchProtectionRulesWithHttpInfo(repository);
         return localVarResp.getData();
@@ -1121,7 +1153,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<List<BranchProtectionRule>> internalGetBranchProtectionRulesWithHttpInfo(String repository) throws ApiException {
         okhttp3.Call localVarCall = internalGetBranchProtectionRulesValidateBeforeCall(repository, null);
         Type localVarReturnType = new TypeToken<List<BranchProtectionRule>>(){}.getType();
@@ -1143,7 +1177,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalGetBranchProtectionRulesAsync(String repository, final ApiCallback<List<BranchProtectionRule>> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = internalGetBranchProtectionRulesValidateBeforeCall(repository, _callback);
@@ -1165,7 +1201,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalGetGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
@@ -1197,6 +1235,7 @@ public class InternalApi {
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call internalGetGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
         
@@ -1225,7 +1264,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public GarbageCollectionRules internalGetGarbageCollectionRules(String repository) throws ApiException {
         ApiResponse<GarbageCollectionRules> localVarResp = internalGetGarbageCollectionRulesWithHttpInfo(repository);
         return localVarResp.getData();
@@ -1245,7 +1286,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<GarbageCollectionRules> internalGetGarbageCollectionRulesWithHttpInfo(String repository) throws ApiException {
         okhttp3.Call localVarCall = internalGetGarbageCollectionRulesValidateBeforeCall(repository, null);
         Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
@@ -1267,7 +1310,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalGetGarbageCollectionRulesAsync(String repository, final ApiCallback<GarbageCollectionRules> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = internalGetGarbageCollectionRulesValidateBeforeCall(repository, _callback);
@@ -1290,7 +1335,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalSetGarbageCollectionRulesCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = garbageCollectionRules;
 
@@ -1322,6 +1369,7 @@ public class InternalApi {
         return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
+    @Deprecated
     @SuppressWarnings("rawtypes")
     private okhttp3.Call internalSetGarbageCollectionRulesValidateBeforeCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
         
@@ -1355,7 +1403,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public void internalSetGarbageCollectionRules(String repository, GarbageCollectionRules garbageCollectionRules) throws ApiException {
         internalSetGarbageCollectionRulesWithHttpInfo(repository, garbageCollectionRules);
     }
@@ -1375,7 +1425,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public ApiResponse<Void> internalSetGarbageCollectionRulesWithHttpInfo(String repository, GarbageCollectionRules garbageCollectionRules) throws ApiException {
         okhttp3.Call localVarCall = internalSetGarbageCollectionRulesValidateBeforeCall(repository, garbageCollectionRules, null);
         return localVarApiClient.execute(localVarCall);
@@ -1397,7 +1449,9 @@ public class InternalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
+     * @deprecated
      */
+    @Deprecated
     public okhttp3.Call internalSetGarbageCollectionRulesAsync(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = internalSetGarbageCollectionRulesValidateBeforeCall(repository, garbageCollectionRules, _callback);

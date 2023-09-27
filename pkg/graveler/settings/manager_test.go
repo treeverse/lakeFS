@@ -55,29 +55,45 @@ func TestSaveAndGet(t *testing.T) {
 	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.Save(ctx, repository, "settingKey", firstSettings)
 	testutil.Must(t, err)
-	gotSettings, eTag, err := m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
-	}
-	if eTag == "" {
-		t.Fatal("expected non-empty eTag")
 	}
 	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
 	err = m.Save(ctx, repository, "settingKey", secondSettings)
 	testutil.Must(t, err)
 	// the result should be cached, and we should get the first settings:
-	gotSettings, eTag, err = m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings, err = m.Get(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	// after clearing the mc, we should get the new settings:
 	mc.c = make(map[interface{}]interface{})
-	gotSettings, eTag, err = m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings, err = m.Get(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(secondSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
+	}
+}
+func TestGetLatest(t *testing.T) {
+	ctx := context.Background()
+	m, _ := prepareTest(t, ctx, nil, nil)
+	emptySettings := &settings.ExampleSettings{}
+	setting, eTag, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}})
+	testutil.Must(t, err)
+	setting, eTag, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	testutil.Must(t, err)
+	if diff := deep.Equal(&settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, setting); diff != nil {
+		t.Fatal("got unexpected settings:", diff)
+	}
+	if eTag == "" {
+		t.Fatal("got empty eTag")
 	}
 }
 
@@ -101,10 +117,8 @@ func TestUpdate(t *testing.T) {
 	}
 	emptySettings := &settings.ExampleSettings{}
 	require.NoError(t, m.Update(ctx, repository, "settingKey", emptySettings, update))
-	gotSettings, eTag1, err := m.Get(ctx, repository, "settingKey", emptySettings)
-	if eTag1 == "" {
-		t.Fatal("expected non-empty eTag")
-	}
+	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
+
 	require.NoError(t, err)
 	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -127,10 +141,7 @@ func TestUpdate(t *testing.T) {
 		return &newSettings, nil
 	}
 	require.NoError(t, m.Update(ctx, repository, "settingKey", emptySettings, update))
-	gotSettings, eTag2, err := m.Get(ctx, repository, "settingKey", emptySettings)
-	if eTag2 == "" || eTag2 == eTag1 {
-		t.Fatal("expected non-empty eTag2 and different from eTag1")
-	}
+	gotSettings, err = m.Get(ctx, repository, "settingKey", emptySettings)
 	require.NoError(t, err)
 	if diff := deep.Equal(initialData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -204,10 +215,7 @@ func TestMultipleUpdates(t *testing.T) {
 	}
 	err = wg.Wait().ErrorOrNil()
 	testutil.Must(t, err)
-	gotSettings, eTag, err := m.Get(ctx, repository, "settingKey", emptySettings)
-	if eTag == "" {
-		t.Fatal("expected non-empty eTag")
-	}
+	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
 	expectedSettings.ExampleInt += IncrementCount
 	expectedSettings.ExampleMap["boo"] += IncrementCount
@@ -221,13 +229,10 @@ func TestEmpty(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
 	emptySettings := &settings.ExampleSettings{}
-	_, eTag, err := m.Get(ctx, repository, "settingKey", emptySettings)
+	_, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	// the key was not set, an error should be returned
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
-	}
-	if eTag != "" {
-		t.Fatal("expected empty eTag")
 	}
 	// when using Update on an unset key, the update function gets an empty setting object to operate on
 	err = m.Update(ctx, repository, "settingKey", emptySettings, func(setting proto.Message) (proto.Message, error) {
@@ -241,7 +246,7 @@ func TestEmpty(t *testing.T) {
 		return newSettings, nil
 	})
 	testutil.Must(t, err)
-	gotSettings, eTag, err := m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
 	expectedSettings := &settings.ExampleSettings{ExampleInt: 1, ExampleMap: map[string]int32{"boo": 1}}
 	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {

@@ -86,8 +86,10 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}
         }
         setError(null)
         setCreateButtonDisabled(true)
-        currentRulesResponse['rules'].push({pattern})
-        branchProtectionRules.setRules(repoID, currentRulesResponse['rules'], currentRulesResponse['ETag']).then(onSuccess).catch(err => {
+        let updatedRules = [...currentRulesResponse['rules']]
+        let lastKnownChecksum = currentRulesResponse['checksum']
+        updatedRules.push({pattern})
+        branchProtectionRules.setRules(repoID, updatedRules, lastKnownChecksum).then(onSuccess).catch(err => {
             setError(err)
             setCreateButtonDisabled(false)
         })
