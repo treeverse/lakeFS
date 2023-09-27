@@ -2916,9 +2916,9 @@ func (mr *MockProtectedBranchesManagerMockRecorder) IsBlocked(ctx, repository, b
 }
 
 // SetRules mocks base method.
-func (m *MockProtectedBranchesManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+func (m *MockProtectedBranchesManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetRules", ctx, repository, rules, ifMatchETag)
+	ret := m.ctrl.Call(m, "SetRulesIf", ctx, repository, rules, ifMatchETag)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -2926,5 +2926,5 @@ func (m *MockProtectedBranchesManager) SetRules(ctx context.Context, repository 
 // SetRules indicates an expected call of SetRules.
 func (mr *MockProtectedBranchesManagerMockRecorder) SetRules(ctx, repository, rules, ifMatchETag interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRules", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRules), ctx, repository, rules, ifMatchETag)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRulesIf", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRulesIf), ctx, repository, rules, ifMatchETag)
 }

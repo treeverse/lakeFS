@@ -62,8 +62,12 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 	}
 	return rulesMsg.(*graveler.BranchProtectionRules), eTag, nil
 }
+func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules) error {
+	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules)
 
-func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+}
+
+func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag string) error {
 	err := m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, ifMatchETag)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed

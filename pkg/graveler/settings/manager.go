@@ -69,14 +69,10 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 }
 
 // SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
-// If ifMatchETag is not nil, the setting is persisted only if the current version of the setting matches the given ETag.
-// If ifMatchETag is nil, the setting is always persisted.
-func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, ifMatchETag *string) error {
+// The setting is persisted only if the current version of the setting matches the given ETag.
+func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, ifMatchETag string) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
-	if ifMatchETag == nil {
-		return m.Save(ctx, repository, key, setting)
-	}
-	decodedEtag, err := base64.StdEncoding.DecodeString(*ifMatchETag)
+	decodedEtag, err := base64.StdEncoding.DecodeString(ifMatchETag)
 	if err != nil {
 		return fmt.Errorf("decode etag: %w", err)
 	}

@@ -1497,7 +1497,10 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error {
-	return g.protectedBranchesManager.SetRules(ctx, repository, rules, ifMatchETag)
+	if ifMatchETag == nil {
+		return g.protectedBranchesManager.SetRules(ctx, repository, rules)
+	}
+	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, *ifMatchETag)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -3236,10 +3239,10 @@ type ProtectedBranchesManager interface {
 	// GetRules returns all branch protection rules for the repository.
 	// The returned ETag is used for conditional updates.
 	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
-	// SetRules sets the branch protection rules for the repository.
+	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules) error
+	// SetRulesIf sets the branch protection rules for the repository.
 	// If the given ETag does not match the current ETag, returns ErrPreconditionFailed.
-	// If the given ETag is nil, the update is unconditional.
-	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error
+	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }
