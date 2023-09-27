@@ -925,7 +925,7 @@ public abstract class LakeFSFileSystemTest {
         ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInDstDir);
         Path dst = new Path("lakefs://repo/main/existing-dir2");
         ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-        mockExistingDirPath(dstObjLoc, ImmutableList.of(fileObjLoc));
+        //        mockExistingDirPath(dstObjLoc, ImmutableList.of(fileObjLoc));
 
         mockDirectoryMarker(fs.pathToObjectLocation(src.getParent()));
 
