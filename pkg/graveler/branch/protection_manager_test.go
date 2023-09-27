@@ -28,8 +28,9 @@ func TestSetAndGet(t *testing.T) {
 	ctx := context.Background()
 	bpm := prepareTest(t, ctx)
 	rules, eTag, err := bpm.GetRules(ctx, repository)
-	if !errors.Is(err, graveler.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound, got %v", err)
+	testutil.Must(t, err)
+	if len(rules.BranchPatternToBlockedActions) != 0 {
+		t.Fatalf("expected no rules, got %d rules", len(rules.BranchPatternToBlockedActions))
 	}
 	testutil.Must(t, bpm.SetRulesIf(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
@@ -90,8 +91,9 @@ func TestDelete(t *testing.T) {
 	testutil.Must(t, bpm.Delete(ctx, repository, "main*"))
 
 	rules, _, err = bpm.GetRules(ctx, repository)
-	if !errors.Is(err, graveler.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound after delete, got %v", err)
+	testutil.Must(t, err)
+	if len(rules.BranchPatternToBlockedActions) != 0 {
+		t.Fatalf("expected no rules, got %d rules", len(rules.BranchPatternToBlockedActions))
 	}
 }
 

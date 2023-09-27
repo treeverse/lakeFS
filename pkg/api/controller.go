@@ -3091,9 +3091,10 @@ func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r
 		}
 	}
 	if rules == nil {
-		rules = &graveler.BranchProtectionRules{
-			BranchPatternToBlockedActions: make(map[string]*graveler.BranchProtectionBlockedActions),
-		}
+		rules = &graveler.BranchProtectionRules{}
+	}
+	if rules.BranchPatternToBlockedActions == nil {
+		rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
 	}
 	blockedActions := &graveler.BranchProtectionBlockedActions{
 		Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT},
