@@ -15,7 +15,7 @@ import (
 
 var fsUploadCmd = &cobra.Command{
 	Use:               "upload <path uri>",
-	Short:             "upload a local file to the specified URI",
+	Short:             "Upload a local file to the specified URI",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {

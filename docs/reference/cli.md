@@ -2120,7 +2120,7 @@ lakectl fs cat <path uri> [flags]
 
 ### lakectl fs download
 
-download object(s) from a given repository path
+Download object(s) from a given repository path
 
 ```
 lakectl fs download <path uri> [<destination path>] [flags]
@@ -2243,7 +2243,7 @@ lakectl fs stat <path uri> [flags]
 
 ### lakectl fs upload
 
-upload a local file to the specified URI
+Upload a local file to the specified URI
 
 ```
 lakectl fs upload <path uri> [flags]
