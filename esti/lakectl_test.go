@@ -3,7 +3,6 @@ package esti
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -471,9 +470,8 @@ func TestLakectlFsUpload(t *testing.T) {
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
 		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
-		workdir, err := os.Getwd()
-		require.NoError(t, err)
-		require.Contains(t, sanitizedResult, "diff 'local://"+workdir+"+/files' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+
+		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "upload ro_1k")
 		require.Contains(t, sanitizedResult, "upload ro_1k_other")
 		require.Contains(t, sanitizedResult, "upload upload_file.txt")
@@ -485,9 +483,7 @@ func TestLakectlFsUpload(t *testing.T) {
 	t.Run("exist_dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
 		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
-		workdir, err := os.Getwd()
-		require.NoError(t, err)
-		require.Contains(t, sanitizedResult, "diff 'local://"+workdir+"+/files' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "Upload Summary:")
 		require.Contains(t, sanitizedResult, "No changes")
 	})
