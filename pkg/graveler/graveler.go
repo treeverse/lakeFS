@@ -609,13 +609,14 @@ type VersionController interface {
 
 	GCNewRunID() string
 
-	// GetBranchProtectionRules return all branch protection rules for the repository
+	// GetBranchProtectionRules return all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for a conditional update.
 	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 
 	// SetBranchProtectionRules sets the branch protection rules for the repository.
-	// If ifMatchETag is not nil, the update is performed only if the current ETag matches the given one.
-	// If ifMatchETag is nil, the update is always performed.
-	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error
+	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
+	// If lastKnownChecksum is nil, the update is always performed.
+	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
 	// or return ErrAddressTokenAlreadyExists if a token already exists.
@@ -1496,11 +1497,11 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag *string) error {
-	if ifMatchETag == nil {
+func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
+	if lastKnownChecksum == nil {
 		return g.protectedBranchesManager.SetRules(ctx, repository, rules)
 	}
-	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, *ifMatchETag)
+	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, *lastKnownChecksum)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -3237,12 +3238,13 @@ type ProtectedBranchesManager interface {
 	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
 	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
 	// GetRules returns all branch protection rules for the repository.
-	// The returned ETag is used for conditional updates.
+	// The returned checksum represents the current state of the rules, and can be passed to SetRulesIf for conditional updates.
 	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules) error
 	// SetRulesIf sets the branch protection rules for the repository.
-	// If the given ETag does not match the current ETag, returns ErrPreconditionFailed.
-	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, ifMatchETag string) error
+	// If lastKnownChecksum does not match the current checksum, returns ErrPreconditionFailed.
+	// If lastKnownChecksum is empty, the rules are set only if no rules are currently set.
+	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

@@ -2088,12 +2088,12 @@ func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID str
 	return c.Store.GetBranchProtectionRules(ctx, repository)
 }
 
-func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	return c.Store.SetBranchProtectionRules(ctx, repository, rules, ifMatchETag)
+	return c.Store.SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum)
 }
 
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRunMetadata, error) {

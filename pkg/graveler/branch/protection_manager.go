@@ -50,7 +50,7 @@ func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.Rep
 }
 
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
-	rulesMsg, eTag, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	rulesMsg, checksum, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
 		return &graveler.BranchProtectionRules{}, "", nil
 	}
@@ -58,16 +58,16 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 		return nil, "", err
 	}
 	if proto.Size(rulesMsg) == 0 {
-		return &graveler.BranchProtectionRules{}, eTag, nil
+		return &graveler.BranchProtectionRules{}, checksum, nil
 	}
-	return rulesMsg.(*graveler.BranchProtectionRules), eTag, nil
+	return rulesMsg.(*graveler.BranchProtectionRules), checksum, nil
 }
 func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules) error {
 	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules)
 }
 
-func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag string) error {
-	err := m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, ifMatchETag)
+func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum string) error {
+	err := m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, lastKnownChecksum)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed
 	}

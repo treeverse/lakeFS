@@ -69,14 +69,14 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 }
 
 // SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
-// The setting is persisted only if the current version of the setting matches the given ETag.
-func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, ifMatchETag string) error {
+// The setting is persisted only if the current version of the setting matches the given checksum.
+func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum string) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
-	decodedEtag, err := base64.StdEncoding.DecodeString(ifMatchETag)
+	decodedChecksum, err := base64.StdEncoding.DecodeString(lastKnownChecksum)
 	if err != nil {
-		return fmt.Errorf("decode etag: %w", err)
+		return fmt.Errorf("decode checksum: %w", err)
 	}
-	return kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, decodedEtag)
+	return kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, decodedChecksum)
 }
 
 func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
@@ -91,7 +91,7 @@ func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.Repositor
 }
 
 // GetLatest returns the latest setting under the given repository and key, without using the cache.
-// The returned checksum represents the version of the setting, and can be used in SaveIf to perform an atomic update.
+// The returned checksum represents the version of the setting, and can be passed to SaveIf for conditional updates.
 func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, string, error) {
 	data := settingTemplate.ProtoReflect().Interface()
 	pred, err := m.getWithPredicate(ctx, repository, key, data)

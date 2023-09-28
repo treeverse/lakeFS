@@ -809,17 +809,17 @@ func (mr *MockVersionControllerMockRecorder) SaveGarbageCollectionCommits(ctx, r
 }
 
 // SetBranchProtectionRules mocks base method.
-func (m *MockVersionController) SetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag *string) error {
+func (m *MockVersionController) SetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetBranchProtectionRules", ctx, repository, rules, ifMatchETag)
+	ret := m.ctrl.Call(m, "SetBranchProtectionRules", ctx, repository, rules, lastKnownChecksum)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetBranchProtectionRules indicates an expected call of SetBranchProtectionRules.
-func (mr *MockVersionControllerMockRecorder) SetBranchProtectionRules(ctx, repository, rules, ifMatchETag interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBranchProtectionRules", reflect.TypeOf((*MockVersionController)(nil).SetBranchProtectionRules), ctx, repository, rules, ifMatchETag)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBranchProtectionRules", reflect.TypeOf((*MockVersionController)(nil).SetBranchProtectionRules), ctx, repository, rules, lastKnownChecksum)
 }
 
 // SetGarbageCollectionRules mocks base method.
@@ -2930,15 +2930,15 @@ func (mr *MockProtectedBranchesManagerMockRecorder) SetRules(ctx, repository, ru
 }
 
 // SetRulesIf mocks base method.
-func (m *MockProtectedBranchesManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, ifMatchETag string) error {
+func (m *MockProtectedBranchesManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetRulesIf", ctx, repository, rules, ifMatchETag)
+	ret := m.ctrl.Call(m, "SetRulesIf", ctx, repository, rules, lastKnownChecksum)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetRulesIf indicates an expected call of SetRulesIf.
-func (mr *MockProtectedBranchesManagerMockRecorder) SetRulesIf(ctx, repository, rules, ifMatchETag interface{}) *gomock.Call {
+func (mr *MockProtectedBranchesManagerMockRecorder) SetRulesIf(ctx, repository, rules, lastKnownChecksum interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRulesIf", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRulesIf), ctx, repository, rules, ifMatchETag)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRulesIf", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRulesIf), ctx, repository, rules, lastKnownChecksum)
 }
