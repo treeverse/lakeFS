@@ -411,7 +411,7 @@ func TestLakectlFsDownload(t *testing.T) {
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro_1k.0")
 		require.Contains(t, sanitizedResult, "Download Summary:")
-		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Downloaded: 1")
 		require.Contains(t, sanitizedResult, "Uploaded: 0")
 		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
@@ -462,6 +462,8 @@ func TestLakectlFsUpload(t *testing.T) {
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
 	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
 	t.Run("single_file", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
