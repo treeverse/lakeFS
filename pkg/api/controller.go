@@ -27,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -92,7 +91,6 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
-	Emailer               *email.Emailer
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
@@ -149,11 +147,10 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	inviteSupported := c.Auth.IsInviteSupported()
-	emailSupported := c.Emailer.Params.SMTPHost != ""
+	_, inviteSupported := c.Auth.(auth.EmailInviter)
 	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
 		InviteUser:     &inviteSupported,
-		ForgotPassword: &emailSupported,
+		ForgotPassword: swag.Bool(false), // TODO(barak): verify no code refrence this capability and remove
 	})
 }
 
@@ -1080,6 +1077,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 
 	var parsedEmail *string
 	if invite {
+		// Check that email is valid
 		addr, err := mail.ParseAddress(username)
 		if err != nil {
 			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
@@ -1100,7 +1098,12 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user", r, "", "", "")
 	if invite {
-		err := c.Auth.InviteUser(ctx, *parsedEmail)
+		inviter, ok := c.Auth.(auth.EmailInviter)
+		if !ok {
+			writeError(w, r, http.StatusNotImplemented, "Not implemented")
+			return
+		}
+		err := inviter.InviteUser(ctx, *parsedEmail)
 		if c.handleAPIError(ctx, w, r, err) {
 			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
 			return
@@ -4424,7 +4427,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, emailer *email.Emailer, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
+func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -4438,7 +4441,6 @@ func NewController(cfg *config.Config, catalog catalog.Interface, authenticator 
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
-		Emailer:               emailer,
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
 		otfDiffService:        otfDiffService,
