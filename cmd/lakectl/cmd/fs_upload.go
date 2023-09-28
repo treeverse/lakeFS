@@ -26,7 +26,6 @@ var fsUploadCmd = &cobra.Command{
 		preSignMode := Must(flagSet.GetBool("pre-sign"))
 		parallelism := Must(flagSet.GetInt("parallelism"))
 		contentType := Must(flagSet.GetString("content-type"))
-		println("preSignMode", preSignMode)
 
 		if parallelism < 1 {
 			DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
