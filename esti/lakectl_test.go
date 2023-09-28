@@ -418,7 +418,7 @@ func TestLakectlFsDownload(t *testing.T) {
 	})
 
 	t.Run("directory", func(t *testing.T) {
-		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
@@ -428,7 +428,7 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	t.Run("directory_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
