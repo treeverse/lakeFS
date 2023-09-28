@@ -82,7 +82,7 @@ type syncFlags struct {
 	presign     bool
 }
 
-func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
+func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
 	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
 	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
 	if !presignFlag.Changed {

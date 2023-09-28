@@ -23,7 +23,8 @@ var fsUploadCmd = &cobra.Command{
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
 		source := Must(flagSet.GetString("source"))
-		syncFlags := getSyncFlags(cmd, client)
+		parallelism := Must(flagSet.GetInt(localParallelismFlagName))
+		preSignMode := Must(flagSet.GetBool(localPresignFlagName))
 		contentType := Must(flagSet.GetString("content-type"))
 
 		ctx := cmd.Context()
@@ -38,7 +39,7 @@ var fsUploadCmd = &cobra.Command{
 			if pathURI.GetPath() == "" {
 				Die("target path is not a valid URI", 1)
 			}
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.presign)
+			stat, err := upload(ctx, client, source, pathURI, contentType, preSignMode)
 			if err != nil {
 				DieErr(err)
 			}
@@ -58,7 +59,7 @@ var fsUploadCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		s := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
+		s := local.NewSyncManager(ctx, client, parallelism, preSignMode)
 		currentDir, err := os.Getwd()
 		if err != nil {
 			DieErr(err)

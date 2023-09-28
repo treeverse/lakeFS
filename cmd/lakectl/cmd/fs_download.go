@@ -23,7 +23,13 @@ var fsDownloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, dest := getSyncArgs(args, true, false)
 		client := getClient()
-		syncFlags := getSyncFlags(cmd, client)
+		flagSet := cmd.Flags()
+		parallelism := Must(flagSet.GetInt(localParallelismFlagName))
+		preSignMode := Must(flagSet.GetBool(localPresignFlagName))
+
+		if parallelism < 1 {
+			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallelism)
+		}
 
 		// optional destination directory
 		if len(args) > 1 {
@@ -31,7 +37,7 @@ var fsDownloadCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		s := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
+		s := local.NewSyncManager(ctx, client, parallelism, preSignMode)
 		remotePath := remote.GetPath()
 
 		ch := make(chan *local.Change, filesChanSize)
