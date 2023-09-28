@@ -1441,7 +1441,7 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		storageCfg = c.GetStorageCfg()
+		storageCfg = c.getStorageConfig()
 	}
 
 	versionConfig := c.getVersionConfig()
@@ -1458,9 +1458,9 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(w, r, http.StatusOK, c.GetStorageCfg())
+	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
 }
-func (c *Controller) GetStorageCfg() apigen.StorageConfig {
+func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
 	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
