@@ -2132,7 +2132,7 @@ lakectl fs download <path uri> [<destination path>] [flags]
 ```
   -h, --help              help for download
   -p, --parallelism int   Max concurrent operations to perform (default 25)
-      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+      --pre-sign          Use pre-sign link to access the data
 ```
 
 
@@ -2256,7 +2256,7 @@ lakectl fs upload <path uri> [flags]
       --content-type string   MIME type of contents
   -h, --help                  help for upload
   -p, --parallelism int       Max concurrent operations to perform (default 25)
-      --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+      --pre-sign              Use pre-sign link to access the data
   -s, --source string         local file to upload, or "-" for stdin
 ```
 

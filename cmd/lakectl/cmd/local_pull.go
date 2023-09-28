@@ -89,6 +89,6 @@ var localPullCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	withForceFlag(localPullCmd, "Reset any uncommitted local change")
-	withSyncFlags(localPullCmd)
+	withLocalSyncFlags(localPullCmd)
 	localCmd.AddCommand(localPullCmd)
 }

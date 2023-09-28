@@ -23,9 +23,14 @@ var fsUploadCmd = &cobra.Command{
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
 		source := Must(flagSet.GetString("source"))
-		parallelism := Must(flagSet.GetInt(localParallelismFlagName))
-		preSignMode := Must(flagSet.GetBool(localPresignFlagName))
+		preSignMode := Must(flagSet.GetBool("pre-sign"))
+		parallelism := Must(flagSet.GetInt("parallelism"))
 		contentType := Must(flagSet.GetString("content-type"))
+		println("preSignMode", preSignMode)
+
+		if parallelism < 1 {
+			DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
+		}
 
 		ctx := cmd.Context()
 
@@ -95,7 +100,8 @@ func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
-	withSyncFlags(fsUploadCmd)
+	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
+	withParallelismFlag(fsUploadCmd)
 
 	fsCmd.AddCommand(fsUploadCmd)
 }

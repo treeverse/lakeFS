@@ -120,6 +120,6 @@ func init() {
 	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
 	localCheckoutCmd.MarkFlagsMutuallyExclusive("ref", "all")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
-	withSyncFlags(localCheckoutCmd)
+	withLocalSyncFlags(localCheckoutCmd)
 	localCmd.AddCommand(localCheckoutCmd)
 }

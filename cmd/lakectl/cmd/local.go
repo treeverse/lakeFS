@@ -63,7 +63,7 @@ func withPresignFlag(cmd *cobra.Command) {
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
 }
 
-func withSyncFlags(cmd *cobra.Command) {
+func withLocalSyncFlags(cmd *cobra.Command) {
 	withParallelismFlag(cmd)
 	withPresignFlag(cmd)
 }
@@ -96,7 +96,7 @@ func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) s
 
 	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
 	if parallelism < 1 {
-		DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallelism)
+		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
 	}
 	return syncFlags{parallelism: parallelism, presign: presign}
 }

@@ -22,13 +22,12 @@ var fsDownloadCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, dest := getSyncArgs(args, true, false)
-		client := getClient()
 		flagSet := cmd.Flags()
-		parallelism := Must(flagSet.GetInt(localParallelismFlagName))
-		preSignMode := Must(flagSet.GetBool(localPresignFlagName))
+		preSignMode := Must(flagSet.GetBool("pre-sign"))
+		parallelism := Must(flagSet.GetInt("parallelism"))
 
 		if parallelism < 1 {
-			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallelism)
+			DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
 		}
 
 		// optional destination directory
@@ -37,6 +36,7 @@ var fsDownloadCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
+		client := getClient()
 		s := local.NewSyncManager(ctx, client, parallelism, preSignMode)
 		remotePath := remote.GetPath()
 
@@ -112,6 +112,7 @@ var fsDownloadCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	withSyncFlags(fsDownloadCmd)
+	fsDownloadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
+	withParallelismFlag(fsDownloadCmd)
 	fsCmd.AddCommand(fsDownloadCmd)
 }

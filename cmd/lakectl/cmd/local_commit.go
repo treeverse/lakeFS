@@ -187,6 +187,6 @@ func init() {
 	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
 	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
 	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
-	withSyncFlags(localCommitCmd)
+	withLocalSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }

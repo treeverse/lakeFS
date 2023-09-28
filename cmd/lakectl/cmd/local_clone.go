@@ -106,6 +106,6 @@ var localCloneCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	withGitIgnoreFlag(localCloneCmd)
-	withSyncFlags(localCloneCmd)
+	withLocalSyncFlags(localCloneCmd)
 	localCmd.AddCommand(localCloneCmd)
 }
