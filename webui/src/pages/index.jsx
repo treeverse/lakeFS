@@ -29,7 +29,6 @@ import GroupsIndexPage from "./auth/groups";
 import UsersIndexPage from "./auth/users";
 import PoliciesIndexPage from "./auth/policies";
 import LoginPage from "./auth/login";
-import ResetPasswordPage from "./auth/reset-password";
 import ActivateInvitedUserPage from "./auth/users/create-user-with-password";
 import Setup from "./setup";
 import {AuthLayout} from "../lib/components/auth/layout";
@@ -78,7 +77,6 @@ export const IndexPage = () => {
           <Route path="auth" element={<Layout logged={false} />}>
             <Route index element={<Navigate to="credentials"/>} />
             <Route path="login" element={<LoginPage/>} />
-            <Route path="resetpassword" element={<ResetPasswordPage/>} />
             <Route path="users/create" element={<ActivateInvitedUserPage/>} />
             <Route element={<AuthLayout/>}>
               <Route path="credentials" element={<CredentialsPage/>} />
