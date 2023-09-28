@@ -76,7 +76,7 @@ var fsUploadCmd = &cobra.Command{
 			Operation string
 			local.Tasks
 		}{
-			Operation: "Sync",
+			Operation: "Upload",
 			Tasks:     s.Summary(),
 		})
 	},

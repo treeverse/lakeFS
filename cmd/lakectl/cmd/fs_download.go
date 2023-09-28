@@ -107,6 +107,14 @@ var fsDownloadCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+
+		Write(localSummaryTemplate, struct {
+			Operation string
+			local.Tasks
+		}{
+			Operation: "Download",
+			Tasks:     s.Summary(),
+		})
 	},
 }
 

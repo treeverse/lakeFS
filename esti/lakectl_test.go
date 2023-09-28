@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -409,12 +410,20 @@ func TestLakectlFsDownload(t *testing.T) {
 	t.Run("single", func(t *testing.T) {
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro_1k.0")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro_1k.0")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 1")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("directory", func(t *testing.T) {
@@ -424,6 +433,10 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("directory_with_dest", func(t *testing.T) {
@@ -434,6 +447,47 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
+	})
+}
+
+func TestLakectlFsUpload(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	t.Run("single_file", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/ro_1k.0"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	})
+	t.Run("dir", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/"
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		workdir, err := os.Getwd()
+		require.NoError(t, err)
+		require.Contains(t, sanitizedResult, "diff 'local://"+workdir+"+/files' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "upload ro_1k")
+		require.Contains(t, sanitizedResult, "upload ro_1k_other")
+		require.Contains(t, sanitizedResult, "upload upload_file.txt")
+		require.Contains(t, sanitizedResult, "Upload Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 0")
+		require.Contains(t, sanitizedResult, "Uploaded: 3")
+		require.Contains(t, sanitizedResult, "Removed: 0")
+	})
+	t.Run("exist_dir", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/"
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		workdir, err := os.Getwd()
+		require.NoError(t, err)
+		require.Contains(t, sanitizedResult, "diff 'local://"+workdir+"+/files' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "Upload Summary:")
+		require.Contains(t, sanitizedResult, "No changes")
 	})
 }
 
