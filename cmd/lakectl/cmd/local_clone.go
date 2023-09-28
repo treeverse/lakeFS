@@ -27,8 +27,8 @@ var localCloneCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		remote, localPath := getLocalArgs(args, true, false)
-		syncFlags := getLocalSyncFlags(cmd, client)
+		remote, localPath := getSyncArgs(args, true, false)
+		syncFlags := getSyncFlags(cmd, client)
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		empty, err := fileutil.IsDirEmpty(localPath)
 		if err != nil {
@@ -106,6 +106,6 @@ var localCloneCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	withGitIgnoreFlag(localCloneCmd)
-	withLocalSyncFlags(localCloneCmd)
+	withSyncFlags(localCloneCmd)
 	localCmd.AddCommand(localCloneCmd)
 }

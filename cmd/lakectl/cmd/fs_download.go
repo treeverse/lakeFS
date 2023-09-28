@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -15,11 +14,6 @@ import (
 const (
 	fsDownloadCmdMinArgs = 1
 	fsDownloadCmdMaxArgs = 2
-
-	fsDownloadParallelDefault = 6
-
-	fsNonRecursiveDownloadTemplate = `Successfully downloaded {{.Path}} to {{.Dest}}
-`
 )
 
 var fsDownloadCmd = &cobra.Command{
@@ -27,28 +21,46 @@ var fsDownloadCmd = &cobra.Command{
 	Short: "Download object(s) from a given repository path",
 	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		remote, dest := getLocalArgs(args, true, false)
-		flagSet := cmd.Flags()
-		preSignMode := Must(flagSet.GetBool("pre-sign"))
-		recursive := Must(flagSet.GetBool("recursive"))
-		parallel := Must(flagSet.GetInt("parallel"))
-
-		if parallel < 1 {
-			DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallel)
-		}
+		remote, dest := getSyncArgs(args, true, false)
+		client := getClient()
+		syncFlags := getSyncFlags(cmd, client)
 
 		// optional destination directory
 		if len(args) > 1 {
 			dest = args[1]
 		}
 
-		client := getClient()
 		ctx := cmd.Context()
-		s := local.NewSyncManager(ctx, client, parallel, preSignMode)
+		s := local.NewSyncManager(ctx, client, syncFlags.parallelism, syncFlags.presign)
 		remotePath := remote.GetPath()
-		if recursive {
-			// Dynamically construct changes
-			ch := make(chan *local.Change, filesChanSize)
+
+		ch := make(chan *local.Change, filesChanSize)
+
+		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
+			Path: *remote.Path,
+		})
+		switch {
+		case err != nil:
+			DieErr(err)
+		case stat.JSON200 != nil:
+			var objName string
+			if strings.Contains(remotePath, uri.PathSeparator) {
+				lastInd := strings.LastIndex(remotePath, uri.PathSeparator)
+				remotePath, objName = remotePath[lastInd+len(uri.PathSeparator):], remotePath[:lastInd]
+			} else {
+				objName = ""
+			}
+			remote.Path = swag.String(objName)
+			ch <- &local.Change{
+				Source: local.ChangeSourceRemote,
+				Path:   remotePath,
+				Type:   local.ChangeTypeAdded,
+			}
+			close(ch)
+		default:
+			if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
+				*remote.Path += uri.PathSeparator
+			}
 			go func() {
 				defer close(ch)
 				var after string
@@ -83,35 +95,17 @@ var fsDownloadCmd = &cobra.Command{
 					after = listResp.JSON200.Pagination.NextOffset
 				}
 			}()
+		}
+		err = s.Sync(dest, remote, ch)
 
-			err := s.Sync(dest, remote, ch)
-
-			if err != nil {
-				DieErr(err)
-			}
-		} else {
-			objectPath, ObjectName := filepath.Split(remotePath)
-			*remote.Path = objectPath
-
-			err := s.Download(ctx, dest, remote, ObjectName)
-			if err != nil {
-				DieErr(err)
-			}
-
-			downloadRes := struct {
-				Path string
-				Dest string
-			}{remote.String() + ObjectName, dest}
-			Write(fsNonRecursiveDownloadTemplate, downloadRes)
+		if err != nil {
+			DieErr(err)
 		}
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
-	fsDownloadCmd.Flags().IntP("parallel", "p", fsDownloadParallelDefault, "max concurrent downloads")
-	fsDownloadCmd.Flags().Bool("pre-sign", false, "Request pre-sign link to access the data")
-
+	withSyncFlags(fsDownloadCmd)
 	fsCmd.AddCommand(fsDownloadCmd)
 }

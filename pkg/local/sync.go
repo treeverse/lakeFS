@@ -98,12 +98,12 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 		switch change.Source {
 		case ChangeSourceRemote:
 			// remotely changed something, download it!
-			if err := s.Download(ctx, rootPath, remote, change.Path); err != nil {
+			if err := s.download(ctx, rootPath, remote, change.Path); err != nil {
 				return fmt.Errorf("download %s failed: %w", change.Path, err)
 			}
 		case ChangeSourceLocal:
-			// we wrote something, Upload it!
-			if err := s.Upload(ctx, rootPath, remote, change.Path); err != nil {
+			// we wrote something, upload it!
+			if err := s.upload(ctx, rootPath, remote, change.Path); err != nil {
 				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
 		default:
@@ -129,7 +129,7 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 	return nil
 }
 
-func (s *SyncManager) Download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
 	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
 		return err
 	}
@@ -138,7 +138,6 @@ func (s *SyncManager) Download(ctx context.Context, rootPath string, remote *uri
 	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
 		return err
 	}
-
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
 		Presign:      swag.Bool(s.presign),
@@ -235,7 +234,7 @@ func (s *SyncManager) Download(ctx context.Context, rootPath string, remote *uri
 	return err
 }
 
-func (s *SyncManager) Upload(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
 	source := filepath.Join(rootPath, path)
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err

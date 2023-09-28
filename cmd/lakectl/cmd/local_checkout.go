@@ -18,7 +18,7 @@ var localCheckoutCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
 		all := Must(cmd.Flags().GetBool("all"))
-		_, localPath := getLocalArgs(args, false, all)
+		_, localPath := getSyncArgs(args, false, all)
 		if !all {
 			localCheckout(cmd, localPath, specifiedRef, true)
 			return
@@ -40,7 +40,7 @@ var localCheckoutCmd = &cobra.Command{
 
 func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, confirmByFlag bool) {
 	client := getClient()
-	locaSyncFlags := getLocalSyncFlags(cmd, client)
+	locaSyncFlags := getSyncFlags(cmd, client)
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -120,6 +120,6 @@ func init() {
 	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
 	localCheckoutCmd.MarkFlagsMutuallyExclusive("ref", "all")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
-	withLocalSyncFlags(localCheckoutCmd)
+	withSyncFlags(localCheckoutCmd)
 	localCmd.AddCommand(localCheckoutCmd)
 }

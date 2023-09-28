@@ -2120,7 +2120,7 @@ lakectl fs cat <path uri> [flags]
 
 ### lakectl fs download
 
-Download object(s) from a given repository path
+download object(s) from a given repository path
 
 ```
 lakectl fs download <path uri> [<destination path>] [flags]
@@ -2130,10 +2130,9 @@ lakectl fs download <path uri> [<destination path>] [flags]
 {:.no_toc}
 
 ```
-  -h, --help           help for download
-  -p, --parallel int   max concurrent downloads (default 6)
-      --pre-sign       Request pre-sign link to access the data
-  -r, --recursive      recursively all objects under path
+  -h, --help              help for download
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2244,7 +2243,7 @@ lakectl fs stat <path uri> [flags]
 
 ### lakectl fs upload
 
-Upload a local file to the specified URI
+upload a local file to the specified URI
 
 ```
 lakectl fs upload <path uri> [flags]
@@ -2256,8 +2255,8 @@ lakectl fs upload <path uri> [flags]
 ```
       --content-type string   MIME type of contents
   -h, --help                  help for upload
-      --pre-sign              Use pre-sign link to access the data
-  -r, --recursive             recursively copy all files under local source
+  -p, --parallelism int       Max concurrent operations to perform (default 25)
+      --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -s, --source string         local file to upload, or "-" for stdin
 ```
 

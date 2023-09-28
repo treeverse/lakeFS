@@ -63,7 +63,7 @@ func withPresignFlag(cmd *cobra.Command) {
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
 }
 
-func withLocalSyncFlags(cmd *cobra.Command) {
+func withSyncFlags(cmd *cobra.Command) {
 	withParallelismFlag(cmd)
 	withPresignFlag(cmd)
 }
@@ -82,7 +82,7 @@ type syncFlags struct {
 	presign     bool
 }
 
-func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
+func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
 	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
 	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
 	if !presignFlag.Changed {
@@ -95,12 +95,15 @@ func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) s
 	}
 
 	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
+	if parallelism < 1 {
+		DieFmt("Invalid value for parallel (%d), minimum is 1.\n", parallelism)
+	}
 	return syncFlags{parallelism: parallelism, presign: presign}
 }
 
-// getLocalArgs parses arguments to extract a remote URI and deduces the local path.
+// getSyncArgs parses arguments to extract a remote URI and deduces the local path.
 // If the local path isn't provided and considerGitRoot is true, it uses the git repository root.
-func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
+func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
 		remote = MustParsePathURI("path", args[0])
