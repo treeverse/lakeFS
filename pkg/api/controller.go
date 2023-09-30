@@ -149,8 +149,7 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
 	_, inviteSupported := c.Auth.(auth.EmailInviter)
 	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser:     &inviteSupported,
-		ForgotPassword: swag.Bool(false), // TODO(barak): verify no code refrence this capability and remove
+		InviteUser: &inviteSupported,
 	})
 }
 
