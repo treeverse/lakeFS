@@ -37,6 +37,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_dump_refs(self):
+        """Test case for dump_refs
+
+        Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations   # noqa: E501
+        """
+        pass
+
     def test_get_auth_capabilities(self):
         """Test case for get_auth_capabilities
 
@@ -67,6 +74,13 @@ class TestInternalApi(unittest.TestCase):
         """Test case for post_stats_events
 
         post stats events, this endpoint is meant for internal use only  # noqa: E501
+        """
+        pass
+
+    def test_restore_refs(self):
+        """Test case for restore_refs
+
+        Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations   # noqa: E501
         """
         pass
 

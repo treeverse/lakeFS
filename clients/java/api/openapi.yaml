@@ -1922,9 +1922,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-accepts: application/json
   /repositories/{repository}/refs/restore:
     put:
@@ -1970,9 +1972,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/tags:
