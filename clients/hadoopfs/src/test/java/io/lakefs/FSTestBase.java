@@ -132,6 +132,7 @@ abstract class FSTestBase {
 
         addHadoopConfiguration(conf);
 
+        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
 
         conf.set("fs.lakefs.access.key", "unused-but-checked");
@@ -162,7 +163,8 @@ abstract class FSTestBase {
                      .withBody(gson.toJson(new Repository().id("repo")
                                            .creationDate(1234L)
                                            .defaultBranch("main")
-                                           .storageNamespace("s3://FIX/ME?"))));
+                                           // Not really needed, just put something that works.
+                                           .storageNamespace("s3a://FIX/ME?"))));
 
         // Don't return 404s for unknown paths - they will be emitted for
         // many bad requests or mocks, and make our life difficult.  Instead
