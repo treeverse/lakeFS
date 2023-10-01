@@ -373,10 +373,12 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
 
-	// validate physical address
-	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
+	if addressType == catalog.AddressTypeRelative {
+		// if the address is in the storage namespace, verify it has been saved for linking
+		err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
 	}
 
 	// Because CreateEntry tracks staging on a database with atomic operations,
