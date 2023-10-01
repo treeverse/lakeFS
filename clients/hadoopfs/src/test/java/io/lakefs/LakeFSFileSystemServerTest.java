@@ -8,132 +8,41 @@ import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import io.lakefs.utils.ObjectLocation;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
-import com.amazonaws.services.s3.model.*;
-import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.utility.DockerImageName;
 
 import org.hamcrest.core.StringContains;
 
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import org.mockserver.client.MockServerClient;
-import org.mockserver.junit.MockServerRule;
+import org.mockserver.matchers.TimeToLive;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.Cookie;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 
-import org.mockserver.matchers.MatchType;
-import org.mockserver.matchers.TimeToLive;
 import static org.mockserver.model.HttpResponse.response;
 import static org.mockserver.model.JsonBody.json;
-
-import static org.apache.commons.lang3.StringUtils.removeStart;
-import com.google.common.base.Optional;
-import org.immutables.value.Value;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LakeFSFileSystemServerTest {
+public class LakeFSFileSystemServerTest extends FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemServerTest.class);
-
-    static final Long UNUSED_FILE_SIZE = 1L;
-    static final Long UNUSED_MTIME = 0L;
-    static final String UNUSED_CHECKSUM = "unused";
-
-    static final Long STATUS_FILE_SIZE = 2L;
-    static final Long STATUS_MTIME = 123456789L;
-    static final String STATUS_CHECKSUM = "status";
-
-    protected Configuration conf;
-    protected final LakeFSFileSystem fs = new LakeFSFileSystem();
-
-    protected AmazonS3 s3Client;
-
-    protected String s3Base;
-    protected String s3Bucket;
-
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
-    protected static final String S3_ACCESS_KEY_ID = "AKIArootkey";
-    protected static final String S3_SECRET_ACCESS_KEY = "secret/minio/key=";
-
-    protected static final ApiException noSuchFile = new ApiException(HttpStatus.SC_NOT_FOUND, "no such file");
-
-    protected final Gson gson = new GsonBuilder()
-        .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-        .create();
-
-    // TODO(ariels): Remove!
-    @Value.Immutable static public interface Pagination {
-        @Value.Parameter Optional<Integer> amount();
-        @Value.Parameter Optional<String> after();
-        @Value.Parameter Optional<String> prefix();
-    }
-
-    @Rule
-    public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
-        withCommand("minio", "server", "/data").
-        withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
-        withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
-        withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
-        withEnv("MINIO_UPDATE", "off").
-        withExposedPorts(9000);
-
-    // TODO(ariels): Include in resources or otherwise package nicely.
-    // TODO(ariels): Read, parse the spec once!
-    String openAPISpec = "../../api/swagger.yml";
-
-    @Rule
-    public MockServerRule mockServerRule = new MockServerRule(this);
-    protected MockServerClient mockServerClient;
-
-    @Rule
-    public TestName name = new TestName();
-
-    protected String sessionId() {
-        return name.getMethodName();
-    }
-
-    protected HttpRequest request() {
-        return HttpRequest.request().withCookie(new Cookie("sessionId", sessionId()));
-    }
 
     //    abstract void initConfiguration();
     
@@ -141,319 +50,14 @@ public class LakeFSFileSystemServerTest {
 
     //    abstract StagingLocation mockGetPhysicalAddress(String repo, String branch, String key, String physicalKey) throws ApiException;
 
-    // TODO(ariels): Override and make abstract!
-    protected String createPhysicalAddress(String key) {
-        return s3Url(key);
-    }
-
-    protected static String makeS3BucketName() {
-        String slug = NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR,
-                                               "abcdefghijklmnopqrstuvwxyz-0123456789".toCharArray(), 14);
-        return String.format("bucket-%s-x", slug);
-    }
-
-    /** @return "s3://..." URL to use for s3Path (which does not start with a slash) on bucket */
-    protected String s3Url(String s3Path) {
-        return s3Base + s3Path;
-    }
-
-    protected String getS3Key(StagingLocation stagingLocation) {
-        return removeStart(stagingLocation.getPhysicalAddress(), s3Base);
-    }
-
-    protected void assertS3Object(StagingLocation stagingLocation, String contents) {
-        String s3Key = getS3Key(stagingLocation);
-        List<String> actualFiles = ImmutableList.of("<not yet listed>");
-        try (S3Object obj =
-             s3Client.getObject(new GetObjectRequest(s3Bucket, "/" + s3Key))) {
-            actualFiles = getS3FilesByPrefix("");
-            String actual = IOUtils.toString(obj.getObjectContent());
-            Assert.assertEquals(contents, actual);
-
-            Assert.assertEquals(ImmutableList.of(s3Key), actualFiles);
-        } catch (Exception e) {
-            throw new RuntimeException("Files " + actualFiles +
-                                       "; read key " + s3Key + " failed", e);
-        }
-    }
-
     protected String objectLocToS3ObjKey(ObjectLocation objectLoc) {
         return String.format("/%s/%s/%s",objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
-    }
-
-    @Before
-    public void logS3Container() {
-        Logger s3Logger = LoggerFactory.getLogger("s3 container");
-        Slf4jLogConsumer logConsumer = new Slf4jLogConsumer(s3Logger)
-            .withMdc("container", "s3")
-            .withSeparateOutputStreams();
-        s3.followOutput(logConsumer);
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        AWSCredentials creds = new BasicAWSCredentials(S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY);
-
-        ClientConfiguration clientConfiguration = new ClientConfiguration()
-                .withSignerOverride("AWSS3V4SignerType");
-        String s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
-
-        s3Client = new AmazonS3Client(creds, clientConfiguration);
-
-        S3ClientOptions s3ClientOptions = new S3ClientOptions()
-            .withPathStyleAccess(true);
-        s3Client.setS3ClientOptions(s3ClientOptions);
-        s3Client.setEndpoint(s3Endpoint);
-
-        s3Bucket = makeS3BucketName();
-        s3Base = String.format("s3://%s/", s3Bucket);
-        LOG.info("S3: bucket {} => base URL {}", s3Bucket, s3Base);
-
-        // Always expect repo "repo" to be found, it's used in all tests.
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath("/repositories/repo"))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(new Repository().id("repo")
-                                           .creationDate(1234L)
-                                           .defaultBranch("main")
-                                           .storageNamespace(s3Base))));
-
-        CreateBucketRequest cbr = new CreateBucketRequest(s3Bucket);
-        s3Client.createBucket(cbr);
-
-        conf = new Configuration(false);
-        //initConfiguration();
-        conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
-
-        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
-        conf.set(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, S3_ACCESS_KEY_ID);
-        conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
-        conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
-        conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
-
-        conf.set("fs.lakefs.access.key", "unused-but-checked");
-        conf.set("fs.lakefs.secret.key", "unused-but-checked");
-        conf.set("fs.lakefs.endpoint", String.format("http://localhost:%d/", mockServerClient.getPort()));
-        conf.set("fs.lakefs.session_id", sessionId());
-
-        System.setProperty("hadoop.home.dir", "/");
-
-        // lakeFSFS initialization requires a blockstore.
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath("/config/storage"),
-                              Times.once())
-            .respond(response()
-                     .withStatusCode(200)
-                     .withBody(gson.toJson(new StorageConfig()
-                                           .blockstoreType("s3")
-                                           .blockstoreNamespaceValidityRegex(".*")
-                                           // TODO(ariels): Change for presigned?
-                                           .preSignSupport(false))));
-
-        // Don't return 404s for unknown paths - they will be emitted for
-        // many bad requests or mocks, and make our life difficult.  Instead
-        // fail using a unique error code.  This has very low priority.
-        mockServerClient.when(request(), Times.unlimited(), TimeToLive.unlimited(), -10000)
-            .respond(response().withStatusCode(418));
-        // TODO(ariels): No tests mock "get underlying filesystem", so this
-        //     also catches its "get repo" call.  Nothing bad happens, but
-        //     this response does show up in logs.
-
-        fs.initialize(new URI("lakefs://repo/main/file.txt"), conf);
-    }
-
-    /**
-     * @return all pathnames under s3Prefix that start with prefix.  (Obvious not scalable!)
-     */
-    protected List<String> getS3FilesByPrefix(String prefix) {
-
-        ListObjectsRequest req = new ListObjectsRequest()
-            .withBucketName(s3Bucket)
-            .withPrefix(prefix)
-            .withDelimiter(null);
-
-        ObjectListing listing = s3Client.listObjects(req);
-        List<S3ObjectSummary> summaries = listing.getObjectSummaries();
-        if (listing.isTruncated()) {
-            Assert.fail(String.format("[internal] no support for test that creates >%d S3 objects", listing.getMaxKeys()));
-        }
-
-        return Lists.transform(summaries, S3ObjectSummary::getKey);
     }
 
     @Test
     public void getUri() {
         URI u = fs.getUri();
         Assert.assertNotNull(u);
-    }
-
-    // Expect this statObject to be not found
-    protected void expectStatObjectNotFound(String repo, String ref, String path) {
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/refs/%s/objects/stat", repo, ref))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(404)
-                     .withBody(String.format("{message: \"%s/%s/%s not found\"}",
-                                             repo, ref, path, sessionId())));
-    }
-
-    protected void expectStatObject(String repo, String ref, String path, ObjectStats stats) {
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/refs/%s/objects/stat", repo, ref))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(stats)));
-    }
-
-    // Expect this lakeFSFS path not to exist.  You may still need to
-    // expectListing for the directory that will not contain this pagth.
-    protected void expectFileDoesNotExist(String repo, String ref, String path) {
-        expectStatObjectNotFound(repo, ref, path);
-        expectStatObjectNotFound(repo, ref, path + Constants.SEPARATOR);
-    }
-
-    protected void expectFilesInDir(String repo, String main, String dir, String... files) {
-        ObjectStats[] allStats;
-        if (files.length == 0) {
-            // Fake a directory marker
-            Path dirPath = new Path(String.format("lakefs://%s/%s/%s", repo, main, dir));
-            ObjectLocation dirLoc = ObjectLocation.pathToObjectLocation(dirPath);
-            ObjectStats dirStats = expectDirectoryMarker(dirLoc);
-            allStats = new ObjectStats[1];
-            allStats[0] = dirStats;
-        } else {
-            expectStatObjectNotFound(repo, main, dir);
-            expectStatObjectNotFound(repo, main, dir + Constants.SEPARATOR);
-
-            allStats = new ObjectStats[files.length];
-            for (int i = 0; i < files.length; i++) {
-                allStats[i] = new ObjectStats()
-                    .pathType(PathTypeEnum.OBJECT)
-                    .path(dir + Constants.SEPARATOR + files[i]);
-            }
-        }
-
-        // Directory can be listed!
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix(dir + Constants.SEPARATOR).build(),
-                      allStats);
-    }
-
-    protected void expectUploadObject(String repo, String branch, String path) {
-        StagingLocation stagingLocation = new StagingLocation()
-            .token("token:foo:" + sessionId())
-            .physicalAddress(s3Url(String.format("repo-base/dir-marker/%s/%s/%s/%s",
-                                                 sessionId(), repo, branch, path)));
-        mockServerClient.when(request()
-                              .withMethod("POST")
-                              .withPath(String.format("/repositories/%s/branches/%s/objects", repo, branch))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(stagingLocation)));
-    }
-
-    protected void expectGetBranch(String repo, String branch) {
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/branches/%s", repo, branch)))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(new Ref().id("123").commitId("456"))));
-    }
-
-    // Return a location under namespace for this getPhysicalAddress call.
-    //
-    // TODO(ariels): abstract, overload separately for direct and pre-signed.
-    protected StagingLocation expectGetPhysicalAddress(String repo, String branch, String path, String namespace) {
-        StagingLocation stagingLocation = new StagingLocation()
-            .token("token:foo:" + sessionId())
-            .physicalAddress(s3Url(String.format("%s/%s/%s/%s/%s-object",
-                                                 sessionId(), namespace, repo, branch, path)));
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(stagingLocation)));
-        return stagingLocation;
-    }
-
-    protected void expectDeleteObject(String repo, String branch, String path) {
-        mockServerClient.when(request()
-                              .withMethod("DELETE")
-                              .withPath(String.format("/repositories/%s/branches/%s/objects", repo, branch))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(204));
-    }
-
-    protected void expectDeleteObjectNotFound(String repo, String branch, String path) {
-        mockServerClient.when(request()
-                              .withMethod("DELETE")
-                              .withPath(String.format("/repositories/%s/branches/%s/objects", repo, branch))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(404));
-    }
-
-    // Expects a single deleteObjects call to succeed, returning list of failures.
-    protected void expectDeleteObjects(String repo, String branch, String path, ObjectError... errors) {
-        PathList pathList = new PathList().addPathsItem(path);
-        expectDeleteObjects(repo, branch, pathList, errors);
-    }
-
-    // Expects a single deleteObjects call to succeed, returning list of failures.
-    protected void expectDeleteObjects(String repo, String branch, PathList pathList, ObjectError... errors) {
-        mockServerClient.when(request()
-                              .withMethod("POST")
-                              .withPath(String.format("/repositories/%s/branches/%s/objects/delete", repo, branch))
-                              .withBody(gson.toJson(pathList)),
-                              Times.once())
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(new ObjectErrorList()
-                                           .errors(Arrays.asList(errors)))));
-    }
-
-    protected ObjectStats expectDirectoryMarker(ObjectLocation objectLoc) {
-        // Mock parent directory to show the directory marker exists.
-        ObjectStats markerStats = new ObjectStats()
-            .path(objectLoc.getPath())
-            .pathType(PathTypeEnum.OBJECT);
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/refs/%s/objects/stat", objectLoc.getRepository(), objectLoc.getRef()))
-                              .withQueryStringParameter("path", objectLoc.getPath()))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(markerStats)));
-        return markerStats;
-    }
-
-    // Expect this listing and return these stats.
-    protected void expectListing(String repo, String ref, ImmutablePagination pagination, ObjectStats... stats) {
-        expectListingWithHasMore(repo, ref, pagination, false, stats);
-    }
-
-    protected void expectListingWithHasMore(String repo, String ref, ImmutablePagination pagination, boolean hasMore, ObjectStats... stats) {
-        HttpRequest req = request()
-            .withMethod("GET")
-            .withPath(String.format("/repositories/%s/refs/%s/objects/ls", repo, ref));
-        // Validate elements of pagination only if present.
-        if (pagination.after().isPresent()) {
-            req = req.withQueryStringParameter("after", pagination.after().or(""));
-        }
-        if (pagination.amount().isPresent()) {
-            req = req.withQueryStringParameter("amount", pagination.amount().get().toString());
-        }
-        if (pagination.prefix().isPresent()) {
-            req = req.withQueryStringParameter("prefix", pagination.prefix().or(""));
-        }
-        mockServerClient.when(req)
-            .respond(response()
-                     .withStatusCode(200)
-                     .withBody(gson.toJson(ImmutableMap.of("results", Arrays.asList(stats),
-                                                           "pagination",
-                                                           new io.lakefs.clients.api.model.Pagination().hasMore(hasMore)))));
     }
 
     @Test
@@ -559,7 +163,7 @@ public class LakeFSFileSystemServerTest {
         // First listing returns irrelevant objects, _before_ "exis.ts/"
         expectListingWithHasMore("repo", "main",
                                  ImmutablePagination.builder().prefix("exis.ts").build(),
-                                 false,
+                                 true,
                                  beforeStats1, beforeStats2);
         // Second listing tries to find an object inside "exis.ts/".
         expectListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts/").build(),
@@ -798,193 +402,6 @@ public class LakeFSFileSystemServerTest {
     @Test
     public void testDeleteDirectoryRecursiveBatch123() throws IOException {
         caseDeleteDirectoryRecursive(123, 123);
-    }
-
-    @Test
-    public void testCreate() throws IOException {
-        String contents = "The quick brown fox jumps over the lazy dog.";
-        long contentsLength = (long) contents.getBytes().length;
-        Path path = new Path("lakefs://repo/main/sub1/sub2/create.me");
-
-        expectDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path));
-
-        StagingLocation stagingLocation =
-            expectGetPhysicalAddress("repo", "main", "sub1/sub2/create.me", "repo-base/create");
-
-        // nothing at path
-        expectFileDoesNotExist("repo", "main", "sub1/sub2/create.me");
-        // sub1/sub2 was an empty directory with no marker.
-        expectStatObjectNotFound("repo", "main", "sub1/sub2/");
-
-        ObjectStats newStats = new ObjectStats()
-            .path("sub1/sub2/create.me")
-            .pathType(PathTypeEnum.OBJECT)
-            .physicalAddress(stagingLocation.getPhysicalAddress()).
-            checksum(UNUSED_CHECKSUM).
-            mtime(UNUSED_MTIME).
-            sizeBytes(UNUSED_FILE_SIZE);
-
-        mockServerClient.when(request()
-                              .withMethod("PUT")
-                              .withPath("/repositories/repo/branches/main/staging/backing")
-                              .withBody(json(gson.toJson(new StagingMetadata()
-                                                    .staging(stagingLocation)
-                                                    .sizeBytes(contentsLength)),
-                                             MatchType.ONLY_MATCHING_FIELDS)))
-            .respond(response()
-                     .withStatusCode(200)
-                     .withBody(gson.toJson(newStats)));
-
-        // Empty dir marker should be deleted.
-        expectDeleteObject("repo", "main", "sub1/sub2/");
-
-        OutputStream out = fs.create(path);
-        out.write(contents.getBytes());
-        out.close();
-
-        // Write succeeded, verify physical file on S3.
-        assertS3Object(stagingLocation, contents);
-    }
-
-    @Test
-    public void testCreateExistingDirectory() throws IOException {
-        Path path = new Path("lakefs://repo/main/sub1/sub2/create.me");
-        // path is a directory -- so cannot be created as a file.
-
-        expectStatObjectNotFound("repo", "main", "sub1/sub2/create.me");
-        ObjectStats stats = new ObjectStats()
-            .path("sub1/sub2/create.me/")
-            .physicalAddress(s3Url("repo-base/sub1/sub2/create.me"));
-        expectStatObject("repo", "main", "sub1/sub2/create.me/", stats);
-
-        Exception e =
-            Assert.assertThrows(FileAlreadyExistsException.class, () -> fs.create(path, false));
-        Assert.assertThat(e.getMessage(), new StringContains("is a directory"));
-    }
-
-    @Test
-    public void testCreateExistingFile() throws IOException {
-        Path path = new Path("lakefs://repo/main/sub1/sub2/create.me");
-
-        ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
-        expectStatObject("repo", "main", "sub1/sub2/create.me",
-                         new ObjectStats().path("sub1/sub2/create.me"));
-        Exception e = Assert.assertThrows(FileAlreadyExistsException.class,
-                            () -> fs.create(path, false));
-        Assert.assertThat(e.getMessage(), new StringContains("already exists"));
-    }
-
-    @Test
-    public void testMkdirs() throws IOException {
-        // setup empty folder checks
-        Path path = new Path("dir1/dir2/dir3");
-        for (Path p = new Path(path.toString()); p != null && !p.isRoot(); p = p.getParent()) {
-            expectStatObjectNotFound("repo", "main", p.toString());
-            expectStatObjectNotFound("repo", "main", p+"/");
-            expectListing("repo", "main", ImmutablePagination.builder().prefix(p+"/").build());
-        }
-
-        // physical address to directory marker object
-        StagingLocation stagingLocation =
-            expectGetPhysicalAddress("repo", "main", "dir1/dir2/dir3/", "repo-base/emptyDir");
-
-        ObjectStats newStats = new ObjectStats()
-            .path("dir1/dir2/dir3/")
-            .physicalAddress(s3Url("repo-base/dir12"));
-        expectStatObject("repo", "main", "dir1/dir2/dir3/", newStats);
-
-        mockServerClient.when(request()
-                              .withMethod("PUT")
-                              .withPath("/repositories/repo/branches/main/staging/backing")
-                              .withQueryStringParameter("path", "dir1/dir2/dir3/")
-                              .withBody(json(gson.toJson(new StagingMetadata()
-                                                         .staging(stagingLocation)
-                                                         .sizeBytes(0L)),
-                                             MatchType.ONLY_MATCHING_FIELDS)))
-            .respond(response()
-                     .withStatusCode(200)
-                     .withBody(gson.toJson(newStats)));
-
-        // call mkdirs
-        Assert.assertTrue(fs.mkdirs(new Path("lakefs://repo/main/", path)));
-
-        // verify file exists on s3
-        assertS3Object(stagingLocation, "");
-    }
-
-    @Test
-    public void testOpen() throws IOException, ApiException {
-        String contents = "The quick brown fox jumps over the lazy dog.";
-        byte[] contentsBytes = contents.getBytes();
-        String physicalPath = sessionId() + "/repo-base/open";
-        String physicalKey = createPhysicalAddress(physicalPath);
-        int readBufferSize = 5;
-        Path path = new Path("lakefs://repo/main/read.me");
-
-        expectStatObject("repo", "main", "read.me",
-                         new ObjectStats()
-                         .physicalAddress(physicalKey)
-                         .checksum(UNUSED_CHECKSUM)
-                         .mtime(UNUSED_MTIME)
-                         .sizeBytes((long) contentsBytes.length));
-
-        // Write physical file to S3.
-        ObjectMetadata s3Metadata = new ObjectMetadata();
-        s3Metadata.setContentLength(contentsBytes.length);
-        s3Client.putObject(s3Bucket,
-                           physicalPath,
-                           new ByteArrayInputStream(contentsBytes),
-                           s3Metadata);
-
-        try (InputStream in = fs.open(path, readBufferSize)) {
-            String actual = IOUtils.toString(in);
-            Assert.assertEquals(contents, actual);
-        } catch (Exception e) {
-            String actualFiles = String.join(", ", getS3FilesByPrefix(""));
-            throw new RuntimeException("Files " + actualFiles + "; read " + path.toString() + " from " + physicalKey, e);
-        }
-    }
-
-    // TODO(ariels): Rename test to "testOpenWithNonAsciiUriChars".
-    @Test
-    public void testOpenWithInvalidUriChars() throws IOException, ApiException {
-        String contents = "The quick brown fox jumps over the lazy dog.";
-        byte[] contentsBytes = contents.getBytes();
-        int readBufferSize = 5;
-
-        String[] suffixes = {
-                "with space/open",
-                "wi:th$cha&rs#/%op;e?n",
-                "עכשיו/בעברית/open",
-                "\uD83E\uDD2F/imoji/open",
-        };
-        for (String suffix : suffixes) {
-            String key = "/repo-base/" + suffix;
-
-            // Write physical file to S3.
-            ObjectMetadata s3Metadata = new ObjectMetadata();
-            s3Metadata.setContentLength(contentsBytes.length);
-            s3Client.putObject(new PutObjectRequest(s3Bucket, key, new ByteArrayInputStream(contentsBytes), s3Metadata));
-
-            String path = String.format("lakefs://repo/main/%s-x", suffix);
-            ObjectStats stats = new ObjectStats()
-                .physicalAddress(s3Url(key))
-                .sizeBytes((long) contentsBytes.length);
-            expectStatObject("repo", "main", suffix + "-x", stats);
-
-            try (InputStream in = fs.open(new Path(path), readBufferSize)) {
-                String actual = IOUtils.toString(in);
-                Assert.assertEquals(contents, actual);
-            }
-        }
-    }
-
-    @Test
-    public void testOpen_NotExists() throws IOException, ApiException {
-        Path path = new Path("lakefs://repo/main/doesNotExi.st");
-        expectStatObjectNotFound("repo", "main", "doesNotExi.st");
-        Assert.assertThrows(FileNotFoundException.class,
-                            () -> fs.open(path));
     }
 
     @Test
