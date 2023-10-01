@@ -190,11 +190,13 @@ Class | Method | HTTP request | Description
 *ImportApi* | [**importStatus**](docs/ImportApi.md#importStatus) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
 *InternalApi* | [**createBranchProtectionRulePreflight**](docs/InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *InternalApi* | [**createSymlinkFile**](docs/InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+*InternalApi* | [**dumpRefs**](docs/InternalApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**getAuthCapabilities**](docs/InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *InternalApi* | [**getLakeFSVersion**](docs/InternalApi.md#getLakeFSVersion) | **GET** /config/version | 
 *InternalApi* | [**getSetupState**](docs/InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *InternalApi* | [**getStorageConfig**](docs/InternalApi.md#getStorageConfig) | **GET** /config/storage | 
 *InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+*InternalApi* | [**restoreRefs**](docs/InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *InternalApi* | [**setupCommPrefs**](docs/InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
@@ -212,11 +214,9 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
-*RefsApi* | [**dumpRefs**](docs/RefsApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**findMergeBase**](docs/RefsApi.md#findMergeBase) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**logCommits**](docs/RefsApi.md#logCommits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**mergeIntoBranch**](docs/RefsApi.md#mergeIntoBranch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-*RefsApi* | [**restoreRefs**](docs/RefsApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
 *RepositoriesApi* | [**createBranchProtectionRule**](docs/RepositoriesApi.md#createBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**deleteBranchProtectionRule**](docs/RepositoriesApi.md#deleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 

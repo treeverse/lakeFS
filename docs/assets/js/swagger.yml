@@ -2406,9 +2406,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: dumpRefs
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       responses:
         201:
           description: refs dump
@@ -2434,9 +2436,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: restoreRefs
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       requestBody:
         required: true
         content:

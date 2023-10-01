@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.RefsDump;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StatsEventsList;
@@ -70,6 +71,21 @@ public class InternalApiTest {
         String branch = null;
         String location = null;
                 StorageURI response = api.createSymlinkFile(repository, branch, location);
+        // TODO: test validations
+    }
+    
+    /**
+     * Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void dumpRefsTest() throws ApiException {
+        String repository = null;
+                RefsDump response = api.dumpRefs(repository);
         // TODO: test validations
     }
     
@@ -141,6 +157,22 @@ public class InternalApiTest {
     public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
                 api.postStatsEvents(statsEventsList);
+        // TODO: test validations
+    }
+    
+    /**
+     * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void restoreRefsTest() throws ApiException {
+        String repository = null;
+        RefsDump refsDump = null;
+                api.restoreRefs(repository, refsDump);
         // TODO: test validations
     }
     
