@@ -4198,7 +4198,6 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
 	}
-
 }
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
