@@ -119,5 +119,12 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 
 func AddBranchProtection(ctx context.Context, repo *catalog.Repository, cat catalog.Interface) error {
 	// Set branch protection on the main branch
-	return cat.CreateBranchProtectionRule(ctx, repo.Name, repo.DefaultBranch, []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
+	rules, eTag, err := cat.GetBranchProtectionRules(ctx, repo.Name)
+	if err != nil {
+		return err
+	}
+	rules.BranchPatternToBlockedActions[repo.DefaultBranch] = &graveler.BranchProtectionBlockedActions{
+		Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT},
+	}
+	return cat.SetBranchProtectionRules(ctx, repo.Name, rules, swag.String(eTag))
 }

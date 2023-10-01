@@ -2329,6 +2329,130 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/settings/gc_rules:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getGCRules
+      summary: get repository GC rules
+      responses:
+        200:
+          description: repository GC rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionRules"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    put:
+      tags:
+        - repositories
+      operationId: setGCRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionRules"
+      responses:
+        204:
+          description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - repositories
+      operationId: deleteGCRules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/settings/branch_protection:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getBranchProtectionRules
+      summary: get branch protection rules
+      responses:
+        200:
+          description: branch protection rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchProtectionRule"
+          headers:
+            ETag:
+              schema:
+                type: string
+                description: ETag of the branch protection rules
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+          description: if provided, the branch protection rules will be updated only if the current ETag match the provided value
+          allowEmptyValue: true
+      tags:
+        - repositories
+      operationId: setBranchProtectionRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: branch protection rule created successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /otf/diffs:
     get:
       tags:
@@ -4068,9 +4192,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - retention
-      operationId: getGarbageCollectionRules
+        - internal
+      operationId: internalGetGarbageCollectionRules
       responses:
         200:
           description: gc rule list
@@ -4086,9 +4211,10 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
+      deprecated: true
       tags:
-        - retention
-      operationId: set garbage collection rules
+        - internal
+      operationId: internalSetGarbageCollectionRules
       requestBody:
         required: true
         content:
@@ -4105,9 +4231,10 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - retention
-      operationId: delete garbage collection rules
+        - internal
+      operationId: internalDeleteGarbageCollectionRules
       responses:
         204:
           description: deleted garbage collection rules successfully
@@ -4208,9 +4335,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - repositories
-      operationId: getBranchProtectionRules
+        - internal
+      operationId: internalGetBranchProtectionRules
       summary: get branch protection rules
       responses:
         200:
@@ -4229,9 +4357,10 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
+      deprecated: true
       tags:
-        - repositories
-      operationId: createBranchProtectionRule
+        - internal
+      operationId: internalCreateBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4248,9 +4377,10 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - repositories
-      operationId: deleteBranchProtectionRule
+        - internal
+      operationId: internalDeleteBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4331,7 +4461,7 @@ paths:
   /config/garbage-collection:
     get:
       tags:
-        - config
+        - internal
       operationId: getGarbageCollectionConfig
       description: get information of gc settings
       responses:

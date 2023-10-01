@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -67,6 +68,17 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 	return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
 }
 
+// SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
+// The setting is persisted only if the current version of the setting matches the given checksum.
+func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum string) error {
+	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
+	decodedChecksum, err := base64.StdEncoding.DecodeString(lastKnownChecksum)
+	if err != nil {
+		return fmt.Errorf("decode checksum: %w", err)
+	}
+	return kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, decodedChecksum)
+}
+
 func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.RepositoryRecord, key string, data proto.Message) (kv.Predicate, error) {
 	pred, err := kv.GetMsg(ctx, m.store, graveler.RepoPartition(repo), []byte(graveler.SettingsPath(key)), data)
 	if err != nil {
@@ -78,29 +90,32 @@ func (m *Manager) getWithPredicate(ctx context.Context, repo *graveler.Repositor
 	return pred, nil
 }
 
-func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+// GetLatest returns the latest setting under the given repository and key, without using the cache.
+// The returned checksum represents the version of the setting, and can be passed to SaveIf for conditional updates.
+func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, string, error) {
 	data := settingTemplate.ProtoReflect().Interface()
-	_, err := m.getWithPredicate(ctx, repository, key, data)
+	pred, err := m.getWithPredicate(ctx, repository, key, data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
 		}
-		return nil, err
+		return nil, "", err
 	}
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "got repository-level setting")
-	return data, nil
+	return data, base64.StdEncoding.EncodeToString(pred.([]byte)), nil
 }
 
 // Get fetches the setting under the given repository and key, and returns the result.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
 // The settingTemplate parameter is used to determine the returned type.
+// The returned checksum represents the version of the setting, and can be used in SaveIf to perform an atomic update.
 func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
 	k := cacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
 	}
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		setting, err := m.GetLatest(ctx, repository, key, settingTemplate)
+		setting, _, err := m.GetLatest(ctx, repository, key, settingTemplate)
 		if errors.Is(err, graveler.ErrNotFound) {
 			return nil, nil
 		}

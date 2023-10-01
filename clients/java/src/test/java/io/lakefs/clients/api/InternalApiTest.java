@@ -15,9 +15,13 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.AuthCapabilities;
+import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.GarbageCollectionConfig;
+import io.lakefs.clients.api.model.GarbageCollectionRules;
+import io.lakefs.clients.api.model.InlineObject1;
 import io.lakefs.clients.api.model.RefsDump;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
@@ -106,6 +110,20 @@ public class InternalApiTest {
     /**
      * 
      *
+     * get information of gc settings
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getGarbageCollectionConfigTest() throws ApiException {
+                GarbageCollectionConfig response = api.getGarbageCollectionConfig();
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
      * get version of lakeFS server
      *
      * @throws ApiException
@@ -142,6 +160,99 @@ public class InternalApiTest {
     @Test
     public void getStorageConfigTest() throws ApiException {
                 StorageConfig response = api.getStorageConfig();
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalCreateBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        BranchProtectionRule branchProtectionRule = null;
+                api.internalCreateBranchProtectionRule(repository, branchProtectionRule);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalDeleteBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        InlineObject1 inlineObject1 = null;
+                api.internalDeleteBranchProtectionRule(repository, inlineObject1);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalDeleteGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+                api.internalDeleteGarbageCollectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * get branch protection rules
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalGetBranchProtectionRulesTest() throws ApiException {
+        String repository = null;
+                List<BranchProtectionRule> response = api.internalGetBranchProtectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalGetGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+                GarbageCollectionRules response = api.internalGetGarbageCollectionRules(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * 
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void internalSetGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules garbageCollectionRules = null;
+                api.internalSetGarbageCollectionRules(repository, garbageCollectionRules);
         // TODO: test validations
     }
     

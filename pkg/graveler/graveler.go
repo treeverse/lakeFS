@@ -609,16 +609,14 @@ type VersionController interface {
 
 	GCNewRunID() string
 
-	// GetBranchProtectionRules return all branch protection rules for the repository
-	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	// GetBranchProtectionRules return all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for a conditional update.
+	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 
-	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
-	// or return ErrRuleNotExists if no such rule exists.
-	DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error
-
-	// CreateBranchProtectionRule creates a rule for the given name pattern,
-	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
-	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
+	// SetBranchProtectionRules sets the branch protection rules for the repository.
+	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
+	// If lastKnownChecksum is nil, the update is always performed.
+	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
 	// or return ErrAddressTokenAlreadyExists if a token already exists.
@@ -1495,16 +1493,15 @@ func (g *Graveler) GCNewRunID() string {
 	return g.garbageCollectionManager.NewID()
 }
 
-func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
+func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error {
-	return g.protectedBranchesManager.Delete(ctx, repository, pattern)
-}
-
-func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error {
-	return g.protectedBranchesManager.Add(ctx, repository, pattern, blockedActions)
+func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
+	if lastKnownChecksum == nil {
+		return g.protectedBranchesManager.SetRules(ctx, repository, rules)
+	}
+	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, *lastKnownChecksum)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -3238,15 +3235,16 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
-	// Add creates a rule for the given name pattern, blocking the given actions.
-	// Returns ErrRuleAlreadyExists if there is already a rule for the given pattern.
-	Add(ctx context.Context, repository *RepositoryRecord, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
 	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
 	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
-	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
-	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
-	// GetRules returns all branch protection rules for the repository
-	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	// GetRules returns all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetRulesIf for conditional updates.
+	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
+	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules) error
+	// SetRulesIf sets the branch protection rules for the repository.
+	// If lastKnownChecksum does not match the current checksum, returns ErrPreconditionFailed.
+	// If lastKnownChecksum is empty, the rules are set only if no rules are currently set.
+	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }
