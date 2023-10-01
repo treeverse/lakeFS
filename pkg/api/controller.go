@@ -27,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -92,7 +91,6 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
-	Emailer               *email.Emailer
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
@@ -149,11 +147,9 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	inviteSupported := c.Auth.IsInviteSupported()
-	emailSupported := c.Emailer.Params.SMTPHost != ""
+	_, inviteSupported := c.Auth.(auth.EmailInviter)
 	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser:     &inviteSupported,
-		ForgotPassword: &emailSupported,
+		InviteUser: &inviteSupported,
 	})
 }
 
@@ -1080,6 +1076,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 
 	var parsedEmail *string
 	if invite {
+		// Check that email is valid
 		addr, err := mail.ParseAddress(username)
 		if err != nil {
 			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
@@ -1100,7 +1097,12 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user", r, "", "", "")
 	if invite {
-		err := c.Auth.InviteUser(ctx, *parsedEmail)
+		inviter, ok := c.Auth.(auth.EmailInviter)
+		if !ok {
+			writeError(w, r, http.StatusNotImplemented, "Not implemented")
+			return
+		}
+		err := inviter.InviteUser(ctx, *parsedEmail)
 		if c.handleAPIError(ctx, w, r, err) {
 			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
 			return
@@ -1415,6 +1417,39 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
+func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
+	_, err := auth.GetUser(r.Context())
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+	var storageCfg apigen.StorageConfig
+	internalError := false
+	if !c.authorizeCallback(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadConfigAction,
+			Resource: permissions.All,
+		},
+	}, func(_ http.ResponseWriter, _ *http.Request, code int, v interface{}) {
+		switch code {
+		case http.StatusInternalServerError:
+			writeError(w, r, code, v)
+			internalError = true
+		case http.StatusUnauthorized:
+			c.Logger.Debug("Unauthorized request to get storage config, returning partial config")
+		}
+	}) {
+		if internalError {
+			return
+		}
+	} else {
+		storageCfg = c.getStorageConfig()
+	}
+
+	versionConfig := c.getVersionConfig()
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig})
+}
+
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -1424,12 +1459,16 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}) {
 		return
 	}
+
+	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
+}
+func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
 	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
 		defaultNamespacePrefix = c.Config.Blockstore.DefaultNamespacePrefix
 	}
-	response := apigen.StorageConfig{
+	return apigen.StorageConfig{
 		BlockstoreType:                   c.Config.Blockstore.Type,
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
@@ -1439,9 +1478,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
 	}
-	writeResponse(w, r, http.StatusOK, response)
 }
-
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -4198,7 +4235,10 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
+	writeResponse(w, r, http.StatusOK, c.getVersionConfig())
+}
 
+func (c *Controller) getVersionConfig() apigen.VersionConfig {
 	// set upgrade recommended based on last security audit check
 	var (
 		upgradeRecommended *bool
@@ -4228,14 +4268,13 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeResponse(w, r, http.StatusOK, apigen.VersionConfig{
+	return apigen.VersionConfig{
 		UpgradeRecommended: upgradeRecommended,
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
-	})
+	}
 }
-
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)
@@ -4498,7 +4537,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, emailer *email.Emailer, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
+func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -4512,7 +4551,6 @@ func NewController(cfg *config.Config, catalog catalog.Interface, authenticator 
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
-		Emailer:               emailer,
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
 		otfDiffService:        otfDiffService,

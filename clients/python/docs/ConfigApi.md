@@ -4,16 +4,16 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_lake_fs_version**](ConfigApi.md#get_lake_fs_version) | **GET** /config/version | 
-[**get_storage_config**](ConfigApi.md#get_storage_config) | **GET** /config/storage | 
+[**get_config**](ConfigApi.md#get_config) | **GET** /config | 
+[**get_garbage_collection_config**](ConfigApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
 
 
-# **get_lake_fs_version**
-> VersionConfig get_lake_fs_version()
+# **get_config**
+> Config get_config()
 
 
 
-get version of lakeFS server
+retrieve lakeFS configuration
 
 ### Example
 
@@ -27,7 +27,7 @@ get version of lakeFS server
 import time
 import lakefs_client
 from lakefs_client.api import config_api
-from lakefs_client.model.version_config import VersionConfig
+from lakefs_client.model.config import Config
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -77,10 +77,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example, this endpoint has no required or optional parameters
     try:
-        api_response = api_instance.get_lake_fs_version()
+        api_response = api_instance.get_config()
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling ConfigApi->get_lake_fs_version: %s\n" % e)
+        print("Exception when calling ConfigApi->get_config: %s\n" % e)
 ```
 
 
@@ -89,7 +89,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**VersionConfig**](VersionConfig.md)
+[**Config**](Config.md)
 
 ### Authorization
 
@@ -105,17 +105,17 @@ This endpoint does not need any parameter.
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | lakeFS version |  -  |
+**200** | lakeFS configuration |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_storage_config**
-> StorageConfig get_storage_config()
+# **get_garbage_collection_config**
+> GarbageCollectionConfig get_garbage_collection_config()
 
 
 
-retrieve lakeFS storage configuration
+get information of gc settings
 
 ### Example
 
@@ -129,8 +129,8 @@ retrieve lakeFS storage configuration
 import time
 import lakefs_client
 from lakefs_client.api import config_api
+from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
 from lakefs_client.model.error import Error
-from lakefs_client.model.storage_config import StorageConfig
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
 # See configuration.py for a list of all supported configuration parameters.
@@ -179,10 +179,10 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example, this endpoint has no required or optional parameters
     try:
-        api_response = api_instance.get_storage_config()
+        api_response = api_instance.get_garbage_collection_config()
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling ConfigApi->get_storage_config: %s\n" % e)
+        print("Exception when calling ConfigApi->get_garbage_collection_config: %s\n" % e)
 ```
 
 
@@ -191,7 +191,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**StorageConfig**](StorageConfig.md)
+[**GarbageCollectionConfig**](GarbageCollectionConfig.md)
 
 ### Authorization
 
@@ -207,7 +207,7 @@ This endpoint does not need any parameter.
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | lakeFS storage configuration |  -  |
+**200** | lakeFS garbage collection config |  -  |
 **401** | Unauthorized |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

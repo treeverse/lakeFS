@@ -1001,7 +1001,13 @@ components:
           type: boolean
         import_validity_regex:
           type: string
-
+    Config:
+      type: object
+      properties:
+        version_config:
+          $ref: "#/components/schemas/VersionConfig"
+        storage_config:
+          $ref: "#/components/schemas/StorageConfig"
     VersionConfig:
       type: object
       properties:
@@ -2524,9 +2530,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: dumpRefs
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       responses:
         201:
           description: refs dump
@@ -2552,9 +2560,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: restoreRefs
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       requestBody:
         required: true
         content:
@@ -4401,12 +4411,28 @@ paths:
       responses:
         204:
           description: NoContent
-  /config/version:
+  /config:
     get:
       tags:
         - config
+      operationId: getConfig
+      description: retrieve lakeFS configuration
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/version:
+    get:
+      tags:
+        - internal
       operationId: getLakeFSVersion
       description: get version of lakeFS server
+      deprecated: true
       responses:
         200:
           description: lakeFS version
@@ -4419,9 +4445,10 @@ paths:
   /config/storage:
     get:
       tags:
-        - config
+        - internal
       operationId: getStorageConfig
       description: retrieve lakeFS storage configuration
+      deprecated: true
       responses:
         200:
           description: lakeFS storage configuration

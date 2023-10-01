@@ -86,12 +86,12 @@ func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) s
 	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
 	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
 	if !presignFlag.Changed {
-		resp, err := client.GetStorageConfigWithResponse(cmd.Context())
+		resp, err := client.GetConfigWithResponse(cmd.Context())
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		presign = resp.JSON200.PreSignSupport
+		presign = resp.JSON200.StorageConfig.PreSignSupport
 	}
 
 	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))

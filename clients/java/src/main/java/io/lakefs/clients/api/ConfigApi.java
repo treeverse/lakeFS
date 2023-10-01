@@ -27,9 +27,9 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 
 
+import io.lakefs.clients.api.model.Config;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.StorageConfig;
-import io.lakefs.clients.api.model.VersionConfig;
+import io.lakefs.clients.api.model.GarbageCollectionConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -57,22 +57,22 @@ public class ConfigApi {
     }
 
     /**
-     * Build call for getLakeFSVersion
+     * Build call for getConfig
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getLakeFSVersionCall(final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getConfigCall(final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/config/version";
+        String localVarPath = "/config";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -99,86 +99,86 @@ public class ConfigApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getLakeFSVersionValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getConfigValidateBeforeCall(final ApiCallback _callback) throws ApiException {
         
 
-        okhttp3.Call localVarCall = getLakeFSVersionCall(_callback);
+        okhttp3.Call localVarCall = getConfigCall(_callback);
         return localVarCall;
 
     }
 
     /**
      * 
-     * get version of lakeFS server
-     * @return VersionConfig
+     * retrieve lakeFS configuration
+     * @return Config
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public VersionConfig getLakeFSVersion() throws ApiException {
-        ApiResponse<VersionConfig> localVarResp = getLakeFSVersionWithHttpInfo();
+    public Config getConfig() throws ApiException {
+        ApiResponse<Config> localVarResp = getConfigWithHttpInfo();
         return localVarResp.getData();
     }
 
     /**
      * 
-     * get version of lakeFS server
-     * @return ApiResponse&lt;VersionConfig&gt;
+     * retrieve lakeFS configuration
+     * @return ApiResponse&lt;Config&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<VersionConfig> getLakeFSVersionWithHttpInfo() throws ApiException {
-        okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(null);
-        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
+    public ApiResponse<Config> getConfigWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getConfigValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<Config>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
      *  (asynchronously)
-     * get version of lakeFS server
+     * retrieve lakeFS configuration
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS configuration </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getLakeFSVersionAsync(final ApiCallback<VersionConfig> _callback) throws ApiException {
+    public okhttp3.Call getConfigAsync(final ApiCallback<Config> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(_callback);
-        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
+        okhttp3.Call localVarCall = getConfigValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<Config>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
     /**
-     * Build call for getStorageConfig
+     * Build call for getGarbageCollectionConfig
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getStorageConfigCall(final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getGarbageCollectionConfigCall(final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/config/storage";
+        String localVarPath = "/config/garbage-collection";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
@@ -205,66 +205,66 @@ public class ConfigApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getStorageConfigValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getGarbageCollectionConfigValidateBeforeCall(final ApiCallback _callback) throws ApiException {
         
 
-        okhttp3.Call localVarCall = getStorageConfigCall(_callback);
+        okhttp3.Call localVarCall = getGarbageCollectionConfigCall(_callback);
         return localVarCall;
 
     }
 
     /**
      * 
-     * retrieve lakeFS storage configuration
-     * @return StorageConfig
+     * get information of gc settings
+     * @return GarbageCollectionConfig
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public StorageConfig getStorageConfig() throws ApiException {
-        ApiResponse<StorageConfig> localVarResp = getStorageConfigWithHttpInfo();
+    public GarbageCollectionConfig getGarbageCollectionConfig() throws ApiException {
+        ApiResponse<GarbageCollectionConfig> localVarResp = getGarbageCollectionConfigWithHttpInfo();
         return localVarResp.getData();
     }
 
     /**
      * 
-     * retrieve lakeFS storage configuration
-     * @return ApiResponse&lt;StorageConfig&gt;
+     * get information of gc settings
+     * @return ApiResponse&lt;GarbageCollectionConfig&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<StorageConfig> getStorageConfigWithHttpInfo() throws ApiException {
-        okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(null);
-        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
+    public ApiResponse<GarbageCollectionConfig> getGarbageCollectionConfigWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getGarbageCollectionConfigValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<GarbageCollectionConfig>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
      *  (asynchronously)
-     * retrieve lakeFS storage configuration
+     * get information of gc settings
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getStorageConfigAsync(final ApiCallback<StorageConfig> _callback) throws ApiException {
+    public okhttp3.Call getGarbageCollectionConfigAsync(final ApiCallback<GarbageCollectionConfig> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(_callback);
-        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
+        okhttp3.Call localVarCall = getGarbageCollectionConfigValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<GarbageCollectionConfig>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

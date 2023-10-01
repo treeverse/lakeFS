@@ -4,17 +4,17 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**getLakeFSVersion**](ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
-[**getStorageConfig**](ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
+[**getConfig**](ConfigApi.md#getConfig) | **GET** /config | 
+[**getGarbageCollectionConfig**](ConfigApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
 
 
-<a name="getLakeFSVersion"></a>
-# **getLakeFSVersion**
-> VersionConfig getLakeFSVersion()
+<a name="getConfig"></a>
+# **getConfig**
+> Config getConfig()
 
 
 
-get version of lakeFS server
+retrieve lakeFS configuration
 
 ### Example
 ```java
@@ -60,10 +60,10 @@ public class Example {
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
-      VersionConfig result = apiInstance.getLakeFSVersion();
+      Config result = apiInstance.getConfig();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ConfigApi#getLakeFSVersion");
+      System.err.println("Exception when calling ConfigApi#getConfig");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -78,7 +78,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**VersionConfig**](VersionConfig.md)
+[**Config**](Config.md)
 
 ### Authorization
 
@@ -92,16 +92,16 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | lakeFS version |  -  |
+**200** | lakeFS configuration |  -  |
 **401** | Unauthorized |  -  |
 
-<a name="getStorageConfig"></a>
-# **getStorageConfig**
-> StorageConfig getStorageConfig()
+<a name="getGarbageCollectionConfig"></a>
+# **getGarbageCollectionConfig**
+> GarbageCollectionConfig getGarbageCollectionConfig()
 
 
 
-retrieve lakeFS storage configuration
+get information of gc settings
 
 ### Example
 ```java
@@ -147,10 +147,10 @@ public class Example {
 
     ConfigApi apiInstance = new ConfigApi(defaultClient);
     try {
-      StorageConfig result = apiInstance.getStorageConfig();
+      GarbageCollectionConfig result = apiInstance.getGarbageCollectionConfig();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ConfigApi#getStorageConfig");
+      System.err.println("Exception when calling ConfigApi#getGarbageCollectionConfig");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -165,7 +165,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**StorageConfig**](StorageConfig.md)
+[**GarbageCollectionConfig**](GarbageCollectionConfig.md)
 
 ### Authorization
 
@@ -179,6 +179,6 @@ This endpoint does not need any parameter.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | lakeFS storage configuration |  -  |
+**200** | lakeFS garbage collection config |  -  |
 **401** | Unauthorized |  -  |
 

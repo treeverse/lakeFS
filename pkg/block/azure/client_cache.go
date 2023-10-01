@@ -17,6 +17,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
+const UDCCacheExpiry = time.Hour
+const UDCCacheWorkaroundDivider = 2
+
 type ClientCache struct {
 	serviceToClient   *xsync.MapOf[string, *service.Client]
 	containerToClient *xsync.MapOf[string, *container.Client]
@@ -26,7 +29,8 @@ type ClientCache struct {
 }
 
 func NewCache(p params.Azure) (*ClientCache, error) {
-	l, err := lru.NewARC(udcCacheSize)
+	l, err := lru.NewARCWithExpire(udcCacheSize, UDCCacheExpiry/UDCCacheWorkaroundDivider)
+	// TODO(Guys): dividing the udc cache expiry by 2 is a workaround for the fact that this package does not handle expiry correctly, we can remove this once we use https://github.com/hashicorp/golang-lru expirables
 	if err != nil {
 		return nil, err
 	}
@@ -88,19 +92,17 @@ func (c *ClientCache) NewServiceClient(storageAccount string) (*service.Client, 
 }
 
 func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry *time.Time) (*service.UserDelegationCredential, error) {
-	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
-	currentTime := time.Now().UTC().Add(-10 * time.Second)
-	// UDC expiry time of PreSignedExpiry + hour
-	udcExpiry := expiry.Add(time.Hour)
-	info := service.KeyInfo{
-		Start:  to.Ptr(currentTime.UTC().Format(sas.TimeFormat)),
-		Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
-	}
-
 	var udc *service.UserDelegationCredential
 	// Check udcCache
 	res, ok := c.udcCache.Get(storageAccount)
 	if !ok {
+		baseTime := time.Now().UTC().Add(-10 * time.Second)
+		// UDC expiry time of PreSignedExpiry + hour
+		udcExpiry := expiry.Add(UDCCacheExpiry)
+		info := service.KeyInfo{
+			Start:  to.Ptr(baseTime.UTC().Format(sas.TimeFormat)),
+			Expiry: to.Ptr(udcExpiry.Format(sas.TimeFormat)),
+		}
 		svc, err := c.NewServiceClient(storageAccount)
 		if err != nil {
 			return nil, err
@@ -110,7 +112,7 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 			return nil, err
 		}
 		// UDC expires after PreSignedExpiry + hour but cache entry expires after an hour
-		c.udcCache.AddEx(storageAccount, udc, time.Hour)
+		c.udcCache.Add(storageAccount, udc)
 	} else {
 		udc = res.(*service.UserDelegationCredential)
 	}
