@@ -2,6 +2,28 @@
 
 ## UNRELEASED
 
+# v0.111.0
+
+:new: What's new:
+- lakectl endpoint configure and endpoint path reuse (#6609)
+- Remove UpdateBranchToken API (#6590)
+- Table Extractor Hook and _lakefs_tables format  (#6589)
+- Remove lakectl direct deprecated functionality (#6623)
+- API cleanup: make createSymlinkFile internal (#6630)
+- Remove expired commits from prepare_gc_commits response (#6634)
+- Remove lakectl dbt deprecated functionality (#6632)
+- Export Hooks: Symlink Exporter (#6636)
+- API cleanup: consolidate lakefs level information API (#6647)
+- Mark refs dump/restore current API as internal (#6640)
+- API cleanup: remove emailer service implementation (#6661)
+- Move setting endpoints to be under `/settings/` (#6649)
+
+:bug: Bug fixed:
+- Fix: lua s3 client endpoint configure if set (#6629)
+- Fix: UI alert if "quickstart" repository failed on local (#6622)
+- Fix: Lua runtime - marshaling arrays (#6655)
+- Fix: Presigned URL Cache - change to Default expiry due to bug in package (#6651)
+
 # v0.110.0
 
 :new: What's new:
