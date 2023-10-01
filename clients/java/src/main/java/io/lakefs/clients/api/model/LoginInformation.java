@@ -37,6 +37,8 @@ public class LoginInformation {
   @SerializedName(SERIALIZED_NAME_SECRET_ACCESS_KEY)
   private String secretAccessKey;
 
+  public LoginInformation() { 
+  }
 
   public LoginInformation accessKeyId(String accessKeyId) {
     

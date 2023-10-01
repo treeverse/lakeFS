@@ -33,6 +33,8 @@ public class MergeResult {
   @SerializedName(SERIALIZED_NAME_REFERENCE)
   private String reference;
 
+  public MergeResult() { 
+  }
 
   public MergeResult reference(String reference) {
     

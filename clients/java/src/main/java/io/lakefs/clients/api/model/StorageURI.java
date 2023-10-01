@@ -34,6 +34,8 @@ public class StorageURI {
   @SerializedName(SERIALIZED_NAME_LOCATION)
   private String location;
 
+  public StorageURI() { 
+  }
 
   public StorageURI location(String location) {
     

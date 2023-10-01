@@ -45,6 +45,8 @@ public class GarbageCollectionPrepareResponse {
   @SerializedName(SERIALIZED_NAME_GC_COMMITS_PRESIGNED_URL)
   private String gcCommitsPresignedUrl;
 
+  public GarbageCollectionPrepareResponse() { 
+  }
 
   public GarbageCollectionPrepareResponse runId(String runId) {
     

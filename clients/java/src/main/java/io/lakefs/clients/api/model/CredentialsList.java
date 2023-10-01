@@ -41,6 +41,8 @@ public class CredentialsList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Credentials> results = new ArrayList<Credentials>();
 
+  public CredentialsList() { 
+  }
 
   public CredentialsList pagination(Pagination pagination) {
     

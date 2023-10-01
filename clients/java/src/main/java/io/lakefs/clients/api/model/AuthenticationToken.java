@@ -37,6 +37,8 @@ public class AuthenticationToken {
   @SerializedName(SERIALIZED_NAME_TOKEN_EXPIRATION)
   private Long tokenExpiration;
 
+  public AuthenticationToken() { 
+  }
 
   public AuthenticationToken token(String token) {
     

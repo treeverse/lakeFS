@@ -41,6 +41,8 @@ public class FindMergeBaseResult {
   @SerializedName(SERIALIZED_NAME_BASE_COMMIT_ID)
   private String baseCommitId;
 
+  public FindMergeBaseResult() { 
+  }
 
   public FindMergeBaseResult sourceCommitId(String sourceCommitId) {
     

@@ -61,6 +61,8 @@ public class Commit {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
 
+  public Commit() { 
+  }
 
   public Commit id(String id) {
     

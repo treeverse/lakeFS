@@ -41,6 +41,8 @@ public class ObjectStatsList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<ObjectStats> results = new ArrayList<ObjectStats>();
 
+  public ObjectStatsList() { 
+  }
 
   public ObjectStatsList pagination(Pagination pagination) {
     

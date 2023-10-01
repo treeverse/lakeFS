@@ -44,6 +44,8 @@ public class Policy {
   @SerializedName(SERIALIZED_NAME_STATEMENT)
   private List<Statement> statement = new ArrayList<Statement>();
 
+  public Policy() { 
+  }
 
   public Policy id(String id) {
     

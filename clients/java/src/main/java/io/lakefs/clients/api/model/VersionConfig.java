@@ -45,6 +45,8 @@ public class VersionConfig {
   @SerializedName(SERIALIZED_NAME_UPGRADE_URL)
   private String upgradeUrl;
 
+  public VersionConfig() { 
+  }
 
   public VersionConfig version(String version) {
     

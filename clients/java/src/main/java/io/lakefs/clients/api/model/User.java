@@ -41,6 +41,8 @@ public class User {
   @SerializedName(SERIALIZED_NAME_FRIENDLY_NAME)
   private String friendlyName;
 
+  public User() { 
+  }
 
   public User id(String id) {
     

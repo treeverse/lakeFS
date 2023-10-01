@@ -54,6 +54,8 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public StagingMetadata() { 
+  }
 
   public StagingMetadata staging(StagingLocation staging) {
     

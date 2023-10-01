@@ -37,6 +37,8 @@ public class Ref {
   @SerializedName(SERIALIZED_NAME_COMMIT_ID)
   private String commitId;
 
+  public Ref() { 
+  }
 
   public Ref id(String id) {
     

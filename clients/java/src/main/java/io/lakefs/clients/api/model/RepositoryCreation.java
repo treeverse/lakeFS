@@ -45,6 +45,8 @@ public class RepositoryCreation {
   @SerializedName(SERIALIZED_NAME_SAMPLE_DATA)
   private Boolean sampleData = false;
 
+  public RepositoryCreation() { 
+  }
 
   public RepositoryCreation name(String name) {
     

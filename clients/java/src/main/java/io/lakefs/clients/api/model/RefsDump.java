@@ -41,6 +41,8 @@ public class RefsDump {
   @SerializedName(SERIALIZED_NAME_BRANCHES_META_RANGE_ID)
   private String branchesMetaRangeId;
 
+  public RefsDump() { 
+  }
 
   public RefsDump commitsMetaRangeId(String commitsMetaRangeId) {
     

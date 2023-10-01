@@ -89,6 +89,8 @@ public class OtfDiffList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<OtfDiffEntry> results = new ArrayList<OtfDiffEntry>();
 
+  public OtfDiffList() { 
+  }
 
   public OtfDiffList diffType(DiffTypeEnum diffType) {
     

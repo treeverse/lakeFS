@@ -37,6 +37,8 @@ public class ObjectCopyCreation {
   @SerializedName(SERIALIZED_NAME_SRC_REF)
   private String srcRef;
 
+  public ObjectCopyCreation() { 
+  }
 
   public ObjectCopyCreation srcPath(String srcPath) {
     

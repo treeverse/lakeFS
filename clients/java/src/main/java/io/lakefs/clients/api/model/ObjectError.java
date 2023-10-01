@@ -41,6 +41,8 @@ public class ObjectError {
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
 
+  public ObjectError() { 
+  }
 
   public ObjectError statusCode(Integer statusCode) {
     

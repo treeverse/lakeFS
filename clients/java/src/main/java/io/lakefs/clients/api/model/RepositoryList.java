@@ -41,6 +41,8 @@ public class RepositoryList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Repository> results = new ArrayList<Repository>();
 
+  public RepositoryList() { 
+  }
 
   public RepositoryList pagination(Pagination pagination) {
     

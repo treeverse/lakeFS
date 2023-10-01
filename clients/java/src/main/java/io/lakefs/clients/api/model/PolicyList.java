@@ -41,6 +41,8 @@ public class PolicyList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Policy> results = new ArrayList<Policy>();
 
+  public PolicyList() { 
+  }
 
   public PolicyList pagination(Pagination pagination) {
     

@@ -33,6 +33,8 @@ public class UpdateToken {
   @SerializedName(SERIALIZED_NAME_STAGING_TOKEN)
   private String stagingToken;
 
+  public UpdateToken() { 
+  }
 
   public UpdateToken stagingToken(String stagingToken) {
     

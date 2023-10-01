@@ -44,6 +44,8 @@ public class CommitCreation {
   @SerializedName(SERIALIZED_NAME_DATE)
   private Long date;
 
+  public CommitCreation() { 
+  }
 
   public CommitCreation message(String message) {
     

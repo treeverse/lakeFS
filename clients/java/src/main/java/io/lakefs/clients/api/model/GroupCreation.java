@@ -33,6 +33,8 @@ public class GroupCreation {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
+  public GroupCreation() { 
+  }
 
   public GroupCreation id(String id) {
     

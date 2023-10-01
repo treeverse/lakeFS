@@ -101,6 +101,8 @@ public class HookRun {
   @SerializedName(SERIALIZED_NAME_STATUS)
   private StatusEnum status;
 
+  public HookRun() { 
+  }
 
   public HookRun hookRunId(String hookRunId) {
     

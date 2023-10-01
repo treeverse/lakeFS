@@ -98,6 +98,8 @@ public class OtfDiffEntry {
   @SerializedName(SERIALIZED_NAME_OPERATION_TYPE)
   private OperationTypeEnum operationType;
 
+  public OtfDiffEntry() { 
+  }
 
   public OtfDiffEntry id(String id) {
     

@@ -1,6 +1,6 @@
 # lakefs_client.ActionsApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -30,10 +30,10 @@ from lakefs_client.api import actions_api
 from lakefs_client.model.action_run import ActionRun
 from lakefs_client.model.error import Error
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
 configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -138,10 +138,10 @@ import lakefs_client
 from lakefs_client.api import actions_api
 from lakefs_client.model.error import Error
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
 configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -249,10 +249,10 @@ from lakefs_client.api import actions_api
 from lakefs_client.model.action_run_list import ActionRunList
 from lakefs_client.model.error import Error
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
 configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -373,10 +373,10 @@ from lakefs_client.api import actions_api
 from lakefs_client.model.error import Error
 from lakefs_client.model.hook_run_list import HookRunList
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
 configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters

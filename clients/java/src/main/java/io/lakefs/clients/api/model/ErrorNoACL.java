@@ -37,6 +37,8 @@ public class ErrorNoACL {
   @SerializedName(SERIALIZED_NAME_NO_ACL)
   private Boolean noAcl;
 
+  public ErrorNoACL() { 
+  }
 
   public ErrorNoACL message(String message) {
     

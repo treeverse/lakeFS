@@ -34,6 +34,8 @@ public class InlineObject {
   @SerializedName(SERIALIZED_NAME_CONTENT)
   private File content;
 
+  public InlineObject() { 
+  }
 
   public InlineObject content(File content) {
     

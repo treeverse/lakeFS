@@ -34,6 +34,8 @@ public class CurrentUser {
   @SerializedName(SERIALIZED_NAME_USER)
   private User user;
 
+  public CurrentUser() { 
+  }
 
   public CurrentUser user(User user) {
     

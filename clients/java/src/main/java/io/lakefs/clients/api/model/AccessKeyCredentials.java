@@ -37,6 +37,8 @@ public class AccessKeyCredentials {
   @SerializedName(SERIALIZED_NAME_SECRET_ACCESS_KEY)
   private String secretAccessKey;
 
+  public AccessKeyCredentials() { 
+  }
 
   public AccessKeyCredentials accessKeyId(String accessKeyId) {
     

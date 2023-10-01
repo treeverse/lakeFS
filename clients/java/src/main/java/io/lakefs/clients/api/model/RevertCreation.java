@@ -37,6 +37,8 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
+  public RevertCreation() { 
+  }
 
   public RevertCreation ref(String ref) {
     

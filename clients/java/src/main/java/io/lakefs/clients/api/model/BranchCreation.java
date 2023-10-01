@@ -37,6 +37,8 @@ public class BranchCreation {
   @SerializedName(SERIALIZED_NAME_SOURCE)
   private String source;
 
+  public BranchCreation() { 
+  }
 
   public BranchCreation name(String name) {
     

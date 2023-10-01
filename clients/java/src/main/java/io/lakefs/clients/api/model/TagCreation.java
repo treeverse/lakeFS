@@ -37,6 +37,8 @@ public class TagCreation {
   @SerializedName(SERIALIZED_NAME_REF)
   private String ref;
 
+  public TagCreation() { 
+  }
 
   public TagCreation id(String id) {
     

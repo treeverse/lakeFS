@@ -90,6 +90,8 @@ public class Statement {
   @SerializedName(SERIALIZED_NAME_ACTION)
   private List<String> action = new ArrayList<String>();
 
+  public Statement() { 
+  }
 
   public Statement effect(EffectEnum effect) {
     

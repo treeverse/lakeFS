@@ -45,6 +45,8 @@ public class Repository {
   @SerializedName(SERIALIZED_NAME_STORAGE_NAMESPACE)
   private String storageNamespace;
 
+  public Repository() { 
+  }
 
   public Repository id(String id) {
     

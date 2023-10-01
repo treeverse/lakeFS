@@ -89,6 +89,8 @@ public class SetupState {
   @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
   private LoginConfig loginConfig;
 
+  public SetupState() { 
+  }
 
   public SetupState state(StateEnum state) {
     

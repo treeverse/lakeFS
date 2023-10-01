@@ -33,6 +33,8 @@ public class MetaRangeCreationResponse {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
+  public MetaRangeCreationResponse() { 
+  }
 
   public MetaRangeCreationResponse id(String id) {
     

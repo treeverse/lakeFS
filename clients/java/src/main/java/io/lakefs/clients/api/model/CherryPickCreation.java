@@ -37,6 +37,8 @@ public class CherryPickCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
+  public CherryPickCreation() { 
+  }
 
   public CherryPickCreation ref(String ref) {
     

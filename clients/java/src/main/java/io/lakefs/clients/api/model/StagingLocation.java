@@ -47,6 +47,8 @@ public class StagingLocation {
   @SerializedName(SERIALIZED_NAME_PRESIGNED_URL_EXPIRY)
   private Long presignedUrlExpiry;
 
+  public StagingLocation() { 
+  }
 
   public StagingLocation physicalAddress(String physicalAddress) {
     

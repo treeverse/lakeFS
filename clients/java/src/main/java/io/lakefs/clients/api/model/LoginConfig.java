@@ -106,6 +106,8 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
   private String logoutUrl;
 
+  public LoginConfig() { 
+  }
 
   public LoginConfig RBAC(RBACEnum RBAC) {
     

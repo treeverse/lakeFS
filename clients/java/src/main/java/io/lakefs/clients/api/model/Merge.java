@@ -44,6 +44,8 @@ public class Merge {
   @SerializedName(SERIALIZED_NAME_STRATEGY)
   private String strategy;
 
+  public Merge() { 
+  }
 
   public Merge message(String message) {
     

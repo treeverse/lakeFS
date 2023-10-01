@@ -45,6 +45,8 @@ public class Pagination {
   @SerializedName(SERIALIZED_NAME_MAX_PER_PAGE)
   private Integer maxPerPage;
 
+  public Pagination() { 
+  }
 
   public Pagination hasMore(Boolean hasMore) {
     

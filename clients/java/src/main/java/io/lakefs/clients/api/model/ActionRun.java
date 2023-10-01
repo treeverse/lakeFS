@@ -105,6 +105,8 @@ public class ActionRun {
   @SerializedName(SERIALIZED_NAME_COMMIT_ID)
   private String commitId;
 
+  public ActionRun() { 
+  }
 
   public ActionRun runId(String runId) {
     

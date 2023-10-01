@@ -115,6 +115,8 @@ public class ObjectStats {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public ObjectStats() { 
+  }
 
   public ObjectStats path(String path) {
     

@@ -1,6 +1,6 @@
 # lakefs_client.CommitsApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -29,10 +29,10 @@ from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.error import Error
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
 configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -160,10 +160,10 @@ from lakefs_client.api import commits_api
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.error import Error
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
 configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters

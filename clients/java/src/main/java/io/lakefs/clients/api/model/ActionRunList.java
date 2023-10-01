@@ -41,6 +41,8 @@ public class ActionRunList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<ActionRun> results = new ArrayList<ActionRun>();
 
+  public ActionRunList() { 
+  }
 
   public ActionRunList pagination(Pagination pagination) {
     

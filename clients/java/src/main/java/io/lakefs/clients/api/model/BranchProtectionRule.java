@@ -33,6 +33,8 @@ public class BranchProtectionRule {
   @SerializedName(SERIALIZED_NAME_PATTERN)
   private String pattern;
 
+  public BranchProtectionRule() { 
+  }
 
   public BranchProtectionRule pattern(String pattern) {
     

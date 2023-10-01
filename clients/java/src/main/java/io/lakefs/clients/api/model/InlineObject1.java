@@ -33,6 +33,8 @@ public class InlineObject1 {
   @SerializedName(SERIALIZED_NAME_PATTERN)
   private String pattern;
 
+  public InlineObject1() { 
+  }
 
   public InlineObject1 pattern(String pattern) {
     

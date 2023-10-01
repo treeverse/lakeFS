@@ -37,6 +37,8 @@ public class AuthCapabilities {
   @SerializedName(SERIALIZED_NAME_FORGOT_PASSWORD)
   private Boolean forgotPassword;
 
+  public AuthCapabilities() { 
+  }
 
   public AuthCapabilities inviteUser(Boolean inviteUser) {
     

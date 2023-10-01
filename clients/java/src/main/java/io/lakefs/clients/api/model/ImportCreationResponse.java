@@ -33,6 +33,8 @@ public class ImportCreationResponse {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
+  public ImportCreationResponse() { 
+  }
 
   public ImportCreationResponse id(String id) {
     

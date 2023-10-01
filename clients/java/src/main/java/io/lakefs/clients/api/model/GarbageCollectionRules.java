@@ -40,6 +40,8 @@ public class GarbageCollectionRules {
   @SerializedName(SERIALIZED_NAME_BRANCHES)
   private List<GarbageCollectionRule> branches = new ArrayList<GarbageCollectionRule>();
 
+  public GarbageCollectionRules() { 
+  }
 
   public GarbageCollectionRules defaultRetentionDays(Integer defaultRetentionDays) {
     

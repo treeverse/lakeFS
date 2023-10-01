@@ -56,6 +56,8 @@ public class ImportStatus {
   @SerializedName(SERIALIZED_NAME_ERROR)
   private Error error;
 
+  public ImportStatus() { 
+  }
 
   public ImportStatus completed(Boolean completed) {
     

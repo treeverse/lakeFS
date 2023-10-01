@@ -36,6 +36,8 @@ public class StatsEventsList {
   @SerializedName(SERIALIZED_NAME_EVENTS)
   private List<StatsEvent> events = new ArrayList<StatsEvent>();
 
+  public StatsEventsList() { 
+  }
 
   public StatsEventsList events(List<StatsEvent> events) {
     

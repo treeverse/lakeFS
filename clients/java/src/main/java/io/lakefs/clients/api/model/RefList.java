@@ -41,6 +41,8 @@ public class RefList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Ref> results = new ArrayList<Ref>();
 
+  public RefList() { 
+  }
 
   public RefList pagination(Pagination pagination) {
     

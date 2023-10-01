@@ -38,6 +38,8 @@ public class Setup {
   @SerializedName(SERIALIZED_NAME_KEY)
   private AccessKeyCredentials key;
 
+  public Setup() { 
+  }
 
   public Setup username(String username) {
     

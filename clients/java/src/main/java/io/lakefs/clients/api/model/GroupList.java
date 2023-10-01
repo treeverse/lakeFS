@@ -41,6 +41,8 @@ public class GroupList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Group> results = new ArrayList<Group>();
 
+  public GroupList() { 
+  }
 
   public GroupList pagination(Pagination pagination) {
     

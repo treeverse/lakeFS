@@ -41,6 +41,8 @@ public class StatsEvent {
   @SerializedName(SERIALIZED_NAME_COUNT)
   private Integer count;
 
+  public StatsEvent() { 
+  }
 
   public StatsEvent propertyClass(String propertyClass) {
     

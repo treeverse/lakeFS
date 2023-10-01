@@ -36,6 +36,8 @@ public class OTFDiffs {
   @SerializedName(SERIALIZED_NAME_DIFFS)
   private List<DiffProperties> diffs = null;
 
+  public OTFDiffs() { 
+  }
 
   public OTFDiffs diffs(List<DiffProperties> diffs) {
     

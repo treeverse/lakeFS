@@ -145,6 +145,8 @@ public class Diff {
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
   private Long sizeBytes;
 
+  public Diff() { 
+  }
 
   public Diff type(TypeEnum type) {
     

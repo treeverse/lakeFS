@@ -36,6 +36,8 @@ public class ObjectErrorList {
   @SerializedName(SERIALIZED_NAME_ERRORS)
   private List<ObjectError> errors = new ArrayList<ObjectError>();
 
+  public ObjectErrorList() { 
+  }
 
   public ObjectErrorList errors(List<ObjectError> errors) {
     

@@ -33,6 +33,8 @@ public class Error {
   @SerializedName(SERIALIZED_NAME_MESSAGE)
   private String message;
 
+  public Error() { 
+  }
 
   public Error message(String message) {
     

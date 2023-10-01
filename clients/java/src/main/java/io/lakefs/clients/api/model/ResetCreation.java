@@ -86,6 +86,8 @@ public class ResetCreation {
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
 
+  public ResetCreation() { 
+  }
 
   public ResetCreation type(TypeEnum type) {
     

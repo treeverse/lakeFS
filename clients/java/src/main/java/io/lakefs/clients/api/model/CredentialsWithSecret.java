@@ -41,6 +41,8 @@ public class CredentialsWithSecret {
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
 
+  public CredentialsWithSecret() { 
+  }
 
   public CredentialsWithSecret accessKeyId(String accessKeyId) {
     

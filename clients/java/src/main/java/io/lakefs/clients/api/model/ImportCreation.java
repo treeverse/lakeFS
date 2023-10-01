@@ -41,6 +41,8 @@ public class ImportCreation {
   @SerializedName(SERIALIZED_NAME_COMMIT)
   private CommitCreation commit;
 
+  public ImportCreation() { 
+  }
 
   public ImportCreation paths(List<ImportLocation> paths) {
     

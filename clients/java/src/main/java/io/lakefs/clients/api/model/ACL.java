@@ -33,6 +33,8 @@ public class ACL {
   @SerializedName(SERIALIZED_NAME_PERMISSION)
   private String permission;
 
+  public ACL() { 
+  }
 
   public ACL permission(String permission) {
     

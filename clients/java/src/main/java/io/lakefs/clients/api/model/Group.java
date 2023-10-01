@@ -37,6 +37,8 @@ public class Group {
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
 
+  public Group() { 
+  }
 
   public Group id(String id) {
     

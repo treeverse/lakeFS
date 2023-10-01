@@ -1,6 +1,6 @@
 # ConfigApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -29,7 +29,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -116,7 +116,7 @@ import io.lakefs.clients.api.ConfigApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");

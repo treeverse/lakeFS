@@ -41,6 +41,8 @@ public class CommPrefsInput {
   @SerializedName(SERIALIZED_NAME_SECURITY_UPDATES)
   private Boolean securityUpdates;
 
+  public CommPrefsInput() { 
+  }
 
   public CommPrefsInput email(String email) {
     

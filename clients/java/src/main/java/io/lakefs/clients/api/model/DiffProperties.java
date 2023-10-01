@@ -33,6 +33,8 @@ public class DiffProperties {
   @SerializedName(SERIALIZED_NAME_NAME)
   private String name;
 
+  public DiffProperties() { 
+  }
 
   public DiffProperties name(String name) {
     

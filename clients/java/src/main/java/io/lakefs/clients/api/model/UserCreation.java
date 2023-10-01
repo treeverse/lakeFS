@@ -37,6 +37,8 @@ public class UserCreation {
   @SerializedName(SERIALIZED_NAME_INVITE_USER)
   private Boolean inviteUser;
 
+  public UserCreation() { 
+  }
 
   public UserCreation id(String id) {
     

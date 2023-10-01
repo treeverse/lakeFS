@@ -36,6 +36,8 @@ public class MetaRangeCreation {
   @SerializedName(SERIALIZED_NAME_RANGES)
   private List<RangeMetadata> ranges = new ArrayList<RangeMetadata>();
 
+  public MetaRangeCreation() { 
+  }
 
   public MetaRangeCreation ranges(List<RangeMetadata> ranges) {
     

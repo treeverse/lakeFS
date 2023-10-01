@@ -41,6 +41,8 @@ public class DiffList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Diff> results = new ArrayList<Diff>();
 
+  public DiffList() { 
+  }
 
   public DiffList pagination(Pagination pagination) {
     

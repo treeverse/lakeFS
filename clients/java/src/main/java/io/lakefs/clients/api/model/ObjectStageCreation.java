@@ -56,6 +56,8 @@ public class ObjectStageCreation {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public ObjectStageCreation() { 
+  }
 
   public ObjectStageCreation physicalAddress(String physicalAddress) {
     

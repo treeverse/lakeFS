@@ -39,6 +39,8 @@ public class Config {
   @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG)
   private StorageConfig storageConfig;
 
+  public Config() { 
+  }
 
   public Config versionConfig(VersionConfig versionConfig) {
     

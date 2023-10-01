@@ -49,6 +49,8 @@ public class RangeMetadata {
   @SerializedName(SERIALIZED_NAME_ESTIMATED_SIZE)
   private Integer estimatedSize;
 
+  public RangeMetadata() { 
+  }
 
   public RangeMetadata id(String id) {
     

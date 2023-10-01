@@ -88,6 +88,8 @@ public class ImportLocation {
   @SerializedName(SERIALIZED_NAME_DESTINATION)
   private String destination;
 
+  public ImportLocation() { 
+  }
 
   public ImportLocation type(TypeEnum type) {
     

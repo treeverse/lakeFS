@@ -35,6 +35,8 @@ public class PathList {
   @SerializedName(SERIALIZED_NAME_PATHS)
   private List<String> paths = new ArrayList<String>();
 
+  public PathList() { 
+  }
 
   public PathList paths(List<String> paths) {
     

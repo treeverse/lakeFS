@@ -61,6 +61,8 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_IMPORT_VALIDITY_REGEX)
   private String importValidityRegex;
 
+  public StorageConfig() { 
+  }
 
   public StorageConfig blockstoreType(String blockstoreType) {
     

@@ -33,6 +33,8 @@ public class GarbageCollectionConfig {
   @SerializedName(SERIALIZED_NAME_GRACE_PERIOD)
   private Integer gracePeriod;
 
+  public GarbageCollectionConfig() { 
+  }
 
   public GarbageCollectionConfig gracePeriod(Integer gracePeriod) {
     

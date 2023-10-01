@@ -33,6 +33,8 @@ public class PrepareGCUncommittedRequest {
   @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
   private String continuationToken;
 
+  public PrepareGCUncommittedRequest() { 
+  }
 
   public PrepareGCUncommittedRequest continuationToken(String continuationToken) {
     

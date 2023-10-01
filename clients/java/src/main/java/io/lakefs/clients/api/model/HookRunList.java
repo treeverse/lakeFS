@@ -41,6 +41,8 @@ public class HookRunList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<HookRun> results = new ArrayList<HookRun>();
 
+  public HookRunList() { 
+  }
 
   public HookRunList pagination(Pagination pagination) {
     

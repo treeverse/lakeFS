@@ -34,6 +34,8 @@ public class UnderlyingObjectProperties {
   @SerializedName(SERIALIZED_NAME_STORAGE_CLASS)
   private String storageClass;
 
+  public UnderlyingObjectProperties() { 
+  }
 
   public UnderlyingObjectProperties storageClass(String storageClass) {
     

@@ -41,6 +41,8 @@ public class CommitList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<Commit> results = new ArrayList<Commit>();
 
+  public CommitList() { 
+  }
 
   public CommitList pagination(Pagination pagination) {
     

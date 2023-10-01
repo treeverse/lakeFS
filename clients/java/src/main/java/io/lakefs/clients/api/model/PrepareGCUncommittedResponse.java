@@ -41,6 +41,8 @@ public class PrepareGCUncommittedResponse {
   @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
   private String continuationToken;
 
+  public PrepareGCUncommittedResponse() { 
+  }
 
   public PrepareGCUncommittedResponse runId(String runId) {
     

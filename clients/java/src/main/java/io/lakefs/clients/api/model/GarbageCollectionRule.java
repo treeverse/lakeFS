@@ -37,6 +37,8 @@ public class GarbageCollectionRule {
   @SerializedName(SERIALIZED_NAME_RETENTION_DAYS)
   private Integer retentionDays;
 
+  public GarbageCollectionRule() { 
+  }
 
   public GarbageCollectionRule branchId(String branchId) {
     

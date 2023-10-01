@@ -41,6 +41,8 @@ public class UserList {
   @SerializedName(SERIALIZED_NAME_RESULTS)
   private List<User> results = new ArrayList<User>();
 
+  public UserList() { 
+  }
 
   public UserList pagination(Pagination pagination) {
     
