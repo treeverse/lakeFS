@@ -68,6 +68,9 @@ local function extract_partition_pager(client, repo_id, commit_id, base_path, pa
                 })
                 -- remove entry only if its part of the current partition
                 table.remove(page, 1)
+            else
+                -- remove hidden files from the entry set
+                table.remove(page, 1)
             end
         end
     end

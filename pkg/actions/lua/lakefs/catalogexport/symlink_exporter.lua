@@ -96,7 +96,7 @@ local function export_s3(s3_client, table_src_path, action_info, options)
         if opts.debug then
             print("S3 writing bucket: " .. location.bucket .. " key: " .. key)
         end
-        put_obj(location.bucket, key, symlink.data)
+        put_object(location.bucket, key, symlink.data)
     end
     return {
         location = location
@@ -104,5 +104,6 @@ local function export_s3(s3_client, table_src_path, action_info, options)
 end
 
 return {
-    export_s3 = export_s3
+    export_s3 = export_s3,
+    get_storage_uri_prefix=get_storage_uri_prefix,
 }
