@@ -16,7 +16,6 @@ package io.lakefs.clients.api;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Config;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.GarbageCollectionConfig;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -45,20 +44,6 @@ public class ConfigApiTest {
     @Test
     public void getConfigTest() throws ApiException {
                 Config response = api.getConfig();
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * get information of gc settings
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getGarbageCollectionConfigTest() throws ApiException {
-                GarbageCollectionConfig response = api.getGarbageCollectionConfig();
         // TODO: test validations
     }
     

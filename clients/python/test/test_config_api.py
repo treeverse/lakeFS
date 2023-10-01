@@ -30,12 +30,6 @@ class TestConfigApi(unittest.TestCase):
         """
         pass
 
-    def test_get_garbage_collection_config(self):
-        """Test case for get_garbage_collection_config
-
-        """
-        pass
-
 
 if __name__ == '__main__':
     unittest.main()
