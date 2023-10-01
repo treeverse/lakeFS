@@ -152,10 +152,10 @@ func createTable(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
 		database := lua.CheckString(l, 1)
-		tableInputJson := lua.CheckString(l, 2)
+		tableInputJSON := lua.CheckString(l, 2)
 		// parse table input JSON
 		var tableInput types.TableInput
-		err := json.Unmarshal([]byte(tableInputJson), &tableInput)
+		err := json.Unmarshal([]byte(tableInputJSON), &tableInput)
 		if err != nil {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
