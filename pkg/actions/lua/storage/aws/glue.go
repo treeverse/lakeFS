@@ -165,7 +165,7 @@ func createTable(c *GlueClient) lua.Function {
 		if !l.IsNone(3) {
 			catalogID = aws.String(lua.CheckString(l, 3))
 		}
-		// TODO(isan) Additional input params: partition index and iceberg table format?
+		// TODO(isan) Additional input params: partition index and iceberg table format
 		// AWS API call
 		_, err = client.CreateTable(c.ctx, &glue.CreateTableInput{
 			DatabaseName: aws.String(database),
@@ -217,7 +217,6 @@ func getTable(c *GlueClient) lua.Function {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
-		// TODO(isan) consider if instead a table return a json string that a user can unmarshal, i think not because we return tables in lakefs for example
 		retArgs := util.DeepPush(l, itemMap)
 		l.PushBoolean(true)
 		return retArgs + 1
