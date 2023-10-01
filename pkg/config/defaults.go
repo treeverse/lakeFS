@@ -103,10 +103,6 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("security.check_latest_version", true)
 	viper.SetDefault("security.check_latest_version_cache", time.Hour)
 
-	viper.SetDefault("email.limit_every_duration", time.Minute)
-	viper.SetDefault("email.burst", 10)
-	viper.SetDefault("email.lakefs_base_url", "http://localhost:8000")
-
 	viper.SetDefault("ui.enabled", true)
 
 	viper.SetDefault("database.local.path", "~/lakefs/metadata")

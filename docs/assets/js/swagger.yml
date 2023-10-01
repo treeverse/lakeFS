@@ -77,7 +77,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorNoACL"
-            
+
     Unauthorized:
       description: Unauthorized
       content:
@@ -1250,7 +1250,7 @@ components:
           example: s3://my-bucket/production/collections/
         destination:
           type: string
-          description: Destination for the imported objects on the branch 
+          description: Destination for the imported objects on the branch
           example: collections/
 
     ImportCreation:
@@ -1323,14 +1323,14 @@ components:
       required:
         - update_time
         - completed
-    
+
     ImportCreationResponse:
       type: object
       properties:
         id:
           description: The id of the import process
           type: string
-      required: 
+      required:
         - id
 
     MetaRangeCreation:
@@ -4084,7 +4084,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-    
+
     post:
       tags:
         - retention
