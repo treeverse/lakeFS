@@ -2,22 +2,16 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
-
-const fsRecursiveTemplate = `Files: {{.Count}}
-Total Size: {{.Bytes}} bytes
-Human Total Size: {{.Bytes|human_bytes}}
-`
 
 var fsUploadCmd = &cobra.Command{
 	Use:               "upload <path uri>",
@@ -29,12 +23,23 @@ var fsUploadCmd = &cobra.Command{
 		pathURI := MustParsePathURI("path", args[0])
 		flagSet := cmd.Flags()
 		source := Must(flagSet.GetString("source"))
-		recursive := Must(flagSet.GetBool("recursive"))
 		preSignMode := Must(flagSet.GetBool("pre-sign"))
+		parallelism := Must(flagSet.GetInt("parallelism"))
 		contentType := Must(flagSet.GetString("content-type"))
 
+		if parallelism < 1 {
+			DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
+		}
+
 		ctx := cmd.Context()
-		if !recursive {
+
+		info, err := os.Stat(source)
+		if err != nil {
+			DieErr(err)
+			return
+		}
+
+		if !info.IsDir() {
 			if pathURI.GetPath() == "" {
 				Die("target path is not a valid URI", 1)
 			}
@@ -46,36 +51,34 @@ var fsUploadCmd = &cobra.Command{
 			return
 		}
 
-		// copy recursively
-		var totals struct {
-			Bytes int64
-			Count int64
-		}
-		err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return fmt.Errorf("traverse %s: %w", path, err)
+		changes := localDiff(cmd.Context(), client, pathURI, source)
+		// sync changes
+		c := make(chan *local.Change, filesChanSize)
+		go func() {
+			defer close(c)
+			for _, change := range changes {
+				if change.Type == local.ChangeTypeRemoved {
+					continue
+				}
+				c <- change
 			}
-			if info.IsDir() {
-				return nil
-			}
-			relPath := strings.TrimPrefix(path, source)
-			uri := *pathURI
-			p := filepath.ToSlash(filepath.Join(*uri.Path, relPath))
-			uri.Path = &p
-			stat, err := upload(ctx, client, path, &uri, contentType, preSignMode)
-			if err != nil {
-				return fmt.Errorf("upload %s: %w", path, err)
-			}
-			if stat.SizeBytes != nil {
-				totals.Bytes += *stat.SizeBytes
-			}
-			totals.Count++
-			return nil
-		})
+		}()
+		s := local.NewSyncManager(ctx, client, parallelism, preSignMode)
+		fullPath, err := filepath.Abs(source)
 		if err != nil {
 			DieErr(err)
 		}
-		Write(fsRecursiveTemplate, totals)
+		err = s.Sync(fullPath, pathURI, c)
+		if err != nil {
+			DieErr(err)
+		}
+		Write(localSummaryTemplate, struct {
+			Operation string
+			local.Tasks
+		}{
+			Operation: "Upload",
+			Tasks:     s.Summary(),
+		})
 	},
 }
 
@@ -94,10 +97,12 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 //nolint:gochecknoinits
 func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
-	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
+	withParallelismFlag(fsUploadCmd)
+	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
+	_ = fsUploadCmd.Flags().MarkDeprecated("recursive", "recursive flag is deprecated and will be removed in a future release")
 
 	fsCmd.AddCommand(fsUploadCmd)
 }
