@@ -1,6 +1,18 @@
 local url = require("net/url")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
+local function clone_table(original_table)
+    local new_table = {}
+    for k, v in pairs(original_table) do
+        if type(v) == "table" then
+            new_table[k] = clone_table(v) -- Recursively clone nested tables
+        else
+            new_table[k] = v
+        end
+    end
+    return new_table
+end
+
 local function short_digest(digest, len)
     return digest:sub(1, len or DEFAULT_SHORT_DIGEST_LEN)
 end 
@@ -52,6 +64,7 @@ local function parse_storage_uri(uri)
 end
 
 return {
+    clone_table=clone_table,
     parse_storage_uri=parse_storage_uri,
     short_digest=short_digest,
     ref_from_branch_or_tag=ref_from_branch_or_tag,

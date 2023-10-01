@@ -58,6 +58,7 @@ var glueFunctions = map[string]func(client *GlueClient) lua.Function{
 	"get_table":    getTable,
 	"create_table": createTable,
 	"update_table": updateTable,
+	"delete_table": deleteTable,
 }
 
 func (c *GlueClient) client() *glue.Client {
@@ -73,6 +74,31 @@ func (c *GlueClient) client() *glue.Client {
 			o.BaseEndpoint = aws.String(c.Endpoint)
 		}
 	})
+}
+
+func deleteTable(c *GlueClient) lua.Function {
+	return func(l *lua.State) int {
+		client := c.client()
+		database := lua.CheckString(l, 1)
+		tableName := lua.CheckString(l, 2)
+		// check if catalog ID provided
+		var catalogID *string
+		if !l.IsNone(3) {
+			catalogID = aws.String(lua.CheckString(l, 3))
+		}
+		_, err := client.DeleteTable(c.ctx, &glue.DeleteTableInput{
+			DatabaseName: aws.String(database),
+			Name:         aws.String(tableName),
+			CatalogId:    catalogID,
+		})
+
+		if err != nil {
+			lua.Errorf(l, err.Error())
+			panic("unreachable")
+		}
+
+		return 0
+	}
 }
 func updateTable(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
@@ -107,13 +133,18 @@ func updateTable(c *GlueClient) lua.Function {
 			skipArchive = aws.Bool(l.ToBoolean(5))
 		}
 
-		client.UpdateTable(c.ctx, &glue.UpdateTableInput{
+		_, err = client.UpdateTable(c.ctx, &glue.UpdateTableInput{
 			DatabaseName: &database,
 			TableInput:   &tableInput,
 			CatalogId:    catalogID,
 			VersionId:    versionID,
 			SkipArchive:  skipArchive,
 		})
+
+		if err != nil {
+			lua.Errorf(l, err.Error())
+			panic("unreachable")
+		}
 		return 0
 	}
 }
