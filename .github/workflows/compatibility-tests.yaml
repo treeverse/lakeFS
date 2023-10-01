@@ -240,7 +240,7 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+        run: echo "value=${RANDOM}${RANDOM}${RANDOM}${RANDOM}" >> $GITHUB_OUTPUT
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
