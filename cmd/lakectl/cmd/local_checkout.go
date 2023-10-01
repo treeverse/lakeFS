@@ -18,7 +18,7 @@ var localCheckoutCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
 		all := Must(cmd.Flags().GetBool("all"))
-		_, localPath := getLocalArgs(args, false, all)
+		_, localPath := getSyncArgs(args, false, all)
 		if !all {
 			localCheckout(cmd, localPath, specifiedRef, true)
 			return
