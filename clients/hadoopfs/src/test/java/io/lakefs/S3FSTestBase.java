@@ -59,7 +59,6 @@ abstract class S3FSTestBase extends FSTestBase {
         s3.followOutput(logConsumer);
     }
 
-    @Before
     public void s3ClientSetup() {
         AWSCredentials creds = new BasicAWSCredentials(S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY);
 
@@ -117,13 +116,13 @@ abstract class S3FSTestBase extends FSTestBase {
         }
     }
 
-    @Before
-    public void s3HadoopSetup() {
-        // TODO(ariels): Move to test simple mode.
+    protected void moreHadoopSetup() {
+        s3ClientSetup();
+
         conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
         conf.set(org.apache.hadoop.fs.s3a.Constants.ACCESS_KEY, S3_ACCESS_KEY_ID);
         conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
         conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
-        conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
+        conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
     }
 }

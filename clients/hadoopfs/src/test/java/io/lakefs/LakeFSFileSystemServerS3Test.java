@@ -1,18 +1,27 @@
 package io.lakefs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.lakefs.clients.api.model.*;
 import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.utils.ObjectLocation;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.Path;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.*;
+
 import org.junit.Assert;
 import org.junit.Test;
-import org.hamcrest.core.StringContains;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;import org.hamcrest.core.StringContains;
 
 import org.mockserver.matchers.MatchType;
 
@@ -20,11 +29,101 @@ import static org.mockserver.model.HttpResponse.response;
 import static org.mockserver.model.JsonBody.json;
 
 import java.io.*;
+import java.net.URL;
+import java.util.Date;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
+@RunWith(Parameterized.class)
 public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
-    // TODO(ariels): Override and make abstract!
-    protected String createPhysicalAddress(String key) {
-        return s3Url(key);
+    static private final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemServerS3Test.class);
+
+    public static interface PhysicalAddressCreator {
+        default void initConfiguration(Configuration conf) {}
+        String createGetPhysicalAddress(S3FSTestBase o, String key);
+        StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path);
+    }
+
+    // TODO(ariels): Improve naming per-parameter, don't name them "[0]", "[1]".
+    @Parameters(name="{1}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]{
+                {new SimplePhysicalAddressCreator(), "simple"},
+                {new PresignedPhysicalAddressCreator(), "presigned"}});
+    }
+
+    @Parameter(1)
+    public String unusedAddressCreatorType;
+
+    @Parameter(0)
+    public PhysicalAddressCreator pac;
+
+    static private class SimplePhysicalAddressCreator implements PhysicalAddressCreator {
+        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
+            return o.s3Url(key);
+        }
+
+        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
+            String fullPath = String.format("%s/%s/%s/%s/%s-object",
+                                            o.sessionId(), namespace, repo, branch, path);
+            return new StagingLocation()
+                .token("token:simple:" + o.sessionId())
+                .physicalAddress(o.s3Url(fullPath));
+        }
+    }
+
+    static private class PresignedPhysicalAddressCreator implements PhysicalAddressCreator {
+        public void initConfiguration(Configuration conf) {
+            conf.set("fs.lakefs.access.mode", "presigned");
+        }
+
+        protected Date getExpiration() {
+            return new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
+        }
+
+        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
+            Date expiration = getExpiration();
+            URL presignedUrl =
+                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, key)
+                                              .withMethod(HttpMethod.GET)
+                                              .withExpiration(expiration));
+            return presignedUrl.toString();
+        }
+
+        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
+            String fullPath = String.format("%s/%s/%s/%s/%s-object",
+                                            o.sessionId(), namespace, repo, branch, path);
+            Date expiration = getExpiration();
+            URL presignedUrl =
+                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, fullPath)
+                                              .withMethod(HttpMethod.PUT)
+                                              .withExpiration(expiration));
+            return new StagingLocation()
+                .token("token:presigned:" + o.sessionId())
+                .physicalAddress(o.s3Url(fullPath))
+                .presignedUrl(presignedUrl.toString());
+        }
+    }
+
+    @Override
+    protected void moreHadoopSetup() {
+        super.moreHadoopSetup();
+        pac.initConfiguration(conf);
+    }
+
+    // Return a location under namespace for this getPhysicalAddress call.
+    //
+    // TODO(ariels): abstract, overload separately for direct and pre-signed.
+    protected StagingLocation expectGetPhysicalAddress(String repo, String branch, String path, String namespace) {
+        StagingLocation stagingLocation =
+            pac.createPutStagingLocation(this, namespace, repo, branch, path);
+        mockServerClient.when(request()
+                              .withMethod("GET")
+                              .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
+                              .withQueryStringParameter("path", path))
+            .respond(response().withStatusCode(200)
+                     .withBody(gson.toJson(stagingLocation)));
+        return stagingLocation;
     }
 
     @Test
@@ -89,7 +188,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
 
         ObjectStats newStats = new ObjectStats()
             .path("dir1/dir2/dir3/")
-            .physicalAddress(s3Url("repo-base/dir12"));
+            .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/dir12"));
         expectStatObject("repo", "main", "dir1/dir2/dir3/", newStats);
 
         mockServerClient.when(request()
@@ -119,7 +218,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         expectStatObjectNotFound("repo", "main", "sub1/sub2/create.me");
         ObjectStats stats = new ObjectStats()
             .path("sub1/sub2/create.me/")
-            .physicalAddress(s3Url("repo-base/sub1/sub2/create.me"));
+            .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/sub1/sub2/create.me"));
         expectStatObject("repo", "main", "sub1/sub2/create.me/", stats);
 
         Exception e =
@@ -144,7 +243,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
         String physicalPath = sessionId() + "/repo-base/open";
-        String physicalKey = createPhysicalAddress(physicalPath);
+        String physicalKey = pac.createGetPhysicalAddress(this, physicalPath);
         int readBufferSize = 5;
         Path path = new Path("lakefs://repo/main/read.me");
 
@@ -195,7 +294,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
 
             String path = String.format("lakefs://repo/main/%s-x", suffix);
             ObjectStats stats = new ObjectStats()
-                .physicalAddress(s3Url(key))
+                .physicalAddress(pac.createGetPhysicalAddress(this, key))
                 .sizeBytes((long) contentsBytes.length);
             expectStatObject("repo", "main", suffix + "-x", stats);
 

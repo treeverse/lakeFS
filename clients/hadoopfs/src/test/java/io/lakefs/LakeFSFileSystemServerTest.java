@@ -45,7 +45,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemServerTest.class);
 
     //    abstract void initConfiguration();
-    
+
     //    abstract void mockStatObject(String repo, String branch, String key, String physicalKey, Long sizeBytes) throws ApiException;
 
     //    abstract StagingLocation mockGetPhysicalAddress(String repo, String branch, String key, String physicalKey) throws ApiException;

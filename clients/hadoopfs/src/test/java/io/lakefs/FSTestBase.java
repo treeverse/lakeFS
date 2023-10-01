@@ -132,7 +132,6 @@ abstract class FSTestBase {
 
         addHadoopConfiguration(conf);
 
-        conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
 
         conf.set("fs.lakefs.access.key", "unused-but-checked");
@@ -175,8 +174,12 @@ abstract class FSTestBase {
         //     also catches its "get repo" call.  Nothing bad happens, but
         //     this response does show up in logs.
 
+        moreHadoopSetup();
+
         fs.initialize(new URI("lakefs://repo/main/file.txt"), conf);
     }
+
+    protected void moreHadoopSetup() {}
 
     // Expect this statObject to be not found
     protected void expectStatObjectNotFound(String repo, String ref, String path) {
@@ -251,23 +254,6 @@ abstract class FSTestBase {
                               .withPath(String.format("/repositories/%s/branches/%s", repo, branch)))
             .respond(response().withStatusCode(200)
                      .withBody(gson.toJson(new Ref().id("123").commitId("456"))));
-    }
-
-    // Return a location under namespace for this getPhysicalAddress call.
-    //
-    // TODO(ariels): abstract, overload separately for direct and pre-signed.
-    protected StagingLocation expectGetPhysicalAddress(String repo, String branch, String path, String namespace) {
-        StagingLocation stagingLocation = new StagingLocation()
-            .token("token:foo:" + sessionId())
-            .physicalAddress(s3Url(String.format("%s/%s/%s/%s/%s-object",
-                                                 sessionId(), namespace, repo, branch, path)));
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(stagingLocation)));
-        return stagingLocation;
     }
 
     protected void expectDeleteObject(String repo, String branch, String path) {
