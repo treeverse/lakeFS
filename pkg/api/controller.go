@@ -1415,6 +1415,39 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
+func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
+	_, err := auth.GetUser(r.Context())
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+	var storageCfg apigen.StorageConfig
+	internalError := false
+	if !c.authorizeCallback(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadConfigAction,
+			Resource: permissions.All,
+		},
+	}, func(_ http.ResponseWriter, _ *http.Request, code int, v interface{}) {
+		switch code {
+		case http.StatusInternalServerError:
+			writeError(w, r, code, v)
+			internalError = true
+		case http.StatusUnauthorized:
+			c.Logger.Debug("Unauthorized request to get storage config, returning partial config")
+		}
+	}) {
+		if internalError {
+			return
+		}
+	} else {
+		storageCfg = c.getStorageConfig()
+	}
+
+	versionConfig := c.getVersionConfig()
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig})
+}
+
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -1424,12 +1457,16 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}) {
 		return
 	}
+
+	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
+}
+func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
 	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
 		defaultNamespacePrefix = c.Config.Blockstore.DefaultNamespacePrefix
 	}
-	response := apigen.StorageConfig{
+	return apigen.StorageConfig{
 		BlockstoreType:                   c.Config.Blockstore.Type,
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
@@ -1439,9 +1476,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
 	}
-	writeResponse(w, r, http.StatusOK, response)
 }
-
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -4124,7 +4159,10 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
+	writeResponse(w, r, http.StatusOK, c.getVersionConfig())
+}
 
+func (c *Controller) getVersionConfig() apigen.VersionConfig {
 	// set upgrade recommended based on last security audit check
 	var (
 		upgradeRecommended *bool
@@ -4154,14 +4192,13 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeResponse(w, r, http.StatusOK, apigen.VersionConfig{
+	return apigen.VersionConfig{
 		UpgradeRecommended: upgradeRecommended,
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
-	})
+	}
 }
-
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)

@@ -184,18 +184,18 @@ var rootCmd = &cobra.Command{
 
 		client := getClient()
 
-		resp, err := client.GetLakeFSVersionWithResponse(cmd.Context())
+		resp, err := client.GetConfigWithResponse(cmd.Context())
 		if err != nil {
 			WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
 		} else if resp.JSON200 == nil {
 			WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
 		} else {
 			lakefsVersion := resp.JSON200
-			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
-			if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
-				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
+			info.LakeFSVersion = swag.StringValue(lakefsVersion.VersionConfig.Version)
+			if swag.BoolValue(lakefsVersion.VersionConfig.UpgradeRecommended) {
+				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.VersionConfig.LatestVersion)
 			}
-			upgradeURL := swag.StringValue(lakefsVersion.UpgradeUrl)
+			upgradeURL := swag.StringValue(lakefsVersion.VersionConfig.UpgradeUrl)
 			if upgradeURL != "" {
 				info.UpgradeURL = upgradeURL
 			}

@@ -44,10 +44,22 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_lake_fs_version(self):
+        """Test case for get_lake_fs_version
+
+        """
+        pass
+
     def test_get_setup_state(self):
         """Test case for get_setup_state
 
         check if the lakeFS installation is already set up  # noqa: E501
+        """
+        pass
+
+    def test_get_storage_config(self):
+        """Test case for get_storage_config
+
         """
         pass
 
