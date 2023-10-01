@@ -51,13 +51,13 @@ Example configuration file:
 				_ = reader.Close()
 			}()
 		}
-		var body apigen.SetGarbageCollectionRulesJSONRequestBody
+		var body apigen.SetGCRulesJSONRequestBody
 		err = json.NewDecoder(reader).Decode(&body)
 		if err != nil {
 			DieErr(err)
 		}
 		client := getClient()
-		resp, err := client.SetGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository, body)
+		resp, err := client.SetGCRules(cmd.Context(), u.Repository, body)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

@@ -51,6 +51,12 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_garbage_collection_config(self):
+        """Test case for get_garbage_collection_config
+
+        """
+        pass
+
     def test_get_lake_fs_version(self):
         """Test case for get_lake_fs_version
 
@@ -66,6 +72,43 @@ class TestInternalApi(unittest.TestCase):
 
     def test_get_storage_config(self):
         """Test case for get_storage_config
+
+        """
+        pass
+
+    def test_internal_create_branch_protection_rule(self):
+        """Test case for internal_create_branch_protection_rule
+
+        """
+        pass
+
+    def test_internal_delete_branch_protection_rule(self):
+        """Test case for internal_delete_branch_protection_rule
+
+        """
+        pass
+
+    def test_internal_delete_garbage_collection_rules(self):
+        """Test case for internal_delete_garbage_collection_rules
+
+        """
+        pass
+
+    def test_internal_get_branch_protection_rules(self):
+        """Test case for internal_get_branch_protection_rules
+
+        get branch protection rules  # noqa: E501
+        """
+        pass
+
+    def test_internal_get_garbage_collection_rules(self):
+        """Test case for internal_get_garbage_collection_rules
+
+        """
+        pass
+
+    def test_internal_set_garbage_collection_rules(self):
+        """Test case for internal_set_garbage_collection_rules
 
         """
         pass

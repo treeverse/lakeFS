@@ -847,7 +847,7 @@ class Actions {
 
 class Retention {
     async getGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`);
         if (response.status === 404) {
             throw new NotFoundError('policy not found')
         }
@@ -866,8 +866,8 @@ class Retention {
     }
 
     async setGCPolicy(repoID, policy) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
-            method: 'POST',
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
+            method: 'PUT',
             body: policy
         });
         if (response.status !== 204) {
@@ -877,7 +877,7 @@ class Retention {
     }
 
     async deleteGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
             method: 'DELETE',
         });
         if (response.status !== 204) {
@@ -983,14 +983,17 @@ class Config {
 
 class BranchProtectionRules {
     async getRules(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`);
         if (response.status === 404) {
             throw new NotFoundError('branch protection rules not found')
         }
         if (response.status !== 200) {
             throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
         }
-        return response.json();
+        return {
+            'checksum': response.headers.get('ETag'),
+            'rules': await response.json()
+        }
     }
 
     async createRulePreflight(repoID) {
@@ -999,11 +1002,11 @@ class BranchProtectionRules {
 
     }
 
-    async createRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
-            method: 'POST',
-            body: JSON.stringify({pattern: pattern})
-        });
+    async setRules(repoID, rules, lastKnownChecksum) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`, {
+            method: 'PUT',
+            body: JSON.stringify(rules),
+        }, {'If-Match': lastKnownChecksum});
         if (response.status !== 204) {
             throw new Error(`could not create protection rule: ${await extractError(response)}`);
         }

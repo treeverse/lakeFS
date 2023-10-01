@@ -1778,6 +1778,234 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /repositories/{repository}/settings/gc_rules:
+    delete:
+      operationId: deleteGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: deleted garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-accepts: application/json
+    get:
+      operationId: getGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionRules'
+          description: repository GC rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get repository GC rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionRules'
+        required: true
+      responses:
+        "204":
+          description: set garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/settings/branch_protection:
+    get:
+      operationId: getBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BranchProtectionRule'
+                type: array
+          description: branch protection rules
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: ETag of the branch protection rules
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: if provided, the branch protection rules will be updated only
+          if the current ETag match the provided value
+        explode: false
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/BranchProtectionRule'
+              type: array
+        required: true
+      responses:
+        "204":
+          description: branch protection rule created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
   /otf/diffs:
     get:
       operationId: getOtfDiffs
@@ -4811,7 +5039,8 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
-      operationId: delete garbage collection rules
+      deprecated: true
+      operationId: internalDeleteGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4842,10 +5071,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     get:
-      operationId: getGarbageCollectionRules
+      deprecated: true
+      operationId: internalGetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4880,10 +5110,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     post:
-      operationId: set garbage collection rules
+      deprecated: true
+      operationId: internalSetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4920,7 +5151,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_commits:
@@ -5059,7 +5290,8 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
-      operationId: deleteBranchProtectionRule
+      deprecated: true
+      operationId: internalDeleteBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5102,11 +5334,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-contentType: application/json
       x-accepts: application/json
     get:
-      operationId: getBranchProtectionRules
+      deprecated: true
+      operationId: internalGetBranchProtectionRules
       parameters:
       - explode: false
         in: path
@@ -5144,10 +5377,11 @@ paths:
           description: Internal Server Error
       summary: get branch protection rules
       tags:
-      - repositories
+      - internal
       x-accepts: application/json
     post:
-      operationId: createBranchProtectionRule
+      deprecated: true
+      operationId: internalCreateBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5184,7 +5418,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /healthcheck:
@@ -5278,7 +5512,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /statistics:
     post:

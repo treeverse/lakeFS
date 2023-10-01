@@ -159,8 +159,8 @@ export const getRepoOnboardingSteps = (
     showStep: () => true,
     isCompleted: async () => {
       try {
-        const rules = await branchProtectionRules.getRules(currentRepo);
-        return rules?.length > 0;
+        const rulesResponse = await branchProtectionRules.getRules(currentRepo);
+        return rulesResponse['rules']?.length > 0;
       } catch (e) {
         if (e instanceof NotFoundError) {
           return false;
