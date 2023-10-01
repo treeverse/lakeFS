@@ -180,9 +180,8 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**revertBranch**](docs/BranchesApi.md#revertBranch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**getCommit**](docs/CommitsApi.md#getCommit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
+*ConfigApi* | [**getConfig**](docs/ConfigApi.md#getConfig) | **GET** /config | 
 *ConfigApi* | [**getGarbageCollectionConfig**](docs/ConfigApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
-*ConfigApi* | [**getLakeFSVersion**](docs/ConfigApi.md#getLakeFSVersion) | **GET** /config/version | 
-*ConfigApi* | [**getStorageConfig**](docs/ConfigApi.md#getStorageConfig) | **GET** /config/storage | 
 *ExperimentalApi* | [**getOtfDiffs**](docs/ExperimentalApi.md#getOtfDiffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *ExperimentalApi* | [**otfDiff**](docs/ExperimentalApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
@@ -192,7 +191,9 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**createBranchProtectionRulePreflight**](docs/InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *InternalApi* | [**createSymlinkFile**](docs/InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 *InternalApi* | [**getAuthCapabilities**](docs/InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+*InternalApi* | [**getLakeFSVersion**](docs/InternalApi.md#getLakeFSVersion) | **GET** /config/version | 
 *InternalApi* | [**getSetupState**](docs/InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+*InternalApi* | [**getStorageConfig**](docs/InternalApi.md#getStorageConfig) | **GET** /config/storage | 
 *InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
@@ -252,6 +253,7 @@ Class | Method | HTTP request | Description
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
+ - [Config](docs/Config.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)

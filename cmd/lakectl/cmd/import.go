@@ -164,9 +164,9 @@ func newImportProgressBar(visible bool) *progressbar.ProgressBar {
 }
 
 func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.ClientWithResponses, source string) {
-	storageConfResp, err := client.GetStorageConfigWithResponse(ctx)
-	DieOnErrorOrUnexpectedStatusCode(storageConfResp, err, http.StatusOK)
-	storageConfig := storageConfResp.JSON200
+	confResp, err := client.GetConfigWithResponse(ctx)
+	DieOnErrorOrUnexpectedStatusCode(confResp, err, http.StatusOK)
+	storageConfig := confResp.JSON200.StorageConfig
 	if storageConfig == nil {
 		Die("Bad response from server", 1)
 	}

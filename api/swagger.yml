@@ -1001,7 +1001,13 @@ components:
           type: boolean
         import_validity_regex:
           type: string
-
+    Config:
+      type: object
+      properties:
+        version_config:
+          $ref: "#/components/schemas/VersionConfig"
+        storage_config:
+          $ref: "#/components/schemas/StorageConfig"
     VersionConfig:
       type: object
       properties:
@@ -4271,12 +4277,28 @@ paths:
       responses:
         204:
           description: NoContent
-  /config/version:
+  /config:
     get:
       tags:
         - config
+      operationId: getConfig
+      description: retrieve lakeFS configuration
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/version:
+    get:
+      tags:
+        - internal
       operationId: getLakeFSVersion
       description: get version of lakeFS server
+      deprecated: true
       responses:
         200:
           description: lakeFS version
@@ -4289,9 +4311,10 @@ paths:
   /config/storage:
     get:
       tags:
-        - config
+        - internal
       operationId: getStorageConfig
       description: retrieve lakeFS storage configuration
+      deprecated: true
       responses:
         200:
           description: lakeFS storage configuration

@@ -946,18 +946,19 @@ class Setup {
 
 class Config {
     async getStorageConfig() {
-        const response = await apiRequest('/config/storage', {
+        const response = await apiRequest('/config', {
             method: 'GET',
         });
-        let cfg;
+        let cfg, storageCfg;
         switch (response.status) {
             case 200:
                 cfg = await response.json();
-                cfg.warnings = []
-                if (cfg.blockstore_type === 'mem') {
-                    cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
+                storageCfg = cfg.storage_config
+                storageCfg.warnings = []
+                if (storageCfg.blockstore_type === 'mem') {
+                    storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`)
                 }
-                return cfg;
+                return storageCfg;
             case 409:
                 throw new Error('Conflict');
             default:
@@ -966,12 +967,14 @@ class Config {
     }
 
     async getLakeFSVersion() {
-        const response = await apiRequest('/config/version', {
+        const response = await apiRequest('/config', {
             method: 'GET',
         });
+        let cfg;
         switch (response.status) {
             case 200:
-                return await response.json();
+                cfg =  await response.json();
+                return cfg.version_config
             default:
                 throw new Error('Unknown');
         }

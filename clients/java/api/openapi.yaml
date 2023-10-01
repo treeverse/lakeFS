@@ -5194,8 +5194,29 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
+  /config:
+    get:
+      description: retrieve lakeFS configuration
+      operationId: getConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: lakeFS configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/version:
     get:
+      deprecated: true
       description: get version of lakeFS server
       operationId: getLakeFSVersion
       responses:
@@ -5212,10 +5233,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/storage:
     get:
+      deprecated: true
       description: retrieve lakeFS storage configuration
       operationId: getStorageConfig
       responses:
@@ -5232,7 +5254,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/garbage-collection:
     get:
@@ -6647,6 +6669,28 @@ components:
       - import_validity_regex
       - pre_sign_support
       - pre_sign_support_ui
+      type: object
+    Config:
+      example:
+        storage_config:
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        version_config:
+          latest_version: latest_version
+          version: version
+          upgrade_recommended: true
+          upgrade_url: upgrade_url
+      properties:
+        version_config:
+          $ref: '#/components/schemas/VersionConfig'
+        storage_config:
+          $ref: '#/components/schemas/StorageConfig'
       type: object
     VersionConfig:
       example:
