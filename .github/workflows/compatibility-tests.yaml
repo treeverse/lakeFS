@@ -150,7 +150,8 @@ jobs:
 
       - name: Generate uniquifying value
         id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+        shell: bash
+        run: echo "value=$(cat /proc/sys/kernel/random/uuid)" >> $GITHUB_OUTPUT
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -237,10 +238,10 @@ jobs:
           cache: 'pip'
       - run: pip install -r ./test/spark/requirements.txt
 
-
       - name: Generate uniquifying value
         id: unique
-        run: echo "value=${RANDOM}${RANDOM}${RANDOM}${RANDOM}" >> $GITHUB_OUTPUT
+        shell: bash
+        run: echo "value=$(cat /proc/sys/kernel/random/uuid)" >> $GITHUB_OUTPUT
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
