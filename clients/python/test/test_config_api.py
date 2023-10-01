@@ -36,18 +36,6 @@ class TestConfigApi(unittest.TestCase):
         """
         pass
 
-    def test_get_lake_fs_version(self):
-        """Test case for get_lake_fs_version
-
-        """
-        pass
-
-    def test_get_storage_config(self):
-        """Test case for get_storage_config
-
-        """
-        pass
-
 
 if __name__ == '__main__':
     unittest.main()

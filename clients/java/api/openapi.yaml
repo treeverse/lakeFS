@@ -5233,7 +5233,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/storage:
     get:
@@ -5254,7 +5254,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/garbage-collection:
     get:
