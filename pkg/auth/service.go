@@ -20,7 +20,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -73,9 +72,11 @@ type CredentialsCreator interface {
 	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
 }
 
-type Service interface {
-	InviteHandler
+type EmailInviter interface {
+	InviteUser(ctx context.Context, email string) error
+}
 
+type Service interface {
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
@@ -180,10 +181,9 @@ type AuthService struct {
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
-	*EmailInviteHandler
 }
 
-func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
+func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -197,7 +197,6 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *emai
 		cache:       cache,
 		log:         logger,
 	}
-	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
 	return res
 }
 
@@ -1141,17 +1140,13 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 }
 
 type APIAuthService struct {
-	apiClient              ClientWithResponsesInterface
-	secretStore            crypt.SecretStore
-	logger                 logging.Logger
-	cache                  Cache
-	delegatedInviteHandler *EmailInviteHandler
+	apiClient   ClientWithResponsesInterface
+	secretStore crypt.SecretStore
+	logger      logging.Logger
+	cache       Cache
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
-	if a.delegatedInviteHandler != nil {
-		return a.delegatedInviteHandler.InviteUser(ctx, email)
-	}
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:    swag.String(email),
 		Invite:   swag.Bool(true),
@@ -1162,10 +1157,6 @@ func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
-}
-
-func (a *APIAuthService) IsInviteSupported() bool {
-	return true
 }
 
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
@@ -1879,7 +1870,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, emailer *email.Emailer, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1916,9 +1907,6 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		secretStore: secretStore,
 		logger:      logger,
 		cache:       cache,
-	}
-	if emailer != nil {
-		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.ContextUnavailable(), emailer)
 	}
 	return res, nil
 }
