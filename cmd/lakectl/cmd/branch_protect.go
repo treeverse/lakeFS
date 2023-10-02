@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -37,7 +38,7 @@ var branchProtectListCmd = &cobra.Command{
 		for i, rule := range *resp.JSON200 {
 			patterns[i] = []interface{}{rule.Pattern}
 		}
-		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &api.Pagination{
+		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &apigen.Pagination{
 			HasMore: false,
 			Results: len(patterns),
 		}, len(patterns))
@@ -54,11 +55,17 @@ var branchProtectAddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		resp, err := client.CreateBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.CreateBranchProtectionRuleJSONRequestBody{
+		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
+
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		rules := *resp.JSON200
+		rules = append(rules, apigen.BranchProtectionRule{
 			Pattern: args[1],
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("Branch protection rule added to '%s' repository.\n", u.Repository)
+		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, &apigen.SetBranchProtectionRulesParams{
+			IfMatch: swag.String(resp.HTTPResponse.Header.Get("ETag")),
+		}, rules)
+		DieOnErrorOrUnexpectedStatusCode(setResp, err, http.StatusNoContent)
 	},
 }
 
@@ -72,11 +79,23 @@ var branchProtectDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := MustParseRepoURI("repository", args[0])
-		resp, err := client.DeleteBranchProtectionRuleWithResponse(cmd.Context(), u.Repository, api.DeleteBranchProtectionRuleJSONRequestBody{
-			Pattern: args[1],
+		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		found := false
+		rules := slices.DeleteFunc(*resp.JSON200, func(rule apigen.BranchProtectionRule) bool {
+			if rule.Pattern == args[1] {
+				found = true
+				return true
+			}
+			return false
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
-		fmt.Printf("Branch protection rule deleted from '%s' repository.\n", u.Repository)
+		if !found {
+			Die("Branch protection rule not found", 1)
+		}
+		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, &apigen.SetBranchProtectionRulesParams{
+			IfMatch: swag.String(resp.HTTPResponse.Header.Get("ETag")),
+		}, rules)
+		DieOnErrorOrUnexpectedStatusCode(setResp, err, http.StatusNoContent)
 	},
 }
 

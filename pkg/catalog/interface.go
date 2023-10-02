@@ -154,19 +154,22 @@ type Interface interface {
 	CancelImport(ctx context.Context, repositoryID, importID string) error
 	WriteRange(ctx context.Context, repositoryID string, params WriteRangeRequest) (*graveler.RangeInfo, *Mark, error)
 	WriteMetaRange(ctx context.Context, repositoryID string, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error)
-	UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error
 
 	GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error)
 	SetGarbageCollectionRules(ctx context.Context, repositoryID string, rules *graveler.GarbageCollectionRules) error
-	PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error)
+	PrepareExpiredCommits(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRunMetadata, error)
 	// PrepareGCUncommitted Creates parquet files listing of all uncommitted objects in the given repositoryID and saves them under the GC runID in the object store
 	// Since this operation might take a very long time, we save 20MB files at a time and return a mark of the next item to read, which can be provided to a consecutive call
 	// Consecutive calls must be made using the returned run ID, upon completion mark will return nil
 	PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error)
 
-	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error)
-	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
-	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
+	// GetBranchProtectionRules returns the branch protection rules for the given repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for conditional updates.
+	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, string, error)
+	// SetBranchProtectionRules sets the branch protection rules for the given repository.
+	// If lastKnownChecksum doesn't match the current state, the update will fail with ErrPreconditionFailed.
+	// If lastKnownChecksum is nil, the update will be performed regardless of the current state of the rules.
+	SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress to validate single use limited in time of a given physical address
 	SetLinkAddress(ctx context.Context, repository, token string) error

@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var fsLsCmd = &cobra.Command{
@@ -25,16 +26,16 @@ var fsLsCmd = &cobra.Command{
 			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
-		var paramsDelimiter api.PaginationDelimiter
+		var paramsDelimiter apigen.PaginationDelimiter
 		if !recursive {
 			paramsDelimiter = PathDelimiter
 		}
 		var from string
 		for {
-			pfx := api.PaginationPrefix(prefix)
-			params := &api.ListObjectsParams{
+			pfx := apigen.PaginationPrefix(prefix)
+			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)

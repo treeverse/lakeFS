@@ -122,7 +122,7 @@ func initConfig() {
 	// read in environment variables
 	viper.AutomaticEnv()
 
-	// read configuration file
+	// read the configuration file
 	err := viper.ReadInConfig()
 	logger = logger.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
 	var errFileNotFound viper.ConfigFileNotFoundError
@@ -130,7 +130,7 @@ func initConfig() {
 		logger.WithError(err).Fatal("Failed to find a config file")
 	}
 	// fallback - try to load the previous supported $HOME/.lakefs.yaml
-	//   if err is set it will be file-not-found based on previous check
+	//   if err is set it will be file-not-found based on the previous check
 	if err != nil {
 		fallbackCfgFile := path.Join(getHomeDir(), ".lakefs.yaml")
 		if cfgFile != fallbackCfgFile {

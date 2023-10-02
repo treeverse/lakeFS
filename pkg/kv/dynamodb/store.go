@@ -10,13 +10,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
@@ -26,7 +27,7 @@ import (
 type Driver struct{}
 
 type Store struct {
-	svc    *dynamodb.DynamoDB
+	svc    *dynamodb.Client
 	params *kvparams.DynamoDB
 	wg     sync.WaitGroup
 	logger logging.Logger
@@ -36,7 +37,7 @@ type Store struct {
 type EntriesIterator struct {
 	partitionKey      []byte
 	startKey          []byte
-	exclusiveStartKey map[string]*dynamodb.AttributeValue
+	exclusiveStartKey map[string]types.AttributeValue
 
 	scanCtx      context.Context
 	entry        *kv.Entry
@@ -74,39 +75,38 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		return nil, fmt.Errorf("missing %s settings: %w", DriverName, kv.ErrDriverConfiguration)
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Profile:           params.AwsProfile,
-	})
+	var opts []func(*config.LoadOptions) error
+	if params.AwsRegion != "" {
+		opts = append(opts, config.WithRegion(params.AwsRegion))
+	}
+	if params.AwsProfile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(params.AwsProfile))
+	}
+	if params.AwsAccessKeyID != "" {
+		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			params.AwsAccessKeyID,
+			params.AwsSecretAccessKey,
+			"",
+		)))
+	}
+	const maxConnectionPerHost = 10
+	opts = append(opts, config.WithHTTPClient(
+		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
+			transport.MaxConnsPerHost = maxConnectionPerHost
+		})))
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := aws.NewConfig()
-	if params.Endpoint != "" {
-		cfg.Endpoint = aws.String(params.Endpoint)
-	}
-	if params.AwsRegion != "" {
-		cfg = cfg.WithRegion(params.AwsRegion)
-	}
-	if params.AwsAccessKeyID != "" {
-		cfg = cfg.WithCredentials(credentials.NewCredentials(
-			&credentials.StaticProvider{
-				Value: credentials.Value{
-					AccessKeyID:     params.AwsAccessKeyID,
-					SecretAccessKey: params.AwsSecretAccessKey,
-				},
-			}))
-	}
-	const maxConnectionPerHost = 10
-	cfg = cfg.WithHTTPClient(&http.Client{
-		Transport: &http.Transport{
-			MaxConnsPerHost: maxConnectionPerHost,
-		},
+	// Create DynamoDB client
+	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+		if params.Endpoint != "" {
+			o.BaseEndpoint = &params.Endpoint
+		}
 	})
 
-	// Create DynamoDB client
-	svc := dynamodb.New(sess, cfg)
 	err = setupKeyValueDatabase(ctx, svc, params)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
@@ -125,53 +125,55 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 }
 
 // isTableExist will try to describeTable and return bool status, error is returned only in case err != ResourceNotFoundException
-func isTableExist(ctx context.Context, svc *dynamodb.DynamoDB, table string) (bool, error) {
-	_, err := svc.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+func isTableExist(ctx context.Context, svc *dynamodb.Client, table string) (bool, error) {
+	_, err := svc.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(table),
 	})
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok && awsErr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+		var errResNotFound *types.ResourceNotFoundException
+		if errors.As(err, &errResNotFound) {
 			return false, nil
 		}
-		return false, handleClientError(err)
+		return false, err
 	}
 	return true, nil
 }
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
-func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *kvparams.DynamoDB) error {
+func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.Client, params *kvparams.DynamoDB) error {
 	// main kv table
 	exist, err := isTableExist(ctx, svc, params.TableName)
 	if exist || err != nil {
 		return err
 	}
 
-	table, err := svc.CreateTableWithContext(ctx, &dynamodb.CreateTableInput{
+	table, err := svc.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName:   aws.String(params.TableName),
-		BillingMode: aws.String(dynamodb.BillingModePayPerRequest), // On-Demand
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+		BillingMode: types.BillingModePayPerRequest, // On-Demand
+		AttributeDefinitions: []types.AttributeDefinition{
 			{
 				AttributeName: aws.String(PartitionKey),
-				AttributeType: aws.String("B"),
+				AttributeType: types.ScalarAttributeTypeB,
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				AttributeType: aws.String("B"),
+				AttributeType: types.ScalarAttributeTypeB,
 			},
 		},
-		KeySchema: []*dynamodb.KeySchemaElement{
+		KeySchema: []types.KeySchemaElement{
 			{
 				AttributeName: aws.String(PartitionKey),
-				KeyType:       aws.String("HASH"),
+				KeyType:       types.KeyTypeHash,
 			},
 			{
 				AttributeName: aws.String(ItemKey),
-				KeyType:       aws.String("RANGE"),
+				KeyType:       types.KeyTypeRange,
 			},
 		},
 	})
 	if err != nil {
-		if _, ok := err.(*dynamodb.ResourceInUseException); ok {
+		var errResInUse *types.ResourceInUseException
+		if errors.As(err, &errResInUse) {
 			return nil
 		}
 		return err
@@ -185,28 +187,28 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.DynamoDB, params *
 	bo.MaxInterval = maxInterval * time.Second
 	bo.MaxElapsedTime = maxElapsed * time.Second
 	err = backoff.Retry(func() error {
-		desc, err := svc.DescribeTable(&dynamodb.DescribeTableInput{
+		desc, err := svc.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 			TableName: table.TableDescription.TableName,
 		})
 		if err != nil {
 			// we shouldn't retry on anything but kv.ErrTableNotActive
 			return backoff.Permanent(err)
 		}
-		if *desc.Table.TableStatus != dynamodb.TableStatusActive {
-			return fmt.Errorf("table status(%s): %w", *desc.Table.TableStatus, kv.ErrTableNotActive)
+		if desc.Table.TableStatus != types.TableStatusActive {
+			return fmt.Errorf("table status(%s): %w", desc.Table.TableStatus, kv.ErrTableNotActive)
 		}
 		return nil
 	}, bo)
 	return err
 }
 
-func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
-		PartitionKey: {
-			B: partitionKey,
+func (s *Store) bytesKeyToDynamoKey(partitionKey, key []byte) map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		PartitionKey: &types.AttributeValueMemberB{
+			Value: partitionKey,
 		},
-		ItemKey: {
-			B: key,
+		ItemKey: &types.AttributeValueMemberB{
+			Value: key,
 		},
 	}
 }
@@ -218,16 +220,15 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if len(key) == 0 {
 		return nil, kv.ErrMissingKey
 	}
-
-	result, err := s.svc.GetItemWithContext(ctx, &dynamodb.GetItemInput{
+	result, err := s.svc.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
 		ConsistentRead:         aws.Bool(true),
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	})
 	const operation = "GetItem"
 	if err != nil {
-		return nil, fmt.Errorf("get item: %w", handleClientError(err))
+		return nil, fmt.Errorf("get item: %w", err)
 	}
 	if result.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*result.ConsumedCapacity.CapacityUnits)
@@ -238,7 +239,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	}
 
 	var item DynKVItem
-	err = dynamodbattribute.UnmarshalMap(result.Item, &item)
+	err = attributevalue.UnmarshalMap(result.Item, &item)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal map: %w", err)
 	}
@@ -274,7 +275,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		ItemValue:    value,
 	}
 
-	marshaledItem, err := dynamodbattribute.MarshalMap(item)
+	marshaledItem, err := attributevalue.MarshalMap(item)
 	if err != nil {
 		return fmt.Errorf("marshal map: %w", err)
 	}
@@ -282,7 +283,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 	input := &dynamodb.PutItemInput{
 		Item:                   marshaledItem,
 		TableName:              &s.params.TableName,
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	}
 	if usePredicate {
 		switch valuePredicate {
@@ -292,7 +293,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		case kv.PrecondConditionalExists: // update only if exists
 			input.ConditionExpression = aws.String("attribute_exists(" + ItemValue + ")")
 
-		default: // update only if predicate matches current stored value
+		default: // update only if predicate matches the current stored value
 			predicateCondition := expression.Name(ItemValue).Equal(expression.Value(valuePredicate.([]byte)))
 			conditionExpression, err := expression.NewBuilder().WithCondition(predicateCondition).Build()
 			if err != nil {
@@ -304,13 +305,14 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		}
 	}
 
-	resp, err := s.svc.PutItemWithContext(ctx, input)
+	resp, err := s.svc.PutItem(ctx, input)
 	const operation = "PutItem"
 	if err != nil {
-		if _, ok := err.(*dynamodb.ConditionalCheckFailedException); ok && usePredicate {
+		var errConditionalCheckFailed *types.ConditionalCheckFailedException
+		if usePredicate && errors.As(err, &errConditionalCheckFailed) {
 			return kv.ErrPredicateFailed
 		}
-		return fmt.Errorf("put item: %w", handleClientError(err))
+		return fmt.Errorf("put item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -326,14 +328,14 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		return kv.ErrMissingKey
 	}
 
-	resp, err := s.svc.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
+	resp, err := s.svc.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName:              aws.String(s.params.TableName),
 		Key:                    s.bytesKeyToDynamoKey(partitionKey, key),
-		ReturnConsumedCapacity: aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
 	})
 	const operation = "DeleteItem"
 	if err != nil {
-		return fmt.Errorf("delete item: %w", handleClientError(err))
+		return fmt.Errorf("delete item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*resp.ConsumedCapacity.CapacityUnits)
@@ -371,7 +373,8 @@ func (s *Store) Close() {
 
 // DropTable used internally for testing purposes
 func (s *Store) DropTable() error {
-	_, err := s.svc.DeleteTable(&dynamodb.DeleteTableInput{
+	ctx := context.Background()
+	_, err := s.svc.DeleteTable(ctx, &dynamodb.DeleteTableInput{
 		TableName: &s.params.TableName,
 	})
 	return err
@@ -380,12 +383,13 @@ func (s *Store) DropTable() error {
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
 		e.startKey = key
+		e.exclusiveStartKey = nil
 		e.runQuery()
 		return
 	}
 	var item DynKVItem
 	e.currEntryIdx = sort.Search(len(e.queryResult.Items), func(i int) bool {
-		if e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[i], &item); e.err != nil {
+		if e.err = attributevalue.UnmarshalMap(e.queryResult.Items[i], &item); e.err != nil {
 			return false
 		}
 		return bytes.Compare(key, item.ItemKey) <= 0
@@ -407,7 +411,7 @@ func (e *EntriesIterator) Next() bool {
 		}
 	}
 	var item DynKVItem
-	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
+	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[e.currEntryIdx], &item)
 	if e.err != nil {
 		return false
 	}
@@ -432,16 +436,16 @@ func (e *EntriesIterator) Close() {
 }
 
 func (e *EntriesIterator) runQuery() {
-	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
-		":partitionkey": {
-			B: e.partitionKey,
+	expressionAttributeValues := map[string]types.AttributeValue{
+		":partitionkey": &types.AttributeValueMemberB{
+			Value: e.partitionKey,
 		},
 	}
 	keyConditionExpression := PartitionKey + " = :partitionkey"
 	if len(e.startKey) > 0 {
 		keyConditionExpression += " AND " + ItemKey + " >= :fromkey"
-		expressionAttributeValues[":fromkey"] = &dynamodb.AttributeValue{
-			B: e.startKey,
+		expressionAttributeValues[":fromkey"] = &types.AttributeValueMemberB{
+			Value: e.startKey,
 		}
 	}
 	queryInput := &dynamodb.QueryInput{
@@ -451,16 +455,16 @@ func (e *EntriesIterator) runQuery() {
 		ConsistentRead:            aws.Bool(true),
 		ScanIndexForward:          aws.Bool(true),
 		ExclusiveStartKey:         e.exclusiveStartKey,
-		ReturnConsumedCapacity:    aws.String(dynamodb.ReturnConsumedCapacityTotal),
+		ReturnConsumedCapacity:    types.ReturnConsumedCapacityTotal,
 	}
 	if e.limit != 0 {
-		queryInput.SetLimit(e.limit)
+		queryInput.Limit = aws.Int32(int32(e.limit))
 	}
 
-	queryResult, err := e.store.svc.QueryWithContext(e.scanCtx, queryInput)
+	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
-		e.err = fmt.Errorf("query: %w", handleClientError(err))
+		e.err = fmt.Errorf("query: %w", err)
 		return
 	}
 	dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
@@ -473,11 +477,11 @@ func (e *EntriesIterator) isInRange(key []byte) bool {
 		return false
 	}
 	var maxItem, minItem DynKVItem
-	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[0], &minItem)
+	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[0], &minItem)
 	if e.err != nil {
 		return false
 	}
-	e.err = dynamodbattribute.UnmarshalMap(e.queryResult.Items[len(e.queryResult.Items)-1], &maxItem)
+	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[len(e.queryResult.Items)-1], &maxItem)
 	if e.err != nil {
 		return false
 	}
@@ -525,13 +529,4 @@ func (s *Store) StopPeriodicCheck() {
 		s.wg.Wait()
 		s.cancel = nil
 	}
-}
-
-func handleClientError(err error) error {
-	// extract original error if needed
-	var reqErr awserr.Error
-	if errors.As(err, &reqErr) && errors.Is(reqErr.OrigErr(), context.Canceled) {
-		err = reqErr.OrigErr()
-	}
-	return err
 }

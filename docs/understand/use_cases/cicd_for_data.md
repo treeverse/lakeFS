@@ -6,6 +6,8 @@ parent: Use Cases
 grand_parent: Understanding lakeFS
 redirect_from:
    - /use_cases/cicd_for_data.html
+   - /usecases/ci.html
+   - /usecases/cd.html
 ---
 
 # CI/CD for Data

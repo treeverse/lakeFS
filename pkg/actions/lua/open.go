@@ -13,12 +13,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/yaml"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/http"
+	"github.com/treeverse/lakefs/pkg/actions/lua/net/url"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
 	"github.com/treeverse/lakefs/pkg/actions/lua/time"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/treeverse/lakefs/pkg/actions/lua/uuid"
 )
 
@@ -28,6 +30,7 @@ import (
 func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	regexp.Open(l)
 	strings.Open(l)
+	util.Open(l)
 	json.Open(l)
 	yaml.Open(l)
 	time.Open(l)
@@ -41,6 +44,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	path.Open(l)
 	aws.Open(l, ctx)
 	gcloud.Open(l, ctx)
+	url.Open(l)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}

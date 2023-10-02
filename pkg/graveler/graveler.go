@@ -440,9 +440,9 @@ type CommitParams struct {
 
 type GarbageCollectionRunMetadata struct {
 	RunID string
-	// Location of expired commits CSV file on object store
+	// Location of active commits CSV file on object store
 	CommitsCSVLocation string
-	// Location of where to write expired addresses on object store
+	// Location of where to write active addresses on object store
 	AddressLocation string
 }
 
@@ -602,23 +602,21 @@ type VersionController interface {
 	//	- location where the information of addresses to be removed should be saved
 	// If a previousRunID is specified, commits that were already expired and their ancestors will not be considered as expired/active.
 	// Note: Ancestors of previously expired commits may still be considered if they can be reached from a non-expired commit.
-	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
+	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (garbageCollectionRunMetadata *GarbageCollectionRunMetadata, err error)
 
 	// GCGetUncommittedLocation returns full uri of the storage location of saved uncommitted files per runID
 	GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error)
 
 	GCNewRunID() string
 
-	// GetBranchProtectionRules return all branch protection rules for the repository
-	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	// GetBranchProtectionRules return all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for a conditional update.
+	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
 
-	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
-	// or return ErrRuleNotExists if no such rule exists.
-	DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error
-
-	// CreateBranchProtectionRule creates a rule for the given name pattern,
-	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
-	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
+	// SetBranchProtectionRules sets the branch protection rules for the repository.
+	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
+	// If lastKnownChecksum is nil, the update is always performed.
+	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
 	// or return ErrAddressTokenAlreadyExists if a token already exists.
@@ -656,8 +654,6 @@ type Plumbing interface {
 	WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error)
 	// StageObject stages given object to stagingToken.
 	StageObject(ctx context.Context, stagingToken string, object ValueRecord) error
-	// UpdateBranchToken updates the given branch stagingToken
-	UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error
 }
 
 type Dumper interface {
@@ -936,7 +932,7 @@ type StagingManager interface {
 	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
-	List(ctx context.Context, st StagingToken, batchSize int) (ValueIterator, error)
+	List(ctx context.Context, st StagingToken, batchSize int) ValueIterator
 
 	// DropKey clears a value by staging token and key
 	DropKey(ctx context.Context, st StagingToken, key Key) error
@@ -1024,15 +1020,20 @@ type Graveler struct {
 	// logger *without context* to be used for logging.  It should be
 	// avoided in favour of g.log(ctx) in any operation where context is
 	// available.
-	logger logging.Logger
+	logger              logging.Logger
+	BranchUpdateBackOff backoff.BackOff
 }
 
 func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
+	branchUpdateBackOff := backoff.NewExponentialBackOff()
+	branchUpdateBackOff.MaxInterval = BranchUpdateMaxInterval
+
 	return &Graveler{
 		hooks:                    &HooksNoOp{},
 		CommittedManager:         committedManager,
 		RefManager:               refManager,
 		StagingManager:           stagingManager,
+		BranchUpdateBackOff:      branchUpdateBackOff,
 		protectedBranchesManager: protectedBranchesManager,
 		garbageCollectionManager: gcManager,
 		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
@@ -1097,25 +1098,6 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRec
 
 func (g *Graveler) StageObject(ctx context.Context, stagingToken string, object ValueRecord) error {
 	return g.StagingManager.Set(ctx, StagingToken(stagingToken), object.Key, object.Value, false)
-}
-
-func (g *Graveler) UpdateBranchToken(ctx context.Context, repository *RepositoryRecord, branchID, stagingToken string) error {
-	err := g.RefManager.BranchUpdate(ctx, repository, BranchID(branchID), func(branch *Branch) (*Branch, error) {
-		isEmpty, err := g.isStagingEmpty(ctx, repository, branch)
-		if err != nil {
-			return nil, err
-		}
-		if !isEmpty {
-			return nil, fmt.Errorf("branch staging is not empty: %w", ErrDirtyBranch)
-		}
-		tokensToDrop := []StagingToken{branch.StagingToken}
-		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
-		g.dropTokens(ctx, tokensToDrop...)
-		branch.StagingToken = StagingToken(stagingToken)
-		branch.SealedTokens = make([]StagingToken, 0)
-		return branch, nil
-	})
-	return err
 }
 
 func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error) {
@@ -1477,17 +1459,13 @@ func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repository *Re
 	return g.garbageCollectionManager.SaveRules(ctx, repository.StorageNamespace, rules)
 }
 
-func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, previousRunID string) (*GarbageCollectionRunMetadata, error) {
+func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRunMetadata, error) {
 	rules, err := g.getGarbageCollectionRules(ctx, repository)
 	if err != nil {
 		return nil, fmt.Errorf("get gc rules: %w", err)
 	}
-	previouslyExpiredCommits, err := g.garbageCollectionManager.GetRunExpiredCommits(ctx, repository.StorageNamespace, previousRunID)
-	if err != nil {
-		return nil, fmt.Errorf("get expired commits from previous run: %w", err)
-	}
 
-	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits)
+	runID, err := g.garbageCollectionManager.SaveGarbageCollectionCommits(ctx, repository, rules)
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
@@ -1515,16 +1493,15 @@ func (g *Graveler) GCNewRunID() string {
 	return g.garbageCollectionManager.NewID()
 }
 
-func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
+func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error {
-	return g.protectedBranchesManager.Delete(ctx, repository, pattern)
-}
-
-func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error {
-	return g.protectedBranchesManager.Add(ctx, repository, pattern, blockedActions)
+func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
+	if lastKnownChecksum == nil {
+		return g.protectedBranchesManager.SetRules(ctx, repository, rules)
+	}
+	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, *lastKnownChecksum)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -1645,7 +1622,8 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 // if the staging token changes during the write.  It never backs off.  It
 // returns the number of times it tried -- between 1 and options.MaxTries.
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
-	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string) error {
+	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string,
+) error {
 	if options.MaxTries == 0 {
 		options.MaxTries = BranchWriteMaxTries
 	}
@@ -1797,45 +1775,25 @@ func (g *Graveler) listStagingArea(ctx context.Context, b *Branch, batchSize int
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
-	it, err := g.StagingManager.List(ctx, b.StagingToken, batchSize)
-	if err != nil {
-		return nil, err
-	}
+	it := g.StagingManager.List(ctx, b.StagingToken, batchSize)
 
 	if len(b.SealedTokens) == 0 { // Only staging token exists -> return its iterator
 		return it, nil
 	}
-
-	itrs, err := g.listSealedTokens(ctx, b, batchSize)
-	if err != nil {
-		it.Close()
-		return nil, err
-	}
-	itrs = append([]ValueIterator{it}, itrs...)
+	itrs := append([]ValueIterator{it}, g.listSealedTokens(ctx, b, batchSize)...)
 	return NewCombinedIterator(itrs...), nil
 }
 
-func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) ([]ValueIterator, error) {
+func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) []ValueIterator {
 	iterators := make([]ValueIterator, 0, len(b.SealedTokens))
 	for _, st := range b.SealedTokens {
-		it, err := g.StagingManager.List(ctx, st, batchSize)
-		if err != nil {
-			// close the iterators we managed to open
-			for _, iter := range iterators {
-				iter.Close()
-			}
-			return nil, err
-		}
-		iterators = append(iterators, it)
+		iterators = append(iterators, g.StagingManager.List(ctx, st, batchSize))
 	}
-	return iterators, nil
+	return iterators
 }
 
 func (g *Graveler) sealedTokensIterator(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
-	itrs, err := g.listSealedTokens(ctx, b, batchSize)
-	if err != nil {
-		return nil, err
-	}
+	itrs := g.listSealedTokens(ctx, b, batchSize)
 	if len(itrs) == 0 {
 		return nil, ErrNoChanges
 	}
@@ -2017,9 +1975,6 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 // BranchUpdateMaxInterval.  It returns the number of times it tried --
 // between 1 and BranchUpdateMaxTries.
 func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc, operation string) error {
-	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = BranchUpdateMaxInterval
-
 	tries := 0
 	defer g.monitorRetries(ctx, tries, repository.RepositoryID, branchID, operation)
 	err := backoff.Retry(func() error {
@@ -2036,7 +1991,7 @@ func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *Repository
 			return backoff.Permanent(err)
 		}
 		return nil
-	}, bo)
+	}, g.BranchUpdateBackOff)
 	if errors.Is(err, kv.ErrPredicateFailed) && tries >= BranchUpdateMaxTries {
 		return fmt.Errorf("update branch: %w (last %s)", ErrTooManyTries, err)
 	}
@@ -3271,8 +3226,7 @@ type GarbageCollectionManager interface {
 	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
 	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
 
-	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules, previouslyExpiredCommits []CommitID) (string, error)
-	GetRunExpiredCommits(ctx context.Context, storageNamespace StorageNamespace, runID string) ([]CommitID, error)
+	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) (string, error)
 	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
 	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
 	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
@@ -3281,15 +3235,16 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
-	// Add creates a rule for the given name pattern, blocking the given actions.
-	// Returns ErrRuleAlreadyExists if there is already a rule for the given pattern.
-	Add(ctx context.Context, repository *RepositoryRecord, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
 	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
 	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
-	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
-	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
-	// GetRules returns all branch protection rules for the repository
-	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	// GetRules returns all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetRulesIf for conditional updates.
+	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
+	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules) error
+	// SetRulesIf sets the branch protection rules for the repository.
+	// If lastKnownChecksum does not match the current checksum, returns ErrPreconditionFailed.
+	// If lastKnownChecksum is empty, the rules are set only if no rules are currently set.
+	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

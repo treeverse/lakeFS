@@ -22,7 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -44,10 +43,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -108,11 +105,6 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
 
-		emailer, err := email.NewEmailer(email.Params(cfg.Email))
-		if err != nil {
-			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
-		}
-
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
@@ -126,17 +118,11 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
 		if cfg.IsAuthTypeAPI() {
-			var apiEmailer *email.Emailer
-			if !cfg.Auth.API.SupportsInvites {
-				// invites not supported by API - delegate it to emailer
-				apiEmailer = emailer
-			}
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
-				apiEmailer,
 				logger.WithField("service", "auth_api"),
 			)
 			if err != nil {
@@ -146,7 +132,6 @@ var runCmd = &cobra.Command{
 			authService = auth.NewAuthService(
 				kvStore,
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-				emailer,
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
@@ -168,6 +153,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
+
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
@@ -202,8 +188,6 @@ var runCmd = &cobra.Command{
 				logger.WithField("admin", cfg.Installation.UserName).Info("Initial setup completed successfully")
 			}
 		}
-
-		templater := templater.NewService(templates.Content, cfg, authService)
 
 		actionsService := actions.NewService(
 			ctx,
@@ -266,8 +250,6 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
-			emailer,
-			templater,
 			cfg.Gateways.S3.DomainNames,
 			cfg.UISnippets(),
 			upload.DefaultPathProvider,
@@ -280,14 +262,6 @@ var runCmd = &cobra.Command{
 			s3FallbackURL, err = url.Parse(cfg.Gateways.S3.FallbackURL)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
-			}
-		}
-
-		lakefsBaseURL := cfg.Email.LakefsBaseURL
-		if lakefsBaseURL != "" {
-			_, err := url.Parse(lakefsBaseURL)
-			if err != nil {
-				logger.WithError(err).Warn("Failed to parse configured lakefs base url for email")
 			}
 		}
 

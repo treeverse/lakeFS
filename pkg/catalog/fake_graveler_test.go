@@ -23,12 +23,7 @@ type FakeGraveler struct {
 }
 
 func (g *FakeGraveler) StageObject(ctx context.Context, stagingToken string, object graveler.ValueRecord) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *FakeGraveler) UpdateBranchToken(_ context.Context, _ *graveler.RepositoryRecord, _, _ string) error {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
@@ -44,7 +39,7 @@ func (g *FakeGraveler) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRe
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SaveGarbageCollectionCommits(_ context.Context, _ *graveler.RepositoryRecord, _ string) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
+func (g *FakeGraveler) SaveGarbageCollectionCommits(_ context.Context, _ *graveler.RepositoryRecord) (garbageCollectionRunMetadata *graveler.GarbageCollectionRunMetadata, err error) {
 	panic("implement me")
 }
 
@@ -389,16 +384,6 @@ func (m *FakeValueIterator) Close() {}
 type FakeDiffIterator struct {
 	Data  []*graveler.Diff
 	Index int
-}
-
-func NewFakeDiffIterator(data []*graveler.Diff) *FakeDiffIterator {
-	return &FakeDiffIterator{Data: data, Index: -1}
-}
-
-func NewFakeDiffIteratorFactory(data []*graveler.Diff) func() graveler.DiffIterator {
-	return func() graveler.DiffIterator {
-		return NewFakeDiffIterator(data)
-	}
 }
 
 func (m *FakeDiffIterator) Next() bool {

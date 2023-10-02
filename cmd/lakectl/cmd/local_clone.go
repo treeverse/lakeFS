@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -27,7 +27,7 @@ var localCloneCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		remote, localPath := getLocalArgs(args, true, false)
+		remote, localPath := getSyncArgs(args, true, false)
 		syncFlags := getLocalSyncFlags(cmd, client)
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		empty, err := fileutil.IsDirEmpty(localPath)
@@ -46,15 +46,15 @@ var localCloneCmd = &cobra.Command{
 		}
 		stableRemote := remote.WithRef(head)
 		// Dynamically construct changes
-		c := make(chan *local.Change, filesChanSize)
+		ch := make(chan *local.Change, filesChanSize)
 		go func() {
-			defer close(c)
+			defer close(ch)
 			remotePath := remote.GetPath()
 			var after string
 			for {
-				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, stableRemote.Ref, &api.ListObjectsParams{
-					After:        (*api.PaginationAfter)(swag.String(after)),
-					Prefix:       (*api.PaginationPrefix)(remote.Path),
+				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, stableRemote.Ref, &apigen.ListObjectsParams{
+					After:        (*apigen.PaginationAfter)(swag.String(after)),
+					Prefix:       (*apigen.PaginationPrefix)(remote.Path),
 					UserMetadata: swag.Bool(true),
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
@@ -70,7 +70,7 @@ var localCloneCmd = &cobra.Command{
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					c <- &local.Change{
+					ch <- &local.Change{
 						Source: local.ChangeSourceRemote,
 						Path:   relPath,
 						Type:   local.ChangeTypeAdded,
@@ -88,7 +88,7 @@ var localCloneCmd = &cobra.Command{
 		}
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
-		err = s.Sync(localPath, stableRemote, c)
+		err = s.Sync(localPath, stableRemote, ch)
 		if err != nil {
 			DieErr(err)
 		}

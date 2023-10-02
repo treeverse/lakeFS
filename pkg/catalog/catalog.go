@@ -2063,14 +2063,6 @@ func (c *Catalog) WriteMetaRange(ctx context.Context, repositoryID string, range
 	return c.Store.WriteMetaRange(ctx, repository, ranges)
 }
 
-func (c *Catalog) UpdateBranchToken(ctx context.Context, repositoryID, branchID, stagingToken string) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.UpdateBranchToken(ctx, repository, branchID, stagingToken)
-}
-
 func (c *Catalog) GetGarbageCollectionRules(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRules, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -2087,32 +2079,24 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	return c.Store.SetGarbageCollectionRules(ctx, repository, rules)
 }
 
-func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error) {
+func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	return c.Store.GetBranchProtectionRules(ctx, repository)
 }
 
-func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error {
+func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	return c.Store.DeleteBranchProtectionRule(ctx, repository, pattern)
+	return c.Store.SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum)
 }
 
-func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.CreateBranchProtectionRule(ctx, repository, pattern, blockedActions)
-}
-
-func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {
+func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRunMetadata, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -2122,7 +2106,7 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 	if err != nil {
 		return nil, err
 	}
-	return c.Store.SaveGarbageCollectionCommits(ctx, repository, previousRunID)
+	return c.Store.SaveGarbageCollectionCommits(ctx, repository)
 }
 
 // GCUncommittedMark Marks the *next* item to be scanned by the paginated call to PrepareGCUncommitted

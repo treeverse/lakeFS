@@ -3,7 +3,7 @@ info:
   description: lakeFS HTTP API
   license:
     name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: lakeFS API
   version: 0.1.0
 servers:
@@ -49,7 +49,7 @@ paths:
       security: []
       summary: setup communications preferences
       tags:
-      - config
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /setup_lakefs:
@@ -71,7 +71,7 @@ paths:
       security: []
       summary: check if the lakeFS installation is already set up
       tags:
-      - config
+      - internal
       x-accepts: application/json
     post:
       operationId: setup
@@ -109,7 +109,7 @@ paths:
       security: []
       summary: setup lakeFS and create a first user
       tags:
-      - config
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /user:
@@ -166,67 +166,6 @@ paths:
       - auth
       x-contentType: application/json
       x-accepts: application/json
-  /auth/password:
-    post:
-      operationId: updatePassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePasswordByToken'
-        required: true
-      responses:
-        "201":
-          description: successful reset
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security:
-      - cookie_auth: []
-      summary: Update user password by reset_password token
-      tags:
-      - auth
-      x-contentType: application/json
-      x-accepts: application/json
-  /auth/password/forgot:
-    post:
-      operationId: forgotPassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ForgotPasswordRequest'
-        required: true
-      responses:
-        "204":
-          description: No content
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Bad Request
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      security: []
-      summary: forgot password request initiates the password reset process
-      tags:
-      - auth
-      x-contentType: application/json
-      x-accepts: application/json
   /auth/capabilities:
     get:
       operationId: getAuthCapabilities
@@ -246,7 +185,7 @@ paths:
       security: []
       summary: list authentication capabilities supported
       tags:
-      - auth
+      - internal
       x-accepts: application/json
   /auth/users:
     get:
@@ -855,7 +794,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserList'
-          description: group memeber list
+          description: group member list
         "401":
           content:
             application/json:
@@ -1839,6 +1778,234 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /repositories/{repository}/settings/gc_rules:
+    delete:
+      operationId: deleteGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: deleted garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-accepts: application/json
+    get:
+      operationId: getGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionRules'
+          description: repository GC rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get repository GC rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionRules'
+        required: true
+      responses:
+        "204":
+          description: set garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/settings/branch_protection:
+    get:
+      operationId: getBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BranchProtectionRule'
+                type: array
+          description: branch protection rules
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: ETag of the branch protection rules
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: if provided, the branch protection rules will be updated only
+          if the current ETag match the provided value
+        explode: false
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/BranchProtectionRule'
+              type: array
+        required: true
+      responses:
+        "204":
+          description: branch protection rule created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-contentType: application/json
+      x-accepts: application/json
   /otf/diffs:
     get:
       operationId: getOtfDiffs
@@ -1864,7 +2031,6 @@ paths:
       summary: get the available Open Table Format diffs
       tags:
       - experimental
-      - otf diff
       x-accepts: application/json
   /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
     get:
@@ -1941,7 +2107,6 @@ paths:
       summary: perform otf diff
       tags:
       - experimental
-      - otf diff
       x-accepts: application/json
   /repositories/{repository}/refs/dump:
     put:
@@ -1985,9 +2150,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-accepts: application/json
   /repositories/{repository}/refs/restore:
     put:
@@ -2033,9 +2200,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/tags:
@@ -3689,7 +3858,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ImportStatusResp'
+                $ref: '#/components/schemas/ImportStatus'
           description: import status
         "401":
           content:
@@ -3772,180 +3941,6 @@ paths:
       - import
       x-contentType: application/json
       x-accepts: application/json
-  /repositories/{repository}/branches/metaranges:
-    post:
-      operationId: createMetaRange
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MetaRangeCreation'
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetaRangeCreationResponse'
-          description: metarange metadata
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Forbidden
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: create a lakeFS metarange file from the given ranges
-      tags:
-      - import
-      x-contentType: application/json
-      x-accepts: application/json
-  /repositories/{repository}/branches/ranges:
-    post:
-      operationId: ingestRange
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StageRangeCreation'
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IngestRangeCreationResponse'
-          description: range metadata
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: create a lakeFS range file from the source uri
-      tags:
-      - import
-      x-contentType: application/json
-      x-accepts: application/json
-  /repositories/{repository}/branches/{branch}/update_token:
-    put:
-      operationId: updateBranchToken
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: false
-        in: path
-        name: branch
-        required: true
-        schema:
-          type: string
-        style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateToken'
-        required: true
-      responses:
-        "204":
-          description: branch updated successfully
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Validation Error
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Forbidden
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: modify branch staging token
-      tags:
-      - staging
-      x-contentType: application/json
-      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/stage_allowed:
     get:
       operationId: uploadObjectPreflight
@@ -4002,7 +3997,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - objects
+      - internal
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
@@ -4115,6 +4110,10 @@ paths:
                   format: binary
                   type: string
               type: object
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
       responses:
         "201":
           content:
@@ -4651,7 +4650,7 @@ paths:
           description: Internal Server Error
       summary: creates symlink files corresponding to the given directory
       tags:
-      - metadata
+      - internal
       x-accepts: application/json
   /repositories/{repository}/actions/runs:
     get:
@@ -5036,11 +5035,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
-      operationId: delete garbage collection rules
+      deprecated: true
+      operationId: internalDeleteGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -5071,10 +5071,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     get:
-      operationId: getGarbageCollectionRules
+      deprecated: true
+      operationId: internalGetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -5109,10 +5110,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     post:
-      operationId: set garbage collection rules
+      deprecated: true
+      operationId: internalSetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -5149,7 +5151,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_commits:
@@ -5163,11 +5165,6 @@ paths:
         schema:
           type: string
         style: simple
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GarbageCollectionPrepareRequest'
       responses:
         "201":
           content:
@@ -5193,10 +5190,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: save lists of active and expired commits for garbage collection
+      summary: save lists of active commits for garbage collection
       tags:
       - retention
-      x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_uncommited:
     post:
@@ -5290,11 +5286,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
-      operationId: deleteBranchProtectionRule
+      deprecated: true
+      operationId: internalDeleteBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5337,11 +5334,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-contentType: application/json
       x-accepts: application/json
     get:
-      operationId: getBranchProtectionRules
+      deprecated: true
+      operationId: internalGetBranchProtectionRules
       parameters:
       - explode: false
         in: path
@@ -5379,10 +5377,11 @@ paths:
           description: Internal Server Error
       summary: get branch protection rules
       tags:
-      - repositories
+      - internal
       x-accepts: application/json
     post:
-      operationId: createBranchProtectionRule
+      deprecated: true
+      operationId: internalCreateBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5419,7 +5418,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /healthcheck:
@@ -5433,8 +5432,29 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
+  /config:
+    get:
+      description: retrieve lakeFS configuration
+      operationId: getConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: lakeFS configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/version:
     get:
+      deprecated: true
       description: get version of lakeFS server
       operationId: getLakeFSVersion
       responses:
@@ -5451,10 +5471,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/storage:
     get:
+      deprecated: true
       description: retrieve lakeFS storage configuration
       operationId: getStorageConfig
       responses:
@@ -5471,7 +5492,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/garbage-collection:
     get:
@@ -5491,61 +5512,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
-      x-accepts: application/json
-  /templates/{template_location}:
-    get:
-      description: fetch and expand template
-      operationId: expandTemplate
-      parameters:
-      - description: URL of the template; must be relative (to a URL configured on
-          the server).
-        example: spark.submit.conf.tt
-        explode: false
-        in: path
-        name: template_location
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: true
-        in: query
-        name: params
-        required: false
-        schema:
-          additionalProperties:
-            type: string
-          example:
-            lakefs_url: https://lakefs.example.com
-          type: object
-        style: form
-      responses:
-        "200":
-          content:
-            '*/*':
-              schema:
-                format: binary
-          description: expanded template
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      tags:
-      - templates
+      - internal
       x-accepts: application/json
   /statistics:
     post:
@@ -5579,7 +5546,7 @@ paths:
           description: Internal Server Error
       summary: post stats events, this endpoint is meant for internal use only
       tags:
-      - statistics
+      - internal
       x-contentType: application/json
       x-accepts: application/json
 components:
@@ -5633,6 +5600,9 @@ components:
     inline_object:
       content:
         multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/inline_object'
+        application/octet-stream:
           schema:
             $ref: '#/components/schemas/inline_object'
   responses:
@@ -5717,29 +5687,6 @@ components:
       - max_per_page
       - next_offset
       - results
-      type: object
-    ImportPagination:
-      example:
-        continuation_token: continuation_token
-        staging_token: staging_token
-        has_more: true
-        last_key: last_key
-      properties:
-        has_more:
-          description: More keys to be ingested.
-          type: boolean
-        continuation_token:
-          description: Opaque. Token used to import the next range.
-          type: string
-        last_key:
-          description: Last object store key that was ingested.
-          type: string
-        staging_token:
-          description: Staging token for skipped objects during ingest
-          type: string
-      required:
-      - has_more
-      - last_key
       type: object
     Repository:
       example:
@@ -5893,9 +5840,9 @@ components:
           type: string
         physical_address_expiry:
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -6483,8 +6430,7 @@ components:
         email: email
       properties:
         id:
-          description: a unique identifier for the user. In password-based authentication,
-            this is the email.
+          description: a unique identifier for the user.
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -6511,23 +6457,13 @@ components:
       required:
       - user
       type: object
-    ForgotPasswordRequest:
-      example:
-        email: email
-      properties:
-        email:
-          type: string
-      required:
-      - email
-      type: object
     UserCreation:
       example:
         invite_user: true
         id: id
       properties:
         id:
-          description: a unique identifier for the user. In password-based authentication,
-            this is the email.
+          description: a unique identifier for the user.
           type: string
         invite_user:
           type: boolean
@@ -6659,25 +6595,6 @@ components:
       required:
       - featureUpdates
       - securityUpdates
-      type: object
-    UpdatePasswordByToken:
-      example:
-        newPassword: newPassword
-        email: email
-        token: token
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-      - newPassword
-      - token
       type: object
     Credentials:
       example:
@@ -6997,6 +6914,28 @@ components:
       - pre_sign_support
       - pre_sign_support_ui
       type: object
+    Config:
+      example:
+        storage_config:
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        version_config:
+          latest_version: latest_version
+          version: version
+          upgrade_recommended: true
+          upgrade_url: upgrade_url
+      properties:
+        version_config:
+          $ref: '#/components/schemas/VersionConfig'
+        storage_config:
+          $ref: '#/components/schemas/StorageConfig'
+      type: object
     VersionConfig:
       example:
         latest_version: latest_version
@@ -7171,14 +7110,14 @@ components:
           type: string
         presigned_url:
           description: if presign=true is passed in the request, this field will contain
-            a presigned URL to use when uploading
+            a pre-signed URL to use when uploading
           nullable: true
           type: string
         presigned_url_expiry:
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -7221,15 +7160,6 @@ components:
       - checksum
       - size_bytes
       - staging
-      type: object
-    GarbageCollectionPrepareRequest:
-      example:
-        previous_run_id: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-      properties:
-        previous_run_id:
-          description: run id of a previous successful GC job
-          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
-          type: string
       type: object
     GarbageCollectionPrepareResponse:
       example:
@@ -7337,7 +7267,7 @@ components:
           - object
           type: string
         path:
-          description: A source location to ingested path or to a single object. Must
+          description: A source location to import path or to a single object. Must
             match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
           type: string
@@ -7370,47 +7300,7 @@ components:
       - commit
       - paths
       type: object
-    StageRangeCreation:
-      example:
-        fromSourceURI: s3://my-bucket/production/collections/
-        continuation_token: continuation_token
-        staging_token: staging_token
-        prepend: collections/
-        after: production/collections/some/file.parquet
-      properties:
-        fromSourceURI:
-          description: The source location of the ingested files. Must match the lakeFS
-            installation blockstore type.
-          example: s3://my-bucket/production/collections/
-          type: string
-        after:
-          description: Only objects after this key would be ingested.
-          example: production/collections/some/file.parquet
-          type: string
-        prepend:
-          description: A prefix to prepend to ingested objects.
-          example: collections/
-          type: string
-        continuation_token:
-          description: Opaque. Client should pass the continuation_token received
-            from server to continue creation ranges from the same key.
-          type: string
-        staging_token:
-          description: Opaque. Client should pass staging_token if received from server
-            on previous request
-          type: string
-      required:
-      - after
-      - fromSourceURI
-      - prepend
-      type: object
     RangeMetadata:
-      example:
-        max_key: production/collections/some/file_8229.parquet
-        count: 0
-        estimated_size: 6
-        id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-        min_key: production/collections/some/file_1.parquet
       properties:
         id:
           description: ID of the range.
@@ -7437,26 +7327,7 @@ components:
       - max_key
       - min_key
       type: object
-    IngestRangeCreationResponse:
-      example:
-        pagination:
-          continuation_token: continuation_token
-          staging_token: staging_token
-          has_more: true
-          last_key: last_key
-        range:
-          max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
-      properties:
-        range:
-          $ref: '#/components/schemas/RangeMetadata'
-        pagination:
-          $ref: '#/components/schemas/ImportPagination'
-      type: object
-    ImportStatusResp:
+    ImportStatus:
       example:
         update_time: 2000-01-23T04:56:07.000+00:00
         metarange_id: metarange_id
@@ -7506,18 +7377,6 @@ components:
       - id
       type: object
     MetaRangeCreation:
-      example:
-        ranges:
-        - max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
-        - max_key: production/collections/some/file_8229.parquet
-          count: 0
-          estimated_size: 6
-          id: 480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c
-          min_key: production/collections/some/file_1.parquet
       properties:
         ranges:
           items:
@@ -7528,16 +7387,12 @@ components:
       - ranges
       type: object
     MetaRangeCreationResponse:
-      example:
-        id: id
       properties:
         id:
           description: The id of the created metarange
           type: string
       type: object
     UpdateToken:
-      example:
-        staging_token: staging_token
       properties:
         staging_token:
           type: string

@@ -707,7 +707,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
 		})
-		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]), nil)
+		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]))
 	}
 
 	if numRecords > 0 {
@@ -734,8 +734,7 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 
 	data, err := io.ReadAll(objReader)
 	require.NoError(t, err)
-	bufferFile, err := buffer.NewBufferFile(data)
-	require.NoError(t, err)
+	bufferFile := buffer.NewBufferFileFromBytes(data)
 	defer func() { _ = bufferFile.Close() }()
 
 	pr, err := reader.NewParquetReader(bufferFile, new(catalog.UncommittedParquetObject), 4)

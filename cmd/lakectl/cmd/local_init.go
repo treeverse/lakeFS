@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -29,7 +29,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 
 	remotePath := remote.GetPath()
 	if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) { // Verify path is not an existing object
-		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
+		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 			Path: *remote.Path,
 		})
 		switch {
@@ -92,7 +92,7 @@ var localInitCmd = &cobra.Command{
 	Short: "set a local directory to sync with a lakeFS path.",
 	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		remote, localPath := getLocalArgs(args, true, false)
+		remote, localPath := getSyncArgs(args, true, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)

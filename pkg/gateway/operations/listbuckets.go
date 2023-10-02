@@ -23,13 +23,13 @@ func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (permissions
 func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, o *AuthorizedOperation) {
 	o.Incr("list_repos", o.Principal, "", "")
 
-	buckets := []serde.Bucket{}
+	buckets := make([]serde.Bucket, 0)
 	var after string
 	for {
 		// list repositories
 		repos, hasMore, err := o.Catalog.ListRepositories(req.Context(), -1, "", after)
 		if err != nil {
-			_ = o.EncodeError(w, req, errors.Codes.ToAPIErr(errors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
 

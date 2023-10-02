@@ -77,6 +77,25 @@ func TestSaveAndGet(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 }
+func TestGetLatest(t *testing.T) {
+	ctx := context.Background()
+	m, _ := prepareTest(t, ctx, nil, nil)
+	emptySettings := &settings.ExampleSettings{}
+	setting, eTag, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}})
+	testutil.Must(t, err)
+	setting, eTag, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	testutil.Must(t, err)
+	if diff := deep.Equal(&settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, setting); diff != nil {
+		t.Fatal("got unexpected settings:", diff)
+	}
+	if eTag == "" {
+		t.Fatal("got empty eTag")
+	}
+}
 
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
@@ -99,6 +118,7 @@ func TestUpdate(t *testing.T) {
 	emptySettings := &settings.ExampleSettings{}
 	require.NoError(t, m.Update(ctx, repository, "settingKey", emptySettings, update))
 	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
+
 	require.NoError(t, err)
 	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -136,7 +156,7 @@ func TestUpdate(t *testing.T) {
 		return &newSettings, nil
 	}
 	require.ErrorIs(t, m.Update(ctx, repository, "settingKey", emptySettings, update), graveler.ErrTooManyTries)
-	gotSettings, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	gotSettings, eTag3, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
 	require.NoError(t, err)
 	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -148,7 +168,10 @@ func TestUpdate(t *testing.T) {
 		return nil, testErr
 	}
 	require.ErrorIs(t, m.Update(ctx, repository, "settingKey", emptySettings, update), testErr)
-	gotSettings, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	gotSettings, eTag4, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	if eTag4 != eTag3 {
+		t.Fatal("expected eTag4 to be equal to eTag3")
+	}
 	require.NoError(t, err)
 	if diff := deep.Equal(validationData, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -208,7 +231,7 @@ func TestEmpty(t *testing.T) {
 	emptySettings := &settings.ExampleSettings{}
 	_, err := m.Get(ctx, repository, "settingKey", emptySettings)
 	// the key was not set, an error should be returned
-	if err != graveler.ErrNotFound {
+	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
 	}
 	// when using Update on an unset key, the update function gets an empty setting object to operate on

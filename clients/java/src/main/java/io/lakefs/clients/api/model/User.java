@@ -53,11 +53,11 @@ public class User {
   }
 
    /**
-   * a unique identifier for the user. In password-based authentication, this is the email.
+   * a unique identifier for the user.
    * @return id
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "a unique identifier for the user. In password-based authentication, this is the email.")
+  @ApiModelProperty(required = true, value = "a unique identifier for the user.")
 
   public String getId() {
     return id;

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const policyCreatedTemplate = `{{ "Policy created successfully." | green }}
@@ -40,7 +40,7 @@ var authPoliciesCreate = &cobra.Command{
 		if err != nil {
 			DieFmt("could not parse statement JSON document: %v", err)
 		}
-		resp, err := clt.CreatePolicyWithResponse(cmd.Context(), api.CreatePolicyJSONRequestBody{
+		resp, err := clt.CreatePolicyWithResponse(cmd.Context(), apigen.CreatePolicyJSONRequestBody{
 			Id:        id,
 			Statement: doc.Statement,
 		})

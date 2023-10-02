@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"sync"
@@ -48,8 +47,6 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("Requests must be above 1! (%d)\n", concurrency)
 			os.Exit(1)
 		}
-
-		rand.Seed(time.Now().UTC().UnixNano()) // make it special
 
 		ctx := cmd.Context()
 

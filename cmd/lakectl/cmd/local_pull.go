@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/sync/errgroup"
@@ -18,7 +18,7 @@ var localPullCmd = &cobra.Command{
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		_, localPath := getLocalArgs(args, false, false)
+		_, localPath := getSyncArgs(args, false, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		syncFlags := getLocalSyncFlags(cmd, client)
 		idx, err := local.ReadIndex(localPath)
@@ -48,7 +48,7 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 		newBase := remote.WithRef(newHead)
-		d := make(chan api.Diff, maxDiffPageSize)
+		d := make(chan apigen.Diff, maxDiffPageSize)
 		var wg errgroup.Group
 		wg.Go(func() error {
 			return diff.StreamRepositoryDiffs(cmd.Context(), client, currentBase, newBase, swag.StringValue(currentBase.Path), d, false)

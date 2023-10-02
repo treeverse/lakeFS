@@ -111,7 +111,7 @@ class User(ModelNormal):
         """User - a model defined in OpenAPI
 
         Args:
-            id (str): a unique identifier for the user. In password-based authentication, this is the email.
+            id (str): a unique identifier for the user.
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -200,7 +200,7 @@ class User(ModelNormal):
         """User - a model defined in OpenAPI
 
         Args:
-            id (str): a unique identifier for the user. In password-based authentication, this is the email.
+            id (str): a unique identifier for the user.
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:

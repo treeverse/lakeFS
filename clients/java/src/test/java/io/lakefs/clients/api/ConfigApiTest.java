@@ -14,14 +14,8 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.CommPrefsInput;
-import io.lakefs.clients.api.model.CredentialsWithSecret;
+import io.lakefs.clients.api.model.Config;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.GarbageCollectionConfig;
-import io.lakefs.clients.api.model.Setup;
-import io.lakefs.clients.api.model.SetupState;
-import io.lakefs.clients.api.model.StorageConfig;
-import io.lakefs.clients.api.model.VersionConfig;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -42,86 +36,14 @@ public class ConfigApiTest {
     /**
      * 
      *
-     * get information of gc settings
+     * retrieve lakeFS configuration
      *
      * @throws ApiException
      *          if the Api call fails
      */
     @Test
-    public void getGarbageCollectionConfigTest() throws ApiException {
-                GarbageCollectionConfig response = api.getGarbageCollectionConfig();
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * get version of lakeFS server
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getLakeFSVersionTest() throws ApiException {
-                VersionConfig response = api.getLakeFSVersion();
-        // TODO: test validations
-    }
-    
-    /**
-     * check if the lakeFS installation is already set up
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getSetupStateTest() throws ApiException {
-                SetupState response = api.getSetupState();
-        // TODO: test validations
-    }
-    
-    /**
-     * 
-     *
-     * retrieve lakeFS storage configuration
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getStorageConfigTest() throws ApiException {
-                StorageConfig response = api.getStorageConfig();
-        // TODO: test validations
-    }
-    
-    /**
-     * setup lakeFS and create a first user
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setupTest() throws ApiException {
-        Setup setup = null;
-                CredentialsWithSecret response = api.setup(setup);
-        // TODO: test validations
-    }
-    
-    /**
-     * setup communications preferences
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void setupCommPrefsTest() throws ApiException {
-        CommPrefsInput commPrefsInput = null;
-                api.setupCommPrefs(commPrefsInput);
+    public void getConfigTest() throws ApiException {
+                Config response = api.getConfig();
         // TODO: test validations
     }
     

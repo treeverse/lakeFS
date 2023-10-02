@@ -15,7 +15,7 @@ import (
 func SetupService(t *testing.T, ctx context.Context, secret []byte) (*auth.AuthService, kv.Store) {
 	t.Helper()
 	kvStore := kvtest.GetStore(ctx, t)
-	return auth.NewAuthService(kvStore, crypt.NewSecretStore(secret), nil, authparams.ServiceCache{
+	return auth.NewAuthService(kvStore, crypt.NewSecretStore(secret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable()), kvStore
 }

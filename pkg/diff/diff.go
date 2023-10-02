@@ -7,7 +7,8 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -15,21 +16,21 @@ import (
 const diffTypeTwoDot = "two_dot"
 
 // StreamRepositoryDiffs asynchronously fetches differences between 'left' and 'right' references, assumes both are in the same repository
-func StreamRepositoryDiffs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, prefix string, diffs chan<- api.Diff, twoDot bool) error {
+func StreamRepositoryDiffs(ctx context.Context, client apigen.ClientWithResponsesInterface, left, right *uri.URI, prefix string, diffs chan<- apigen.Diff, twoDot bool) error {
 	defer func() {
 		close(diffs)
 	}()
 	var diffType *string
 	if twoDot {
-		diffType = api.StringPtr(diffTypeTwoDot)
+		diffType = apiutil.Ptr(diffTypeTwoDot)
 	}
 
 	hasMore := true
 	var after string
 	for hasMore {
-		diffResp, err := client.DiffRefsWithResponse(ctx, left.Repository, left.Ref, right.Ref, &api.DiffRefsParams{
-			After:  (*api.PaginationAfter)(swag.String(after)),
-			Prefix: (*api.PaginationPrefix)(&prefix),
+		diffResp, err := client.DiffRefsWithResponse(ctx, left.Repository, left.Ref, right.Ref, &apigen.DiffRefsParams{
+			After:  (*apigen.PaginationAfter)(swag.String(after)),
+			Prefix: (*apigen.PaginationPrefix)(&prefix),
 			Type:   diffType,
 		})
 		if err != nil {

@@ -35,6 +35,7 @@ import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
 import {FaDownload} from "react-icons/fa";
+import {CommitInfoCard} from "./commits";
 
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
@@ -258,29 +259,6 @@ const EntryMetadata = ({ metadata }) => {
     )
 };
 
-
-const CommitMetadata = ({ metadata }) => {
-  const entries = Object.entries(metadata);
-  if (entries.length === 0) {
-    // empty state
-    return <small>No metadata fields</small>;
-  }
-  return (
-    <Table striped size="sm" responsive>
-      <tbody>
-        {entries.map(([key, value]) => (
-          <tr key={`blame-commit-md-${key}`}>
-            <td>{key}</td>
-            <td>
-              <code>{value}</code>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  );
-};
-
 const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   const {
     response: commit,
@@ -307,69 +285,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   }
   if (!loading && !error && commit) {
     content = (
-      <>
-        <Table hover responsive>
-          <tbody>
-            <tr>
-              <td>
-                <strong>Path</strong>
-              </td>
-              <td>
-                <code>{entry.path}</code>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Commit ID</strong>
-              </td>
-              <td>
-                <Link
-                  className="me-2"
-                  href={{
-                    pathname: "/repositories/:repoId/commits/:commitId",
-                    params: { repoId: repo.id, commitId: commit.id },
-                  }}
-                >
-                  <code>{commit.id}</code>
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Commit Message</strong>
-              </td>
-              <td>{commit.message}</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Committed By</strong>
-              </td>
-              <td>{commit.committer}</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Created At</strong>
-              </td>
-              <td>
-                <>
-                  {dayjs
-                    .unix(commit.creation_date)
-                    .format("MM/DD/YYYY HH:mm:ss")}
-                </>{" "}
-                ({dayjs.unix(commit.creation_date).fromNow()})
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Metadata</strong>
-              </td>
-              <td>
-                <CommitMetadata metadata={commit.metadata} />
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-      </>
+      <CommitInfoCard bare={true} repo={repo} commit={commit}/>
     );
   }
 

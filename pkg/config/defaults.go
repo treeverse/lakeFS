@@ -62,8 +62,6 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
-	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk
-	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", time.Second) // or 1 seconds, whatever comes first
 	viper.SetDefault("blockstore.s3.max_retries", 5)
 	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
 	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)
@@ -103,11 +101,7 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)
 	viper.SetDefault("security.audit_check_url", "https://audit.lakefs.io/audit")
 	viper.SetDefault("security.check_latest_version", true)
-	viper.SetDefault("security.check_latest_version_cache", 24*time.Hour)
-
-	viper.SetDefault("email.limit_every_duration", time.Minute)
-	viper.SetDefault("email.burst", 10)
-	viper.SetDefault("email.lakefs_base_url", "http://localhost:8000")
+	viper.SetDefault("security.check_latest_version_cache", time.Hour)
 
 	viper.SetDefault("ui.enabled", true)
 

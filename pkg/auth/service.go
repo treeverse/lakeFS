@@ -13,14 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -28,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -74,9 +72,11 @@ type CredentialsCreator interface {
 	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
 }
 
-type Service interface {
-	InviteHandler
+type EmailInviter interface {
+	InviteUser(ctx context.Context, email string) error
+}
 
+type Service interface {
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
@@ -114,7 +114,6 @@ type Service interface {
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
 	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
-	HashAndUpdatePassword(ctx context.Context, username string, password string) error
 
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
@@ -182,10 +181,9 @@ type AuthService struct {
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
-	*EmailInviteHandler
 }
 
-func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
+func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -199,7 +197,6 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *emai
 		cache:       cache,
 		log:         logger,
 	}
-	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
 	return res
 }
 
@@ -988,31 +985,6 @@ func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*
 	})
 }
 
-func (s *AuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
-	user, err := s.GetUser(ctx, username)
-	if err != nil {
-		return err
-	}
-	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	userKey := model.UserPath(user.Username)
-	userUpdatePassword := model.User{
-		CreatedAt:         user.CreatedAt,
-		Username:          user.Username,
-		FriendlyName:      user.FriendlyName,
-		Email:             user.Email,
-		EncryptedPassword: pw,
-		Source:            user.Source,
-	}
-	err = kv.SetMsgIf(ctx, s.store, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
-	if err != nil {
-		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
-	}
-	return err
-}
-
 func interpolateUser(resource string, username string) string {
 	return strings.ReplaceAll(resource, "${user}", username)
 }
@@ -1168,17 +1140,13 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 }
 
 type APIAuthService struct {
-	apiClient              ClientWithResponsesInterface
-	secretStore            crypt.SecretStore
-	logger                 logging.Logger
-	cache                  Cache
-	delegatedInviteHandler *EmailInviteHandler
+	apiClient   ClientWithResponsesInterface
+	secretStore crypt.SecretStore
+	logger      logging.Logger
+	cache       Cache
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
-	if a.delegatedInviteHandler != nil {
-		return a.delegatedInviteHandler.InviteUser(ctx, email)
-	}
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:    swag.String(email),
 		Invite:   swag.Bool(true),
@@ -1189,10 +1157,6 @@ func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
-}
-
-func (a *APIAuthService) IsInviteSupported() bool {
-	return true
 }
 
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
@@ -1349,20 +1313,6 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 		}
 	}
 	return users, toPagination(pagination), nil
-}
-
-func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
-	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	resp, err := a.apiClient.UpdatePasswordWithResponse(ctx, username, UpdatePasswordJSONRequestBody{EncryptedPassword: encryptedPassword})
-	if err != nil {
-		a.logger.WithField("username", username).WithError(err).Error("failed to update password")
-		return err
-	}
-
-	return a.validateResponse(resp, http.StatusOK)
 }
 
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
@@ -1714,7 +1664,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 		if credentials == nil {
 			return nil, fmt.Errorf("get credentials api %w", ErrInvalidResponse)
 		}
-		username := aws.StringValue(credentials.UserName)
+		username := aws.ToString(credentials.UserName)
 		if username == "" {
 			user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 			if err != nil {
@@ -1920,7 +1870,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, emailer *email.Emailer, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1957,9 +1907,6 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		secretStore: secretStore,
 		logger:      logger,
 		cache:       cache,
-	}
-	if emailer != nil {
-		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.ContextUnavailable(), emailer)
 	}
 	return res, nil
 }

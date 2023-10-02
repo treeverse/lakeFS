@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
@@ -30,7 +30,7 @@ func ExtractRepoAndBranchFromDBName(ctx context.Context, dbName string, client m
 // CreateBranch creates a new branch with the given repository, and source and destination branch names
 func CreateBranch(ctx context.Context, repository, sourceBranch, destinationBranch string) {
 	client := getClient()
-	resp, err := client.CreateBranchWithResponse(ctx, repository, api.CreateBranchJSONRequestBody{
+	resp, err := client.CreateBranchWithResponse(ctx, repository, apigen.CreateBranchJSONRequestBody{
 		Name:   destinationBranch,
 		Source: sourceBranch,
 	})

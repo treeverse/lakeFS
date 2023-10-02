@@ -15,6 +15,7 @@ import requested tables between hive metastores. the destination tables will poi
 table with location s3://my-s3-bucket/path/to/table 
 will be transformed to location s3://repo-param/bucket-param/path/to/table
 	`,
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
 		fromAddress := Must(cmd.Flags().GetString("from-address"))

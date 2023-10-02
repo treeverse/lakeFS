@@ -20,8 +20,6 @@ const (
 	DynamodbLocalURI          = "http://localhost:6432"
 	chars                     = "abcdef1234567890"
 	charsSize                 = 8
-	DynamoDBReadCapacity      = 1000
-	DynamoDBWriteCapacity     = 1000
 	DynamoDBScanLimit         = 10
 )
 
@@ -59,9 +57,9 @@ func GetDynamoDBInstance() (string, func(), error) {
 	}
 
 	err = dockerPool.Retry(func() error {
-		// waiting for dynamodb container to be ready by issuing an HTTP get request with
-		// exponential backoff retry. The response is not really meaningful for that case
-		// and so is ignored
+		// Waiting for dynamodb container to be ready by issuing an HTTP get request with
+		// exponential backoff retry.
+		// The response is not really meaningful for that case and so is ignored.
 		resp, err := http.Get(DynamodbLocalURI)
 		if err != nil {
 			return err
@@ -78,7 +76,11 @@ func GetDynamoDBInstance() (string, func(), error) {
 }
 
 func UniqueKVTableName() string {
-	return "kvstore_" + nanoid.MustGenerate(chars, charsSize)
+	return "kvstore_" + UniqueName()
+}
+
+func UniqueName() string {
+	return nanoid.MustGenerate(chars, charsSize)
 }
 
 func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {

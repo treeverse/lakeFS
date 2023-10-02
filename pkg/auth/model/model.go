@@ -21,7 +21,6 @@ const (
 	StatementEffectAllow   = "allow"
 	StatementEffectDeny    = "deny"
 	PartitionKey           = "auth"
-	PackageName            = "auth"
 	groupsPrefix           = "groups"
 	groupsUsersPrefix      = "gUsers"
 	groupsPoliciesPrefix   = "gPolicies"
@@ -350,14 +349,6 @@ func protoFromStatements(s *Statements) []*StatementData {
 	return statements
 }
 
-func ConvertUsersList(users []*DBUser) []*User {
-	kvUsers := make([]*User, 0, len(users))
-	for _, u := range users {
-		kvUsers = append(kvUsers, &u.User)
-	}
-	return kvUsers
-}
-
 func ConvertUsersDataList(users []proto.Message) []*User {
 	kvUsers := make([]*User, 0, len(users))
 	for _, u := range users {
@@ -365,25 +356,6 @@ func ConvertUsersDataList(users []proto.Message) []*User {
 		kvUsers = append(kvUsers, UserFromProto(a))
 	}
 	return kvUsers
-}
-
-func ConvertCredList(creds []*DBCredential, username string) []*Credential {
-	res := make([]*Credential, 0, len(creds))
-	for _, c := range creds {
-		res = append(res, &Credential{
-			Username:       username,
-			BaseCredential: c.BaseCredential,
-		})
-	}
-	return res
-}
-
-func ConvertGroupList(groups []*DBGroup) []*Group {
-	res := make([]*Group, 0, len(groups))
-	for _, g := range groups {
-		res = append(res, &g.Group)
-	}
-	return res
 }
 
 func ConvertGroupDataList(group []proto.Message) []*Group {

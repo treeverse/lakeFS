@@ -270,7 +270,7 @@ func TestGraveler_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			Value, err := tt.r.Get(context.Background(), repository, "", []byte("key"))
-			if err != tt.expectedErr {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
 			if err != nil {
@@ -347,7 +347,7 @@ func TestGraveler_Set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newGraveler(t, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
 			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(tt.ifAbsent))
-			if err != tt.expectedErr {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("Set() - error: %v, expected: %v", err, tt.expectedErr)
 			}
 			lastVal := tt.stagingMgr.LastSetValueRecord
@@ -573,7 +573,7 @@ func TestGravelerGet_Advanced(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			Value, err := tt.r.Get(context.Background(), repository, "", []byte("staged"))
-			if err != tt.expectedErr {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%v got:%v", tt.expectedErr, err)
 			}
 			if err != nil {
@@ -811,7 +811,7 @@ func TestGraveler_Diff(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			diff, err := tt.r.Diff(ctx, repository, "ref1", "b1")
-			if err != tt.expectedErr {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
 			if err != nil {
@@ -924,7 +924,7 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			diff, err := tt.r.DiffUncommitted(ctx, repository, "branch")
-			if err != tt.expectedErr {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("wrong error, expected:%s got:%s", tt.expectedErr, err)
 			}
 			if err != nil {
@@ -1186,28 +1186,6 @@ func TestGravelerCommit(t *testing.T) {
 			},
 			values:      values,
 			expectedErr: graveler.ErrCommitMetaRangeDirtyBranch,
-		},
-		{
-			name: "fail on staging",
-			fields: fields{
-				CommittedManager: &testutil.CommittedFake{MetaRangeID: expectedRangeID},
-				StagingManager:   &testutil.StagingFake{ValueIterator: values, Err: graveler.ErrNotFound},
-				RefManager: &testutil.RefsFake{
-					CommitID: expectedCommitID,
-					Branch:   &graveler.Branch{CommitID: expectedCommitID},
-					Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
-				},
-			},
-			args: args{
-				ctx:       nil,
-				branchID:  "branch",
-				committer: "committer",
-				message:   "a message",
-				metadata:  nil,
-			},
-			want:        expectedCommitID,
-			values:      values,
-			expectedErr: graveler.ErrNotFound,
 		},
 		{
 			name: "fail on apply",

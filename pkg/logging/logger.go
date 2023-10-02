@@ -131,13 +131,6 @@ type OutputFormatOptions struct {
 
 type OutputFormatOptionFunc func(options *OutputFormatOptions)
 
-// WithOutputFormatCallerPrettyfier allows overriding the default caller prettyfier function
-func WithOutputFormatCallerPrettyfier(callerPrettyfier func(*runtime.Frame) (function string, file string)) func(options *OutputFormatOptions) {
-	return func(options *OutputFormatOptions) {
-		options.CallerPrettyfier = callerPrettyfier
-	}
-}
-
 func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 	// setup options
 	var options OutputFormatOptions
@@ -152,12 +145,18 @@ func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 	var formatter logrus.Formatter
 	switch strings.ToLower(format) {
 	case "text":
+		disableColors := false
+		noColor := os.Getenv("NO_COLOR")
+		if noColor != "" && noColor != "0" {
+			disableColors = true
+		}
 		formatter = &logrus.TextFormatter{
 			FullTimestamp:          true,
 			DisableLevelTruncation: true,
 			PadLevelText:           true,
 			QuoteEmptyFields:       true,
 			CallerPrettyfier:       options.CallerPrettyfier,
+			DisableColors:          disableColors,
 		}
 	case "json":
 		formatter = &logrus.JSONFormatter{

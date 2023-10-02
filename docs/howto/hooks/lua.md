@@ -93,6 +93,10 @@ For more examples and configuration samples, check out the [examples/hooks/](htt
 
 The Lua runtime embedded in lakeFS is limited for security reasons. The provided APIs are shown below.
 
+### `array(table)`
+
+Helper function to mark a table object as an array for the runtime by setting `_is_array: true` metatable field.
+
 ### `aws/s3.get_object(bucket, key)`
 
 Returns the body (as a Lua string) of the requested object and a boolean value that is true if the requested object exists
@@ -419,6 +423,23 @@ The `value` string should be in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601
 ### `uuid/new()`
 
 Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: target="_blank" } in string representation.
+
+### `net/url`
+
+Provides a `parse` function parse a URL string into parts, returns a table with the URL's host, path, scheme, query and fragment.
+
+```lua
+> local url = require("net/url")
+> url.parse("https://example.com/path?p1=a#section")
+{
+    ["host"] = "example.com"
+    ["path"] = "/path"
+    ["scheme"] = "https"
+    ["query"] = "p1=a"
+    ["fragment"] = "section"
+}
+```
+
 
 ### `net/http` (optional)
 

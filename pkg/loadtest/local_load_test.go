@@ -13,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
@@ -50,7 +49,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	kvStore := kvtest.GetStore(ctx, t)
-	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{}, logging.ContextUnavailable().WithField("service", "auth"))
+	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.ContextUnavailable().WithField("service", "auth"))
 	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
@@ -73,7 +72,7 @@ func TestLocalLoad(t *testing.T) {
 	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true})
 	c.SetHooksHandler(actionsService)
 
-	credentials, err := setup.SetupAdminUser(ctx, authService, conf, superuser)
+	credentials, err := setup.CreateAdminUser(ctx, authService, conf, superuser)
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
@@ -84,28 +83,7 @@ func TestLocalLoad(t *testing.T) {
 		_ = c.Close()
 	})
 	auditChecker := version.NewDefaultAuditChecker(conf.Security.AuditCheckURL, "", nil)
-	emailer, err := email.NewEmailer(email.Params(conf.Email))
-	testutil.Must(t, err)
-	handler := api.Serve(
-		conf,
-		c,
-		authenticator,
-		authService,
-		blockAdapter,
-		meta,
-		migrator,
-		&stats.NullCollector{},
-		nil,
-		actionsService,
-		auditChecker,
-		logging.ContextUnavailable(),
-		emailer,
-		nil,
-		nil,
-		nil,
-		upload.DefaultPathProvider,
-		nil,
-	)
+	handler := api.Serve(conf, c, authenticator, authService, blockAdapter, meta, migrator, &stats.NullCollector{}, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, nil)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

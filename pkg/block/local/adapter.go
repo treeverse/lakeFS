@@ -20,7 +20,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/exp/slices"
 )
 
@@ -35,7 +34,6 @@ type Adapter struct {
 
 var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
-	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
 )
@@ -518,10 +516,6 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 	}
 	sort.Strings(names)
 	return names, nil
-}
-
-func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, ErrInventoryNotSupported
 }
 
 func (l *Adapter) BlockstoreType() string {

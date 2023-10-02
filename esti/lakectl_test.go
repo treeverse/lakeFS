@@ -6,12 +6,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 var emptyVars = make(map[string]string)
 
 func TestLakectlHelp(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), true, "lakectl_help", emptyVars)
@@ -19,7 +20,6 @@ func TestLakectlHelp(t *testing.T) {
 }
 
 func TestLakectlBasicRepoActions(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	// RunCmdAndVerifySuccess(t, Lakectl()+" repo list", false, "\n", emptyVars)
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
@@ -99,7 +99,6 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 }
 
 func TestLakectlCommit(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -153,7 +152,6 @@ func TestLakectlCommit(t *testing.T) {
 }
 
 func TestLakectlBranchAndTagValidation(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	validTagName := "my.valid.tag"
@@ -186,7 +184,6 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -274,7 +271,6 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 }
 
 func TestLakectlAnnotate(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -343,7 +339,6 @@ func TestLakectlAnnotate(t *testing.T) {
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
@@ -361,7 +356,6 @@ func TestLakectlAuthUsers(t *testing.T) {
 }
 
 func TestLakectlIngestS3(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
 	// this test can only run on AWS setup, and therefore is skipped for other store types
 	skipOnSchemaMismatch(t, IngestTestBucketPath)
@@ -397,7 +391,6 @@ func TestLakectlIngestS3(t *testing.T) {
 }
 
 func TestLakectlFsDownload(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -413,54 +406,90 @@ func TestLakectlFsDownload(t *testing.T) {
 		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
-
 	t.Run("single", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_fs_download", map[string]string{
-			"REPO":    repoName,
-			"STORAGE": storage,
-			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
-			"FILE":    "ro_1k.0",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro_1k.0")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 1")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1 "+dest, false, "lakectl_fs_download_custom", map[string]string{
-			"REPO":    repoName,
-			"STORAGE": storage,
-			"BRANCH":  mainBranch,
-			"DEST":    dest,
-			"PATH":    "data/ro",
-			"FILE":    "ro_1k.1",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 "+dest, false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro_1k.0")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 1")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
-	t.Run("recursive", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "lakectl_fs_download_recursive", map[string]string{
-			"REPO":        repoName,
-			"STORAGE":     storage,
-			"BRANCH":      mainBranch,
-			"PATH":        "data",
-			"FILE_PREFIX": "ro/ro_1k",
-		})
+	t.Run("directory", func(t *testing.T) {
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
-	t.Run("recursive_with_dest", func(t *testing.T) {
+	t.Run("directory_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs download --recursive --parallel 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, "lakectl_fs_download_recursive_custom", map[string]string{
-			"REPO":        repoName,
-			"STORAGE":     storage,
-			"BRANCH":      mainBranch,
-			"DEST":        dest,
-			"PATH":        "data",
-			"FILE_PREFIX": "ro/ro_1k",
-		})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
+		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
+	})
+}
+
+func TestLakectlFsUpload(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	t.Run("single_file", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/ro_1k.0"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	})
+	t.Run("dir", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/"
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+
+		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "upload ro_1k")
+		require.Contains(t, sanitizedResult, "upload ro_1k_other")
+		require.Contains(t, sanitizedResult, "upload upload_file.txt")
+		require.Contains(t, sanitizedResult, "Upload Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 0")
+		require.Contains(t, sanitizedResult, "Uploaded: 3")
+		require.Contains(t, sanitizedResult, "Removed: 0")
+	})
+	t.Run("exist_dir", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/"
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "Upload Summary:")
+		require.Contains(t, sanitizedResult, "No changes")
 	})
 }
 
 func TestLakectlFsStat(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -513,8 +542,6 @@ func TestLakectlFsStat(t *testing.T) {
 }
 
 func TestLakectlImport(t *testing.T) {
-	SkipTestIfAskedTo(t)
-
 	// TODO(barak): generalize test to work all supported object stores
 	skipOnSchemaMismatch(t, IngestTestBucketPath)
 
@@ -535,7 +562,6 @@ func TestLakectlImport(t *testing.T) {
 }
 
 func TestLakectlCherryPick(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -606,7 +632,6 @@ func TestLakectlCherryPick(t *testing.T) {
 }
 
 func TestLakectlBisect(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{

@@ -14,7 +14,6 @@ Available Commands:
   commit          Commit changes on a given branch
   completion      Generate completion script
   config          Create/update local lakeFS configuration
-  dbt             Integration with dbt commands
   diff            Show changes between two commits, or the currently uncommitted changes
   doctor          Run a basic diagnosis of the LakeFS configuration
   fs              View and manipulate objects
@@ -24,7 +23,6 @@ Available Commands:
   local           Sync local directories with lakeFS paths
   log             Show log of commits
   merge           Merge & commit changes from source branch into destination branch
-  metastore       Manage metastore commands
   repo            Manage and explore repos
   show            See detailed information about an entity
   tag             Create and manage tags within a repository
@@ -36,7 +34,7 @@ Flags:
       --log-format string    set logging output format
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
-      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --no-color             don't use fancy output colors (default value can be set by NO_COLOR environment variable)
       --verbose              run in verbose mode
   -v, --version              version for lakectl
 

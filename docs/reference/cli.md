@@ -4,6 +4,7 @@ description: lakeFS comes with its own native CLI client. Here you can see the c
 parent: Reference
 redirect_from:
   - /reference/commands.html
+  - /quickstart/lakefs_cli.html
 ---
 
 {% comment %}
@@ -40,7 +41,7 @@ lakectl config
 # Config file /home/janedoe/.lakectl.yaml will be used
 # Access key ID: AKIAIOSFODNN7EXAMPLE
 # Secret access key: ****************************************
-# Server endpoint URL: http://localhost:8000/api/v1
+# Server endpoint URL: http://localhost:8000
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
@@ -92,7 +93,7 @@ lakectl [flags]
       --log-format string    set logging output format
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
-      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --no-color             don't use fancy output colors (default value can be set by NO_COLOR environment variable)
       --verbose              run in verbose mode
   -v, --version              version for lakectl
 ```
@@ -1989,100 +1990,6 @@ lakectl config [flags]
 
 
 
-### lakectl dbt
-
-Integration with dbt commands
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for dbt
-```
-
-
-
-### lakectl dbt create-branch-schema
-
-Creates a new schema dedicated for branch and clones all dbt models to new schema
-
-```
-lakectl dbt create-branch-schema [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-lakectl dbt create-branch-schema --branch <branch-name>
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --branch string               requested branch
-      --continue-on-error           prevent command from failing when a single table fails
-      --continue-on-schema-exists   allow running on existing schema
-      --create-branch               create a new branch for the schema
-      --dbfs-location string        
-      --from-client-type string     metastore type [hive, glue]
-  -h, --help                        help for create-branch-schema
-      --project-root string         location of dbt project (default ".")
-      --skip-views                  
-      --to-schema string            destination schema name [default is branch]
-```
-
-
-
-### lakectl dbt generate-schema-macro
-
-generates the a macro allowing lakectl to run dbt on dynamic schemas
-
-```
-lakectl dbt generate-schema-macro [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-lakectl dbt generate-schema-macro
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help                  help for generate-schema-macro
-      --project-root string   location of dbt project (default ".")
-```
-
-
-
-### lakectl dbt help
-
-Help about any command
-
-#### Synopsis
-{:.no_toc}
-
-Help provides help for any command in the application.
-Simply type dbt help [path to command] for full details.
-
-```
-lakectl dbt help [command] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for help
-```
-
-
-
 ### lakectl diff
 
 Show changes between two commits, or the currently uncommitted changes
@@ -2223,10 +2130,9 @@ lakectl fs download <path uri> [<destination path>] [flags]
 {:.no_toc}
 
 ```
-  -h, --help           help for download
-  -p, --parallel int   max concurrent downloads (default 6)
-      --pre-sign       Request pre-sign link to access the data
-  -r, --recursive      recursively all objects under path
+  -h, --help              help for download
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --pre-sign          Use pre-sign link to access the data
 ```
 
 
@@ -2349,8 +2255,8 @@ lakectl fs upload <path uri> [flags]
 ```
       --content-type string   MIME type of contents
   -h, --help                  help for upload
+  -p, --parallelism int       Max concurrent operations to perform (default 25)
       --pre-sign              Use pre-sign link to access the data
-  -r, --recursive             recursively copy all files under local source
   -s, --source string         local file to upload, or "-" for stdin
 ```
 

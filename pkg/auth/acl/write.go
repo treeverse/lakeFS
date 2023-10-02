@@ -7,18 +7,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 const (
-	ACLAdminsGroup  = "Admins"
-	ACLSupersGroup  = "Supers"
-	ACLWritersGroup = "Writers"
-	ACLReadersGroup = "Readers"
+	AdminsGroup  = "Admins"
+	SupersGroup  = "Supers"
+	WritersGroup = "Writers"
+	ReadersGroup = "Readers"
 )
 
 func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl model.ACL, creationTime time.Time, warnIfCreate bool) error {
@@ -29,7 +28,7 @@ func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl 
 		return fmt.Errorf("%s: translate ACL %+v to statements: %w", groupName, acl, err)
 	}
 
-	aclPolicyName := ACLPolicyName(groupName)
+	aclPolicyName := PolicyName(groupName)
 
 	policy := &model.Policy{
 		CreatedAt:   creationTime,

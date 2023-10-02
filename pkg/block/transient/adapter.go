@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,10 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
-
-var ErrInventoryNotImplemented = errors.New("inventory feature not implemented for transient storage adapter")
 
 type Adapter struct{}
 
@@ -141,10 +137,6 @@ func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, 
 		ETag:          codeHex,
 		ContentLength: dataSize,
 	}, nil
-}
-
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, ErrInventoryNotImplemented
 }
 
 func (a *Adapter) BlockstoreType() string {

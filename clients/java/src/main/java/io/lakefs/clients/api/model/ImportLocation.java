@@ -119,11 +119,11 @@ public class ImportLocation {
   }
 
    /**
-   * A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+   * A source location to import path or to a single object. Must match the lakeFS installation blockstore type.
    * @return path
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "s3://my-bucket/production/collections/", required = true, value = "A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.")
+  @ApiModelProperty(example = "s3://my-bucket/production/collections/", required = true, value = "A source location to import path or to a single object. Must match the lakeFS installation blockstore type.")
 
   public String getPath() {
     return path;

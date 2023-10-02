@@ -6,6 +6,11 @@ redirect_from: /using/athena.html
 ---
 
 # Using lakeFS with Amazon Athena
+
+{: .warning }
+**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
+
 [Amazon Athena](https://aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL.
 {:.pb-5 }
 
@@ -47,14 +52,14 @@ To query that table with Athena, you need to use the `create-symlink` command as
 
 ```shell
 lakectl metastore create-symlink \
---repo example \
---branch main \
---path my_table \
---from-client-type hive \
---from-schema default \
---from-table my_table \
---to-schema default \ 
---to-table my_table  
+  --repo example \
+  --branch main \
+  --path my_table \
+  --from-client-type hive \
+  --from-schema default \
+  --from-table my_table \
+  --to-schema default \ 
+  --to-table my_table  
 ```
 
 The command will generate two notable outputs:
@@ -62,13 +67,14 @@ The command will generate two notable outputs:
 1. For each partition, the command will create a symlink file:
 
 ```shell
-➜   aws s3 ls s3://my-bucket/my-repo-prefix/my_table/ --recursive
+aws s3 ls s3://my-bucket/my-repo-prefix/my_table/ --recursive
 2021-11-23 17:46:29          0 my-repo-prefix/my_table/symlinks/example/main/my_table/year=2021/month=11/symlink.txt
 2021-11-23 17:46:29         60 my-repo-prefix/my_table/symlinks/example/main/my_table/year=2021/month=12/symlink.txt
 2021-11-23 17:46:30         60 my-repo-prefix/my_table/symlinks/example/main/my_table/year=2022/month=1/symlink.txt
 ```
 
 An example content of a symlink file, where each line represents a single object of the specific partition:
+
 ```text
 s3://my-bucket/my-repo-prefix/5bdc62da516944b49889770d98274227
 s3://my-bucket/my-repo-prefix/64262fbf3d6347a79ead641d2b2baee6

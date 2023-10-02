@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var authGroupsListCmd = &cobra.Command{
@@ -17,9 +18,9 @@ var authGroupsListCmd = &cobra.Command{
 
 		clt := getClient()
 
-		resp, err := clt.ListGroupsWithResponse(cmd.Context(), &api.ListGroupsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+		resp, err := clt.ListGroupsWithResponse(cmd.Context(), &apigen.ListGroupsParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

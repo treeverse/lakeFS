@@ -1,7 +1,5 @@
 package api
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package api -generate "types,client,chi-server,spec" -templates tmpl -o lakefs.gen.go ../../api/swagger.yml
-
 import (
 	"errors"
 	"io"
@@ -14,9 +12,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -25,40 +24,19 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 const (
 	RequestIDHeaderName = "X-Request-ID"
 	LoggerServiceName   = "rest_api"
-	BaseURL             = "/api/v1"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(
-	cfg *config.Config,
-	catalog catalog.Interface,
-	middlewareAuthenticator auth.Authenticator,
-	authService auth.Service,
-	blockAdapter block.Adapter,
-	metadataManager auth.MetadataManager,
-	migrator Migrator,
-	collector stats.Collector,
-	cloudMetadataProvider cloud.MetadataProvider,
-	actions actionsHandler,
-	auditChecker AuditChecker,
-	logger logging.Logger,
-	emailer *email.Emailer,
-	templater templater.Service,
-	gatewayDomains []string,
-	snippets []params.CodeSnippet,
-	pathProvider upload.PathProvider,
-	otfService *tablediff.Service,
-) http.Handler {
+func Serve(cfg *config.Config, catalog catalog.Interface, middlewareAuthenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, otfService *tablediff.Service) http.Handler {
 	logger.Info("initialize OpenAPI server")
-	swagger, err := GetSwagger()
+	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		panic(err)
 	}
@@ -78,32 +56,14 @@ func Serve(
 		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
-	controller := NewController(
-		cfg,
-		catalog,
-		middlewareAuthenticator,
-		authService,
-		blockAdapter,
-		metadataManager,
-		migrator,
-		collector,
-		cloudMetadataProvider,
-		actions,
-		auditChecker,
-		logger,
-		emailer,
-		templater,
-		sessionStore,
-		pathProvider,
-		otfService,
-	)
-	HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
+	controller := NewController(cfg, catalog, middlewareAuthenticator, authService, blockAdapter, metadataManager, migrator, collector, cloudMetadataProvider, actions, auditChecker, logger, sessionStore, pathProvider, otfService)
+	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
-	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
+	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
@@ -125,7 +85,7 @@ func Serve(
 }
 
 func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
-	reader, err := GetSwaggerSpecReader()
+	reader, err := apigen.GetSwaggerSpecReader()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

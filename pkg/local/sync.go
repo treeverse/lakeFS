@@ -16,7 +16,8 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -25,10 +26,10 @@ import (
 
 const (
 	DefaultDirectoryMask   = 0o755
-	ClientMtimeMetadataKey = api.LakeFSMetadataPrefix + "client-mtime"
+	ClientMtimeMetadataKey = apiutil.LakeFSMetadataPrefix + "client-mtime"
 )
 
-func getMtimeFromStats(stats api.ObjectStats) (int64, error) {
+func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
 	}
@@ -48,7 +49,7 @@ type Tasks struct {
 
 type SyncManager struct {
 	ctx            context.Context
-	client         *api.ClientWithResponses
+	client         *apigen.ClientWithResponses
 	httpClient     *http.Client
 	progressBar    *ProgressPool
 	maxParallelism int
@@ -56,7 +57,7 @@ type SyncManager struct {
 	tasks          Tasks
 }
 
-func NewSyncManager(ctx context.Context, client *api.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
 	return &SyncManager{
 		ctx:            ctx,
 		client:         client,
@@ -74,17 +75,16 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	wg.SetLimit(s.maxParallelism)
-	for change := range changeSet {
-		c := change
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+	for i := 0; i < s.maxParallelism; i++ {
 		wg.Go(func() error {
-			return s.apply(ctx, rootPath, remote, c)
+			for change := range changeSet {
+				if err := s.apply(ctx, rootPath, remote, change); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 	}
-
 	if err := wg.Wait(); err != nil {
 		return err
 	}
@@ -92,62 +92,54 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	return err
 }
 
-func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) (err error) {
+func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
 		case ChangeSourceRemote:
-			// remote changed something, download it!
-			err = s.download(ctx, rootPath, remote, change)
-			if err != nil {
-				err = fmt.Errorf("download %s failed: %w", change.Path, err)
+			// remotely changed something, download it!
+			if err := s.download(ctx, rootPath, remote, change.Path); err != nil {
+				return fmt.Errorf("download %s failed: %w", change.Path, err)
 			}
-			return err
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
-			err = s.upload(ctx, rootPath, remote, change)
-			if err != nil {
-				err = fmt.Errorf("upload %s failed: %w", change.Path, err)
+			if err := s.upload(ctx, rootPath, remote, change.Path); err != nil {
+				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
-			return err
 		default:
 			panic("invalid change source")
 		}
 	case ChangeTypeRemoved:
 		if change.Source == ChangeSourceRemote {
 			// remote deleted something, delete it locally!
-			err = s.deleteLocal(rootPath, change)
-			if err != nil {
-				err = fmt.Errorf("delete local %s failed: %w", change.Path, err)
+			if err := s.deleteLocal(rootPath, change); err != nil {
+				return fmt.Errorf("delete local %s failed: %w", change.Path, err)
 			}
-			return err
 		} else {
 			// we deleted something, delete it on remote!
-			err = s.deleteRemote(ctx, remote, change)
-			if err != nil {
-				err = fmt.Errorf("delete remote %s failed: %w", change.Path, err)
+			if err := s.deleteRemote(ctx, remote, change); err != nil {
+				return fmt.Errorf("delete remote %s failed: %w", change.Path, err)
 			}
-			return err
 		}
 	case ChangeTypeConflict:
 		return ErrConflict
 	default:
 		panic("invalid change type")
 	}
+	return nil
 }
 
-func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
-	if err := fileutil.VerifyRelPath(strings.TrimPrefix(change.Path, uri.PathSeparator), rootPath); err != nil {
+func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
 		return err
 	}
-	destination := filepath.Join(rootPath, change.Path)
+	destination := filepath.Join(rootPath, path)
 	destinationDirectory := filepath.Dir(destination)
 	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
 		return err
 	}
-
-	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.StatObjectParams{
-		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
+	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
+		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
 		Presign:      swag.Bool(s.presign),
 		UserMetadata: swag.Bool(true),
 	})
@@ -155,7 +147,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 	if statResp.StatusCode() != http.StatusOK {
-		httpErr := api.Error{Message: "no content"}
+		httpErr := apigen.Error{Message: "no content"}
 		_ = json.Unmarshal(statResp.Body, &httpErr)
 		return fmt.Errorf("(stat: HTTP %d, message: %s): %w", statResp.StatusCode(), httpErr.Message, ErrDownloadingFile)
 	}
@@ -165,7 +157,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 
-	if strings.HasSuffix(change.Path, uri.PathSeparator) {
+	if strings.HasSuffix(path, uri.PathSeparator) {
 		// Directory marker - skip
 		return nil
 	}
@@ -174,8 +166,8 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	sizeBytes := swag.Int64Value(statResp.JSON200.SizeBytes)
 	f, err := os.Create(destination)
 	if err != nil {
-		// sometimes we get a file that is actually a directory marker.
-		// spark loves writing those. If we already have the directory we can skip it.
+		// Sometimes we get a file that is actually a directory marker (Spark loves writing those).
+		// If we already have the directory, we can skip it.
 		if errors.Is(err, syscall.EISDIR) && sizeBytes == 0 {
 			return nil // no further action required!
 		}
@@ -186,7 +178,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}()
 
 	if sizeBytes == 0 { // if size is empty just create file
-		spinner := s.progressBar.AddSpinner(fmt.Sprintf("download %s", change.Path))
+		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
 	} else { // Download file
@@ -201,12 +193,12 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 				_ = resp.Body.Close()
 			}()
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", change.Path, resp.StatusCode, ErrDownloadingFile)
+				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
 			}
 			body = resp.Body
 		} else {
-			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &api.GetObjectParams{
-				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
+			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
+				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
 			})
 			if err != nil {
 				return err
@@ -215,12 +207,12 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 				_ = resp.Body.Close()
 			}()
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("%s (GetObject: HTTP %d): %w", change.Path, resp.StatusCode, ErrDownloadingFile)
+				return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
 			}
 			body = resp.Body
 		}
 
-		b := s.progressBar.AddReader(fmt.Sprintf("download %s", change.Path), sizeBytes)
+		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
 		barReader := b.Reader(body)
 		defer func() {
 			if err != nil {
@@ -238,16 +230,16 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	// set mtime to the server returned one
-	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in defer func
+	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in deferred func
 	return err
 }
 
-func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
-	source := filepath.Join(rootPath, change.Path)
+func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+	source := filepath.Join(rootPath, path)
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
 	}
-	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
+	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), path))
 
 	f, err := os.Open(source)
 	if err != nil {
@@ -262,7 +254,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		return err
 	}
 
-	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", change.Path), fileStat.Size())
+	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", path), fileStat.Size())
 	defer func() {
 		if err != nil {
 			b.Error()
@@ -291,7 +283,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 }
 
 func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
-	b := s.progressBar.AddSpinner(fmt.Sprintf("delete local: %s", change.Path))
+	b := s.progressBar.AddSpinner("delete local: " + change.Path)
 	defer func() {
 		defer func() {
 			if err != nil {
@@ -311,7 +303,7 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 }
 
 func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {
-	b := s.progressBar.AddSpinner(fmt.Sprintf("delete remote path: %s", change.Path))
+	b := s.progressBar.AddSpinner("delete remote path: " + change.Path)
 	defer func() {
 		if err != nil {
 			b.Error()
@@ -321,7 +313,7 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		}
 	}()
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
-	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &api.DeleteObjectParams{
+	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DeleteObjectParams{
 		Path: dest,
 	})
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -15,7 +14,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -25,16 +25,25 @@ import (
 const (
 	DefaultMaxIdleConnsPerHost = 100
 	// version templates
-	getLakeFSVersionErrorTemplate = `{{ print "Failed getting lakeFS server version:" | red }} {{ . }}
+	getLakeFSVersionErrorTemplate = `{{ "Failed getting lakeFS server version:" | red }} {{ . }}
 `
-	getLatestVersionErrorTemplate = `{{ print "Failed getting latest lakectl version:" | red }} {{ . }}
+	getLatestVersionErrorTemplate = `{{ "Failed getting latest lakectl version:" | red }} {{ . }}
 `
 	versionTemplate = `lakectl version: {{.LakectlVersion }}
-{{- if .LakeFSVersion }}{{ "\n" }}lakeFS version: {{.LakeFSVersion}}{{ "\n" }}{{ end -}}
+{{- if .LakeFSVersion }}
+lakeFS version: {{.LakeFSVersion}}
+{{- end }}
 {{- if .UpgradeURL }}{{ "\n" }}{{ end -}}
-{{- if .LakectlLatestVersion }}{{ print "lakectl out of date!"| yellow }} (Available: {{ .LakectlLatestVersion }}){{ "\n" }}{{ end -}}
-{{- if .LakeFSLatestVersion }}{{ print "lakeFS out of date!"| yellow }} (Available: {{ .LakeFSLatestVersion }}){{ "\n" }}{{ end -}}
-{{- if .UpgradeURL }}Get the latest release {{ .UpgradeURL|blue }}{{ "\n" }}{{ end -}}`
+{{- if .LakectlLatestVersion }}
+{{ "lakectl out of date!" | yellow }} (Available: {{ .LakectlLatestVersion }})
+{{- end }}
+{{- if .LakeFSLatestVersion }}
+{{ "lakeFS out of date!" | yellow }} (Available: {{ .LakeFSLatestVersion }})
+{{- end }}
+{{- if .UpgradeURL }}
+Get the latest release {{ .UpgradeURL|blue }}
+{{- end }}
+`
 )
 
 // Configuration is the user-visible configuration structure in Golang form.
@@ -175,19 +184,20 @@ var rootCmd = &cobra.Command{
 
 		client := getClient()
 
-		resp, err := client.GetLakeFSVersionWithResponse(cmd.Context())
+		resp, err := client.GetConfigWithResponse(cmd.Context())
 		if err != nil {
 			WriteIfVerbose(getLakeFSVersionErrorTemplate, err)
 		} else if resp.JSON200 == nil {
 			WriteIfVerbose(getLakeFSVersionErrorTemplate, resp.Status())
 		} else {
 			lakefsVersion := resp.JSON200
-			info.LakeFSVersion = swag.StringValue(lakefsVersion.Version)
-			if swag.BoolValue(lakefsVersion.UpgradeRecommended) {
-				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.LatestVersion)
+			info.LakeFSVersion = swag.StringValue(lakefsVersion.VersionConfig.Version)
+			if swag.BoolValue(lakefsVersion.VersionConfig.UpgradeRecommended) {
+				info.LakeFSLatestVersion = swag.StringValue(lakefsVersion.VersionConfig.LatestVersion)
 			}
-			if swag.StringValue(lakefsVersion.UpgradeUrl) != "" {
-				info.UpgradeURL = swag.StringValue(lakefsVersion.UpgradeUrl)
+			upgradeURL := swag.StringValue(lakefsVersion.VersionConfig.UpgradeUrl)
+			if upgradeURL != "" {
+				info.UpgradeURL = upgradeURL
 			}
 		}
 		// get lakectl latest version
@@ -216,13 +226,13 @@ var excludeStatsCmds = []string{
 	"config",
 }
 
-func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd string) {
+func sendStats(ctx context.Context, client apigen.ClientWithResponsesInterface, cmd string) {
 	if version.IsVersionUnreleased() {
 		return
 	}
 
-	resp, err := client.PostStatsEventsWithResponse(ctx, api.PostStatsEventsJSONRequestBody{
-		Events: []api.StatsEvent{
+	resp, err := client.PostStatsEventsWithResponse(ctx, apigen.PostStatsEventsJSONRequestBody{
+		Events: []apigen.StatsEvent{
 			{
 				Class: "lakectl",
 				Name:  cmd,
@@ -242,7 +252,7 @@ func sendStats(ctx context.Context, client api.ClientWithResponsesInterface, cmd
 	}
 }
 
-func getClient() *api.ClientWithResponses {
+func getClient() *apigen.ClientWithResponses {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -260,21 +270,16 @@ func getClient() *api.ClientWithResponses {
 		DieErr(err)
 	}
 
-	serverEndpoint := cfg.Server.EndpointURL.String()
-	u, err := url.Parse(serverEndpoint)
+	serverEndpoint, err := apiutil.NormalizeLakeFSEndpoint(cfg.Server.EndpointURL.String())
 	if err != nil {
 		DieErr(err)
 	}
-	// if no uri to api is set in configuration - set the default
-	if u.Path == "" || u.Path == "/" {
-		serverEndpoint = strings.TrimRight(serverEndpoint, "/") + api.BaseURL
-	}
 
-	client, err := api.NewClientWithResponses(
+	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		api.WithHTTPClient(httpClient),
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
-		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		apigen.WithHTTPClient(httpClient),
+		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			req.Header.Set("User-Agent", "lakectl/"+version.Version)
 			return nil
 		}),
@@ -301,13 +306,18 @@ func init() {
 	// will be global for your application.
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
-	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
+	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", getEnvNoColor(), "don't use fancy output colors (default value can be set by NO_COLOR environment variable)")
 	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
 	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
 	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
 	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
 	rootCmd.Flags().BoolP("version", "v", false, "version for lakectl")
+}
+
+func getEnvNoColor() bool {
+	v := os.Getenv("NO_COLOR")
+	return v != "" && v != "0"
 }
 
 // initConfig reads in config file and ENV variables if set.

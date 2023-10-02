@@ -22,6 +22,7 @@ from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
+from lakefs_client.model.config import Config
 from lakefs_client.model.credentials import Credentials
 from lakefs_client.model.credentials_list import CredentialsList
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
@@ -32,9 +33,7 @@ from lakefs_client.model.diff_properties import DiffProperties
 from lakefs_client.model.error import Error
 from lakefs_client.model.error_no_acl import ErrorNoACL
 from lakefs_client.model.find_merge_base_result import FindMergeBaseResult
-from lakefs_client.model.forgot_password_request import ForgotPasswordRequest
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
-from lakefs_client.model.garbage_collection_prepare_request import GarbageCollectionPrepareRequest
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_client.model.garbage_collection_rule import GarbageCollectionRule
 from lakefs_client.model.garbage_collection_rules import GarbageCollectionRules
@@ -46,9 +45,8 @@ from lakefs_client.model.hook_run_list import HookRunList
 from lakefs_client.model.import_creation import ImportCreation
 from lakefs_client.model.import_creation_response import ImportCreationResponse
 from lakefs_client.model.import_location import ImportLocation
-from lakefs_client.model.import_pagination import ImportPagination
-from lakefs_client.model.import_status_resp import ImportStatusResp
-from lakefs_client.model.ingest_range_creation_response import IngestRangeCreationResponse
+from lakefs_client.model.import_status import ImportStatus
+from lakefs_client.model.inline_object import InlineObject
 from lakefs_client.model.inline_object1 import InlineObject1
 from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
@@ -84,7 +82,6 @@ from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
-from lakefs_client.model.stage_range_creation import StageRangeCreation
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.staging_metadata import StagingMetadata
 from lakefs_client.model.statement import Statement
@@ -94,7 +91,6 @@ from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
-from lakefs_client.model.update_password_by_token import UpdatePasswordByToken
 from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation

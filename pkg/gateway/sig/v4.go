@@ -2,7 +2,6 @@ package sig
 
 import (
 	"bufio"
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -75,16 +74,15 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 				result[name] = match[i]
 			}
 		}
-		headers := splitHeaders(result["SignatureHeaders"])
 		ctx.AccessKeyID = result["AccessKeyId"]
 		ctx.Date = result["Date"]
 		ctx.Region = result["Region"]
 		ctx.Service = result["Service"]
-
 		ctx.Signature = result["Signature"]
 
-		ctx.SignedHeaders = headers
-		ctx.SignedHeadersString = result["SignatureHeaders"]
+		signatureHeaders := result["SignatureHeaders"]
+		ctx.SignedHeaders = splitHeaders(signatureHeaders)
+		ctx.SignedHeadersString = signatureHeaders
 		return ctx, nil
 	}
 
@@ -317,11 +315,8 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 	if err != nil {
 		return "", err
 	}
-	h := sha256.New()
-	if _, err := h.Write([]byte(canonicalRequest)); err != nil {
-		return "", err
-	}
-	hashedCanonicalRequest := hex.EncodeToString(h.Sum(nil))
+	h := sha256.Sum256([]byte(canonicalRequest))
+	hashedCanonicalRequest := hex.EncodeToString(h[:])
 	stringToSign := strings.Join([]string{
 		algorithm,
 		amzDate,
@@ -378,32 +373,29 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 
 type V4Authenticator struct {
 	request *http.Request
-	ctx     V4Auth
+	sigCtx  V4Auth
 }
 
-func (a *V4Authenticator) Parse(_ context.Context) (SigContext, error) {
-	var ctx V4Auth
-	var err error
-	ctx, err = ParseV4AuthContext(a.request)
+func (a *V4Authenticator) Parse() (SigContext, error) {
+	sigCtx, err := ParseV4AuthContext(a.request)
 	if err != nil {
-		return ctx, err
+		return nil, err
 	}
-	a.ctx = ctx
-	return a.ctx, nil
+	a.sigCtx = sigCtx
+	return a.sigCtx, nil
 }
 
 func (a *V4Authenticator) String() string {
 	return "sigv4"
 }
 
-func (a *V4Authenticator) Verify(creds *model.Credential, _ string) error {
-	err := V4Verify(a.ctx, creds, a.request)
-	return err
+func (a *V4Authenticator) Verify(creds *model.Credential) error {
+	return V4Verify(a.sigCtx, creds, a.request)
 }
 
-func NewV4Authenticator(r *http.Request) SigAuthenticator {
+func NewV4Authenticator(r *http.Request) *V4Authenticator {
 	return &V4Authenticator{
 		request: r,
-		ctx:     V4Auth{},
+		sigCtx:  V4Auth{},
 	}
 }

@@ -26,7 +26,6 @@ const (
 )
 
 var (
-	ErrNotImplemented      = errors.New("not implemented")
 	ErrMismatchPartETag    = errors.New("mismatch part ETag")
 	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
@@ -527,10 +526,6 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 		return nil, err
 	}
 	return targetAttrs, nil
-}
-
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 
 func (a *Adapter) Close() error {

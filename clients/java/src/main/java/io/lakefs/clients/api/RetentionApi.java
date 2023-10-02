@@ -28,9 +28,7 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.GarbageCollectionPrepareRequest;
 import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
-import io.lakefs.clients.api.model.GarbageCollectionRules;
 import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
 
@@ -60,253 +58,8 @@ public class RetentionApi {
     }
 
     /**
-     * Build call for deleteGarbageCollectionRules
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call deleteGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/gc/rules"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling deleteGarbageCollectionRules(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = deleteGarbageCollectionRulesCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void deleteGarbageCollectionRules(String repository) throws ApiException {
-        deleteGarbageCollectionRulesWithHttpInfo(repository);
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> deleteGarbageCollectionRulesWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = deleteGarbageCollectionRulesValidateBeforeCall(repository, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     *  (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call deleteGarbageCollectionRulesAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = deleteGarbageCollectionRulesValidateBeforeCall(repository, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for getGarbageCollectionRules
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/gc/rules"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call getGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling getGarbageCollectionRules(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = getGarbageCollectionRulesCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @return GarbageCollectionRules
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public GarbageCollectionRules getGarbageCollectionRules(String repository) throws ApiException {
-        ApiResponse<GarbageCollectionRules> localVarResp = getGarbageCollectionRulesWithHttpInfo(repository);
-        return localVarResp.getData();
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;GarbageCollectionRules&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<GarbageCollectionRules> getGarbageCollectionRulesWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = getGarbageCollectionRulesValidateBeforeCall(repository, null);
-        Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
-    }
-
-    /**
-     *  (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call getGarbageCollectionRulesAsync(String repository, final ApiCallback<GarbageCollectionRules> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = getGarbageCollectionRulesValidateBeforeCall(repository, _callback);
-        Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-    /**
      * Build call for prepareGarbageCollectionCommits
      * @param repository  (required)
-     * @param garbageCollectionPrepareRequest  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -319,8 +72,8 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareGarbageCollectionCommitsCall(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = garbageCollectionPrepareRequest;
+    public okhttp3.Call prepareGarbageCollectionCommitsCall(String repository, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/gc/prepare_commits"
@@ -341,7 +94,7 @@ public class RetentionApi {
         }
 
         final String[] localVarContentTypes = {
-            "application/json"
+            
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
@@ -351,7 +104,7 @@ public class RetentionApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call prepareGarbageCollectionCommitsValidateBeforeCall(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call prepareGarbageCollectionCommitsValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -359,16 +112,15 @@ public class RetentionApi {
         }
         
 
-        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsCall(repository, garbageCollectionPrepareRequest, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsCall(repository, _callback);
         return localVarCall;
 
     }
 
     /**
-     * save lists of active and expired commits for garbage collection
+     * save lists of active commits for garbage collection
      * 
      * @param repository  (required)
-     * @param garbageCollectionPrepareRequest  (optional)
      * @return GarbageCollectionPrepareResponse
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -380,16 +132,15 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
-        ApiResponse<GarbageCollectionPrepareResponse> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository, garbageCollectionPrepareRequest);
+    public GarbageCollectionPrepareResponse prepareGarbageCollectionCommits(String repository) throws ApiException {
+        ApiResponse<GarbageCollectionPrepareResponse> localVarResp = prepareGarbageCollectionCommitsWithHttpInfo(repository);
         return localVarResp.getData();
     }
 
     /**
-     * save lists of active and expired commits for garbage collection
+     * save lists of active commits for garbage collection
      * 
      * @param repository  (required)
-     * @param garbageCollectionPrepareRequest  (optional)
      * @return ApiResponse&lt;GarbageCollectionPrepareResponse&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -401,17 +152,16 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<GarbageCollectionPrepareResponse> prepareGarbageCollectionCommitsWithHttpInfo(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest) throws ApiException {
-        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, null);
+    public ApiResponse<GarbageCollectionPrepareResponse> prepareGarbageCollectionCommitsWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, null);
         Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
-     * save lists of active and expired commits for garbage collection (asynchronously)
+     * save lists of active commits for garbage collection (asynchronously)
      * 
      * @param repository  (required)
-     * @param garbageCollectionPrepareRequest  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -424,9 +174,9 @@ public class RetentionApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, GarbageCollectionPrepareRequest garbageCollectionPrepareRequest, final ApiCallback<GarbageCollectionPrepareResponse> _callback) throws ApiException {
+    public okhttp3.Call prepareGarbageCollectionCommitsAsync(String repository, final ApiCallback<GarbageCollectionPrepareResponse> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, garbageCollectionPrepareRequest, _callback);
+        okhttp3.Call localVarCall = prepareGarbageCollectionCommitsValidateBeforeCall(repository, _callback);
         Type localVarReturnType = new TypeToken<GarbageCollectionPrepareResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -561,255 +311,6 @@ public class RetentionApi {
         okhttp3.Call localVarCall = prepareGarbageCollectionUncommittedValidateBeforeCall(repository, prepareGCUncommittedRequest, _callback);
         Type localVarReturnType = new TypeToken<PrepareGCUncommittedResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for setGarbageCollectionRules
-     * @param repository  (required)
-     * @param garbageCollectionRules  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call setGarbageCollectionRulesCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = garbageCollectionRules;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/gc/rules"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            "application/json"
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call setGarbageCollectionRulesValidateBeforeCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling setGarbageCollectionRules(Async)");
-        }
-        
-        // verify the required parameter 'garbageCollectionRules' is set
-        if (garbageCollectionRules == null) {
-            throw new ApiException("Missing the required parameter 'garbageCollectionRules' when calling setGarbageCollectionRules(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = setGarbageCollectionRulesCall(repository, garbageCollectionRules, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @param garbageCollectionRules  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void setGarbageCollectionRules(String repository, GarbageCollectionRules garbageCollectionRules) throws ApiException {
-        setGarbageCollectionRulesWithHttpInfo(repository, garbageCollectionRules);
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @param garbageCollectionRules  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> setGarbageCollectionRulesWithHttpInfo(String repository, GarbageCollectionRules garbageCollectionRules) throws ApiException {
-        okhttp3.Call localVarCall = setGarbageCollectionRulesValidateBeforeCall(repository, garbageCollectionRules, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     *  (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param garbageCollectionRules  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call setGarbageCollectionRulesAsync(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = setGarbageCollectionRulesValidateBeforeCall(repository, garbageCollectionRules, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-    /**
-     * Build call for setGarbageCollectionRulesPreflight
-     * @param repository  (required)
-     * @param _callback Callback for upload/download progress
-     * @return Call to execute
-     * @throws ApiException If fail to serialize the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call setGarbageCollectionRulesPreflightCall(String repository, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/gc/rules/set_allowed"
-            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        localVarHeaderParams.put("Content-Type", localVarContentType);
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
-        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call setGarbageCollectionRulesPreflightValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling setGarbageCollectionRulesPreflight(Async)");
-        }
-        
-
-        okhttp3.Call localVarCall = setGarbageCollectionRulesPreflightCall(repository, _callback);
-        return localVarCall;
-
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public void setGarbageCollectionRulesPreflight(String repository) throws ApiException {
-        setGarbageCollectionRulesPreflightWithHttpInfo(repository);
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @return ApiResponse&lt;Void&gt;
-     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public ApiResponse<Void> setGarbageCollectionRulesPreflightWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = setGarbageCollectionRulesPreflightValidateBeforeCall(repository, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    /**
-     *  (asynchronously)
-     * 
-     * @param repository  (required)
-     * @param _callback The callback to be executed when the API call finishes
-     * @return The request call
-     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> User has permissions to set garbage collection rules on this repository </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public okhttp3.Call setGarbageCollectionRulesPreflightAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = setGarbageCollectionRulesPreflightValidateBeforeCall(repository, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 }

@@ -138,36 +138,6 @@ class Auth {
         }
     }
 
-    async updatePasswordByToken(token, newPassword, email) {
-        const response = await fetch(`${API_ENDPOINT}/auth/password`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-            body: JSON.stringify({token: token, newPassword: newPassword, email: email})
-        });
-
-        if (response.status === 401) {
-            throw new AuthorizationError('user unauthorized');
-        }
-        if (response.status !== 201) {
-            throw new Error('failed to update password');
-        }
-    }
-
-    async passwordForgot(email) {
-        const response = await fetch(`${API_ENDPOINT}/auth/password/forgot`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-            body: JSON.stringify({email: email})
-        });
-
-        if (response.status === 400) {
-            throw new BadRequestError("invalid email");
-        }
-        if (response.status !== 204) {
-            throw new Error('failed to request password reset');
-        }
-    }
-
     async login(accessKeyId, secretAccessKey) {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
@@ -569,16 +539,6 @@ class Branches {
         }
         return response.json();
     }
-
-    async updateToken(repoId, branch, staging_token) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}/update_token`, {
-            method: 'PUT',
-            body: JSON.stringify({staging_token: staging_token}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-    }
 }
 
 
@@ -887,7 +847,7 @@ class Actions {
 
 class Retention {
     async getGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`);
         if (response.status === 404) {
             throw new NotFoundError('policy not found')
         }
@@ -906,8 +866,8 @@ class Retention {
     }
 
     async setGCPolicy(repoID, policy) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
-            method: 'POST',
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
+            method: 'PUT',
             body: policy
         });
         if (response.status !== 204) {
@@ -917,7 +877,7 @@ class Retention {
     }
 
     async deleteGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
             method: 'DELETE',
         });
         if (response.status !== 204) {
@@ -986,18 +946,19 @@ class Setup {
 
 class Config {
     async getStorageConfig() {
-        const response = await apiRequest('/config/storage', {
+        const response = await apiRequest('/config', {
             method: 'GET',
         });
-        let cfg;
+        let cfg, storageCfg;
         switch (response.status) {
             case 200:
                 cfg = await response.json();
-                cfg.warnings = []
-                if (cfg.blockstore_type === 'mem') {
-                    cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
+                storageCfg = cfg.storage_config
+                storageCfg.warnings = []
+                if (storageCfg.blockstore_type === 'mem') {
+                    storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`)
                 }
-                return cfg;
+                return storageCfg;
             case 409:
                 throw new Error('Conflict');
             default:
@@ -1006,12 +967,14 @@ class Config {
     }
 
     async getLakeFSVersion() {
-        const response = await apiRequest('/config/version', {
+        const response = await apiRequest('/config', {
             method: 'GET',
         });
+        let cfg;
         switch (response.status) {
             case 200:
-                return await response.json();
+                cfg =  await response.json();
+                return cfg.version_config
             default:
                 throw new Error('Unknown');
         }
@@ -1020,29 +983,30 @@ class Config {
 
 class BranchProtectionRules {
     async getRules(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`);
         if (response.status === 404) {
             throw new NotFoundError('branch protection rules not found')
         }
         if (response.status !== 200) {
             throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
         }
-        return response.json();
+        return {
+            'checksum': response.headers.get('ETag'),
+            'rules': await response.json()
+        }
     }
 
     async createRulePreflight(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection/set_allowed`);
-        if (response.status !== 204) {
-            return false;
-        }
-        return true;
+        return response.status === 204;
+
     }
 
-    async createRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
-            method: 'POST',
-            body: JSON.stringify({pattern: pattern})
-        });
+    async setRules(repoID, rules, lastKnownChecksum) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`, {
+            method: 'PUT',
+            body: JSON.stringify(rules),
+        }, {'If-Match': lastKnownChecksum});
         if (response.status !== 204) {
             throw new Error(`could not create protection rule: ${await extractError(response)}`);
         }
@@ -1061,48 +1025,6 @@ class BranchProtectionRules {
         }
     }
 
-}
-
-class Ranges {
-    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "", staging_token="") {
-        const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
-            method: 'POST',
-            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token, staging_token}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
-class MetaRanges {
-    async createMetaRange(repoID, ranges) {
-        const response = await apiRequest(`/repositories/${repoID}/branches/metaranges`, {
-            method: 'POST',
-            body: JSON.stringify({ranges}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
-class Templates {
-    async expandTemplate(templateLocation, params) {
-        const urlParams = new URLSearchParams();
-        for (const [k, v] of Object.entries(params)) {
-            urlParams.set(k, v);
-        }
-        const response = await apiRequest(
-            `/templates/${encodeURI(templateLocation)}?${urlParams.toString()}`,
-            {method: 'GET'});
-        if (!response.ok) {
-            throw new Error(await extractError(response));
-        }
-        return response.text();
-    }
 }
 
 class Statistics {
@@ -1219,9 +1141,6 @@ export const actions = new Actions();
 export const retention = new Retention();
 export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
-export const ranges = new Ranges();
-export const metaRanges = new MetaRanges();
-export const templates = new Templates();
 export const statistics = new Statistics();
 export const staging = new Staging();
 export const otfDiffs = new OTFDiffs();

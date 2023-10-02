@@ -5,7 +5,7 @@ info:
   title: lakeFS API
   license:
     name: "Apache 2.0"
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 0.1.0
 
 servers:
@@ -77,7 +77,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorNoACL"
-            
+
     Unauthorized:
       description: Unauthorized
       content:
@@ -150,25 +150,6 @@ components:
           type: integer
           minimum: 0
           description: Maximal number of entries per page
-
-    ImportPagination:
-      type: object
-      required:
-        - has_more
-        - last_key
-      properties:
-        has_more:
-          type: boolean
-          description: More keys to be ingested.
-        continuation_token:
-          type: string
-          description: Opaque. Token used to import the next range.
-        last_key:
-          type: string
-          description: Last object store key that was ingested.
-        staging_token:
-          type: string
-          description: Staging token for skipped objects during ingest
 
     Repository:
       type: object
@@ -290,9 +271,9 @@ components:
           type: integer
           format: int64
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -691,7 +672,7 @@ components:
       properties:
         id:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user.
         creation_date:
           type: integer
           format: int64
@@ -709,20 +690,12 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
-    ForgotPasswordRequest:
-      type: object
-      required:
-        - email
-      properties:
-        email:
-          type: string
-
     UserCreation:
       type: object
       properties:
         id:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user.
         invite_user:
           type: boolean
       required:
@@ -821,21 +794,6 @@ components:
         - featureUpdates
         - securityUpdates
 
-    UpdatePasswordByToken:
-      type: object
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-        - token
-        - newPassword
 
     Credentials:
       type: object
@@ -1045,7 +1003,13 @@ components:
           type: boolean
         import_validity_regex:
           type: string
-
+    Config:
+      type: object
+      properties:
+        version_config:
+          $ref: "#/components/schemas/VersionConfig"
+        storage_config:
+          $ref: "#/components/schemas/StorageConfig"
     VersionConfig:
       type: object
       properties:
@@ -1157,14 +1121,14 @@ components:
         presigned_url:
           type: string
           nullable: true
-          description: if presign=true is passed in the request, this field will contain a presigned URL to use when uploading
+          description: if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading
         presigned_url_expiry:
           type: integer
           format: int64
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -1192,14 +1156,6 @@ components:
         - staging
         - checksum
         - size_bytes
-
-    GarbageCollectionPrepareRequest:
-      type: object
-      properties:
-        previous_run_id:
-          type: string
-          description: run id of a previous successful GC job
-          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
 
     GarbageCollectionPrepareResponse:
       type: object
@@ -1292,11 +1248,11 @@ components:
           description: Path type, can either be 'common_prefix' or 'object'
         path:
           type: string
-          description: A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+          description: A source location to import path or to a single object. Must match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
         destination:
           type: string
-          description: Destination for the imported objects on the branch 
+          description: Destination for the imported objects on the branch
           example: collections/
 
     ImportCreation:
@@ -1319,32 +1275,6 @@ components:
           - path: s3://my-bucket/production/collections/file1
             destination: collections/file1
             type: object
-
-    StageRangeCreation:
-      type: object
-      required:
-        - fromSourceURI
-        - after
-        - prepend
-      properties:
-        fromSourceURI:
-          type: string
-          description: The source location of the ingested files. Must match the lakeFS installation blockstore type.
-          example: s3://my-bucket/production/collections/
-        after:
-          type: string
-          description: Only objects after this key would be ingested.
-          example: production/collections/some/file.parquet
-        prepend:
-          type: string
-          description: A prefix to prepend to ingested objects.
-          example: collections/
-        continuation_token:
-          type: string
-          description: Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
-        staging_token:
-          type: string
-          description: Opaque. Client should pass staging_token if received from server on previous request
 
     RangeMetadata:
       type: object
@@ -1374,15 +1304,7 @@ components:
           type: integer
           description: Estimated size of the range in bytes
 
-    IngestRangeCreationResponse:
-      type: object
-      properties:
-        range:
-          $ref: "#/components/schemas/RangeMetadata"
-        pagination:
-          $ref: "#/components/schemas/ImportPagination"
-
-    ImportStatusResp:
+    ImportStatus:
       type: object
       properties:
         completed:
@@ -1403,14 +1325,14 @@ components:
       required:
         - update_time
         - completed
-    
+
     ImportCreationResponse:
       type: object
       properties:
         id:
           description: The id of the import process
           type: string
-      required: 
+      required:
         - id
 
     MetaRangeCreation:
@@ -1470,7 +1392,7 @@ paths:
   /setup_comm_prefs:
     post:
       tags:
-        - config
+        - internal
       operationId: setupCommPrefs
       summary: setup communications preferences
       security: []
@@ -1501,7 +1423,7 @@ paths:
   /setup_lakefs:
     get:
       tags:
-        - config
+        - internal
       operationId: getSetupState
       summary: check if the lakeFS installation is already set up
       security: []
@@ -1516,7 +1438,7 @@ paths:
           $ref: "#/components/responses/ServerError"
     post:
       tags:
-        - config
+        - internal
       operationId: setup
       summary: setup lakeFS and create a first user
       security: []
@@ -1587,53 +1509,12 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/password:
-    post:
-      tags:
-        - auth
-      operationId: updatePassword
-      summary: Update user password by reset_password token
-      security:
-        - cookie_auth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdatePasswordByToken"
-      responses:
-        201:
-          description: successful reset
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        default:
-          $ref: "#/components/responses/ServerError"
 
-  /auth/password/forgot:
-    post:
-      tags:
-        - auth
-      operationId: forgotPassword
-      summary: forgot password request initiates the password reset process
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ForgotPasswordRequest"
-      responses:
-        204:
-          description: No content
-        400:
-          $ref: "#/components/responses/BadRequest"
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /auth/capabilities:
     get:
       tags:
-        - auth
+        - internal
       operationId: getAuthCapabilities
       summary: list authentication capabilities supported
       security: []
@@ -1955,7 +1836,7 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
-          description: group memeber list
+          description: group member list
           content:
             application/json:
               schema:
@@ -2450,11 +2331,134 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/settings/gc_rules:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getGCRules
+      summary: get repository GC rules
+      responses:
+        200:
+          description: repository GC rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionRules"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    put:
+      tags:
+        - repositories
+      operationId: setGCRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionRules"
+      responses:
+        204:
+          description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - repositories
+      operationId: deleteGCRules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/settings/branch_protection:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getBranchProtectionRules
+      summary: get branch protection rules
+      responses:
+        200:
+          description: branch protection rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchProtectionRule"
+          headers:
+            ETag:
+              schema:
+                type: string
+                description: ETag of the branch protection rules
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+          description: if provided, the branch protection rules will be updated only if the current ETag match the provided value
+          allowEmptyValue: true
+      tags:
+        - repositories
+      operationId: setBranchProtectionRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: branch protection rule created successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /otf/diffs:
     get:
       tags:
         - experimental
-        - otf diff
       operationId: getOtfDiffs
       summary: get the available Open Table Format diffs
       responses:
@@ -2501,7 +2505,6 @@ paths:
     get:
       tags:
         - experimental
-        - otf diff
       operationId: otfDiff
       summary: perform otf diff
       responses:
@@ -2529,9 +2532,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: dumpRefs
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       responses:
         201:
           description: refs dump
@@ -2557,9 +2562,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: restoreRefs
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       requestBody:
         required: true
         content:
@@ -3478,7 +3485,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ImportStatusResp"
+                $ref: "#/components/schemas/ImportStatus"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3537,114 +3544,6 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /repositories/{repository}/branches/metaranges:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-    post:
-      tags:
-        - import
-      operationId: createMetaRange
-      summary: create a lakeFS metarange file from the given ranges
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MetaRangeCreation"
-      responses:
-        201:
-          description: metarange metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MetaRangeCreationResponse"
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        403:
-          $ref: "#/components/responses/Forbidden"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /repositories/{repository}/branches/ranges:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-    post:
-      tags:
-        - import
-      operationId: ingestRange
-      summary: create a lakeFS range file from the source uri
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/StageRangeCreation"
-      responses:
-        201:
-          description: range metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IngestRangeCreationResponse"
-
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /repositories/{repository}/branches/{branch}/update_token:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: branch
-        required: true
-        schema:
-          type: string
-    put:
-      tags:
-        - staging
-      operationId: updateBranchToken
-      summary: modify branch staging token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateToken"
-      responses:
-        204:
-          description: branch updated successfully
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        403:
-          $ref: "#/components/responses/Forbidden"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
   /repositories/{repository}/branches/{branch}/objects/stage_allowed:
     parameters:
       - in: path
@@ -3665,7 +3564,7 @@ paths:
           type: string
     get:
       tags:
-        - objects
+        - internal
       operationId: uploadObjectPreflight
       responses:
         204:
@@ -3741,6 +3640,10 @@ paths:
                   description: Only a single file per upload which must be named "content".
                   type: string
                   format: binary
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
 
       parameters:
         - in: query
@@ -4035,7 +3938,7 @@ paths:
         description: path to the table data
     post:
       tags:
-        - metadata
+        - internal
       operationId: createSymlinkFile
       summary: creates symlink files corresponding to the given directory
 
@@ -4271,7 +4174,7 @@ paths:
           type: string
     get:
       tags:
-        - retention
+        - internal
       operationId: setGarbageCollectionRulesPreflight
       responses:
         204:
@@ -4291,9 +4194,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - retention
-      operationId: getGarbageCollectionRules
+        - internal
+      operationId: internalGetGarbageCollectionRules
       responses:
         200:
           description: gc rule list
@@ -4307,11 +4211,12 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-    
+
     post:
+      deprecated: true
       tags:
-        - retention
-      operationId: set garbage collection rules
+        - internal
+      operationId: internalSetGarbageCollectionRules
       requestBody:
         required: true
         content:
@@ -4328,9 +4233,10 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - retention
-      operationId: delete garbage collection rules
+        - internal
+      operationId: internalDeleteGarbageCollectionRules
       responses:
         204:
           description: deleted garbage collection rules successfully
@@ -4349,15 +4255,10 @@ paths:
         schema:
           type: string
     post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GarbageCollectionPrepareRequest"
       tags:
         - retention
       operationId: prepareGarbageCollectionCommits
-      summary: save lists of active and expired commits for garbage collection
+      summary: save lists of active commits for garbage collection
       responses:
         201:
           description: paths to commit dataset
@@ -4414,7 +4315,7 @@ paths:
           type: string
     get:
       tags:
-        - repositories
+        - internal
       operationId: createBranchProtectionRulePreflight
       responses:
         204:
@@ -4436,9 +4337,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - repositories
-      operationId: getBranchProtectionRules
+        - internal
+      operationId: internalGetBranchProtectionRules
       summary: get branch protection rules
       responses:
         200:
@@ -4457,9 +4359,10 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
+      deprecated: true
       tags:
-        - repositories
-      operationId: createBranchProtectionRule
+        - internal
+      operationId: internalCreateBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4476,9 +4379,10 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - repositories
-      operationId: deleteBranchProtectionRule
+        - internal
+      operationId: internalDeleteBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4509,12 +4413,28 @@ paths:
       responses:
         204:
           description: NoContent
-  /config/version:
+  /config:
     get:
       tags:
         - config
+      operationId: getConfig
+      description: retrieve lakeFS configuration
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/version:
+    get:
+      tags:
+        - internal
       operationId: getLakeFSVersion
       description: get version of lakeFS server
+      deprecated: true
       responses:
         200:
           description: lakeFS version
@@ -4527,9 +4447,10 @@ paths:
   /config/storage:
     get:
       tags:
-        - config
+        - internal
       operationId: getStorageConfig
       description: retrieve lakeFS storage configuration
+      deprecated: true
       responses:
         200:
           description: lakeFS storage configuration
@@ -4542,7 +4463,7 @@ paths:
   /config/garbage-collection:
     get:
       tags:
-        - config
+        - internal
       operationId: getGarbageCollectionConfig
       description: get information of gc settings
       responses:
@@ -4554,48 +4475,11 @@ paths:
                 $ref: "#/components/schemas/GarbageCollectionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
-  /templates/{template_location}:
-    get:
-      tags:
-        - templates
-      operationId: expandTemplate
-      description: fetch and expand template
-      parameters:
-        - in: path
-          name: template_location
-          required: true
-          schema:
-            type: string
-          description: URL of the template; must be relative (to a URL configured on the server).
-          example: spark.submit.conf.tt
-        - in: query
-          name: params
-          schema:
-            type: object
-            additionalProperties:
-              type: string
-            example:
-              lakefs_url: https://lakefs.example.com
-          style: form
-          explode: true
-      responses:
-        200:
-          description: expanded template
-          content:
-            "*/*":
-              schema:
-                format: binary
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /statistics:
     post:
       tags:
-        - statistics
+        - internal
       operationId: postStatsEvents
       summary: post stats events, this endpoint is meant for internal use only
       requestBody:

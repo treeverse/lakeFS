@@ -5,6 +5,7 @@ grand_parent: Understanding lakeFS
 description: lakeFS helps recover from errors and find root case in production.
 redirect_from:
   - /data_lifecycle_management/production.html
+  - /usecases/production.html
 ---
 
 ## In Production

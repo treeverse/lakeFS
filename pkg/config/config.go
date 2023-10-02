@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -20,7 +18,6 @@ import (
 
 var (
 	ErrBadConfiguration    = errors.New("bad configuration")
-	ErrMissingSecretKey    = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
 	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
@@ -43,7 +40,7 @@ type OIDC struct {
 // CookieAuthVerification is related to auth based on a cookie set by an external service
 // TODO(isan) consolidate with OIDC
 type CookieAuthVerification struct {
-	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
+	// ValidateIDTokenClaims if set will validate the values (e.g., department: "R&D") exist in the token claims
 	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
 	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
 	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
@@ -62,11 +59,7 @@ type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 	Profile         string
 	Credentials     *struct {
-		AccessKeyID SecureString `mapstructure:"access_key_id"`
-		// AccessSecretKey is the old name for SecretAccessKey.
-		//
-		// Deprecated: use SecretAccessKey instead.
-		AccessSecretKey SecureString `mapstructure:"access_secret_key"`
+		AccessKeyID     SecureString `mapstructure:"access_key_id"`
 		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
 		SessionToken    SecureString `mapstructure:"session_token"`
 	}
@@ -240,8 +233,6 @@ type Config struct {
 			S3AuthInfo                    `mapstructure:",squash"`
 			Region                        string        `mapstructure:"region"`
 			Endpoint                      string        `mapstructure:"endpoint"`
-			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
-			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
 			MaxRetries                    int           `mapstructure:"max_retries"`
 			ForcePathStyle                bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
@@ -251,6 +242,8 @@ type Config struct {
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI            bool          `mapstructure:"disable_pre_signed_ui"`
+			ClientLogRetries              bool          `mapstructure:"client_log_retries"`
+			ClientLogRequest              bool          `mapstructure:"client_log_request"`
 			WebIdentity                   *struct {
 				SessionDuration     time.Duration `mapstructure:"session_duration"`
 				SessionExpiryWindow time.Duration `mapstructure:"session_expiry_window"`
@@ -347,19 +340,6 @@ type Config struct {
 		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
-
-	Email struct {
-		SMTPHost           string        `mapstructure:"smtp_host"`
-		SMTPPort           int           `mapstructure:"smtp_port"`
-		UseSSL             bool          `mapstructure:"use_ssl"`
-		Username           string        `mapstructure:"username"`
-		Password           string        `mapstructure:"password"`
-		LocalName          string        `mapstructure:"local_name"`
-		Sender             string        `mapstructure:"sender"`
-		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
-		Burst              int           `mapstructure:"burst"`
-		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
-	} `mapstructure:"email"`
 	UI struct {
 		// Enabled - control serving of embedded UI
 		Enabled  bool `mapstructure:"enabled"`
@@ -447,49 +427,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) GetAwsConfig() *aws.Config {
-	logger := logging.ContextUnavailable().WithField("sdk", "aws")
-	cfg := &aws.Config{
-		Logger: &logging.AWSAdapter{Logger: logger},
-	}
-	if c.Blockstore.S3.Region != "" {
-		cfg.Region = aws.String(c.Blockstore.S3.Region)
-	}
-	level := strings.ToLower(logging.Level())
-	if level == "trace" {
-		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-	}
-	if c.Blockstore.S3.Profile != "" || c.Blockstore.S3.CredentialsFile != "" {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			c.Blockstore.S3.CredentialsFile,
-			c.Blockstore.S3.Profile,
-		)
-	}
-	if c.Blockstore.S3.Credentials != nil {
-		secretAccessKey := c.Blockstore.S3.Credentials.SecretAccessKey
-		if secretAccessKey == "" {
-			logging.ContextUnavailable().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
-			secretAccessKey = c.Blockstore.S3.Credentials.AccessSecretKey
-		}
-		cfg.Credentials = credentials.NewStaticCredentials(
-			c.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
-			secretAccessKey.SecureValue(),
-			c.Blockstore.S3.Credentials.SessionToken.SecureValue(),
-		)
-	}
-
-	s3Endpoint := c.Blockstore.S3.Endpoint
-	if len(s3Endpoint) > 0 {
-		cfg = cfg.WithEndpoint(s3Endpoint)
-	}
-	s3ForcePathStyle := c.Blockstore.S3.ForcePathStyle
-	if s3ForcePathStyle {
-		cfg = cfg.WithS3ForcePathStyle(true)
-	}
-	cfg = cfg.WithMaxRetries(c.Blockstore.S3.MaxRetries)
-	return cfg
-}
-
 func (c *Config) BlockstoreType() string {
 	return c.Blockstore.Type
 }
@@ -502,10 +439,22 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 			SessionExpiryWindow: c.Blockstore.S3.WebIdentity.SessionExpiryWindow,
 		}
 	}
+
+	var creds blockparams.S3Credentials
+	if c.Blockstore.S3.Credentials != nil {
+		creds.AccessKeyID = c.Blockstore.S3.Credentials.AccessKeyID.SecureValue()
+		creds.SecretAccessKey = c.Blockstore.S3.Credentials.SecretAccessKey.SecureValue()
+		creds.SessionToken = c.Blockstore.S3.Credentials.SessionToken.SecureValue()
+	}
+
 	return blockparams.S3{
-		AwsConfig:                     c.GetAwsConfig(),
-		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
+		Region:                        c.Blockstore.S3.Region,
+		Profile:                       c.Blockstore.S3.Profile,
+		CredentialsFile:               c.Blockstore.S3.CredentialsFile,
+		Credentials:                   creds,
+		MaxRetries:                    c.Blockstore.S3.MaxRetries,
+		Endpoint:                      c.Blockstore.S3.Endpoint,
+		ForcePathStyle:                c.Blockstore.S3.ForcePathStyle,
 		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
 		SkipVerifyCertificateTestOnly: c.Blockstore.S3.SkipVerifyCertificateTestOnly,
 		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,
@@ -513,6 +462,8 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
+		ClientLogRetries:              c.Blockstore.S3.ClientLogRetries,
+		ClientLogRequest:              c.Blockstore.S3.ClientLogRequest,
 		WebIdentity:                   webIdentity,
 	}, nil
 }

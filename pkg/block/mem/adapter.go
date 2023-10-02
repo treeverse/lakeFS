@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,14 +16,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var (
-	ErrNoDataForKey            = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
-	ErrMultiPartNotFound       = fmt.Errorf("multipart ID not found")
-	ErrNoPropertiesForKey      = fmt.Errorf("no properties for key")
-	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")
+	ErrNoDataForKey       = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
+	ErrMultiPartNotFound  = fmt.Errorf("multipart ID not found")
+	ErrNoPropertiesForKey = fmt.Errorf("no properties for key")
 )
 
 type mpu struct {
@@ -336,10 +333,6 @@ func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 		ETag:          hexCode,
 		ContentLength: int64(len(data)),
 	}, nil
-}
-
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, ErrInventoryNotImplemented
 }
 
 func (a *Adapter) BlockstoreType() string {

@@ -27,13 +27,13 @@ func TestGetMinPermission(t *testing.T) {
 		Action     string
 		Permission model.ACLPermission
 	}{
-		{Action: permissions.ReadObjectAction, Permission: acl.ACLRead},
-		{Action: "fs:Read*", Permission: acl.ACLRead},
-		{Action: "fs:ReadO*", Permission: acl.ACLRead},
-		{Action: permissions.ListObjectsAction, Permission: acl.ACLRead},
-		{Action: "fs:List*", Permission: acl.ACLRead},
-		{Action: permissions.ReadActionsAction, Permission: acl.ACLWrite},
-		{Action: "fs:WriteO?ject", Permission: acl.ACLWrite},
+		{Action: permissions.ReadObjectAction, Permission: acl.ReadPermission},
+		{Action: "fs:Read*", Permission: acl.ReadPermission},
+		{Action: "fs:ReadO*", Permission: acl.ReadPermission},
+		{Action: permissions.ListObjectsAction, Permission: acl.ReadPermission},
+		{Action: "fs:List*", Permission: acl.ReadPermission},
+		{Action: permissions.ReadActionsAction, Permission: acl.WritePermission},
+		{Action: "fs:WriteO?ject", Permission: acl.WritePermission},
 	}
 
 	mig := migrations.NewACLsMigrator(nil, false)
@@ -59,51 +59,51 @@ func TestComputePermission(t *testing.T) {
 		{
 			Name:       "read-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("FSRead"),
-			Permission: acl.ACLRead,
+			Permission: acl.ReadPermission,
 		}, {
 			Name:       "read-one",
 			Actions:    []string{permissions.ReadRepositoryAction},
-			Permission: acl.ACLRead,
+			Permission: acl.ReadPermission,
 		}, {
 			Name:       "read-two",
 			Actions:    []string{permissions.ListObjectsAction, permissions.ReadTagAction},
-			Permission: acl.ACLRead,
+			Permission: acl.ReadPermission,
 		}, {
 			Name:       "only-own-credentials",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("AuthManageOwnCredentials"),
-			Permission: acl.ACLRead,
+			Permission: acl.ReadPermission,
 		}, {
 			Name:       "write-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("FSReadWrite"),
-			Permission: acl.ACLWrite,
+			Permission: acl.WritePermission,
 		}, {
 			Name:       "write-one",
 			Actions:    []string{permissions.WriteObjectAction},
-			Permission: acl.ACLWrite,
+			Permission: acl.WritePermission,
 		}, {
 			Name:       "write-one-read-one-create-one",
 			Actions:    []string{permissions.CreateCommitAction, permissions.ReadObjectAction, permissions.CreateMetaRangeAction},
-			Permission: acl.ACLWrite,
+			Permission: acl.WritePermission,
 		}, {
 			Name:       "super-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("FSFullAccess"),
-			Permission: acl.ACLSuper,
+			Permission: acl.SuperPermission,
 		}, {
 			Name:       "super-one",
 			Actions:    []string{permissions.AttachStorageNamespaceAction},
-			Permission: acl.ACLSuper,
+			Permission: acl.SuperPermission,
 		}, {
 			Name:       "super-one-write-one-read-two",
 			Actions:    []string{permissions.CreateTagAction, permissions.AttachStorageNamespaceAction, permissions.ReadConfigAction, permissions.ReadRepositoryAction},
-			Permission: acl.ACLSuper,
+			Permission: acl.SuperPermission,
 		}, {
 			Name:       "admin-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("AllAccess"),
-			Permission: acl.ACLAdmin,
+			Permission: acl.AdminPermission,
 		}, {
 			Name:       "admin-one",
 			Actions:    []string{permissions.SetGarbageCollectionRulesAction},
-			Permission: acl.ACLAdmin,
+			Permission: acl.AdminPermission,
 		},
 	}
 
@@ -125,7 +125,7 @@ func TestComputePermission(t *testing.T) {
 }
 
 func TestBroaderPermission(t *testing.T) {
-	perms := []model.ACLPermission{"", acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
+	perms := []model.ACLPermission{"", acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
 	for i, a := range perms {
 		for j, b := range perms {
 			after := i > j
@@ -164,7 +164,7 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 	ctx := context.Background()
 	svc, _ := authtestutil.SetupService(t, ctx, []byte("shh..."))
 
-	err := setup.SetupRBACBaseGroups(ctx, svc, now)
+	err := setup.CreateRBACBaseGroups(ctx, svc, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,25 +182,25 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 			Name:     "ExactlyFSFullAccess",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSFullAccess")},
 			ACL: model.ACL{
-				Permission: acl.ACLSuper,
+				Permission: acl.SuperPermission,
 			},
 		}, {
 			Name:     "GroupSuperUsers",
 			Policies: getPolicies(t, ctx, svc, "SuperUsers"),
 			ACL: model.ACL{
-				Permission: acl.ACLSuper,
+				Permission: acl.SuperPermission,
 			},
 		}, {
 			Name:     "ExactlyFSReadAll",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSReadAll")},
 			ACL: model.ACL{
-				Permission: acl.ACLRead,
+				Permission: acl.ReadPermission,
 			},
 		}, {
 			Name:     "GroupViewers",
 			Policies: getPolicies(t, ctx, svc, "Viewers"),
 			ACL: model.ACL{
-				Permission: acl.ACLRead,
+				Permission: acl.ReadPermission,
 			},
 		},
 	}
@@ -349,6 +349,7 @@ func TestMigrateImportPermissions(t *testing.T) {
 func createARN(name string) string {
 	return fmt.Sprintf("arn:%s:this:is:an:arn", name)
 }
+
 func verifyMigration(t *testing.T, ctx context.Context, authService *auth.AuthService, policies []model.Policy, cfg config.Config) {
 	for _, prev := range policies {
 		policy, err := authService.GetPolicy(ctx, prev.DisplayName)

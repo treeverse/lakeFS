@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"golang.org/x/exp/slices"
@@ -32,12 +32,10 @@ type (
 
 var (
 	logger      logging.Logger
-	client      api.ClientWithResponsesInterface
+	client      apigen.ClientWithResponsesInterface
 	endpointURL string
-	svc         *s3.S3
+	svc         *s3.Client
 	server      *webhookServer
-
-	testDirectDataAccess = Booleans{false}
 
 	metaClientJarPath  string
 	sparkImageTag      string
@@ -45,8 +43,6 @@ var (
 	groupsToKeep       arrayFlags
 	usersToKeep        arrayFlags
 	policiesToKeep     arrayFlags
-
-	testsToSkipRegex *regexp.Regexp
 )
 
 var (
@@ -88,7 +84,7 @@ func (i *arrayFlags) Set(value string) error {
 	return nil
 }
 
-func envCleanup(client api.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep arrayFlags) error {
+func envCleanup(client apigen.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep arrayFlags) error {
 	ctx := context.Background()
 	errRepos := deleteAllRepositories(ctx, client, repositoriesToKeep)
 	errGroups := deleteAllGroups(ctx, client, groupsToKeep)
@@ -97,7 +93,7 @@ func envCleanup(client api.ClientWithResponsesInterface, repositoriesToKeep, gro
 	return multierror.Append(errRepos, errGroups, errPolicies, errUsers).ErrorOrNil()
 }
 
-func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesInterface, repositoriesToKeep arrayFlags) error {
+func deleteAllRepositories(ctx context.Context, client apigen.ClientWithResponsesInterface, repositoriesToKeep arrayFlags) error {
 	// collect repositories to delete
 	var (
 		repositoriesToDelete []string
@@ -105,7 +101,7 @@ func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesIn
 	)
 
 	for {
-		resp, err := client.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{After: api.PaginationAfterPtr(nextOffset)})
+		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
 		if err != nil {
 			return fmt.Errorf("list repositories: %w", err)
 		}
@@ -136,14 +132,14 @@ func deleteAllRepositories(ctx context.Context, client api.ClientWithResponsesIn
 	return errs.ErrorOrNil()
 }
 
-func deleteAllGroups(ctx context.Context, client api.ClientWithResponsesInterface, groupsToKeep arrayFlags) error {
+func deleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInterface, groupsToKeep arrayFlags) error {
 	// list groups to delete
 	var (
 		groupsToDelete []string
 		nextOffset     string
 	)
 	for {
-		resp, err := client.ListGroupsWithResponse(ctx, &api.ListGroupsParams{After: api.PaginationAfterPtr(nextOffset)})
+		resp, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
 		if err != nil {
 			return fmt.Errorf("list groups: %w", err)
 		}
@@ -174,14 +170,14 @@ func deleteAllGroups(ctx context.Context, client api.ClientWithResponsesInterfac
 	return errs.ErrorOrNil()
 }
 
-func deleteAllUsers(ctx context.Context, client api.ClientWithResponsesInterface, usersToKeep arrayFlags) error {
+func deleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterface, usersToKeep arrayFlags) error {
 	// collect users to delete
 	var (
 		usersToDelete []string
 		nextOffset    string
 	)
 	for {
-		resp, err := client.ListUsersWithResponse(ctx, &api.ListUsersParams{After: api.PaginationAfterPtr(nextOffset)})
+		resp, err := client.ListUsersWithResponse(ctx, &apigen.ListUsersParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
 		if err != nil {
 			return fmt.Errorf("list users: %s", err)
 		}
@@ -212,14 +208,14 @@ func deleteAllUsers(ctx context.Context, client api.ClientWithResponsesInterface
 	return errs.ErrorOrNil()
 }
 
-func deleteAllPolicies(ctx context.Context, client api.ClientWithResponsesInterface, policiesToKeep arrayFlags) error {
+func deleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInterface, policiesToKeep arrayFlags) error {
 	// list policies to delete
 	var (
 		policiesToDelete []string
 		nextOffset       string
 	)
 	for {
-		resp, err := client.ListPoliciesWithResponse(ctx, &api.ListPoliciesParams{After: api.PaginationAfterPtr(nextOffset)})
+		resp, err := client.ListPoliciesWithResponse(ctx, &apigen.ListPoliciesParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
 		if err != nil {
 			return fmt.Errorf("list policies: %w", err)
 		}
@@ -256,7 +252,6 @@ func TestMain(m *testing.M) {
 	adminAccessKeyID := flag.String("admin-access-key-id", DefaultAdminAccessKeyID, "lakeFS Admin access key ID")
 	adminSecretAccessKey := flag.String("admin-secret-access-key", DefaultAdminSecretAccessKey, "lakeFS Admin secret access key")
 	cleanupEnv := flag.Bool("cleanup-env-pre-run", false, "Clean repositories, groups, users and polices before running esti tests")
-	testsToSkip := flag.String("skip", "", "Tests to skip in a regex format")
 	flag.Var(&repositoriesToKeep, "repository-to-keep", "Repositories to keep in case of pre-run cleanup")
 	flag.Var(&groupsToKeep, "group-to-keep", "Groups to keep in case of pre-run cleanup")
 	flag.Var(&usersToKeep, "user-to-keep", "Users to keep in case of pre-run cleanup")
@@ -281,27 +276,17 @@ func TestMain(m *testing.M) {
 
 	logger, client, svc, endpointURL = testutil.SetupTestingEnv(&params)
 
-	if directs, ok := os.LookupEnv("ESTI_TEST_DATA_ACCESS"); ok {
-		if err := testDirectDataAccess.Parse(directs); err != nil {
-			logger.Fatalf("ESTI_TEST_DATA_ACCESS=\"%s\": %s", directs, err)
-		}
-	}
 	azureStorageAccount = viper.GetString("azure_storage_account")
 	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 
-	if *testsToSkip != "" {
-		testsToSkipRegex = regexp.MustCompile(*testsToSkip)
-	}
-
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {
-		logger.
-			WithFields(logging.Fields{
-				"repositories": repositoriesToKeep,
-				"groups":       groupsToKeep,
-				"users":        usersToKeep,
-				"policies":     policiesToKeep,
-			}).Info("Deleting repositories, groups, users and policies before Esti run")
+		logger.WithFields(logging.Fields{
+			"repositories": repositoriesToKeep,
+			"groups":       groupsToKeep,
+			"users":        usersToKeep,
+			"policies":     policiesToKeep,
+		}).Info("Deleting repositories, groups, users and policies before Esti run")
 		err := envCleanup(client, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep)
 		if err != nil {
 			logger.WithError(err).Fatal("env cleanup")
@@ -317,10 +302,4 @@ func TestMain(m *testing.M) {
 
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
-}
-
-func SkipTestIfAskedTo(t testing.TB) {
-	if testsToSkipRegex != nil && testsToSkipRegex.MatchString(t.Name()) {
-		t.SkipNow()
-	}
 }

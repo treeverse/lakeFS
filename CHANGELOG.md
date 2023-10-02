@@ -2,6 +2,63 @@
 
 ## UNRELEASED
 
+# v0.111.0
+
+:new: What's new:
+- lakectl endpoint configure and endpoint path reuse (#6609)
+- Remove UpdateBranchToken API (#6590)
+- Table Extractor Hook and _lakefs_tables format  (#6589)
+- Export Hooks: Symlink Exporter (#6636)
+- Move setting endpoints to be under `/settings/` (#6649)
+- Remove expired commits from prepare_gc_commits response (#6634)
+- Remove lakectl dbt deprecated functionality (#6632)
+- Remove lakectl direct deprecated functionality (#6623)
+- API cleanup: remove emailer service implementation (#6661)
+- API cleanup: consolidate lakefs level information API (#6647)
+- API cleanup: make createSymlinkFile internal (#6630)
+- API cleanup: Mark refs dump/restore current API as internal (#6640)
+
+:bug: Bug fixed:
+- Fix: lua s3 client endpoint configure if set (#6629)
+- Fix: UI alert if "quickstart" repository failed on local (#6622)
+- Fix: Lua runtime - marshaling arrays (#6655)
+- Fix: Presigned URL Cache - change to Default expiry due to bug in package (#6651)
+
+# v0.110.0
+
+:new: What's new:
+- Upgrade code to use AWS SDK go v2 (#6486)
+- Actions: Lua package to parse URL (#6597)
+- UI: Commit info consistent across screens (#6593)
+- API: Update APIs tag for internal use (#6582)
+- lakectl: dbt and metastore commands marked as deprecated (#6565)
+- Removed deprecated: expand template API (#6587)
+- Removed deprecated: remove the update and forgot password APIs (#6591)
+
+:bug: Bug fixed:
+- Fix lakectl local verify bad path error on Windows (#6602)
+- Fix Azure pre-signed URL for blob imported from different account (#6594)
+  
+# v0.109.0
+
+:new: What's new:
+- Restrict lakectl local to common prefixes only (#6510)
+- lakectl local gitignore end marker (#6522)
+- Remove logBranchCommits (#6528)
+- Lua package for yaml support (#6545)
+- lakectl skip stats for unrelased version (#6551)
+- Remove OTF diff APIs from non experimental tag/category (#6563)
+- S3 API: Propogate slowdown response from cosmosdb to client (#6556)
+- logging and lakectl NO_COLOR support (#6569)
+ 
+:bug: Bug fixed:
+- Fix: lakectl import with Azure Data Lake Storage (#6515)
+- Fix: UI pdf viewer by X-Frame-Options set to SAMEORIGIN (#6520)
+- Fix: Lua gs client close (#6547)
+- Fix: Lua path.Join to handle concatenation of two separators (#6549)
+- Fix latest version cache and remove the use of go-github (#6572)
+- Fix: DynamoDB SeekGE bug (#6561)
+
 # v0.108.0
 
 :new: What's new:

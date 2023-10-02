@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
@@ -30,7 +29,6 @@ var abuseRandomWritesCmd = &cobra.Command{
 		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				add(fmt.Sprintf("%sfile-%d", prefix, i))
@@ -49,7 +47,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		var size int64
 		checksum := "00695c7307b0480c7b6bdc873cf05c15"
 		addr := storagePrefix + "/random-write"
-		creationInfo := api.ObjectStageCreation{
+		creationInfo := apigen.ObjectStageCreation{
 			Checksum:        checksum,
 			PhysicalAddress: addr,
 			SizeBytes:       size,
@@ -61,8 +59,8 @@ var abuseRandomWritesCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &api.StageObjectParams{Path: work},
-					api.StageObjectJSONRequestBody(creationInfo))
+				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &apigen.StageObjectParams{Path: work},
+					apigen.StageObjectJSONRequestBody(creationInfo))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}

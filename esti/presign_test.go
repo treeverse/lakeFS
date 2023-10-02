@@ -11,7 +11,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
@@ -48,7 +48,7 @@ func TestPreSign(t *testing.T) {
 		t.Skipf("Only GS, S3 and Azure Blob supported for pre-signed urls. Got: %s", blockStoreType)
 	}
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", false)
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar")
 
 	objContent := randstr.String(randomDataContentLength)
 	_, err = uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false)
@@ -57,7 +57,7 @@ func TestPreSign(t *testing.T) {
 	}
 
 	t.Run("preSignStat", func(t *testing.T) {
-		response, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &api.StatObjectParams{
+		response, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{
 			Path:    "foo/bar",
 			Presign: swag.Bool(true),
 		})
@@ -72,9 +72,9 @@ func TestPreSign(t *testing.T) {
 	})
 
 	t.Run("preSignList", func(t *testing.T) {
-		paginationDelimiter := api.PaginationDelimiter("/")
-		paginationPrefix := api.PaginationPrefix("foo/")
-		response, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &api.ListObjectsParams{
+		paginationDelimiter := apigen.PaginationDelimiter("/")
+		paginationPrefix := apigen.PaginationPrefix("foo/")
+		response, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{
 			Prefix:    &paginationPrefix,
 			Presign:   swag.Bool(true),
 			Delimiter: &paginationDelimiter,
@@ -91,7 +91,7 @@ func TestPreSign(t *testing.T) {
 	})
 
 	t.Run("preSignGet", func(t *testing.T) {
-		response, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{
+		response, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{
 			Path:    "foo/bar",
 			Presign: swag.Bool(true),
 		})
@@ -105,7 +105,7 @@ func TestPreSign(t *testing.T) {
 
 	t.Run("preSignGetPhysicalAddress", func(t *testing.T) {
 		// request a pre-signed URL for us to upload to
-		response, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.GetPhysicalAddressParams{
+		response, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.GetPhysicalAddressParams{
 			Path:    "foo/uploaded",
 			Presign: swag.Bool(true),
 		})
@@ -126,13 +126,13 @@ func TestPreSign(t *testing.T) {
 		require.Truef(t, httpResp.StatusCode < 400, "got a bad response from pre-signed URL for PUT: %s", httpResp.Status)
 
 		// Let's link this physical address
-		linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, repo, mainBranch, &api.LinkPhysicalAddressParams{
+		linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.LinkPhysicalAddressParams{
 			Path: "foo/uploaded",
-		}, api.LinkPhysicalAddressJSONRequestBody{
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:    httpResp.Header.Get("Etag"),
 			ContentType: swag.String("application/octet-stream"),
 			SizeBytes:   int64(uploadContentLength),
-			Staging: api.StagingLocation{
+			Staging: apigen.StagingLocation{
 				PhysicalAddress: response.JSON200.PhysicalAddress,
 				PresignedUrl:    response.JSON200.PresignedUrl,
 				Token:           response.JSON200.Token,
@@ -142,7 +142,7 @@ func TestPreSign(t *testing.T) {
 		require.Equalf(t, linkResponse.StatusCode(), http.StatusOK, "unexpected HTTP code for link_physical_address: %s", linkResponse.Status())
 
 		// Finally, let's read it back and see that we get back what we uploaded!
-		readBackResponse, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &api.GetObjectParams{
+		readBackResponse, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{
 			Path: "foo/uploaded",
 		})
 		require.NoError(t, err, "failed to read back linked object")

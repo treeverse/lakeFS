@@ -44,7 +44,7 @@ func init() {
 
 func (d *Driver) Open(_ context.Context, _ kvparams.Config) (kv.Store, error) {
 	return &Store{
-		m: make(map[string]PartitionMap, 0),
+		m: make(map[string]PartitionMap),
 	}, nil
 }
 
@@ -184,21 +184,20 @@ func (e *EntriesIterator) Next() bool {
 	e.store.mu.RLock()
 	defer e.store.mu.RUnlock()
 
-	l := make([]*kv.Entry, 0)
+	var l []*kv.Entry
 	if _, ok := e.store.m[e.partition]; ok {
-		for _, v := range e.store.m[e.partition] {
-			if bytes.Compare(v.Key, e.start) >= 0 {
-				entry := v
+		for _, entry := range e.store.m[e.partition] {
+			if bytes.Compare(entry.Key, e.start) >= 0 {
+				entry := entry
 				l = append(l, &entry)
 			}
 		}
 	}
-
 	if len(l) == 0 { // No results
 		e.start = nil
 		return false
 	}
-	if len(l) == 1 { // only 1 key >= start, set start to nil, so to indicate next call to return false immediately.
+	if len(l) == 1 { // only one key >= start, set start to nil, so to indicate the next call to return false immediately.
 		e.start = nil
 		e.entry = l[0]
 		return true

@@ -12,7 +12,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -82,25 +82,28 @@ type syncFlags struct {
 	presign     bool
 }
 
-func getLocalSyncFlags(cmd *cobra.Command, client *api.ClientWithResponses) syncFlags {
+func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
 	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
 	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
 	if !presignFlag.Changed {
-		resp, err := client.GetStorageConfigWithResponse(cmd.Context())
+		resp, err := client.GetConfigWithResponse(cmd.Context())
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		presign = resp.JSON200.PreSignSupport
+		presign = resp.JSON200.StorageConfig.PreSignSupport
 	}
 
 	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
+	if parallelism < 1 {
+		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
+	}
 	return syncFlags{parallelism: parallelism, presign: presign}
 }
 
-// getLocalArgs parses arguments to extract a remote URI and deduces the local path.
-// If local path isn't provided and considerGitRoot is true, it uses the git repository root.
-func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
+// getSyncArgs parses arguments to extract a remote URI and deduces the local path.
+// If the local path isn't provided and considerGitRoot is true, it uses the git repository root.
+func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
 		remote = MustParsePathURI("path", args[0])
@@ -125,9 +128,9 @@ func getLocalArgs(args []string, requireRemote bool, considerGitRoot bool) (remo
 	return
 }
 
-func localDiff(ctx context.Context, client api.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
+func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
 	fmt.Printf("\ndiff 'local://%s' <--> '%s'...\n", path, remote)
-	currentRemoteState := make(chan api.ObjectStats, maxDiffPageSize)
+	currentRemoteState := make(chan apigen.ObjectStats, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {
 		return local.ListRemote(ctx, client, remote, currentRemoteState)

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const (
@@ -31,8 +31,8 @@ var repoCreateCmd = &cobra.Command{
 			DieErr(err)
 		}
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
-			&api.CreateRepositoryParams{},
-			api.CreateRepositoryJSONRequestBody{
+			&apigen.CreateRepositoryParams{},
+			apigen.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
