@@ -154,7 +154,7 @@ abstract class FSTestBase {
                                            // TODO(ariels): Change for presigned?
                                            .preSignSupport(false))));
 
-        // Always expect repo "repo" to be found, it's used in all tests.
+        // Always allow repo "repo" to be found, it's used in all tests.
         mockServerClient.when(request()
                               .withMethod("GET")
                               .withPath("/repositories/repo"))
@@ -181,8 +181,8 @@ abstract class FSTestBase {
 
     protected void moreHadoopSetup() {}
 
-    // Expect this statObject to be not found
-    protected void expectStatObjectNotFound(String repo, String ref, String path) {
+    // Mock this statObject call not to be found
+    protected void mockStatObjectNotFound(String repo, String ref, String path) {
         mockServerClient.when(request()
                               .withMethod("GET")
                               .withPath(String.format("/repositories/%s/refs/%s/objects/stat", repo, ref))
@@ -192,7 +192,7 @@ abstract class FSTestBase {
                                              repo, ref, path, sessionId())));
     }
 
-    protected void expectStatObject(String repo, String ref, String path, ObjectStats stats) {
+    protected void mockStatObject(String repo, String ref, String path, ObjectStats stats) {
         mockServerClient.when(request()
                               .withMethod("GET")
                               .withPath(String.format("/repositories/%s/refs/%s/objects/stat", repo, ref))
@@ -201,25 +201,25 @@ abstract class FSTestBase {
                      .withBody(gson.toJson(stats)));
     }
 
-    // Expect this lakeFSFS path not to exist.  You may still need to
-    // expectListing for the directory that will not contain this pagth.
-    protected void expectFileDoesNotExist(String repo, String ref, String path) {
-        expectStatObjectNotFound(repo, ref, path);
-        expectStatObjectNotFound(repo, ref, path + Constants.SEPARATOR);
+    // Mock this lakeFSFS path not to exist.  You may still need to
+    // mockListing for the directory that will not contain this path.
+    protected void mockFileDoesNotExist(String repo, String ref, String path) {
+        mockStatObjectNotFound(repo, ref, path);
+        mockStatObjectNotFound(repo, ref, path + Constants.SEPARATOR);
     }
 
-    protected void expectFilesInDir(String repo, String main, String dir, String... files) {
+    protected void mockFilesInDir(String repo, String main, String dir, String... files) {
         ObjectStats[] allStats;
         if (files.length == 0) {
             // Fake a directory marker
             Path dirPath = new Path(String.format("lakefs://%s/%s/%s", repo, main, dir));
             ObjectLocation dirLoc = ObjectLocation.pathToObjectLocation(dirPath);
-            ObjectStats dirStats = expectDirectoryMarker(dirLoc);
+            ObjectStats dirStats = mockDirectoryMarker(dirLoc);
             allStats = new ObjectStats[1];
             allStats[0] = dirStats;
         } else {
-            expectStatObjectNotFound(repo, main, dir);
-            expectStatObjectNotFound(repo, main, dir + Constants.SEPARATOR);
+            mockStatObjectNotFound(repo, main, dir);
+            mockStatObjectNotFound(repo, main, dir + Constants.SEPARATOR);
 
             allStats = new ObjectStats[files.length];
             for (int i = 0; i < files.length; i++) {
@@ -230,12 +230,12 @@ abstract class FSTestBase {
         }
 
         // Directory can be listed!
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix(dir + Constants.SEPARATOR).build(),
-                      allStats);
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix(dir + Constants.SEPARATOR).build(),
+                    allStats);
     }
 
-    protected void expectUploadObject(String repo, String branch, String path) {
+    protected void mockUploadObject(String repo, String branch, String path) {
         StagingLocation stagingLocation = new StagingLocation()
             .token("token:foo:" + sessionId())
             .physicalAddress(s3Url(String.format("repo-base/dir-marker/%s/%s/%s/%s",
@@ -248,7 +248,7 @@ abstract class FSTestBase {
                      .withBody(gson.toJson(stagingLocation)));
     }
 
-    protected void expectGetBranch(String repo, String branch) {
+    protected void mockGetBranch(String repo, String branch) {
         mockServerClient.when(request()
                               .withMethod("GET")
                               .withPath(String.format("/repositories/%s/branches/%s", repo, branch)))
@@ -256,7 +256,7 @@ abstract class FSTestBase {
                      .withBody(gson.toJson(new Ref().id("123").commitId("456"))));
     }
 
-    protected void expectDeleteObject(String repo, String branch, String path) {
+    protected void mockDeleteObject(String repo, String branch, String path) {
         mockServerClient.when(request()
                               .withMethod("DELETE")
                               .withPath(String.format("/repositories/%s/branches/%s/objects", repo, branch))
@@ -264,7 +264,7 @@ abstract class FSTestBase {
             .respond(response().withStatusCode(204));
     }
 
-    protected void expectDeleteObjectNotFound(String repo, String branch, String path) {
+    protected void mockDeleteObjectNotFound(String repo, String branch, String path) {
         mockServerClient.when(request()
                               .withMethod("DELETE")
                               .withPath(String.format("/repositories/%s/branches/%s/objects", repo, branch))
@@ -272,14 +272,14 @@ abstract class FSTestBase {
             .respond(response().withStatusCode(404));
     }
 
-    // Expects a single deleteObjects call to succeed, returning list of failures.
-    protected void expectDeleteObjects(String repo, String branch, String path, ObjectError... errors) {
+    // Mocks a single deleteObjects call to succeed, returning list of failures.
+    protected void mockDeleteObjects(String repo, String branch, String path, ObjectError... errors) {
         PathList pathList = new PathList().addPathsItem(path);
-        expectDeleteObjects(repo, branch, pathList, errors);
+        mockDeleteObjects(repo, branch, pathList, errors);
     }
 
-    // Expects a single deleteObjects call to succeed, returning list of failures.
-    protected void expectDeleteObjects(String repo, String branch, PathList pathList, ObjectError... errors) {
+    // Mocks a single deleteObjects call to succeed, returning list of failures.
+    protected void mockDeleteObjects(String repo, String branch, PathList pathList, ObjectError... errors) {
         mockServerClient.when(request()
                               .withMethod("POST")
                               .withPath(String.format("/repositories/%s/branches/%s/objects/delete", repo, branch))
@@ -290,7 +290,7 @@ abstract class FSTestBase {
                                            .errors(Arrays.asList(errors)))));
     }
 
-    protected ObjectStats expectDirectoryMarker(ObjectLocation objectLoc) {
+    protected ObjectStats mockDirectoryMarker(ObjectLocation objectLoc) {
         // Mock parent directory to show the directory marker exists.
         ObjectStats markerStats = new ObjectStats()
             .path(objectLoc.getPath())
@@ -304,12 +304,12 @@ abstract class FSTestBase {
         return markerStats;
     }
 
-    // Expect this listing and return these stats.
-    protected void expectListing(String repo, String ref, ImmutablePagination pagination, ObjectStats... stats) {
-        expectListingWithHasMore(repo, ref, pagination, false, stats);
+    // Mock this listing and return these stats.
+    protected void mockListing(String repo, String ref, ImmutablePagination pagination, ObjectStats... stats) {
+        mockListingWithHasMore(repo, ref, pagination, false, stats);
     }
 
-    protected void expectListingWithHasMore(String repo, String ref, ImmutablePagination pagination, boolean hasMore, ObjectStats... stats) {
+    protected void mockListingWithHasMore(String repo, String ref, ImmutablePagination pagination, boolean hasMore, ObjectStats... stats) {
         HttpRequest req = request()
             .withMethod("GET")
             .withPath(String.format("/repositories/%s/refs/%s/objects/ls", repo, ref));

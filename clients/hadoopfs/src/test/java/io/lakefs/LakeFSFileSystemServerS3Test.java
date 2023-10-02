@@ -114,7 +114,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
     // Return a location under namespace for this getPhysicalAddress call.
     //
     // TODO(ariels): abstract, overload separately for direct and pre-signed.
-    protected StagingLocation expectGetPhysicalAddress(String repo, String branch, String path, String namespace) {
+    protected StagingLocation mockGetPhysicalAddress(String repo, String branch, String path, String namespace) {
         StagingLocation stagingLocation =
             pac.createPutStagingLocation(this, namespace, repo, branch, path);
         mockServerClient.when(request()
@@ -132,15 +132,15 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         long contentsLength = (long) contents.getBytes().length;
         Path path = new Path("lakefs://repo/main/sub1/sub2/create.me");
 
-        expectDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path));
+        mockDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path));
 
         StagingLocation stagingLocation =
-            expectGetPhysicalAddress("repo", "main", "sub1/sub2/create.me", "repo-base/create");
+            mockGetPhysicalAddress("repo", "main", "sub1/sub2/create.me", "repo-base/create");
 
         // nothing at path
-        expectFileDoesNotExist("repo", "main", "sub1/sub2/create.me");
+        mockFileDoesNotExist("repo", "main", "sub1/sub2/create.me");
         // sub1/sub2 was an empty directory with no marker.
-        expectStatObjectNotFound("repo", "main", "sub1/sub2/");
+        mockStatObjectNotFound("repo", "main", "sub1/sub2/");
 
         ObjectStats newStats = new ObjectStats()
             .path("sub1/sub2/create.me")
@@ -162,7 +162,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
                      .withBody(gson.toJson(newStats)));
 
         // Empty dir marker should be deleted.
-        expectDeleteObject("repo", "main", "sub1/sub2/");
+        mockDeleteObject("repo", "main", "sub1/sub2/");
 
         OutputStream out = fs.create(path);
         out.write(contents.getBytes());
@@ -177,19 +177,19 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         // setup empty folder checks
         Path path = new Path("dir1/dir2/dir3");
         for (Path p = new Path(path.toString()); p != null && !p.isRoot(); p = p.getParent()) {
-            expectStatObjectNotFound("repo", "main", p.toString());
-            expectStatObjectNotFound("repo", "main", p+"/");
-            expectListing("repo", "main", ImmutablePagination.builder().prefix(p+"/").build());
+            mockStatObjectNotFound("repo", "main", p.toString());
+            mockStatObjectNotFound("repo", "main", p+"/");
+            mockListing("repo", "main", ImmutablePagination.builder().prefix(p+"/").build());
         }
 
         // physical address to directory marker object
         StagingLocation stagingLocation =
-            expectGetPhysicalAddress("repo", "main", "dir1/dir2/dir3/", "repo-base/emptyDir");
+            mockGetPhysicalAddress("repo", "main", "dir1/dir2/dir3/", "repo-base/emptyDir");
 
         ObjectStats newStats = new ObjectStats()
             .path("dir1/dir2/dir3/")
             .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/dir12"));
-        expectStatObject("repo", "main", "dir1/dir2/dir3/", newStats);
+        mockStatObject("repo", "main", "dir1/dir2/dir3/", newStats);
 
         mockServerClient.when(request()
                               .withMethod("PUT")
@@ -215,11 +215,11 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         Path path = new Path("lakefs://repo/main/sub1/sub2/create.me");
         // path is a directory -- so cannot be created as a file.
 
-        expectStatObjectNotFound("repo", "main", "sub1/sub2/create.me");
+        mockStatObjectNotFound("repo", "main", "sub1/sub2/create.me");
         ObjectStats stats = new ObjectStats()
             .path("sub1/sub2/create.me/")
             .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/sub1/sub2/create.me"));
-        expectStatObject("repo", "main", "sub1/sub2/create.me/", stats);
+        mockStatObject("repo", "main", "sub1/sub2/create.me/", stats);
 
         Exception e =
             Assert.assertThrows(FileAlreadyExistsException.class, () -> fs.create(path, false));
@@ -231,8 +231,8 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         Path path = new Path("lakefs://repo/main/sub1/sub2/create.me");
 
         ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
-        expectStatObject("repo", "main", "sub1/sub2/create.me",
-                         new ObjectStats().path("sub1/sub2/create.me"));
+        mockStatObject("repo", "main", "sub1/sub2/create.me",
+                       new ObjectStats().path("sub1/sub2/create.me"));
         Exception e = Assert.assertThrows(FileAlreadyExistsException.class,
                             () -> fs.create(path, false));
         Assert.assertThat(e.getMessage(), new StringContains("already exists"));
@@ -247,12 +247,12 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         int readBufferSize = 5;
         Path path = new Path("lakefs://repo/main/read.me");
 
-        expectStatObject("repo", "main", "read.me",
-                         new ObjectStats()
-                         .physicalAddress(physicalKey)
-                         .checksum(UNUSED_CHECKSUM)
-                         .mtime(UNUSED_MTIME)
-                         .sizeBytes((long) contentsBytes.length));
+        mockStatObject("repo", "main", "read.me",
+                       new ObjectStats()
+                       .physicalAddress(physicalKey)
+                       .checksum(UNUSED_CHECKSUM)
+                       .mtime(UNUSED_MTIME)
+                       .sizeBytes((long) contentsBytes.length));
 
         // Write physical file to S3.
         ObjectMetadata s3Metadata = new ObjectMetadata();
@@ -296,7 +296,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
             ObjectStats stats = new ObjectStats()
                 .physicalAddress(pac.createGetPhysicalAddress(this, key))
                 .sizeBytes((long) contentsBytes.length);
-            expectStatObject("repo", "main", suffix + "-x", stats);
+            mockStatObject("repo", "main", suffix + "-x", stats);
 
             try (InputStream in = fs.open(new Path(path), readBufferSize)) {
                 String actual = IOUtils.toString(in);
@@ -308,7 +308,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
     @Test
     public void testOpen_NotExists() throws IOException, ApiException {
         Path path = new Path("lakefs://repo/main/doesNotExi.st");
-        expectStatObjectNotFound("repo", "main", "doesNotExi.st");
+        mockStatObjectNotFound("repo", "main", "doesNotExi.st");
         Assert.assertThrows(FileNotFoundException.class,
                             () -> fs.open(path));
     }

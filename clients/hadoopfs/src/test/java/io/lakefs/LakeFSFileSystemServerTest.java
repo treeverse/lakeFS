@@ -44,12 +44,6 @@ import java.util.Map;
 public class LakeFSFileSystemServerTest extends FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemServerTest.class);
 
-    //    abstract void initConfiguration();
-
-    //    abstract void mockStatObject(String repo, String branch, String key, String physicalKey, Long sizeBytes) throws ApiException;
-
-    //    abstract StagingLocation mockGetPhysicalAddress(String repo, String branch, String key, String physicalKey) throws ApiException;
-
     protected String objectLocToS3ObjKey(ObjectLocation objectLoc) {
         return String.format("/%s/%s/%s",objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath());
     }
@@ -88,7 +82,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
                               .withMethod("GET")
                               .withPath("/repositories/repo/refs/main/objects/stat")
                               .withQueryStringParameter("path", "mock/exists"))
-            // TODO(ariels) expectStatObject()!
+            // TODO(ariels) mockStatObject()!
             .respond(response()
                      .withStatusCode(200)
                      .withBody(gson.toJson(new ObjectStats().path("mock/exists"))));
@@ -101,21 +95,21 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     public void testGetFileStatus_NoFile() {
         Path noFilePath = new Path("lakefs://repo/main/no.file");
 
-        expectStatObjectNotFound("repo", "main", "no.file");
-        expectStatObjectNotFound("repo", "main", "no.file/");
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("no.file/").amount(1).build());
+        mockStatObjectNotFound("repo", "main", "no.file");
+        mockStatObjectNotFound("repo", "main", "no.file/");
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("no.file/").amount(1).build());
         Assert.assertThrows(FileNotFoundException.class, () -> fs.getFileStatus(noFilePath));
     }
 
     @Test
     public void testGetFileStatus_DirectoryMarker() throws IOException {
         Path dirPath = new Path("lakefs://repo/main/dir1/dir2");
-        expectStatObjectNotFound("repo", "main", "dir1/dir2");
+        mockStatObjectNotFound("repo", "main", "dir1/dir2");
 
         ObjectStats stats = new ObjectStats()
             .path("dir1/dir2/")
             .physicalAddress(s3Url("repo-base/dir12"));
-        expectStatObject("repo", "main", "dir1/dir2/", stats);
+        mockStatObject("repo", "main", "dir1/dir2/", stats);
 
         LakeFSFileStatus dirStatus = fs.getFileStatus(dirPath);
         Assert.assertTrue(dirStatus.isDirectory());
@@ -128,7 +122,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         ObjectStats stats = new ObjectStats()
             .path("exis.ts")
             .physicalAddress(s3Url("repo-base/o12"));
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(), stats);
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(), stats);
         Assert.assertTrue(fs.exists(path));
     }
 
@@ -137,8 +131,8 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path path = new Path("lakefs://repo/main/exis.ts");
         ObjectStats stats = new ObjectStats().path("exis.ts");
 
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(),
-                      stats);
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(),
+                    stats);
 
         Assert.assertTrue(fs.exists(path));
     }
@@ -148,8 +142,8 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path path = new Path("lakefs://repo/main/exis.ts");
         ObjectStats stats = new ObjectStats().path("exis.ts/object-inside-the-path");
 
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(),
-                      stats);
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(),
+                    stats);
         Assert.assertTrue(fs.exists(path));
     }
 
@@ -161,13 +155,13 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         ObjectStats indirStats = new ObjectStats().path("exis.ts/object-inside-the-path");
 
         // First listing returns irrelevant objects, _before_ "exis.ts/"
-        expectListingWithHasMore("repo", "main",
-                                 ImmutablePagination.builder().prefix("exis.ts").build(),
-                                 true,
-                                 beforeStats1, beforeStats2);
+        mockListingWithHasMore("repo", "main",
+                               ImmutablePagination.builder().prefix("exis.ts").build(),
+                               true,
+                               beforeStats1, beforeStats2);
         // Second listing tries to find an object inside "exis.ts/".
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts/").build(),
-                      indirStats);
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts/").build(),
+                    indirStats);
         Assert.assertTrue(fs.exists(path));
     }
 
@@ -197,36 +191,36 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
     @Test
     public void testDelete_FileExists() throws IOException {
-        expectStatObject("repo", "main", "no/place/file.txt", new ObjectStats()
-                         .path("delete/sample/file.txt")
-                         .pathType(PathTypeEnum.OBJECT)
-                         .physicalAddress(s3Url("repo-base/delete")));
+        mockStatObject("repo", "main", "no/place/file.txt", new ObjectStats()
+                       .path("delete/sample/file.txt")
+                       .pathType(PathTypeEnum.OBJECT)
+                       .physicalAddress(s3Url("repo-base/delete")));
         String[] arrDirs = {"no/place", "no"};
         for (String dir: arrDirs) {
-            expectStatObjectNotFound("repo", "main", dir);
-            expectStatObjectNotFound("repo", "main", dir + "/");
-            expectListing("repo", "main", ImmutablePagination.builder().build());
+            mockStatObjectNotFound("repo", "main", dir);
+            mockStatObjectNotFound("repo", "main", dir + "/");
+            mockListing("repo", "main", ImmutablePagination.builder().build());
         }
-        expectDeleteObject("repo", "main", "no/place/file.txt");
-        expectUploadObject("repo", "main", "no/place/");
+        mockDeleteObject("repo", "main", "no/place/file.txt");
+        mockUploadObject("repo", "main", "no/place/");
 
         Path path = new Path("lakefs://repo/main/no/place/file.txt");
 
-        expectDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path.getParent()));
+        mockDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path.getParent()));
 
         Assert.assertTrue(fs.delete(path, false));
     }
 
     @Test
     public void testDelete_FileNotExists() throws IOException {
-        expectDeleteObjectNotFound("repo", "main", "no/place/file.txt");
-        expectStatObjectNotFound("repo", "main", "no/place/file.txt");
-        expectStatObjectNotFound("repo", "main", "no/place/file.txt/");
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("no/place/file.txt/").build());
+        mockDeleteObjectNotFound("repo", "main", "no/place/file.txt");
+        mockStatObjectNotFound("repo", "main", "no/place/file.txt");
+        mockStatObjectNotFound("repo", "main", "no/place/file.txt/");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("no/place/file.txt/").build());
 
         // Should still create a directory marker!
-        expectUploadObject("repo", "main", "no/place/");
+        mockUploadObject("repo", "main", "no/place/");
 
         // return false because file not found
         Assert.assertFalse(fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), false));
@@ -237,26 +231,26 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         ObjectLocation dirObjLoc = new ObjectLocation("lakefs", "repo", "main", "delete/me");
         String key = objectLocToS3ObjKey(dirObjLoc);
 
-        expectStatObjectNotFound(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath());
+        mockStatObjectNotFound(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath());
         ObjectStats srcStats = new ObjectStats()
-                .path(dirObjLoc.getPath() + Constants.SEPARATOR)
-                .sizeBytes(0L)
-                .mtime(UNUSED_MTIME)
-                .pathType(PathTypeEnum.OBJECT)
-                .physicalAddress(s3Url(key+Constants.SEPARATOR))
-                .checksum(UNUSED_CHECKSUM);
-        expectStatObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath() + Constants.SEPARATOR, srcStats);
+            .path(dirObjLoc.getPath() + Constants.SEPARATOR)
+            .sizeBytes(0L)
+            .mtime(UNUSED_MTIME)
+            .pathType(PathTypeEnum.OBJECT)
+            .physicalAddress(s3Url(key+Constants.SEPARATOR))
+            .checksum(UNUSED_CHECKSUM);
+        mockStatObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath() + Constants.SEPARATOR, srcStats);
 
         // Just a directory marker delete/me/, so nothing to delete.
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("delete/me/").build(),
-                      srcStats);
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("delete/me/").build(),
+                    srcStats);
 
-        expectDirectoryMarker(dirObjLoc.getParent());
-        expectStatObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath(), srcStats);
-        expectDeleteObject("repo", "main", "delete/me/");
+        mockDirectoryMarker(dirObjLoc.getParent());
+        mockStatObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath(), srcStats);
+        mockDeleteObject("repo", "main", "delete/me/");
         // Now need to create the parent directory.
-        expectUploadObject("repo", "main", "delete/");
+        mockUploadObject("repo", "main", "delete/");
 
         Path path = new Path("lakefs://repo/main/delete/me");
 
@@ -268,8 +262,8 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         String directoryPath = "delete/sample";
         String existingPath = "delete/sample/file.txt";
         String directoryToDelete = "lakefs://repo/main/delete/sample";
-        expectStatObjectNotFound("repo", "main", directoryPath);
-        expectStatObjectNotFound("repo", "main", directoryPath + Constants.SEPARATOR);
+        mockStatObjectNotFound("repo", "main", directoryPath);
+        mockStatObjectNotFound("repo", "main", directoryPath + Constants.SEPARATOR);
         // Just a single object under delete/sample/, not even a directory
         // marker for delete/sample/.
         ObjectStats srcStats = new ObjectStats().
@@ -279,11 +273,11 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             checksum(UNUSED_CHECKSUM).
             mtime(UNUSED_MTIME).
             sizeBytes(UNUSED_FILE_SIZE);
-        expectListing("repo", "main",
-                      ImmutablePagination.builder()
-                      .prefix(directoryPath + Constants.SEPARATOR)
-                      .build(),
-                      srcStats);
+        mockListing("repo", "main",
+                    ImmutablePagination.builder()
+                    .prefix(directoryPath + Constants.SEPARATOR)
+                    .build(),
+                    srcStats);
 
         // No deletes!
         mockServerClient.when(request()
@@ -308,15 +302,15 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
                               .withPath("/repositories/repo/refs/main/objects/stat"))
             .respond(response().withStatusCode(404));
         // No objects to list, either -- in directory.
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("no/place/file.txt/").build());
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("no/place/file.txt/").build());
         Assert.assertFalse(fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), true));
     }
 
     @Test
     public void testDelete_DirectoryWithFileRecursive() throws IOException {
-        expectStatObjectNotFound("repo", "main", "delete/sample");
-        expectStatObjectNotFound("repo", "main", "delete/sample/");
+        mockStatObjectNotFound("repo", "main", "delete/sample");
+        mockStatObjectNotFound("repo", "main", "delete/sample/");
         ObjectStats stats = new ObjectStats().
             path("delete/sample/file.txt").
             pathType(PathTypeEnum.OBJECT).
@@ -324,19 +318,19 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             checksum(UNUSED_CHECKSUM).
             mtime(UNUSED_MTIME).
             sizeBytes(UNUSED_FILE_SIZE);
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("delete/sample/").build(),
-                      stats);
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("delete/sample/").build(),
+                    stats);
 
-        expectDeleteObjects("repo", "main", "delete/sample/file.txt");
+        mockDeleteObjects("repo", "main", "delete/sample/file.txt");
 
         // recursive will always end successfully
         Path path = new Path("lakefs://repo/main/delete/sample");
 
-        expectDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path.getParent()));
+        mockDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path.getParent()));
         // Must create a parent directory marker: it wasn't deleted, and now
         // perhaps is empty.
-        expectUploadObject("repo", "main", "delete/");
+        mockUploadObject("repo", "main", "delete/");
 
         boolean delete = fs.delete(path, true);
         Assert.assertTrue(delete);
@@ -344,8 +338,8 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
     protected void caseDeleteDirectoryRecursive(int bulkSize, int numObjects) throws IOException {
         conf.setInt(LakeFSFileSystem.LAKEFS_DELETE_BULK_SIZE, bulkSize);
-        expectStatObjectNotFound("repo", "main", "delete/sample");
-        expectStatObjectNotFound("repo", "main", "delete/sample/");
+        mockStatObjectNotFound("repo", "main", "delete/sample");
+        mockStatObjectNotFound("repo", "main", "delete/sample/");
 
         ObjectStats[] objects = new ObjectStats[numObjects];
         for (int i = 0; i < numObjects; i++) {
@@ -357,9 +351,9 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
                 mtime(UNUSED_MTIME).
                 sizeBytes(UNUSED_FILE_SIZE);
         }
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("delete/sample/").build(),
-                      objects);
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("delete/sample/").build(),
+                    objects);
 
         // Set up multiple deleteObjects expectations of bulkSize deletes
         // each (except for the last, which might be smaller).
@@ -368,11 +362,11 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             for (int i = start; i < numObjects && i < start + bulkSize; i++) {
                 pl.addPathsItem(String.format("delete/sample/file%04d.txt", i));
             }
-            expectDeleteObjects("repo", "main", pl);
+            mockDeleteObjects("repo", "main", pl);
         }
         // Mock parent directory marker creation at end of fs.delete to show
         // the directory marker exists.
-        expectUploadObject("repo", "main", "delete/");
+        mockUploadObject("repo", "main", "delete/");
         // recursive will always end successfully
         Assert.assertTrue(fs.delete(new Path("lakefs://repo/main/delete/sample"), true));
     }
@@ -407,13 +401,13 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     @Test
     public void testListStatusFile() throws IOException {
         ObjectStats objectStats = new ObjectStats().
-                path("status/file").
-                pathType(PathTypeEnum.OBJECT).
-                physicalAddress(s3Url("/repo-base/status")).
-                checksum(STATUS_CHECKSUM).
-                mtime(STATUS_MTIME).
-                sizeBytes(STATUS_FILE_SIZE);
-        expectStatObject("repo", "main", "status/file", objectStats);
+            path("status/file").
+            pathType(PathTypeEnum.OBJECT).
+            physicalAddress(s3Url("/repo-base/status")).
+            checksum(STATUS_CHECKSUM).
+            mtime(STATUS_MTIME).
+            sizeBytes(STATUS_FILE_SIZE);
+        mockStatObject("repo", "main", "status/file", objectStats);
         Path path = new Path("lakefs://repo/main/status/file");
         FileStatus[] fileStatuses = fs.listStatus(path);
         LakeFSFileStatus expectedFileStatus = new LakeFSFileStatus.Builder(path)
@@ -429,10 +423,10 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
     @Test
     public void testListStatusNotFound() throws ApiException {
-        expectStatObjectNotFound("repo", "main", "status/file");
-        expectStatObjectNotFound("repo", "main", "status/file/");
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("status/file/").build());
+        mockStatObjectNotFound("repo", "main", "status/file");
+        mockStatObjectNotFound("repo", "main", "status/file/");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("status/file/").build());
         Path path = new Path("lakefs://repo/main/status/file");
         Assert.assertThrows(FileNotFoundException.class, () -> fs.listStatus(path));
     }
@@ -443,17 +437,17 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         ObjectStats[] objects = new ObjectStats[3];
         for (int i = 0; i < totalObjectsCount; i++) {
             objects[i] = new ObjectStats().
-                    path("status/file" + i).
-                    pathType(PathTypeEnum.OBJECT).
-                    physicalAddress(s3Url("/repo-base/status" + i)).
-                    checksum(STATUS_CHECKSUM).
-                    mtime(STATUS_MTIME).
-                    sizeBytes(STATUS_FILE_SIZE);
+                path("status/file" + i).
+                pathType(PathTypeEnum.OBJECT).
+                physicalAddress(s3Url("/repo-base/status" + i)).
+                checksum(STATUS_CHECKSUM).
+                mtime(STATUS_MTIME).
+                sizeBytes(STATUS_FILE_SIZE);
         }
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("status/").build(),
-                      objects);
-        expectStatObjectNotFound("repo", "main", "status");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("status/").build(),
+                    objects);
+        mockStatObjectNotFound("repo", "main", "status");
 
         Path dir = new Path("lakefs://repo/main/status");
         FileStatus[] fileStatuses = fs.listStatus(dir);
@@ -462,12 +456,12 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         for (int i = 0; i < totalObjectsCount; i++) {
             Path p = new Path(dir + "/file" + i);
             LakeFSFileStatus fileStatus = new LakeFSFileStatus.Builder(p)
-                    .length(STATUS_FILE_SIZE)
-                    .checksum(STATUS_CHECKSUM)
-                    .mTime(STATUS_MTIME)
-                    .blockSize(Constants.DEFAULT_BLOCK_SIZE)
-                    .physicalAddress(s3Url("/repo-base/status" + i))
-                    .build();
+                .length(STATUS_FILE_SIZE)
+                .checksum(STATUS_CHECKSUM)
+                .mTime(STATUS_MTIME)
+                .blockSize(Constants.DEFAULT_BLOCK_SIZE)
+                .physicalAddress(s3Url("/repo-base/status" + i))
+                .build();
             expectedFileStatuses[i] = new LocatedFileStatus(fileStatus, null);
         }
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
@@ -493,18 +487,18 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             .physicalAddress(s3Url("existing.src"))
             .checksum(STATUS_CHECKSUM);
 
-        expectStatObject("repo", "main", "existing.src", stats);
+        mockStatObject("repo", "main", "existing.src", stats);
 
         Path dst = new Path("lakefs://repo/main/non-existing/new");
 
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("non-existing/").build());
-        expectStatObjectNotFound("repo", "main", "non-existing/new");
-        expectStatObjectNotFound("repo", "main", "non-existing/new/");
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("non-existing/new/").build());
-        expectStatObjectNotFound("repo", "main", "non-existing");
-        expectStatObjectNotFound("repo", "main", "non-existing/");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("non-existing/").build());
+        mockStatObjectNotFound("repo", "main", "non-existing/new");
+        mockStatObjectNotFound("repo", "main", "non-existing/new/");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("non-existing/new/").build());
+        mockStatObjectNotFound("repo", "main", "non-existing");
+        mockStatObjectNotFound("repo", "main", "non-existing/");
 
         boolean renamed = fs.rename(src, dst);
         Assert.assertFalse(renamed);
@@ -512,22 +506,19 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
     @Test
     public void testRename_existingFileToExistingFileName() throws IOException {
-        String contents = "The quick brown fox jumps over the lazy dog.";
-        byte[] contentsBytes = contents.getBytes();
-
         Path src = new Path("lakefs://repo/main/existing.src");
         ObjectStats srcStats = new ObjectStats()
             .path("existing.src")
             .pathType(PathTypeEnum.OBJECT)
             .physicalAddress("base/existing.src");
-        expectStatObject("repo", "main", "existing.src", srcStats);
+        mockStatObject("repo", "main", "existing.src", srcStats);
 
         Path dst = new Path("lakefs://repo/main/existing.dst");
         ObjectStats dstStats = new ObjectStats()
             .pathType(PathTypeEnum.OBJECT)
             .path("existing.dst")
             .physicalAddress(s3Url("existing.dst"));
-        expectStatObject("repo", "main", "existing.dst", dstStats);
+        mockStatObject("repo", "main", "existing.dst", dstStats);
 
         mockServerClient.when(request()
                               .withMethod("POST")
@@ -541,7 +532,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
                      // Actual new dstStats will be different... but lakeFSFS doesn't care.
                      .withBody(json(gson.toJson(dstStats))));
 
-        expectDeleteObject("repo", "main", "existing.src");
+        mockDeleteObject("repo", "main", "existing.src");
 
         Assert.assertTrue(fs.rename(src, dst));
     }
@@ -553,17 +544,17 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             .pathType(PathTypeEnum.OBJECT)
             .path("existing-dir/existing.src");
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
-        expectStatObjectNotFound("repo", "main", "existing-dir");
-        expectStatObjectNotFound("repo", "main", "existing-dir/");
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("existing-dir/").build(),
-                      srcStats);
+        mockStatObjectNotFound("repo", "main", "existing-dir");
+        mockStatObjectNotFound("repo", "main", "existing-dir/");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("existing-dir/").build(),
+                    srcStats);
 
         Path dst = new Path("lakefs://repo/main/existingdst.file");
         ObjectStats dstStats = new ObjectStats()
             .pathType(PathTypeEnum.OBJECT)
             .path("existingdst.file");
-        expectStatObject("repo", "main", "existingdst.file", dstStats);
+        mockStatObject("repo", "main", "existingdst.file", dstStats);
 
         Assert.assertFalse(fs.rename(srcDir, dst));
     }
@@ -577,16 +568,16 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         ObjectStats srcStats = new ObjectStats()
             .pathType(PathTypeEnum.OBJECT)
             .path("existing-dir1/existing.src");
-        expectStatObject("repo", "main", "existing-dir1/existing.src", srcStats);
+        mockStatObject("repo", "main", "existing-dir1/existing.src", srcStats);
 
         ObjectStats dstStats = new ObjectStats()
             .pathType(PathTypeEnum.OBJECT)
             .path("existing-dir2/existing.src");
-        expectFileDoesNotExist("repo", "main", "existing-dir2");
-        expectFileDoesNotExist("repo", "main", "existing-dir2/");
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("existing-dir2/").build(),
-                      dstStats);
+        mockFileDoesNotExist("repo", "main", "existing-dir2");
+        mockFileDoesNotExist("repo", "main", "existing-dir2/");
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("existing-dir2/").build(),
+                    dstStats);
 
         Path dst = new Path("lakefs://repo/main/existing-dir2/");
 
@@ -601,11 +592,11 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
                      .withStatusCode(201)
                      // Actual new dstStats will be different... but lakeFSFS doesn't care.
                      .withBody(json(gson.toJson(dstStats))));
-        expectGetBranch("repo", "main");
-        expectDeleteObject("repo", "main", "existing-dir1/existing.src");
+        mockGetBranch("repo", "main");
+        mockDeleteObject("repo", "main", "existing-dir1/existing.src");
 
         // Need a directory marker at the source because it's now empty!
-        expectUploadObject("repo", "main", "existing-dir1/");
+        mockUploadObject("repo", "main", "existing-dir1/");
 
         Assert.assertTrue(fs.rename(src, dst));
     }
@@ -618,23 +609,23 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path fileInSrcDir = new Path("lakefs://repo/main/existing-dir/existing.src");
         Path srcDir = new Path("lakefs://repo/main/existing-dir");
 
-        expectFilesInDir("repo", "main", "existing-dir", "existing.src");
+        mockFilesInDir("repo", "main", "existing-dir", "existing.src");
 
-        expectFileDoesNotExist("repo", "main", "x/non-existing-dir");
-        expectFileDoesNotExist("repo", "main", "x/non-existing-dir/new");
+        mockFileDoesNotExist("repo", "main", "x/non-existing-dir");
+        mockFileDoesNotExist("repo", "main", "x/non-existing-dir/new");
         // Will also check if parent of destination is a directory (it isn't).
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("x/non-existing-dir/").build());
-        expectListing("repo", "main",
-                      ImmutablePagination.builder().prefix("x/non-existing-dir/new/").build());
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("x/non-existing-dir/").build());
+        mockListing("repo", "main",
+                    ImmutablePagination.builder().prefix("x/non-existing-dir/new/").build());
 
         // Keep a directory marker, or rename will try to create one because
         // it emptied the existing directory.
-        expectStatObject("repo", "main", "x",
-                         new ObjectStats().pathType(PathTypeEnum.OBJECT).path("x"));
+        mockStatObject("repo", "main", "x",
+                       new ObjectStats().pathType(PathTypeEnum.OBJECT).path("x"));
 
         Path dst = new Path("lakefs://repo/main/x/non-existing-dir/new");
-        
+
         Assert.assertFalse(fs.rename(srcDir, dst));
     }
 
@@ -651,18 +642,18 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             .pathType(PathTypeEnum.OBJECT)
             .path("existing-dir/existing.src");
 
-        expectStatObjectNotFound("repo", "main", "existing-dir");
-        expectStatObjectNotFound("repo", "main", "existing-dir/");
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir/").build(),
-                      srcStats);
+        mockStatObjectNotFound("repo", "main", "existing-dir");
+        mockStatObjectNotFound("repo", "main", "existing-dir/");
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir/").build(),
+                    srcStats);
 
-        expectStatObjectNotFound("repo", "main", "existing-dir2");
-        expectStatObject("repo", "main", "existing-dir2/",
-                         new ObjectStats().pathType(PathTypeEnum.OBJECT).path("existing-dir2/"));
+        mockStatObjectNotFound("repo", "main", "existing-dir2");
+        mockStatObject("repo", "main", "existing-dir2/",
+                       new ObjectStats().pathType(PathTypeEnum.OBJECT).path("existing-dir2/"));
 
-        expectStatObjectNotFound("repo", "main", "existing-dir2/new");
-        expectStatObjectNotFound("repo", "main", "existing-dir2/new/");
-        expectListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir2/new/").build());
+        mockStatObjectNotFound("repo", "main", "existing-dir2/new");
+        mockStatObjectNotFound("repo", "main", "existing-dir2/new/");
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir2/new/").build());
 
         ObjectStats dstStats = new ObjectStats()
             .pathType(PathTypeEnum.OBJECT)
@@ -678,9 +669,9 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             .respond(response()
                      .withStatusCode(201)
                      .withBody(json(gson.toJson(dstStats))));
-        expectDeleteObject("repo", "main", "existing-dir/existing.src");
+        mockDeleteObject("repo", "main", "existing-dir/existing.src");
         // Directory marker no longer required.
-        expectDeleteObject("repo", "main", "existing-dir2/");
+        mockDeleteObject("repo", "main", "existing-dir2/");
 
         boolean renamed = fs.rename(srcDir, dst);
         Assert.assertTrue(renamed);
