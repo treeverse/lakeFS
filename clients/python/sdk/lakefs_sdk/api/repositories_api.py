@@ -20,12 +20,12 @@ import warnings
 from pydantic import validate_arguments, ValidationError
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictBool, StrictStr, conint
+from pydantic import Field, StrictBool, StrictStr, conint, conlist
 
 from typing import Dict, List, Optional
 
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
-from lakefs_sdk.models.delete_branch_protection_rule_request import DeleteBranchProtectionRuleRequest
+from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
 from lakefs_sdk.models.repository_list import RepositoryList
@@ -49,291 +49,6 @@ class RepositoriesApi(object):
         if api_client is None:
             api_client = ApiClient.get_default()
         self.api_client = api_client
-
-    @validate_arguments
-    def create_branch_protection_rule(self, repository : StrictStr, branch_protection_rule : BranchProtectionRule, **kwargs) -> None:  # noqa: E501
-        """create_branch_protection_rule  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.create_branch_protection_rule(repository, branch_protection_rule, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch_protection_rule: (required)
-        :type branch_protection_rule: BranchProtectionRule
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the create_branch_protection_rule_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.create_branch_protection_rule_with_http_info(repository, branch_protection_rule, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def create_branch_protection_rule_with_http_info(self, repository : StrictStr, branch_protection_rule : BranchProtectionRule, **kwargs) -> ApiResponse:  # noqa: E501
-        """create_branch_protection_rule  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.create_branch_protection_rule_with_http_info(repository, branch_protection_rule, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param branch_protection_rule: (required)
-        :type branch_protection_rule: BranchProtectionRule
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the 
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
-        :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-
-        _params = locals()
-
-        _all_params = [
-            'repository',
-            'branch_protection_rule'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
-        )
-
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method create_branch_protection_rule" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        if _params['branch_protection_rule'] is not None:
-            _body_params = _params['branch_protection_rule']
-
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branch_protection', 'POST',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
-            response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
-
-    @validate_arguments
-    def create_branch_protection_rule_preflight(self, repository : StrictStr, **kwargs) -> None:  # noqa: E501
-        """create_branch_protection_rule_preflight  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.create_branch_protection_rule_preflight(repository, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-        kwargs['_return_http_data_only'] = True
-        if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the create_branch_protection_rule_preflight_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.create_branch_protection_rule_preflight_with_http_info(repository, **kwargs)  # noqa: E501
-
-    @validate_arguments
-    def create_branch_protection_rule_preflight_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
-        """create_branch_protection_rule_preflight  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.create_branch_protection_rule_preflight_with_http_info(repository, async_req=True)
-        >>> result = thread.get()
-
-        :param repository: (required)
-        :type repository: str
-        :param async_req: Whether to execute the request asynchronously.
-        :type async_req: bool, optional
-        :param _preload_content: if False, the ApiResponse.data will
-                                 be set to none and raw_data will store the 
-                                 HTTP response body without reading/decoding.
-                                 Default is True.
-        :type _preload_content: bool, optional
-        :param _return_http_data_only: response data instead of ApiResponse
-                                       object with status code, headers, etc
-        :type _return_http_data_only: bool, optional
-        :param _request_timeout: timeout setting for this request. If one
-                                 number provided, it will be total request
-                                 timeout. It can also be a pair (tuple) of
-                                 (connection, read) timeouts.
-        :param _request_auth: set to override the auth_settings for an a single
-                              request; this effectively ignores the authentication
-                              in the spec for a single request.
-        :type _request_auth: dict, optional
-        :type _content_type: string, optional: force content-type for the request
-        :return: Returns the result object.
-                 If the method is called asynchronously,
-                 returns the request thread.
-        :rtype: None
-        """
-
-        _params = locals()
-
-        _all_params = [
-            'repository'
-        ]
-        _all_params.extend(
-            [
-                'async_req',
-                '_return_http_data_only',
-                '_preload_content',
-                '_request_timeout',
-                '_request_auth',
-                '_content_type',
-                '_headers'
-            ]
-        )
-
-        # validate the arguments
-        for _key, _val in _params['kwargs'].items():
-            if _key not in _all_params:
-                raise ApiTypeError(
-                    "Got an unexpected keyword argument '%s'"
-                    " to method create_branch_protection_rule_preflight" % _key
-                )
-            _params[_key] = _val
-        del _params['kwargs']
-
-        _collection_formats = {}
-
-        # process the path parameters
-        _path_params = {}
-        if _params['repository']:
-            _path_params['repository'] = _params['repository']
-
-
-        # process the query parameters
-        _query_params = []
-        # process the header parameters
-        _header_params = dict(_params.get('_headers', {}))
-        # process the form parameters
-        _form_params = []
-        _files = {}
-        # process the body parameter
-        _body_params = None
-        # set the HTTP header `Accept`
-        _header_params['Accept'] = self.api_client.select_header_accept(
-            ['application/json'])  # noqa: E501
-
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
-
-        _response_types_map = {}
-
-        return self.api_client.call_api(
-            '/repositories/{repository}/branch_protection/set_allowed', 'GET',
-            _path_params,
-            _query_params,
-            _header_params,
-            body=_body_params,
-            post_params=_form_params,
-            files=_files,
-            response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            async_req=_params.get('async_req'),
-            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
-            _preload_content=_params.get('_preload_content', True),
-            _request_timeout=_params.get('_request_timeout'),
-            collection_formats=_collection_formats,
-            _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
     def create_repository(self, repository_creation : RepositoryCreation, bare : Annotated[Optional[StrictBool], Field(description="If true, create a bare repository with no initial commit and branch")] = None, **kwargs) -> Repository:  # noqa: E501
@@ -491,19 +206,17 @@ class RepositoriesApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def delete_branch_protection_rule(self, repository : StrictStr, delete_branch_protection_rule_request : DeleteBranchProtectionRuleRequest, **kwargs) -> None:  # noqa: E501
-        """delete_branch_protection_rule  # noqa: E501
+    def delete_gc_rules(self, repository : StrictStr, **kwargs) -> None:  # noqa: E501
+        """delete_gc_rules  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_branch_protection_rule(repository, delete_branch_protection_rule_request, async_req=True)
+        >>> thread = api.delete_gc_rules(repository, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
-        :param delete_branch_protection_rule_request: (required)
-        :type delete_branch_protection_rule_request: DeleteBranchProtectionRuleRequest
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -517,23 +230,21 @@ class RepositoriesApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the delete_branch_protection_rule_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.delete_branch_protection_rule_with_http_info(repository, delete_branch_protection_rule_request, **kwargs)  # noqa: E501
+            raise ValueError("Error! Please call the delete_gc_rules_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.delete_gc_rules_with_http_info(repository, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_branch_protection_rule_with_http_info(self, repository : StrictStr, delete_branch_protection_rule_request : DeleteBranchProtectionRuleRequest, **kwargs) -> ApiResponse:  # noqa: E501
-        """delete_branch_protection_rule  # noqa: E501
+    def delete_gc_rules_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
+        """delete_gc_rules  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_branch_protection_rule_with_http_info(repository, delete_branch_protection_rule_request, async_req=True)
+        >>> thread = api.delete_gc_rules_with_http_info(repository, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
-        :param delete_branch_protection_rule_request: (required)
-        :type delete_branch_protection_rule_request: DeleteBranchProtectionRuleRequest
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -562,8 +273,7 @@ class RepositoriesApi(object):
         _params = locals()
 
         _all_params = [
-            'repository',
-            'delete_branch_protection_rule_request'
+            'repository'
         ]
         _all_params.extend(
             [
@@ -582,7 +292,7 @@ class RepositoriesApi(object):
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method delete_branch_protection_rule" % _key
+                    " to method delete_gc_rules" % _key
                 )
             _params[_key] = _val
         del _params['kwargs']
@@ -604,19 +314,9 @@ class RepositoriesApi(object):
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params['delete_branch_protection_rule_request'] is not None:
-            _body_params = _params['delete_branch_protection_rule_request']
-
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
             ['application/json'])  # noqa: E501
-
-        # set the HTTP header `Content-Type`
-        _content_types_list = _params.get('_content_type',
-            self.api_client.select_header_content_type(
-                ['application/json']))
-        if _content_types_list:
-                _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
@@ -624,7 +324,7 @@ class RepositoriesApi(object):
         _response_types_map = {}
 
         return self.api_client.call_api(
-            '/repositories/{repository}/branch_protection', 'DELETE',
+            '/repositories/{repository}/settings/gc_rules', 'DELETE',
             _path_params,
             _query_params,
             _header_params,
@@ -898,7 +598,146 @@ class RepositoriesApi(object):
         }
 
         return self.api_client.call_api(
-            '/repositories/{repository}/branch_protection', 'GET',
+            '/repositories/{repository}/settings/branch_protection', 'GET',
+            _path_params,
+            _query_params,
+            _header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))
+
+    @validate_arguments
+    def get_gc_rules(self, repository : StrictStr, **kwargs) -> GarbageCollectionRules:  # noqa: E501
+        """get repository GC rules  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.get_gc_rules(repository, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: GarbageCollectionRules
+        """
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
+            raise ValueError("Error! Please call the get_gc_rules_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.get_gc_rules_with_http_info(repository, **kwargs)  # noqa: E501
+
+    @validate_arguments
+    def get_gc_rules_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
+        """get repository GC rules  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.get_gc_rules_with_http_info(repository, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _preload_content: if False, the ApiResponse.data will
+                                 be set to none and raw_data will store the 
+                                 HTTP response body without reading/decoding.
+                                 Default is True.
+        :type _preload_content: bool, optional
+        :param _return_http_data_only: response data instead of ApiResponse
+                                       object with status code, headers, etc
+        :type _return_http_data_only: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the authentication
+                              in the spec for a single request.
+        :type _request_auth: dict, optional
+        :type _content_type: string, optional: force content-type for the request
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: tuple(GarbageCollectionRules, status_code(int), headers(HTTPHeaderDict))
+        """
+
+        _params = locals()
+
+        _all_params = [
+            'repository'
+        ]
+        _all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
+            ]
+        )
+
+        # validate the arguments
+        for _key, _val in _params['kwargs'].items():
+            if _key not in _all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method get_gc_rules" % _key
+                )
+            _params[_key] = _val
+        del _params['kwargs']
+
+        _collection_formats = {}
+
+        # process the path parameters
+        _path_params = {}
+        if _params['repository']:
+            _path_params['repository'] = _params['repository']
+
+
+        # process the query parameters
+        _query_params = []
+        # process the header parameters
+        _header_params = dict(_params.get('_headers', {}))
+        # process the form parameters
+        _form_params = []
+        _files = {}
+        # process the body parameter
+        _body_params = None
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # authentication setting
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+
+        _response_types_map = {
+            '200': "GarbageCollectionRules",
+            '401': "Error",
+            '404': "Error",
+        }
+
+        return self.api_client.call_api(
+            '/repositories/{repository}/settings/gc_rules', 'GET',
             _path_params,
             _query_params,
             _header_params,
@@ -1331,6 +1170,314 @@ class RepositoriesApi(object):
 
         return self.api_client.call_api(
             '/repositories', 'GET',
+            _path_params,
+            _query_params,
+            _header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))
+
+    @validate_arguments
+    def set_branch_protection_rules(self, repository : StrictStr, branch_protection_rule : conlist(BranchProtectionRule), if_match : Annotated[Optional[StrictStr], Field(description="if provided, the branch protection rules will be updated only if the current ETag match the provided value")] = None, **kwargs) -> None:  # noqa: E501
+        """set_branch_protection_rules  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.set_branch_protection_rules(repository, branch_protection_rule, if_match, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param branch_protection_rule: (required)
+        :type branch_protection_rule: List[BranchProtectionRule]
+        :param if_match: if provided, the branch protection rules will be updated only if the current ETag match the provided value
+        :type if_match: str
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: None
+        """
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
+            raise ValueError("Error! Please call the set_branch_protection_rules_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.set_branch_protection_rules_with_http_info(repository, branch_protection_rule, if_match, **kwargs)  # noqa: E501
+
+    @validate_arguments
+    def set_branch_protection_rules_with_http_info(self, repository : StrictStr, branch_protection_rule : conlist(BranchProtectionRule), if_match : Annotated[Optional[StrictStr], Field(description="if provided, the branch protection rules will be updated only if the current ETag match the provided value")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+        """set_branch_protection_rules  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.set_branch_protection_rules_with_http_info(repository, branch_protection_rule, if_match, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param branch_protection_rule: (required)
+        :type branch_protection_rule: List[BranchProtectionRule]
+        :param if_match: if provided, the branch protection rules will be updated only if the current ETag match the provided value
+        :type if_match: str
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _preload_content: if False, the ApiResponse.data will
+                                 be set to none and raw_data will store the 
+                                 HTTP response body without reading/decoding.
+                                 Default is True.
+        :type _preload_content: bool, optional
+        :param _return_http_data_only: response data instead of ApiResponse
+                                       object with status code, headers, etc
+        :type _return_http_data_only: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the authentication
+                              in the spec for a single request.
+        :type _request_auth: dict, optional
+        :type _content_type: string, optional: force content-type for the request
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: None
+        """
+
+        _params = locals()
+
+        _all_params = [
+            'repository',
+            'branch_protection_rule',
+            'if_match'
+        ]
+        _all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
+            ]
+        )
+
+        # validate the arguments
+        for _key, _val in _params['kwargs'].items():
+            if _key not in _all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method set_branch_protection_rules" % _key
+                )
+            _params[_key] = _val
+        del _params['kwargs']
+
+        _collection_formats = {}
+
+        # process the path parameters
+        _path_params = {}
+        if _params['repository']:
+            _path_params['repository'] = _params['repository']
+
+
+        # process the query parameters
+        _query_params = []
+        # process the header parameters
+        _header_params = dict(_params.get('_headers', {}))
+        if _params['if_match']:
+            _header_params['If-Match'] = _params['if_match']
+
+        # process the form parameters
+        _form_params = []
+        _files = {}
+        # process the body parameter
+        _body_params = None
+        if _params['branch_protection_rule'] is not None:
+            _body_params = _params['branch_protection_rule']
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # set the HTTP header `Content-Type`
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
+        if _content_types_list:
+                _header_params['Content-Type'] = _content_types_list
+
+        # authentication setting
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+
+        _response_types_map = {}
+
+        return self.api_client.call_api(
+            '/repositories/{repository}/settings/branch_protection', 'PUT',
+            _path_params,
+            _query_params,
+            _header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))
+
+    @validate_arguments
+    def set_gc_rules(self, repository : StrictStr, garbage_collection_rules : GarbageCollectionRules, **kwargs) -> None:  # noqa: E501
+        """set_gc_rules  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.set_gc_rules(repository, garbage_collection_rules, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param garbage_collection_rules: (required)
+        :type garbage_collection_rules: GarbageCollectionRules
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: None
+        """
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
+            raise ValueError("Error! Please call the set_gc_rules_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.set_gc_rules_with_http_info(repository, garbage_collection_rules, **kwargs)  # noqa: E501
+
+    @validate_arguments
+    def set_gc_rules_with_http_info(self, repository : StrictStr, garbage_collection_rules : GarbageCollectionRules, **kwargs) -> ApiResponse:  # noqa: E501
+        """set_gc_rules  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.set_gc_rules_with_http_info(repository, garbage_collection_rules, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param garbage_collection_rules: (required)
+        :type garbage_collection_rules: GarbageCollectionRules
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _preload_content: if False, the ApiResponse.data will
+                                 be set to none and raw_data will store the 
+                                 HTTP response body without reading/decoding.
+                                 Default is True.
+        :type _preload_content: bool, optional
+        :param _return_http_data_only: response data instead of ApiResponse
+                                       object with status code, headers, etc
+        :type _return_http_data_only: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the authentication
+                              in the spec for a single request.
+        :type _request_auth: dict, optional
+        :type _content_type: string, optional: force content-type for the request
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: None
+        """
+
+        _params = locals()
+
+        _all_params = [
+            'repository',
+            'garbage_collection_rules'
+        ]
+        _all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
+            ]
+        )
+
+        # validate the arguments
+        for _key, _val in _params['kwargs'].items():
+            if _key not in _all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method set_gc_rules" % _key
+                )
+            _params[_key] = _val
+        del _params['kwargs']
+
+        _collection_formats = {}
+
+        # process the path parameters
+        _path_params = {}
+        if _params['repository']:
+            _path_params['repository'] = _params['repository']
+
+
+        # process the query parameters
+        _query_params = []
+        # process the header parameters
+        _header_params = dict(_params.get('_headers', {}))
+        # process the form parameters
+        _form_params = []
+        _files = {}
+        # process the body parameter
+        _body_params = None
+        if _params['garbage_collection_rules'] is not None:
+            _body_params = _params['garbage_collection_rules']
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # set the HTTP header `Content-Type`
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
+        if _content_types_list:
+                _header_params['Content-Type'] = _content_types_list
+
+        # authentication setting
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+
+        _response_types_map = {}
+
+        return self.api_client.call_api(
+            '/repositories/{repository}/settings/gc_rules', 'PUT',
             _path_params,
             _query_params,
             _header_params,

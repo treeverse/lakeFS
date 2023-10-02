@@ -137,8 +137,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**delete_user**](docs/AuthApi.md#delete_user) | **DELETE** /auth/users/{userId} | delete user
 *AuthApi* | [**detach_policy_from_group**](docs/AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detach_policy_from_user**](docs/AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-*AuthApi* | [**forgot_password**](docs/AuthApi.md#forgot_password) | **POST** /auth/password/forgot | forgot password request initiates the password reset process
-*AuthApi* | [**get_auth_capabilities**](docs/AuthApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *AuthApi* | [**get_credentials**](docs/AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**get_current_user**](docs/AuthApi.md#get_current_user) | **GET** /user | get current user
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
@@ -155,7 +153,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
 *AuthApi* | [**set_group_acl**](docs/AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
-*AuthApi* | [**update_password**](docs/AuthApi.md#update_password) | **POST** /auth/password | Update user password by reset_password token
 *AuthApi* | [**update_policy**](docs/AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherry_pick**](docs/BranchesApi.md#cherry_pick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
 *BranchesApi* | [**create_branch**](docs/BranchesApi.md#create_branch) | **POST** /repositories/{repository}/branches | create branch
@@ -167,21 +164,33 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**revert_branch**](docs/BranchesApi.md#revert_branch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
-*ConfigApi* | [**get_garbage_collection_config**](docs/ConfigApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
-*ConfigApi* | [**get_lake_fs_version**](docs/ConfigApi.md#get_lake_fs_version) | **GET** /config/version | 
-*ConfigApi* | [**get_setup_state**](docs/ConfigApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
-*ConfigApi* | [**get_storage_config**](docs/ConfigApi.md#get_storage_config) | **GET** /config/storage | 
-*ConfigApi* | [**setup**](docs/ConfigApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
-*ConfigApi* | [**setup_comm_prefs**](docs/ConfigApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
+*ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
 *ExperimentalApi* | [**get_otf_diffs**](docs/ExperimentalApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *ExperimentalApi* | [**otf_diff**](docs/ExperimentalApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
-*ImportApi* | [**create_meta_range**](docs/ImportApi.md#create_meta_range) | **POST** /repositories/{repository}/branches/metaranges | create a lakeFS metarange file from the given ranges
 *ImportApi* | [**import_cancel**](docs/ImportApi.md#import_cancel) | **DELETE** /repositories/{repository}/branches/{branch}/import | cancel ongoing import
 *ImportApi* | [**import_start**](docs/ImportApi.md#import_start) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
 *ImportApi* | [**import_status**](docs/ImportApi.md#import_status) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
-*ImportApi* | [**ingest_range**](docs/ImportApi.md#ingest_range) | **POST** /repositories/{repository}/branches/ranges | create a lakeFS range file from the source uri
-*MetadataApi* | [**create_symlink_file**](docs/MetadataApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+*InternalApi* | [**create_branch_protection_rule_preflight**](docs/InternalApi.md#create_branch_protection_rule_preflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
+*InternalApi* | [**create_symlink_file**](docs/InternalApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+*InternalApi* | [**dump_refs**](docs/InternalApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
+*InternalApi* | [**get_auth_capabilities**](docs/InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
+*InternalApi* | [**get_garbage_collection_config**](docs/InternalApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
+*InternalApi* | [**get_lake_fs_version**](docs/InternalApi.md#get_lake_fs_version) | **GET** /config/version | 
+*InternalApi* | [**get_setup_state**](docs/InternalApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
+*InternalApi* | [**get_storage_config**](docs/InternalApi.md#get_storage_config) | **GET** /config/storage | 
+*InternalApi* | [**internal_create_branch_protection_rule**](docs/InternalApi.md#internal_create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection | 
+*InternalApi* | [**internal_delete_branch_protection_rule**](docs/InternalApi.md#internal_delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection | 
+*InternalApi* | [**internal_delete_garbage_collection_rules**](docs/InternalApi.md#internal_delete_garbage_collection_rules) | **DELETE** /repositories/{repository}/gc/rules | 
+*InternalApi* | [**internal_get_branch_protection_rules**](docs/InternalApi.md#internal_get_branch_protection_rules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
+*InternalApi* | [**internal_get_garbage_collection_rules**](docs/InternalApi.md#internal_get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
+*InternalApi* | [**internal_set_garbage_collection_rules**](docs/InternalApi.md#internal_set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
+*InternalApi* | [**post_stats_events**](docs/InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+*InternalApi* | [**restore_refs**](docs/InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
+*InternalApi* | [**set_garbage_collection_rules_preflight**](docs/InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+*InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
+*InternalApi* | [**setup_comm_prefs**](docs/InternalApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
+*InternalApi* | [**upload_object_preflight**](docs/InternalApi.md#upload_object_preflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 *MetadataApi* | [**get_meta_range**](docs/MetadataApi.md#get_meta_range) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**get_range**](docs/MetadataApi.md#get_range) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**copy_object**](docs/ObjectsApi.md#copy_object) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
@@ -194,39 +203,28 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stage_object**](docs/ObjectsApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
-*ObjectsApi* | [**upload_object_preflight**](docs/ObjectsApi.md#upload_object_preflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
-*OtfDiffApi* | [**get_otf_diffs**](docs/OtfDiffApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
-*OtfDiffApi* | [**otf_diff**](docs/OtfDiffApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *RefsApi* | [**diff_refs**](docs/RefsApi.md#diff_refs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
-*RefsApi* | [**dump_refs**](docs/RefsApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store
 *RefsApi* | [**find_merge_base**](docs/RefsApi.md#find_merge_base) | **GET** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | find the merge base for 2 references
 *RefsApi* | [**log_commits**](docs/RefsApi.md#log_commits) | **GET** /repositories/{repository}/refs/{ref}/commits | get commit log from ref. If both objects and prefixes are empty, return all commits.
 *RefsApi* | [**merge_into_branch**](docs/RefsApi.md#merge_into_branch) | **POST** /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch} | merge references
-*RefsApi* | [**restore_refs**](docs/RefsApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store
-*RepositoriesApi* | [**create_branch_protection_rule**](docs/RepositoriesApi.md#create_branch_protection_rule) | **POST** /repositories/{repository}/branch_protection | 
-*RepositoriesApi* | [**create_branch_protection_rule_preflight**](docs/RepositoriesApi.md#create_branch_protection_rule_preflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *RepositoriesApi* | [**create_repository**](docs/RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
-*RepositoriesApi* | [**delete_branch_protection_rule**](docs/RepositoriesApi.md#delete_branch_protection_rule) | **DELETE** /repositories/{repository}/branch_protection | 
+*RepositoriesApi* | [**delete_gc_rules**](docs/RepositoriesApi.md#delete_gc_rules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 *RepositoriesApi* | [**delete_repository**](docs/RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
-*RepositoriesApi* | [**get_branch_protection_rules**](docs/RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/branch_protection | get branch protection rules
+*RepositoriesApi* | [**get_branch_protection_rules**](docs/RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
+*RepositoriesApi* | [**get_gc_rules**](docs/RepositoriesApi.md#get_gc_rules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 *RepositoriesApi* | [**get_repository**](docs/RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**get_repository_metadata**](docs/RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**list_repositories**](docs/RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
-*RetentionApi* | [**delete_garbage_collection_rules**](docs/RetentionApi.md#delete_garbage_collection_rules) | **DELETE** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**get_garbage_collection_rules**](docs/RetentionApi.md#get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active and expired commits for garbage collection
+*RepositoriesApi* | [**set_branch_protection_rules**](docs/RepositoriesApi.md#set_branch_protection_rules) | **PUT** /repositories/{repository}/settings/branch_protection | 
+*RepositoriesApi* | [**set_gc_rules**](docs/RepositoriesApi.md#set_gc_rules) | **PUT** /repositories/{repository}/settings/gc_rules | 
+*RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
 *RetentionApi* | [**prepare_garbage_collection_uncommitted**](docs/RetentionApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
-*RetentionApi* | [**set_garbage_collection_rules**](docs/RetentionApi.md#set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
-*RetentionApi* | [**set_garbage_collection_rules_preflight**](docs/RetentionApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *StagingApi* | [**get_physical_address**](docs/StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**link_physical_address**](docs/StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
-*StagingApi* | [**update_branch_token**](docs/StagingApi.md#update_branch_token) | **PUT** /repositories/{repository}/branches/{branch}/update_token | modify branch staging token
-*StatisticsApi* | [**post_stats_events**](docs/StatisticsApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
 *TagsApi* | [**create_tag**](docs/TagsApi.md#create_tag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**delete_tag**](docs/TagsApi.md#delete_tag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
 *TagsApi* | [**get_tag**](docs/TagsApi.md#get_tag) | **GET** /repositories/{repository}/tags/{tag} | get tag
 *TagsApi* | [**list_tags**](docs/TagsApi.md#list_tags) | **GET** /repositories/{repository}/tags | list tags
-*TemplatesApi* | [**expand_template**](docs/TemplatesApi.md#expand_template) | **GET** /templates/{template_location} | 
 
 
 ## Documentation For Models
@@ -244,20 +242,18 @@ Class | Method | HTTP request | Description
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
+ - [Config](docs/Config.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)
  - [CurrentUser](docs/CurrentUser.md)
- - [DeleteBranchProtectionRuleRequest](docs/DeleteBranchProtectionRuleRequest.md)
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
  - [DiffProperties](docs/DiffProperties.md)
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
- - [ForgotPasswordRequest](docs/ForgotPasswordRequest.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)
- - [GarbageCollectionPrepareRequest](docs/GarbageCollectionPrepareRequest.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)
  - [GarbageCollectionRule](docs/GarbageCollectionRule.md)
  - [GarbageCollectionRules](docs/GarbageCollectionRules.md)
@@ -269,9 +265,8 @@ Class | Method | HTTP request | Description
  - [ImportCreation](docs/ImportCreation.md)
  - [ImportCreationResponse](docs/ImportCreationResponse.md)
  - [ImportLocation](docs/ImportLocation.md)
- - [ImportPagination](docs/ImportPagination.md)
- - [ImportStatusResp](docs/ImportStatusResp.md)
- - [IngestRangeCreationResponse](docs/IngestRangeCreationResponse.md)
+ - [ImportStatus](docs/ImportStatus.md)
+ - [InternalDeleteBranchProtectionRuleRequest](docs/InternalDeleteBranchProtectionRuleRequest.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
@@ -304,7 +299,6 @@ Class | Method | HTTP request | Description
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
  - [SetupState](docs/SetupState.md)
- - [StageRangeCreation](docs/StageRangeCreation.md)
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)
@@ -314,7 +308,6 @@ Class | Method | HTTP request | Description
  - [StorageURI](docs/StorageURI.md)
  - [TagCreation](docs/TagCreation.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
- - [UpdatePasswordByToken](docs/UpdatePasswordByToken.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)

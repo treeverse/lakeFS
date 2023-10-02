@@ -26,7 +26,7 @@ class User(BaseModel):
     """
     User
     """
-    id: StrictStr = Field(..., description="a unique identifier for the user. In password-based authentication, this is the email.")
+    id: StrictStr = Field(..., description="a unique identifier for the user.")
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     friendly_name: Optional[StrictStr] = None
     email: Optional[StrictStr] = None

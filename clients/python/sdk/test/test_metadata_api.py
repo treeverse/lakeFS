@@ -29,13 +29,6 @@ class TestMetadataApi(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_create_symlink_file(self):
-        """Test case for create_symlink_file
-
-        creates symlink files corresponding to the given directory  # noqa: E501
-        """
-        pass
-
     def test_get_meta_range(self):
         """Test case for get_meta_range
 

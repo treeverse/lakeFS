@@ -19,18 +19,15 @@ import re  # noqa: F401
 import json
 
 
-from typing import Optional
-from pydantic import BaseModel, Field, StrictBool, StrictStr
 
-class ImportPagination(BaseModel):
+from pydantic import BaseModel, Field, StrictStr
+
+class InternalDeleteBranchProtectionRuleRequest(BaseModel):
     """
-    ImportPagination
+    InternalDeleteBranchProtectionRuleRequest
     """
-    has_more: StrictBool = Field(..., description="More keys to be ingested.")
-    continuation_token: Optional[StrictStr] = Field(None, description="Opaque. Token used to import the next range.")
-    last_key: StrictStr = Field(..., description="Last object store key that was ingested.")
-    staging_token: Optional[StrictStr] = Field(None, description="Staging token for skipped objects during ingest")
-    __properties = ["has_more", "continuation_token", "last_key", "staging_token"]
+    pattern: StrictStr = Field(...)
+    __properties = ["pattern"]
 
     class Config:
         """Pydantic configuration"""
@@ -46,8 +43,8 @@ class ImportPagination(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> ImportPagination:
-        """Create an instance of ImportPagination from a JSON string"""
+    def from_json(cls, json_str: str) -> InternalDeleteBranchProtectionRuleRequest:
+        """Create an instance of InternalDeleteBranchProtectionRuleRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -59,19 +56,16 @@ class ImportPagination(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> ImportPagination:
-        """Create an instance of ImportPagination from a dict"""
+    def from_dict(cls, obj: dict) -> InternalDeleteBranchProtectionRuleRequest:
+        """Create an instance of InternalDeleteBranchProtectionRuleRequest from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return ImportPagination.parse_obj(obj)
+            return InternalDeleteBranchProtectionRuleRequest.parse_obj(obj)
 
-        _obj = ImportPagination.parse_obj({
-            "has_more": obj.get("has_more"),
-            "continuation_token": obj.get("continuation_token"),
-            "last_key": obj.get("last_key"),
-            "staging_token": obj.get("staging_token")
+        _obj = InternalDeleteBranchProtectionRuleRequest.parse_obj({
+            "pattern": obj.get("pattern")
         })
         return _obj
 

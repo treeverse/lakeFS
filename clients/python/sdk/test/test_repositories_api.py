@@ -29,18 +29,6 @@ class TestRepositoriesApi(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_create_branch_protection_rule(self):
-        """Test case for create_branch_protection_rule
-
-        """
-        pass
-
-    def test_create_branch_protection_rule_preflight(self):
-        """Test case for create_branch_protection_rule_preflight
-
-        """
-        pass
-
     def test_create_repository(self):
         """Test case for create_repository
 
@@ -48,8 +36,8 @@ class TestRepositoriesApi(unittest.TestCase):
         """
         pass
 
-    def test_delete_branch_protection_rule(self):
-        """Test case for delete_branch_protection_rule
+    def test_delete_gc_rules(self):
+        """Test case for delete_gc_rules
 
         """
         pass
@@ -65,6 +53,13 @@ class TestRepositoriesApi(unittest.TestCase):
         """Test case for get_branch_protection_rules
 
         get branch protection rules  # noqa: E501
+        """
+        pass
+
+    def test_get_gc_rules(self):
+        """Test case for get_gc_rules
+
+        get repository GC rules  # noqa: E501
         """
         pass
 
@@ -86,6 +81,18 @@ class TestRepositoriesApi(unittest.TestCase):
         """Test case for list_repositories
 
         list repositories  # noqa: E501
+        """
+        pass
+
+    def test_set_branch_protection_rules(self):
+        """Test case for set_branch_protection_rules
+
+        """
+        pass
+
+    def test_set_gc_rules(self):
+        """Test case for set_gc_rules
+
         """
         pass
 

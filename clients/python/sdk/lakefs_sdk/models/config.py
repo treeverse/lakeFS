@@ -21,16 +21,16 @@ import json
 
 from typing import Optional
 from pydantic import BaseModel
-from lakefs_sdk.models.import_pagination import ImportPagination
-from lakefs_sdk.models.range_metadata import RangeMetadata
+from lakefs_sdk.models.storage_config import StorageConfig
+from lakefs_sdk.models.version_config import VersionConfig
 
-class IngestRangeCreationResponse(BaseModel):
+class Config(BaseModel):
     """
-    IngestRangeCreationResponse
+    Config
     """
-    range: Optional[RangeMetadata] = None
-    pagination: Optional[ImportPagination] = None
-    __properties = ["range", "pagination"]
+    version_config: Optional[VersionConfig] = None
+    storage_config: Optional[StorageConfig] = None
+    __properties = ["version_config", "storage_config"]
 
     class Config:
         """Pydantic configuration"""
@@ -46,8 +46,8 @@ class IngestRangeCreationResponse(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> IngestRangeCreationResponse:
-        """Create an instance of IngestRangeCreationResponse from a JSON string"""
+    def from_json(cls, json_str: str) -> Config:
+        """Create an instance of Config from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -56,26 +56,26 @@ class IngestRangeCreationResponse(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
-        # override the default output from pydantic by calling `to_dict()` of range
-        if self.range:
-            _dict['range'] = self.range.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of pagination
-        if self.pagination:
-            _dict['pagination'] = self.pagination.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of version_config
+        if self.version_config:
+            _dict['version_config'] = self.version_config.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of storage_config
+        if self.storage_config:
+            _dict['storage_config'] = self.storage_config.to_dict()
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> IngestRangeCreationResponse:
-        """Create an instance of IngestRangeCreationResponse from a dict"""
+    def from_dict(cls, obj: dict) -> Config:
+        """Create an instance of Config from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return IngestRangeCreationResponse.parse_obj(obj)
+            return Config.parse_obj(obj)
 
-        _obj = IngestRangeCreationResponse.parse_obj({
-            "range": RangeMetadata.from_dict(obj.get("range")) if obj.get("range") is not None else None,
-            "pagination": ImportPagination.from_dict(obj.get("pagination")) if obj.get("pagination") is not None else None
+        _obj = Config.parse_obj({
+            "version_config": VersionConfig.from_dict(obj.get("version_config")) if obj.get("version_config") is not None else None,
+            "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None
         })
         return _obj
 

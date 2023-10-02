@@ -29,7 +29,7 @@ class ObjectStats(BaseModel):
     path: StrictStr = Field(...)
     path_type: StrictStr = Field(...)
     physical_address: StrictStr = Field(..., description="The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\"s3://...\", \"gs://...\", etc.) Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET ")
-    physical_address_expiry: Optional[StrictInt] = Field(None, description="If present and nonzero, physical_address is a presigned URL and will expire at this Unix Epoch time.  This will be shorter than the presigned URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
+    physical_address_expiry: Optional[StrictInt] = Field(None, description="If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
     checksum: StrictStr = Field(...)
     size_bytes: Optional[StrictInt] = None
     mtime: StrictInt = Field(..., description="Unix Epoch in seconds")

@@ -24,9 +24,9 @@ from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.error import Error
 
-class ImportStatusResp(BaseModel):
+class ImportStatus(BaseModel):
     """
-    ImportStatusResp
+    ImportStatus
     """
     completed: StrictBool = Field(...)
     update_time: datetime = Field(...)
@@ -50,8 +50,8 @@ class ImportStatusResp(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> ImportStatusResp:
-        """Create an instance of ImportStatusResp from a JSON string"""
+    def from_json(cls, json_str: str) -> ImportStatus:
+        """Create an instance of ImportStatus from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -69,15 +69,15 @@ class ImportStatusResp(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> ImportStatusResp:
-        """Create an instance of ImportStatusResp from a dict"""
+    def from_dict(cls, obj: dict) -> ImportStatus:
+        """Create an instance of ImportStatus from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return ImportStatusResp.parse_obj(obj)
+            return ImportStatus.parse_obj(obj)
 
-        _obj = ImportStatusResp.parse_obj({
+        _obj = ImportStatus.parse_obj({
             "completed": obj.get("completed"),
             "update_time": obj.get("update_time"),
             "ingested_objects": obj.get("ingested_objects"),

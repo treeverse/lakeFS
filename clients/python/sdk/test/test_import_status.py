@@ -17,11 +17,11 @@ import unittest
 import datetime
 
 import lakefs_sdk
-from lakefs_sdk.models.import_status_resp import ImportStatusResp  # noqa: E501
+from lakefs_sdk.models.import_status import ImportStatus  # noqa: E501
 from lakefs_sdk.rest import ApiException
 
-class TestImportStatusResp(unittest.TestCase):
-    """ImportStatusResp unit test stubs"""
+class TestImportStatus(unittest.TestCase):
+    """ImportStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -30,15 +30,15 @@ class TestImportStatusResp(unittest.TestCase):
         pass
 
     def make_instance(self, include_optional):
-        """Test ImportStatusResp
+        """Test ImportStatus
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `ImportStatusResp`
+        # uncomment below to create an instance of `ImportStatus`
         """
-        model = lakefs_sdk.models.import_status_resp.ImportStatusResp()  # noqa: E501
+        model = lakefs_sdk.models.import_status.ImportStatus()  # noqa: E501
         if include_optional :
-            return ImportStatusResp(
+            return ImportStatus(
                 completed = True, 
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 ingested_objects = 56, 
@@ -59,14 +59,14 @@ class TestImportStatusResp(unittest.TestCase):
                     message = '', )
             )
         else :
-            return ImportStatusResp(
+            return ImportStatus(
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 
-    def testImportStatusResp(self):
-        """Test ImportStatusResp"""
+    def testImportStatus(self):
+        """Test ImportStatus"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

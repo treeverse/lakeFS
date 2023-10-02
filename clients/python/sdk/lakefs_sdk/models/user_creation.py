@@ -26,7 +26,7 @@ class UserCreation(BaseModel):
     """
     UserCreation
     """
-    id: StrictStr = Field(..., description="a unique identifier for the user. In password-based authentication, this is the email.")
+    id: StrictStr = Field(..., description="a unique identifier for the user.")
     invite_user: Optional[StrictBool] = None
     __properties = ["id", "invite_user"]
 

@@ -4,7 +4,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** | a unique identifier for the user. In password-based authentication, this is the email. | 
+**id** | **str** | a unique identifier for the user. | 
 **invite_user** | **bool** |  | [optional] 
 
 ## Example

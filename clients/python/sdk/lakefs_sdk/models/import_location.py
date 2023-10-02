@@ -27,7 +27,7 @@ class ImportLocation(BaseModel):
     ImportLocation
     """
     type: StrictStr = Field(..., description="Path type, can either be 'common_prefix' or 'object'")
-    path: StrictStr = Field(..., description="A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.")
+    path: StrictStr = Field(..., description="A source location to import path or to a single object. Must match the lakeFS installation blockstore type.")
     destination: StrictStr = Field(..., description="Destination for the imported objects on the branch")
     __properties = ["type", "path", "destination"]
 

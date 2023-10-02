@@ -29,13 +29,6 @@ class TestImportApi(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_create_meta_range(self):
-        """Test case for create_meta_range
-
-        create a lakeFS metarange file from the given ranges  # noqa: E501
-        """
-        pass
-
     def test_import_cancel(self):
         """Test case for import_cancel
 
@@ -54,13 +47,6 @@ class TestImportApi(unittest.TestCase):
         """Test case for import_status
 
         get import status  # noqa: E501
-        """
-        pass
-
-    def test_ingest_range(self):
-        """Test case for ingest_range
-
-        create a lakeFS range file from the source uri  # noqa: E501
         """
         pass
 
