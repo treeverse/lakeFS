@@ -77,8 +77,10 @@ func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRec
 	}
 	var currentChecksum *string
 	var currentPredicate kv.Predicate
-	if valueWithPredicate != nil && valueWithPredicate.Value != nil {
-		currentChecksum, err = computeChecksum(valueWithPredicate.Value)
+	if valueWithPredicate != nil {
+		if valueWithPredicate.Value != nil {
+			currentChecksum, err = computeChecksum(valueWithPredicate.Value)
+		}
 		if err != nil {
 			return err
 		}

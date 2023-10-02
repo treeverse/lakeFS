@@ -69,7 +69,6 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if err != nil {
 		return nil, err
 	}
-
 	return &kv.ValueWithPredicate{
 		Value:     value,
 		Predicate: kv.Predicate(value),
@@ -145,8 +144,8 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 					return kv.ErrPredicateFailed
 				}
 			}
-		} else if !errors.Is(err, badger.ErrKeyNotFound) && value != nil && item.ValueSize() != 0 {
-			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (expected value not to exist)")
+		} else if !errors.Is(err, badger.ErrKeyNotFound) {
+			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (key not found)")
 			return kv.ErrPredicateFailed
 		}
 
