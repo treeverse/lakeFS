@@ -18,14 +18,14 @@ local typesMapping = {
     integer = "int"
 }
 
-local function hive_col_to_glue(col) 
+local function hive_col_to_glue(col)
     return {
         Name = col.name,
         Type = typesMapping[col.type] or col.type,
         Comment = col.comment,
         Parameters = col.parameters
     }
-end 
+end
 
 local function hive_partitions_to_glue_input(descriptor)
     local partitions = {}
@@ -72,11 +72,9 @@ end
 -- create a standard AWS Glue table input (i.e not Apache Iceberg), add input values to base input and configure the rest
 local function build_glue_create_table_input(base_input, descriptor, symlink_location, columns, partitions, action_info,
     options)
-    local input = utils.clone_table(base_input)
+    local input = utils.deepcopy(base_input)
     local opts = options or {}
-    local repo_id = action_info.repository_id
-    local commit_id = action_info.commit_id
-    input.Name = opts.table_name or get_full_table_name(descriptor,action_info)
+    input.Name = opts.table_name or get_full_table_name(descriptor, action_info)
     input.PartitionKeys = array(partitions)
     input.TableType = "EXTERNAL_TABLE"
     input.StorageDescriptor.Columns = array(columns)
@@ -84,7 +82,7 @@ local function build_glue_create_table_input(base_input, descriptor, symlink_loc
     return input
 end
 
-local function build_glue_create_table_input_from_hive(descriptor,base_input, action_info, options)
+local function build_glue_create_table_input_from_hive(descriptor, base_input, action_info, options)
     local opts = options or {}
     -- get table symlink location uri 
     local base_prefix = opts.export_base_uri or action_info.storage_namespace
@@ -97,7 +95,7 @@ local function build_glue_create_table_input_from_hive(descriptor,base_input, ac
 end
 
 -- create table in glue
-local function export_glue(glue, db, table_src_path,create_table_table_input, action_info, options)
+local function export_glue(glue, db, table_src_path, create_table_table_input, action_info, options)
     local opts = options or {}
     local repo_id = action_info.repository_id
     local commit_id = action_info.commit_id
@@ -105,18 +103,20 @@ local function export_glue(glue, db, table_src_path,create_table_table_input, ac
     local descriptor = extractor.get_table_descriptor(lakefs, repo_id, commit_id, table_src_path)
 
     -- build table creation input for glue
-    local table_input = opts.override_create_table_input or build_glue_create_table_input_from_hive(descriptor, create_table_table_input, action_info, opts)
+    local table_input = opts.override_create_table_input or
+                            build_glue_create_table_input_from_hive(descriptor, create_table_table_input, action_info,
+            opts)
     -- create table
     local json_input = json.marshal(table_input)
     if opts.debug then
-        print("Creating Glue Table - input: ", json_input)
+        print("Creating Glue Table - input:", json_input)
     end
     glue.create_table(db, json_input)
     return {
-        create_table_input=table_input
+        create_table_input = table_input
     }
 end
 
 return {
-    export_glue = export_glue,
+    export_glue = export_glue
 }

@@ -1,16 +1,19 @@
 local url = require("net/url")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
-local function clone_table(original_table)
-    local new_table = {}
-    for k, v in pairs(original_table) do
-        if type(v) == "table" then
-            new_table[k] = clone_table(v) -- Recursively clone nested tables
-        else
-            new_table[k] = v
+local function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
         end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
     end
-    return new_table
+    return copy
 end
 
 local function short_digest(digest, len)
@@ -64,7 +67,7 @@ local function parse_storage_uri(uri)
 end
 
 return {
-    clone_table=clone_table,
+    deepcopy=deepcopy,
     parse_storage_uri=parse_storage_uri,
     short_digest=short_digest,
     ref_from_branch_or_tag=ref_from_branch_or_tag,

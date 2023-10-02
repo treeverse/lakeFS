@@ -106,14 +106,6 @@ func updateTable(c *GlueClient) lua.Function {
 		database := lua.CheckString(l, 1)
 		tableInputJSON := lua.CheckString(l, 2)
 
-		// parse table input JSON
-		var tableInput types.TableInput
-		err := json.Unmarshal([]byte(tableInputJSON), &tableInput)
-		if err != nil {
-			lua.Errorf(l, err.Error())
-			panic("unreachable")
-		}
-
 		// check if catalog ID provided
 		var catalogID *string
 		if !l.IsNone(3) {
@@ -131,6 +123,14 @@ func updateTable(c *GlueClient) lua.Function {
 		if !l.IsNone(5) {
 			lua.CheckType(l, 5, lua.TypeBoolean)
 			skipArchive = aws.Bool(l.ToBoolean(5))
+		}
+
+		// parse table input JSON
+		var tableInput types.TableInput
+		err := json.Unmarshal([]byte(tableInputJSON), &tableInput)
+		if err != nil {
+			lua.Errorf(l, err.Error())
+			panic("unreachable")
 		}
 
 		_, err = client.UpdateTable(c.ctx, &glue.UpdateTableInput{
@@ -217,8 +217,8 @@ func getTable(c *GlueClient) lua.Function {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
 		}
-		retArgs := util.DeepPush(l, itemMap)
+		util.DeepPush(l, itemMap)
 		l.PushBoolean(true)
-		return retArgs + 1
+		return 2
 	}
 }
