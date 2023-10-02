@@ -101,8 +101,6 @@ func init() {
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 	fsUploadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
 	withParallelismFlag(fsUploadCmd)
-	fsUploadCmd.Flags().BoolP("recursive", "r", false, "recursively copy all files under local source")
-	_ = fsUploadCmd.Flags().MarkDeprecated("recursive", "recursive flag is deprecated and will be removed in a future release")
 
 	fsCmd.AddCommand(fsUploadCmd)
 }
