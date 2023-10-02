@@ -168,8 +168,8 @@ type Interface interface {
 	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, *string, error)
 	// SetBranchProtectionRules sets the branch protection rules for the given repository.
 	// If lastKnownChecksum doesn't match the current state, the update will fail with ErrPreconditionFailed.
-	// If lastKnownChecksum is the empty string, the update is performed only if no rules exist.
-	// If lastKnownChecksum is nil, the update is always performed.
+	// If lastKnownChecksum is nil, the update is performed only if no rules exist.
+	// If lastKnownChecksum is equal to BranchProtectionSkipValidationChecksum, the update is always performed.
 	SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress to validate single use limited in time of a given physical address

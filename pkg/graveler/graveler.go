@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-openapi/swag"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
@@ -44,6 +45,8 @@ const (
 	RepoMetadataUpdateMaxElapsedTime = 15 * time.Second
 	RepoMetadataUpdateRandomFactor   = 0.5
 )
+
+const BranchProtectionSkipValidationChecksum = "skip-checksum-validation"
 
 // Basic Types
 
@@ -471,7 +474,7 @@ type KeyValueStore interface {
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 
-	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
+	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by X in PrepareGCUncommitted
 	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
@@ -615,8 +618,8 @@ type VersionController interface {
 
 	// SetBranchProtectionRules sets the branch protection rules for the repository.
 	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
-	// If lastKnownChecksum is the empty string, the update is performed only if no rules exist.
-	// If lastKnownChecksum is nil, the update is always performed.
+	// If lastKnownChecksum is nil, the update is performed only if no rules exist.
+	// If lastKnownChecksum is equal to BranchProtectionSkipValidationChecksum, the update is always performed.
 	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
@@ -1499,11 +1502,9 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
-	if lastKnownChecksum == nil {
+	if swag.StringValue(lastKnownChecksum) == BranchProtectionSkipValidationChecksum {
+		// TODO(johnnyaug): remove this logic and constant once the legacy API is dropped.
 		return g.protectedBranchesManager.SetRules(ctx, repository, rules)
-	}
-	if *lastKnownChecksum == "" {
-		lastKnownChecksum = nil
 	}
 	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, lastKnownChecksum)
 }
