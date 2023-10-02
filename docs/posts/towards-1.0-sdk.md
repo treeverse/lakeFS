@@ -68,6 +68,11 @@ following interfaces:
   should not require downtime.[^2]
 * The lakectl CLI flags will continue to work across minor version upgrades.
   However we do not currently guarantee the format of lakectl output.
+* Obviously we do _not_ control the S3 API or its many clients.  If your
+  program uses an S3 API that lakeFS supports, it should continue to work
+  across a minor version upgrade of lakeFS.  A minor version upgrade will
+  not remove support for a documented S3 API that is supported in the
+  previous version.
 
 ## Why this is important
 
