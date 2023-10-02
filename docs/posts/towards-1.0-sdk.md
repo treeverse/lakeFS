@@ -103,6 +103,13 @@ SDK is *not* stable with respect to a minor version upgrade.  The upgrade
 from `io.lakefs:lakefs-client` to `io.lakefs:lakefs-sdk` will require you to
 rewrite API calls in a new style.
 
+The forward-compatible generated SDKs will be published _before_ the 1.0
+release.  The existing SDKs will remain available to allow migration.  APIs
+that are will be marked "experimental", "deprecated" or "internal" before
+the 1.0 release in previous SDKs as well.  The OpenAPI specification
+("swagger.yml") continues to be available for any other client SDK
+generation.  {: .note }
+
 Here is [one example of such a change][lakefsfs-new-sdk-sample].
 Old calls looked like this:
 
