@@ -113,9 +113,9 @@ tools: ## Install tools
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
-client-python: python-client python-sdk
+client-python: sdk-python-legacy python-sdk
 
-python-client: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 5.3.0
+sdk-python-legacy: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 5.3.0
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
 		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
@@ -157,7 +157,7 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python python-client python-sdk client-java
+.PHONY: clients client-python sdk-python-legacy python-sdk client-java
 clients: client-python client-java
 
 package-python: package-python-client package-python-sdk
