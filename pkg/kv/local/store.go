@@ -145,8 +145,8 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 					return kv.ErrPredicateFailed
 				}
 			}
-		} else if !errors.Is(err, badger.ErrKeyNotFound) {
-			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (key not found)")
+		} else if !errors.Is(err, badger.ErrKeyNotFound) && value != nil && item.ValueSize() != 0 {
+			log.WithField("predicate", valuePredicate).Trace("predicate condition failed (expected value not to exist)")
 			return kv.ErrPredicateFailed
 		}
 

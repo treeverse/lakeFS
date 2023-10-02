@@ -3,13 +3,11 @@ package settings_test
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
-	"github.com/hashicorp/go-multierror"
-	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/cache"
@@ -18,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
-	"google.golang.org/protobuf/proto"
 )
 
 type mockCache struct {
@@ -81,176 +78,43 @@ func TestGetLatest(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
 	emptySettings := &settings.ExampleSettings{}
-	setting, eTag, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	setting, _, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}})
 	testutil.Must(t, err)
-	setting, eTag, err = m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	setting, eTag, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(&settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, setting); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	if eTag == "" {
+	if eTag == nil || *eTag == "" {
 		t.Fatal("got empty eTag")
 	}
 }
 
-func TestUpdate(t *testing.T) {
+func TestSaveIf(t *testing.T) {
 	ctx := context.Background()
-	m, _ := prepareTest(t, ctx, nil, nil)
-	initialData := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	testutil.Must(t, m.Save(ctx, repository, "settingKey", initialData))
-
-	validationData := &settings.ExampleSettings{
-		ExampleInt: initialData.ExampleInt + 1,
-		ExampleStr: "goodbye",
-		ExampleMap: map[string]int32{"boo": initialData.ExampleMap["boo"] + 1},
+	mc := &mockCache{
+		c: make(map[interface{}]interface{}),
 	}
-	update := func(settingsToEdit proto.Message) (proto.Message, error) {
-		newSettings := settings.ExampleSettings{ExampleMap: map[string]int32{}}
-		newSettings.ExampleStr = validationData.ExampleStr
-		newSettings.ExampleInt = validationData.ExampleInt
-		newSettings.ExampleMap["boo"] = validationData.ExampleMap["boo"]
-		return &newSettings, nil
-	}
+	m, _ := prepareTest(t, ctx, mc, nil)
 	emptySettings := &settings.ExampleSettings{}
-	require.NoError(t, m.Update(ctx, repository, "settingKey", emptySettings, update))
-	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
-
-	require.NoError(t, err)
-	if diff := deep.Equal(validationData, gotSettings); diff != nil {
-		t.Fatal("got unexpected settings:", diff)
-	}
-
-	badData := &settings.ExampleSettings{
-		ExampleInt: initialData.ExampleInt + 1,
-		ExampleStr: "bad",
-		ExampleMap: map[string]int32{"boo": -1},
-	}
-
-	// Failed update attempt with retry
-	update = func(settingsToEdit proto.Message) (proto.Message, error) {
-		newSettings := settings.ExampleSettings{ExampleMap: map[string]int32{}}
-
-		newSettings.ExampleStr = initialData.ExampleStr
-		newSettings.ExampleInt = initialData.ExampleInt
-		newSettings.ExampleMap["boo"] = initialData.ExampleMap["boo"]
-		require.NoError(t, m.Save(ctx, repository, "settingKey", badData))
-		return &newSettings, nil
-	}
-	require.NoError(t, m.Update(ctx, repository, "settingKey", emptySettings, update))
-	gotSettings, err = m.Get(ctx, repository, "settingKey", emptySettings)
-	require.NoError(t, err)
-	if diff := deep.Equal(initialData, gotSettings); diff != nil {
-		t.Fatal("got unexpected settings:", diff)
-	}
-
-	// Failed update attempt with retry exhausted
-	update = func(settingsToEdit proto.Message) (proto.Message, error) {
-		newSettings := settings.ExampleSettings{ExampleMap: map[string]int32{}}
-
-		validationData.ExampleInt++
-		require.NoError(t, m.Save(ctx, repository, "settingKey", validationData))
-		return &newSettings, nil
-	}
-	require.ErrorIs(t, m.Update(ctx, repository, "settingKey", emptySettings, update), graveler.ErrTooManyTries)
-	gotSettings, eTag3, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
-	require.NoError(t, err)
-	if diff := deep.Equal(validationData, gotSettings); diff != nil {
-		t.Fatal("got unexpected settings:", diff)
-	}
-
-	// Failed update attempt with unknown error
-	testErr := errors.New("test error")
-	update = func(settingsToEdit proto.Message) (proto.Message, error) {
-		return nil, testErr
-	}
-	require.ErrorIs(t, m.Update(ctx, repository, "settingKey", emptySettings, update), testErr)
-	gotSettings, eTag4, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
-	if eTag4 != eTag3 {
-		t.Fatal("expected eTag4 to be equal to eTag3")
-	}
-	require.NoError(t, err)
-	if diff := deep.Equal(validationData, gotSettings); diff != nil {
-		t.Fatal("got unexpected settings:", diff)
-	}
-}
-
-// TODO: locking is irrelevant for KV, create a new test for it
-// Relevant only to DB implementation since KV is lockless
-func TestMultipleUpdates(t *testing.T) {
-	ctx := context.Background()
-	const IncrementCount = 20
-	var lockStartWaitGroup sync.WaitGroup
-	var lock sync.Mutex
-	lockStartWaitGroup.Add(IncrementCount)
-
-	m, _ := prepareTest(t, ctx, nil, func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
-		lockStartWaitGroup.Done()
-		lockStartWaitGroup.Wait() // wait until all goroutines ask for the lock
-		lock.Lock()
-		retVal, err := f()
-		lock.Unlock()
-		return retVal, err
-	})
-	emptySettings := &settings.ExampleSettings{}
-	expectedSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	err := m.Save(ctx, repository, "settingKey", expectedSettings)
+	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
+	err := m.SaveIf(ctx, repository, "settingKey", firstSettings, nil)
 	testutil.Must(t, err)
-	update := func(settingsToEdit proto.Message) (proto.Message, error) {
-		newSettings := settings.ExampleSettings{ExampleMap: map[string]int32{}}
-
-		newSettings.ExampleStr = settingsToEdit.(*settings.ExampleSettings).ExampleStr
-		newSettings.ExampleInt = settingsToEdit.(*settings.ExampleSettings).ExampleInt + 1
-		newSettings.ExampleMap["boo"] = settingsToEdit.(*settings.ExampleSettings).ExampleMap["boo"] + 1
-		return &newSettings, nil
-	}
-	var wg multierror.Group
-	for i := 0; i < IncrementCount; i++ {
-		wg.Go(func() error {
-			return m.Update(ctx, repository, "settingKey", &settings.ExampleSettings{}, update)
-		})
-	}
-	err = wg.Wait().ErrorOrNil()
+	gotSettings, checksum, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
 	testutil.Must(t, err)
-	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
-	testutil.Must(t, err)
-	expectedSettings.ExampleInt += IncrementCount
-	expectedSettings.ExampleMap["boo"] += IncrementCount
-	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
+	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-}
-
-// TestEmpty tests the setting store for keys which have not been set.
-func TestEmpty(t *testing.T) {
-	ctx := context.Background()
-	m, _ := prepareTest(t, ctx, nil, nil)
-	emptySettings := &settings.ExampleSettings{}
-	_, err := m.Get(ctx, repository, "settingKey", emptySettings)
-	// the key was not set, an error should be returned
-	if !errors.Is(err, graveler.ErrNotFound) {
-		t.Fatalf("expected error %v, got %v", graveler.ErrNotFound, err)
-	}
-	// when using Update on an unset key, the update function gets an empty setting object to operate on
-	err = m.Update(ctx, repository, "settingKey", emptySettings, func(setting proto.Message) (proto.Message, error) {
-		newSettings := proto.Clone(setting).(*settings.ExampleSettings)
-
-		if newSettings.ExampleMap == nil {
-			newSettings.ExampleMap = make(map[string]int32)
-		}
-		newSettings.ExampleInt++
-		newSettings.ExampleMap["boo"]++
-		return newSettings, nil
-	})
+	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
+	err = m.SaveIf(ctx, repository, "settingKey", secondSettings, checksum)
 	testutil.Must(t, err)
-	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
-	testutil.Must(t, err)
-	expectedSettings := &settings.ExampleSettings{ExampleInt: 1, ExampleMap: map[string]int32{"boo": 1}}
-	if diff := deep.Equal(expectedSettings, gotSettings); diff != nil {
-		t.Fatal("got unexpected settings:", diff)
+	err = m.SaveIf(ctx, repository, "settingKey", secondSettings, swag.String("WRONG_CHECKSUM"))
+	if !errors.Is(err, graveler.ErrPreconditionFailed) {
+		t.Fatalf("expected ErrPreconditionFailed, got %v", err)
 	}
 }
 

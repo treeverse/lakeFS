@@ -1788,7 +1788,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Pattern: pattern,
 		})
 	}
-	w.Header().Set("ETag", eTag)
+	w.Header().Set("ETag", swag.StringValue(eTag))
 	writeResponse(w, r, http.StatusOK, resp)
 }
 
@@ -1816,6 +1816,9 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		}
 	}
 	eTag := params.IfMatch
+	if swag.StringValue(eTag) == "" {
+		eTag = swag.String("")
+	}
 	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
 	if c.handleAPIError(ctx, w, r, err) {
 		return

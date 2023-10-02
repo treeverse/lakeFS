@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -62,38 +63,9 @@ func TestSetWrongETag(t *testing.T) {
 				graveler.BranchProtectionBlockedAction_STAGING_WRITE},
 			},
 		},
-	}, base64.StdEncoding.EncodeToString([]byte("WRONG_ETAG")))
+	}, swag.String(base64.StdEncoding.EncodeToString([]byte("WRONG_ETAG"))))
 	if !errors.Is(err, graveler.ErrPreconditionFailed) {
 		t.Fatalf("expected ErrPreconditionFailed, got %v", err)
-	}
-}
-
-func TestDelete(t *testing.T) {
-	ctx := context.Background()
-	bpm := prepareTest(t, ctx)
-	err := bpm.Delete(ctx, repository, "main*")
-	if !errors.Is(err, branch.ErrRuleNotExists) {
-		t.Fatalf("expected ErrRuleNotExists, got %v", err)
-	}
-	testutil.Must(t, bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
-		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
-			"main*": {Value: []graveler.BranchProtectionBlockedAction{
-				graveler.BranchProtectionBlockedAction_STAGING_WRITE},
-			},
-		},
-	}))
-	rules, _, err := bpm.GetRules(ctx, repository)
-	testutil.Must(t, err)
-	expectedActions := &graveler.BranchProtectionBlockedActions{Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE}}
-	if diff := deep.Equal(expectedActions, rules.BranchPatternToBlockedActions["main*"]); diff != nil {
-		t.Fatalf("got unexpected blocked actions. diff=%s", diff)
-	}
-	testutil.Must(t, bpm.Delete(ctx, repository, "main*"))
-
-	rules, _, err = bpm.GetRules(ctx, repository)
-	testutil.Must(t, err)
-	if len(rules.BranchPatternToBlockedActions) != 0 {
-		t.Fatalf("expected no rules, got %d rules", len(rules.BranchPatternToBlockedActions))
 	}
 }
 
