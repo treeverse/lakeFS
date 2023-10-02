@@ -118,5 +118,6 @@ local function export_glue(glue, db, table_src_path, create_table_table_input, a
 end
 
 return {
+    build_glue_create_table_input_from_hive=build_glue_create_table_input_from_hive,
     export_glue = export_glue
 }
