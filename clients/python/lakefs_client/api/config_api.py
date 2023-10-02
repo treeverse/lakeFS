@@ -22,10 +22,8 @@ from lakefs_client.model_utils import (  # noqa: F401
     none_type,
     validate_and_convert_types
 )
+from lakefs_client.model.config import Config
 from lakefs_client.model.error import Error
-from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
-from lakefs_client.model.storage_config import StorageConfig
-from lakefs_client.model.version_config import VersionConfig
 
 
 class ConfigApi(object):
@@ -39,9 +37,9 @@ class ConfigApi(object):
         if api_client is None:
             api_client = ApiClient()
         self.api_client = api_client
-        self.get_garbage_collection_config_endpoint = _Endpoint(
+        self.get_config_endpoint = _Endpoint(
             settings={
-                'response_type': (GarbageCollectionConfig,),
+                'response_type': (Config,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -49,104 +47,8 @@ class ConfigApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/config/garbage-collection',
-                'operation_id': 'get_garbage_collection_config',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                ],
-                'required': [],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                },
-                'attribute_map': {
-                },
-                'location_map': {
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client
-        )
-        self.get_lake_fs_version_endpoint = _Endpoint(
-            settings={
-                'response_type': (VersionConfig,),
-                'auth': [
-                    'basic_auth',
-                    'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth',
-                    'saml_auth'
-                ],
-                'endpoint_path': '/config/version',
-                'operation_id': 'get_lake_fs_version',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                ],
-                'required': [],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                },
-                'attribute_map': {
-                },
-                'location_map': {
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client
-        )
-        self.get_storage_config_endpoint = _Endpoint(
-            settings={
-                'response_type': (StorageConfig,),
-                'auth': [
-                    'basic_auth',
-                    'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth',
-                    'saml_auth'
-                ],
-                'endpoint_path': '/config/storage',
-                'operation_id': 'get_storage_config',
+                'endpoint_path': '/config',
+                'operation_id': 'get_config',
                 'http_method': 'GET',
                 'servers': None,
             },
@@ -184,17 +86,17 @@ class ConfigApi(object):
             api_client=api_client
         )
 
-    def get_garbage_collection_config(
+    def get_config(
         self,
         **kwargs
     ):
-        """get_garbage_collection_config  # noqa: E501
+        """get_config  # noqa: E501
 
-        get information of gc settings  # noqa: E501
+        retrieve lakeFS configuration  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_garbage_collection_config(async_req=True)
+        >>> thread = api.get_config(async_req=True)
         >>> result = thread.get()
 
 
@@ -220,7 +122,7 @@ class ConfigApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            GarbageCollectionConfig
+            Config
                 If the method is called asynchronously, returns the request
                 thread.
         """
@@ -243,127 +145,5 @@ class ConfigApi(object):
             '_check_return_type', True
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
-        return self.get_garbage_collection_config_endpoint.call_with_http_info(**kwargs)
-
-    def get_lake_fs_version(
-        self,
-        **kwargs
-    ):
-        """get_lake_fs_version  # noqa: E501
-
-        get version of lakeFS server  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_lake_fs_version(async_req=True)
-        >>> result = thread.get()
-
-
-        Keyword Args:
-            _return_http_data_only (bool): response data without head status
-                code and headers. Default is True.
-            _preload_content (bool): if False, the urllib3.HTTPResponse object
-                will be returned without reading/decoding response data.
-                Default is True.
-            _request_timeout (int/float/tuple): timeout setting for this request. If
-                one number provided, it will be total request timeout. It can also
-                be a pair (tuple) of (connection, read) timeouts.
-                Default is None.
-            _check_input_type (bool): specifies if type checking
-                should be done one the data sent to the server.
-                Default is True.
-            _check_return_type (bool): specifies if type checking
-                should be done one the data received from the server.
-                Default is True.
-            _host_index (int/None): specifies the index of the server
-                that we want to use.
-                Default is read from the configuration.
-            async_req (bool): execute request asynchronously
-
-        Returns:
-            VersionConfig
-                If the method is called asynchronously, returns the request
-                thread.
-        """
-        kwargs['async_req'] = kwargs.get(
-            'async_req', False
-        )
-        kwargs['_return_http_data_only'] = kwargs.get(
-            '_return_http_data_only', True
-        )
-        kwargs['_preload_content'] = kwargs.get(
-            '_preload_content', True
-        )
-        kwargs['_request_timeout'] = kwargs.get(
-            '_request_timeout', None
-        )
-        kwargs['_check_input_type'] = kwargs.get(
-            '_check_input_type', True
-        )
-        kwargs['_check_return_type'] = kwargs.get(
-            '_check_return_type', True
-        )
-        kwargs['_host_index'] = kwargs.get('_host_index')
-        return self.get_lake_fs_version_endpoint.call_with_http_info(**kwargs)
-
-    def get_storage_config(
-        self,
-        **kwargs
-    ):
-        """get_storage_config  # noqa: E501
-
-        retrieve lakeFS storage configuration  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_storage_config(async_req=True)
-        >>> result = thread.get()
-
-
-        Keyword Args:
-            _return_http_data_only (bool): response data without head status
-                code and headers. Default is True.
-            _preload_content (bool): if False, the urllib3.HTTPResponse object
-                will be returned without reading/decoding response data.
-                Default is True.
-            _request_timeout (int/float/tuple): timeout setting for this request. If
-                one number provided, it will be total request timeout. It can also
-                be a pair (tuple) of (connection, read) timeouts.
-                Default is None.
-            _check_input_type (bool): specifies if type checking
-                should be done one the data sent to the server.
-                Default is True.
-            _check_return_type (bool): specifies if type checking
-                should be done one the data received from the server.
-                Default is True.
-            _host_index (int/None): specifies the index of the server
-                that we want to use.
-                Default is read from the configuration.
-            async_req (bool): execute request asynchronously
-
-        Returns:
-            StorageConfig
-                If the method is called asynchronously, returns the request
-                thread.
-        """
-        kwargs['async_req'] = kwargs.get(
-            'async_req', False
-        )
-        kwargs['_return_http_data_only'] = kwargs.get(
-            '_return_http_data_only', True
-        )
-        kwargs['_preload_content'] = kwargs.get(
-            '_preload_content', True
-        )
-        kwargs['_request_timeout'] = kwargs.get(
-            '_request_timeout', None
-        )
-        kwargs['_check_input_type'] = kwargs.get(
-            '_check_input_type', True
-        )
-        kwargs['_check_return_type'] = kwargs.get(
-            '_check_return_type', True
-        )
-        kwargs['_host_index'] = kwargs.get('_host_index')
-        return self.get_storage_config_endpoint.call_with_http_info(**kwargs)
+        return self.get_config_endpoint.call_with_http_info(**kwargs)
 

@@ -340,19 +340,6 @@ type Config struct {
 		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
-
-	Email struct {
-		SMTPHost           string        `mapstructure:"smtp_host"`
-		SMTPPort           int           `mapstructure:"smtp_port"`
-		UseSSL             bool          `mapstructure:"use_ssl"`
-		Username           string        `mapstructure:"username"`
-		Password           string        `mapstructure:"password"`
-		LocalName          string        `mapstructure:"local_name"`
-		Sender             string        `mapstructure:"sender"`
-		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
-		Burst              int           `mapstructure:"burst"`
-		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
-	} `mapstructure:"email"`
 	UI struct {
 		// Enabled - control serving of embedded UI
 		Enabled  bool `mapstructure:"enabled"`

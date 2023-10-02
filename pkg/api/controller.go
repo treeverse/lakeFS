@@ -27,14 +27,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/graveler"
+	graveler "github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -92,7 +91,6 @@ type Controller struct {
 	Actions               actionsHandler
 	AuditChecker          AuditChecker
 	Logger                logging.Logger
-	Emailer               *email.Emailer
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
@@ -149,11 +147,9 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 }
 
 func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request) {
-	inviteSupported := c.Auth.IsInviteSupported()
-	emailSupported := c.Emailer.Params.SMTPHost != ""
+	_, inviteSupported := c.Auth.(auth.EmailInviter)
 	writeResponse(w, r, http.StatusOK, apigen.AuthCapabilities{
-		InviteUser:     &inviteSupported,
-		ForgotPassword: &emailSupported,
+		InviteUser: &inviteSupported,
 	})
 }
 
@@ -1080,6 +1076,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 
 	var parsedEmail *string
 	if invite {
+		// Check that email is valid
 		addr, err := mail.ParseAddress(username)
 		if err != nil {
 			c.Logger.WithError(err).WithField("user_id", username).Warn("failed parsing email")
@@ -1100,7 +1097,12 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	ctx := r.Context()
 	c.LogAction(ctx, "create_user", r, "", "", "")
 	if invite {
-		err := c.Auth.InviteUser(ctx, *parsedEmail)
+		inviter, ok := c.Auth.(auth.EmailInviter)
+		if !ok {
+			writeError(w, r, http.StatusNotImplemented, "Not implemented")
+			return
+		}
+		err := inviter.InviteUser(ctx, *parsedEmail)
 		if c.handleAPIError(ctx, w, r, err) {
 			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
 			return
@@ -1415,6 +1417,39 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
+func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
+	_, err := auth.GetUser(r.Context())
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+	var storageCfg apigen.StorageConfig
+	internalError := false
+	if !c.authorizeCallback(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadConfigAction,
+			Resource: permissions.All,
+		},
+	}, func(_ http.ResponseWriter, _ *http.Request, code int, v interface{}) {
+		switch code {
+		case http.StatusInternalServerError:
+			writeError(w, r, code, v)
+			internalError = true
+		case http.StatusUnauthorized:
+			c.Logger.Debug("Unauthorized request to get storage config, returning partial config")
+		}
+	}) {
+		if internalError {
+			return
+		}
+	} else {
+		storageCfg = c.getStorageConfig()
+	}
+
+	versionConfig := c.getVersionConfig()
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig})
+}
+
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -1424,12 +1459,16 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}) {
 		return
 	}
+
+	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
+}
+func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
 	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
 		defaultNamespacePrefix = c.Config.Blockstore.DefaultNamespacePrefix
 	}
-	response := apigen.StorageConfig{
+	return apigen.StorageConfig{
 		BlockstoreType:                   c.Config.Blockstore.Type,
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
@@ -1439,9 +1478,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
 	}
-	writeResponse(w, r, http.StatusOK, response)
 }
-
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -1729,6 +1766,124 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata{AdditionalProperties: metadata})
+}
+
+func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.GetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, eTag, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	resp := make([]*apigen.BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
+	for pattern := range rules.BranchPatternToBlockedActions {
+		resp = append(resp, &apigen.BranchProtectionRule{
+			Pattern: pattern,
+		})
+	}
+	w.Header().Set("ETag", eTag)
+	writeResponse(w, r, http.StatusOK, resp)
+}
+
+func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Request, body apigen.SetBranchProtectionRulesJSONRequestBody, repository string, params apigen.SetBranchProtectionRulesParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetBranchProtectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
+
+	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
+	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
+
+	rules := &graveler.BranchProtectionRules{
+		BranchPatternToBlockedActions: make(map[string]*graveler.BranchProtectionBlockedActions),
+	}
+	for _, r := range body {
+		rules.BranchPatternToBlockedActions[r.Pattern] = &graveler.BranchProtectionBlockedActions{
+			Value: blockedActions,
+		}
+	}
+	eTag := params.IfMatch
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) DeleteGCRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, nil)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) GetGCRules(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.GetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules, err := c.Catalog.GetGarbageCollectionRules(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	resp := apigen.GarbageCollectionRules{}
+	resp.DefaultRetentionDays = int(rules.DefaultRetentionDays)
+	for branchID, retentionDays := range rules.BranchRetentionDays {
+		resp.Branches = append(resp.Branches, apigen.GarbageCollectionRule{BranchId: branchID, RetentionDays: int(retentionDays)})
+	}
+	writeResponse(w, r, http.StatusOK, resp)
+}
+
+func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body apigen.SetGCRulesJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.SetGarbageCollectionRulesAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	rules := &graveler.GarbageCollectionRules{
+		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		BranchRetentionDays:  make(map[string]int32),
+	}
+	for _, rule := range body.Branches {
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
+	}
+	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListRepositoryRunsParams) {
@@ -2113,7 +2268,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrTooManyTries):
 		log.Debug("Retried too many times")
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
-
+	case errors.Is(err, graveler.ErrPreconditionFailed):
+		log.Debug("Precondition failed")
+		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
@@ -2845,26 +3002,8 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.GetGarbageCollectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	rules, err := c.Catalog.GetGarbageCollectionRules(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	resp := apigen.GarbageCollectionRules{}
-	resp.DefaultRetentionDays = int(rules.DefaultRetentionDays)
-	for branchID, retentionDays := range rules.BranchRetentionDays {
-		resp.Branches = append(resp.Branches, apigen.GarbageCollectionRule{BranchId: branchID, RetentionDays: int(retentionDays)})
-	}
-	writeResponse(w, r, http.StatusOK, resp)
+func (c *Controller) InternalGetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	c.GetGCRules(w, r, repository)
 }
 
 func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r *http.Request, repository string) {
@@ -2883,45 +3022,12 @@ func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) SetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body apigen.SetGarbageCollectionRulesJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.SetGarbageCollectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	rules := &graveler.GarbageCollectionRules{
-		DefaultRetentionDays: int32(body.DefaultRetentionDays),
-		BranchRetentionDays:  make(map[string]int32),
-	}
-	for _, rule := range body.Branches {
-		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
-	}
-	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
+func (c *Controller) InternalSetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body apigen.InternalSetGarbageCollectionRulesJSONRequestBody, repository string) {
+	c.SetGCRules(w, r, apigen.SetGCRulesJSONRequestBody(body), repository)
 }
 
-func (c *Controller) DeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.SetGarbageCollectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, nil)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
+func (c *Controller) InternalDeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	c.DeleteGCRules(w, r, repository)
 }
 
 func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *http.Request, repository string) {
@@ -2954,30 +3060,11 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	})
 }
 
-func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.GetBranchProtectionRulesAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	rules, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	resp := make([]*apigen.BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
-	for pattern := range rules.BranchPatternToBlockedActions {
-		resp = append(resp, &apigen.BranchProtectionRule{
-			Pattern: pattern,
-		})
-	}
-	writeResponse(w, r, http.StatusOK, resp)
+func (c *Controller) InternalGetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
+	c.GetBranchProtectionRules(w, r, repository)
 }
 
-func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.DeleteBranchProtectionRuleJSONRequestBody, repository string) {
+func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.InternalDeleteBranchProtectionRuleJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.SetBranchProtectionRulesAction,
@@ -2989,11 +3076,22 @@ func (c *Controller) DeleteBranchProtectionRule(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_branch_protection_rule", r, repository, "", "")
 
-	err := c.Catalog.DeleteBranchProtectionRule(ctx, repository, body.Pattern)
+	rules, _, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusNoContent, nil)
+	for p := range rules.BranchPatternToBlockedActions {
+		if p == body.Pattern {
+			delete(rules.BranchPatternToBlockedActions, p)
+			err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+			writeResponse(w, r, http.StatusNoContent, nil)
+			return
+		}
+	}
+	writeResponse(w, r, http.StatusNotFound, nil)
 }
 
 func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, r *http.Request, repository string) {
@@ -3012,7 +3110,7 @@ func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, 
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.CreateBranchProtectionRuleJSONRequestBody, repository string) {
+func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.InternalCreateBranchProtectionRuleJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.SetBranchProtectionRulesAction,
@@ -3023,10 +3121,23 @@ func (c *Controller) CreateBranchProtectionRule(w http.ResponseWriter, r *http.R
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
-
-	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
-	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
-	err := c.Catalog.CreateBranchProtectionRule(ctx, repository, body.Pattern, blockedActions)
+	rules, _, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
+	if !errors.Is(err, graveler.ErrNotFound) {
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+	}
+	if rules == nil {
+		rules = &graveler.BranchProtectionRules{}
+	}
+	if rules.BranchPatternToBlockedActions == nil {
+		rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
+	}
+	blockedActions := &graveler.BranchProtectionBlockedActions{
+		Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT},
+	}
+	rules.BranchPatternToBlockedActions[body.Pattern] = blockedActions
+	err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4124,7 +4235,10 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
+	writeResponse(w, r, http.StatusOK, c.getVersionConfig())
+}
 
+func (c *Controller) getVersionConfig() apigen.VersionConfig {
 	// set upgrade recommended based on last security audit check
 	var (
 		upgradeRecommended *bool
@@ -4154,14 +4268,13 @@ func (c *Controller) GetLakeFSVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeResponse(w, r, http.StatusOK, apigen.VersionConfig{
+	return apigen.VersionConfig{
 		UpgradeRecommended: upgradeRecommended,
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
-	})
+	}
 }
-
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)
@@ -4424,7 +4537,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, emailer *email.Emailer, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
+func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -4438,7 +4551,6 @@ func NewController(cfg *config.Config, catalog catalog.Interface, authenticator 
 		Actions:               actions,
 		AuditChecker:          auditChecker,
 		Logger:                logger,
-		Emailer:               emailer,
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
 		otfDiffService:        otfDiffService,

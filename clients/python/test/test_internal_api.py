@@ -37,10 +37,29 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_dump_refs(self):
+        """Test case for dump_refs
+
+        Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations   # noqa: E501
+        """
+        pass
+
     def test_get_auth_capabilities(self):
         """Test case for get_auth_capabilities
 
         list authentication capabilities supported  # noqa: E501
+        """
+        pass
+
+    def test_get_garbage_collection_config(self):
+        """Test case for get_garbage_collection_config
+
+        """
+        pass
+
+    def test_get_lake_fs_version(self):
+        """Test case for get_lake_fs_version
+
         """
         pass
 
@@ -51,10 +70,60 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_storage_config(self):
+        """Test case for get_storage_config
+
+        """
+        pass
+
+    def test_internal_create_branch_protection_rule(self):
+        """Test case for internal_create_branch_protection_rule
+
+        """
+        pass
+
+    def test_internal_delete_branch_protection_rule(self):
+        """Test case for internal_delete_branch_protection_rule
+
+        """
+        pass
+
+    def test_internal_delete_garbage_collection_rules(self):
+        """Test case for internal_delete_garbage_collection_rules
+
+        """
+        pass
+
+    def test_internal_get_branch_protection_rules(self):
+        """Test case for internal_get_branch_protection_rules
+
+        get branch protection rules  # noqa: E501
+        """
+        pass
+
+    def test_internal_get_garbage_collection_rules(self):
+        """Test case for internal_get_garbage_collection_rules
+
+        """
+        pass
+
+    def test_internal_set_garbage_collection_rules(self):
+        """Test case for internal_set_garbage_collection_rules
+
+        """
+        pass
+
     def test_post_stats_events(self):
         """Test case for post_stats_events
 
         post stats events, this endpoint is meant for internal use only  # noqa: E501
+        """
+        pass
+
+    def test_restore_refs(self):
+        """Test case for restore_refs
+
+        Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations   # noqa: E501
         """
         pass
 

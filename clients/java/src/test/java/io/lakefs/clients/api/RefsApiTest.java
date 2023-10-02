@@ -20,7 +20,6 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.FindMergeBaseResult;
 import io.lakefs.clients.api.model.Merge;
 import io.lakefs.clients.api.model.MergeResult;
-import io.lakefs.clients.api.model.RefsDump;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -57,21 +56,6 @@ public class RefsApiTest {
         String delimiter = null;
         String type = null;
                 DiffList response = api.diffRefs(repository, leftRef, rightRef, after, amount, prefix, delimiter, type);
-        // TODO: test validations
-    }
-    
-    /**
-     * Dump repository refs (tags, commits, branches) to object store
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void dumpRefsTest() throws ApiException {
-        String repository = null;
-                RefsDump response = api.dumpRefs(repository);
         // TODO: test validations
     }
     
@@ -129,22 +113,6 @@ public class RefsApiTest {
         String destinationBranch = null;
         Merge merge = null;
                 MergeResult response = api.mergeIntoBranch(repository, sourceRef, destinationBranch, merge);
-        // TODO: test validations
-    }
-    
-    /**
-     * Restore repository refs (tags, commits, branches) from object store
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void restoreRefsTest() throws ApiException {
-        String repository = null;
-        RefsDump refsDump = null;
-                api.restoreRefs(repository, refsDump);
         // TODO: test validations
     }
     

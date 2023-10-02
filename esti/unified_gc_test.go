@@ -200,7 +200,7 @@ func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
 	createBranchRes, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: "dev2", Source: mainBranch})
 	testutil.MustDo(t, "Create branch dev2", err)
 	require.False(t, createBranchRes.StatusCode() > 299, "Create branch dev2")
-	setGCRulesRes, err := client.SetGarbageCollectionRulesWithResponse(ctx, repo, apigen.SetGarbageCollectionRulesJSONRequestBody{Branches: []apigen.GarbageCollectionRule{
+	setGCRulesRes, err := client.SetGCRulesWithResponse(ctx, repo, apigen.SetGCRulesJSONRequestBody{Branches: []apigen.GarbageCollectionRule{
 		{BranchId: "main", RetentionDays: 10}, {BranchId: "dev", RetentionDays: 7}, {BranchId: "dev", RetentionDays: 7},
 	}, DefaultRetentionDays: 7})
 	testutil.MustDo(t, "Set gc rules", err)

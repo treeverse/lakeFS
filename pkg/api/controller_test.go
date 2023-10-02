@@ -929,7 +929,16 @@ func TestController_CommitHandler(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
 		testutil.MustDo(t, "create repository", err)
-		err = deps.catalog.CreateBranchProtectionRule(ctx, repo, "main", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
+		rules := map[string]*graveler.BranchProtectionBlockedActions{
+			"main": {
+				Value: []graveler.BranchProtectionBlockedAction{
+					graveler.BranchProtectionBlockedAction_COMMIT,
+				},
+			},
+		}
+		err = deps.catalog.SetBranchProtectionRules(ctx, repo, &graveler.BranchProtectionRules{
+			BranchPatternToBlockedActions: rules,
+		}, swag.String(""))
 		testutil.MustDo(t, "protection rule", err)
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
 		testutil.MustDo(t, "commit to protected branch", err)
@@ -2560,7 +2569,16 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 			resp, err := uploadObjectHelper(t, ctx, clt, p, strings.NewReader(content), repo, branch)
 			verifyResponseOK(t, resp, err)
 		}
-		err = deps.catalog.CreateBranchProtectionRule(ctx, repo, "*", []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE})
+		rules := map[string]*graveler.BranchProtectionBlockedActions{
+			"*": {
+				Value: []graveler.BranchProtectionBlockedAction{
+					graveler.BranchProtectionBlockedAction_STAGING_WRITE,
+				},
+			},
+		}
+		err = deps.catalog.SetBranchProtectionRules(ctx, repo, &graveler.BranchProtectionRules{
+			BranchPatternToBlockedActions: rules,
+		}, swag.String(""))
 		testutil.Must(t, err)
 
 		// delete objects
@@ -4378,17 +4396,17 @@ func TestController_BranchProtectionRules(t *testing.T) {
 			}
 
 			// the result of an actual call to the endpoint should have the same result
-			resp, err := tc.clt.CreateBranchProtectionRuleWithResponse(currCtx, repo, apigen.CreateBranchProtectionRuleJSONRequestBody{
+			resp, err := tc.clt.InternalCreateBranchProtectionRuleWithResponse(currCtx, repo, apigen.InternalCreateBranchProtectionRuleJSONRequestBody{
 				Pattern: "main",
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 			if resp == nil {
-				t.Fatal("CreateBranchProtectionRuleWithResponse got no response")
+				t.Fatal("InternalCreateBranchProtectionRuleWithResponse got no response")
 			}
 			if resp.StatusCode() != respPreflight.StatusCode() {
-				t.Fatalf("CreateBranchProtectionRuleWithResponse and preflight shouls return the same unauthorized status expected %d, got %d", respPreflight.StatusCode(), resp.StatusCode())
+				t.Fatalf("InternalCreateBranchProtectionRuleWithResponse and preflight should return the same unauthorized status expected %d, got %d", respPreflight.StatusCode(), resp.StatusCode())
 			}
 		})
 	}
@@ -4437,7 +4455,7 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 			}
 
 			// the result of an actual call to the endpoint should have the same result
-			resp, err := tc.clt.SetGarbageCollectionRulesWithResponse(currCtx, repo, apigen.SetGarbageCollectionRulesJSONRequestBody{
+			resp, err := tc.clt.SetGCRulesWithResponse(currCtx, repo, apigen.SetGCRulesJSONRequestBody{
 				Branches: []apigen.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
 			})
 			if err != nil {

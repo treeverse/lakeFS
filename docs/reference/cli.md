@@ -2130,10 +2130,9 @@ lakectl fs download <path uri> [<destination path>] [flags]
 {:.no_toc}
 
 ```
-  -h, --help           help for download
-  -p, --parallel int   max concurrent downloads (default 6)
-      --pre-sign       Request pre-sign link to access the data
-  -r, --recursive      recursively all objects under path
+  -h, --help              help for download
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --pre-sign          Use pre-sign link to access the data
 ```
 
 
@@ -2256,8 +2255,8 @@ lakectl fs upload <path uri> [flags]
 ```
       --content-type string   MIME type of contents
   -h, --help                  help for upload
+  -p, --parallelism int       Max concurrent operations to perform (default 25)
       --pre-sign              Use pre-sign link to access the data
-  -r, --recursive             recursively copy all files under local source
   -s, --source string         local file to upload, or "-" for stdin
 ```
 
