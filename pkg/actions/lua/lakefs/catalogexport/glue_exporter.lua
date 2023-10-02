@@ -101,9 +101,9 @@ local function export_glue(glue, db, table_src_path, create_table_table_input, a
     local commit_id = action_info.commit_id
     -- get table desctiptor
     local descriptor = extractor.get_table_descriptor(lakefs, repo_id, commit_id, table_src_path)
-
+    
     -- build table creation input for glue
-    local table_input = opts.override_create_table_input or
+    local table_input = opts.create_table_input or
                             build_glue_create_table_input_from_hive(descriptor, create_table_table_input, action_info,
             opts)
     -- create table
@@ -113,7 +113,7 @@ local function export_glue(glue, db, table_src_path, create_table_table_input, a
     end
     glue.create_table(db, json_input)
     return {
-        create_table_input = table_input
+        table_input = table_input
     }
 end
 
