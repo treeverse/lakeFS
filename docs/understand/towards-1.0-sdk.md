@@ -1,6 +1,6 @@
 # lakeFS SDK in 1.0
 
-<img src="file:./images/1.0-is-coming.jpg" height="500px"
+<img src="./images/1.0-is-coming.jpg" height="500px"
 	alt="1.0 is coming: a double rainbow over a traffic jam in Tel Aviv"/>
 
 ## Goals

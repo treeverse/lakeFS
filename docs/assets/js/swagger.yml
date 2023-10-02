@@ -679,6 +679,8 @@ components:
           description: Unix Epoch in seconds
         friendly_name:
           type: string
+        email:
+          type: string
 
     CurrentUser:
       type: object
@@ -4429,7 +4431,7 @@ paths:
   /config/version:
     get:
       tags:
-        - config
+        - internal
       operationId: getLakeFSVersion
       description: get version of lakeFS server
       deprecated: true
@@ -4445,7 +4447,7 @@ paths:
   /config/storage:
     get:
       tags:
-        - config
+        - internal
       operationId: getStorageConfig
       description: retrieve lakeFS storage configuration
       deprecated: true
