@@ -41,7 +41,6 @@ func TestRepositoryCreateSampleRepo(t *testing.T) {
 	name := generateUniqueRepositoryName()
 	storageNamespace := generateUniqueStorageNamespace(name)
 	name = makeRepositoryName(name)
-	createRepository(ctx, t, name, storageNamespace)
 	logger.WithFields(logging.Fields{
 		"repository":        name,
 		"storage_namespace": storageNamespace,
