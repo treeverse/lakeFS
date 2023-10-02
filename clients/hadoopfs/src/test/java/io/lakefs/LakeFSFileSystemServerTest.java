@@ -172,7 +172,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     @Test
     public void testExists_NotExistsNoPrefix() throws IOException {
         Path path = new Path("lakefs://repo/main/doesNotExi.st");
-        expectListing("repo", "main", ImmutablePagination.builder().build());
+        mockListing("repo", "main", ImmutablePagination.builder().build());
         Assert.assertFalse(fs.exists(path));
     }
 

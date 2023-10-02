@@ -14,9 +14,9 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.*;
-import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.model.*;
+import io.lakefs.clients.sdk.model.ObjectStats.PathTypeEnum;
 import io.lakefs.utils.ObjectLocation;
 
 import org.apache.hadoop.conf.Configuration;
@@ -128,6 +128,8 @@ abstract class FSTestBase {
 
     @Before
     public void hadoopSetup() throws IOException, URISyntaxException {
+        s3Base = "blockstore://a-bucket/"; // Overridden if S3 will be used!
+
         conf = new Configuration(false);
 
         addHadoopConfiguration(conf);
@@ -150,9 +152,13 @@ abstract class FSTestBase {
                      .withStatusCode(200)
                      .withBody(gson.toJson(new StorageConfig()
                                            .blockstoreType("s3")
+                                           .blockstoreNamespaceExample("/not/really")
                                            .blockstoreNamespaceValidityRegex(".*")
                                            // TODO(ariels): Change for presigned?
-                                           .preSignSupport(false))));
+                                           .preSignSupport(false)
+                                           .preSignSupportUi(false)
+                                           .importSupport(false)
+                                           .importValidityRegex(".*"))));
 
         // Always allow repo "repo" to be found, it's used in all tests.
         mockServerClient.when(request()
@@ -180,6 +186,15 @@ abstract class FSTestBase {
     }
 
     protected void moreHadoopSetup() {}
+
+    protected ObjectStats makeObjectStats(String path) {
+        return new ObjectStats()
+            .pathType(PathTypeEnum.OBJECT)
+            .path(path)
+            .checksum(UNUSED_CHECKSUM)
+            .physicalAddress("physical://unused/" + path)
+            .mtime(UNUSED_MTIME);
+    }
 
     // Mock this statObject call not to be found
     protected void mockStatObjectNotFound(String repo, String ref, String path) {
@@ -223,9 +238,7 @@ abstract class FSTestBase {
 
             allStats = new ObjectStats[files.length];
             for (int i = 0; i < files.length; i++) {
-                allStats[i] = new ObjectStats()
-                    .pathType(PathTypeEnum.OBJECT)
-                    .path(dir + Constants.SEPARATOR + files[i]);
+                allStats[i] = makeObjectStats(dir + Constants.SEPARATOR + files[i]);
             }
         }
 
@@ -236,8 +249,7 @@ abstract class FSTestBase {
     }
 
     protected void mockUploadObject(String repo, String branch, String path) {
-        StagingLocation stagingLocation = new StagingLocation()
-            .token("token:foo:" + sessionId())
+        ObjectStats uploadedStats = makeObjectStats(path)
             .physicalAddress(s3Url(String.format("repo-base/dir-marker/%s/%s/%s/%s",
                                                  sessionId(), repo, branch, path)));
         mockServerClient.when(request()
@@ -245,7 +257,7 @@ abstract class FSTestBase {
                               .withPath(String.format("/repositories/%s/branches/%s/objects", repo, branch))
                               .withQueryStringParameter("path", path))
             .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(stagingLocation)));
+                     .withBody(gson.toJson(uploadedStats)));
     }
 
     protected void mockGetBranch(String repo, String branch) {
@@ -292,8 +304,7 @@ abstract class FSTestBase {
 
     protected ObjectStats mockDirectoryMarker(ObjectLocation objectLoc) {
         // Mock parent directory to show the directory marker exists.
-        ObjectStats markerStats = new ObjectStats()
-            .path(objectLoc.getPath())
+        ObjectStats markerStats = makeObjectStats(objectLoc.getPath())
             .pathType(PathTypeEnum.OBJECT);
         mockServerClient.when(request()
                               .withMethod("GET")
@@ -323,11 +334,13 @@ abstract class FSTestBase {
         if (pagination.prefix().isPresent()) {
             req = req.withQueryStringParameter("prefix", pagination.prefix().or(""));
         }
+        ObjectStatsList resp = new ObjectStatsList()
+            .results(Arrays.asList(stats))
+            .pagination(new io.lakefs.clients.sdk.model.Pagination()
+                        .hasMore(hasMore).maxPerPage(10000).results(stats.length).nextOffset("zz"));
         mockServerClient.when(req)
             .respond(response()
                      .withStatusCode(200)
-                     .withBody(gson.toJson(ImmutableMap.of("results", Arrays.asList(stats),
-                                                           "pagination",
-                                                           new io.lakefs.clients.api.model.Pagination().hasMore(hasMore)))));
+                     .withBody(gson.toJson(resp)));
     }
 }

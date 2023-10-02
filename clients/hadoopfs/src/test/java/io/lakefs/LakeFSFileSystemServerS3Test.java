@@ -3,9 +3,9 @@ package io.lakefs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.lakefs.clients.api.model.*;
-import io.lakefs.clients.api.model.ObjectStats.PathTypeEnum;
-import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.sdk.model.*;
+import io.lakefs.clients.sdk.model.ObjectStats.PathTypeEnum;
+import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.utils.ObjectLocation;
 
 import org.apache.commons.io.IOUtils;
@@ -142,8 +142,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         // sub1/sub2 was an empty directory with no marker.
         mockStatObjectNotFound("repo", "main", "sub1/sub2/");
 
-        ObjectStats newStats = new ObjectStats()
-            .path("sub1/sub2/create.me")
+        ObjectStats newStats = makeObjectStats("sub1/sub2/create.me")
             .pathType(PathTypeEnum.OBJECT)
             .physicalAddress(stagingLocation.getPhysicalAddress()).
             checksum(UNUSED_CHECKSUM).
@@ -186,8 +185,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         StagingLocation stagingLocation =
             mockGetPhysicalAddress("repo", "main", "dir1/dir2/dir3/", "repo-base/emptyDir");
 
-        ObjectStats newStats = new ObjectStats()
-            .path("dir1/dir2/dir3/")
+        ObjectStats newStats = makeObjectStats("dir1/dir2/dir3/")
             .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/dir12"));
         mockStatObject("repo", "main", "dir1/dir2/dir3/", newStats);
 
@@ -216,8 +214,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         // path is a directory -- so cannot be created as a file.
 
         mockStatObjectNotFound("repo", "main", "sub1/sub2/create.me");
-        ObjectStats stats = new ObjectStats()
-            .path("sub1/sub2/create.me/")
+        ObjectStats stats = makeObjectStats("sub1/sub2/create.me/")
             .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/sub1/sub2/create.me"));
         mockStatObject("repo", "main", "sub1/sub2/create.me/", stats);
 
@@ -232,7 +229,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
 
         ObjectLocation dir = new ObjectLocation("lakefs", "repo", "main", "sub1/sub2");
         mockStatObject("repo", "main", "sub1/sub2/create.me",
-                       new ObjectStats().path("sub1/sub2/create.me"));
+                       makeObjectStats("sub1/sub2/create.me"));
         Exception e = Assert.assertThrows(FileAlreadyExistsException.class,
                             () -> fs.create(path, false));
         Assert.assertThat(e.getMessage(), new StringContains("already exists"));
@@ -248,7 +245,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         Path path = new Path("lakefs://repo/main/read.me");
 
         mockStatObject("repo", "main", "read.me",
-                       new ObjectStats()
+                       makeObjectStats("read.me")
                        .physicalAddress(physicalKey)
                        .checksum(UNUSED_CHECKSUM)
                        .mtime(UNUSED_MTIME)
@@ -293,7 +290,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
             s3Client.putObject(new PutObjectRequest(s3Bucket, key, new ByteArrayInputStream(contentsBytes), s3Metadata));
 
             String path = String.format("lakefs://repo/main/%s-x", suffix);
-            ObjectStats stats = new ObjectStats()
+            ObjectStats stats = makeObjectStats(suffix + "-x")
                 .physicalAddress(pac.createGetPhysicalAddress(this, key))
                 .sizeBytes((long) contentsBytes.length);
             mockStatObject("repo", "main", suffix + "-x", stats);
