@@ -698,6 +698,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	for _, u := range users {
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
+			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
 		})
 	}
@@ -1057,6 +1058,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 	for _, u := range users {
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
+			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
 		})
 	}
@@ -1125,6 +1127,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	}
 	response := apigen.User{
 		Id:           u.Username,
+		Email:        u.Email,
 		CreationDate: u.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -1174,6 +1177,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 	}
 	response := apigen.User{
 		CreationDate: u.CreatedAt.Unix(),
+		Email:        u.Email,
 		Id:           u.Username,
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1462,6 +1466,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
 }
+
 func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
@@ -1479,6 +1484,7 @@ func (c *Controller) getStorageConfig() apigen.StorageConfig {
 		ImportValidityRegex:              info.ImportValidityRegex,
 	}
 }
+
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -4221,6 +4227,7 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		} else {
 			user.FriendlyName = &u.Username
 		}
+		user.Email = u.Email
 	}
 	response := apigen.CurrentUser{
 		User: user,
@@ -4275,6 +4282,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		LatestVersion:      latestVersion,
 	}
 }
+
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)
