@@ -2267,20 +2267,20 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	return &dstEntry, nil
 }
 
-func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
+func (c *Catalog) SetLinkAddress(ctx context.Context, repository, physicalAddress string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
-	return c.Store.SetLinkAddress(ctx, repo, token)
+	return c.Store.SetLinkAddress(ctx, repo, physicalAddress)
 }
 
-func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token string) error {
+func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, physicalAddress string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
-	return c.Store.VerifyLinkAddress(ctx, repo, token)
+	return c.Store.VerifyLinkAddress(ctx, repo, physicalAddress)
 }
 
 func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {

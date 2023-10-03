@@ -173,8 +173,8 @@ type Interface interface {
 	SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress to validate single use limited in time of a given physical address
-	SetLinkAddress(ctx context.Context, repository, token string) error
-	VerifyLinkAddress(ctx context.Context, repository, token string) error
+	SetLinkAddress(ctx context.Context, repository, physicalAddress string) error
+	VerifyLinkAddress(ctx context.Context, repository, physicalAddress string) error
 	DeleteExpiredLinkAddresses(ctx context.Context)
 
 	io.Closer

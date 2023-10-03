@@ -239,7 +239,7 @@ type RefsFake struct {
 	ListCommitsRes      graveler.CommitIterator
 	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
-	addressTokenIter    graveler.AddressTokenIterator
+	linkAddressIterator graveler.LinkAddressIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
 	Branch              *graveler.Branch
@@ -433,8 +433,8 @@ func (m *RefsFake) SetLinkAddress(context.Context, *graveler.RepositoryRecord, s
 	return nil
 }
 
-func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
-	return m.addressTokenIter, nil
+func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
+	return m.linkAddressIterator, nil
 }
 
 func (m *RefsFake) IsLinkAddressExpired(*graveler.LinkAddressData) (bool, error) {
