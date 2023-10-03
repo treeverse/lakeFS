@@ -122,7 +122,5 @@ var fsDownloadCmd = &cobra.Command{
 func init() {
 	fsDownloadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
 	withParallelismFlag(fsDownloadCmd)
-	fsDownloadCmd.Flags().BoolP("recursive", "r", false, "recursively all objects under path")
-	_ = fsDownloadCmd.Flags().MarkDeprecated("recursive", "recursive flag is deprecated and will be removed in a future release")
 	fsCmd.AddCommand(fsDownloadCmd)
 }
