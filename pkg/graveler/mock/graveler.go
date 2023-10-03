@@ -481,11 +481,11 @@ func (mr *MockVersionControllerMockRecorder) GetBranch(ctx, repository, branchID
 }
 
 // GetBranchProtectionRules mocks base method.
-func (m *MockVersionController) GetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
+func (m *MockVersionController) GetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBranchProtectionRules", ctx, repository)
 	ret0, _ := ret[0].(*graveler.BranchProtectionRules)
-	ret1, _ := ret[1].(string)
+	ret1, _ := ret[1].(*string)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -2870,26 +2870,12 @@ func (m *MockProtectedBranchesManager) EXPECT() *MockProtectedBranchesManagerMoc
 	return m.recorder
 }
 
-// Delete mocks base method.
-func (m *MockProtectedBranchesManager) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, repository, branchNamePattern)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockProtectedBranchesManagerMockRecorder) Delete(ctx, repository, branchNamePattern interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Delete), ctx, repository, branchNamePattern)
-}
-
 // GetRules mocks base method.
-func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
+func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRules", ctx, repository)
 	ret0, _ := ret[0].(*graveler.BranchProtectionRules)
-	ret1, _ := ret[1].(string)
+	ret1, _ := ret[1].(*string)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -2930,7 +2916,7 @@ func (mr *MockProtectedBranchesManagerMockRecorder) SetRules(ctx, repository, ru
 }
 
 // SetRulesIf mocks base method.
-func (m *MockProtectedBranchesManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum string) error {
+func (m *MockProtectedBranchesManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetRulesIf", ctx, repository, rules, lastKnownChecksum)
 	ret0, _ := ret[0].(error)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-openapi/swag"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
@@ -44,6 +45,8 @@ const (
 	RepoMetadataUpdateMaxElapsedTime = 15 * time.Second
 	RepoMetadataUpdateRandomFactor   = 0.5
 )
+
+const BranchProtectionSkipValidationChecksum = "skip-checksum-validation"
 
 // Basic Types
 
@@ -471,7 +474,7 @@ type KeyValueStore interface {
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 
-	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
+	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by X in PrepareGCUncommitted
 	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
@@ -611,11 +614,12 @@ type VersionController interface {
 
 	// GetBranchProtectionRules return all branch protection rules for the repository.
 	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for a conditional update.
-	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
+	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error)
 
 	// SetBranchProtectionRules sets the branch protection rules for the repository.
 	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
-	// If lastKnownChecksum is nil, the update is always performed.
+	// If lastKnownChecksum is nil, the update is performed only if no rules exist.
+	// If lastKnownChecksum is equal to BranchProtectionSkipValidationChecksum, the update is always performed.
 	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
@@ -1493,15 +1497,16 @@ func (g *Graveler) GCNewRunID() string {
 	return g.garbageCollectionManager.NewID()
 }
 
-func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error) {
+func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
-	if lastKnownChecksum == nil {
+	if swag.StringValue(lastKnownChecksum) == BranchProtectionSkipValidationChecksum {
+		// TODO(johnnyaug): remove this logic and constant once the legacy API is dropped.
 		return g.protectedBranchesManager.SetRules(ctx, repository, rules)
 	}
-	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, *lastKnownChecksum)
+	return g.protectedBranchesManager.SetRulesIf(ctx, repository, rules, lastKnownChecksum)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -3235,16 +3240,14 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
-	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
-	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
 	// GetRules returns all branch protection rules for the repository.
 	// The returned checksum represents the current state of the rules, and can be passed to SetRulesIf for conditional updates.
-	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, string, error)
+	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error)
 	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules) error
 	// SetRulesIf sets the branch protection rules for the repository.
 	// If lastKnownChecksum does not match the current checksum, returns ErrPreconditionFailed.
-	// If lastKnownChecksum is empty, the rules are set only if no rules are currently set.
-	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum string) error
+	// If lastKnownChecksum is nil, the rules are set only if no rules are currently set.
+	SetRulesIf(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }
