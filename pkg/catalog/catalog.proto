@@ -22,3 +22,30 @@ message Entry {
 	AddressType address_type = 6;
 	string content_type = 7;
 }
+
+message Task {
+	string id = 1;
+	bool completed = 2;
+	google.protobuf.Timestamp updated_at = 3;
+	int64 progress = 4;
+	//  string metarange_id = 5;
+	//  CommitData commit = 6;
+	string error = 7;
+}
+
+message RefsDumpInfo {
+	string commits_metarange_id = 1;
+	string tags_metarange_id = 2;
+	string branches_metarange_id = 3;
+}
+
+message RefsDumpStatus {
+	Task task = 1;
+	RefsDumpInfo info = 2;
+}
+
+message RefsRestoreStatus {
+	Task task = 1;
+}
+
+

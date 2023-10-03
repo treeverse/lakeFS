@@ -18,6 +18,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -41,6 +42,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -63,6 +65,10 @@ const (
 	// Total per entry ~52 bytes
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
+
+	taskIDNanoLength           = 20
+	dumpRefsTaskIDPrefix       = "RD"
+	restoreRestoreTaskIDPrefix = "RD"
 )
 
 type Path string
@@ -1432,7 +1438,7 @@ func (h *commitLogJobHeap) Pop() interface{} {
 }
 
 // checkPathListInCommit checks whether the given commit contains changes to a list of paths.
-// it searches the path in the diff between the commit, and it's parent, but do so only to commits
+// it searches the path in the diff between the commit, and it's parent, but does so only to commit
 // that have single parent (not merge commits)
 func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit *graveler.CommitRecord, pathList []PathRecord, commitCache *lru.Cache) (bool, error) {
 	left := commit.Parents[0]
@@ -1502,7 +1508,7 @@ func (c *Catalog) checkPathListInCommit(ctx context.Context, repository *gravele
 				return false, err
 			}
 
-			// if left or right are missing or doesn't hold the same identify
+			// if left or right are missing or doesn't hold the same identity
 			// we want the commit log
 			if leftObject == nil && rightObject != nil ||
 				leftObject != nil && rightObject == nil ||
@@ -1819,67 +1825,143 @@ func (c *Catalog) FindMergeBase(ctx context.Context, repositoryID string, destin
 	return fromCommit.CommitID.String(), toCommit.CommitID.String(), c.addressProvider.ContentAddress(baseCommit), nil
 }
 
-func (c *Catalog) DumpCommits(ctx context.Context, repositoryID string) (string, error) {
+func (c *Catalog) DumpRefsSubmit(ctx context.Context, repositoryID string) (string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
 
-	metaRangeID, err := c.Store.DumpCommits(ctx, repository)
-	if err != nil {
+	// create refs dump task and update initial status
+	taskID := newTaskID(dumpRefsTaskIDPrefix)
+	taskStatus := &RefsDumpStatus{
+		Task: &Task{
+			Id:        taskID,
+			Completed: false,
+			UpdatedAt: timestamppb.Now(),
+		},
+		Info: &RefsDumpInfo{},
+	}
+	if err := c.updateTaskStatus(ctx, repository, taskID, taskStatus); err != nil {
 		return "", err
 	}
-	return string(*metaRangeID), nil
+
+	c.workPool.Submit(func() {
+		// update task status on task exit
+		defer func(status *RefsDumpStatus) {
+			status.Task.Completed = true
+			if err != nil {
+				status.Task.Error = err.Error()
+			}
+			_ = c.updateTaskStatus(ctx, repository, taskID, taskStatus)
+		}(taskStatus)
+
+		// dump refs - keep using the same error variable for the defer status update
+		var commitsMetaRangeID *graveler.MetaRangeID
+		commitsMetaRangeID, err = c.Store.DumpCommits(ctx, repository)
+		if err != nil {
+			return
+		}
+		taskStatus.Info.CommitsMetarangeId = string(*commitsMetaRangeID)
+
+		var branchesMetaRangeID *graveler.MetaRangeID
+		branchesMetaRangeID, err = c.Store.DumpBranches(ctx, repository)
+		if err != nil {
+			return
+		}
+		taskStatus.Info.BranchesMetarangeId = string(*branchesMetaRangeID)
+
+		var tagsMetaRangeID *graveler.MetaRangeID
+		tagsMetaRangeID, err = c.Store.DumpTags(ctx, repository)
+		if err != nil {
+			return
+		}
+		taskStatus.Info.TagsMetarangeId = string(*tagsMetaRangeID)
+	})
+	return taskID, nil
 }
 
-func (c *Catalog) DumpBranches(ctx context.Context, repositoryID string) (string, error) {
+func (c *Catalog) DumpRefsStatus(ctx context.Context, repositoryID string, id string) (*RefsDumpStatus, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	if isTaskID(dumpRefsTaskIDPrefix, id) {
+		return nil, graveler.ErrNotFound
+	}
+
+	var taskStatus RefsDumpStatus
+	err = c.getTaskStatus(ctx, repository, id, &taskStatus)
+	if err != nil {
+		return nil, err
+	}
+	return &taskStatus, nil
+}
+
+func (c *Catalog) RestoreRefsSubmit(ctx context.Context, repositoryID string, info *RefsDumpInfo) (string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
 	}
-
-	metaRangeID, err := c.Store.DumpBranches(ctx, repository)
-	if err != nil {
+	// create refs restore task and update initial status
+	taskID := newTaskID(restoreRestoreTaskIDPrefix)
+	taskStatus := &RefsDumpStatus{
+		Task: &Task{
+			Id:        taskID,
+			Completed: false,
+			UpdatedAt: timestamppb.Now(),
+		},
+		Info: &RefsDumpInfo{},
+	}
+	if err := c.updateTaskStatus(ctx, repository, taskID, taskStatus); err != nil {
 		return "", err
 	}
-	return string(*metaRangeID), nil
+
+	c.workPool.Submit(func() {
+		// update task status on task exit
+		defer func(status *RefsDumpStatus) {
+			status.Task.Completed = true
+			if err != nil {
+				status.Task.Error = err.Error()
+			}
+			_ = c.updateTaskStatus(ctx, repository, taskID, taskStatus)
+		}(taskStatus)
+
+		commitsMetaRangeID := graveler.MetaRangeID(info.CommitsMetarangeId)
+		err = c.Store.LoadCommits(ctx, repository, commitsMetaRangeID)
+		if err != nil {
+			return
+		}
+
+		branchesMetaRangeID := graveler.MetaRangeID(info.BranchesMetarangeId)
+		err = c.Store.LoadBranches(ctx, repository, branchesMetaRangeID)
+		if err != nil {
+			return
+		}
+
+		tagsMetaRangeID := graveler.MetaRangeID(info.TagsMetarangeId)
+		err = c.Store.LoadTags(ctx, repository, tagsMetaRangeID)
+		if err != nil {
+			return
+		}
+	})
+	return taskID, nil
 }
 
-func (c *Catalog) DumpTags(ctx context.Context, repositoryID string) (string, error) {
+func (c *Catalog) RestoreRefsStatus(ctx context.Context, repositoryID string, id string) (*RefsRestoreStatus, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	if isTaskID(restoreRestoreTaskIDPrefix, id) {
+		return nil, graveler.ErrNotFound
 	}
 
-	metaRangeID, err := c.Store.DumpTags(ctx, repository)
+	var status RefsRestoreStatus
+	err = c.getTaskStatus(ctx, repository, id, &status)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(*metaRangeID), nil
-}
-
-func (c *Catalog) LoadCommits(ctx context.Context, repositoryID, commitsMetaRangeID string) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.LoadCommits(ctx, repository, graveler.MetaRangeID(commitsMetaRangeID))
-}
-
-func (c *Catalog) LoadBranches(ctx context.Context, repositoryID, branchesMetaRangeID string) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.LoadBranches(ctx, repository, graveler.MetaRangeID(branchesMetaRangeID))
-}
-
-func (c *Catalog) LoadTags(ctx context.Context, repositoryID, tagsMetaRangeID string) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.LoadTags(ctx, repository, graveler.MetaRangeID(tagsMetaRangeID))
+	return &status, nil
 }
 
 func (c *Catalog) GetMetaRange(ctx context.Context, repositoryID, metaRangeID string) (graveler.MetaRangeAddress, error) {
@@ -2209,7 +2291,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 	if err != nil {
 		return "", err
 	}
-	// location is full path to underlying storage - join a unique filename and upload data
+	// location is a full path to underlying storage - join a unique filename and upload data
 	name := xid.New().String()
 	identifier, err := url.JoinPath(location, name)
 	if err != nil {
@@ -2445,6 +2527,32 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	return err
 }
 
+func (c *Catalog) updateTaskStatus(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, statusMsg protoreflect.ProtoMessage) error {
+	err := kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.TaskPath(taskID)), statusMsg)
+	if err != nil {
+		c.log(ctx).
+			WithError(err).
+			WithFields(logging.Fields{
+				"task_id":    taskID,
+				"repository": repository.RepositoryID,
+			}).
+			Error("failed to update task status")
+		return err
+	}
+	return nil
+}
+
+func (c *Catalog) getTaskStatus(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, statusMsg protoreflect.ProtoMessage) error {
+	_, err := kv.GetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.TaskPath(taskID)), statusMsg)
+	if err != nil {
+		if errors.Is(err, kv.ErrNotFound) {
+			return graveler.ErrNotFound
+		}
+		return err
+	}
+	return nil
+}
+
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
 	b := NewDBEntryBuilder().
 		CommonLevel(commonPrefix).
@@ -2509,4 +2617,12 @@ func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
 
 func (w *UncommittedWriter) Size() int64 {
 	return w.size
+}
+
+func newTaskID(prefix string) string {
+	return prefix + nanoid.Must(taskIDNanoLength)
+}
+
+func isTaskID(prefix, taskID string) bool {
+	return len(taskID) == len(prefix)+taskIDNanoLength && strings.HasPrefix(taskID, prefix)
 }

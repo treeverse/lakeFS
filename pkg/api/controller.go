@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -3215,7 +3214,7 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository string) {
+func (c *Controller) DumpRefsSubmit(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -3241,54 +3240,76 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 	}) {
 		return
 	}
+
 	ctx := r.Context()
 	c.LogAction(ctx, "dump_repository_refs", r, repository, "", "")
 
-	repo, err := c.Catalog.GetRepository(ctx, repository)
+	taskID, err := c.Catalog.DumpRefsSubmit(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-
-	// dump all types:
-	tagsID, err := c.Catalog.DumpTags(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	branchesID, err := c.Catalog.DumpBranches(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	commitsID, err := c.Catalog.DumpCommits(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	response := apigen.RefsDump{
-		BranchesMetaRangeId: branchesID,
-		CommitsMetaRangeId:  commitsID,
-		TagsMetaRangeId:     tagsID,
-	}
-
-	// write this to the block store
-	manifestBytes, err := json.MarshalIndent(response, "", "  ")
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
-		StorageNamespace: repo.StorageNamespace,
-		IdentifierType:   block.IdentifierTypeRelative,
-		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
-	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-	writeResponse(w, r, http.StatusCreated, response)
+	writeResponse(w, r, http.StatusAccepted, apigen.RefsDumpTask{
+		Id: taskID,
+	})
 }
 
-func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body apigen.RestoreRefsJSONRequestBody, repository string) {
+func (c *Controller) DumpRefsStatus(w http.ResponseWriter, r *http.Request, repository string, taskID string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListTagsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListBranchesAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListCommitsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	// get the current status
+	ctx := r.Context()
+	status, err := c.Catalog.DumpRefsStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// build response based on status
+	response := &apigen.RefsDumpStatus{
+		Id: taskID,
+	}
+	switch {
+	case status.Task.Error != "":
+		response.Status = "failed"
+	case status.Task.Completed:
+		response.Status = "completed"
+	default:
+		response.Status = "running"
+	}
+	if status.Info != nil {
+		response.Refs = &apigen.RefsDump{
+			CommitsMetaRangeId:  status.Info.CommitsMetarangeId,
+			TagsMetaRangeId:     status.Info.TagsMetarangeId,
+			BranchesMetaRangeId: status.Info.BranchesMetarangeId,
+		}
+	}
+	writeResponse(w, r, http.StatusAccepted, response)
+}
+
+func (c *Controller) RestoreRefsSubmit(w http.ResponseWriter, r *http.Request, body apigen.RestoreRefsSubmitJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -3315,40 +3336,203 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "restore_repository_refs", r, repository, "", "")
+	c.LogAction(ctx, "restore_refs_submit", r, repository, "", "")
 
-	repo, err := c.Catalog.GetRepository(ctx, repository)
+	info := &catalog.RefsDumpInfo{
+		CommitsMetarangeId:  body.Refs.CommitsMetaRangeId,
+		TagsMetarangeId:     body.Refs.TagsMetaRangeId,
+		BranchesMetarangeId: body.Refs.BranchesMetaRangeId,
+	}
+	taskID, err := c.Catalog.RestoreRefsSubmit(ctx, repository, info)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-
-	// ensure no refs currently found
-	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, catalog.LogParams{
-		PathList:      make([]catalog.PathRecord, 0),
-		FromReference: "",
-		Amount:        1,
+	writeResponse(w, r, http.StatusAccepted, apigen.RefsDumpTask{
+		Id: taskID,
 	})
-	if !errors.Is(err, graveler.ErrNotFound) {
-		writeError(w, r, http.StatusBadRequest, "can only restore into a bare repository")
-		return
-	}
-
-	// load commits
-	err = c.Catalog.LoadCommits(ctx, repo.Name, body.CommitsMetaRangeId)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	err = c.Catalog.LoadBranches(ctx, repo.Name, body.BranchesMetaRangeId)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	err = c.Catalog.LoadTags(ctx, repo.Name, body.TagsMetaRangeId)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
 }
+
+func (c *Controller) RestoreRefsStatus(w http.ResponseWriter, r *http.Request, body apigen.RestoreRefsStatusJSONRequestBody, repository string, taskID string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateTagAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateBranchAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "restore_refs_status", r, repository, "", "")
+
+	status, err := c.Catalog.RestoreRefsStatus(ctx, repository, taskID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	response := &apigen.RefsRestoreStatus{
+		Id: taskID,
+	}
+	switch {
+	case status.Task.Error != "":
+		response.Status = "failed"
+	case status.Task.Completed:
+		response.Status = "completed"
+	default:
+		response.Status = "running"
+	}
+	writeResponse(w, r, http.StatusAccepted, response)
+}
+
+//func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository string) {
+//	if !c.authorize(w, r, permissions.Node{
+//		Type: permissions.NodeTypeAnd,
+//		Nodes: []permissions.Node{
+//			{
+//				Permission: permissions.Permission{
+//					Action:   permissions.ListTagsAction,
+//					Resource: permissions.RepoArn(repository),
+//				},
+//			},
+//			{
+//				Permission: permissions.Permission{
+//					Action:   permissions.ListBranchesAction,
+//					Resource: permissions.RepoArn(repository),
+//				},
+//			},
+//			{
+//				Permission: permissions.Permission{
+//					Action:   permissions.ListCommitsAction,
+//					Resource: permissions.RepoArn(repository),
+//				},
+//			},
+//		},
+//	}) {
+//		return
+//	}
+//	ctx := r.Context()
+//	c.LogAction(ctx, "dump_repository_refs", r, repository, "", "")
+//
+//	repo, err := c.Catalog.GetRepository(ctx, repository)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//
+//	// dump all types:
+//	tagsID, err := c.Catalog.DumpTags(ctx, repository)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//
+//	branchesID, err := c.Catalog.DumpBranches(ctx, repository)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//	commitsID, err := c.Catalog.DumpCommits(ctx, repository)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//
+//	response := apigen.RefsDump{
+//		BranchesMetaRangeId: branchesID,
+//		CommitsMetaRangeId:  commitsID,
+//		TagsMetaRangeId:     tagsID,
+//	}
+//
+//	// write this to the block store
+//	manifestBytes, err := json.MarshalIndent(response, "", "  ")
+//	if err != nil {
+//		writeError(w, r, http.StatusInternalServerError, err)
+//		return
+//	}
+//	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
+//		StorageNamespace: repo.StorageNamespace,
+//		IdentifierType:   block.IdentifierTypeRelative,
+//		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
+//	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
+//	if err != nil {
+//		writeError(w, r, http.StatusInternalServerError, err)
+//		return
+//	}
+//	writeResponse(w, r, http.StatusCreated, response)
+//}
+
+//func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body apigen.RestoreRefsJSONRequestBody, repository string) {
+//	if !c.authorize(w, r, permissions.Node{
+//		Type: permissions.NodeTypeAnd,
+//		Nodes: []permissions.Node{
+//			{
+//				Permission: permissions.Permission{
+//					Action:   permissions.CreateTagAction,
+//					Resource: permissions.RepoArn(repository),
+//				},
+//			},
+//			{
+//				Permission: permissions.Permission{
+//					Action:   permissions.CreateBranchAction,
+//					Resource: permissions.RepoArn(repository),
+//				},
+//			},
+//			{
+//				Permission: permissions.Permission{
+//					Action:   permissions.CreateCommitAction,
+//					Resource: permissions.RepoArn(repository),
+//				},
+//			},
+//		},
+//	}) {
+//		return
+//	}
+//	ctx := r.Context()
+//	c.LogAction(ctx, "restore_repository_refs", r, repository, "", "")
+//
+//	repo, err := c.Catalog.GetRepository(ctx, repository)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//
+//	// ensure no refs currently found
+//	_, _, err = c.Catalog.ListCommits(ctx, repo.Name, repo.DefaultBranch, catalog.LogParams{
+//		PathList:      make([]catalog.PathRecord, 0),
+//		FromReference: "",
+//		Amount:        1,
+//	})
+//	if !errors.Is(err, graveler.ErrNotFound) {
+//		writeError(w, r, http.StatusBadRequest, "can only restore into a bare repository")
+//		return
+//	}
+//
+//	// load commits
+//	err = c.Catalog.LoadCommits(ctx, repo.Name, body.CommitsMetaRangeId)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//
+//	err = c.Catalog.LoadBranches(ctx, repo.Name, body.BranchesMetaRangeId)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//
+//	err = c.Catalog.LoadTags(ctx, repo.Name, body.TagsMetaRangeId)
+//	if c.handleAPIError(ctx, w, r, err) {
+//		return
+//	}
+//}
 
 func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CreateSymlinkFileParams) {
 	if !c.authorize(w, r, permissions.Node{

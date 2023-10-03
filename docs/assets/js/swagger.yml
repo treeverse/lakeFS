@@ -594,18 +594,72 @@ components:
         ref:
           type: string
 
+    RefsDumpTask:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: ID of the task
+
+    RefsDumpStatus:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        refs:
+            $ref: "#/components/schemas/RefsDump"
+
+    RefsRestoreTask:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        refs:
+          $ref: "#/components/schemas/RefsDump"
+
+    RefsRestoreStatus:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+
     RefsDump:
       type: object
       required:
-        - branches_meta_range_id
-        - tags_meta_range_id
         - commits_meta_range_id
+        - tags_meta_range_id
+        - branches_meta_range_id
       properties:
         commits_meta_range_id:
           type: string
         tags_meta_range_id:
           type: string
         branches_meta_range_id:
+          type: string
+        commits_meta_object_url:
+          type: string
+        tags_meta_object_url:
+          type: string
+        branches_meta_object_url:
           type: string
 
     StorageURI:
@@ -2627,20 +2681,51 @@ paths:
         required: true
         schema:
           type: string
-    put:
+    post:
       tags:
-        - internal
-      operationId: dumpRefs
-      summary: |
-        Dump repository refs (tags, commits, branches) to object store
-        Deprecated: a new API will introduce long running operations
+        - refs
+      operationId: dumpRefsSubmit
+      summary: Dump repository refs (tags, commits, branches) to object store
+      responses:
+        201:
+          description: refs dump task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefsDumpTask"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/refs/dump/{task_id}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - refs
+      operationId: dumpRefsStatus
+      summary: Dump repository refs (tags, commits, branches) to object store
       responses:
         201:
           description: refs dump
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RefsDump"
+                $ref: "#/components/schemas/RefsDumpStatus"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -2659,19 +2744,52 @@ paths:
         required: true
         schema:
           type: string
-    put:
+    post:
       tags:
-        - internal
-      operationId: restoreRefs
-      summary: |
-        Restore repository refs (tags, commits, branches) from object store.
-        Deprecated: a new API will introduce long running operations
+        - refs
+      operationId: restoreRefsSubmit
+      summary: Restore repository refs (tags, commits, branches) from object store
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsDump"
+              $ref: "#/components/schemas/RefsRestoreTask"
+      responses:
+        200:
+          description: refs successfully loaded
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/refs/restore/{task_id}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: task_id
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - refs
+      operationId: restoreRefsStatus
+      summary: Restore repository refs (tags, commits, branches) from object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefsRestoreStatus"
       responses:
         200:
           description: refs successfully loaded
