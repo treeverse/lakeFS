@@ -14,7 +14,6 @@
 package io.lakefs.clients.sdk.model;
 
 import java.util.Objects;
-import java.util.Arrays;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
@@ -23,6 +22,7 @@ import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.sdk.model.DiffProperties;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -189,17 +189,18 @@ public class OTFDiffs {
   }
 
  /**
-  * Validates the JSON Object and throws an exception if issues found
+  * Validates the JSON Element and throws an exception if issues found
   *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to OTFDiffs
+  * @param jsonElement JSON Element
+  * @throws IOException if the JSON Element is invalid with respect to OTFDiffs
   */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!OTFDiffs.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!OTFDiffs.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
           throw new IllegalArgumentException(String.format("The required field(s) %s in OTFDiffs is not found in the empty JSON string", OTFDiffs.openapiRequiredFields.toString()));
         }
       }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (jsonObj.get("diffs") != null && !jsonObj.get("diffs").isJsonNull()) {
         JsonArray jsonArraydiffs = jsonObj.getAsJsonArray("diffs");
         if (jsonArraydiffs != null) {
@@ -210,7 +211,7 @@ public class OTFDiffs {
 
           // validate the optional field `diffs` (array)
           for (int i = 0; i < jsonArraydiffs.size(); i++) {
-            DiffProperties.validateJsonObject(jsonArraydiffs.get(i).getAsJsonObject());
+            DiffProperties.validateJsonElement(jsonArraydiffs.get(i));
           };
         }
       }
@@ -253,8 +254,9 @@ public class OTFDiffs {
 
            @Override
            public OTFDiffs read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
              OTFDiffs instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
