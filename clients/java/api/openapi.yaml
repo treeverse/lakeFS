@@ -4163,6 +4163,7 @@ paths:
       x-contentType: multipart/form-data
       x-accepts: application/json
     put:
+      deprecated: true
       operationId: stageObject
       parameters:
       - explode: false
@@ -4232,7 +4233,7 @@ paths:
           description: Internal Server Error
       summary: stage an object's metadata for the given branch
       tags:
-      - objects
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/delete:

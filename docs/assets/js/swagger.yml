@@ -3597,8 +3597,9 @@ paths:
         schema:
           type: string
     put:
+      deprecated: true
       tags:
-        - objects
+        - internal
       operationId: stageObject
       summary: stage an object's metadata for the given branch
       requestBody:

@@ -22,6 +22,8 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
 import io.lakefs.clients.api.model.InlineObject1;
+import io.lakefs.clients.api.model.ObjectStageCreation;
+import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.RefsDump;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
@@ -329,6 +331,24 @@ public class InternalApiTest {
     public void setupCommPrefsTest() throws ApiException {
         CommPrefsInput commPrefsInput = null;
                 api.setupCommPrefs(commPrefsInput);
+        // TODO: test validations
+    }
+    
+    /**
+     * stage an object&#39;s metadata for the given branch
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void stageObjectTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+        ObjectStageCreation objectStageCreation = null;
+                ObjectStats response = api.stageObject(repository, branch, path, objectStageCreation);
         // TODO: test validations
     }
     
