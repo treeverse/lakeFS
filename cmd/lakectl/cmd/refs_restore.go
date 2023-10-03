@@ -45,7 +45,11 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		}
 		// execute the restore operation
 		client := getClient()
-		resp, err := client.RestoreRefsWithResponse(cmd.Context(), repoURI.Repository, apigen.RestoreRefsJSONRequestBody(manifest))
+		ctx := cmd.Context()
+		resp, err := client.RestoreRefsSubmitWithResponse(ctx, repoURI.Repository, apigen.RestoreRefsSubmitJSONRequestBody{
+			Id:   "",
+			Refs: nil,
+		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		Write(refsRestoreSuccess, nil)
 	},

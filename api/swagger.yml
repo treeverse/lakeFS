@@ -607,14 +607,15 @@ components:
       type: object
       required:
         - id
-        - status
+        - completed
       properties:
         id:
           type: string
           description: ID of the task
-        status:
+        completed:
+          type: boolean
+        error:
           type: string
-          enum: [pending, in_progress, completed, failed]
         refs:
             $ref: "#/components/schemas/RefsDump"
 
@@ -633,14 +634,15 @@ components:
       type: object
       required:
         - id
-        - status
+        - completed
       properties:
         id:
           type: string
           description: ID of the task
-        status:
+        completed:
+          type: boolean
+        error:
           type: string
-          enum: [pending, in_progress, completed, failed]
 
     RefsDump:
       type: object
@@ -2754,7 +2756,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsRestoreTask"
+              $ref: "#/components/schemas/RefsDump"
       responses:
         200:
           description: refs successfully loaded
