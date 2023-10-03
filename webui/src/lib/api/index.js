@@ -1003,9 +1003,8 @@ class BranchProtectionRules {
     }
 
     async setRules(repoID, rules, lastKnownChecksum) {
-        let additionalHeaders = {}
+        const additionalHeaders = {}
         if (lastKnownChecksum) {
-            console.log(`setting branch protection rules with checksum ${lastKnownChecksum}`)
             additionalHeaders['If-Match'] = lastKnownChecksum
         }
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`, {

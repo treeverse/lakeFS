@@ -90,7 +90,7 @@ func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRec
 		return graveler.ErrPreconditionFailed
 	}
 	err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, currentPredicate)
-	if err != nil && errors.Is(err, kv.ErrPredicateFailed) {
+	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed
 	}
 	return err
