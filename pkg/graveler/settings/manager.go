@@ -117,7 +117,7 @@ func (m *Manager) GetLatest(ctx context.Context, repository *graveler.Repository
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
 		}
-		return swag.String(""), err
+		return nil, err
 	}
 	checksum, err := computeChecksum(settings.Value)
 	if err != nil {
@@ -142,6 +142,7 @@ func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
 		_, err = m.GetLatest(ctx, repository, key, tmp)
 		if errors.Is(err, graveler.ErrNotFound) {
+			// do not return this error here, so that empty settings are cached
 			return nil, nil
 		}
 		return tmp, err

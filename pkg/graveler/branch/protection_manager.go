@@ -5,12 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/gobwas/glob"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
-	"google.golang.org/protobuf/proto"
 )
 
 const ProtectionSettingKey = "protected_branches"
@@ -33,17 +31,12 @@ func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
 	rulesMsg := &graveler.BranchProtectionRules{}
 	checksum, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, rulesMsg)
-	if errors.Is(err, graveler.ErrNotFound) {
-		return &graveler.BranchProtectionRules{}, swag.String(""), nil
-	}
 	if err != nil {
 		return nil, nil, err
 	}
-	if proto.Size(rulesMsg) == 0 {
-		return &graveler.BranchProtectionRules{}, nil, nil
-	}
 	return rulesMsg, checksum, nil
 }
+
 func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules, lastKnownChecksum)
 }

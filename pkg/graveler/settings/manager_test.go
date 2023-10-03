@@ -2,12 +2,12 @@ package settings_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/cache"
@@ -41,6 +41,15 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 	m.c[k] = val
 	return val, nil
 }
+func TestNonExistent(t *testing.T) {
+	ctx := context.Background()
+	m, _ := prepareTest(t, ctx, nil, nil)
+	setting := &settings.ExampleSettings{}
+	err := m.Get(ctx, repository, "settingKey", setting)
+	require.ErrorIs(t, err, graveler.ErrNotFound)
+	_, err = m.GetLatest(ctx, repository, "settingKey", setting)
+	require.ErrorIs(t, err, graveler.ErrNotFound)
+}
 
 func TestSaveAndGet(t *testing.T) {
 	ctx := context.Background()
@@ -48,7 +57,7 @@ func TestSaveAndGet(t *testing.T) {
 		c: make(map[interface{}]interface{}),
 	}
 	m, _ := prepareTest(t, ctx, mc, nil)
-	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
+	firstSettings := newSetting(5, 6, "hello")
 	err := m.Save(ctx, repository, "settingKey", firstSettings, nil)
 	testutil.Must(t, err)
 	gotSettings := &settings.ExampleSettings{}
@@ -57,7 +66,7 @@ func TestSaveAndGet(t *testing.T) {
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
+	secondSettings := newSetting(15, 16, "hi")
 	err = m.Save(ctx, repository, "settingKey", secondSettings, nil)
 	testutil.Must(t, err)
 	// the result should be cached, and we should get the first settings:
@@ -79,17 +88,12 @@ func TestSaveAndGet(t *testing.T) {
 func TestGetLatest(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
-	setting := &settings.ExampleSettings{}
-	_, err := m.GetLatest(ctx, repository, "settingKey", setting)
-	if !errors.Is(err, graveler.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound, got %v", err)
-	}
-	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, nil)
+	err := m.Save(ctx, repository, "settingKey", newSetting(5, 6, "hello"), nil)
 	testutil.Must(t, err)
-	setting = &settings.ExampleSettings{}
+	setting := &settings.ExampleSettings{}
 	eTag, err := m.GetLatest(ctx, repository, "settingKey", setting)
 	testutil.Must(t, err)
-	if diff := deep.Equal(&settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, setting); diff != nil {
+	if diff := deep.Equal(newSetting(5, 6, "hello"), setting); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	if eTag == nil || *eTag == "" {
@@ -97,14 +101,16 @@ func TestGetLatest(t *testing.T) {
 	}
 }
 
-func TestConditionalSave(t *testing.T) {
+func TestConditionalUpdate(t *testing.T) {
 	ctx := context.Background()
 	mc := &mockCache{
 		c: make(map[interface{}]interface{}),
 	}
 	m, _ := prepareTest(t, ctx, mc, nil)
-	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	err := m.Save(ctx, repository, "settingKey", firstSettings, swag.String(""))
+	firstSettings := newSetting(5, 6, "hello")
+	err := m.Save(ctx, repository, "settingKey", firstSettings, swag.String("WRONG_CHECKSUM"))
+	require.ErrorIs(t, err, graveler.ErrPreconditionFailed)
+	err = m.Save(ctx, repository, "settingKey", firstSettings, swag.String(""))
 	testutil.Must(t, err)
 	gotSettings := &settings.ExampleSettings{}
 	checksum, err := m.GetLatest(ctx, repository, "settingKey", gotSettings)
@@ -112,13 +118,11 @@ func TestConditionalSave(t *testing.T) {
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
-	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
+	secondSettings := newSetting(15, 16, "hi")
 	err = m.Save(ctx, repository, "settingKey", secondSettings, checksum)
 	testutil.Must(t, err)
 	err = m.Save(ctx, repository, "settingKey", secondSettings, swag.String("WRONG_CHECKSUM"))
-	if !errors.Is(err, graveler.ErrPreconditionFailed) {
-		t.Fatalf("expected ErrPreconditionFailed, got %v", err)
-	}
+	require.ErrorIs(t, err, graveler.ErrPreconditionFailed)
 }
 
 func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.Manager, block.Adapter) {
@@ -144,4 +148,12 @@ func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branch
 
 	refManager.EXPECT().GetRepository(ctx, gomock.Eq(repository.RepositoryID)).AnyTimes().Return(repository, nil)
 	return m, blockAdapter
+}
+
+func newSetting(a int32, b int32, c string) *settings.ExampleSettings {
+	return &settings.ExampleSettings{
+		ExampleInt: a,
+		ExampleStr: c,
+		ExampleMap: map[string]int32{"boo": b},
+	}
 }
