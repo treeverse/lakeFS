@@ -65,6 +65,8 @@ This reference uses `.` to denote the nesting of values.
     + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
     + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
     + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
+    + `database.cosmosdb.throughput` `(uint : 400)` - The container's RU/s.
+    + `database.cosmosdb.autoscale` `(bool : false)` - If set, container throughput is autoscaled (requires a minimum of 1000 RU/s). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
   + `database.local` - Configuration section when using `database.type="local"`
     + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
     + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance

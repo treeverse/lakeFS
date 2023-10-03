@@ -172,10 +172,12 @@ type Config struct {
 		} `mapstructure:"dynamodb"`
 
 		CosmosDB *struct {
-			Key       SecureString `mapstructure:"key"`
-			Endpoint  string       `mapstructure:"endpoint"`
-			Database  string       `mapstructure:"database"`
-			Container string       `mapstructure:"container"`
+			Key        SecureString `mapstructure:"key"`
+			Endpoint   string       `mapstructure:"endpoint"`
+			Database   string       `mapstructure:"database"`
+			Container  string       `mapstructure:"container"`
+			Throughput uint         `mapstructure:"throughput"`
+			Autoscale  bool         `mapstructure:"autoscale"`
 		} `mapstructure:"cosmosdb"`
 	}
 
