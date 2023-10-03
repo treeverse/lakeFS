@@ -113,39 +113,39 @@ tools: ## Install tools
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
 
-client-python: sdk-python-legacy python-sdk
+client-python: sdk-python-legacy sdk-python
 
 sdk-python-legacy: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 5.3.0
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
-	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
+	rm -rf clients/python-legacy/build; cd clients/python-legacy && \
+		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name python-codegen-config.yaml \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
-		-t /mnt/clients/python/templates \
+		-t /mnt/clients/python-legacy/templates \
 		--package-name lakefs_client \
-		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
+		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)-legacy" \
 		--git-user-id treeverse --git-repo-id lakeFS \
-		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
-		-c /mnt/clients/python-codegen-config.yaml \
-		-o /mnt/clients/python
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python-legacy \
+		-c /mnt/clients/python-legacy/python-codegen-config.yaml \
+		-o /mnt/clients/python-legacy \
+		--ignore-file-override /mnt/clients/python/.openapi-generator-ignore
 
-python-sdk: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
+sdk-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
 	# remove the build folder as it also holds lakefs_sdk folder which keeps because we skip it during find
-	rm -rf clients/python/sdk/build; cd clients/python/sdk && \
-		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
+	rm -rf clients/python/build; cd clients/python && \
+		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name python-codegen-config.yaml \) -delete
 	$(OPENAPI_GENERATOR_ADVANCED) generate \
 		-i /mnt/$< \
 		-g python \
-		-t /mnt/clients/python/templates/sdk \
+		-t /mnt/clients/python/templates \
 		--package-name lakefs_sdk \
 		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
-		--additional-properties=packageVersion=$(PACKAGE_VERSION) \
-		-c /mnt/clients/python-sdk-codegen-config.yaml \
-		-o /mnt/clients/python/sdk \
-		-t /mnt/clients/python/templates/sdk \
-		--ignore-file-override /mnt/clients/python/sdk/.openapi-generator-ignore
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),packageName=lakefs_sdk,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
+		-c /mnt/clients/python/python-codegen-config.yaml \
+		-o /mnt/clients/python \
+		--ignore-file-override /mnt/clients/python/.openapi-generator-ignore
 
 client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 	rm -rf clients/java
@@ -157,7 +157,7 @@ client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
 		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python sdk-python-legacy python-sdk client-java
+.PHONY: clients client-python sdk-python-legacy sdk-python client-java
 clients: client-python client-java
 
 package-python: package-python-client package-python-sdk
@@ -166,7 +166,7 @@ package-python-client: client-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
-package-python-sdk: python-sdk
+package-python-sdk: sdk-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python/sdk $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
@@ -270,7 +270,12 @@ validate-permissions-gen: gen-code
 validate-reference:
 	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
 
-validate-client-python:
+validate-client-python: validate-python-sdk-legacy validate-python-sdk
+
+validate-python-sdk-legacy:
+	git diff --quiet -- clients/python-legacy || (echo "Modification verification failed! python client"; false)
+
+validate-python-sdk:
 	git diff --quiet -- clients/python || (echo "Modification verification failed! python client"; false)
 
 validate-client-java:
