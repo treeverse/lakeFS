@@ -86,14 +86,8 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     @Test
     public void testGetFileStatus_ExistingFile() throws IOException {
         Path path = new Path("lakefs://repo/main/mock/exists");
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath("/repositories/repo/refs/main/objects/stat")
-                              .withQueryStringParameter("path", "mock/exists"))
-            // TODO(ariels) mockStatObject()!
-            .respond(response()
-                     .withStatusCode(200)
-                     .withBody(gson.toJson(makeObjectStats("mock/exists"))));
+        mockStatObject("repo", "main", "mock/exists", makeObjectStats("mock/exists"));
+
         LakeFSFileStatus fileStatus = fs.getFileStatus(path);
         Assert.assertTrue(fileStatus.isFile());
         Assert.assertEquals(path, fileStatus.getPath());
@@ -610,34 +604,41 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Assert.assertTrue(renamed);
     }
 
-    // /**
-    //  * rename(srcDir(containing srcDir/a.txt), existing-nonempty-dstdir) -> unsupported, rename should fail by returning false.
-    //  */
-    // @Test
-    // public void testRename_existingDirToExistingNonEmptyDirName() throws IOException {
-    //     Path firstSrcFile = new Path("lakefs://repo/main/existing-dir1/a.src");
-    //     ObjectLocation firstObjLoc = fs.pathToObjectLocation(firstSrcFile);
-    //     Path secSrcFile = new Path("lakefs://repo/main/existing-dir1/b.src");
-    //     ObjectLocation secObjLoc = fs.pathToObjectLocation(secSrcFile);
+    /**
+     * rename(srcDir(containing srcDir/a.txt), existing-nonempty-dstdir) -> unsupported, rename should fail by returning false.
+     */
+    @Test
+    public void testRename_existingDirToExistingNonEmptyDirName() throws IOException {
+        Path firstSrcFile = new Path("lakefs://repo/main/existing-dir1/a.src");
+        ObjectStats firstSrcFileStats = makeObjectStats("existing-dir1/a.src");
+        Path secSrcFile = new Path("lakefs://repo/main/existing-dir1/b.src");
+        ObjectStats secSrcFileStats = makeObjectStats("existing-dir1/b.src");
 
-    //     Path srcDir = new Path("lakefs://repo/main/existing-dir1");
-    //     ObjectLocation srcDirObjLoc = fs.pathToObjectLocation(srcDir);
-    //     mockExistingDirPath(srcDirObjLoc, ImmutableList.of(firstObjLoc, secObjLoc));
+        Path srcDir = new Path("lakefs://repo/main/existing-dir1");
 
-    //     Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/file.dst");
-    //     ObjectLocation dstFileObjLoc = fs.pathToObjectLocation(fileInDstDir);
-    //     Path dstDir = new Path("lakefs://repo/main/existing-dir2");
-    //     ObjectLocation dstDirObjLoc = fs.pathToObjectLocation(dstDir);
-    //     mockExistingDirPath(dstDirObjLoc, ImmutableList.of(dstFileObjLoc));
+        mockStatObjectNotFound("repo", "main", "existing-dir1");
+        mockStatObjectNotFound("repo", "main", "existing-dir1/");
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir1/").build(),
+                    firstSrcFileStats, secSrcFileStats);
 
-    //     boolean renamed = fs.rename(srcDir, dstDir);
-    //     Assert.assertFalse(renamed);
-    // }
+        Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/file.dst");
+        ObjectStats fileInDstDirStats = makeObjectStats("existing-dir2/file.dst");
+        Path dstDir = new Path("lakefs://repo/main/existing-dir2");
+        mockStatObjectNotFound("repo", "main", "existing-dir2");
+        mockStatObjectNotFound("repo", "main", "existing-dir2/");
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir2/").build(),
+                    fileInDstDirStats);
+
+        boolean renamed = fs.rename(srcDir, dstDir);
+        Assert.assertFalse(renamed);
+    }
 
     // /**
     //  * Check that a file is renamed when working against a lakeFS version
     //  * where CopyObject API doesn't exist
     //  */
+    // TODO(johnnyaug): Do we still need this test?
+    //
     // @Test
     // public void testRename_fallbackStageAPI() throws IOException {
     //     Path src = new Path("lakefs://repo/main/existing-dir1/existing.src");
@@ -660,57 +661,54 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     //     verifyObjDeletion(srcObjLoc);
     // }
 
-    // @Test
-    // public void testRename_srcAndDstOnDifferentBranch() throws IOException {
-    //     Path src = new Path("lakefs://repo/branch/existing.src");
-    //     Path dst = new Path("lakefs://repo/another-branch/existing.dst");
-    //     boolean renamed = fs.rename(src, dst);
-    //     Assert.assertFalse(renamed);
-    //     Mockito.verify(objectsApi, never()).statObject(any(), any(), any(), any(), any());
-    //     Mockito.verify(objectsApi, never()).copyObject(any(), any(), any(), any());
-    //     Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
-    // }
+    @Test
+    public void testRename_srcAndDstOnDifferentBranch() throws IOException {
+        Path src = new Path("lakefs://repo/branch/existing.src");
+        Path dst = new Path("lakefs://repo/another-branch/existing.dst");
+        // Any lakeFS access will fail, including statObject, copyObject, or
+        // deleteObject!
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertFalse(renamed);
+    }
 
-    // /**
-    //  * no-op. rename is expected to succeed.
-    //  */
-    // @Test
-    // public void testRename_srcEqualsDst() throws IOException {
-    //     Path src = new Path("lakefs://repo/main/existing.src");
-    //     Path dst = new Path("lakefs://repo/main/existing.src");
-    //     boolean renamed = fs.rename(src, dst);
-    //     Assert.assertTrue(renamed);
-    //     Mockito.verify(objectsApi, never()).statObject(any(), any(), any(), any(), any());
-    //     Mockito.verify(objectsApi, never()).copyObject(any(), any(), any(), any());
-    //     Mockito.verify(objectsApi, never()).deleteObject(any(), any(), any());
-    // }
+    /**
+     * no-op. rename is expected to succeed.
+     */
+    @Test
+    public void testRename_srcEqualsDst() throws IOException {
+        Path src = new Path("lakefs://repo/main/existing.src");
+        Path dst = new Path("lakefs://repo/main/existing.src");
+        // Any lakeFS access will fail, including statObject, copyObject, or
+        // deleteObject!
+        boolean renamed = fs.rename(src, dst);
+        Assert.assertTrue(renamed);
+    }
 
-    // @Test
-    // public void testRename_nonExistingSrcFile() throws IOException {
-    //     Path src = new Path("lakefs://repo/main/non-existing.src");
-    //     ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
-    //     mockNonExistingPath(srcObjLoc);
+    @Test
+    public void testRename_nonExistingSrcFile() throws IOException {
+        Path src = new Path("lakefs://repo/main/non-existing.src");
+        mockStatObjectNotFound("repo", "main", "non-existing.src");
+        mockStatObjectNotFound("repo", "main", "non-existing.src/");
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("non-existing.src/").build());
 
-    //     Path dst = new Path("lakefs://repo/main/existing.dst");
-    //     ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
-    //     mockExistingFilePath(dstObjLoc);
+        Path dst = new Path("lakefs://repo/main/existing.dst");
+        mockStatObject("repo", "main", "existing.dst", makeObjectStats("existing.dst"));
 
-    //     boolean success = fs.rename(src, dst);
-    //     Assert.assertFalse(success);
-    // }
+        boolean success = fs.rename(src, dst);
+        Assert.assertFalse(success);
+    }
 
-    // /**
-    //  * globStatus is used only by the Hadoop CLI where the pattern is always the exact file.
-    //  */
-    // @Test
-    // public void testGlobStatus_SingleFile() throws IOException {
-    //     Path path = new Path("lakefs://repo/main/existing.dst");
-    //     ObjectLocation dstObjLoc = fs.pathToObjectLocation(path);
-    //     mockExistingFilePath(dstObjLoc);
+    /**
+     * globStatus is used only by the Hadoop CLI where the pattern is always the exact file.
+     */
+    @Test
+    public void testGlobStatus_SingleFile() throws IOException {
+        Path path = new Path("lakefs://repo/main/existing");
+        mockStatObject("repo", "main", "existing", makeObjectStats("existing"));
 
-    //     FileStatus[] statuses = fs.globStatus(path);
-    //     Assert.assertArrayEquals(new FileStatus[]{
-    //             new LakeFSFileStatus.Builder(path).build()
-    //     }, statuses);
-    // }
+        FileStatus[] statuses = fs.globStatus(path);
+        Assert.assertArrayEquals(new FileStatus[]{
+                new LakeFSFileStatus.Builder(path).build()
+        }, statuses);
+    }
 }

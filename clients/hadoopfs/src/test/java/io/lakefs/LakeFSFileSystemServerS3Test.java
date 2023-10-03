@@ -44,7 +44,6 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path);
     }
 
-    // TODO(ariels): Improve naming per-parameter, don't name them "[0]", "[1]".
     @Parameters(name="{1}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
@@ -112,8 +111,6 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
     }
 
     // Return a location under namespace for this getPhysicalAddress call.
-    //
-    // TODO(ariels): abstract, overload separately for direct and pre-signed.
     protected StagingLocation mockGetPhysicalAddress(String repo, String branch, String path, String namespace) {
         StagingLocation stagingLocation =
             pac.createPutStagingLocation(this, namespace, repo, branch, path);
