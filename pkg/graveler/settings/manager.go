@@ -105,52 +105,51 @@ func computeChecksum(value []byte) (*string, error) {
 	return swag.String(hex.EncodeToString(h.Sum(nil))), nil
 }
 
-// GetLatest returns the latest setting under the given repository and key, without using the cache.
-// The returned checksum represents the version of the setting, and can be passed to SaveIf for conditional updates.
-func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, *string, error) {
+// GetLatest loads the latest setting into dst.
+// It returns a checksum representing the version of the setting, which can be passed to SaveIf for conditional updates.
+func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) (*string, error) {
 	settings, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
 		}
-		return nil, nil, err
+		return nil, err
 	}
 	checksum, err := computeChecksum(settings.Value)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	data := settingTemplate.ProtoReflect().Interface()
-	err = proto.Unmarshal(settings.Value, data)
+	err = proto.Unmarshal(settings.Value, dst)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "got repository-level setting")
-	return data, checksum, nil
+	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, dst, "got repository-level setting")
+	return checksum, nil
 }
 
-// Get fetches the setting under the given repository and key, and returns the result.
+// Get fetches the setting under the given repository and key, and loads it into dst.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
-// The settingTemplate parameter is used to determine the returned type.
-// The returned checksum represents the version of the setting, and can be used in SaveIf to perform an atomic update.
-func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) error {
 	k := cacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
 	}
+	tmp := proto.Clone(dst)
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		setting, _, err := m.GetLatest(ctx, repository, key, settingTemplate)
+		_, err = m.GetLatest(ctx, repository, key, tmp)
 		if errors.Is(err, graveler.ErrNotFound) {
 			return nil, nil
 		}
-		return setting, err
+		return tmp, err
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if setting == nil {
-		return nil, graveler.ErrNotFound
+		return graveler.ErrNotFound
 	}
-	return setting.(proto.Message), nil
+	proto.Merge(dst, setting.(proto.Message))
+	return nil
 }
 
 func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, setting proto.Message, logMsg string) {

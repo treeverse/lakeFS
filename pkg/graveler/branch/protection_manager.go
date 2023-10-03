@@ -3,7 +3,6 @@ package branch
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -22,10 +21,6 @@ const (
 	matcherCacheJitter = 1 * time.Minute
 )
 
-var (
-	ErrRuleNotExists = fmt.Errorf("branch protection rule does not exist: %w", graveler.ErrNotFound)
-)
-
 type ProtectionManager struct {
 	settingManager *settings.Manager
 	matchers       cache.Cache
@@ -36,7 +31,8 @@ func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
 }
 
 func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
-	rulesMsg, checksum, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	rulesMsg := &graveler.BranchProtectionRules{}
+	checksum, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, rulesMsg)
 	if errors.Is(err, graveler.ErrNotFound) {
 		return &graveler.BranchProtectionRules{}, nil, nil
 	}
@@ -46,7 +42,7 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 	if proto.Size(rulesMsg) == 0 {
 		return &graveler.BranchProtectionRules{}, nil, nil
 	}
-	return rulesMsg.(*graveler.BranchProtectionRules), checksum, nil
+	return rulesMsg, checksum, nil
 }
 func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules) error {
 	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules)
@@ -61,14 +57,15 @@ func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler
 }
 
 func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {
-	rules, err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
+	rules := &graveler.BranchProtectionRules{}
+	err := m.settingManager.Get(ctx, repository, ProtectionSettingKey, rules)
 	if errors.Is(err, graveler.ErrNotFound) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
-	for pattern, blockedActions := range rules.(*graveler.BranchProtectionRules).BranchPatternToBlockedActions {
+	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
 		pattern := pattern
 		matcher, err := m.matchers.GetOrSet(pattern, func() (v interface{}, err error) {
 			return glob.Compile(pattern)

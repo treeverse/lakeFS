@@ -48,11 +48,11 @@ func TestSaveAndGet(t *testing.T) {
 		c: make(map[interface{}]interface{}),
 	}
 	m, _ := prepareTest(t, ctx, mc, nil)
-	emptySettings := &settings.ExampleSettings{}
 	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.Save(ctx, repository, "settingKey", firstSettings)
 	testutil.Must(t, err)
-	gotSettings, err := m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings := &settings.ExampleSettings{}
+	err = m.Get(ctx, repository, "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -61,14 +61,16 @@ func TestSaveAndGet(t *testing.T) {
 	err = m.Save(ctx, repository, "settingKey", secondSettings)
 	testutil.Must(t, err)
 	// the result should be cached, and we should get the first settings:
-	gotSettings, err = m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings = &settings.ExampleSettings{}
+	err = m.Get(ctx, repository, "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	// after clearing the mc, we should get the new settings:
 	mc.c = make(map[interface{}]interface{})
-	gotSettings, err = m.Get(ctx, repository, "settingKey", emptySettings)
+	gotSettings = &settings.ExampleSettings{}
+	err = m.Get(ctx, repository, "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(secondSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -77,14 +79,15 @@ func TestSaveAndGet(t *testing.T) {
 func TestGetLatest(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
-	emptySettings := &settings.ExampleSettings{}
-	setting, _, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	setting := &settings.ExampleSettings{}
+	_, err := m.GetLatest(ctx, repository, "settingKey", setting)
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}})
 	testutil.Must(t, err)
-	setting, eTag, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	setting = &settings.ExampleSettings{}
+	eTag, err := m.GetLatest(ctx, repository, "settingKey", setting)
 	testutil.Must(t, err)
 	if diff := deep.Equal(&settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, setting); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
@@ -100,11 +103,11 @@ func TestSaveIf(t *testing.T) {
 		c: make(map[interface{}]interface{}),
 	}
 	m, _ := prepareTest(t, ctx, mc, nil)
-	emptySettings := &settings.ExampleSettings{}
 	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
 	err := m.SaveIf(ctx, repository, "settingKey", firstSettings, nil)
 	testutil.Must(t, err)
-	gotSettings, checksum, err := m.GetLatest(ctx, repository, "settingKey", emptySettings)
+	gotSettings := &settings.ExampleSettings{}
+	checksum, err := m.GetLatest(ctx, repository, "settingKey", gotSettings)
 	testutil.Must(t, err)
 	if diff := deep.Equal(firstSettings, gotSettings); diff != nil {
 		t.Fatal("got unexpected settings:", diff)
