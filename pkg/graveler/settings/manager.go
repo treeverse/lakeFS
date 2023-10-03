@@ -59,37 +59,37 @@ func NewManager(refManager graveler.RefManager, store kv.Store, options ...Manag
 	return m
 }
 
-// Save persists the given setting under the given repository and key. Overrides settings key in KV Store
-func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message) error {
-	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
-	// Write key in KV Store
-	return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
-}
-
-// SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
+// Save persists the given setting under the given repository and key. Overrides settings key in KV Store.
 // The setting is persisted only if the current version of the setting matches the given checksum.
-// If lastKnownChecksum is nil, the setting is persisted only if it does not exist.
-func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum *string) error {
+// If lastKnownChecksum is the empty string, the setting is persisted only if it does not exist.
+// If lastKnownChecksum is nil, the setting is persisted unconditionally.
+func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum *string) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
-	valueWithPredicate, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
-	if err != nil && !errors.Is(err, kv.ErrNotFound) {
+	if lastKnownChecksum == nil {
+		return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
+	}
+	if *lastKnownChecksum == "" {
+		err := kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, nil)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return graveler.ErrPreconditionFailed
+		}
 		return err
 	}
-	var currentChecksum *string
-	var currentPredicate kv.Predicate
-	if valueWithPredicate != nil {
-		if valueWithPredicate.Value != nil {
-			currentChecksum, err = computeChecksum(valueWithPredicate.Value)
-		}
-		if err != nil {
-			return err
-		}
-		currentPredicate = valueWithPredicate.Predicate
-	}
-	if swag.StringValue(currentChecksum) != swag.StringValue(lastKnownChecksum) {
+	valueWithPredicate, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
+	if errors.Is(err, kv.ErrNotFound) {
 		return graveler.ErrPreconditionFailed
 	}
-	err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, currentPredicate)
+	if err != nil {
+		return err
+	}
+	currentChecksum, err := computeChecksum(valueWithPredicate.Value)
+	if err != nil {
+		return err
+	}
+	if *currentChecksum != *lastKnownChecksum {
+		return graveler.ErrPreconditionFailed
+	}
+	err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, valueWithPredicate.Predicate)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed
 	}
@@ -97,6 +97,9 @@ func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRec
 }
 
 func computeChecksum(value []byte) (*string, error) {
+	if value == nil {
+		return nil, graveler.ErrInvalidValue
+	}
 	h := sha256.New()
 	_, err := h.Write(value)
 	if err != nil {
@@ -107,13 +110,14 @@ func computeChecksum(value []byte) (*string, error) {
 
 // GetLatest loads the latest setting into dst.
 // It returns a checksum representing the version of the setting, which can be passed to SaveIf for conditional updates.
+// The checksum of a non-existent setting is the empty string.
 func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) (*string, error) {
 	settings, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
 		}
-		return nil, err
+		return swag.String(""), err
 	}
 	checksum, err := computeChecksum(settings.Value)
 	if err != nil {

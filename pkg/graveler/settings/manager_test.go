@@ -49,7 +49,7 @@ func TestSaveAndGet(t *testing.T) {
 	}
 	m, _ := prepareTest(t, ctx, mc, nil)
 	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	err := m.Save(ctx, repository, "settingKey", firstSettings)
+	err := m.Save(ctx, repository, "settingKey", firstSettings, nil)
 	testutil.Must(t, err)
 	gotSettings := &settings.ExampleSettings{}
 	err = m.Get(ctx, repository, "settingKey", gotSettings)
@@ -58,7 +58,7 @@ func TestSaveAndGet(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
-	err = m.Save(ctx, repository, "settingKey", secondSettings)
+	err = m.Save(ctx, repository, "settingKey", secondSettings, nil)
 	testutil.Must(t, err)
 	// the result should be cached, and we should get the first settings:
 	gotSettings = &settings.ExampleSettings{}
@@ -84,7 +84,7 @@ func TestGetLatest(t *testing.T) {
 	if !errors.Is(err, graveler.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
-	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}})
+	err = m.Save(ctx, repository, "settingKey", &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}, nil)
 	testutil.Must(t, err)
 	setting = &settings.ExampleSettings{}
 	eTag, err := m.GetLatest(ctx, repository, "settingKey", setting)
@@ -97,14 +97,14 @@ func TestGetLatest(t *testing.T) {
 	}
 }
 
-func TestSaveIf(t *testing.T) {
+func TestConditionalSave(t *testing.T) {
 	ctx := context.Background()
 	mc := &mockCache{
 		c: make(map[interface{}]interface{}),
 	}
 	m, _ := prepareTest(t, ctx, mc, nil)
 	firstSettings := &settings.ExampleSettings{ExampleInt: 5, ExampleStr: "hello", ExampleMap: map[string]int32{"boo": 6}}
-	err := m.SaveIf(ctx, repository, "settingKey", firstSettings, nil)
+	err := m.Save(ctx, repository, "settingKey", firstSettings, swag.String(""))
 	testutil.Must(t, err)
 	gotSettings := &settings.ExampleSettings{}
 	checksum, err := m.GetLatest(ctx, repository, "settingKey", gotSettings)
@@ -113,9 +113,9 @@ func TestSaveIf(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 	secondSettings := &settings.ExampleSettings{ExampleInt: 15, ExampleStr: "hi", ExampleMap: map[string]int32{"boo": 16}}
-	err = m.SaveIf(ctx, repository, "settingKey", secondSettings, checksum)
+	err = m.Save(ctx, repository, "settingKey", secondSettings, checksum)
 	testutil.Must(t, err)
-	err = m.SaveIf(ctx, repository, "settingKey", secondSettings, swag.String("WRONG_CHECKSUM"))
+	err = m.Save(ctx, repository, "settingKey", secondSettings, swag.String("WRONG_CHECKSUM"))
 	if !errors.Is(err, graveler.ErrPreconditionFailed) {
 		t.Fatalf("expected ErrPreconditionFailed, got %v", err)
 	}

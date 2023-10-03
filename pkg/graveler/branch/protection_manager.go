@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/gobwas/glob"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -34,7 +34,7 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 	rulesMsg := &graveler.BranchProtectionRules{}
 	checksum, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, rulesMsg)
 	if errors.Is(err, graveler.ErrNotFound) {
-		return &graveler.BranchProtectionRules{}, nil, nil
+		return &graveler.BranchProtectionRules{}, swag.String(""), nil
 	}
 	if err != nil {
 		return nil, nil, err
@@ -44,16 +44,8 @@ func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.R
 	}
 	return rulesMsg, checksum, nil
 }
-func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules) error {
-	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules)
-}
-
-func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
-	err := m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, lastKnownChecksum)
-	if errors.Is(err, kv.ErrPredicateFailed) {
-		return graveler.ErrPreconditionFailed
-	}
-	return err
+func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
+	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules, lastKnownChecksum)
 }
 
 func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, action graveler.BranchProtectionBlockedAction) (bool, error) {

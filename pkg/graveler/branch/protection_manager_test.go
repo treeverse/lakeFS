@@ -33,7 +33,7 @@ func TestSetAndGet(t *testing.T) {
 	if len(rules.BranchPatternToBlockedActions) != 0 {
 		t.Fatalf("expected no rules, got %d rules", len(rules.BranchPatternToBlockedActions))
 	}
-	testutil.Must(t, bpm.SetRulesIf(ctx, repository, &graveler.BranchProtectionRules{
+	testutil.Must(t, bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
 			"main*": {Value: []graveler.BranchProtectionBlockedAction{
 				graveler.BranchProtectionBlockedAction_STAGING_WRITE},
@@ -57,7 +57,7 @@ func TestSetAndGet(t *testing.T) {
 func TestSetWrongETag(t *testing.T) {
 	ctx := context.Background()
 	bpm := prepareTest(t, ctx)
-	err := bpm.SetRulesIf(ctx, repository, &graveler.BranchProtectionRules{
+	err := bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
 			"main*": {Value: []graveler.BranchProtectionBlockedAction{
 				graveler.BranchProtectionBlockedAction_STAGING_WRITE},
@@ -106,7 +106,7 @@ func TestIsBlocked(t *testing.T) {
 			bpm := prepareTest(t, ctx)
 			testutil.Must(t, bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 				BranchPatternToBlockedActions: tst.patternToBlockedActions,
-			}))
+			}, nil))
 
 			for branchID, expectedBlockedActions := range tst.expectedBlockedActions {
 				for _, action := range expectedBlockedActions.Value {

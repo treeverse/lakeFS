@@ -1821,11 +1821,7 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Value: blockedActions,
 		}
 	}
-	eTag := params.IfMatch
-	if swag.StringValue(eTag) == "" {
-		eTag = nil
-	}
-	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, params.IfMatch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3092,7 +3088,7 @@ func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r
 	for p := range rules.BranchPatternToBlockedActions {
 		if p == body.Pattern {
 			delete(rules.BranchPatternToBlockedActions, p)
-			err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, swag.String(graveler.BranchProtectionSkipValidationChecksum))
+			err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
 			if c.handleAPIError(ctx, w, r, err) {
 				return
 			}
@@ -3146,7 +3142,7 @@ func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r
 		Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT},
 	}
 	rules.BranchPatternToBlockedActions[body.Pattern] = blockedActions
-	err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, swag.String(graveler.BranchProtectionSkipValidationChecksum))
+	err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
