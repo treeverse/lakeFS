@@ -1,6 +1,21 @@
 local url = require("net/url")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
+local function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
 local function short_digest(digest, len)
     return digest:sub(1, len or DEFAULT_SHORT_DIGEST_LEN)
 end 
@@ -52,6 +67,7 @@ local function parse_storage_uri(uri)
 end
 
 return {
+    deepcopy=deepcopy,
     parse_storage_uri=parse_storage_uri,
     short_digest=short_digest,
     ref_from_branch_or_tag=ref_from_branch_or_tag,
