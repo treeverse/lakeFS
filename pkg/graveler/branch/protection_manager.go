@@ -35,30 +35,16 @@ func NewProtectionManager(settingManager *settings.Manager) *ProtectionManager {
 	return &ProtectionManager{settingManager: settingManager, matchers: cache.NewCache(matcherCacheSize, matcherCacheExpiry, cache.NewJitterFn(matcherCacheJitter))}
 }
 
-func (m *ProtectionManager) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) error {
-	return m.settingManager.Update(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{}, func(message proto.Message) (proto.Message, error) {
-		rules := message.(*graveler.BranchProtectionRules)
-		if rules.BranchPatternToBlockedActions == nil {
-			rules.BranchPatternToBlockedActions = make(map[string]*graveler.BranchProtectionBlockedActions)
-		}
-		if _, ok := rules.BranchPatternToBlockedActions[branchNamePattern]; !ok {
-			return nil, ErrRuleNotExists
-		}
-		delete(rules.BranchPatternToBlockedActions, branchNamePattern)
-		return rules, nil
-	})
-}
-
-func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, string, error) {
+func (m *ProtectionManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
 	rulesMsg, checksum, err := m.settingManager.GetLatest(ctx, repository, ProtectionSettingKey, &graveler.BranchProtectionRules{})
 	if errors.Is(err, graveler.ErrNotFound) {
-		return &graveler.BranchProtectionRules{}, "", nil
+		return &graveler.BranchProtectionRules{}, nil, nil
 	}
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 	if proto.Size(rulesMsg) == 0 {
-		return &graveler.BranchProtectionRules{}, checksum, nil
+		return &graveler.BranchProtectionRules{}, nil, nil
 	}
 	return rulesMsg.(*graveler.BranchProtectionRules), checksum, nil
 }
@@ -66,7 +52,7 @@ func (m *ProtectionManager) SetRules(ctx context.Context, repository *graveler.R
 	return m.settingManager.Save(ctx, repository, ProtectionSettingKey, rules)
 }
 
-func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum string) error {
+func (m *ProtectionManager) SetRulesIf(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	err := m.settingManager.SaveIf(ctx, repository, ProtectionSettingKey, rules, lastKnownChecksum)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed

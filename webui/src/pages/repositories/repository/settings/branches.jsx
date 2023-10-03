@@ -22,6 +22,18 @@ const SettingsContainer = () => {
     const {response: rulesResponse, error: rulesError, loading: rulesLoading} = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
+    const deleteRule = (pattern) => {
+        let updatedRules = [...rulesResponse['rules']]
+        let lastKnownChecksum = rulesResponse['checksum']
+        updatedRules = updatedRules.filter(r => r.pattern !== pattern)
+        branchProtectionRules.setRules(repo.id, updatedRules, lastKnownChecksum).then(() => {
+            setRefresh(!refresh)
+            setDeleteButtonDisabled(false)
+        }).catch(err => {
+            setDeleteButtonDisabled(false)
+            setActionError(err)
+        })
+    }
     if (error) return <AlertError error={error}/>;
     if (rulesError) return <AlertError error={rulesError}/>;
     if (actionError) return <AlertError error={actionError}/>;
@@ -51,16 +63,7 @@ const SettingsContainer = () => {
                                     return <ListGroup.Item key={r.pattern}>
                                         <div className="d-flex">
                                             <code>{r.pattern}</code>
-                                            <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => {
-                                                setDeleteButtonDisabled(true)
-                                                branchProtectionRules.deleteRule(repo.id, r.pattern).then(() => {
-                                                    setRefresh(!refresh)
-                                                    setDeleteButtonDisabled(false)
-                                                }).catch(err => {
-                                                    setDeleteButtonDisabled(false)
-                                                    setActionError(err)
-                                                })
-                                            }}>Delete</Button>
+                                            <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => deleteRule(r.pattern)}>Delete</Button>
                                         </div>
                                     </ListGroup.Item>
                                 }) : <Alert variant="info">There aren&apos;t any rules yet.</Alert>}
