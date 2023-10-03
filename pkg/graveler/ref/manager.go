@@ -599,27 +599,27 @@ func newCache(cfg CacheConfig) cache.Cache {
 	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
 }
 
-func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
 	a := &graveler.LinkAddressData{
-		Address: token,
+		Address: physicalAddress,
 	}
-	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(physicalAddress)), a, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = graveler.ErrAddressTokenAlreadyExists
+			err = graveler.ErrLinkAddressAlreadyExists
 		}
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
 	data := graveler.LinkAddressData{}
-	addrPath := []byte(graveler.LinkedAddressPath(token))
+	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
 	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), addrPath, &data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrAddressTokenNotFound
+			err = graveler.ErrLinkAddressNotFound
 		}
 		return err
 	}
@@ -628,23 +628,23 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 		return err
 	}
 	if expired {
-		err = graveler.ErrAddressTokenExpired
+		err = graveler.ErrLinkAddressExpired
 	}
-	_ = deleteLinkAddress(ctx, m.kvStore, repository, token)
+	_ = deleteLinkAddress(ctx, m.kvStore, repository, physicalAddress)
 	return err
 }
 
-func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, token string) error {
-	addrPath := []byte(graveler.LinkedAddressPath(token))
+func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, physicalAddress string) error {
+	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
 	return kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), addrPath)
 }
 
-func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
-	return NewAddressTokenIterator(ctx, m.kvStore, repository)
+func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
+	return NewLinkAddressIterator(ctx, m.kvStore, repository)
 }
 
-func (m *Manager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
-	creationTime, err := m.resolveLinkAddressTime(token.Address)
+func (m *Manager) IsLinkAddressExpired(linkAddress *graveler.LinkAddressData) (bool, error) {
+	creationTime, err := m.resolveLinkAddressTime(linkAddress.Address)
 	if err != nil {
 		return false, err
 	}
@@ -663,19 +663,19 @@ func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
 // DeleteExpiredLinkAddresses delete expired link addresses from kv store. This call uses limiter to access
 // kv, assuming the call does in the background.
 func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := NewAddressTokenIterator(ctx, m.kvStoreLimited, repository)
+	itr, err := NewLinkAddressIterator(ctx, m.kvStoreLimited, repository)
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		token := itr.Value()
-		expired, err := m.IsLinkAddressExpired(token)
+		linkAddress := itr.Value()
+		expired, err := m.IsLinkAddressExpired(linkAddress)
 		if err != nil {
 			return err
 		}
 		if expired {
-			err := deleteLinkAddress(ctx, m.kvStoreLimited, repository, token.Address)
+			err := deleteLinkAddress(ctx, m.kvStoreLimited, repository, linkAddress.Address)
 			if err != nil {
 				return err
 			}

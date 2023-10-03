@@ -206,6 +206,7 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *InternalApi* | [**setupCommPrefs**](docs/InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
+*InternalApi* | [**stageObject**](docs/InternalApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *InternalApi* | [**uploadObjectPreflight**](docs/InternalApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
@@ -216,7 +217,6 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**getUnderlyingProperties**](docs/ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
 *ObjectsApi* | [**headObject**](docs/ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
 *ObjectsApi* | [**listObjects**](docs/ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
-*ObjectsApi* | [**stageObject**](docs/ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *RefsApi* | [**diffRefs**](docs/RefsApi.md#diffRefs) | **GET** /repositories/{repository}/refs/{leftRef}/diff/{rightRef} | diff references
