@@ -163,11 +163,11 @@ clients: client-python client-java
 package-python: package-python-client package-python-sdk
 
 package-python-client: client-python
-	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-legacy $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package-python-sdk: sdk-python
-	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python/sdk $(PYTHON_IMAGE) /bin/bash -c \
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package: package-python
