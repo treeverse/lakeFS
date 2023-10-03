@@ -41,6 +41,11 @@ public class LakeFSClient {
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
 
+        String sessionId = FSConfiguration.get(conf, scheme, Constants.SESSION_ID);
+        if (sessionId != null) {
+            apiClient.addDefaultCookie("sessionId", sessionId);
+        }
+
         this.objectsApi = new ObjectsApi(apiClient);
         this.stagingApi = new StagingApi(apiClient);
         this.repositoriesApi = new RepositoriesApi(apiClient);

@@ -421,6 +421,7 @@ public class LakeFSFileSystem extends FileSystem {
             LOG.debug("renameFile: dst {} exists and is a {}", dst, dstFileStatus.isDirectory() ? "directory" : "file");
             if (dstFileStatus.isDirectory()) {
                 dst = buildObjPathOnExistingDestinationDir(srcStatus.getPath(), dst);
+                LOG.debug("renameFile: use {} to create dst {}", srcStatus.getPath(), dst);
             }
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
