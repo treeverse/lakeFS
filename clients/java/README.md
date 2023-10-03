@@ -345,7 +345,7 @@ Authentication schemes defined for the API:
 <a id="jwt_token"></a>
 ### jwt_token
 
-- **Type**: HTTP basic authentication
+- **Type**: HTTP Bearer Token authentication (JWT)
 
 <a id="cookie_auth"></a>
 ### cookie_auth
