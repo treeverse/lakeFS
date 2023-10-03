@@ -33,22 +33,27 @@ var refsDumpCmd = &cobra.Command{
 
 		// wait for refs dump to complete
 		ticker := time.NewTicker(3 * time.Second)
-		var statusResp *apigen.DumpRefsStatusResponse
+		var dumpStatus *apigen.RefsDumpStatus
 		for range ticker.C {
-			statusResp, err = client.DumpRefsStatusWithResponse(cmd.Context(), repoURI.Repository, taskID)
-			DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
-			if statusResp.JSON201 == nil {
-				DieFmt("Refs dump status failed: %s", statusResp.Status())
+			fmt.Println("Checking status of refs dump")
+			resp, err := client.DumpRefsStatusWithResponse(cmd.Context(), repoURI.Repository, taskID)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				DieFmt("Refs dump status failed: %s", resp.Status())
 			}
-			fmt.Printf("Refs dump status: %s\n", statusResp.JSON201.Status)
-			if statusResp.JSON201.Status == "completed" || statusResp.JSON201.Status == "failed" {
+			dumpStatus = resp.JSON200
+			if dumpStatus.Completed {
 				break
 			}
 		}
-		if statusResp.JSON201.Refs != nil {
+		if dumpStatus.Error != nil {
+			DieFmt("Refs dump failed: %s", *dumpStatus.Error)
+		} else if dumpStatus.Refs == nil {
+			Die("Refs dump failed: no refs returned", 1)
+		} else {
 			Write(metadataDumpTemplate, struct {
 				Response interface{}
-			}{statusResp.JSON201.Refs})
+			}{Response: dumpStatus.Refs})
 		}
 	},
 }

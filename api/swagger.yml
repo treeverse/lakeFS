@@ -2690,7 +2690,7 @@ paths:
       summary: Dump repository refs (tags, commits, branches) to object store
       responses:
         201:
-          description: refs dump task created
+          description: dump refs task created
           content:
             application/json:
               schema:
@@ -2722,8 +2722,8 @@ paths:
       operationId: dumpRefsStatus
       summary: Dump repository refs (tags, commits, branches) to object store
       responses:
-        201:
-          description: refs dump
+        200:
+          description: dump refs status
           content:
             application/json:
               schema:
@@ -2758,8 +2758,8 @@ paths:
             schema:
               $ref: "#/components/schemas/RefsDump"
       responses:
-        200:
-          description: refs successfully loaded
+        201:
+          description: restore refs task created
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -2786,15 +2786,13 @@ paths:
         - refs
       operationId: restoreRefsStatus
       summary: Restore repository refs (tags, commits, branches) from object store
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RefsRestoreStatus"
       responses:
         200:
-          description: refs successfully loaded
+          description: restore refs status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefsRestoreStatus"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
