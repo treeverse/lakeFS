@@ -1,6 +1,12 @@
 # Changelog
 
-## UNRELEASED
+# v0.112.0
+:new: What's new:
+- Hooks: Glue Catalog exporter! (#6653)
+
+:bug: Bugs fixed:
+- Fix email display bug when using external auth provider (#6680)
+- Fix repository creation bug in quickstart mode (#6682)
 
 # v0.111.0
 
