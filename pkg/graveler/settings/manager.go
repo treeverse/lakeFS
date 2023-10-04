@@ -59,44 +59,47 @@ func NewManager(refManager graveler.RefManager, store kv.Store, options ...Manag
 	return m
 }
 
-// Save persists the given setting under the given repository and key. Overrides settings key in KV Store
-func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message) error {
-	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
-	// Write key in KV Store
-	return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
-}
-
-// SaveIf persists the given setting under the given repository and key. Overrides settings key in KV Store.
+// Save persists the given setting under the given repository and key. Overrides settings key in KV Store.
 // The setting is persisted only if the current version of the setting matches the given checksum.
-// If lastKnownChecksum is nil, the setting is persisted only if it does not exist.
-func (m *Manager) SaveIf(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum *string) error {
+// If lastKnownChecksum is the empty string, the setting is persisted only if it does not exist.
+// If lastKnownChecksum is nil, the setting is persisted unconditionally.
+func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum *string) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
-	valueWithPredicate, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
-	if err != nil && !errors.Is(err, kv.ErrNotFound) {
+	if lastKnownChecksum == nil {
+		return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
+	}
+	if *lastKnownChecksum == "" {
+		err := kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, nil)
+		if errors.Is(err, kv.ErrPredicateFailed) {
+			return graveler.ErrPreconditionFailed
+		}
 		return err
 	}
-	var currentChecksum *string
-	var currentPredicate kv.Predicate
-	if valueWithPredicate != nil {
-		if valueWithPredicate.Value != nil {
-			currentChecksum, err = computeChecksum(valueWithPredicate.Value)
-		}
-		if err != nil {
-			return err
-		}
-		currentPredicate = valueWithPredicate.Predicate
-	}
-	if swag.StringValue(currentChecksum) != swag.StringValue(lastKnownChecksum) {
+	valueWithPredicate, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
+	if errors.Is(err, kv.ErrNotFound) {
 		return graveler.ErrPreconditionFailed
 	}
-	err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, currentPredicate)
-	if err != nil && errors.Is(err, kv.ErrPredicateFailed) {
+	if err != nil {
+		return err
+	}
+	currentChecksum, err := computeChecksum(valueWithPredicate.Value)
+	if err != nil {
+		return err
+	}
+	if *currentChecksum != *lastKnownChecksum {
+		return graveler.ErrPreconditionFailed
+	}
+	err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, valueWithPredicate.Predicate)
+	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed
 	}
 	return err
 }
 
 func computeChecksum(value []byte) (*string, error) {
+	if value == nil {
+		return nil, graveler.ErrInvalidValue
+	}
 	h := sha256.New()
 	_, err := h.Write(value)
 	if err != nil {
@@ -105,52 +108,53 @@ func computeChecksum(value []byte) (*string, error) {
 	return swag.String(hex.EncodeToString(h.Sum(nil))), nil
 }
 
-// GetLatest returns the latest setting under the given repository and key, without using the cache.
-// The returned checksum represents the version of the setting, and can be passed to SaveIf for conditional updates.
-func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, *string, error) {
+// GetLatest loads the latest setting into dst.
+// It returns a checksum representing the version of the setting, which can be passed to SaveIf for conditional updates.
+// The checksum of a non-existent setting is the empty string.
+func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) (*string, error) {
 	settings, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = graveler.ErrNotFound
 		}
-		return nil, nil, err
+		return nil, err
 	}
 	checksum, err := computeChecksum(settings.Value)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	data := settingTemplate.ProtoReflect().Interface()
-	err = proto.Unmarshal(settings.Value, data)
+	err = proto.Unmarshal(settings.Value, dst)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, data, "got repository-level setting")
-	return data, checksum, nil
+	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, dst, "got repository-level setting")
+	return checksum, nil
 }
 
-// Get fetches the setting under the given repository and key, and returns the result.
+// Get fetches the setting under the given repository and key, and loads it into dst.
 // The result is eventually consistent: it is not guaranteed to be the most up-to-date setting. The cache expiry period is 1 second.
-// The settingTemplate parameter is used to determine the returned type.
-// The returned checksum represents the version of the setting, and can be used in SaveIf to perform an atomic update.
-func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, settingTemplate proto.Message) (proto.Message, error) {
+func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) error {
 	k := cacheKey{
 		RepositoryID: repository.RepositoryID,
 		Key:          key,
 	}
+	tmp := proto.Clone(dst)
 	setting, err := m.cache.GetOrSet(k, func() (v interface{}, err error) {
-		setting, _, err := m.GetLatest(ctx, repository, key, settingTemplate)
+		_, err = m.GetLatest(ctx, repository, key, tmp)
 		if errors.Is(err, graveler.ErrNotFound) {
+			// do not return this error here, so that empty settings are cached
 			return nil, nil
 		}
-		return setting, err
+		return tmp, err
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if setting == nil {
-		return nil, graveler.ErrNotFound
+		return graveler.ErrNotFound
 	}
-	return setting.(proto.Message), nil
+	proto.Merge(dst, setting.(proto.Message))
+	return nil
 }
 
 func logSetting(logger logging.Logger, repositoryID graveler.RepositoryID, key string, setting proto.Message, logMsg string) {
