@@ -20,10 +20,13 @@ import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
+import io.lakefs.clients.api.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
 import io.lakefs.clients.api.model.InlineObject1;
 import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
+import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
+import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.api.model.RefsDump;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
@@ -270,6 +273,37 @@ public class InternalApiTest {
     public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
                 api.postStatsEvents(statsEventsList);
+        // TODO: test validations
+    }
+    
+    /**
+     * save lists of active commits for garbage collection
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionCommitsTest() throws ApiException {
+        String repository = null;
+                GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * save repository uncommitted metadata for garbage collection
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionUncommittedTest() throws ApiException {
+        String repository = null;
+        PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
+                PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
         // TODO: test validations
     }
     

@@ -210,6 +210,8 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**internalGetGarbageCollectionRules**](docs/InternalApi.md#internalGetGarbageCollectionRules) | **GET** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**internalSetGarbageCollectionRules**](docs/InternalApi.md#internalSetGarbageCollectionRules) | **POST** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**postStatsEvents**](docs/InternalApi.md#postStatsEvents) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+*InternalApi* | [**prepareGarbageCollectionCommits**](docs/InternalApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+*InternalApi* | [**prepareGarbageCollectionUncommitted**](docs/InternalApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restoreRefs**](docs/InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**setGarbageCollectionRulesPreflight**](docs/InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
@@ -241,9 +243,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 *RepositoriesApi* | [**setBranchProtectionRules**](docs/RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 *RepositoriesApi* | [**setGCRules**](docs/RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules | 
-*RetentionApi* | [**prepareGarbageCollectionCommits**](docs/RetentionApi.md#prepareGarbageCollectionCommits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
-*RetentionApi* | [**prepareGarbageCollectionUncommitted**](docs/RetentionApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
-*StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | generate an address to which the client can upload an object
+*StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**deleteTag**](docs/TagsApi.md#deleteTag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag

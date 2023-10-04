@@ -5,9 +5,25 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **pagination** | [**Pagination**](Pagination.md) |  | 
-**results** | [**[Commit]**](Commit.md) |  | 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
+**results** | [**List[Commit]**](Commit.md) |  | 
 
+## Example
+
+```python
+from lakefs_sdk.models.commit_list import CommitList
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of CommitList from a JSON string
+commit_list_instance = CommitList.from_json(json)
+# print the JSON string representation of the object
+print CommitList.to_json()
+
+# convert the object into a dict
+commit_list_dict = commit_list_instance.to_dict()
+# create an instance of CommitList from a dict
+commit_list_form_dict = commit_list.from_dict(commit_list_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

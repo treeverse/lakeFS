@@ -5187,7 +5187,7 @@ paths:
           description: Internal Server Error
       summary: save lists of active commits for garbage collection
       tags:
-      - retention
+      - internal
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_uncommited:
     post:
@@ -5238,7 +5238,7 @@ paths:
           description: Internal Server Error
       summary: save repository uncommitted metadata for garbage collection
       tags:
-      - retention
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branch_protection/set_allowed:
