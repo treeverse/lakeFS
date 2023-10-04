@@ -63,11 +63,12 @@ type DynamoDB struct {
 }
 
 type CosmosDB struct {
-	Key       string
-	Endpoint  string
-	Database  string
-	Container string
-
+	Key        string
+	Endpoint   string
+	Database   string
+	Container  string
+	Throughput int32
+	Autoscale  bool
 	// These values should only be set to false for testing purposes using the CosmosDB emulator
 	Client            *http.Client
 	StrongConsistency bool
@@ -111,11 +112,16 @@ func NewConfig(cfg *config.Config) (Config, error) {
 	}
 
 	if cfg.Database.CosmosDB != nil {
+		if cfg.Database.CosmosDB.Autoscale && cfg.Database.CosmosDB.Throughput == 0 {
+			return Config{}, fmt.Errorf("enabling autoscale requires setting the throughput param: %w", config.ErrBadConfiguration)
+		}
 		p.CosmosDB = &CosmosDB{
 			Key:               cfg.Database.CosmosDB.Key.SecureValue(),
 			Endpoint:          cfg.Database.CosmosDB.Endpoint,
 			Database:          cfg.Database.CosmosDB.Database,
 			Container:         cfg.Database.CosmosDB.Container,
+			Throughput:        cfg.Database.CosmosDB.Throughput,
+			Autoscale:         cfg.Database.CosmosDB.Autoscale,
 			StrongConsistency: true,
 		}
 	}
