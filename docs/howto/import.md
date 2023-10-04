@@ -125,7 +125,14 @@ Once the import is complete, the changes are merged into the destination branch.
 
 #### Notes
 
-* Import uses the `src-wins` merge strategy. Therefore - import of existing objects nad prefixes in destination will override them.
+* Import uses the `src-wins` merge strategy. Therefore - import of existing objects and prefixes in destination will override them. 
+Meaning, any files that exist in the source but not in the destination will be deleted after the import. 
+To retain existing data in the destination and only add new data, follow these steps:
+
+1. Create an empty ingest branch in your repository.
+2. Import the desired data into this empty ingest branch.
+3. Merge the ingest branch with your existing data.
+
 * The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
 ### _lakectl import_
