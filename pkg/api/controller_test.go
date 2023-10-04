@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -2465,6 +2466,30 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			},
 		})
 		verifyResponseOK(t, resp, err)
+	})
+	t.Run("link expired address", func(t *testing.T) {
+		address := upload.DefaultPathProvider.NewPath()
+		dir, _ := path.Split(address)
+		newFilename := xid.NewWithTime(time.Now().Add(-24 * time.Hour))
+		path.Join(dir, newFilename.String())
+		address = path.Join(dir, newFilename.String())
+		err = deps.catalog.SetLinkAddress(ctx, repo, address)
+		testutil.Must(t, err)
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: swag.String(ns + "/" + address),
+			},
+		})
+		testutil.Must(t, err)
+		expectedStatusCode := http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
+		}
 	})
 }
 
