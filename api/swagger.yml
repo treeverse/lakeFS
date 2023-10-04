@@ -679,6 +679,8 @@ components:
           description: Unix Epoch in seconds
         friendly_name:
           type: string
+        email:
+          type: string
 
     CurrentUser:
       type: object
@@ -3595,8 +3597,9 @@ paths:
         schema:
           type: string
     put:
+      deprecated: true
       tags:
-        - objects
+        - internal
       operationId: stageObject
       summary: stage an object's metadata for the given branch
       requestBody:

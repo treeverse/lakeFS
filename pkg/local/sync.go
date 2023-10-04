@@ -98,12 +98,12 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 		switch change.Source {
 		case ChangeSourceRemote:
 			// remotely changed something, download it!
-			if err := s.download(ctx, rootPath, remote, change); err != nil {
+			if err := s.download(ctx, rootPath, remote, change.Path); err != nil {
 				return fmt.Errorf("download %s failed: %w", change.Path, err)
 			}
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
-			if err := s.upload(ctx, rootPath, remote, change); err != nil {
+			if err := s.upload(ctx, rootPath, remote, change.Path); err != nil {
 				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
 		default:
@@ -129,18 +129,17 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 	return nil
 }
 
-func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
-	if err := fileutil.VerifyRelPath(strings.TrimPrefix(change.Path, uri.PathSeparator), rootPath); err != nil {
+func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
 		return err
 	}
-	destination := filepath.Join(rootPath, change.Path)
+	destination := filepath.Join(rootPath, path)
 	destinationDirectory := filepath.Dir(destination)
 	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
 		return err
 	}
-
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
-		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
+		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
 		Presign:      swag.Bool(s.presign),
 		UserMetadata: swag.Bool(true),
 	})
@@ -158,7 +157,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 
-	if strings.HasSuffix(change.Path, uri.PathSeparator) {
+	if strings.HasSuffix(path, uri.PathSeparator) {
 		// Directory marker - skip
 		return nil
 	}
@@ -179,7 +178,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}()
 
 	if sizeBytes == 0 { // if size is empty just create file
-		spinner := s.progressBar.AddSpinner("download " + change.Path)
+		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
 	} else { // Download file
@@ -194,12 +193,12 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 				_ = resp.Body.Close()
 			}()
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", change.Path, resp.StatusCode, ErrDownloadingFile)
+				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
 			}
 			body = resp.Body
 		} else {
 			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
-				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path)),
+				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
 			})
 			if err != nil {
 				return err
@@ -208,12 +207,12 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 				_ = resp.Body.Close()
 			}()
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("%s (GetObject: HTTP %d): %w", change.Path, resp.StatusCode, ErrDownloadingFile)
+				return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
 			}
 			body = resp.Body
 		}
 
-		b := s.progressBar.AddReader(fmt.Sprintf("download %s", change.Path), sizeBytes)
+		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
 		barReader := b.Reader(body)
 		defer func() {
 			if err != nil {
@@ -235,12 +234,12 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	return err
 }
 
-func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
-	source := filepath.Join(rootPath, change.Path)
+func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+	source := filepath.Join(rootPath, path)
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
 	}
-	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
+	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), path))
 
 	f, err := os.Open(source)
 	if err != nil {
@@ -255,7 +254,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		return err
 	}
 
-	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", change.Path), fileStat.Size())
+	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", path), fileStat.Size())
 	defer func() {
 		if err != nil {
 			b.Error()

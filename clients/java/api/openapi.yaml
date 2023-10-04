@@ -4163,6 +4163,7 @@ paths:
       x-contentType: multipart/form-data
       x-accepts: application/json
     put:
+      deprecated: true
       operationId: stageObject
       parameters:
       - explode: false
@@ -4232,7 +4233,7 @@ paths:
           description: Internal Server Error
       summary: stage an object's metadata for the given branch
       tags:
-      - objects
+      - internal
       x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/delete:
@@ -6427,6 +6428,7 @@ components:
         friendly_name: friendly_name
         id: id
         creation_date: 0
+        email: email
       properties:
         id:
           description: a unique identifier for the user.
@@ -6436,6 +6438,8 @@ components:
           format: int64
           type: integer
         friendly_name:
+          type: string
+        email:
           type: string
       required:
       - creation_date
@@ -6447,6 +6451,7 @@ components:
           friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
       properties:
         user:
           $ref: '#/components/schemas/User'
@@ -6708,9 +6713,11 @@ components:
         - friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
         - friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'

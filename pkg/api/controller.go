@@ -373,7 +373,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
 
-	// validate token
+	// validate physical address
 	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -698,6 +698,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	for _, u := range users {
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
+			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
 		})
 	}
@@ -1057,6 +1058,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 	for _, u := range users {
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
+			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
 		})
 	}
@@ -1125,6 +1127,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 	}
 	response := apigen.User{
 		Id:           u.Username,
+		Email:        u.Email,
 		CreationDate: u.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -1174,6 +1177,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 	}
 	response := apigen.User{
 		CreationDate: u.CreatedAt.Unix(),
+		Email:        u.Email,
 		Id:           u.Username,
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1462,6 +1466,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
 }
+
 func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
@@ -1479,6 +1484,7 @@ func (c *Controller) getStorageConfig() apigen.StorageConfig {
 		ImportValidityRegex:              info.ImportValidityRegex,
 	}
 }
+
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -1788,7 +1794,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Pattern: pattern,
 		})
 	}
-	w.Header().Set("ETag", eTag)
+	w.Header().Set("ETag", swag.StringValue(eTag))
 	writeResponse(w, r, http.StatusOK, resp)
 }
 
@@ -1815,8 +1821,7 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Value: blockedActions,
 		}
 	}
-	eTag := params.IfMatch
-	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, params.IfMatch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2211,8 +2216,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	// order of case is important, more specific errors should be first
 	switch {
-	case errors.Is(err, graveler.ErrAddressTokenNotFound),
-		errors.Is(err, graveler.ErrAddressTokenExpired):
+	case errors.Is(err, graveler.ErrLinkAddressNotFound),
+		errors.Is(err, graveler.ErrLinkAddressExpired):
 		log.Debug("Expired or invalid address token")
 		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
@@ -4221,6 +4226,7 @@ func (c *Controller) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		} else {
 			user.FriendlyName = &u.Username
 		}
+		user.Email = u.Email
 	}
 	response := apigen.CurrentUser{
 		User: user,
@@ -4275,6 +4281,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		LatestVersion:      latestVersion,
 	}
 }
+
 func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	_, err := auth.GetUser(ctx)

@@ -92,7 +92,7 @@ var localInitCmd = &cobra.Command{
 	Short: "set a local directory to sync with a lakeFS path.",
 	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		remote, localPath := getLocalArgs(args, true, false)
+		remote, localPath := getSyncArgs(args, true, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)
