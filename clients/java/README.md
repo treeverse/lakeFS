@@ -1,4 +1,4 @@
-# api-client
+# sdk-client
 
 lakeFS API
 - API version: 0.1.0
@@ -12,8 +12,8 @@ lakeFS HTTP API
 ## Requirements
 
 Building the API client library requires:
-1. Java 1.7+
-2. Maven/Gradle
+1. Java 1.8+
+2. Maven (3.8.3+)/Gradle (7.2+)
 
 ## Installation
 
@@ -38,7 +38,7 @@ Add this dependency to your project's POM:
 ```xml
 <dependency>
   <groupId>io.lakefs</groupId>
-  <artifactId>api-client</artifactId>
+  <artifactId>sdk-client</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <scope>compile</scope>
 </dependency>
@@ -49,7 +49,14 @@ Add this dependency to your project's POM:
 Add this dependency to your project's build file:
 
 ```groovy
-compile "io.lakefs:api-client:0.1.0-SNAPSHOT"
+  repositories {
+    mavenCentral()     // Needed if the 'sdk-client' jar has been published to maven central.
+    mavenLocal()       // Needed if the 'sdk-client' jar has been published to the local maven repo.
+  }
+
+  dependencies {
+     implementation "io.lakefs:sdk-client:0.1.0-SNAPSHOT"
+  }
 ```
 
 ### Others
@@ -62,7 +69,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/api-client-0.1.0-SNAPSHOT.jar`
+* `target/sdk-client-0.1.0-SNAPSHOT.jar`
 * `target/lib/*.jar`
 
 ## Getting Started
@@ -72,17 +79,17 @@ Please follow the [installation](#installation) instruction and execute the foll
 ```java
 
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ActionsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -94,10 +101,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -111,11 +114,16 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ActionsApi apiInstance = new ActionsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String runId = "runId_example"; // String | 
     try {
-      ActionRun result = apiInstance.getRun(repository, runId);
+      ActionRun result = apiInstance.getRun(repository, runId)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ActionsApi#getRun");
@@ -131,7 +139,7 @@ public class Example {
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
@@ -282,8 +290,7 @@ Class | Method | HTTP request | Description
  - [ImportCreationResponse](docs/ImportCreationResponse.md)
  - [ImportLocation](docs/ImportLocation.md)
  - [ImportStatus](docs/ImportStatus.md)
- - [InlineObject](docs/InlineObject.md)
- - [InlineObject1](docs/InlineObject1.md)
+ - [InternalDeleteBranchProtectionRuleRequest](docs/InternalDeleteBranchProtectionRuleRequest.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
@@ -332,29 +339,36 @@ Class | Method | HTTP request | Description
  - [VersionConfig](docs/VersionConfig.md)
 
 
+<a id="documentation-for-authorization"></a>
 ## Documentation for Authorization
 
+
 Authentication schemes defined for the API:
+<a id="basic_auth"></a>
 ### basic_auth
 
 - **Type**: HTTP basic authentication
 
+<a id="jwt_token"></a>
+### jwt_token
+
+- **Type**: HTTP Bearer Token authentication (JWT)
+
+<a id="cookie_auth"></a>
 ### cookie_auth
 
 - **Type**: API key
 - **API key parameter name**: internal_auth_session
 - **Location**: 
 
-### jwt_token
-
-- **Type**: HTTP basic authentication
-
+<a id="oidc_auth"></a>
 ### oidc_auth
 
 - **Type**: API key
 - **API key parameter name**: oidc_auth_session
 - **Location**: 
 
+<a id="saml_auth"></a>
 ### saml_auth
 
 - **Type**: API key

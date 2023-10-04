@@ -50,7 +50,7 @@ paths:
       summary: setup communications preferences
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /setup_lakefs:
     get:
@@ -110,7 +110,7 @@ paths:
       summary: setup lakeFS and create a first user
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /user:
     get:
@@ -164,7 +164,7 @@ paths:
       summary: perform a login
       tags:
       - auth
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /auth/capabilities:
     get:
@@ -282,7 +282,7 @@ paths:
       summary: create user
       tags:
       - auth
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /auth/users/{userId}:
     delete:
@@ -448,7 +448,7 @@ paths:
       summary: create group
       tags:
       - auth
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /auth/groups/{groupId}:
     delete:
@@ -621,7 +621,7 @@ paths:
       summary: create policy
       tags:
       - auth
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /auth/policies/{policyId}:
     delete:
@@ -748,7 +748,7 @@ paths:
       summary: update policy
       tags:
       - auth
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /auth/groups/{groupId}/members:
     get:
@@ -1501,7 +1501,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorNoACL'
-          description: Group not found, or group found but has no ACL
+          description: "Group not found, or group found but has no ACL"
         default:
           content:
             application/json:
@@ -1552,7 +1552,7 @@ paths:
       summary: set ACL of group
       tags:
       - auth
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories:
     get:
@@ -1611,8 +1611,8 @@ paths:
     post:
       operationId: createRepository
       parameters:
-      - description: If true, create a bare repository with no initial commit and
-          branch
+      - description: "If true, create a bare repository with no initial commit and\
+          \ branch"
         explode: true
         in: query
         name: bare
@@ -1661,7 +1661,7 @@ paths:
       summary: create repository
       tags:
       - repositories
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}:
     delete:
@@ -1891,7 +1891,7 @@ paths:
           description: Internal Server Error
       tags:
       - repositories
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/settings/branch_protection:
     get:
@@ -1952,8 +1952,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: if provided, the branch protection rules will be updated only
-          if the current ETag match the provided value
+      - description: "if provided, the branch protection rules will be updated only\
+          \ if the current ETag match the provided value"
         explode: false
         in: header
         name: If-Match
@@ -2004,7 +2004,7 @@ paths:
           description: Internal Server Error
       tags:
       - repositories
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /otf/diffs:
     get:
@@ -2205,7 +2205,7 @@ paths:
         Deprecated: a new API will introduce long running operations
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/tags:
     get:
@@ -2330,7 +2330,7 @@ paths:
       summary: create tag
       tags:
       - tags
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/tags/{tag}:
     delete:
@@ -2544,7 +2544,7 @@ paths:
       summary: create branch
       tags:
       - branches
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{ref}/commits:
     get:
@@ -2583,7 +2583,7 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: list of paths, each element is a path of a specific object
+      - description: "list of paths, each element is a path of a specific object"
         explode: true
         in: query
         name: objects
@@ -2593,7 +2593,7 @@ paths:
             type: string
           type: array
         style: form
-      - description: list of paths, each element is a path of a prefix
+      - description: "list of paths, each element is a path of a prefix"
         explode: true
         in: query
         name: prefixes
@@ -2612,8 +2612,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: if set to true, follow only the first parent upon reaching a
-          merge commit
+      - description: "if set to true, follow only the first parent upon reaching a\
+          \ merge commit"
         explode: true
         in: query
         name: first_parent
@@ -2646,8 +2646,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: get commit log from ref. If both objects and prefixes are empty, return
-        all commits.
+      summary: "get commit log from ref. If both objects and prefixes are empty, return\
+        \ all commits."
       tags:
       - refs
       x-accepts: application/json
@@ -2730,7 +2730,7 @@ paths:
       summary: create commit
       tags:
       - commits
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}:
     delete:
@@ -2874,7 +2874,7 @@ paths:
       summary: reset branch
       tags:
       - branches
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/revert:
     post:
@@ -2936,7 +2936,7 @@ paths:
       summary: revert
       tags:
       - branches
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/cherry-pick:
     post:
@@ -3002,7 +3002,7 @@ paths:
       summary: Replay the changes from the given commit on the branch
       tags:
       - branches
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     get:
@@ -3151,7 +3151,7 @@ paths:
       summary: merge references
       tags:
       - refs
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/diff:
     get:
@@ -3419,7 +3419,7 @@ paths:
         name: Range
         required: false
         schema:
-          pattern: ^bytes=((\d*-\d*,? ?)+)$
+          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
           type: string
         style: simple
       - explode: true
@@ -3471,7 +3471,7 @@ paths:
             Content-Range:
               explode: false
               schema:
-                pattern: ^bytes=((\d*-\d*,? ?)+)$
+                pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
                 type: string
               style: simple
             Last-Modified:
@@ -3559,7 +3559,7 @@ paths:
         name: Range
         required: false
         schema:
-          pattern: ^bytes=((\d*-\d*,? ?)+)$
+          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
           type: string
         style: simple
       responses:
@@ -3594,7 +3594,7 @@ paths:
             Content-Range:
               explode: false
               schema:
-                pattern: ^bytes=((\d*-\d*,? ?)+)$
+                pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
                 type: string
               style: simple
             Last-Modified:
@@ -3753,7 +3753,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
-          description: conflict with a commit, try here
+          description: "conflict with a commit, try here"
         default:
           content:
             application/json:
@@ -3763,7 +3763,7 @@ paths:
       summary: associate staging on this physical address with a path
       tags:
       - staging
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/import:
     delete:
@@ -3939,7 +3939,7 @@ paths:
       summary: import data from object store
       tags:
       - import
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/stage_allowed:
     get:
@@ -4100,16 +4100,10 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object'
         content:
           multipart/form-data:
             schema:
-              properties:
-                content:
-                  description: Only a single file per upload which must be named "content".
-                  format: binary
-                  type: string
-              type: object
+              $ref: '#/components/schemas/uploadObject_request'
           application/octet-stream:
             schema:
               format: binary
@@ -4160,7 +4154,7 @@ paths:
       tags:
       - objects
       x-validation-exclude-body: true
-      x-contentType: multipart/form-data
+      x-content-type: multipart/form-data
       x-accepts: application/json
     put:
       deprecated: true
@@ -4234,7 +4228,7 @@ paths:
       summary: stage an object's metadata for the given branch
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/delete:
     post:
@@ -4294,7 +4288,7 @@ paths:
       summary: delete objects. Missing objects will not return a NotFound error.
       tags:
       - objects
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/copy:
     post:
@@ -4363,7 +4357,7 @@ paths:
       summary: create a copy of an object
       tags:
       - objects
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/stat:
     get:
@@ -5153,7 +5147,7 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_commits:
     post:
@@ -5245,7 +5239,7 @@ paths:
       summary: save repository uncommitted metadata for garbage collection
       tags:
       - retention
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branch_protection/set_allowed:
     get:
@@ -5302,16 +5296,10 @@ paths:
           type: string
         style: simple
       requestBody:
-        $ref: '#/components/requestBodies/inline_object_1'
         content:
           application/json:
             schema:
-              properties:
-                pattern:
-                  type: string
-              required:
-              - pattern
-              type: object
+              $ref: '#/components/schemas/internalDeleteBranchProtectionRule_request'
         required: true
       responses:
         "204":
@@ -5336,7 +5324,7 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
     get:
       deprecated: true
@@ -5420,7 +5408,7 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
   /healthcheck:
     get:
@@ -5545,10 +5533,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: post stats events, this endpoint is meant for internal use only
+      summary: "post stats events, this endpoint is meant for internal use only"
       tags:
       - internal
-      x-contentType: application/json
+      x-content-type: application/json
       x-accepts: application/json
 components:
   parameters:
@@ -5591,28 +5579,13 @@ components:
       schema:
         type: string
       style: form
-  requestBodies:
-    inline_object_1:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_object_1'
-      required: true
-    inline_object:
-      content:
-        multipart/form-data:
-          schema:
-            $ref: '#/components/schemas/inline_object'
-        application/octet-stream:
-          schema:
-            $ref: '#/components/schemas/inline_object'
   responses:
     NotFoundOrNoACL:
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorNoACL'
-      description: Group not found, or group found but has no ACL
+      description: "Group not found, or group found but has no ACL"
     Unauthorized:
       content:
         application/json:
@@ -5781,7 +5754,7 @@ components:
         storage_namespace: s3://example-bucket/
       properties:
         name:
-          pattern: ^[a-z0-9][a-z0-9-]{2,62}$
+          pattern: "^[a-z0-9][a-z0-9-]{2,62}$"
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
@@ -5920,7 +5893,7 @@ components:
           description: path of the copied object relative to the ref
           type: string
         src_ref:
-          description: a reference, if empty uses the provided branch as ref
+          description: "a reference, if empty uses the provided branch as ref"
           type: string
       required:
       - src_path
@@ -6066,7 +6039,7 @@ components:
       type: object
     OtfDiffEntry:
       example:
-        operation_content: '{}'
+        operation_content: "{}"
         operation_type: create
         id: id
         operation: operation
@@ -6099,12 +6072,12 @@ components:
       example:
         diff_type: created
         results:
-        - operation_content: '{}'
+        - operation_content: "{}"
           operation_type: create
           id: id
           operation: operation
           timestamp: 0
-        - operation_content: '{}'
+        - operation_content: "{}"
           operation_type: create
           id: id
           operation: operation
@@ -6166,11 +6139,11 @@ components:
         parent_number: 0
       properties:
         ref:
-          description: the commit to revert, given by a ref
+          description: "the commit to revert, given by a ref"
           type: string
         parent_number:
-          description: when reverting a merge commit, the parent number (starting
-            from 1) relative to which to perform the revert.
+          description: "when reverting a merge commit, the parent number (starting\
+            \ from 1) relative to which to perform the revert."
           type: integer
       required:
       - parent_number
@@ -6182,7 +6155,7 @@ components:
         parent_number: 0
       properties:
         ref:
-          description: the commit to cherry-pick, given by a ref
+          description: "the commit to cherry-pick, given by a ref"
           type: string
         parent_number:
           description: |
@@ -6307,10 +6280,10 @@ components:
             type: string
           type: object
         strategy:
-          description: In case of a merge conflict, this option will force the merge
-            process to automatically favor changes from the dest branch ('dest-wins')
-            or from the source branch('source-wins'). In case no selection is made,
-            the merge process will fail in case of a conflict
+          description: "In case of a merge conflict, this option will force the merge\
+            \ process to automatically favor changes from the dest branch ('dest-wins')\
+            \ or from the source branch('source-wins'). In case no selection is made,\
+            \ the merge process will fail in case of a conflict"
           type: string
       type: object
     BranchCreation:
@@ -7110,8 +7083,8 @@ components:
           description: opaque staging token to use to link uploaded object
           type: string
         presigned_url:
-          description: if presign=true is passed in the request, this field will contain
-            a pre-signed URL to use when uploading
+          description: "if presign=true is passed in the request, this field will\
+            \ contain a pre-signed URL to use when uploading"
           nullable: true
           type: string
         presigned_url_expiry:
@@ -7252,7 +7225,7 @@ components:
         pattern: stable_*
       properties:
         pattern:
-          description: fnmatch pattern for the branch name, supporting * and ? wildcards
+          description: "fnmatch pattern for the branch name, supporting * and ? wildcards"
           example: stable_*
           minLength: 1
           type: string
@@ -7262,7 +7235,7 @@ components:
     ImportLocation:
       properties:
         type:
-          description: Path type, can either be 'common_prefix' or 'object'
+          description: "Path type, can either be 'common_prefix' or 'object'"
           enum:
           - common_prefix
           - object
@@ -7407,11 +7380,12 @@ components:
         class: class
       properties:
         class:
-          description: stats event class (e.g. "s3_gateway", "openapi_request", "experimental-feature",
-            "ui-event")
+          description: "stats event class (e.g. \"s3_gateway\", \"openapi_request\"\
+            , \"experimental-feature\", \"ui-event\")"
           type: string
         name:
-          description: stats event name (e.g. "put_object", "create_repository", "<experimental-feature-name>")
+          description: "stats event name (e.g. \"put_object\", \"create_repository\"\
+            , \"<experimental-feature-name>\")"
           type: string
         count:
           description: number of events of the class and name
@@ -7438,14 +7412,14 @@ components:
       required:
       - events
       type: object
-    inline_object:
+    uploadObject_request:
       properties:
         content:
           description: Only a single file per upload which must be named "content".
           format: binary
           type: string
       type: object
-    inline_object_1:
+    internalDeleteBranchProtectionRule_request:
       properties:
         pattern:
           type: string
