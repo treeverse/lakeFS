@@ -23,6 +23,7 @@ message Entry {
 	string content_type = 7;
 }
 
+// Task is used as field 1 in all status messages
 message Task {
 	string id = 1;
 	bool completed = 2;
@@ -45,6 +46,12 @@ message RefsDumpStatus {
 }
 
 message RefsRestoreStatus {
+	Task task = 1;
+}
+
+// TaskMsg described generic message with Task field
+// used for all status messages and for cleanup messages
+message TaskMsg {
 	Task task = 1;
 }
 

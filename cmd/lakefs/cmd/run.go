@@ -174,7 +174,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		deleteScheduler := getScheduler()
+		deleteScheduler := gocron.NewScheduler(time.UTC)
 		err = scheduleCleanupJobs(ctx, deleteScheduler, c)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to schedule cleanup jobs")
@@ -406,30 +406,40 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 }
 
 func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
-	// delete expired link addresses
-	const deleteExpiredAddressPeriod = 3
-	job1, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
-		c.DeleteExpiredLinkAddresses(ctx)
-	})
-	if err != nil {
-		return err
-	}
-	job1.SingletonMode()
+	const (
+		deleteExpiredAddressPeriod = 3
+		deleteExpiredTaskInterval  = 2 * time.Second
+	)
 
-	// delete expired imports
-	job2, err := s.Every(ref.ImportExpiryTime).Do(func() {
-		c.DeleteExpiredImports(ctx)
-	})
-	if err != nil {
-		return err
+	defs := []struct {
+		name     string
+		fn       func()
+		interval time.Duration
+	}{
+		{
+			name:     "delete expired link addresses",
+			fn:       func() { c.DeleteExpiredLinkAddresses(ctx) },
+			interval: deleteExpiredAddressPeriod * ref.LinkAddressTime,
+		},
+		{
+			name:     "delete expired imports",
+			fn:       func() { c.DeleteExpiredImports(ctx) },
+			interval: ref.ImportExpiryTime,
+		},
+		{
+			name:     "delete expired tasks",
+			fn:       func() { c.DeleteExpiredTasks(ctx) },
+			interval: deleteExpiredTaskInterval,
+		},
 	}
-	job2.SingletonMode()
-
+	for _, def := range defs {
+		job, err := s.Every(def.interval).Do(def.fn)
+		if err != nil {
+			return fmt.Errorf("%s job: %w", def.name, err)
+		}
+		job.SingletonMode()
+	}
 	return nil
-}
-
-func getScheduler() *gocron.Scheduler {
-	return gocron.NewScheduler(time.UTC)
 }
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.

@@ -9,10 +9,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const refsRestoreSuccess = `
-{{ "All references restored successfully!" | green }}
+const refsRestoreSuccess = `{{ "All references restored successfully!" | green }}
 `
 
 var refsRestoreCmd = &cobra.Command{
@@ -57,13 +57,21 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 			Die("Bad response from server", 1)
 		}
 		taskID := resp.JSON202.Id
+		logging.FromContext(ctx).
+			WithField("task_id", taskID).
+			Debug("Submitted refs restore")
 
 		const checkInterval = 3 * time.Second
 		ticker := time.NewTicker(checkInterval)
 		defer ticker.Stop()
 		var restoreStatus *apigen.RefsRestoreStatus
+		counter := 1
 		for range ticker.C {
-			fmt.Println("Checking status of refs restore")
+			logging.FromContext(ctx).
+				WithFields(logging.Fields{"task_id": taskID, "counter": counter}).
+				Debug("Checking status of refs restore")
+			counter++
+
 			resp, err := client.RestoreRefsStatusWithResponse(ctx, repoURI.Repository, taskID)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {

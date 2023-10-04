@@ -168,6 +168,7 @@ func (x *Entry) GetContentType() string {
 	return ""
 }
 
+// Task is used as field 1 in all status messages
 type Task struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -414,6 +415,55 @@ func (x *RefsRestoreStatus) GetTask() *Task {
 	return nil
 }
 
+// TaskMsg described generic message with Task field
+// used for all status messages and for cleanup messages
+type TaskMsg struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Task *Task `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+}
+
+func (x *TaskMsg) Reset() {
+	*x = TaskMsg{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_catalog_catalog_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TaskMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskMsg) ProtoMessage() {}
+
+func (x *TaskMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_catalog_catalog_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskMsg.ProtoReflect.Descriptor instead.
+func (*TaskMsg) Descriptor() ([]byte, []int) {
+	return file_catalog_catalog_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TaskMsg) GetTask() *Task {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
 var File_catalog_catalog_proto protoreflect.FileDescriptor
 
 var file_catalog_catalog_proto_rawDesc = []byte{
@@ -477,10 +527,13 @@ var file_catalog_catalog_proto_rawDesc = []byte{
 	0x22, 0x36, 0x0a, 0x11, 0x52, 0x65, 0x66, 0x73, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x53,
 	0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x21, 0x0a, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x2e, 0x54, 0x61,
-	0x73, 0x6b, 0x52, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x42, 0x24, 0x5a, 0x22, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x73, 0x65, 0x2f,
-	0x6c, 0x61, 0x6b, 0x65, 0x66, 0x73, 0x2f, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x6b, 0x52, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x22, 0x2c, 0x0a, 0x07, 0x54, 0x61, 0x73, 0x6b,
+	0x4d, 0x73, 0x67, 0x12, 0x21, 0x0a, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x0d, 0x2e, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x2e, 0x54, 0x61, 0x73, 0x6b,
+	0x52, 0x04, 0x74, 0x61, 0x73, 0x6b, 0x42, 0x24, 0x5a, 0x22, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x73, 0x65, 0x2f, 0x6c, 0x61,
+	0x6b, 0x65, 0x66, 0x73, 0x2f, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -496,7 +549,7 @@ func file_catalog_catalog_proto_rawDescGZIP() []byte {
 }
 
 var file_catalog_catalog_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_catalog_catalog_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_catalog_catalog_proto_goTypes = []interface{}{
 	(Entry_AddressType)(0),        // 0: catalog.Entry.AddressType
 	(*Entry)(nil),                 // 1: catalog.Entry
@@ -504,22 +557,24 @@ var file_catalog_catalog_proto_goTypes = []interface{}{
 	(*RefsDumpInfo)(nil),          // 3: catalog.RefsDumpInfo
 	(*RefsDumpStatus)(nil),        // 4: catalog.RefsDumpStatus
 	(*RefsRestoreStatus)(nil),     // 5: catalog.RefsRestoreStatus
-	nil,                           // 6: catalog.Entry.MetadataEntry
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*TaskMsg)(nil),               // 6: catalog.TaskMsg
+	nil,                           // 7: catalog.Entry.MetadataEntry
+	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
 }
 var file_catalog_catalog_proto_depIdxs = []int32{
-	7, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
-	6, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
+	8, // 0: catalog.Entry.last_modified:type_name -> google.protobuf.Timestamp
+	7, // 1: catalog.Entry.metadata:type_name -> catalog.Entry.MetadataEntry
 	0, // 2: catalog.Entry.address_type:type_name -> catalog.Entry.AddressType
-	7, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
+	8, // 3: catalog.Task.updated_at:type_name -> google.protobuf.Timestamp
 	2, // 4: catalog.RefsDumpStatus.task:type_name -> catalog.Task
 	3, // 5: catalog.RefsDumpStatus.info:type_name -> catalog.RefsDumpInfo
 	2, // 6: catalog.RefsRestoreStatus.task:type_name -> catalog.Task
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	2, // 7: catalog.TaskMsg.task:type_name -> catalog.Task
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_catalog_catalog_proto_init() }
@@ -588,6 +643,18 @@ func file_catalog_catalog_proto_init() {
 				return nil
 			}
 		}
+		file_catalog_catalog_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TaskMsg); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -595,7 +662,7 @@ func file_catalog_catalog_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_catalog_catalog_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

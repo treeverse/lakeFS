@@ -18,7 +18,6 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/hashicorp/go-multierror"
 	lru "github.com/hnlq715/golang-lru"
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -42,7 +41,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -65,10 +63,6 @@ const (
 	// Total per entry ~52 bytes
 	// Deviation with gcPeriodicCheckSize = 100000 will be around 5 MB
 	gcPeriodicCheckSize = 100000
-
-	taskIDNanoLength           = 20
-	dumpRefsTaskIDPrefix       = "DR"
-	restoreRestoreTaskIDPrefix = "RR"
 )
 
 type Path string
@@ -381,6 +375,11 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 	}, nil
+}
+
+func TaskPath(key string) string {
+	const tasksPrefix = "tasks"
+	return kv.FormatPath(tasksPrefix, key)
 }
 
 func newLimiter(rateLimit int) ratelimit.Limiter {
@@ -1257,7 +1256,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 	mgmtGroup.Go(func() error {
 		defer close(outCh)
 
-		// workers to check if commit record in path
+		// workers check if commit record in the path
 		workerGroup, ctx := c.workPool.GroupContext(ctx)
 
 		current := 0
@@ -1832,7 +1831,7 @@ func (c *Catalog) DumpRefsSubmit(ctx context.Context, repositoryID string) (stri
 	}
 
 	// create refs dump task and update initial status
-	taskID := newTaskID(dumpRefsTaskIDPrefix)
+	taskID := newTaskID(DumpRefsTaskIDPrefix)
 	taskStatus := &RefsDumpStatus{
 		Task: &Task{
 			Id:        taskID,
@@ -1841,43 +1840,86 @@ func (c *Catalog) DumpRefsSubmit(ctx context.Context, repositoryID string) (stri
 		},
 		Info: &RefsDumpInfo{},
 	}
-	if err := c.updateTaskStatus(ctx, repository, taskID, taskStatus); err != nil {
+	if err := updateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return "", err
 	}
-
 	c.workPool.Submit(func() {
-		// update task status on task exit
-		defer func(status *RefsDumpStatus) {
-			status.Task.Completed = true
-			if err != nil {
-				status.Task.Error = err.Error()
-			}
-			_ = c.updateTaskStatus(ctx, repository, taskID, taskStatus)
-		}(taskStatus)
-
-		// dump refs - keep using the same error variable for the defer status update
-		var commitsMetaRangeID *graveler.MetaRangeID
-		commitsMetaRangeID, err = c.Store.DumpCommits(ctx, repository)
-		if err != nil {
-			return
-		}
-		taskStatus.Info.CommitsMetarangeId = string(*commitsMetaRangeID)
-
-		var branchesMetaRangeID *graveler.MetaRangeID
-		branchesMetaRangeID, err = c.Store.DumpBranches(ctx, repository)
-		if err != nil {
-			return
-		}
-		taskStatus.Info.BranchesMetarangeId = string(*branchesMetaRangeID)
-
-		var tagsMetaRangeID *graveler.MetaRangeID
-		tagsMetaRangeID, err = c.Store.DumpTags(ctx, repository)
-		if err != nil {
-			return
-		}
-		taskStatus.Info.TagsMetarangeId = string(*tagsMetaRangeID)
+		c.dumpRefsTask(ctx, err, repository, taskStatus, taskID)
 	})
 	return taskID, nil
+}
+
+func (c *Catalog) dumpRefsTask(ctx context.Context, err error, repository *graveler.RepositoryRecord, taskStatus *RefsDumpStatus, taskID string) {
+	steps := []struct {
+		name string
+		fn   func() error
+	}{
+		{
+			name: "dump commits",
+			fn: func() error {
+				var commitsMetaRangeID *graveler.MetaRangeID
+				commitsMetaRangeID, err = c.Store.DumpCommits(ctx, repository)
+				if err != nil {
+					return err
+				}
+				taskStatus.Info.CommitsMetarangeId = string(*commitsMetaRangeID)
+				return nil
+			},
+		},
+		{
+			name: "dump branches",
+			fn: func() error {
+				var branchesMetaRangeID *graveler.MetaRangeID
+				branchesMetaRangeID, err = c.Store.DumpBranches(ctx, repository)
+				if err != nil {
+					return err
+				}
+				taskStatus.Info.BranchesMetarangeId = string(*branchesMetaRangeID)
+				return nil
+			},
+		},
+		{
+			name: "dump tags",
+			fn: func() error {
+				var tagsMetaRangeID *graveler.MetaRangeID
+				tagsMetaRangeID, err = c.Store.DumpTags(ctx, repository)
+				if err != nil {
+					return err
+				}
+				taskStatus.Info.TagsMetarangeId = string(*tagsMetaRangeID)
+				return nil
+			},
+		},
+	}
+
+	// run each step and update step status
+	for stepIdx, step := range steps {
+		err := step.fn()
+		if err != nil {
+			c.log(ctx).
+				WithError(err).
+				WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID}).
+				Errorf("failed to %s", step.name)
+			taskStatus.Task.Completed = true
+			taskStatus.Task.Error = err.Error()
+		} else if stepIdx == len(steps)-1 {
+			taskStatus.Task.Completed = true
+		}
+		taskStatus.Task.UpdatedAt = timestamppb.Now()
+
+		err = updateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus)
+		if err != nil {
+			c.log(ctx).
+				WithError(err).
+				WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID}).
+				Error("failed to update task status")
+		}
+
+		// make sure we stop based on task completed status, as we may fail
+		if taskStatus.Task.Completed {
+			break
+		}
+	}
 }
 
 func (c *Catalog) DumpRefsStatus(ctx context.Context, repositoryID string, id string) (*RefsDumpStatus, error) {
@@ -1885,12 +1927,12 @@ func (c *Catalog) DumpRefsStatus(ctx context.Context, repositoryID string, id st
 	if err != nil {
 		return nil, err
 	}
-	if !isTaskID(dumpRefsTaskIDPrefix, id) {
+	if !isTaskID(DumpRefsTaskIDPrefix, id) {
 		return nil, graveler.ErrNotFound
 	}
 
 	var taskStatus RefsDumpStatus
-	err = c.getTaskStatus(ctx, repository, id, &taskStatus)
+	err = getTaskStatus(ctx, c.KVStore, repository, id, &taskStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -1903,7 +1945,7 @@ func (c *Catalog) RestoreRefsSubmit(ctx context.Context, repositoryID string, in
 		return "", err
 	}
 	// create refs restore task and update initial status
-	taskID := newTaskID(restoreRestoreTaskIDPrefix)
+	taskID := newTaskID(RestoreRefsTaskIDPrefix)
 	taskStatus := &RefsDumpStatus{
 		Task: &Task{
 			Id:        taskID,
@@ -1912,39 +1954,66 @@ func (c *Catalog) RestoreRefsSubmit(ctx context.Context, repositoryID string, in
 		},
 		Info: &RefsDumpInfo{},
 	}
-	if err := c.updateTaskStatus(ctx, repository, taskID, taskStatus); err != nil {
+	if err := updateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return "", err
 	}
 
 	c.workPool.Submit(func() {
-		// update task status on task exit
-		defer func(status *RefsDumpStatus) {
-			status.Task.Completed = true
-			if err != nil {
-				status.Task.Error = err.Error()
-			}
-			_ = c.updateTaskStatus(ctx, repository, taskID, taskStatus)
-		}(taskStatus)
-
-		commitsMetaRangeID := graveler.MetaRangeID(info.CommitsMetarangeId)
-		err = c.Store.LoadCommits(ctx, repository, commitsMetaRangeID)
-		if err != nil {
-			return
-		}
-
-		branchesMetaRangeID := graveler.MetaRangeID(info.BranchesMetarangeId)
-		err = c.Store.LoadBranches(ctx, repository, branchesMetaRangeID)
-		if err != nil {
-			return
-		}
-
-		tagsMetaRangeID := graveler.MetaRangeID(info.TagsMetarangeId)
-		err = c.Store.LoadTags(ctx, repository, tagsMetaRangeID)
-		if err != nil {
-			return
-		}
+		c.restoreRefsTask(ctx, repository, taskID, taskStatus, info)
 	})
 	return taskID, nil
+}
+
+func (c *Catalog) restoreRefsTask(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, taskStatus *RefsDumpStatus, info *RefsDumpInfo) {
+	steps := []struct {
+		name string
+		fn   func() error
+	}{
+		{
+			name: "load commits",
+			fn: func() error {
+				return c.Store.LoadCommits(ctx, repository, graveler.MetaRangeID(info.CommitsMetarangeId))
+			},
+		},
+		{
+			name: "load branches",
+			fn: func() error {
+				return c.Store.LoadBranches(ctx, repository, graveler.MetaRangeID(info.BranchesMetarangeId))
+			},
+		},
+		{
+			name: "load tags",
+			fn: func() error {
+				return c.Store.LoadTags(ctx, repository, graveler.MetaRangeID(info.TagsMetarangeId))
+			},
+		},
+	}
+
+	// run each step and update step status
+	for stepIdx, step := range steps {
+		err := step.fn()
+		if err != nil {
+			c.log(ctx).
+				WithError(err).
+				WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID}).
+				Error("failed to %s", step.name)
+			taskStatus.Task.Error = err.Error()
+			taskStatus.Task.Completed = true
+		} else if stepIdx == len(steps)-1 {
+			taskStatus.Task.Completed = true
+		}
+		taskStatus.Task.UpdatedAt = timestamppb.Now()
+		err = updateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus)
+		if err != nil {
+			c.log(ctx).
+				WithError(err).
+				WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID}).
+				Error("failed to update task status")
+		}
+		if taskStatus.Task.Completed {
+			break
+		}
+	}
 }
 
 func (c *Catalog) RestoreRefsStatus(ctx context.Context, repositoryID string, id string) (*RefsRestoreStatus, error) {
@@ -1952,12 +2021,12 @@ func (c *Catalog) RestoreRefsStatus(ctx context.Context, repositoryID string, id
 	if err != nil {
 		return nil, err
 	}
-	if !isTaskID(restoreRestoreTaskIDPrefix, id) {
+	if !isTaskID(RestoreRefsTaskIDPrefix, id) {
 		return nil, graveler.ErrNotFound
 	}
 
 	var status RefsRestoreStatus
-	err = c.getTaskStatus(ctx, repository, id, &status)
+	err = getTaskStatus(ctx, c.KVStore, repository, id, &status)
 	if err != nil {
 		return nil, err
 	}
@@ -2471,6 +2540,21 @@ func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	}
 }
 
+func (c *Catalog) DeleteExpiredTasks(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log(ctx).WithError(err).Warn("Delete expired tasks, failed to list repositories")
+		return
+	}
+
+	for _, repo := range repos {
+		err := c.deleteRepositoryExpiredTasks(ctx, repo)
+		if err != nil {
+			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired tasks failed")
+		}
+	}
+}
+
 func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
 	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
@@ -2527,30 +2611,32 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	return err
 }
 
-func (c *Catalog) updateTaskStatus(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, statusMsg protoreflect.ProtoMessage) error {
-	err := kv.SetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.TaskPath(taskID)), statusMsg)
+func (c *Catalog) deleteRepositoryExpiredTasks(ctx context.Context, repo *graveler.RepositoryRecord) error {
+	// new scan iterator to iterate over all tasks
+	repoPartition := graveler.RepoPartition(repo)
+	it, err := kv.NewPrimaryIterator(ctx, c.KVStoreLimited, (&TaskMsg{}).ProtoReflect().Type(),
+		repoPartition, []byte(TaskPath("")), kv.IteratorOptionsFrom([]byte("")))
 	if err != nil {
-		c.log(ctx).
-			WithError(err).
-			WithFields(logging.Fields{
-				"task_id":    taskID,
-				"repository": repository.RepositoryID,
-			}).
-			Error("failed to update task status")
 		return err
 	}
-	return nil
-}
+	defer it.Close()
 
-func (c *Catalog) getTaskStatus(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, statusMsg protoreflect.ProtoMessage) error {
-	_, err := kv.GetMsg(ctx, c.KVStore, graveler.RepoPartition(repository), []byte(graveler.TaskPath(taskID)), statusMsg)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			return graveler.ErrNotFound
+	// iterate over all tasks and delete expired ones
+	for it.Next() {
+		ent := it.Entry()
+		msg := ent.Value.(*TaskMsg)
+		if msg.Task == nil {
+			continue
 		}
-		return err
+		if time.Since(msg.Task.UpdatedAt.AsTime()) < TaskExpiryTime {
+			continue
+		}
+		err := c.KVStoreLimited.Delete(ctx, []byte(repoPartition), ent.Key)
+		if err != nil {
+			return err
+		}
 	}
-	return nil
+	return it.Err()
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
@@ -2617,12 +2703,4 @@ func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
 
 func (w *UncommittedWriter) Size() int64 {
 	return w.size
-}
-
-func newTaskID(prefix string) string {
-	return prefix + nanoid.Must(taskIDNanoLength)
-}
-
-func isTaskID(prefix, taskID string) bool {
-	return len(taskID) == len(prefix)+taskIDNanoLength && strings.HasPrefix(taskID, prefix)
 }

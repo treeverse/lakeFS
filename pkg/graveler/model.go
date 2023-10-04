@@ -17,7 +17,6 @@ const (
 	settingsPrefix         = "settings"
 	addressesPrefix        = "link-addresses"
 	importsPrefix          = "imports"
-	tasksPrefix            = "tasks"
 	repoMetadataPrefix     = "repo-metadata"
 )
 
@@ -76,10 +75,6 @@ func LinkedAddressPath(key string) string {
 
 func ImportsPath(key string) string {
 	return kv.FormatPath(importsPrefix, key)
-}
-
-func TaskPath(key string) string {
-	return kv.FormatPath(tasksPrefix, key)
 }
 
 func RepoMetadataPath() string {
