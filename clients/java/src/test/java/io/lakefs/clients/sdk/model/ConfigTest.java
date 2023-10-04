@@ -18,31 +18,41 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.StorageConfig;
+import io.lakefs.clients.sdk.model.VersionConfig;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for DeleteBranchProtectionRuleRequest
+ * Model tests for Config
  */
-public class DeleteBranchProtectionRuleRequestTest {
-    private final DeleteBranchProtectionRuleRequest model = new DeleteBranchProtectionRuleRequest();
+public class ConfigTest {
+    private final Config model = new Config();
 
     /**
-     * Model tests for DeleteBranchProtectionRuleRequest
+     * Model tests for Config
      */
     @Test
-    public void testDeleteBranchProtectionRuleRequest() {
-        // TODO: test DeleteBranchProtectionRuleRequest
+    public void testConfig() {
+        // TODO: test Config
     }
 
     /**
-     * Test the property 'pattern'
+     * Test the property 'versionConfig'
      */
     @Test
-    public void patternTest() {
-        // TODO: test pattern
+    public void versionConfigTest() {
+        // TODO: test versionConfig
+    }
+
+    /**
+     * Test the property 'storageConfig'
+     */
+    @Test
+    public void storageConfigTest() {
+        // TODO: test storageConfig
     }
 
 }

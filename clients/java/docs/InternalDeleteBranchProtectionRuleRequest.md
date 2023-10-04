@@ -1,6 +1,6 @@
 
 
-# DeleteBranchProtectionRuleRequest
+# InternalDeleteBranchProtectionRuleRequest
 
 
 ## Properties

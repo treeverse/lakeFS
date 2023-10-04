@@ -48,18 +48,18 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * DeleteBranchProtectionRuleRequest
+ * InternalDeleteBranchProtectionRuleRequest
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class DeleteBranchProtectionRuleRequest {
+public class InternalDeleteBranchProtectionRuleRequest {
   public static final String SERIALIZED_NAME_PATTERN = "pattern";
   @SerializedName(SERIALIZED_NAME_PATTERN)
   private String pattern;
 
-  public DeleteBranchProtectionRuleRequest() {
+  public InternalDeleteBranchProtectionRuleRequest() {
   }
 
-  public DeleteBranchProtectionRuleRequest pattern(String pattern) {
+  public InternalDeleteBranchProtectionRuleRequest pattern(String pattern) {
     
     this.pattern = pattern;
     return this;
@@ -92,9 +92,9 @@ public class DeleteBranchProtectionRuleRequest {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the DeleteBranchProtectionRuleRequest instance itself
+   * @return the InternalDeleteBranchProtectionRuleRequest instance itself
    */
-  public DeleteBranchProtectionRuleRequest putAdditionalProperty(String key, Object value) {
+  public InternalDeleteBranchProtectionRuleRequest putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -133,9 +133,9 @@ public class DeleteBranchProtectionRuleRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest = (DeleteBranchProtectionRuleRequest) o;
-    return Objects.equals(this.pattern, deleteBranchProtectionRuleRequest.pattern)&&
-        Objects.equals(this.additionalProperties, deleteBranchProtectionRuleRequest.additionalProperties);
+    InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest = (InternalDeleteBranchProtectionRuleRequest) o;
+    return Objects.equals(this.pattern, internalDeleteBranchProtectionRuleRequest.pattern)&&
+        Objects.equals(this.additionalProperties, internalDeleteBranchProtectionRuleRequest.additionalProperties);
   }
 
   @Override
@@ -146,7 +146,7 @@ public class DeleteBranchProtectionRuleRequest {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DeleteBranchProtectionRuleRequest {\n");
+    sb.append("class InternalDeleteBranchProtectionRuleRequest {\n");
     sb.append("    pattern: ").append(toIndentedString(pattern)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -182,17 +182,17 @@ public class DeleteBranchProtectionRuleRequest {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to DeleteBranchProtectionRuleRequest
+  * @throws IOException if the JSON Element is invalid with respect to InternalDeleteBranchProtectionRuleRequest
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!DeleteBranchProtectionRuleRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in DeleteBranchProtectionRuleRequest is not found in the empty JSON string", DeleteBranchProtectionRuleRequest.openapiRequiredFields.toString()));
+        if (!InternalDeleteBranchProtectionRuleRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in InternalDeleteBranchProtectionRuleRequest is not found in the empty JSON string", InternalDeleteBranchProtectionRuleRequest.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : DeleteBranchProtectionRuleRequest.openapiRequiredFields) {
+      for (String requiredField : InternalDeleteBranchProtectionRuleRequest.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -207,16 +207,16 @@ public class DeleteBranchProtectionRuleRequest {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!DeleteBranchProtectionRuleRequest.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'DeleteBranchProtectionRuleRequest' and its subtypes
+       if (!InternalDeleteBranchProtectionRuleRequest.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'InternalDeleteBranchProtectionRuleRequest' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<DeleteBranchProtectionRuleRequest> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(DeleteBranchProtectionRuleRequest.class));
+       final TypeAdapter<InternalDeleteBranchProtectionRuleRequest> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(InternalDeleteBranchProtectionRuleRequest.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<DeleteBranchProtectionRuleRequest>() {
+       return (TypeAdapter<T>) new TypeAdapter<InternalDeleteBranchProtectionRuleRequest>() {
            @Override
-           public void write(JsonWriter out, DeleteBranchProtectionRuleRequest value) throws IOException {
+           public void write(JsonWriter out, InternalDeleteBranchProtectionRuleRequest value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -239,12 +239,12 @@ public class DeleteBranchProtectionRuleRequest {
            }
 
            @Override
-           public DeleteBranchProtectionRuleRequest read(JsonReader in) throws IOException {
+           public InternalDeleteBranchProtectionRuleRequest read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             DeleteBranchProtectionRuleRequest instance = thisAdapter.fromJsonTree(jsonObj);
+             InternalDeleteBranchProtectionRuleRequest instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -271,18 +271,18 @@ public class DeleteBranchProtectionRuleRequest {
   }
 
  /**
-  * Create an instance of DeleteBranchProtectionRuleRequest given an JSON string
+  * Create an instance of InternalDeleteBranchProtectionRuleRequest given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of DeleteBranchProtectionRuleRequest
-  * @throws IOException if the JSON string is invalid with respect to DeleteBranchProtectionRuleRequest
+  * @return An instance of InternalDeleteBranchProtectionRuleRequest
+  * @throws IOException if the JSON string is invalid with respect to InternalDeleteBranchProtectionRuleRequest
   */
-  public static DeleteBranchProtectionRuleRequest fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, DeleteBranchProtectionRuleRequest.class);
+  public static InternalDeleteBranchProtectionRuleRequest fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, InternalDeleteBranchProtectionRuleRequest.class);
   }
 
  /**
-  * Convert an instance of DeleteBranchProtectionRuleRequest to an JSON string
+  * Convert an instance of InternalDeleteBranchProtectionRuleRequest to an JSON string
   *
   * @return JSON string
   */

@@ -18,7 +18,6 @@ import io.lakefs.clients.sdk.model.Error;
 import java.io.File;
 import io.lakefs.clients.sdk.model.ObjectCopyCreation;
 import io.lakefs.clients.sdk.model.ObjectErrorList;
-import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.ObjectStatsList;
 import io.lakefs.clients.sdk.model.PathList;
@@ -158,22 +157,6 @@ public class ObjectsApiTest {
                 .amount(amount)
                 .delimiter(delimiter)
                 .prefix(prefix)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * stage an object&#39;s metadata for the given branch
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void stageObjectTest() throws ApiException {
-        String repository = null;
-        String branch = null;
-        String path = null;
-        ObjectStageCreation objectStageCreation = null;
-        ObjectStats response = api.stageObject(repository, branch, path, objectStageCreation)
                 .execute();
         // TODO: test validations
     }

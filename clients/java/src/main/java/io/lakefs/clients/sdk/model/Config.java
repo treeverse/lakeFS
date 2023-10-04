@@ -19,6 +19,8 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.StorageConfig;
+import io.lakefs.clients.sdk.model.VersionConfig;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -48,110 +50,60 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * User
+ * Config
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class User {
-  public static final String SERIALIZED_NAME_ID = "id";
-  @SerializedName(SERIALIZED_NAME_ID)
-  private String id;
+public class Config {
+  public static final String SERIALIZED_NAME_VERSION_CONFIG = "version_config";
+  @SerializedName(SERIALIZED_NAME_VERSION_CONFIG)
+  private VersionConfig versionConfig;
 
-  public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
-  @SerializedName(SERIALIZED_NAME_CREATION_DATE)
-  private Long creationDate;
+  public static final String SERIALIZED_NAME_STORAGE_CONFIG = "storage_config";
+  @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG)
+  private StorageConfig storageConfig;
 
-  public static final String SERIALIZED_NAME_FRIENDLY_NAME = "friendly_name";
-  @SerializedName(SERIALIZED_NAME_FRIENDLY_NAME)
-  private String friendlyName;
-
-  public static final String SERIALIZED_NAME_EMAIL = "email";
-  @SerializedName(SERIALIZED_NAME_EMAIL)
-  private String email;
-
-  public User() {
+  public Config() {
   }
 
-  public User id(String id) {
+  public Config versionConfig(VersionConfig versionConfig) {
     
-    this.id = id;
+    this.versionConfig = versionConfig;
     return this;
   }
 
    /**
-   * a unique identifier for the user.
-   * @return id
-  **/
-  @javax.annotation.Nonnull
-  public String getId() {
-    return id;
-  }
-
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-
-  public User creationDate(Long creationDate) {
-    
-    this.creationDate = creationDate;
-    return this;
-  }
-
-   /**
-   * Unix Epoch in seconds
-   * @return creationDate
-  **/
-  @javax.annotation.Nonnull
-  public Long getCreationDate() {
-    return creationDate;
-  }
-
-
-  public void setCreationDate(Long creationDate) {
-    this.creationDate = creationDate;
-  }
-
-
-  public User friendlyName(String friendlyName) {
-    
-    this.friendlyName = friendlyName;
-    return this;
-  }
-
-   /**
-   * Get friendlyName
-   * @return friendlyName
+   * Get versionConfig
+   * @return versionConfig
   **/
   @javax.annotation.Nullable
-  public String getFriendlyName() {
-    return friendlyName;
+  public VersionConfig getVersionConfig() {
+    return versionConfig;
   }
 
 
-  public void setFriendlyName(String friendlyName) {
-    this.friendlyName = friendlyName;
+  public void setVersionConfig(VersionConfig versionConfig) {
+    this.versionConfig = versionConfig;
   }
 
 
-  public User email(String email) {
+  public Config storageConfig(StorageConfig storageConfig) {
     
-    this.email = email;
+    this.storageConfig = storageConfig;
     return this;
   }
 
    /**
-   * Get email
-   * @return email
+   * Get storageConfig
+   * @return storageConfig
   **/
   @javax.annotation.Nullable
-  public String getEmail() {
-    return email;
+  public StorageConfig getStorageConfig() {
+    return storageConfig;
   }
 
 
-  public void setEmail(String email) {
-    this.email = email;
+  public void setStorageConfig(StorageConfig storageConfig) {
+    this.storageConfig = storageConfig;
   }
 
   /**
@@ -167,9 +119,9 @@ public class User {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the User instance itself
+   * @return the Config instance itself
    */
-  public User putAdditionalProperty(String key, Object value) {
+  public Config putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -208,27 +160,23 @@ public class User {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    User user = (User) o;
-    return Objects.equals(this.id, user.id) &&
-        Objects.equals(this.creationDate, user.creationDate) &&
-        Objects.equals(this.friendlyName, user.friendlyName) &&
-        Objects.equals(this.email, user.email)&&
-        Objects.equals(this.additionalProperties, user.additionalProperties);
+    Config config = (Config) o;
+    return Objects.equals(this.versionConfig, config.versionConfig) &&
+        Objects.equals(this.storageConfig, config.storageConfig)&&
+        Objects.equals(this.additionalProperties, config.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate, friendlyName, email, additionalProperties);
+    return Objects.hash(versionConfig, storageConfig, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class User {\n");
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
-    sb.append("    friendlyName: ").append(toIndentedString(friendlyName)).append("\n");
-    sb.append("    email: ").append(toIndentedString(email)).append("\n");
+    sb.append("class Config {\n");
+    sb.append("    versionConfig: ").append(toIndentedString(versionConfig)).append("\n");
+    sb.append("    storageConfig: ").append(toIndentedString(storageConfig)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -252,45 +200,33 @@ public class User {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("id");
-    openapiFields.add("creation_date");
-    openapiFields.add("friendly_name");
-    openapiFields.add("email");
+    openapiFields.add("version_config");
+    openapiFields.add("storage_config");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("id");
-    openapiRequiredFields.add("creation_date");
   }
 
  /**
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to User
+  * @throws IOException if the JSON Element is invalid with respect to Config
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!User.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in User is not found in the empty JSON string", User.openapiRequiredFields.toString()));
-        }
-      }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : User.openapiRequiredFields) {
-        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        if (!Config.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in Config is not found in the empty JSON string", Config.openapiRequiredFields.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      // validate the optional field `version_config`
+      if (jsonObj.get("version_config") != null && !jsonObj.get("version_config").isJsonNull()) {
+        VersionConfig.validateJsonElement(jsonObj.get("version_config"));
       }
-      if ((jsonObj.get("friendly_name") != null && !jsonObj.get("friendly_name").isJsonNull()) && !jsonObj.get("friendly_name").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `friendly_name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("friendly_name").toString()));
-      }
-      if ((jsonObj.get("email") != null && !jsonObj.get("email").isJsonNull()) && !jsonObj.get("email").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `email` to be a primitive type in the JSON string but got `%s`", jsonObj.get("email").toString()));
+      // validate the optional field `storage_config`
+      if (jsonObj.get("storage_config") != null && !jsonObj.get("storage_config").isJsonNull()) {
+        StorageConfig.validateJsonElement(jsonObj.get("storage_config"));
       }
   }
 
@@ -298,16 +234,16 @@ public class User {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!User.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'User' and its subtypes
+       if (!Config.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Config' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<User> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(User.class));
+       final TypeAdapter<Config> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Config.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<User>() {
+       return (TypeAdapter<T>) new TypeAdapter<Config>() {
            @Override
-           public void write(JsonWriter out, User value) throws IOException {
+           public void write(JsonWriter out, Config value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -330,12 +266,12 @@ public class User {
            }
 
            @Override
-           public User read(JsonReader in) throws IOException {
+           public Config read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             User instance = thisAdapter.fromJsonTree(jsonObj);
+             Config instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -362,18 +298,18 @@ public class User {
   }
 
  /**
-  * Create an instance of User given an JSON string
+  * Create an instance of Config given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of User
-  * @throws IOException if the JSON string is invalid with respect to User
+  * @return An instance of Config
+  * @throws IOException if the JSON string is invalid with respect to Config
   */
-  public static User fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, User.class);
+  public static Config fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Config.class);
   }
 
  /**
-  * Convert an instance of User to an JSON string
+  * Convert an instance of Config to an JSON string
   *
   * @return JSON string
   */

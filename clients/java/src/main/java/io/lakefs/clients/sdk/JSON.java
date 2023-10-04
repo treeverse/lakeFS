@@ -106,11 +106,11 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Commit.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CommitCreation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CommitList.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Config.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Credentials.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CredentialsList.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CredentialsWithSecret.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.CurrentUser.CustomTypeAdapterFactory());
-        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.DeleteBranchProtectionRuleRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Diff.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.DiffList.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.DiffProperties.CustomTypeAdapterFactory());
@@ -130,6 +130,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.ImportCreationResponse.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.ImportLocation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.ImportStatus.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.InternalDeleteBranchProtectionRuleRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.LoginConfig.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.LoginInformation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Merge.CustomTypeAdapterFactory());

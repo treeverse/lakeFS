@@ -14,10 +14,8 @@
 package io.lakefs.clients.sdk;
 
 import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.model.Config;
 import io.lakefs.clients.sdk.model.Error;
-import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
-import io.lakefs.clients.sdk.model.StorageConfig;
-import io.lakefs.clients.sdk.model.VersionConfig;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -35,37 +33,13 @@ public class ConfigApiTest {
     private final ConfigApi api = new ConfigApi();
 
     /**
-     * get information of gc settings
+     * retrieve lakeFS configuration
      *
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void getGarbageCollectionConfigTest() throws ApiException {
-        GarbageCollectionConfig response = api.getGarbageCollectionConfig()
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * get version of lakeFS server
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void getLakeFSVersionTest() throws ApiException {
-        VersionConfig response = api.getLakeFSVersion()
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * retrieve lakeFS storage configuration
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void getStorageConfigTest() throws ApiException {
-        StorageConfig response = api.getStorageConfig()
+    public void getConfigTest() throws ApiException {
+        Config response = api.getConfig()
                 .execute();
         // TODO: test validations
     }

@@ -24,49 +24,25 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for User
+ * Model tests for InternalDeleteBranchProtectionRuleRequest
  */
-public class UserTest {
-    private final User model = new User();
+public class InternalDeleteBranchProtectionRuleRequestTest {
+    private final InternalDeleteBranchProtectionRuleRequest model = new InternalDeleteBranchProtectionRuleRequest();
 
     /**
-     * Model tests for User
+     * Model tests for InternalDeleteBranchProtectionRuleRequest
      */
     @Test
-    public void testUser() {
-        // TODO: test User
+    public void testInternalDeleteBranchProtectionRuleRequest() {
+        // TODO: test InternalDeleteBranchProtectionRuleRequest
     }
 
     /**
-     * Test the property 'id'
+     * Test the property 'pattern'
      */
     @Test
-    public void idTest() {
-        // TODO: test id
-    }
-
-    /**
-     * Test the property 'creationDate'
-     */
-    @Test
-    public void creationDateTest() {
-        // TODO: test creationDate
-    }
-
-    /**
-     * Test the property 'friendlyName'
-     */
-    @Test
-    public void friendlyNameTest() {
-        // TODO: test friendlyName
-    }
-
-    /**
-     * Test the property 'email'
-     */
-    @Test
-    public void emailTest() {
-        // TODO: test email
+    public void patternTest() {
+        // TODO: test pattern
     }
 
 }
