@@ -136,7 +136,7 @@ public class LakeFSFileSystem extends FileSystem {
         } else if (accessMode == AccessMode.SIMPLE) {
             // setup address translator for simple storage access strategy
             try {
-                StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig().execute();
+                StorageConfig storageConfig = lfsClient.getInternalApi().getStorageConfig().execute();
                 physicalAddressTranslator = new PhysicalAddressTranslator(storageConfig.getBlockstoreType(),
                         storageConfig.getBlockstoreNamespaceValidityRegex());
             } catch (ApiException e) {
