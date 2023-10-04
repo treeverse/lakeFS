@@ -2377,7 +2377,8 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	ns := onBlock(deps, "bucket/prefix")
+	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2436,6 +2437,38 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		if resp.HTTPResponse.StatusCode != expectedStatusCode {
 			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
 		}
+	})
+
+	t.Run("link physical address without getting it first", func(t *testing.T) {
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: swag.String(fmt.Sprintf("%s/some-physical-address", ns)),
+			},
+		})
+		testutil.Must(t, err)
+		expectedStatusCode := http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
+		}
+	})
+
+	t.Run("link physical address outside the storage namespace should succeed", func(t *testing.T) {
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
+			},
+		})
+		verifyResponseOK(t, resp, err)
 	})
 }
 
