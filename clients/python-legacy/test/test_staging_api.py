@@ -27,7 +27,7 @@ class TestStagingApi(unittest.TestCase):
     def test_get_physical_address(self):
         """Test case for get_physical_address
 
-        get a physical address and a return token to write object to underlying storage  # noqa: E501
+        generate an address to which the client can upload an object  # noqa: E501
         """
         pass
 
