@@ -14,7 +14,6 @@ from lakefs_sdk.api.metadata_api import MetadataApi
 from lakefs_sdk.api.objects_api import ObjectsApi
 from lakefs_sdk.api.refs_api import RefsApi
 from lakefs_sdk.api.repositories_api import RepositoriesApi
-from lakefs_sdk.api.retention_api import RetentionApi
 from lakefs_sdk.api.staging_api import StagingApi
 from lakefs_sdk.api.tags_api import TagsApi
 

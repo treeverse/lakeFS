@@ -86,7 +86,6 @@ docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryList.md
 docs/ResetCreation.md
-docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
 docs/SetupState.md
@@ -138,7 +137,6 @@ src/main/java/io/lakefs/clients/api/ProgressRequestBody.java
 src/main/java/io/lakefs/clients/api/ProgressResponseBody.java
 src/main/java/io/lakefs/clients/api/RefsApi.java
 src/main/java/io/lakefs/clients/api/RepositoriesApi.java
-src/main/java/io/lakefs/clients/api/RetentionApi.java
 src/main/java/io/lakefs/clients/api/ServerConfiguration.java
 src/main/java/io/lakefs/clients/api/ServerVariable.java
 src/main/java/io/lakefs/clients/api/StagingApi.java
@@ -246,7 +244,6 @@ src/test/java/io/lakefs/clients/api/MetadataApiTest.java
 src/test/java/io/lakefs/clients/api/ObjectsApiTest.java
 src/test/java/io/lakefs/clients/api/RefsApiTest.java
 src/test/java/io/lakefs/clients/api/RepositoriesApiTest.java
-src/test/java/io/lakefs/clients/api/RetentionApiTest.java
 src/test/java/io/lakefs/clients/api/StagingApiTest.java
 src/test/java/io/lakefs/clients/api/TagsApiTest.java
 src/test/java/io/lakefs/clients/api/model/ACLTest.java

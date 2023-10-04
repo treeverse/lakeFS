@@ -20,10 +20,13 @@ import io.lakefs.clients.sdk.model.CommPrefsInput;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
+import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
 import io.lakefs.clients.sdk.model.InternalDeleteBranchProtectionRuleRequest;
 import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
+import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
@@ -227,6 +230,34 @@ public class InternalApiTest {
     public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
         api.postStatsEvents(statsEventsList)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * save lists of active commits for garbage collection
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionCommitsTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionPrepareResponse response = api.prepareGarbageCollectionCommits(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * save repository uncommitted metadata for garbage collection
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void prepareGarbageCollectionUncommittedTest() throws ApiException {
+        String repository = null;
+        PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
+        PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository)
+                .prepareGCUncommittedRequest(prepareGCUncommittedRequest)
                 .execute();
         // TODO: test validations
     }

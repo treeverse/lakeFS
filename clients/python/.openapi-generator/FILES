@@ -80,7 +80,6 @@ docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryList.md
 docs/ResetCreation.md
-docs/RetentionApi.md
 docs/RevertCreation.md
 docs/Setup.md
 docs/SetupState.md
@@ -296,7 +295,6 @@ test/test_repository.py
 test/test_repository_creation.py
 test/test_repository_list.py
 test/test_reset_creation.py
-test/test_retention_api.py
 test/test_revert_creation.py
 test/test_setup.py
 test/test_setup_state.py

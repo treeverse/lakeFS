@@ -183,6 +183,8 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**internal_get_garbage_collection_rules**](docs/InternalApi.md#internal_get_garbage_collection_rules) | **GET** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**internal_set_garbage_collection_rules**](docs/InternalApi.md#internal_set_garbage_collection_rules) | **POST** /repositories/{repository}/gc/rules | 
 *InternalApi* | [**post_stats_events**](docs/InternalApi.md#post_stats_events) | **POST** /statistics | post stats events, this endpoint is meant for internal use only
+*InternalApi* | [**prepare_garbage_collection_commits**](docs/InternalApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
+*InternalApi* | [**prepare_garbage_collection_uncommitted**](docs/InternalApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restore_refs**](docs/InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**set_garbage_collection_rules_preflight**](docs/InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
@@ -214,8 +216,6 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**list_repositories**](docs/RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
 *RepositoriesApi* | [**set_branch_protection_rules**](docs/RepositoriesApi.md#set_branch_protection_rules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 *RepositoriesApi* | [**set_gc_rules**](docs/RepositoriesApi.md#set_gc_rules) | **PUT** /repositories/{repository}/settings/gc_rules | 
-*RetentionApi* | [**prepare_garbage_collection_commits**](docs/RetentionApi.md#prepare_garbage_collection_commits) | **POST** /repositories/{repository}/gc/prepare_commits | save lists of active commits for garbage collection
-*RetentionApi* | [**prepare_garbage_collection_uncommitted**](docs/RetentionApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *StagingApi* | [**get_physical_address**](docs/StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
 *StagingApi* | [**link_physical_address**](docs/StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 *TagsApi* | [**create_tag**](docs/TagsApi.md#create_tag) | **POST** /repositories/{repository}/tags | create tag

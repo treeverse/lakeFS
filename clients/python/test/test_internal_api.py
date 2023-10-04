@@ -125,6 +125,20 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_prepare_garbage_collection_commits(self):
+        """Test case for prepare_garbage_collection_commits
+
+        save lists of active commits for garbage collection  # noqa: E501
+        """
+        pass
+
+    def test_prepare_garbage_collection_uncommitted(self):
+        """Test case for prepare_garbage_collection_uncommitted
+
+        save repository uncommitted metadata for garbage collection  # noqa: E501
+        """
+        pass
+
     def test_restore_refs(self):
         """Test case for restore_refs
 
