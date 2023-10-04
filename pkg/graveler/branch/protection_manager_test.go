@@ -9,6 +9,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
@@ -29,10 +30,7 @@ func TestSetAndGet(t *testing.T) {
 	ctx := context.Background()
 	bpm := prepareTest(t, ctx)
 	rules, eTag, err := bpm.GetRules(ctx, repository)
-	testutil.Must(t, err)
-	if len(rules.BranchPatternToBlockedActions) != 0 {
-		t.Fatalf("expected no rules, got %d rules", len(rules.BranchPatternToBlockedActions))
-	}
+	require.ErrorIs(t, err, graveler.ErrNotFound)
 	testutil.Must(t, bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
 			"main*": {Value: []graveler.BranchProtectionBlockedAction{
