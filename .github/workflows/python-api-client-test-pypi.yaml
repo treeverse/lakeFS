@@ -7,7 +7,7 @@ on:
         description: Tag/version to publish
         required: true
       project_name:
-        description: The Pypi (test) package name
+        description: The TestPyPI package name
         required: true
 
 jobs:
