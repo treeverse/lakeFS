@@ -5,10 +5,26 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **message** | **str** |  | [optional] 
-**metadata** | **{str: (str,)}** |  | [optional] 
+**metadata** | **Dict[str, str]** |  | [optional] 
 **strategy** | **str** | In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (&#39;dest-wins&#39;) or from the source branch(&#39;source-wins&#39;). In case no selection is made, the merge process will fail in case of a conflict | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from lakefs_sdk.models.merge import Merge
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of Merge from a JSON string
+merge_instance = Merge.from_json(json)
+# print the JSON string representation of the object
+print Merge.to_json()
+
+# convert the object into a dict
+merge_dict = merge_instance.to_dict()
+# create an instance of Merge from a dict
+merge_form_dict = merge.from_dict(merge_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 
