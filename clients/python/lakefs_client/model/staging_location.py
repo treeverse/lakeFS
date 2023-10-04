@@ -82,7 +82,6 @@ class StagingLocation(ModelNormal):
                 and the value is attribute type.
         """
         return {
-            'token': (str,),  # noqa: E501
             'physical_address': (str,),  # noqa: E501
             'presigned_url': (str, none_type,),  # noqa: E501
             'presigned_url_expiry': (int,),  # noqa: E501
@@ -94,7 +93,6 @@ class StagingLocation(ModelNormal):
 
 
     attribute_map = {
-        'token': 'token',  # noqa: E501
         'physical_address': 'physical_address',  # noqa: E501
         'presigned_url': 'presigned_url',  # noqa: E501
         'presigned_url_expiry': 'presigned_url_expiry',  # noqa: E501
@@ -107,11 +105,8 @@ class StagingLocation(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, token, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """StagingLocation - a model defined in OpenAPI
-
-        Args:
-            token (str): opaque staging token to use to link uploaded object
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -174,7 +169,6 @@ class StagingLocation(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.token = token
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -195,11 +189,8 @@ class StagingLocation(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, token, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """StagingLocation - a model defined in OpenAPI
-
-        Args:
-            token (str): opaque staging token to use to link uploaded object
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -260,7 +251,6 @@ class StagingLocation(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.token = token
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

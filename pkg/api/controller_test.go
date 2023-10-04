@@ -2322,7 +2322,6 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			SizeBytes: expectedSizeBytes,
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-				Token:           linkResp.JSON200.Token,
 			},
 		})
 		verifyResponseOK(t, resp, err)
@@ -2397,7 +2396,6 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			SizeBytes: expectedSizeBytes,
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-				Token:           linkResp.JSON200.Token,
 			},
 		})
 		verifyResponseOK(t, resp, err)
@@ -2417,7 +2415,6 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			SizeBytes: expectedSizeBytes,
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-				Token:           linkResp.JSON200.Token,
 			},
 		})
 		verifyResponseOK(t, resp, err)
@@ -2429,7 +2426,6 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			SizeBytes: expectedSizeBytes,
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-				Token:           linkResp.JSON200.Token,
 			},
 		})
 		testutil.Must(t, err)

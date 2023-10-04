@@ -35,10 +35,6 @@ public class StagingLocation {
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
   private String physicalAddress;
 
-  public static final String SERIALIZED_NAME_TOKEN = "token";
-  @SerializedName(SERIALIZED_NAME_TOKEN)
-  private String token;
-
   public static final String SERIALIZED_NAME_PRESIGNED_URL = "presigned_url";
   @SerializedName(SERIALIZED_NAME_PRESIGNED_URL)
   private String presignedUrl;
@@ -68,29 +64,6 @@ public class StagingLocation {
 
   public void setPhysicalAddress(String physicalAddress) {
     this.physicalAddress = physicalAddress;
-  }
-
-
-  public StagingLocation token(String token) {
-    
-    this.token = token;
-    return this;
-  }
-
-   /**
-   * opaque staging token to use to link uploaded object
-   * @return token
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "opaque staging token to use to link uploaded object")
-
-  public String getToken() {
-    return token;
-  }
-
-
-  public void setToken(String token) {
-    this.token = token;
   }
 
 
@@ -150,7 +123,6 @@ public class StagingLocation {
     }
     StagingLocation stagingLocation = (StagingLocation) o;
     return Objects.equals(this.physicalAddress, stagingLocation.physicalAddress) &&
-        Objects.equals(this.token, stagingLocation.token) &&
         Objects.equals(this.presignedUrl, stagingLocation.presignedUrl) &&
         Objects.equals(this.presignedUrlExpiry, stagingLocation.presignedUrlExpiry);
   }
@@ -161,7 +133,7 @@ public class StagingLocation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, token, presignedUrl, presignedUrlExpiry);
+    return Objects.hash(physicalAddress, presignedUrl, presignedUrlExpiry);
   }
 
   private static <T> int hashCodeNullable(JsonNullable<T> a) {
@@ -176,7 +148,6 @@ public class StagingLocation {
     StringBuilder sb = new StringBuilder();
     sb.append("class StagingLocation {\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
-    sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    presignedUrl: ").append(toIndentedString(presignedUrl)).append("\n");
     sb.append("    presignedUrlExpiry: ").append(toIndentedString(presignedUrlExpiry)).append("\n");
     sb.append("}");
