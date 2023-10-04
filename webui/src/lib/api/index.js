@@ -1003,28 +1003,18 @@ class BranchProtectionRules {
     }
 
     async setRules(repoID, rules, lastKnownChecksum) {
+        const additionalHeaders = {}
+        if (lastKnownChecksum) {
+            additionalHeaders['If-Match'] = lastKnownChecksum
+        }
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`, {
             method: 'PUT',
             body: JSON.stringify(rules),
-        }, {'If-Match': lastKnownChecksum});
+        }, additionalHeaders);
         if (response.status !== 204) {
             throw new Error(`could not create protection rule: ${await extractError(response)}`);
         }
     }
-
-    async deleteRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
-            method: 'DELETE',
-            body: JSON.stringify({pattern: pattern})
-        });
-        if (response.status === 404) {
-            throw new NotFoundError('branch protection rule not found')
-        }
-        if (response.status !== 204) {
-            throw new Error(`could not delete protection rule: ${await extractError(response)}`);
-        }
-    }
-
 }
 
 class Statistics {

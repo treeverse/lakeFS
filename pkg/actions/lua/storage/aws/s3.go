@@ -20,17 +20,6 @@ import (
 
 var errDeleteObject = errors.New("delete object failed")
 
-func Open(l *lua.State, ctx context.Context) {
-	open := func(l *lua.State) int {
-		lua.NewLibrary(l, []lua.RegistryFunction{
-			{Name: "s3_client", Function: newS3Client(ctx)},
-		})
-		return 1
-	}
-	lua.Require(l, "aws", open, false)
-	l.Pop(1)
-}
-
 func newS3Client(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
 		accessKeyID := lua.CheckString(l, 1)

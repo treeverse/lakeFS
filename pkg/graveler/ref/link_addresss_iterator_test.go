@@ -29,7 +29,7 @@ func TestLinkAddressIterator(t *testing.T) {
 	}
 
 	t.Run("listing all addresses", func(t *testing.T) {
-		iter, err := ref.NewAddressTokenIterator(ctx, kvstore, repository)
+		iter, err := ref.NewLinkAddressIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		ids := make([]string, 0)
 		for iter.Next() {
@@ -47,7 +47,7 @@ func TestLinkAddressIterator(t *testing.T) {
 	})
 
 	t.Run("listing addresses SeekGE", func(t *testing.T) {
-		iter, err := ref.NewAddressTokenIterator(ctx, kvstore, repository)
+		iter, err := ref.NewLinkAddressIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("data/a/e")
 		ids := make([]string, 0)
@@ -66,7 +66,7 @@ func TestLinkAddressIterator(t *testing.T) {
 	})
 
 	t.Run("empty value SeekGE", func(t *testing.T) {
-		iter, err := ref.NewAddressTokenIterator(ctx, kvstore, repository)
+		iter, err := ref.NewLinkAddressIterator(ctx, kvstore, repository)
 		testutil.Must(t, err)
 		iter.SeekGE("data/b")
 

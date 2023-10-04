@@ -152,6 +152,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_stage_object(self):
+        """Test case for stage_object
+
+        stage an object's metadata for the given branch  # noqa: E501
+        """
+        pass
+
     def test_upload_object_preflight(self):
         """Test case for upload_object_preflight
 

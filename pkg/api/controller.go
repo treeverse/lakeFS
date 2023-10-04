@@ -373,7 +373,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
 
-	// validate token
+	// validate physical address
 	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1794,7 +1794,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Pattern: pattern,
 		})
 	}
-	w.Header().Set("ETag", eTag)
+	w.Header().Set("ETag", swag.StringValue(eTag))
 	writeResponse(w, r, http.StatusOK, resp)
 }
 
@@ -1821,8 +1821,7 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Value: blockedActions,
 		}
 	}
-	eTag := params.IfMatch
-	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, params.IfMatch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2217,8 +2216,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	// order of case is important, more specific errors should be first
 	switch {
-	case errors.Is(err, graveler.ErrAddressTokenNotFound),
-		errors.Is(err, graveler.ErrAddressTokenExpired):
+	case errors.Is(err, graveler.ErrLinkAddressNotFound),
+		errors.Is(err, graveler.ErrLinkAddressExpired):
 		log.Debug("Expired or invalid address token")
 		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
 
