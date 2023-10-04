@@ -130,9 +130,9 @@ func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *k
 
 func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient, params *kvparams.CosmosDB) (*azcosmos.ContainerClient, error) {
 	var opts *azcosmos.CreateContainerOptions
-	if params.Throughput != nil {
+	if params.Throughput > 0 {
 		var throughputProperties azcosmos.ThroughputProperties
-		tp := *params.Throughput
+		tp := params.Throughput
 		if params.Autoscale {
 			throughputProperties = azcosmos.NewAutoscaleThroughputProperties(tp)
 		} else {

@@ -176,7 +176,7 @@ type Config struct {
 			Endpoint   string       `mapstructure:"endpoint"`
 			Database   string       `mapstructure:"database"`
 			Container  string       `mapstructure:"container"`
-			Throughput *int32       `mapstructure:"throughput"`
+			Throughput int32        `mapstructure:"throughput"`
 			Autoscale  bool         `mapstructure:"autoscale"`
 		} `mapstructure:"cosmosdb"`
 	}
