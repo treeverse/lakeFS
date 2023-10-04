@@ -14,7 +14,6 @@ const (
 	DefaultQuickstartUsername   = "quickstart"
 	DefaultQuickstartKeyID      = "AKIAIOSFOLQUICKSTART"
 	DefaultQuickstartSecretKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
-	DefaultCosmosDBThroughput   = 400
 )
 
 //nolint:gomnd
@@ -112,8 +111,6 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("database.dynamodb.table_name", "kvstore")
 	viper.SetDefault("database.dynamodb.scan_limit", 1024)
-
-	viper.SetDefault("database.cosmosdb.throughput", DefaultCosmosDBThroughput)
 
 	viper.SetDefault("database.postgres.max_open_connections", 25)
 	viper.SetDefault("database.postgres.max_idle_connections", 25)
