@@ -31,6 +31,20 @@ class TestRefsApi(unittest.TestCase):
         """
         pass
 
+    def test_dump_refs_status(self):
+        """Test case for dump_refs_status
+
+        Dump repository refs (tags, commits, branches) to object store  # noqa: E501
+        """
+        pass
+
+    def test_dump_refs_submit(self):
+        """Test case for dump_refs_submit
+
+        Dump repository refs (tags, commits, branches) to object store  # noqa: E501
+        """
+        pass
+
     def test_find_merge_base(self):
         """Test case for find_merge_base
 
@@ -49,6 +63,20 @@ class TestRefsApi(unittest.TestCase):
         """Test case for merge_into_branch
 
         merge references  # noqa: E501
+        """
+        pass
+
+    def test_restore_refs_status(self):
+        """Test case for restore_refs_status
+
+        Restore repository refs (tags, commits, branches) from object store  # noqa: E501
+        """
+        pass
+
+    def test_restore_refs_submit(self):
+        """Test case for restore_refs_submit
+
+        Restore repository refs (tags, commits, branches) from object store  # noqa: E501
         """
         pass
 

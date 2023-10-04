@@ -2201,8 +2201,8 @@ paths:
       - experimental
       x-accepts: application/json
   /repositories/{repository}/refs/dump:
-    put:
-      operationId: dumpRefs
+    post:
+      operationId: dumpRefsSubmit
       parameters:
       - explode: false
         in: path
@@ -2212,12 +2212,65 @@ paths:
           type: string
         style: simple
       responses:
-        "201":
+        "202":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefsDump'
-          description: refs dump
+                $ref: '#/components/schemas/TaskInfo'
+          description: dump refs task created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Dump repository refs (tags, commits, branches) to object store
+      tags:
+      - refs
+      x-accepts: application/json
+  /repositories/{repository}/refs/dump/{task_id}:
+    get:
+      operationId: dumpRefsStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: task_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefsDumpStatus'
+          description: dump refs status
         "400":
           content:
             application/json:
@@ -2244,15 +2297,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: |
-        Dump repository refs (tags, commits, branches) to object store
-        Deprecated: a new API will introduce long running operations
+      summary: Dump repository refs (tags, commits, branches) to object store
       tags:
-      - internal
+      - refs
       x-accepts: application/json
   /repositories/{repository}/refs/restore:
-    put:
-      operationId: restoreRefs
+    post:
+      operationId: restoreRefsSubmit
       parameters:
       - explode: false
         in: path
@@ -2268,8 +2319,66 @@ paths:
               $ref: '#/components/schemas/RefsDump'
         required: true
       responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfo'
+          description: restore refs task created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Restore repository refs (tags, commits, branches) from object store
+      tags:
+      - refs
+      x-contentType: application/json
+      x-accepts: application/json
+  /repositories/{repository}/refs/restore/{task_id}:
+    get:
+      operationId: restoreRefsStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: task_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
         "200":
-          description: refs successfully loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefsRestoreStatus'
+          description: restore refs status
         "400":
           content:
             application/json:
@@ -2296,12 +2405,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: |
-        Restore repository refs (tags, commits, branches) from object store.
-        Deprecated: a new API will introduce long running operations
+      summary: Restore repository refs (tags, commits, branches) from object store
       tags:
-      - internal
-      x-contentType: application/json
+      - refs
       x-accepts: application/json
   /repositories/{repository}/tags:
     get:
@@ -6545,6 +6651,66 @@ components:
       required:
       - id
       - ref
+      type: object
+    TaskInfo:
+      example:
+        id: id
+      properties:
+        id:
+          description: ID of the task
+          type: string
+      required:
+      - id
+      type: object
+    RefsDumpStatus:
+      example:
+        refs:
+          tags_meta_range_id: tags_meta_range_id
+          branches_meta_range_id: branches_meta_range_id
+          commits_meta_range_id: commits_meta_range_id
+        id: id
+        completed: true
+        error: error
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        completed:
+          type: boolean
+        error:
+          type: string
+        refs:
+          $ref: '#/components/schemas/RefsDump'
+      required:
+      - completed
+      - id
+      type: object
+    RefsRestoreTask:
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        refs:
+          $ref: '#/components/schemas/RefsDump'
+      required:
+      - id
+      type: object
+    RefsRestoreStatus:
+      example:
+        id: id
+        completed: true
+        error: error
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        completed:
+          type: boolean
+        error:
+          type: string
+      required:
+      - completed
+      - id
       type: object
     RefsDump:
       example:

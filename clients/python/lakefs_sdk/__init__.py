@@ -109,6 +109,9 @@ from lakefs_sdk.models.range_metadata import RangeMetadata
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.models.ref_list import RefList
 from lakefs_sdk.models.refs_dump import RefsDump
+from lakefs_sdk.models.refs_dump_status import RefsDumpStatus
+from lakefs_sdk.models.refs_restore_status import RefsRestoreStatus
+from lakefs_sdk.models.refs_restore_task import RefsRestoreTask
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
 from lakefs_sdk.models.repository_list import RepositoryList
@@ -124,6 +127,7 @@ from lakefs_sdk.models.stats_events_list import StatsEventsList
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.models.tag_creation import TagCreation
+from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_sdk.models.update_token import UpdateToken
 from lakefs_sdk.models.user import User

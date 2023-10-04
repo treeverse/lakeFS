@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -47,15 +48,40 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		client := getClient()
 		ctx := cmd.Context()
 		resp, err := client.RestoreRefsSubmitWithResponse(ctx, repoURI.Repository, apigen.RestoreRefsSubmitJSONRequestBody{
-			BranchesMetaObjectUrl: nil,
-			BranchesMetaRangeId:   "",
-			CommitsMetaObjectUrl:  nil,
-			CommitsMetaRangeId:    "",
-			TagsMetaObjectUrl:     nil,
-			TagsMetaRangeId:       "",
+			BranchesMetaRangeId: manifest.BranchesMetaRangeId,
+			CommitsMetaRangeId:  manifest.CommitsMetaRangeId,
+			TagsMetaRangeId:     manifest.TagsMetaRangeId,
 		})
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		Write(refsRestoreSuccess, nil)
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
+		if resp.JSON202 == nil {
+			Die("Bad response from server", 1)
+		}
+		taskID := resp.JSON202.Id
+
+		const checkInterval = 3 * time.Second
+		ticker := time.NewTicker(checkInterval)
+		defer ticker.Stop()
+		var restoreStatus *apigen.RefsRestoreStatus
+		for range ticker.C {
+			fmt.Println("Checking status of refs restore")
+			resp, err := client.RestoreRefsStatusWithResponse(ctx, repoURI.Repository, taskID)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+			if resp.JSON200 == nil {
+				DieFmt("Refs restore status failed: %s", resp.Status())
+			}
+			restoreStatus = resp.JSON200
+			if restoreStatus.Completed {
+				break
+			}
+		}
+		if restoreStatus == nil {
+			Die("Refs restore failed: no status returned", 1)
+		}
+		if restoreStatus.Error != nil {
+			DieFmt("Refs restore failed: %s", *restoreStatus.Error)
+		} else {
+			Write(refsRestoreSuccess, nil)
+		}
 	},
 }
 

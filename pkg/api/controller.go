@@ -3248,7 +3248,7 @@ func (c *Controller) DumpRefsSubmit(w http.ResponseWriter, r *http.Request, repo
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusAccepted, apigen.RefsDumpTask{
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskInfo{
 		Id: taskID,
 	})
 }
@@ -3302,7 +3302,7 @@ func (c *Controller) DumpRefsStatus(w http.ResponseWriter, r *http.Request, repo
 			BranchesMetaRangeId: status.Info.BranchesMetarangeId,
 		}
 	}
-	writeResponse(w, r, http.StatusAccepted, response)
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) RestoreRefsSubmit(w http.ResponseWriter, r *http.Request, body apigen.RestoreRefsSubmitJSONRequestBody, repository string) {
@@ -3343,7 +3343,7 @@ func (c *Controller) RestoreRefsSubmit(w http.ResponseWriter, r *http.Request, b
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusAccepted, apigen.RefsDumpTask{
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskInfo{
 		Id: taskID,
 	})
 }
@@ -3388,7 +3388,7 @@ func (c *Controller) RestoreRefsStatus(w http.ResponseWriter, r *http.Request, r
 	if status.Task.Error != "" {
 		response.Error = apiutil.Ptr(status.Task.Error)
 	}
-	writeResponse(w, r, http.StatusAccepted, response)
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CreateSymlinkFileParams) {

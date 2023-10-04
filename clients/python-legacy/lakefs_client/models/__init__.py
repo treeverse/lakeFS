@@ -74,6 +74,9 @@ from lakefs_client.model.range_metadata import RangeMetadata
 from lakefs_client.model.ref import Ref
 from lakefs_client.model.ref_list import RefList
 from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.refs_dump_status import RefsDumpStatus
+from lakefs_client.model.refs_restore_status import RefsRestoreStatus
+from lakefs_client.model.refs_restore_task import RefsRestoreTask
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_list import RepositoryList
@@ -90,6 +93,7 @@ from lakefs_client.model.stats_events_list import StatsEventsList
 from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
+from lakefs_client.model.task_info import TaskInfo
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.user import User

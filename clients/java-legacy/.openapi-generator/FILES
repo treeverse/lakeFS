@@ -81,6 +81,9 @@ docs/Ref.md
 docs/RefList.md
 docs/RefsApi.md
 docs/RefsDump.md
+docs/RefsDumpStatus.md
+docs/RefsRestoreStatus.md
+docs/RefsRestoreTask.md
 docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
@@ -99,6 +102,7 @@ docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
+docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
 docs/User.md
@@ -210,6 +214,9 @@ src/main/java/io/lakefs/clients/api/model/RangeMetadata.java
 src/main/java/io/lakefs/clients/api/model/Ref.java
 src/main/java/io/lakefs/clients/api/model/RefList.java
 src/main/java/io/lakefs/clients/api/model/RefsDump.java
+src/main/java/io/lakefs/clients/api/model/RefsDumpStatus.java
+src/main/java/io/lakefs/clients/api/model/RefsRestoreStatus.java
+src/main/java/io/lakefs/clients/api/model/RefsRestoreTask.java
 src/main/java/io/lakefs/clients/api/model/Repository.java
 src/main/java/io/lakefs/clients/api/model/RepositoryCreation.java
 src/main/java/io/lakefs/clients/api/model/RepositoryList.java
@@ -225,6 +232,7 @@ src/main/java/io/lakefs/clients/api/model/StatsEventsList.java
 src/main/java/io/lakefs/clients/api/model/StorageConfig.java
 src/main/java/io/lakefs/clients/api/model/StorageURI.java
 src/main/java/io/lakefs/clients/api/model/TagCreation.java
+src/main/java/io/lakefs/clients/api/model/TaskInfo.java
 src/main/java/io/lakefs/clients/api/model/UnderlyingObjectProperties.java
 src/main/java/io/lakefs/clients/api/model/UpdateToken.java
 src/main/java/io/lakefs/clients/api/model/User.java
@@ -309,7 +317,10 @@ src/test/java/io/lakefs/clients/api/model/PrepareGCUncommittedResponseTest.java
 src/test/java/io/lakefs/clients/api/model/RangeMetadataTest.java
 src/test/java/io/lakefs/clients/api/model/RefListTest.java
 src/test/java/io/lakefs/clients/api/model/RefTest.java
+src/test/java/io/lakefs/clients/api/model/RefsDumpStatusTest.java
 src/test/java/io/lakefs/clients/api/model/RefsDumpTest.java
+src/test/java/io/lakefs/clients/api/model/RefsRestoreStatusTest.java
+src/test/java/io/lakefs/clients/api/model/RefsRestoreTaskTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryCreationTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryListTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryTest.java
@@ -325,6 +336,7 @@ src/test/java/io/lakefs/clients/api/model/StatsEventsListTest.java
 src/test/java/io/lakefs/clients/api/model/StorageConfigTest.java
 src/test/java/io/lakefs/clients/api/model/StorageURITest.java
 src/test/java/io/lakefs/clients/api/model/TagCreationTest.java
+src/test/java/io/lakefs/clients/api/model/TaskInfoTest.java
 src/test/java/io/lakefs/clients/api/model/UnderlyingObjectPropertiesTest.java
 src/test/java/io/lakefs/clients/api/model/UpdateTokenTest.java
 src/test/java/io/lakefs/clients/api/model/UserCreationTest.java

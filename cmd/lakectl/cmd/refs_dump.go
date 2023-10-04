@@ -24,15 +24,17 @@ var refsDumpCmd = &cobra.Command{
 
 		// request refs dump
 		resp, err := client.DumpRefsSubmitWithResponse(cmd.Context(), repoURI.Repository)
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
-		if resp.JSON201 == nil {
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
+		if resp.JSON202 == nil {
 			Die("Bad response from server", 1)
 		}
 
-		taskID := resp.JSON201.Id
+		taskID := resp.JSON202.Id
 
 		// wait for refs dump to complete
-		ticker := time.NewTicker(3 * time.Second)
+		const checkInterval = 3 * time.Second
+		ticker := time.NewTicker(checkInterval)
+		defer ticker.Stop()
 		var dumpStatus *apigen.RefsDumpStatus
 		for range ticker.C {
 			fmt.Println("Checking status of refs dump")

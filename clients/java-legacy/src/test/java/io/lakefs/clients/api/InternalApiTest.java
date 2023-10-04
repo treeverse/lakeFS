@@ -27,7 +27,6 @@ import io.lakefs.clients.api.model.ObjectStageCreation;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
-import io.lakefs.clients.api.model.RefsDump;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StatsEventsList;
@@ -80,21 +79,6 @@ public class InternalApiTest {
         String branch = null;
         String location = null;
                 StorageURI response = api.createSymlinkFile(repository, branch, location);
-        // TODO: test validations
-    }
-    
-    /**
-     * Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void dumpRefsTest() throws ApiException {
-        String repository = null;
-                RefsDump response = api.dumpRefs(repository);
         // TODO: test validations
     }
     
@@ -304,22 +288,6 @@ public class InternalApiTest {
         String repository = null;
         PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
                 PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository, prepareGCUncommittedRequest);
-        // TODO: test validations
-    }
-    
-    /**
-     * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void restoreRefsTest() throws ApiException {
-        String repository = null;
-        RefsDump refsDump = null;
-                api.restoreRefs(repository, refsDump);
         // TODO: test validations
     }
     

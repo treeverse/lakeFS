@@ -594,7 +594,7 @@ components:
         ref:
           type: string
 
-    RefsDumpTask:
+    TaskInfo:
       type: object
       required:
         - id
@@ -656,12 +656,6 @@ components:
         tags_meta_range_id:
           type: string
         branches_meta_range_id:
-          type: string
-        commits_meta_object_url:
-          type: string
-        tags_meta_object_url:
-          type: string
-        branches_meta_object_url:
           type: string
 
     StorageURI:
@@ -2689,12 +2683,12 @@ paths:
       operationId: dumpRefsSubmit
       summary: Dump repository refs (tags, commits, branches) to object store
       responses:
-        201:
+        202:
           description: dump refs task created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RefsDumpTask"
+                $ref: "#/components/schemas/TaskInfo"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -2758,8 +2752,12 @@ paths:
             schema:
               $ref: "#/components/schemas/RefsDump"
       responses:
-        201:
+        202:
           description: restore refs task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskInfo"
         400:
           $ref: "#/components/responses/ValidationError"
         401:
