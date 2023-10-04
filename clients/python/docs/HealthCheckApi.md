@@ -1,6 +1,6 @@
-# lakefs_client.HealthCheckApi
+# lakefs_sdk.HealthCheckApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -16,30 +16,31 @@ check that the API server is up and running
 
 ### Example
 
-
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import health_check_api
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient() as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = health_check_api.HealthCheckApi(api_client)
+    api_instance = lakefs_sdk.HealthCheckApi(api_client)
 
-    # example, this endpoint has no required or optional parameters
     try:
         api_instance.health_check()
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling HealthCheckApi->health_check: %s\n" % e)
 ```
+
 
 
 ### Parameters
@@ -58,9 +59,7 @@ No authorization required
  - **Content-Type**: Not defined
  - **Accept**: Not defined
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | NoContent |  -  |
