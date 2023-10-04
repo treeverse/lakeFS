@@ -1859,22 +1859,22 @@ stage an object's metadata for the given branch
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import internal_api
-from lakefs_client.model.object_stage_creation import ObjectStageCreation
-from lakefs_client.model.error import Error
-from lakefs_client.model.object_stats import ObjectStats
+import os
+import lakefs_sdk
+from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
+from lakefs_sdk.models.object_stats import ObjectStats
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1883,70 +1883,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = internal_api.InternalApi(api_client)
-    repository = "repository_example" # str | 
-    branch = "branch_example" # str | 
-    path = "path_example" # str | relative to the branch
-    object_stage_creation = ObjectStageCreation(
-        physical_address="physical_address_example",
-        checksum="checksum_example",
-        size_bytes=1,
-        mtime=1,
-        metadata=ObjectUserMetadata(
-            key="key_example",
-        ),
-        content_type="content_type_example",
-    ) # ObjectStageCreation | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.InternalApi(api_client)
+    repository = 'repository_example' # str | 
+    branch = 'branch_example' # str | 
+    path = 'path_example' # str | relative to the branch
+    object_stage_creation = lakefs_sdk.ObjectStageCreation() # ObjectStageCreation | 
+
     try:
         # stage an object's metadata for the given branch
         api_response = api_instance.stage_object(repository, branch, path, object_stage_creation)
+        print("The response of InternalApi->stage_object:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling InternalApi->stage_object: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **repository** | **str**|  |
- **branch** | **str**|  |
- **path** | **str**| relative to the branch |
- **object_stage_creation** | [**ObjectStageCreation**](ObjectStageCreation.md)|  |
+ **repository** | **str**|  | 
+ **branch** | **str**|  | 
+ **path** | **str**| relative to the branch | 
+ **object_stage_creation** | [**ObjectStageCreation**](ObjectStageCreation.md)|  | 
 
 ### Return type
 
@@ -1954,16 +1946,14 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | object metadata |  -  |
