@@ -1,3 +1,4 @@
 # Files to ignore (skip) when generating Java client
 maven.yml
 .github/
+git_push.sh
