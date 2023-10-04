@@ -277,7 +277,7 @@ To export to S3:
         <dependency>
             <groupId>io.lakefs</groupId>
             <artifactId>api-client</artifactId>
-            <version>0.91.0</version>
+            <version>0.109.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
