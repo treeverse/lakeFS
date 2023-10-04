@@ -2202,7 +2202,13 @@ lakectl fs rm <path uri> [flags]
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-Stage a reference to an existing object, to be managed in lakeFS
+Link an external object with a path in a repository
+
+#### Synopsis
+{:.no_toc}
+
+Link an external object with a path in a repository, creating an uncommitted change.
+The object location must be outside the repository's storage namespace
 
 ```
 lakectl fs stage <path uri> [flags]
