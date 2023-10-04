@@ -701,6 +701,34 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Assert.assertFalse(renamed);
     }
 
+    // /**
+    //  * Check that a file is renamed when working against a lakeFS version
+    //  * where CopyObject API doesn't exist
+    //  */
+    // TODO(johnnyaug): Do we still need this test?
+    //
+    // @Test
+    // public void testRename_fallbackStageAPI() throws ApiException, IOException {
+    //     Path src = new Path("lakefs://repo/main/existing-dir1/existing.src");
+    //     ObjectLocation srcObjLoc = fs.pathToObjectLocation(src);
+    //     mockExistingFilePath(srcObjLoc);
+
+    //     Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/existing.src");
+    //     ObjectLocation fileObjLoc = fs.pathToObjectLocation(fileInDstDir);
+    //     Path dst = new Path("lakefs://repo/main/existing-dir2");
+    //     ObjectLocation dstObjLoc = fs.pathToObjectLocation(dst);
+
+    //     mockExistingDirPath(dstObjLoc, ImmutableList.of(fileObjLoc));
+    //     mockDirectoryMarker(fs.pathToObjectLocation(src.getParent()));
+    //     mockMissingCopyAPI();
+
+    //     boolean renamed = fs.rename(src, dst);
+    //     Assert.assertTrue(renamed);
+    //     Path expectedDstPath = new Path("lakefs://repo/main/existing-dir2/existing.src");
+    //     Assert.assertTrue(dstPathLinkedToSrcPhysicalAddress(srcObjLoc, fs.pathToObjectLocation(expectedDstPath)));
+    //     verifyObjDeletion(srcObjLoc);
+    // }
+
     @Test
     public void testRename_srcAndDstOnDifferentBranch() throws IOException {
         Path src = new Path("lakefs://repo/branch/existing.src");
