@@ -114,7 +114,6 @@ lakefs_sdk/api/metadata_api.py
 lakefs_sdk/api/objects_api.py
 lakefs_sdk/api/refs_api.py
 lakefs_sdk/api/repositories_api.py
-lakefs_sdk/api/retention_api.py
 lakefs_sdk/api/staging_api.py
 lakefs_sdk/api/tags_api.py
 lakefs_sdk/api_client.py
