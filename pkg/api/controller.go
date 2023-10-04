@@ -281,24 +281,12 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
-	token, err := c.Catalog.GetStagingToken(ctx, repository, branch)
-	if errors.Is(err, graveler.ErrNotFound) {
-		writeError(w, r, http.StatusNotFound, err)
-		return
-	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-
 	address := c.PathProvider.NewPath()
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
 	err = c.Catalog.SetLinkAddress(ctx, repository, address)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
@@ -307,7 +295,6 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 
 	response := &apigen.StagingLocation{
 		PhysicalAddress: swag.String(qk.Format()),
-		Token:           swag.StringValue(token),
 	}
 
 	if swag.BoolValue(params.Presign) {
@@ -373,15 +360,13 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
 
-	// validate physical address
-	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
+	if addressType == catalog.AddressTypeRelative {
+		// if the address is in the storage namespace, verify it has been saved for linking
+		err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
 	}
-
-	// Because CreateEntry tracks staging on a database with atomic operations,
-	// _ignore_ the staging token here: no harm done even if a race was lost
-	// against a commit.
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).

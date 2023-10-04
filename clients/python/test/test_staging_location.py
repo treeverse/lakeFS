@@ -40,13 +40,11 @@ class TestStagingLocation(unittest.TestCase):
         if include_optional :
             return StagingLocation(
                 physical_address = '', 
-                token = '', 
                 presigned_url = '', 
                 presigned_url_expiry = 56
             )
         else :
             return StagingLocation(
-                token = '',
         )
         """
 

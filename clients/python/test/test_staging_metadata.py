@@ -41,7 +41,6 @@ class TestStagingMetadata(unittest.TestCase):
             return StagingMetadata(
                 staging = lakefs_sdk.models.staging_location.StagingLocation(
                     physical_address = '', 
-                    token = '', 
                     presigned_url = '', 
                     presigned_url_expiry = 56, ), 
                 checksum = '', 
@@ -55,7 +54,6 @@ class TestStagingMetadata(unittest.TestCase):
             return StagingMetadata(
                 staging = lakefs_sdk.models.staging_location.StagingLocation(
                     physical_address = '', 
-                    token = '', 
                     presigned_url = '', 
                     presigned_url_expiry = 56, ),
                 checksum = '',

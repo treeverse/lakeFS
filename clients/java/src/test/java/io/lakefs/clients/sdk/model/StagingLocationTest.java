@@ -47,14 +47,6 @@ public class StagingLocationTest {
     }
 
     /**
-     * Test the property 'token'
-     */
-    @Test
-    public void tokenTest() {
-        // TODO: test token
-    }
-
-    /**
      * Test the property 'presignedUrl'
      */
     @Test

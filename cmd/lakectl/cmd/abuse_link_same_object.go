@@ -64,7 +64,6 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 						Checksum: "00695c7307b0480c7b6bdc873cf05c15",
 						Staging: apigen.StagingLocation{
 							PhysicalAddress: stagingLocation.PhysicalAddress,
-							Token:           stagingLocation.Token,
 						},
 						UserMetadata: nil,
 					})

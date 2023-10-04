@@ -57,10 +57,6 @@ public class StagingLocation {
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
   private String physicalAddress;
 
-  public static final String SERIALIZED_NAME_TOKEN = "token";
-  @SerializedName(SERIALIZED_NAME_TOKEN)
-  private String token;
-
   public static final String SERIALIZED_NAME_PRESIGNED_URL = "presigned_url";
   @SerializedName(SERIALIZED_NAME_PRESIGNED_URL)
   private String presignedUrl;
@@ -90,27 +86,6 @@ public class StagingLocation {
 
   public void setPhysicalAddress(String physicalAddress) {
     this.physicalAddress = physicalAddress;
-  }
-
-
-  public StagingLocation token(String token) {
-    
-    this.token = token;
-    return this;
-  }
-
-   /**
-   * opaque staging token to use to link uploaded object
-   * @return token
-  **/
-  @javax.annotation.Nonnull
-  public String getToken() {
-    return token;
-  }
-
-
-  public void setToken(String token) {
-    this.token = token;
   }
 
 
@@ -211,7 +186,6 @@ public class StagingLocation {
     }
     StagingLocation stagingLocation = (StagingLocation) o;
     return Objects.equals(this.physicalAddress, stagingLocation.physicalAddress) &&
-        Objects.equals(this.token, stagingLocation.token) &&
         Objects.equals(this.presignedUrl, stagingLocation.presignedUrl) &&
         Objects.equals(this.presignedUrlExpiry, stagingLocation.presignedUrlExpiry)&&
         Objects.equals(this.additionalProperties, stagingLocation.additionalProperties);
@@ -223,7 +197,7 @@ public class StagingLocation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, token, presignedUrl, presignedUrlExpiry, additionalProperties);
+    return Objects.hash(physicalAddress, presignedUrl, presignedUrlExpiry, additionalProperties);
   }
 
   private static <T> int hashCodeNullable(JsonNullable<T> a) {
@@ -238,7 +212,6 @@ public class StagingLocation {
     StringBuilder sb = new StringBuilder();
     sb.append("class StagingLocation {\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
-    sb.append("    token: ").append(toIndentedString(token)).append("\n");
     sb.append("    presignedUrl: ").append(toIndentedString(presignedUrl)).append("\n");
     sb.append("    presignedUrlExpiry: ").append(toIndentedString(presignedUrlExpiry)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -265,13 +238,11 @@ public class StagingLocation {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("physical_address");
-    openapiFields.add("token");
     openapiFields.add("presigned_url");
     openapiFields.add("presigned_url_expiry");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("token");
   }
 
  /**
@@ -286,19 +257,9 @@ public class StagingLocation {
           throw new IllegalArgumentException(String.format("The required field(s) %s in StagingLocation is not found in the empty JSON string", StagingLocation.openapiRequiredFields.toString()));
         }
       }
-
-      // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : StagingLocation.openapiRequiredFields) {
-        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
-        }
-      }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if ((jsonObj.get("physical_address") != null && !jsonObj.get("physical_address").isJsonNull()) && !jsonObj.get("physical_address").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));
-      }
-      if (!jsonObj.get("token").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `token` to be a primitive type in the JSON string but got `%s`", jsonObj.get("token").toString()));
       }
       if ((jsonObj.get("presigned_url") != null && !jsonObj.get("presigned_url").isJsonNull()) && !jsonObj.get("presigned_url").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `presigned_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("presigned_url").toString()));

@@ -135,7 +135,6 @@ func TestPreSign(t *testing.T) {
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: response.JSON200.PhysicalAddress,
 				PresignedUrl:    response.JSON200.PresignedUrl,
-				Token:           response.JSON200.Token,
 			},
 		})
 		require.NoError(t, err, "failed to link physical address")
