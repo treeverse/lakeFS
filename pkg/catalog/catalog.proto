@@ -29,9 +29,7 @@ message Task {
 	bool completed = 2;
 	google.protobuf.Timestamp updated_at = 3;
 	int64 progress = 4;
-	//  string metarange_id = 5;
-	//  CommitData commit = 6;
-	string error = 7;
+	string error = 5;
 }
 
 message RefsDumpInfo {

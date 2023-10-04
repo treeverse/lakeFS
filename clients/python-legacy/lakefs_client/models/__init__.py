@@ -76,7 +76,6 @@ from lakefs_client.model.ref_list import RefList
 from lakefs_client.model.refs_dump import RefsDump
 from lakefs_client.model.refs_dump_status import RefsDumpStatus
 from lakefs_client.model.refs_restore_status import RefsRestoreStatus
-from lakefs_client.model.refs_restore_task import RefsRestoreTask
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_list import RepositoryList

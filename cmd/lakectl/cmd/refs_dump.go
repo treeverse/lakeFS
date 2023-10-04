@@ -6,15 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/logging"
-)
-
-const (
-	minRefsDumpInterval = time.Second
 )
 
 var refsDumpCmd = &cobra.Command{
@@ -28,8 +24,8 @@ var refsDumpCmd = &cobra.Command{
 		client := getClient()
 		output := Must(cmd.Flags().GetString("output"))
 		checkInterval := Must(cmd.Flags().GetDuration("interval"))
-		if checkInterval < minRefsDumpInterval {
-			DieFmt("Check interval must be at least %s", minRefsDumpInterval)
+		if checkInterval < minimumCheckInterval {
+			DieFmt("Check interval must be at least %s", minimumCheckInterval)
 		}
 
 		// request refs dump
@@ -41,39 +37,36 @@ var refsDumpCmd = &cobra.Command{
 		}
 
 		taskID := resp.JSON202.Id
+		logging.FromContext(ctx).WithField("task_id", taskID).Debug("Submitted refs dump")
 
 		// wait for refs dump to complete
-		ticker := time.NewTicker(checkInterval)
-		defer ticker.Stop()
-		var dumpStatus *apigen.RefsDumpStatus
-		counter := 1
-		for range ticker.C {
+		dumpStatus, err := backoff.RetryWithData(func() (*apigen.RefsDumpStatus, error) {
 			logging.FromContext(ctx).
-				WithFields(logging.Fields{
-					"task_id": taskID,
-					"counter": counter,
-				}).
-				Debug("Checking status of refs dump")
-			counter++
+				WithFields(logging.Fields{"task_id": taskID}).Debug("Checking status of refs dump")
 
 			resp, err := client.DumpRefsStatusWithResponse(ctx, repoURI.Repository, taskID)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				DieFmt("Refs dump status failed: %s", resp.Status())
+				err := fmt.Errorf("dump status %w: %s", ErrRequestFailed, resp.Status())
+				return nil, backoff.Permanent(err)
 			}
-			dumpStatus = resp.JSON200
-			if dumpStatus.Completed {
-				break
+			if !resp.JSON200.Completed {
+				return nil, ErrTaskNotCompleted
 			}
+			return resp.JSON200, nil
+		},
+			backoff.NewConstantBackOff(checkInterval),
+		)
+		if err != nil {
+			DieErr(err)
 		}
 		if dumpStatus.Error != nil {
 			DieFmt("Refs dump failed: %s", *dumpStatus.Error)
 		} else if dumpStatus.Refs == nil {
 			Die("Refs dump failed: no refs returned", 1)
 		}
-
-		// write refs dump to output
-		if err := printRefs(output, dumpStatus.Refs); err != nil {
+		err = printRefs(output, dumpStatus.Refs)
+		if err != nil {
 			DieErr(err)
 		}
 	},
@@ -107,8 +100,6 @@ func printRefs(output string, refs *apigen.RefsDump) error {
 
 //nolint:gochecknoinits
 func init() {
-	const defaultCheckInterval = 3 * time.Second
-
 	refsDumpCmd.Flags().StringP("output", "o", "", "output filename (default stdout)")
 	refsDumpCmd.Flags().Duration("interval", defaultCheckInterval, "status check interval")
 	rootCmd.AddCommand(refsDumpCmd)

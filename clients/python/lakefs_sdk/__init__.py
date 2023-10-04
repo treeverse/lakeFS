@@ -111,7 +111,6 @@ from lakefs_sdk.models.ref_list import RefList
 from lakefs_sdk.models.refs_dump import RefsDump
 from lakefs_sdk.models.refs_dump_status import RefsDumpStatus
 from lakefs_sdk.models.refs_restore_status import RefsRestoreStatus
-from lakefs_sdk.models.refs_restore_task import RefsRestoreTask
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
 from lakefs_sdk.models.repository_list import RepositoryList

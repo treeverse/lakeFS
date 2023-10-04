@@ -39,11 +39,16 @@ const (
 const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+
+	defaultCheckInterval = 3 * time.Second // default interval while pulling task's status
+	minimumCheckInterval = time.Second     // minimum interval while pulling task's status
 )
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
+
+var ErrTaskNotCompleted = errors.New("task not completed")
 
 //nolint:gochecknoinits
 func init() {

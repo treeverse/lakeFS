@@ -6685,16 +6685,6 @@ components:
       - completed
       - id
       type: object
-    RefsRestoreTask:
-      properties:
-        id:
-          description: ID of the task
-          type: string
-        refs:
-          $ref: '#/components/schemas/RefsDump'
-      required:
-      - id
-      type: object
     RefsRestoreStatus:
       example:
         id: id

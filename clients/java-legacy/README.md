@@ -313,7 +313,6 @@ Class | Method | HTTP request | Description
  - [RefsDump](docs/RefsDump.md)
  - [RefsDumpStatus](docs/RefsDumpStatus.md)
  - [RefsRestoreStatus](docs/RefsRestoreStatus.md)
- - [RefsRestoreTask](docs/RefsRestoreTask.md)
  - [Repository](docs/Repository.md)
  - [RepositoryCreation](docs/RepositoryCreation.md)
  - [RepositoryList](docs/RepositoryList.md)
