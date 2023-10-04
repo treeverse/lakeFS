@@ -3332,7 +3332,7 @@ func (c *Controller) RestoreRefsSubmit(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "restore_refs_submit", r, repository, "", "")
+	c.LogAction(ctx, "restore_repository_refs", r, repository, "", "")
 
 	info := &catalog.RefsDumpInfo{
 		CommitsMetarangeId:  body.CommitsMetaRangeId,
