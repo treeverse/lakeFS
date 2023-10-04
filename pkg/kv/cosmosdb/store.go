@@ -132,11 +132,10 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 	var opts *azcosmos.CreateContainerOptions
 	if params.Throughput > 0 {
 		var throughputProperties azcosmos.ThroughputProperties
-		tp := params.Throughput
 		if params.Autoscale {
-			throughputProperties = azcosmos.NewAutoscaleThroughputProperties(tp)
+			throughputProperties = azcosmos.NewAutoscaleThroughputProperties(params.Throughput)
 		} else {
-			throughputProperties = azcosmos.NewManualThroughputProperties(tp)
+			throughputProperties = azcosmos.NewManualThroughputProperties(params.Throughput)
 		}
 		opts = &azcosmos.CreateContainerOptions{ThroughputProperties: &throughputProperties}
 	}
