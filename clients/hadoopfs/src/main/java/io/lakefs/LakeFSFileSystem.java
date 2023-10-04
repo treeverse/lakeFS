@@ -752,11 +752,12 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         // get object status on path
         try {
-            ObjectsApi.APIstatObjectRequest objectStat = objectsApi.statObject(objectLoc.getRepository(),
-                                                           objectLoc.getRef(),
-                                                           objectLoc.getPath());
-            objectStat = objectStat.userMetadata(false).presign(false);
-            ObjectStats os = objectStat.execute();
+            ObjectStats os = objectsApi.statObject(objectLoc.getRepository(),
+                                                   objectLoc.getRef(),
+                                                   objectLoc.getPath())
+                .userMetadata(false)
+                .presign(false)
+                .execute();
             return convertObjectStatsToFileStatus(objectLoc, os);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
