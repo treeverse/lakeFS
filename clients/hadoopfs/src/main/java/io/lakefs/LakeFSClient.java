@@ -18,6 +18,7 @@ public class LakeFSClient {
     private final RepositoriesApi repositoriesApi;
     private final BranchesApi branchesApi;
     private final ConfigApi configApi;
+    private final InternalApi internalApi;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
         String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
@@ -51,22 +52,18 @@ public class LakeFSClient {
         this.repositoriesApi = new RepositoriesApi(apiClient);
         this.branchesApi = new BranchesApi(apiClient);
         this.configApi = new ConfigApi(apiClient);
+        this.internalApi = new InternalApi(apiClient);
     }
 
-    public ObjectsApi getObjectsApi() {
-        return objectsApi;
-    }
+    public ObjectsApi getObjectsApi() { return objectsApi; }
 
-    public StagingApi getStagingApi() {
-        return stagingApi;
-    }
+    public StagingApi getStagingApi() { return stagingApi; }
 
     public RepositoriesApi getRepositoriesApi() { return repositoriesApi; }
 
     public BranchesApi getBranchesApi() { return branchesApi; }
 
-    public ConfigApi getConfigApi() {
-        return configApi;
-    }
+    public ConfigApi getConfigApi() { return configApi; }
 
+    public InternalApi getInternalApi() { return internalApi; }
 }

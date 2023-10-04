@@ -65,9 +65,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
             String fullPath = String.format("%s/%s/%s/%s/%s-object",
                                             o.sessionId(), namespace, repo, branch, path);
-            return new StagingLocation()
-                .token("token:simple:" + o.sessionId())
-                .physicalAddress(o.s3Url(fullPath));
+            return new StagingLocation().physicalAddress(o.s3Url(fullPath));
         }
     }
 
@@ -98,7 +96,6 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
                                               .withMethod(HttpMethod.PUT)
                                               .withExpiration(expiration));
             return new StagingLocation()
-                .token("token:presigned:" + o.sessionId())
                 .physicalAddress(o.s3Url(fullPath))
                 .presignedUrl(presignedUrl.toString());
         }
