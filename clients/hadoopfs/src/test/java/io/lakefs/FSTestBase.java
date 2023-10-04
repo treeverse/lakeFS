@@ -128,7 +128,7 @@ abstract class FSTestBase {
 
     @Before
     public void hadoopSetup() throws IOException, URISyntaxException {
-        s3Base = "blockstore://a-bucket/"; // Overridden if S3 will be used!
+        s3Base = "s3a://UNUSED/"; // Overridden if S3 will be used!
 
         conf = new Configuration(false);
 
