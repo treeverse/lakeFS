@@ -77,7 +77,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorNoACL"
-            
+
     Unauthorized:
       description: Unauthorized
       content:
@@ -679,6 +679,8 @@ components:
           description: Unix Epoch in seconds
         friendly_name:
           type: string
+        email:
+          type: string
 
     CurrentUser:
       type: object
@@ -1001,7 +1003,13 @@ components:
           type: boolean
         import_validity_regex:
           type: string
-
+    Config:
+      type: object
+      properties:
+        version_config:
+          $ref: "#/components/schemas/VersionConfig"
+        storage_config:
+          $ref: "#/components/schemas/StorageConfig"
     VersionConfig:
       type: object
       properties:
@@ -1244,7 +1252,7 @@ components:
           example: s3://my-bucket/production/collections/
         destination:
           type: string
-          description: Destination for the imported objects on the branch 
+          description: Destination for the imported objects on the branch
           example: collections/
 
     ImportCreation:
@@ -1317,14 +1325,14 @@ components:
       required:
         - update_time
         - completed
-    
+
     ImportCreationResponse:
       type: object
       properties:
         id:
           description: The id of the import process
           type: string
-      required: 
+      required:
         - id
 
     MetaRangeCreation:
@@ -2323,6 +2331,130 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/settings/gc_rules:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getGCRules
+      summary: get repository GC rules
+      responses:
+        200:
+          description: repository GC rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarbageCollectionRules"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    put:
+      tags:
+        - repositories
+      operationId: setGCRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionRules"
+      responses:
+        204:
+          description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - repositories
+      operationId: deleteGCRules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/settings/branch_protection:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getBranchProtectionRules
+      summary: get branch protection rules
+      responses:
+        200:
+          description: branch protection rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchProtectionRule"
+          headers:
+            ETag:
+              schema:
+                type: string
+                description: ETag of the branch protection rules
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+          description: if provided, the branch protection rules will be updated only if the current ETag match the provided value
+          allowEmptyValue: true
+      tags:
+        - repositories
+      operationId: setBranchProtectionRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: branch protection rule created successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /otf/diffs:
     get:
       tags:
@@ -2400,9 +2532,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: dumpRefs
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       responses:
         201:
           description: refs dump
@@ -2428,9 +2562,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: restoreRefs
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       requestBody:
         required: true
         content:
@@ -3461,8 +3597,9 @@ paths:
         schema:
           type: string
     put:
+      deprecated: true
       tags:
-        - objects
+        - internal
       operationId: stageObject
       summary: stage an object's metadata for the given branch
       requestBody:
@@ -4058,9 +4195,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - retention
-      operationId: getGarbageCollectionRules
+        - internal
+      operationId: internalGetGarbageCollectionRules
       responses:
         200:
           description: gc rule list
@@ -4074,11 +4212,12 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-    
+
     post:
+      deprecated: true
       tags:
-        - retention
-      operationId: set garbage collection rules
+        - internal
+      operationId: internalSetGarbageCollectionRules
       requestBody:
         required: true
         content:
@@ -4095,9 +4234,10 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - retention
-      operationId: delete garbage collection rules
+        - internal
+      operationId: internalDeleteGarbageCollectionRules
       responses:
         204:
           description: deleted garbage collection rules successfully
@@ -4198,9 +4338,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - repositories
-      operationId: getBranchProtectionRules
+        - internal
+      operationId: internalGetBranchProtectionRules
       summary: get branch protection rules
       responses:
         200:
@@ -4219,9 +4360,10 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
+      deprecated: true
       tags:
-        - repositories
-      operationId: createBranchProtectionRule
+        - internal
+      operationId: internalCreateBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4238,9 +4380,10 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - repositories
-      operationId: deleteBranchProtectionRule
+        - internal
+      operationId: internalDeleteBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4271,12 +4414,28 @@ paths:
       responses:
         204:
           description: NoContent
-  /config/version:
+  /config:
     get:
       tags:
         - config
+      operationId: getConfig
+      description: retrieve lakeFS configuration
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/version:
+    get:
+      tags:
+        - internal
       operationId: getLakeFSVersion
       description: get version of lakeFS server
+      deprecated: true
       responses:
         200:
           description: lakeFS version
@@ -4289,9 +4448,10 @@ paths:
   /config/storage:
     get:
       tags:
-        - config
+        - internal
       operationId: getStorageConfig
       description: retrieve lakeFS storage configuration
+      deprecated: true
       responses:
         200:
           description: lakeFS storage configuration
@@ -4304,7 +4464,7 @@ paths:
   /config/garbage-collection:
     get:
       tags:
-        - config
+        - internal
       operationId: getGarbageCollectionConfig
       description: get information of gc settings
       responses:

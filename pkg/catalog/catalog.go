@@ -2079,29 +2079,21 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	return c.Store.SetGarbageCollectionRules(ctx, repository, rules)
 }
 
-func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error) {
+func (c *Catalog) GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, *string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return c.Store.GetBranchProtectionRules(ctx, repository)
 }
 
-func (c *Catalog) DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error {
+func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
 	}
-	return c.Store.DeleteBranchProtectionRule(ctx, repository, pattern)
-}
-
-func (c *Catalog) CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-	return c.Store.CreateBranchProtectionRule(ctx, repository, pattern, blockedActions)
+	return c.Store.SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum)
 }
 
 func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string) (*graveler.GarbageCollectionRunMetadata, error) {
@@ -2275,20 +2267,20 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	return &dstEntry, nil
 }
 
-func (c *Catalog) SetLinkAddress(ctx context.Context, repository, token string) error {
+func (c *Catalog) SetLinkAddress(ctx context.Context, repository, physicalAddress string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
-	return c.Store.SetLinkAddress(ctx, repo, token)
+	return c.Store.SetLinkAddress(ctx, repo, physicalAddress)
 }
 
-func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, token string) error {
+func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, physicalAddress string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
-	return c.Store.VerifyLinkAddress(ctx, repo, token)
+	return c.Store.VerifyLinkAddress(ctx, repo, physicalAddress)
 }
 
 func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {

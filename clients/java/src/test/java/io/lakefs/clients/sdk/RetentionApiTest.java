@@ -16,7 +16,6 @@ package io.lakefs.clients.sdk;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
-import io.lakefs.clients.sdk.model.GarbageCollectionRules;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
 import org.junit.jupiter.api.Disabled;
@@ -34,28 +33,6 @@ import java.util.Map;
 public class RetentionApiTest {
 
     private final RetentionApi api = new RetentionApi();
-
-    /**
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void deleteGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-        api.deleteGarbageCollectionRules(repository)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void getGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-        GarbageCollectionRules response = api.getGarbageCollectionRules(repository)
-                .execute();
-        // TODO: test validations
-    }
 
     /**
      * save lists of active commits for garbage collection
@@ -81,18 +58,6 @@ public class RetentionApiTest {
         PrepareGCUncommittedRequest prepareGCUncommittedRequest = null;
         PrepareGCUncommittedResponse response = api.prepareGarbageCollectionUncommitted(repository)
                 .prepareGCUncommittedRequest(prepareGCUncommittedRequest)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void setGarbageCollectionRulesTest() throws ApiException {
-        String repository = null;
-        GarbageCollectionRules garbageCollectionRules = null;
-        api.setGarbageCollectionRules(repository, garbageCollectionRules)
                 .execute();
         // TODO: test validations
     }

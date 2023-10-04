@@ -22,6 +22,7 @@ docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitsApi.md
+docs/Config.md
 docs/ConfigApi.md
 docs/Credentials.md
 docs/CredentialsList.md
@@ -160,6 +161,7 @@ src/main/java/io/lakefs/clients/api/model/CommPrefsInput.java
 src/main/java/io/lakefs/clients/api/model/Commit.java
 src/main/java/io/lakefs/clients/api/model/CommitCreation.java
 src/main/java/io/lakefs/clients/api/model/CommitList.java
+src/main/java/io/lakefs/clients/api/model/Config.java
 src/main/java/io/lakefs/clients/api/model/Credentials.java
 src/main/java/io/lakefs/clients/api/model/CredentialsList.java
 src/main/java/io/lakefs/clients/api/model/CredentialsWithSecret.java
@@ -260,6 +262,7 @@ src/test/java/io/lakefs/clients/api/model/CommPrefsInputTest.java
 src/test/java/io/lakefs/clients/api/model/CommitCreationTest.java
 src/test/java/io/lakefs/clients/api/model/CommitListTest.java
 src/test/java/io/lakefs/clients/api/model/CommitTest.java
+src/test/java/io/lakefs/clients/api/model/ConfigTest.java
 src/test/java/io/lakefs/clients/api/model/CredentialsListTest.java
 src/test/java/io/lakefs/clients/api/model/CredentialsTest.java
 src/test/java/io/lakefs/clients/api/model/CredentialsWithSecretTest.java

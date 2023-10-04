@@ -471,7 +471,7 @@ type KeyValueStore interface {
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 
-	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by catalog in PrepareGCUncommitted
+	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by X in PrepareGCUncommitted
 	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
@@ -609,32 +609,31 @@ type VersionController interface {
 
 	GCNewRunID() string
 
-	// GetBranchProtectionRules return all branch protection rules for the repository
-	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	// GetBranchProtectionRules return all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for a conditional update.
+	GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error)
 
-	// DeleteBranchProtectionRule deletes the branch protection rule for the given pattern,
-	// or return ErrRuleNotExists if no such rule exists.
-	DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error
+	// SetBranchProtectionRules sets the branch protection rules for the repository.
+	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
+	// If lastKnownChecksum is the empty string, the update is performed only if no rules exist.
+	// If lastKnownChecksum is nil, the update is performed unconditionally.
+	SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 
-	// CreateBranchProtectionRule creates a rule for the given name pattern,
-	// or returns ErrRuleAlreadyExists if there is already a rule for the pattern.
-	CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error
+	// SetLinkAddress saves the address for linking under the repository.
+	// It returns ErrLinkAddressAlreadyExists if the address already saved.
+	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, physicalAddress string) error
 
-	// SetLinkAddress stores the address token under the repository. The token will be valid for addressTokenTime.
-	// or return ErrAddressTokenAlreadyExists if a token already exists.
-	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+	// VerifyLinkAddress returns nil if physicalAddress is valid (exists and not expired) and deletes it.
+	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, physicalAddress string) error
 
-	// VerifyLinkAddress returns nil if the token is valid (exists and not expired) and deletes it
-	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+	// ListLinkAddresses lists saved addresses on a repository
+	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (LinkAddressIterator, error)
 
-	// ListLinkAddresses lists address tokens on a repository
-	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
-
-	// DeleteExpiredLinkAddresses deletes expired tokens on a repository
+	// DeleteExpiredLinkAddresses deletes expired addresses on a repository
 	DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error
 
-	// IsLinkAddressExpired returns nil if the token is valid and not expired
-	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
+	// IsLinkAddressExpired returns nil if the address is valid and not expired
+	IsLinkAddressExpired(address *LinkAddressData) (bool, error)
 
 	// DeleteExpiredImports deletes expired imports on a given repository
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
@@ -745,7 +744,7 @@ type CommitIterator interface {
 	Close()
 }
 
-type AddressTokenIterator interface {
+type LinkAddressIterator interface {
 	Next() bool
 	SeekGE(address string)
 	Value() *LinkAddressData
@@ -847,20 +846,20 @@ type RefManager interface {
 	// GCCommitIterator temporary WA to support both DB and KV GC CommitIterator
 	GCCommitIterator(ctx context.Context, repository *RepositoryRecord) (CommitIterator, error)
 
-	// VerifyLinkAddress verifies the given address token
-	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+	// VerifyLinkAddress verifies the given link address
+	VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, physicalAddress string) error
 
-	// SetLinkAddress creates address token
-	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error
+	// SetLinkAddress saves a link address under the repository.
+	SetLinkAddress(ctx context.Context, repository *RepositoryRecord, physicalAddress string) error
 
-	// ListLinkAddresses lists address tokens on a repository
-	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error)
+	// ListLinkAddresses lists saved link addresses on a repository
+	ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (LinkAddressIterator, error)
 
-	// DeleteExpiredLinkAddresses deletes expired tokens on a repository
+	// DeleteExpiredLinkAddresses deletes expired link addresses on a repository
 	DeleteExpiredLinkAddresses(ctx context.Context, repository *RepositoryRecord) error
 
-	// IsLinkAddressExpired returns nil if the token is valid and not expired
-	IsLinkAddressExpired(token *LinkAddressData) (bool, error)
+	// IsLinkAddressExpired returns nil if the link address is valid and not expired
+	IsLinkAddressExpired(linkAddress *LinkAddressData) (bool, error)
 
 	// DeleteExpiredImports deletes expired imports on a given repository
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
@@ -1495,16 +1494,12 @@ func (g *Graveler) GCNewRunID() string {
 	return g.garbageCollectionManager.NewID()
 }
 
-func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error) {
+func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error) {
 	return g.protectedBranchesManager.GetRules(ctx, repository)
 }
 
-func (g *Graveler) DeleteBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string) error {
-	return g.protectedBranchesManager.Delete(ctx, repository, pattern)
-}
-
-func (g *Graveler) CreateBranchProtectionRule(ctx context.Context, repository *RepositoryRecord, pattern string, blockedActions []BranchProtectionBlockedAction) error {
-	return g.protectedBranchesManager.Add(ctx, repository, pattern, blockedActions)
+func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
+	return g.protectedBranchesManager.SetRules(ctx, repository, rules, lastKnownChecksum)
 }
 
 // getFromStagingArea returns the most updated value of a given key in a branch staging area.
@@ -3005,15 +3000,15 @@ func (g *Graveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (
 	)
 }
 
-func (g *Graveler) SetLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error {
-	return g.RefManager.SetLinkAddress(ctx, repository, token)
+func (g *Graveler) SetLinkAddress(ctx context.Context, repository *RepositoryRecord, physicalAddress string) error {
+	return g.RefManager.SetLinkAddress(ctx, repository, physicalAddress)
 }
 
-func (g *Graveler) VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, token string) error {
-	return g.RefManager.VerifyLinkAddress(ctx, repository, token)
+func (g *Graveler) VerifyLinkAddress(ctx context.Context, repository *RepositoryRecord, physicalAddress string) error {
+	return g.RefManager.VerifyLinkAddress(ctx, repository, physicalAddress)
 }
 
-func (g *Graveler) ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (AddressTokenIterator, error) {
+func (g *Graveler) ListLinkAddresses(ctx context.Context, repository *RepositoryRecord) (LinkAddressIterator, error) {
 	return g.RefManager.ListLinkAddresses(ctx, repository)
 }
 
@@ -3021,8 +3016,8 @@ func (g *Graveler) DeleteExpiredLinkAddresses(ctx context.Context, repository *R
 	return g.RefManager.DeleteExpiredLinkAddresses(ctx, repository)
 }
 
-func (g *Graveler) IsLinkAddressExpired(token *LinkAddressData) (bool, error) {
-	return g.RefManager.IsLinkAddressExpired(token)
+func (g *Graveler) IsLinkAddressExpired(linkAddress *LinkAddressData) (bool, error) {
+	return g.RefManager.IsLinkAddressExpired(linkAddress)
 }
 
 func (g *Graveler) DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error {
@@ -3238,15 +3233,14 @@ type GarbageCollectionManager interface {
 }
 
 type ProtectedBranchesManager interface {
-	// Add creates a rule for the given name pattern, blocking the given actions.
-	// Returns ErrRuleAlreadyExists if there is already a rule for the given pattern.
-	Add(ctx context.Context, repository *RepositoryRecord, branchNamePattern string, blockedActions []BranchProtectionBlockedAction) error
-	// Delete deletes the rule for the given name pattern, or returns ErrRuleNotExists if there is no such rule.
-	Delete(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) error
-	// Get returns the list of blocked actions for the given name pattern, or nil if no rule was defined for the pattern.
-	Get(ctx context.Context, repository *RepositoryRecord, branchNamePattern string) ([]BranchProtectionBlockedAction, error)
-	// GetRules returns all branch protection rules for the repository
-	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, error)
+	// GetRules returns all branch protection rules for the repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetRulesIf for conditional updates.
+	GetRules(ctx context.Context, repository *RepositoryRecord) (*BranchProtectionRules, *string, error)
+	// SetRules sets the branch protection rules for the repository.
+	// If lastKnownChecksum does not match the current checksum, returns ErrPreconditionFailed.
+	// If lastKnownChecksum is the empty string, the rules are set only if they are not currently set.
+	// If lastKnownChecksum is nil, the rules are set unconditionally.
+	SetRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error
 	// IsBlocked returns whether the action is blocked by any branch protection rule matching the given branch.
 	IsBlocked(ctx context.Context, repository *RepositoryRecord, branchID BranchID, action BranchProtectionBlockedAction) (bool, error)
 }

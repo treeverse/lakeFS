@@ -69,7 +69,6 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if err != nil {
 		return nil, err
 	}
-
 	return &kv.ValueWithPredicate{
 		Value:     value,
 		Predicate: kv.Predicate(value),

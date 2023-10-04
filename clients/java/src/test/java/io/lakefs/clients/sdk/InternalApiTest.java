@@ -15,13 +15,22 @@ package io.lakefs.clients.sdk;
 
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.AuthCapabilities;
+import io.lakefs.clients.sdk.model.BranchProtectionRule;
 import io.lakefs.clients.sdk.model.CommPrefsInput;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
+import io.lakefs.clients.sdk.model.GarbageCollectionRules;
+import io.lakefs.clients.sdk.model.InternalDeleteBranchProtectionRuleRequest;
+import io.lakefs.clients.sdk.model.ObjectStageCreation;
+import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
+import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.StorageURI;
+import io.lakefs.clients.sdk.model.VersionConfig;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -66,6 +75,19 @@ public class InternalApiTest {
     }
 
     /**
+     * Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void dumpRefsTest() throws ApiException {
+        String repository = null;
+        RefsDump response = api.dumpRefs(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * list authentication capabilities supported
      *
      * @throws ApiException if the Api call fails
@@ -73,6 +95,30 @@ public class InternalApiTest {
     @Test
     public void getAuthCapabilitiesTest() throws ApiException {
         AuthCapabilities response = api.getAuthCapabilities()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get information of gc settings
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getGarbageCollectionConfigTest() throws ApiException {
+        GarbageCollectionConfig response = api.getGarbageCollectionConfig()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get version of lakeFS server
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getLakeFSVersionTest() throws ApiException {
+        VersionConfig response = api.getLakeFSVersion()
                 .execute();
         // TODO: test validations
     }
@@ -90,6 +136,89 @@ public class InternalApiTest {
     }
 
     /**
+     * retrieve lakeFS storage configuration
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getStorageConfigTest() throws ApiException {
+        StorageConfig response = api.getStorageConfig()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void internalCreateBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        BranchProtectionRule branchProtectionRule = null;
+        api.internalCreateBranchProtectionRule(repository, branchProtectionRule)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void internalDeleteBranchProtectionRuleTest() throws ApiException {
+        String repository = null;
+        InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest = null;
+        api.internalDeleteBranchProtectionRule(repository, internalDeleteBranchProtectionRuleRequest)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void internalDeleteGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        api.internalDeleteGarbageCollectionRules(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get branch protection rules
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void internalGetBranchProtectionRulesTest() throws ApiException {
+        String repository = null;
+        List<BranchProtectionRule> response = api.internalGetBranchProtectionRules(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void internalGetGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules response = api.internalGetGarbageCollectionRules(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void internalSetGarbageCollectionRulesTest() throws ApiException {
+        String repository = null;
+        GarbageCollectionRules garbageCollectionRules = null;
+        api.internalSetGarbageCollectionRules(repository, garbageCollectionRules)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * post stats events, this endpoint is meant for internal use only
      *
      * @throws ApiException if the Api call fails
@@ -98,6 +227,20 @@ public class InternalApiTest {
     public void postStatsEventsTest() throws ApiException {
         StatsEventsList statsEventsList = null;
         api.postStatsEvents(statsEventsList)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void restoreRefsTest() throws ApiException {
+        String repository = null;
+        RefsDump refsDump = null;
+        api.restoreRefs(repository, refsDump)
                 .execute();
         // TODO: test validations
     }
@@ -135,6 +278,22 @@ public class InternalApiTest {
     public void setupCommPrefsTest() throws ApiException {
         CommPrefsInput commPrefsInput = null;
         api.setupCommPrefs(commPrefsInput)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * stage an object&#39;s metadata for the given branch
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void stageObjectTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+        ObjectStageCreation objectStageCreation = null;
+        ObjectStats response = api.stageObject(repository, branch, path, objectStageCreation)
                 .execute();
         // TODO: test validations
     }

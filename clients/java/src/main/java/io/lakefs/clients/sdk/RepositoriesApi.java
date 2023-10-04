@@ -28,8 +28,8 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.sdk.model.BranchProtectionRule;
-import io.lakefs.clients.sdk.model.DeleteBranchProtectionRuleRequest;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.GarbageCollectionRules;
 import io.lakefs.clients.sdk.model.Repository;
 import io.lakefs.clients.sdk.model.RepositoryCreation;
 import io.lakefs.clients.sdk.model.RepositoryList;
@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class RepositoriesApi {
     private ApiClient localVarApiClient;
@@ -78,178 +77,6 @@ public class RepositoriesApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    private okhttp3.Call createBranchProtectionRuleCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
-        Object localVarPostBody = branchProtectionRule;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-            "application/json"
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call createBranchProtectionRuleValidateBeforeCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling createBranchProtectionRule(Async)");
-        }
-
-        // verify the required parameter 'branchProtectionRule' is set
-        if (branchProtectionRule == null) {
-            throw new ApiException("Missing the required parameter 'branchProtectionRule' when calling createBranchProtectionRule(Async)");
-        }
-
-        return createBranchProtectionRuleCall(repository, branchProtectionRule, _callback);
-
-    }
-
-
-    private ApiResponse<Void> createBranchProtectionRuleWithHttpInfo(String repository, BranchProtectionRule branchProtectionRule) throws ApiException {
-        okhttp3.Call localVarCall = createBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    private okhttp3.Call createBranchProtectionRuleAsync(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = createBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-
-    public class APIcreateBranchProtectionRuleRequest {
-        private final String repository;
-        private final BranchProtectionRule branchProtectionRule;
-
-        private APIcreateBranchProtectionRuleRequest(String repository, BranchProtectionRule branchProtectionRule) {
-            this.repository = repository;
-            this.branchProtectionRule = branchProtectionRule;
-        }
-
-        /**
-         * Build call for createBranchProtectionRule
-         * @param _callback ApiCallback API callback
-         * @return Call to execute
-         * @throws ApiException If fail to serialize the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return createBranchProtectionRuleCall(repository, branchProtectionRule, _callback);
-        }
-
-        /**
-         * Execute createBranchProtectionRule request
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public void execute() throws ApiException {
-            createBranchProtectionRuleWithHttpInfo(repository, branchProtectionRule);
-        }
-
-        /**
-         * Execute createBranchProtectionRule request with HTTP info returned
-         * @return ApiResponse&lt;Void&gt;
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return createBranchProtectionRuleWithHttpInfo(repository, branchProtectionRule);
-        }
-
-        /**
-         * Execute createBranchProtectionRule request (asynchronously)
-         * @param _callback The callback to be executed when the API call finishes
-         * @return The request call
-         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return createBranchProtectionRuleAsync(repository, branchProtectionRule, _callback);
-        }
-    }
-
-    /**
-     * 
-     * 
-     * @param repository  (required)
-     * @param branchProtectionRule  (required)
-     * @return APIcreateBranchProtectionRuleRequest
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public APIcreateBranchProtectionRuleRequest createBranchProtectionRule(String repository, BranchProtectionRule branchProtectionRule) {
-        return new APIcreateBranchProtectionRuleRequest(repository, branchProtectionRule);
-    }
     private okhttp3.Call createRepositoryCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -437,7 +264,7 @@ public class RepositoriesApi {
     public APIcreateRepositoryRequest createRepository(RepositoryCreation repositoryCreation) {
         return new APIcreateRepositoryRequest(repositoryCreation);
     }
-    private okhttp3.Call deleteBranchProtectionRuleCall(String repository, DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteGCRulesCall(String repository, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -451,10 +278,10 @@ public class RepositoriesApi {
             basePath = null;
         }
 
-        Object localVarPostBody = deleteBranchProtectionRuleRequest;
+        Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
+        String localVarPath = "/repositories/{repository}/settings/gc_rules"
             .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
@@ -472,7 +299,6 @@ public class RepositoriesApi {
         }
 
         final String[] localVarContentTypes = {
-            "application/json"
         };
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         if (localVarContentType != null) {
@@ -484,110 +310,103 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteBranchProtectionRuleValidateBeforeCall(String repository, DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteGCRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling deleteBranchProtectionRule(Async)");
+            throw new ApiException("Missing the required parameter 'repository' when calling deleteGCRules(Async)");
         }
 
-        // verify the required parameter 'deleteBranchProtectionRuleRequest' is set
-        if (deleteBranchProtectionRuleRequest == null) {
-            throw new ApiException("Missing the required parameter 'deleteBranchProtectionRuleRequest' when calling deleteBranchProtectionRule(Async)");
-        }
-
-        return deleteBranchProtectionRuleCall(repository, deleteBranchProtectionRuleRequest, _callback);
+        return deleteGCRulesCall(repository, _callback);
 
     }
 
 
-    private ApiResponse<Void> deleteBranchProtectionRuleWithHttpInfo(String repository, DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest) throws ApiException {
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, deleteBranchProtectionRuleRequest, null);
+    private ApiResponse<Void> deleteGCRulesWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = deleteGCRulesValidateBeforeCall(repository, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call deleteBranchProtectionRuleAsync(String repository, DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call deleteGCRulesAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteBranchProtectionRuleValidateBeforeCall(repository, deleteBranchProtectionRuleRequest, _callback);
+        okhttp3.Call localVarCall = deleteGCRulesValidateBeforeCall(repository, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 
-    public class APIdeleteBranchProtectionRuleRequest {
+    public class APIdeleteGCRulesRequest {
         private final String repository;
-        private final DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest;
 
-        private APIdeleteBranchProtectionRuleRequest(String repository, DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest) {
+        private APIdeleteGCRulesRequest(String repository) {
             this.repository = repository;
-            this.deleteBranchProtectionRuleRequest = deleteBranchProtectionRuleRequest;
         }
 
         /**
-         * Build call for deleteBranchProtectionRule
+         * Build call for deleteGCRules
          * @param _callback ApiCallback API callback
          * @return Call to execute
          * @throws ApiException If fail to serialize the request body object
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteBranchProtectionRuleCall(repository, deleteBranchProtectionRuleRequest, _callback);
+            return deleteGCRulesCall(repository, _callback);
         }
 
         /**
-         * Execute deleteBranchProtectionRule request
+         * Execute deleteGCRules request
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public void execute() throws ApiException {
-            deleteBranchProtectionRuleWithHttpInfo(repository, deleteBranchProtectionRuleRequest);
+            deleteGCRulesWithHttpInfo(repository);
         }
 
         /**
-         * Execute deleteBranchProtectionRule request with HTTP info returned
+         * Execute deleteGCRules request with HTTP info returned
          * @return ApiResponse&lt;Void&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return deleteBranchProtectionRuleWithHttpInfo(repository, deleteBranchProtectionRuleRequest);
+            return deleteGCRulesWithHttpInfo(repository);
         }
 
         /**
-         * Execute deleteBranchProtectionRule request (asynchronously)
+         * Execute deleteGCRules request (asynchronously)
          * @param _callback The callback to be executed when the API call finishes
          * @return The request call
          * @throws ApiException If fail to process the API call, e.g. serializing the request body object
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return deleteBranchProtectionRuleAsync(repository, deleteBranchProtectionRuleRequest, _callback);
+            return deleteGCRulesAsync(repository, _callback);
         }
     }
 
@@ -595,19 +414,18 @@ public class RepositoriesApi {
      * 
      * 
      * @param repository  (required)
-     * @param deleteBranchProtectionRuleRequest  (required)
-     * @return APIdeleteBranchProtectionRuleRequest
+     * @return APIdeleteGCRulesRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIdeleteBranchProtectionRuleRequest deleteBranchProtectionRule(String repository, DeleteBranchProtectionRuleRequest deleteBranchProtectionRuleRequest) {
-        return new APIdeleteBranchProtectionRuleRequest(repository, deleteBranchProtectionRuleRequest);
+    public APIdeleteGCRulesRequest deleteGCRules(String repository) {
+        return new APIdeleteGCRulesRequest(repository);
     }
     private okhttp3.Call deleteRepositoryCall(String repository, final ApiCallback _callback) throws ApiException {
         String basePath = null;
@@ -789,7 +607,7 @@ public class RepositoriesApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/repositories/{repository}/branch_protection"
+        String localVarPath = "/repositories/{repository}/settings/branch_protection"
             .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
@@ -858,7 +676,7 @@ public class RepositoriesApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -875,7 +693,7 @@ public class RepositoriesApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -893,7 +711,7 @@ public class RepositoriesApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -911,7 +729,7 @@ public class RepositoriesApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -930,7 +748,7 @@ public class RepositoriesApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> branch protection rules </td><td>  * ETag -  <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -938,6 +756,173 @@ public class RepositoriesApi {
      */
     public APIgetBranchProtectionRulesRequest getBranchProtectionRules(String repository) {
         return new APIgetBranchProtectionRulesRequest(repository);
+    }
+    private okhttp3.Call getGCRulesCall(String repository, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/settings/gc_rules"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getGCRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling getGCRules(Async)");
+        }
+
+        return getGCRulesCall(repository, _callback);
+
+    }
+
+
+    private ApiResponse<GarbageCollectionRules> getGCRulesWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = getGCRulesValidateBeforeCall(repository, null);
+        Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getGCRulesAsync(String repository, final ApiCallback<GarbageCollectionRules> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getGCRulesValidateBeforeCall(repository, _callback);
+        Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetGCRulesRequest {
+        private final String repository;
+
+        private APIgetGCRulesRequest(String repository) {
+            this.repository = repository;
+        }
+
+        /**
+         * Build call for getGCRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> repository GC rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getGCRulesCall(repository, _callback);
+        }
+
+        /**
+         * Execute getGCRules request
+         * @return GarbageCollectionRules
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> repository GC rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public GarbageCollectionRules execute() throws ApiException {
+            ApiResponse<GarbageCollectionRules> localVarResp = getGCRulesWithHttpInfo(repository);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getGCRules request with HTTP info returned
+         * @return ApiResponse&lt;GarbageCollectionRules&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> repository GC rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<GarbageCollectionRules> executeWithHttpInfo() throws ApiException {
+            return getGCRulesWithHttpInfo(repository);
+        }
+
+        /**
+         * Execute getGCRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> repository GC rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<GarbageCollectionRules> _callback) throws ApiException {
+            return getGCRulesAsync(repository, _callback);
+        }
+    }
+
+    /**
+     * get repository GC rules
+     * 
+     * @param repository  (required)
+     * @return APIgetGCRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> repository GC rules </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIgetGCRulesRequest getGCRules(String repository) {
+        return new APIgetGCRulesRequest(repository);
     }
     private okhttp3.Call getRepositoryCall(String repository, final ApiCallback _callback) throws ApiException {
         String basePath = null;
@@ -1470,5 +1455,374 @@ public class RepositoriesApi {
      */
     public APIlistRepositoriesRequest listRepositories() {
         return new APIlistRepositoriesRequest();
+    }
+    private okhttp3.Call setBranchProtectionRulesCall(String repository, List<BranchProtectionRule> branchProtectionRule, String ifMatch, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = branchProtectionRule;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/settings/branch_protection"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (ifMatch != null) {
+            localVarHeaderParams.put("If-Match", localVarApiClient.parameterToString(ifMatch));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call setBranchProtectionRulesValidateBeforeCall(String repository, List<BranchProtectionRule> branchProtectionRule, String ifMatch, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling setBranchProtectionRules(Async)");
+        }
+
+        // verify the required parameter 'branchProtectionRule' is set
+        if (branchProtectionRule == null) {
+            throw new ApiException("Missing the required parameter 'branchProtectionRule' when calling setBranchProtectionRules(Async)");
+        }
+
+        return setBranchProtectionRulesCall(repository, branchProtectionRule, ifMatch, _callback);
+
+    }
+
+
+    private ApiResponse<Void> setBranchProtectionRulesWithHttpInfo(String repository, List<BranchProtectionRule> branchProtectionRule, String ifMatch) throws ApiException {
+        okhttp3.Call localVarCall = setBranchProtectionRulesValidateBeforeCall(repository, branchProtectionRule, ifMatch, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call setBranchProtectionRulesAsync(String repository, List<BranchProtectionRule> branchProtectionRule, String ifMatch, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = setBranchProtectionRulesValidateBeforeCall(repository, branchProtectionRule, ifMatch, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIsetBranchProtectionRulesRequest {
+        private final String repository;
+        private final List<BranchProtectionRule> branchProtectionRule;
+        private String ifMatch;
+
+        private APIsetBranchProtectionRulesRequest(String repository, List<BranchProtectionRule> branchProtectionRule) {
+            this.repository = repository;
+            this.branchProtectionRule = branchProtectionRule;
+        }
+
+        /**
+         * Set ifMatch
+         * @param ifMatch if provided, the branch protection rules will be updated only if the current ETag match the provided value (optional)
+         * @return APIsetBranchProtectionRulesRequest
+         */
+        public APIsetBranchProtectionRulesRequest ifMatch(String ifMatch) {
+            this.ifMatch = ifMatch;
+            return this;
+        }
+
+        /**
+         * Build call for setBranchProtectionRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return setBranchProtectionRulesCall(repository, branchProtectionRule, ifMatch, _callback);
+        }
+
+        /**
+         * Execute setBranchProtectionRules request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            setBranchProtectionRulesWithHttpInfo(repository, branchProtectionRule, ifMatch);
+        }
+
+        /**
+         * Execute setBranchProtectionRules request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return setBranchProtectionRulesWithHttpInfo(repository, branchProtectionRule, ifMatch);
+        }
+
+        /**
+         * Execute setBranchProtectionRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return setBranchProtectionRulesAsync(repository, branchProtectionRule, ifMatch, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @param branchProtectionRule  (required)
+     * @return APIsetBranchProtectionRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIsetBranchProtectionRulesRequest setBranchProtectionRules(String repository, List<BranchProtectionRule> branchProtectionRule) {
+        return new APIsetBranchProtectionRulesRequest(repository, branchProtectionRule);
+    }
+    private okhttp3.Call setGCRulesCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = garbageCollectionRules;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/settings/gc_rules"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call setGCRulesValidateBeforeCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling setGCRules(Async)");
+        }
+
+        // verify the required parameter 'garbageCollectionRules' is set
+        if (garbageCollectionRules == null) {
+            throw new ApiException("Missing the required parameter 'garbageCollectionRules' when calling setGCRules(Async)");
+        }
+
+        return setGCRulesCall(repository, garbageCollectionRules, _callback);
+
+    }
+
+
+    private ApiResponse<Void> setGCRulesWithHttpInfo(String repository, GarbageCollectionRules garbageCollectionRules) throws ApiException {
+        okhttp3.Call localVarCall = setGCRulesValidateBeforeCall(repository, garbageCollectionRules, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call setGCRulesAsync(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = setGCRulesValidateBeforeCall(repository, garbageCollectionRules, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIsetGCRulesRequest {
+        private final String repository;
+        private final GarbageCollectionRules garbageCollectionRules;
+
+        private APIsetGCRulesRequest(String repository, GarbageCollectionRules garbageCollectionRules) {
+            this.repository = repository;
+            this.garbageCollectionRules = garbageCollectionRules;
+        }
+
+        /**
+         * Build call for setGCRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return setGCRulesCall(repository, garbageCollectionRules, _callback);
+        }
+
+        /**
+         * Execute setGCRules request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            setGCRulesWithHttpInfo(repository, garbageCollectionRules);
+        }
+
+        /**
+         * Execute setGCRules request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return setGCRulesWithHttpInfo(repository, garbageCollectionRules);
+        }
+
+        /**
+         * Execute setGCRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return setGCRulesAsync(repository, garbageCollectionRules, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @param garbageCollectionRules  (required)
+     * @return APIsetGCRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIsetGCRulesRequest setGCRules(String repository, GarbageCollectionRules garbageCollectionRules) {
+        return new APIsetGCRulesRequest(repository, garbageCollectionRules);
     }
 }

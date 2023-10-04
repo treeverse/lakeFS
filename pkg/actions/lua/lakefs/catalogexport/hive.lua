@@ -1,7 +1,7 @@
 local pathlib = require("path")
 local utils = require("lakefs/catalogexport/internal")
 local strings = require("strings")
-local DEFAULT_PAGE_SIZE = 30 
+local DEFAULT_PAGE_SIZE = 30
 
 -- extract partition prefix from full path
 local function extract_partitions_path(partitions, path)
@@ -11,7 +11,7 @@ local function extract_partitions_path(partitions, path)
     local idx = 1
     local is_partition_prefix = strings.has_prefix(path, partitions[1])
     for part_idx, partition in ipairs(partitions) do
-        local col_substr = "/" ..  partition .. "="
+        local col_substr = "/" .. partition .. "="
         -- if partition is the path prefix and we are the that first partition remove /
         if part_idx == 1 and is_partition_prefix then
             col_substr = partition .. "="
@@ -20,7 +20,7 @@ local function extract_partitions_path(partitions, path)
         if i == nil then
             return nil
         end
-        local separator_idx = string.find(path, "/", j+1)
+        local separator_idx = string.find(path, "/", j + 1)
         -- verify / found and there is something in between = ... / 
         if separator_idx == nil or separator_idx <= (j + 1) then
             return nil
@@ -33,7 +33,8 @@ end
 -- Hive format partition iterator each result set is a collection of files under the same partition
 local function extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)
     local target_partition = ""
-    local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", base_path,"", page_size or DEFAULT_PAGE_SIZE)
+    local pager = utils.lakefs_object_pager(client, repo_id, commit_id, "", base_path, "",
+        page_size or DEFAULT_PAGE_SIZE)
     local page = pager()
     return function()
         if page == nil then
@@ -66,13 +67,13 @@ local function extract_partition_pager(client, repo_id, commit_id, base_path, pa
                     size = entry.size_bytes,
                     checksum = entry.checksum
                 })
-                -- remove entry only if its part of the current partition
-                table.remove(page, 1)
             end
+            -- remove entry (if its part of current partition, hidden files etc) from the entry set
+            table.remove(page, 1)
         end
     end
 end
 
 return {
-    extract_partition_pager=extract_partition_pager,
+    extract_partition_pager = extract_partition_pager
 }

@@ -24,18 +24,6 @@ class TestRetentionApi(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_delete_garbage_collection_rules(self):
-        """Test case for delete_garbage_collection_rules
-
-        """
-        pass
-
-    def test_get_garbage_collection_rules(self):
-        """Test case for get_garbage_collection_rules
-
-        """
-        pass
-
     def test_prepare_garbage_collection_commits(self):
         """Test case for prepare_garbage_collection_commits
 
@@ -47,12 +35,6 @@ class TestRetentionApi(unittest.TestCase):
         """Test case for prepare_garbage_collection_uncommitted
 
         save repository uncommitted metadata for garbage collection  # noqa: E501
-        """
-        pass
-
-    def test_set_garbage_collection_rules(self):
-        """Test case for set_garbage_collection_rules
-
         """
         pass
 

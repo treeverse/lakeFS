@@ -19,9 +19,21 @@ const SettingsContainer = () => {
     const [actionError, setActionError] = useState(null);
     const [deleteButtonDisabled, setDeleteButtonDisabled] = useState(false)
 
-    const {response: rules, error: rulesError, loading: rulesLoading} = useAPI(async () => {
+    const {response: rulesResponse, error: rulesError, loading: rulesLoading} = useAPI(async () => {
         return branchProtectionRules.getRules(repo.id)
     }, [repo, refresh])
+    const deleteRule = (pattern) => {
+        let updatedRules = [...rulesResponse['rules']]
+        let lastKnownChecksum = rulesResponse['checksum']
+        updatedRules = updatedRules.filter(r => r.pattern !== pattern)
+        branchProtectionRules.setRules(repo.id, updatedRules, lastKnownChecksum).then(() => {
+            setRefresh(!refresh)
+            setDeleteButtonDisabled(false)
+        }).catch(err => {
+            setDeleteButtonDisabled(false)
+            setActionError(err)
+        })
+    }
     if (error) return <AlertError error={error}/>;
     if (rulesError) return <AlertError error={rulesError}/>;
     if (actionError) return <AlertError error={actionError}/>;
@@ -47,20 +59,11 @@ const SettingsContainer = () => {
                     <Card className={"w-100 rounded border-0"}>
                         <Card.Body className={"p-0 rounded"}>
                             <ListGroup>
-                                {rules && rules.length > 0 ? rules.map((r) => {
+                                {rulesResponse && rulesResponse['rules'].length > 0 ? rulesResponse['rules'].map((r) => {
                                     return <ListGroup.Item key={r.pattern}>
                                         <div className="d-flex">
                                             <code>{r.pattern}</code>
-                                            <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => {
-                                                setDeleteButtonDisabled(true)
-                                                branchProtectionRules.deleteRule(repo.id, r.pattern).then(() => {
-                                                    setRefresh(!refresh)
-                                                    setDeleteButtonDisabled(false)
-                                                }).catch(err => {
-                                                    setDeleteButtonDisabled(false)
-                                                    setActionError(err)
-                                                })
-                                            }}>Delete</Button>
+                                            <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => deleteRule(r.pattern)}>Delete</Button>
                                         </div>
                                     </ListGroup.Item>
                                 }) : <Alert variant="info">There aren&apos;t any rules yet.</Alert>}
@@ -69,13 +72,13 @@ const SettingsContainer = () => {
                     </Card>
                 </div>}
         </div>
-        <CreateRuleModal show={showCreateModal} hideFn={() => setShowCreateModal(false)} onSuccess={() => {
+        <CreateRuleModal show={showCreateModal} hideFn={() => setShowCreateModal(false)} currentRulesResponse={rulesResponse} onSuccess={() => {
             setRefresh(!refresh)
             setShowCreateModal(false)
         }} repoID={repo.id}/>
     </>);
 }
-const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
+const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}) => {
     const [error, setError] = useState(null);
     const [createButtonDisabled, setCreateButtonDisabled] = useState(true);
     const patternField = useRef(null);
@@ -86,7 +89,10 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID}) => {
         }
         setError(null)
         setCreateButtonDisabled(true)
-        branchProtectionRules.createRule(repoID, pattern).then(onSuccess).catch(err => {
+        let updatedRules = [...currentRulesResponse['rules']]
+        let lastKnownChecksum = currentRulesResponse['checksum']
+        updatedRules.push({pattern})
+        branchProtectionRules.setRules(repoID, updatedRules, lastKnownChecksum).then(onSuccess).catch(err => {
             setError(err)
             setCreateButtonDisabled(false)
         })

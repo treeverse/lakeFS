@@ -14,7 +14,7 @@ CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 # https://openapi-generator.tech
 OPENAPI_LEGACY_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
 OPENAPI_LEGACY_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_LEGACY_GENERATOR_IMAGE)
-OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v6.6.0
+OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.0.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3

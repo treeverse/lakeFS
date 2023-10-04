@@ -14,7 +14,6 @@
 package io.lakefs.clients.sdk.model;
 
 import java.util.Objects;
-import java.util.Arrays;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
@@ -24,6 +23,7 @@ import io.lakefs.clients.sdk.model.CommitCreation;
 import io.lakefs.clients.sdk.model.ImportLocation;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -220,24 +220,25 @@ public class ImportCreation {
   }
 
  /**
-  * Validates the JSON Object and throws an exception if issues found
+  * Validates the JSON Element and throws an exception if issues found
   *
-  * @param jsonObj JSON Object
-  * @throws IOException if the JSON Object is invalid with respect to ImportCreation
+  * @param jsonElement JSON Element
+  * @throws IOException if the JSON Element is invalid with respect to ImportCreation
   */
-  public static void validateJsonObject(JsonObject jsonObj) throws IOException {
-      if (jsonObj == null) {
-        if (!ImportCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON object is null
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ImportCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
           throw new IllegalArgumentException(String.format("The required field(s) %s in ImportCreation is not found in the empty JSON string", ImportCreation.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
       for (String requiredField : ImportCreation.openapiRequiredFields) {
-        if (jsonObj.get(requiredField) == null) {
-          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonObj.toString()));
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
       // ensure the json data is an array
       if (!jsonObj.get("paths").isJsonArray()) {
         throw new IllegalArgumentException(String.format("Expected the field `paths` to be an array in the JSON string but got `%s`", jsonObj.get("paths").toString()));
@@ -246,10 +247,10 @@ public class ImportCreation {
       JsonArray jsonArraypaths = jsonObj.getAsJsonArray("paths");
       // validate the required field `paths` (array)
       for (int i = 0; i < jsonArraypaths.size(); i++) {
-        ImportLocation.validateJsonObject(jsonArraypaths.get(i).getAsJsonObject());
+        ImportLocation.validateJsonElement(jsonArraypaths.get(i));
       };
       // validate the required field `commit`
-      CommitCreation.validateJsonObject(jsonObj.getAsJsonObject("commit"));
+      CommitCreation.validateJsonElement(jsonObj.get("commit"));
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
@@ -289,8 +290,9 @@ public class ImportCreation {
 
            @Override
            public ImportCreation read(JsonReader in) throws IOException {
-             JsonObject jsonObj = elementAdapter.read(in).getAsJsonObject();
-             validateJsonObject(jsonObj);
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
              ImportCreation instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {

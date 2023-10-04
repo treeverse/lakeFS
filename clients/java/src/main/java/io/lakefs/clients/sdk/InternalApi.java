@@ -28,20 +28,28 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.sdk.model.AuthCapabilities;
+import io.lakefs.clients.sdk.model.BranchProtectionRule;
 import io.lakefs.clients.sdk.model.CommPrefsInput;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
+import io.lakefs.clients.sdk.model.GarbageCollectionRules;
+import io.lakefs.clients.sdk.model.InternalDeleteBranchProtectionRuleRequest;
+import io.lakefs.clients.sdk.model.ObjectStageCreation;
+import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
+import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.StorageURI;
+import io.lakefs.clients.sdk.model.VersionConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericType;
 
 public class InternalApi {
     private ApiClient localVarApiClient;
@@ -439,6 +447,178 @@ public class InternalApi {
     public APIcreateSymlinkFileRequest createSymlinkFile(String repository, String branch) {
         return new APIcreateSymlinkFileRequest(repository, branch);
     }
+    private okhttp3.Call dumpRefsCall(String repository, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/refs/dump"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call dumpRefsValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling dumpRefs(Async)");
+        }
+
+        return dumpRefsCall(repository, _callback);
+
+    }
+
+
+    private ApiResponse<RefsDump> dumpRefsWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = dumpRefsValidateBeforeCall(repository, null);
+        Type localVarReturnType = new TypeToken<RefsDump>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call dumpRefsAsync(String repository, final ApiCallback<RefsDump> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = dumpRefsValidateBeforeCall(repository, _callback);
+        Type localVarReturnType = new TypeToken<RefsDump>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIdumpRefsRequest {
+        private final String repository;
+
+        private APIdumpRefsRequest(String repository) {
+            this.repository = repository;
+        }
+
+        /**
+         * Build call for dumpRefs
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> refs dump </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return dumpRefsCall(repository, _callback);
+        }
+
+        /**
+         * Execute dumpRefs request
+         * @return RefsDump
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> refs dump </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public RefsDump execute() throws ApiException {
+            ApiResponse<RefsDump> localVarResp = dumpRefsWithHttpInfo(repository);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute dumpRefs request with HTTP info returned
+         * @return ApiResponse&lt;RefsDump&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> refs dump </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<RefsDump> executeWithHttpInfo() throws ApiException {
+            return dumpRefsWithHttpInfo(repository);
+        }
+
+        /**
+         * Execute dumpRefs request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> refs dump </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<RefsDump> _callback) throws ApiException {
+            return dumpRefsAsync(repository, _callback);
+        }
+    }
+
+    /**
+     * Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
+     * 
+     * @param repository  (required)
+     * @return APIdumpRefsRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> refs dump </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIdumpRefsRequest dumpRefs(String repository) {
+        return new APIdumpRefsRequest(repository);
+    }
     private okhttp3.Call getAuthCapabilitiesCall(final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -587,6 +767,313 @@ public class InternalApi {
     public APIgetAuthCapabilitiesRequest getAuthCapabilities() {
         return new APIgetAuthCapabilitiesRequest();
     }
+    private okhttp3.Call getGarbageCollectionConfigCall(final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/config/garbage-collection";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getGarbageCollectionConfigValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        return getGarbageCollectionConfigCall(_callback);
+
+    }
+
+
+    private ApiResponse<GarbageCollectionConfig> getGarbageCollectionConfigWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getGarbageCollectionConfigValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<GarbageCollectionConfig>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getGarbageCollectionConfigAsync(final ApiCallback<GarbageCollectionConfig> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getGarbageCollectionConfigValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<GarbageCollectionConfig>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetGarbageCollectionConfigRequest {
+
+        private APIgetGarbageCollectionConfigRequest() {
+        }
+
+        /**
+         * Build call for getGarbageCollectionConfig
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getGarbageCollectionConfigCall(_callback);
+        }
+
+        /**
+         * Execute getGarbageCollectionConfig request
+         * @return GarbageCollectionConfig
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         */
+        public GarbageCollectionConfig execute() throws ApiException {
+            ApiResponse<GarbageCollectionConfig> localVarResp = getGarbageCollectionConfigWithHttpInfo();
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getGarbageCollectionConfig request with HTTP info returned
+         * @return ApiResponse&lt;GarbageCollectionConfig&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<GarbageCollectionConfig> executeWithHttpInfo() throws ApiException {
+            return getGarbageCollectionConfigWithHttpInfo();
+        }
+
+        /**
+         * Execute getGarbageCollectionConfig request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<GarbageCollectionConfig> _callback) throws ApiException {
+            return getGarbageCollectionConfigAsync(_callback);
+        }
+    }
+
+    /**
+     * 
+     * get information of gc settings
+     * @return APIgetGarbageCollectionConfigRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS garbage collection config </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIgetGarbageCollectionConfigRequest getGarbageCollectionConfig() {
+        return new APIgetGarbageCollectionConfigRequest();
+    }
+    private okhttp3.Call getLakeFSVersionCall(final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/config/version";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getLakeFSVersionValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        return getLakeFSVersionCall(_callback);
+
+    }
+
+
+    private ApiResponse<VersionConfig> getLakeFSVersionWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getLakeFSVersionAsync(final ApiCallback<VersionConfig> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getLakeFSVersionValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<VersionConfig>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetLakeFSVersionRequest {
+
+        private APIgetLakeFSVersionRequest() {
+        }
+
+        /**
+         * Build call for getLakeFSVersion
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getLakeFSVersionCall(_callback);
+        }
+
+        /**
+         * Execute getLakeFSVersion request
+         * @return VersionConfig
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public VersionConfig execute() throws ApiException {
+            ApiResponse<VersionConfig> localVarResp = getLakeFSVersionWithHttpInfo();
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getLakeFSVersion request with HTTP info returned
+         * @return ApiResponse&lt;VersionConfig&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<VersionConfig> executeWithHttpInfo() throws ApiException {
+            return getLakeFSVersionWithHttpInfo();
+        }
+
+        /**
+         * Execute getLakeFSVersion request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<VersionConfig> _callback) throws ApiException {
+            return getLakeFSVersionAsync(_callback);
+        }
+    }
+
+    /**
+     * 
+     * get version of lakeFS server
+     * @return APIgetLakeFSVersionRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS version </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIgetLakeFSVersionRequest getLakeFSVersion() {
+        return new APIgetLakeFSVersionRequest();
+    }
     private okhttp3.Call getSetupStateCall(final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -734,6 +1221,1244 @@ public class InternalApi {
      */
     public APIgetSetupStateRequest getSetupState() {
         return new APIgetSetupStateRequest();
+    }
+    private okhttp3.Call getStorageConfigCall(final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/config/storage";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getStorageConfigValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        return getStorageConfigCall(_callback);
+
+    }
+
+
+    private ApiResponse<StorageConfig> getStorageConfigWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getStorageConfigAsync(final ApiCallback<StorageConfig> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getStorageConfigValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<StorageConfig>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetStorageConfigRequest {
+
+        private APIgetStorageConfigRequest() {
+        }
+
+        /**
+         * Build call for getStorageConfig
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getStorageConfigCall(_callback);
+        }
+
+        /**
+         * Execute getStorageConfig request
+         * @return StorageConfig
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public StorageConfig execute() throws ApiException {
+            ApiResponse<StorageConfig> localVarResp = getStorageConfigWithHttpInfo();
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getStorageConfig request with HTTP info returned
+         * @return ApiResponse&lt;StorageConfig&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<StorageConfig> executeWithHttpInfo() throws ApiException {
+            return getStorageConfigWithHttpInfo();
+        }
+
+        /**
+         * Execute getStorageConfig request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<StorageConfig> _callback) throws ApiException {
+            return getStorageConfigAsync(_callback);
+        }
+    }
+
+    /**
+     * 
+     * retrieve lakeFS storage configuration
+     * @return APIgetStorageConfigRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> lakeFS storage configuration </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIgetStorageConfigRequest getStorageConfig() {
+        return new APIgetStorageConfigRequest();
+    }
+    private okhttp3.Call internalCreateBranchProtectionRuleCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = branchProtectionRule;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branch_protection"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call internalCreateBranchProtectionRuleValidateBeforeCall(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling internalCreateBranchProtectionRule(Async)");
+        }
+
+        // verify the required parameter 'branchProtectionRule' is set
+        if (branchProtectionRule == null) {
+            throw new ApiException("Missing the required parameter 'branchProtectionRule' when calling internalCreateBranchProtectionRule(Async)");
+        }
+
+        return internalCreateBranchProtectionRuleCall(repository, branchProtectionRule, _callback);
+
+    }
+
+
+    private ApiResponse<Void> internalCreateBranchProtectionRuleWithHttpInfo(String repository, BranchProtectionRule branchProtectionRule) throws ApiException {
+        okhttp3.Call localVarCall = internalCreateBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call internalCreateBranchProtectionRuleAsync(String repository, BranchProtectionRule branchProtectionRule, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = internalCreateBranchProtectionRuleValidateBeforeCall(repository, branchProtectionRule, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIinternalCreateBranchProtectionRuleRequest {
+        private final String repository;
+        private final BranchProtectionRule branchProtectionRule;
+
+        private APIinternalCreateBranchProtectionRuleRequest(String repository, BranchProtectionRule branchProtectionRule) {
+            this.repository = repository;
+            this.branchProtectionRule = branchProtectionRule;
+        }
+
+        /**
+         * Build call for internalCreateBranchProtectionRule
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return internalCreateBranchProtectionRuleCall(repository, branchProtectionRule, _callback);
+        }
+
+        /**
+         * Execute internalCreateBranchProtectionRule request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public void execute() throws ApiException {
+            internalCreateBranchProtectionRuleWithHttpInfo(repository, branchProtectionRule);
+        }
+
+        /**
+         * Execute internalCreateBranchProtectionRule request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return internalCreateBranchProtectionRuleWithHttpInfo(repository, branchProtectionRule);
+        }
+
+        /**
+         * Execute internalCreateBranchProtectionRule request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return internalCreateBranchProtectionRuleAsync(repository, branchProtectionRule, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @param branchProtectionRule  (required)
+     * @return APIinternalCreateBranchProtectionRuleRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch protection rule created successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIinternalCreateBranchProtectionRuleRequest internalCreateBranchProtectionRule(String repository, BranchProtectionRule branchProtectionRule) {
+        return new APIinternalCreateBranchProtectionRuleRequest(repository, branchProtectionRule);
+    }
+    private okhttp3.Call internalDeleteBranchProtectionRuleCall(String repository, InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = internalDeleteBranchProtectionRuleRequest;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branch_protection"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call internalDeleteBranchProtectionRuleValidateBeforeCall(String repository, InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling internalDeleteBranchProtectionRule(Async)");
+        }
+
+        // verify the required parameter 'internalDeleteBranchProtectionRuleRequest' is set
+        if (internalDeleteBranchProtectionRuleRequest == null) {
+            throw new ApiException("Missing the required parameter 'internalDeleteBranchProtectionRuleRequest' when calling internalDeleteBranchProtectionRule(Async)");
+        }
+
+        return internalDeleteBranchProtectionRuleCall(repository, internalDeleteBranchProtectionRuleRequest, _callback);
+
+    }
+
+
+    private ApiResponse<Void> internalDeleteBranchProtectionRuleWithHttpInfo(String repository, InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest) throws ApiException {
+        okhttp3.Call localVarCall = internalDeleteBranchProtectionRuleValidateBeforeCall(repository, internalDeleteBranchProtectionRuleRequest, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call internalDeleteBranchProtectionRuleAsync(String repository, InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = internalDeleteBranchProtectionRuleValidateBeforeCall(repository, internalDeleteBranchProtectionRuleRequest, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIinternalDeleteBranchProtectionRuleRequest {
+        private final String repository;
+        private final InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest;
+
+        private APIinternalDeleteBranchProtectionRuleRequest(String repository, InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest) {
+            this.repository = repository;
+            this.internalDeleteBranchProtectionRuleRequest = internalDeleteBranchProtectionRuleRequest;
+        }
+
+        /**
+         * Build call for internalDeleteBranchProtectionRule
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return internalDeleteBranchProtectionRuleCall(repository, internalDeleteBranchProtectionRuleRequest, _callback);
+        }
+
+        /**
+         * Execute internalDeleteBranchProtectionRule request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public void execute() throws ApiException {
+            internalDeleteBranchProtectionRuleWithHttpInfo(repository, internalDeleteBranchProtectionRuleRequest);
+        }
+
+        /**
+         * Execute internalDeleteBranchProtectionRule request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return internalDeleteBranchProtectionRuleWithHttpInfo(repository, internalDeleteBranchProtectionRuleRequest);
+        }
+
+        /**
+         * Execute internalDeleteBranchProtectionRule request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return internalDeleteBranchProtectionRuleAsync(repository, internalDeleteBranchProtectionRuleRequest, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @param internalDeleteBranchProtectionRuleRequest  (required)
+     * @return APIinternalDeleteBranchProtectionRuleRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> branch protection rule deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIinternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRule(String repository, InternalDeleteBranchProtectionRuleRequest internalDeleteBranchProtectionRuleRequest) {
+        return new APIinternalDeleteBranchProtectionRuleRequest(repository, internalDeleteBranchProtectionRuleRequest);
+    }
+    private okhttp3.Call internalDeleteGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/gc/rules"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call internalDeleteGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling internalDeleteGarbageCollectionRules(Async)");
+        }
+
+        return internalDeleteGarbageCollectionRulesCall(repository, _callback);
+
+    }
+
+
+    private ApiResponse<Void> internalDeleteGarbageCollectionRulesWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = internalDeleteGarbageCollectionRulesValidateBeforeCall(repository, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call internalDeleteGarbageCollectionRulesAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = internalDeleteGarbageCollectionRulesValidateBeforeCall(repository, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIinternalDeleteGarbageCollectionRulesRequest {
+        private final String repository;
+
+        private APIinternalDeleteGarbageCollectionRulesRequest(String repository) {
+            this.repository = repository;
+        }
+
+        /**
+         * Build call for internalDeleteGarbageCollectionRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return internalDeleteGarbageCollectionRulesCall(repository, _callback);
+        }
+
+        /**
+         * Execute internalDeleteGarbageCollectionRules request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public void execute() throws ApiException {
+            internalDeleteGarbageCollectionRulesWithHttpInfo(repository);
+        }
+
+        /**
+         * Execute internalDeleteGarbageCollectionRules request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return internalDeleteGarbageCollectionRulesWithHttpInfo(repository);
+        }
+
+        /**
+         * Execute internalDeleteGarbageCollectionRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return internalDeleteGarbageCollectionRulesAsync(repository, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @return APIinternalDeleteGarbageCollectionRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> deleted garbage collection rules successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIinternalDeleteGarbageCollectionRulesRequest internalDeleteGarbageCollectionRules(String repository) {
+        return new APIinternalDeleteGarbageCollectionRulesRequest(repository);
+    }
+    private okhttp3.Call internalGetBranchProtectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branch_protection"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call internalGetBranchProtectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling internalGetBranchProtectionRules(Async)");
+        }
+
+        return internalGetBranchProtectionRulesCall(repository, _callback);
+
+    }
+
+
+    private ApiResponse<List<BranchProtectionRule>> internalGetBranchProtectionRulesWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = internalGetBranchProtectionRulesValidateBeforeCall(repository, null);
+        Type localVarReturnType = new TypeToken<List<BranchProtectionRule>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call internalGetBranchProtectionRulesAsync(String repository, final ApiCallback<List<BranchProtectionRule>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = internalGetBranchProtectionRulesValidateBeforeCall(repository, _callback);
+        Type localVarReturnType = new TypeToken<List<BranchProtectionRule>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIinternalGetBranchProtectionRulesRequest {
+        private final String repository;
+
+        private APIinternalGetBranchProtectionRulesRequest(String repository) {
+            this.repository = repository;
+        }
+
+        /**
+         * Build call for internalGetBranchProtectionRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return internalGetBranchProtectionRulesCall(repository, _callback);
+        }
+
+        /**
+         * Execute internalGetBranchProtectionRules request
+         * @return List&lt;BranchProtectionRule&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public List<BranchProtectionRule> execute() throws ApiException {
+            ApiResponse<List<BranchProtectionRule>> localVarResp = internalGetBranchProtectionRulesWithHttpInfo(repository);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute internalGetBranchProtectionRules request with HTTP info returned
+         * @return ApiResponse&lt;List&lt;BranchProtectionRule&gt;&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<List<BranchProtectionRule>> executeWithHttpInfo() throws ApiException {
+            return internalGetBranchProtectionRulesWithHttpInfo(repository);
+        }
+
+        /**
+         * Execute internalGetBranchProtectionRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<List<BranchProtectionRule>> _callback) throws ApiException {
+            return internalGetBranchProtectionRulesAsync(repository, _callback);
+        }
+    }
+
+    /**
+     * get branch protection rules
+     * 
+     * @param repository  (required)
+     * @return APIinternalGetBranchProtectionRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> branch protection rules </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIinternalGetBranchProtectionRulesRequest internalGetBranchProtectionRules(String repository) {
+        return new APIinternalGetBranchProtectionRulesRequest(repository);
+    }
+    private okhttp3.Call internalGetGarbageCollectionRulesCall(String repository, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/gc/rules"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call internalGetGarbageCollectionRulesValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling internalGetGarbageCollectionRules(Async)");
+        }
+
+        return internalGetGarbageCollectionRulesCall(repository, _callback);
+
+    }
+
+
+    private ApiResponse<GarbageCollectionRules> internalGetGarbageCollectionRulesWithHttpInfo(String repository) throws ApiException {
+        okhttp3.Call localVarCall = internalGetGarbageCollectionRulesValidateBeforeCall(repository, null);
+        Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call internalGetGarbageCollectionRulesAsync(String repository, final ApiCallback<GarbageCollectionRules> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = internalGetGarbageCollectionRulesValidateBeforeCall(repository, _callback);
+        Type localVarReturnType = new TypeToken<GarbageCollectionRules>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIinternalGetGarbageCollectionRulesRequest {
+        private final String repository;
+
+        private APIinternalGetGarbageCollectionRulesRequest(String repository) {
+            this.repository = repository;
+        }
+
+        /**
+         * Build call for internalGetGarbageCollectionRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return internalGetGarbageCollectionRulesCall(repository, _callback);
+        }
+
+        /**
+         * Execute internalGetGarbageCollectionRules request
+         * @return GarbageCollectionRules
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public GarbageCollectionRules execute() throws ApiException {
+            ApiResponse<GarbageCollectionRules> localVarResp = internalGetGarbageCollectionRulesWithHttpInfo(repository);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute internalGetGarbageCollectionRules request with HTTP info returned
+         * @return ApiResponse&lt;GarbageCollectionRules&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<GarbageCollectionRules> executeWithHttpInfo() throws ApiException {
+            return internalGetGarbageCollectionRulesWithHttpInfo(repository);
+        }
+
+        /**
+         * Execute internalGetGarbageCollectionRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<GarbageCollectionRules> _callback) throws ApiException {
+            return internalGetGarbageCollectionRulesAsync(repository, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @return APIinternalGetGarbageCollectionRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> gc rule list </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIinternalGetGarbageCollectionRulesRequest internalGetGarbageCollectionRules(String repository) {
+        return new APIinternalGetGarbageCollectionRulesRequest(repository);
+    }
+    private okhttp3.Call internalSetGarbageCollectionRulesCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = garbageCollectionRules;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/gc/rules"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call internalSetGarbageCollectionRulesValidateBeforeCall(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling internalSetGarbageCollectionRules(Async)");
+        }
+
+        // verify the required parameter 'garbageCollectionRules' is set
+        if (garbageCollectionRules == null) {
+            throw new ApiException("Missing the required parameter 'garbageCollectionRules' when calling internalSetGarbageCollectionRules(Async)");
+        }
+
+        return internalSetGarbageCollectionRulesCall(repository, garbageCollectionRules, _callback);
+
+    }
+
+
+    private ApiResponse<Void> internalSetGarbageCollectionRulesWithHttpInfo(String repository, GarbageCollectionRules garbageCollectionRules) throws ApiException {
+        okhttp3.Call localVarCall = internalSetGarbageCollectionRulesValidateBeforeCall(repository, garbageCollectionRules, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call internalSetGarbageCollectionRulesAsync(String repository, GarbageCollectionRules garbageCollectionRules, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = internalSetGarbageCollectionRulesValidateBeforeCall(repository, garbageCollectionRules, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIinternalSetGarbageCollectionRulesRequest {
+        private final String repository;
+        private final GarbageCollectionRules garbageCollectionRules;
+
+        private APIinternalSetGarbageCollectionRulesRequest(String repository, GarbageCollectionRules garbageCollectionRules) {
+            this.repository = repository;
+            this.garbageCollectionRules = garbageCollectionRules;
+        }
+
+        /**
+         * Build call for internalSetGarbageCollectionRules
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return internalSetGarbageCollectionRulesCall(repository, garbageCollectionRules, _callback);
+        }
+
+        /**
+         * Execute internalSetGarbageCollectionRules request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public void execute() throws ApiException {
+            internalSetGarbageCollectionRulesWithHttpInfo(repository, garbageCollectionRules);
+        }
+
+        /**
+         * Execute internalSetGarbageCollectionRules request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return internalSetGarbageCollectionRulesWithHttpInfo(repository, garbageCollectionRules);
+        }
+
+        /**
+         * Execute internalSetGarbageCollectionRules request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return internalSetGarbageCollectionRulesAsync(repository, garbageCollectionRules, _callback);
+        }
+    }
+
+    /**
+     * 
+     * 
+     * @param repository  (required)
+     * @param garbageCollectionRules  (required)
+     * @return APIinternalSetGarbageCollectionRulesRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> set garbage collection rules successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIinternalSetGarbageCollectionRulesRequest internalSetGarbageCollectionRules(String repository, GarbageCollectionRules garbageCollectionRules) {
+        return new APIinternalSetGarbageCollectionRulesRequest(repository, garbageCollectionRules);
     }
     private okhttp3.Call postStatsEventsCall(StatsEventsList statsEventsList, final ApiCallback _callback) throws ApiException {
         String basePath = null;
@@ -897,6 +2622,183 @@ public class InternalApi {
      */
     public APIpostStatsEventsRequest postStatsEvents(StatsEventsList statsEventsList) {
         return new APIpostStatsEventsRequest(statsEventsList);
+    }
+    private okhttp3.Call restoreRefsCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = refsDump;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/refs/restore"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call restoreRefsValidateBeforeCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling restoreRefs(Async)");
+        }
+
+        // verify the required parameter 'refsDump' is set
+        if (refsDump == null) {
+            throw new ApiException("Missing the required parameter 'refsDump' when calling restoreRefs(Async)");
+        }
+
+        return restoreRefsCall(repository, refsDump, _callback);
+
+    }
+
+
+    private ApiResponse<Void> restoreRefsWithHttpInfo(String repository, RefsDump refsDump) throws ApiException {
+        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsDump, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call restoreRefsAsync(String repository, RefsDump refsDump, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsDump, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIrestoreRefsRequest {
+        private final String repository;
+        private final RefsDump refsDump;
+
+        private APIrestoreRefsRequest(String repository, RefsDump refsDump) {
+            this.repository = repository;
+            this.refsDump = refsDump;
+        }
+
+        /**
+         * Build call for restoreRefs
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> refs successfully loaded </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return restoreRefsCall(repository, refsDump, _callback);
+        }
+
+        /**
+         * Execute restoreRefs request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> refs successfully loaded </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            restoreRefsWithHttpInfo(repository, refsDump);
+        }
+
+        /**
+         * Execute restoreRefs request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> refs successfully loaded </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return restoreRefsWithHttpInfo(repository, refsDump);
+        }
+
+        /**
+         * Execute restoreRefs request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> refs successfully loaded </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return restoreRefsAsync(repository, refsDump, _callback);
+        }
+    }
+
+    /**
+     * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
+     * 
+     * @param repository  (required)
+     * @param refsDump  (required)
+     * @return APIrestoreRefsRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> refs successfully loaded </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIrestoreRefsRequest restoreRefs(String repository, RefsDump refsDump) {
+        return new APIrestoreRefsRequest(repository, refsDump);
     }
     private okhttp3.Call setGarbageCollectionRulesPreflightCall(String repository, final ApiCallback _callback) throws ApiException {
         String basePath = null;
@@ -1390,6 +3292,224 @@ public class InternalApi {
      */
     public APIsetupCommPrefsRequest setupCommPrefs(CommPrefsInput commPrefsInput) {
         return new APIsetupCommPrefsRequest(commPrefsInput);
+    }
+    private okhttp3.Call stageObjectCall(String repository, String branch, String path, ObjectStageCreation objectStageCreation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = objectStageCreation;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (path != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @Deprecated
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call stageObjectValidateBeforeCall(String repository, String branch, String path, ObjectStageCreation objectStageCreation, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling stageObject(Async)");
+        }
+
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling stageObject(Async)");
+        }
+
+        // verify the required parameter 'path' is set
+        if (path == null) {
+            throw new ApiException("Missing the required parameter 'path' when calling stageObject(Async)");
+        }
+
+        // verify the required parameter 'objectStageCreation' is set
+        if (objectStageCreation == null) {
+            throw new ApiException("Missing the required parameter 'objectStageCreation' when calling stageObject(Async)");
+        }
+
+        return stageObjectCall(repository, branch, path, objectStageCreation, _callback);
+
+    }
+
+
+    private ApiResponse<ObjectStats> stageObjectWithHttpInfo(String repository, String branch, String path, ObjectStageCreation objectStageCreation) throws ApiException {
+        okhttp3.Call localVarCall = stageObjectValidateBeforeCall(repository, branch, path, objectStageCreation, null);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call stageObjectAsync(String repository, String branch, String path, ObjectStageCreation objectStageCreation, final ApiCallback<ObjectStats> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = stageObjectValidateBeforeCall(repository, branch, path, objectStageCreation, _callback);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIstageObjectRequest {
+        private final String repository;
+        private final String branch;
+        private final String path;
+        private final ObjectStageCreation objectStageCreation;
+
+        private APIstageObjectRequest(String repository, String branch, String path, ObjectStageCreation objectStageCreation) {
+            this.repository = repository;
+            this.branch = branch;
+            this.path = path;
+            this.objectStageCreation = objectStageCreation;
+        }
+
+        /**
+         * Build call for stageObject
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return stageObjectCall(repository, branch, path, objectStageCreation, _callback);
+        }
+
+        /**
+         * Execute stageObject request
+         * @return ObjectStats
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ObjectStats execute() throws ApiException {
+            ApiResponse<ObjectStats> localVarResp = stageObjectWithHttpInfo(repository, branch, path, objectStageCreation);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute stageObject request with HTTP info returned
+         * @return ApiResponse&lt;ObjectStats&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
+            return stageObjectWithHttpInfo(repository, branch, path, objectStageCreation);
+        }
+
+        /**
+         * Execute stageObject request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> object metadata </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         * @deprecated
+         */
+        @Deprecated
+        public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
+            return stageObjectAsync(repository, branch, path, objectStageCreation, _callback);
+        }
+    }
+
+    /**
+     * stage an object&#39;s metadata for the given branch
+     * 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param path relative to the branch (required)
+     * @param objectStageCreation  (required)
+     * @return APIstageObjectRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> object metadata </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     * @deprecated
+     */
+    @Deprecated
+    public APIstageObjectRequest stageObject(String repository, String branch, String path, ObjectStageCreation objectStageCreation) {
+        return new APIstageObjectRequest(repository, branch, path, objectStageCreation);
     }
     private okhttp3.Call uploadObjectPreflightCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
         String basePath = null;

@@ -19,9 +19,9 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 
 /**
  * Model tests for User
@@ -59,6 +59,14 @@ public class UserTest {
     @Test
     public void friendlyNameTest() {
         // TODO: test friendlyName
+    }
+
+    /**
+     * Test the property 'email'
+     */
+    @Test
+    public void emailTest() {
+        // TODO: test email
     }
 
 }

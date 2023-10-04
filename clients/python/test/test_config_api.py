@@ -24,20 +24,8 @@ class TestConfigApi(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_get_garbage_collection_config(self):
-        """Test case for get_garbage_collection_config
-
-        """
-        pass
-
-    def test_get_lake_fs_version(self):
-        """Test case for get_lake_fs_version
-
-        """
-        pass
-
-    def test_get_storage_config(self):
-        """Test case for get_storage_config
+    def test_get_config(self):
+        """Test case for get_config
 
         """
         pass

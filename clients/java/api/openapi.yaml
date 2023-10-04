@@ -1778,6 +1778,234 @@ paths:
       tags:
       - repositories
       x-accepts: application/json
+  /repositories/{repository}/settings/gc_rules:
+    delete:
+      operationId: deleteGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: deleted garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-accepts: application/json
+    get:
+      operationId: getGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GarbageCollectionRules'
+          description: repository GC rules
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get repository GC rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setGCRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GarbageCollectionRules'
+        required: true
+      responses:
+        "204":
+          description: set garbage collection rules successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/settings/branch_protection:
+    get:
+      operationId: getBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BranchProtectionRule'
+                type: array
+          description: branch protection rules
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: ETag of the branch protection rules
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get branch protection rules
+      tags:
+      - repositories
+      x-accepts: application/json
+    put:
+      operationId: setBranchProtectionRules
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: "if provided, the branch protection rules will be updated only\
+          \ if the current ETag match the provided value"
+        explode: false
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/BranchProtectionRule'
+              type: array
+        required: true
+      responses:
+        "204":
+          description: branch protection rule created successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - repositories
+      x-content-type: application/json
+      x-accepts: application/json
   /otf/diffs:
     get:
       operationId: getOtfDiffs
@@ -1922,9 +2150,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: "Dump repository refs (tags, commits, branches) to object store"
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-accepts: application/json
   /repositories/{repository}/refs/restore:
     put:
@@ -1970,9 +2200,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: "Restore repository refs (tags, commits, branches) from object store"
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       tags:
-      - refs
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/tags:
@@ -3925,6 +4157,7 @@ paths:
       x-content-type: multipart/form-data
       x-accepts: application/json
     put:
+      deprecated: true
       operationId: stageObject
       parameters:
       - explode: false
@@ -3994,7 +4227,7 @@ paths:
           description: Internal Server Error
       summary: stage an object's metadata for the given branch
       tags:
-      - objects
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/branches/{branch}/objects/delete:
@@ -4801,7 +5034,8 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/gc/rules:
     delete:
-      operationId: delete garbage collection rules
+      deprecated: true
+      operationId: internalDeleteGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4832,10 +5066,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     get:
-      operationId: getGarbageCollectionRules
+      deprecated: true
+      operationId: internalGetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4870,10 +5105,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-accepts: application/json
     post:
-      operationId: set garbage collection rules
+      deprecated: true
+      operationId: internalSetGarbageCollectionRules
       parameters:
       - explode: false
         in: path
@@ -4910,7 +5146,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - retention
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/gc/prepare_commits:
@@ -5049,7 +5285,8 @@ paths:
       x-accepts: application/json
   /repositories/{repository}/branch_protection:
     delete:
-      operationId: deleteBranchProtectionRule
+      deprecated: true
+      operationId: internalDeleteBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5062,7 +5299,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/deleteBranchProtectionRule_request'
+              $ref: '#/components/schemas/internalDeleteBranchProtectionRule_request'
         required: true
       responses:
         "204":
@@ -5086,11 +5323,12 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-content-type: application/json
       x-accepts: application/json
     get:
-      operationId: getBranchProtectionRules
+      deprecated: true
+      operationId: internalGetBranchProtectionRules
       parameters:
       - explode: false
         in: path
@@ -5128,10 +5366,11 @@ paths:
           description: Internal Server Error
       summary: get branch protection rules
       tags:
-      - repositories
+      - internal
       x-accepts: application/json
     post:
-      operationId: createBranchProtectionRule
+      deprecated: true
+      operationId: internalCreateBranchProtectionRule
       parameters:
       - explode: false
         in: path
@@ -5168,7 +5407,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       tags:
-      - repositories
+      - internal
       x-content-type: application/json
       x-accepts: application/json
   /healthcheck:
@@ -5182,8 +5421,29 @@ paths:
       tags:
       - healthCheck
       x-accepts: application/json
+  /config:
+    get:
+      description: retrieve lakeFS configuration
+      operationId: getConfig
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: lakeFS configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+      tags:
+      - config
+      x-accepts: application/json
   /config/version:
     get:
+      deprecated: true
       description: get version of lakeFS server
       operationId: getLakeFSVersion
       responses:
@@ -5200,10 +5460,11 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/storage:
     get:
+      deprecated: true
       description: retrieve lakeFS storage configuration
       operationId: getStorageConfig
       responses:
@@ -5220,7 +5481,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /config/garbage-collection:
     get:
@@ -5240,7 +5501,7 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
       tags:
-      - config
+      - internal
       x-accepts: application/json
   /statistics:
     post:
@@ -6140,6 +6401,7 @@ components:
         friendly_name: friendly_name
         id: id
         creation_date: 0
+        email: email
       properties:
         id:
           description: a unique identifier for the user.
@@ -6149,6 +6411,8 @@ components:
           format: int64
           type: integer
         friendly_name:
+          type: string
+        email:
           type: string
       required:
       - creation_date
@@ -6160,6 +6424,7 @@ components:
           friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
       properties:
         user:
           $ref: '#/components/schemas/User'
@@ -6421,9 +6686,11 @@ components:
         - friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
         - friendly_name: friendly_name
           id: id
           creation_date: 0
+          email: email
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -6620,6 +6887,28 @@ components:
       - import_validity_regex
       - pre_sign_support
       - pre_sign_support_ui
+      type: object
+    Config:
+      example:
+        storage_config:
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        version_config:
+          latest_version: latest_version
+          version: version
+          upgrade_recommended: true
+          upgrade_url: upgrade_url
+      properties:
+        version_config:
+          $ref: '#/components/schemas/VersionConfig'
+        storage_config:
+          $ref: '#/components/schemas/StorageConfig'
       type: object
     VersionConfig:
       example:
@@ -7130,7 +7419,7 @@ components:
           format: binary
           type: string
       type: object
-    deleteBranchProtectionRule_request:
+    internalDeleteBranchProtectionRule_request:
       properties:
         pattern:
           type: string

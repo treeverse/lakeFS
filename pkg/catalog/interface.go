@@ -163,13 +163,18 @@ type Interface interface {
 	// Consecutive calls must be made using the returned run ID, upon completion mark will return nil
 	PrepareGCUncommitted(ctx context.Context, repositoryID string, mark *GCUncommittedMark) (*PrepareGCUncommittedInfo, error)
 
-	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, error)
-	DeleteBranchProtectionRule(ctx context.Context, repositoryID string, pattern string) error
-	CreateBranchProtectionRule(ctx context.Context, repositoryID string, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error
+	// GetBranchProtectionRules returns the branch protection rules for the given repository.
+	// The returned checksum represents the current state of the rules, and can be passed to SetBranchProtectionRules for conditional updates.
+	GetBranchProtectionRules(ctx context.Context, repositoryID string) (*graveler.BranchProtectionRules, *string, error)
+	// SetBranchProtectionRules sets the branch protection rules for the given repository.
+	// If lastKnownChecksum doesn't match the current state, the update fails with ErrPreconditionFailed.
+	// If lastKnownChecksum is the empty string, the update is performed only if no rules exist.
+	// If lastKnownChecksum is nil, the update is performed unconditionally.
+	SetBranchProtectionRules(ctx context.Context, repositoryID string, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error
 
 	// SetLinkAddress to validate single use limited in time of a given physical address
-	SetLinkAddress(ctx context.Context, repository, token string) error
-	VerifyLinkAddress(ctx context.Context, repository, token string) error
+	SetLinkAddress(ctx context.Context, repository, physicalAddress string) error
+	VerifyLinkAddress(ctx context.Context, repository, physicalAddress string) error
 	DeleteExpiredLinkAddresses(ctx context.Context)
 
 	io.Closer

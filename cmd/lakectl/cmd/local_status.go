@@ -19,7 +19,7 @@ var localStatusCmd = &cobra.Command{
 	Short: "show modifications (both remote and local) to the directory and the remote location it tracks",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		_, localPath := getLocalArgs(args, false, false)
+		_, localPath := getSyncArgs(args, false, false)
 		abs, err := filepath.Abs(localPath)
 		if err != nil {
 			DieErr(err)
