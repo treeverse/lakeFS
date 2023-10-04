@@ -27,10 +27,9 @@ class StagingLocation(BaseModel):
     location for placing an object when staging it
     """
     physical_address: Optional[StrictStr] = None
-    token: StrictStr = Field(..., description="opaque staging token to use to link uploaded object")
     presigned_url: Optional[StrictStr] = Field(None, description="if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading")
     presigned_url_expiry: Optional[StrictInt] = Field(None, description="If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
-    __properties = ["physical_address", "token", "presigned_url", "presigned_url_expiry"]
+    __properties = ["physical_address", "presigned_url", "presigned_url_expiry"]
 
     class Config:
         """Pydantic configuration"""
@@ -74,7 +73,6 @@ class StagingLocation(BaseModel):
 
         _obj = StagingLocation.parse_obj({
             "physical_address": obj.get("physical_address"),
-            "token": obj.get("token"),
             "presigned_url": obj.get("presigned_url"),
             "presigned_url_expiry": obj.get("presigned_url_expiry")
         })

@@ -235,7 +235,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 *RepositoriesApi* | [**setBranchProtectionRules**](docs/RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 *RepositoriesApi* | [**setGCRules**](docs/RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules | 
-*StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
+*StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | generate an address to which the client can upload an object
 *StagingApi* | [**linkPhysicalAddress**](docs/StagingApi.md#linkPhysicalAddress) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 *TagsApi* | [**createTag**](docs/TagsApi.md#createTag) | **POST** /repositories/{repository}/tags | create tag
 *TagsApi* | [**deleteTag**](docs/TagsApi.md#deleteTag) | **DELETE** /repositories/{repository}/tags/{tag} | delete tag
