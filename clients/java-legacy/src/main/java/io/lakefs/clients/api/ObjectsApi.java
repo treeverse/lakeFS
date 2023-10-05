@@ -1394,8 +1394,8 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
-     * @param storageClass  (optional)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
+     * @param storageClass Deprecated, this capability will not be supported in future releases. (optional)
+     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -1491,8 +1491,8 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
-     * @param storageClass  (optional)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
+     * @param storageClass Deprecated, this capability will not be supported in future releases. (optional)
+     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -1520,8 +1520,8 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
-     * @param storageClass  (optional)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
+     * @param storageClass Deprecated, this capability will not be supported in future releases. (optional)
+     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -1550,8 +1550,8 @@ public class ObjectsApi {
      * @param repository  (required)
      * @param branch  (required)
      * @param path relative to the branch (required)
-     * @param storageClass  (optional)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
+     * @param storageClass Deprecated, this capability will not be supported in future releases. (optional)
+     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
      * @param content Only a single file per upload which must be named \\\&quot;content\\\&quot;. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call

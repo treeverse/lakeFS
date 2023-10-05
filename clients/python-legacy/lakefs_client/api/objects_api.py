@@ -1363,8 +1363,8 @@ class ObjectsApi(object):
             path (str): relative to the branch
 
         Keyword Args:
-            storage_class (str): [optional]
-            if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. [optional]
+            storage_class (str): Deprecated, this capability will not be supported in future releases.. [optional]
+            if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. . [optional]
             content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
