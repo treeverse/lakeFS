@@ -21,6 +21,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.sdk.model.RefsDump;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 import com.google.gson.Gson;
@@ -60,6 +61,10 @@ public class RefsDumpStatus {
   public static final String SERIALIZED_NAME_COMPLETED = "completed";
   @SerializedName(SERIALIZED_NAME_COMPLETED)
   private Boolean completed;
+
+  public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
+  @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
+  private OffsetDateTime updateTime;
 
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
@@ -111,6 +116,27 @@ public class RefsDumpStatus {
 
   public void setCompleted(Boolean completed) {
     this.completed = completed;
+  }
+
+
+  public RefsDumpStatus updateTime(OffsetDateTime updateTime) {
+    
+    this.updateTime = updateTime;
+    return this;
+  }
+
+   /**
+   * Get updateTime
+   * @return updateTime
+  **/
+  @javax.annotation.Nonnull
+  public OffsetDateTime getUpdateTime() {
+    return updateTime;
+  }
+
+
+  public void setUpdateTime(OffsetDateTime updateTime) {
+    this.updateTime = updateTime;
   }
 
 
@@ -212,6 +238,7 @@ public class RefsDumpStatus {
     RefsDumpStatus refsDumpStatus = (RefsDumpStatus) o;
     return Objects.equals(this.id, refsDumpStatus.id) &&
         Objects.equals(this.completed, refsDumpStatus.completed) &&
+        Objects.equals(this.updateTime, refsDumpStatus.updateTime) &&
         Objects.equals(this.error, refsDumpStatus.error) &&
         Objects.equals(this.refs, refsDumpStatus.refs)&&
         Objects.equals(this.additionalProperties, refsDumpStatus.additionalProperties);
@@ -219,7 +246,7 @@ public class RefsDumpStatus {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, completed, error, refs, additionalProperties);
+    return Objects.hash(id, completed, updateTime, error, refs, additionalProperties);
   }
 
   @Override
@@ -228,6 +255,7 @@ public class RefsDumpStatus {
     sb.append("class RefsDumpStatus {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
+    sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    refs: ").append(toIndentedString(refs)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -255,6 +283,7 @@ public class RefsDumpStatus {
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
     openapiFields.add("completed");
+    openapiFields.add("update_time");
     openapiFields.add("error");
     openapiFields.add("refs");
 
@@ -262,6 +291,7 @@ public class RefsDumpStatus {
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("id");
     openapiRequiredFields.add("completed");
+    openapiRequiredFields.add("update_time");
   }
 
  /**

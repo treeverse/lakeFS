@@ -408,7 +408,7 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
 	const (
 		deleteExpiredAddressPeriod = 3
-		deleteExpiredTaskInterval  = 2 * time.Second
+		deleteExpiredTaskInterval  = 24 * time.Hour
 	)
 
 	defs := []struct {
@@ -445,7 +445,7 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
 // A foreign repo might exist if the lakeFS instance configuration changed after a repository was
-// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
+// already created. The behavior of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
 		logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",

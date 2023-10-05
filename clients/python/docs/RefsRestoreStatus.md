@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | ID of the task | 
 **completed** | **bool** |  | 
+**update_time** | **datetime** |  | 
 **error** | **str** |  | [optional] 
 
 ## Example

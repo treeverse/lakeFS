@@ -6664,6 +6664,7 @@ components:
       type: object
     RefsDumpStatus:
       example:
+        update_time: 2000-01-23T04:56:07.000+00:00
         refs:
           tags_meta_range_id: tags_meta_range_id
           branches_meta_range_id: branches_meta_range_id
@@ -6677,6 +6678,9 @@ components:
           type: string
         completed:
           type: boolean
+        update_time:
+          format: date-time
+          type: string
         error:
           type: string
         refs:
@@ -6684,9 +6688,11 @@ components:
       required:
       - completed
       - id
+      - update_time
       type: object
     RefsRestoreStatus:
       example:
+        update_time: 2000-01-23T04:56:07.000+00:00
         id: id
         completed: true
         error: error
@@ -6696,11 +6702,15 @@ components:
           type: string
         completed:
           type: boolean
+        update_time:
+          format: date-time
+          type: string
         error:
           type: string
       required:
       - completed
       - id
+      - update_time
       type: object
     RefsDump:
       example:

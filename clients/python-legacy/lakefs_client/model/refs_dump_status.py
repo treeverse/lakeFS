@@ -90,6 +90,7 @@ class RefsDumpStatus(ModelNormal):
         return {
             'id': (str,),  # noqa: E501
             'completed': (bool,),  # noqa: E501
+            'update_time': (datetime,),  # noqa: E501
             'error': (str,),  # noqa: E501
             'refs': (RefsDump,),  # noqa: E501
         }
@@ -102,6 +103,7 @@ class RefsDumpStatus(ModelNormal):
     attribute_map = {
         'id': 'id',  # noqa: E501
         'completed': 'completed',  # noqa: E501
+        'update_time': 'update_time',  # noqa: E501
         'error': 'error',  # noqa: E501
         'refs': 'refs',  # noqa: E501
     }
@@ -113,12 +115,13 @@ class RefsDumpStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, id, completed, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, id, completed, update_time, *args, **kwargs):  # noqa: E501
         """RefsDumpStatus - a model defined in OpenAPI
 
         Args:
             id (str): ID of the task
             completed (bool):
+            update_time (datetime):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -182,6 +185,7 @@ class RefsDumpStatus(ModelNormal):
 
         self.id = id
         self.completed = completed
+        self.update_time = update_time
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -202,12 +206,13 @@ class RefsDumpStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, id, completed, *args, **kwargs):  # noqa: E501
+    def __init__(self, id, completed, update_time, *args, **kwargs):  # noqa: E501
         """RefsDumpStatus - a model defined in OpenAPI
 
         Args:
             id (str): ID of the task
             completed (bool):
+            update_time (datetime):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -269,6 +274,7 @@ class RefsDumpStatus(ModelNormal):
 
         self.id = id
         self.completed = completed
+        self.update_time = update_time
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

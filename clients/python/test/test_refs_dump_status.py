@@ -41,6 +41,7 @@ class TestRefsDumpStatus(unittest.TestCase):
             return RefsDumpStatus(
                 id = '', 
                 completed = True, 
+                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 error = '', 
                 refs = lakefs_sdk.models.refs_dump.RefsDump(
                     commits_meta_range_id = '', 
@@ -51,6 +52,7 @@ class TestRefsDumpStatus(unittest.TestCase):
             return RefsDumpStatus(
                 id = '',
                 completed = True,
+                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """
 

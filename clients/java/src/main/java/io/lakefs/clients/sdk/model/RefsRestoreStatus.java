@@ -20,6 +20,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 import com.google.gson.Gson;
@@ -59,6 +60,10 @@ public class RefsRestoreStatus {
   public static final String SERIALIZED_NAME_COMPLETED = "completed";
   @SerializedName(SERIALIZED_NAME_COMPLETED)
   private Boolean completed;
+
+  public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
+  @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
+  private OffsetDateTime updateTime;
 
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
@@ -106,6 +111,27 @@ public class RefsRestoreStatus {
 
   public void setCompleted(Boolean completed) {
     this.completed = completed;
+  }
+
+
+  public RefsRestoreStatus updateTime(OffsetDateTime updateTime) {
+    
+    this.updateTime = updateTime;
+    return this;
+  }
+
+   /**
+   * Get updateTime
+   * @return updateTime
+  **/
+  @javax.annotation.Nonnull
+  public OffsetDateTime getUpdateTime() {
+    return updateTime;
+  }
+
+
+  public void setUpdateTime(OffsetDateTime updateTime) {
+    this.updateTime = updateTime;
   }
 
 
@@ -186,13 +212,14 @@ public class RefsRestoreStatus {
     RefsRestoreStatus refsRestoreStatus = (RefsRestoreStatus) o;
     return Objects.equals(this.id, refsRestoreStatus.id) &&
         Objects.equals(this.completed, refsRestoreStatus.completed) &&
+        Objects.equals(this.updateTime, refsRestoreStatus.updateTime) &&
         Objects.equals(this.error, refsRestoreStatus.error)&&
         Objects.equals(this.additionalProperties, refsRestoreStatus.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, completed, error, additionalProperties);
+    return Objects.hash(id, completed, updateTime, error, additionalProperties);
   }
 
   @Override
@@ -201,6 +228,7 @@ public class RefsRestoreStatus {
     sb.append("class RefsRestoreStatus {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
+    sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -227,12 +255,14 @@ public class RefsRestoreStatus {
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
     openapiFields.add("completed");
+    openapiFields.add("update_time");
     openapiFields.add("error");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("id");
     openapiRequiredFields.add("completed");
+    openapiRequiredFields.add("update_time");
   }
 
  /**

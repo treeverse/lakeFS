@@ -24,6 +24,7 @@ import io.lakefs.clients.api.model.RefsDump;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import org.threeten.bp.OffsetDateTime;
 
 /**
  * RefsDumpStatus
@@ -37,6 +38,10 @@ public class RefsDumpStatus {
   public static final String SERIALIZED_NAME_COMPLETED = "completed";
   @SerializedName(SERIALIZED_NAME_COMPLETED)
   private Boolean completed;
+
+  public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
+  @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
+  private OffsetDateTime updateTime;
 
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
@@ -90,6 +95,29 @@ public class RefsDumpStatus {
 
   public void setCompleted(Boolean completed) {
     this.completed = completed;
+  }
+
+
+  public RefsDumpStatus updateTime(OffsetDateTime updateTime) {
+    
+    this.updateTime = updateTime;
+    return this;
+  }
+
+   /**
+   * Get updateTime
+   * @return updateTime
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public OffsetDateTime getUpdateTime() {
+    return updateTime;
+  }
+
+
+  public void setUpdateTime(OffsetDateTime updateTime) {
+    this.updateTime = updateTime;
   }
 
 
@@ -150,13 +178,14 @@ public class RefsDumpStatus {
     RefsDumpStatus refsDumpStatus = (RefsDumpStatus) o;
     return Objects.equals(this.id, refsDumpStatus.id) &&
         Objects.equals(this.completed, refsDumpStatus.completed) &&
+        Objects.equals(this.updateTime, refsDumpStatus.updateTime) &&
         Objects.equals(this.error, refsDumpStatus.error) &&
         Objects.equals(this.refs, refsDumpStatus.refs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, completed, error, refs);
+    return Objects.hash(id, completed, updateTime, error, refs);
   }
 
   @Override
@@ -165,6 +194,7 @@ public class RefsDumpStatus {
     sb.append("class RefsDumpStatus {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
+    sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    refs: ").append(toIndentedString(refs)).append("\n");
     sb.append("}");

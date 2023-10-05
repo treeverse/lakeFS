@@ -23,6 +23,7 @@ import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import org.threeten.bp.OffsetDateTime;
 
 /**
  * RefsRestoreStatus
@@ -36,6 +37,10 @@ public class RefsRestoreStatus {
   public static final String SERIALIZED_NAME_COMPLETED = "completed";
   @SerializedName(SERIALIZED_NAME_COMPLETED)
   private Boolean completed;
+
+  public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
+  @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
+  private OffsetDateTime updateTime;
 
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
@@ -88,6 +93,29 @@ public class RefsRestoreStatus {
   }
 
 
+  public RefsRestoreStatus updateTime(OffsetDateTime updateTime) {
+    
+    this.updateTime = updateTime;
+    return this;
+  }
+
+   /**
+   * Get updateTime
+   * @return updateTime
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public OffsetDateTime getUpdateTime() {
+    return updateTime;
+  }
+
+
+  public void setUpdateTime(OffsetDateTime updateTime) {
+    this.updateTime = updateTime;
+  }
+
+
   public RefsRestoreStatus error(String error) {
     
     this.error = error;
@@ -122,12 +150,13 @@ public class RefsRestoreStatus {
     RefsRestoreStatus refsRestoreStatus = (RefsRestoreStatus) o;
     return Objects.equals(this.id, refsRestoreStatus.id) &&
         Objects.equals(this.completed, refsRestoreStatus.completed) &&
+        Objects.equals(this.updateTime, refsRestoreStatus.updateTime) &&
         Objects.equals(this.error, refsRestoreStatus.error);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, completed, error);
+    return Objects.hash(id, completed, updateTime, error);
   }
 
   @Override
@@ -136,6 +165,7 @@ public class RefsRestoreStatus {
     sb.append("class RefsRestoreStatus {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
+    sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("}");
     return sb.toString();

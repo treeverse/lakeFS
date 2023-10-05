@@ -22,6 +22,7 @@ import io.lakefs.clients.api.model.RefsDump;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
+import org.threeten.bp.OffsetDateTime;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -55,6 +56,14 @@ public class RefsDumpStatusTest {
     @Test
     public void completedTest() {
         // TODO: test completed
+    }
+
+    /**
+     * Test the property 'updateTime'
+     */
+    @Test
+    public void updateTimeTest() {
+        // TODO: test updateTime
     }
 
     /**

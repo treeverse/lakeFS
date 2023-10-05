@@ -20,6 +20,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.sdk.model.RefsDump;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,14 @@ public class RefsDumpStatusTest {
     @Test
     public void completedTest() {
         // TODO: test completed
+    }
+
+    /**
+     * Test the property 'updateTime'
+     */
+    @Test
+    public void updateTimeTest() {
+        // TODO: test updateTime
     }
 
     /**

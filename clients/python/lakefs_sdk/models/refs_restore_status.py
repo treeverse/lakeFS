@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, StrictBool, StrictStr
 
@@ -28,8 +28,9 @@ class RefsRestoreStatus(BaseModel):
     """
     id: StrictStr = Field(..., description="ID of the task")
     completed: StrictBool = Field(...)
+    update_time: datetime = Field(...)
     error: Optional[StrictStr] = None
-    __properties = ["id", "completed", "error"]
+    __properties = ["id", "completed", "update_time", "error"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,6 +70,7 @@ class RefsRestoreStatus(BaseModel):
         _obj = RefsRestoreStatus.parse_obj({
             "id": obj.get("id"),
             "completed": obj.get("completed"),
+            "update_time": obj.get("update_time"),
             "error": obj.get("error")
         })
         return _obj

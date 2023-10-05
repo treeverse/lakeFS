@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/spf13/cobra"
@@ -23,10 +24,11 @@ var refsDumpCmd = &cobra.Command{
 		repoURI := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
 		output := Must(cmd.Flags().GetString("output"))
-		checkInterval := Must(cmd.Flags().GetDuration("interval"))
-		if checkInterval < minimumCheckInterval {
-			DieFmt("Check interval must be at least %s", minimumCheckInterval)
+		pullInterval := Must(cmd.Flags().GetDuration("pull-interval"))
+		if pullInterval < minimumPullInterval {
+			DieFmt("Pull interval must be at least %s", minimumPullInterval)
 		}
+		pullExpiry := Must(cmd.Flags().GetDuration("pull-expiry"))
 
 		// request refs dump
 		ctx := cmd.Context()
@@ -50,23 +52,28 @@ var refsDumpCmd = &cobra.Command{
 				err := fmt.Errorf("dump status %w: %s", ErrRequestFailed, resp.Status())
 				return nil, backoff.Permanent(err)
 			}
-			if !resp.JSON200.Completed {
-				return nil, ErrTaskNotCompleted
+			if resp.JSON200.Completed {
+				return resp.JSON200, nil
 			}
-			return resp.JSON200, nil
-		},
-			backoff.NewConstantBackOff(checkInterval),
+			if pullExpiry >= 0 && time.Since(resp.JSON200.UpdateTime) > pullExpiry {
+				return nil, backoff.Permanent(ErrTaskNotCompleted)
+			}
+			return nil, ErrTaskNotCompleted
+		}, backoff.WithContext(
+			backoff.NewConstantBackOff(pullInterval), ctx),
 		)
-		if err != nil {
+
+		switch {
+		case err != nil:
 			DieErr(err)
-		}
-		if dumpStatus.Error != nil {
+		case dumpStatus == nil:
+			Die("Refs restore failed: no status returned", 1)
+		case dumpStatus.Error != nil:
 			DieFmt("Refs dump failed: %s", *dumpStatus.Error)
-		} else if dumpStatus.Refs == nil {
+		case dumpStatus.Refs == nil:
 			Die("Refs dump failed: no refs returned", 1)
 		}
-		err = printRefs(output, dumpStatus.Refs)
-		if err != nil {
+		if err := printRefs(output, dumpStatus.Refs); err != nil {
 			DieErr(err)
 		}
 	},
@@ -101,6 +108,7 @@ func printRefs(output string, refs *apigen.RefsDump) error {
 //nolint:gochecknoinits
 func init() {
 	refsDumpCmd.Flags().StringP("output", "o", "", "output filename (default stdout)")
-	refsDumpCmd.Flags().Duration("interval", defaultCheckInterval, "status check interval")
+	refsDumpCmd.Flags().Duration("pull-interval", defaultPullInterval, "pull status check interval")
+	refsDumpCmd.Flags().Duration("pull-expiry", defaultPullExpiry, "pull status check expiry")
 	rootCmd.AddCommand(refsDumpCmd)
 }

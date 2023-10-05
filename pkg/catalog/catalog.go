@@ -1317,7 +1317,7 @@ func (c *Catalog) listCommitsWithPaths(ctx context.Context, repository *graveler
 				current++
 			}
 		}
-		// flush heap content when no more results on output channel
+		// flush heap content when no more results on the output channel
 		for len(jobsHeap) > 0 {
 			job := heap.Pop(&jobsHeap).(*commitLogJob)
 			if job.log != nil {
@@ -1844,12 +1844,13 @@ func (c *Catalog) DumpRefsSubmit(ctx context.Context, repositoryID string) (stri
 		return "", err
 	}
 	c.workPool.Submit(func() {
-		c.dumpRefsTask(ctx, err, repository, taskStatus, taskID)
+		c.dumpRefsTask(repository, taskStatus)
 	})
 	return taskID, nil
 }
 
-func (c *Catalog) dumpRefsTask(ctx context.Context, err error, repository *graveler.RepositoryRecord, taskStatus *RefsDumpStatus, taskID string) {
+func (c *Catalog) dumpRefsTask(repository *graveler.RepositoryRecord, taskStatus *RefsDumpStatus) {
+	ctx := context.Background()
 	steps := []struct {
 		name string
 		fn   func() error
@@ -1857,8 +1858,7 @@ func (c *Catalog) dumpRefsTask(ctx context.Context, err error, repository *grave
 		{
 			name: "dump commits",
 			fn: func() error {
-				var commitsMetaRangeID *graveler.MetaRangeID
-				commitsMetaRangeID, err = c.Store.DumpCommits(ctx, repository)
+				commitsMetaRangeID, err := c.Store.DumpCommits(ctx, repository)
 				if err != nil {
 					return err
 				}
@@ -1869,8 +1869,7 @@ func (c *Catalog) dumpRefsTask(ctx context.Context, err error, repository *grave
 		{
 			name: "dump branches",
 			fn: func() error {
-				var branchesMetaRangeID *graveler.MetaRangeID
-				branchesMetaRangeID, err = c.Store.DumpBranches(ctx, repository)
+				branchesMetaRangeID, err := c.Store.DumpBranches(ctx, repository)
 				if err != nil {
 					return err
 				}
@@ -1881,8 +1880,7 @@ func (c *Catalog) dumpRefsTask(ctx context.Context, err error, repository *grave
 		{
 			name: "dump tags",
 			fn: func() error {
-				var tagsMetaRangeID *graveler.MetaRangeID
-				tagsMetaRangeID, err = c.Store.DumpTags(ctx, repository)
+				tagsMetaRangeID, err := c.Store.DumpTags(ctx, repository)
 				if err != nil {
 					return err
 				}
@@ -1893,6 +1891,7 @@ func (c *Catalog) dumpRefsTask(ctx context.Context, err error, repository *grave
 	}
 
 	// run each step and update step status
+	taskID := taskStatus.Task.Id
 	for stepIdx, step := range steps {
 		err := step.fn()
 		if err != nil {
@@ -1944,27 +1943,28 @@ func (c *Catalog) RestoreRefsSubmit(ctx context.Context, repositoryID string, in
 	if err != nil {
 		return "", err
 	}
+
 	// create refs restore task and update initial status
 	taskID := newTaskID(RestoreRefsTaskIDPrefix)
-	taskStatus := &RefsDumpStatus{
+	taskStatus := &RefsRestoreStatus{
 		Task: &Task{
 			Id:        taskID,
 			Completed: false,
 			UpdatedAt: timestamppb.Now(),
 		},
-		Info: &RefsDumpInfo{},
 	}
 	if err := updateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return "", err
 	}
 
 	c.workPool.Submit(func() {
-		c.restoreRefsTask(ctx, repository, taskID, taskStatus, info)
+		c.restoreRefsTask(repository, taskStatus, info)
 	})
 	return taskID, nil
 }
 
-func (c *Catalog) restoreRefsTask(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, taskStatus *RefsDumpStatus, info *RefsDumpInfo) {
+func (c *Catalog) restoreRefsTask(repository *graveler.RepositoryRecord, taskStatus *RefsRestoreStatus, info *RefsDumpInfo) {
+	ctx := context.Background()
 	steps := []struct {
 		name string
 		fn   func() error
@@ -1990,13 +1990,14 @@ func (c *Catalog) restoreRefsTask(ctx context.Context, repository *graveler.Repo
 	}
 
 	// run each step and update step status
+	taskID := taskStatus.Task.Id
 	for stepIdx, step := range steps {
 		err := step.fn()
 		if err != nil {
 			c.log(ctx).
 				WithError(err).
 				WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID}).
-				Error("failed to %s", step.name)
+				Errorf("failed to %s", step.name)
 			taskStatus.Task.Error = err.Error()
 			taskStatus.Task.Completed = true
 		} else if stepIdx == len(steps)-1 {

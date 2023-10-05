@@ -608,12 +608,16 @@ components:
       required:
         - id
         - completed
+        - update_time
       properties:
         id:
           type: string
           description: ID of the task
         completed:
           type: boolean
+        update_time:
+          type: string
+          format: date-time
         error:
           type: string
         refs:
@@ -624,12 +628,16 @@ components:
       required:
         - id
         - completed
+        - update_time
       properties:
         id:
           type: string
           description: ID of the task
         completed:
           type: boolean
+        update_time:
+          type: string
+          format: date-time
         error:
           type: string
 

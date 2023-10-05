@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, StrictBool, StrictStr
 from lakefs_sdk.models.refs_dump import RefsDump
@@ -29,9 +29,10 @@ class RefsDumpStatus(BaseModel):
     """
     id: StrictStr = Field(..., description="ID of the task")
     completed: StrictBool = Field(...)
+    update_time: datetime = Field(...)
     error: Optional[StrictStr] = None
     refs: Optional[RefsDump] = None
-    __properties = ["id", "completed", "error", "refs"]
+    __properties = ["id", "completed", "update_time", "error", "refs"]
 
     class Config:
         """Pydantic configuration"""
@@ -74,6 +75,7 @@ class RefsDumpStatus(BaseModel):
         _obj = RefsDumpStatus.parse_obj({
             "id": obj.get("id"),
             "completed": obj.get("completed"),
+            "update_time": obj.get("update_time"),
             "error": obj.get("error"),
             "refs": RefsDump.from_dict(obj.get("refs")) if obj.get("refs") is not None else None
         })
