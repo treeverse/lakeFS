@@ -886,8 +886,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
-    String storageClass = "storageClass_example"; // String | 
-    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
+    String storageClass = "storageClass_example"; // String | Deprecated, this capability will not be supported in future releases.
+    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
       ObjectStats result = apiInstance.uploadObject(repository, branch, path)
@@ -914,8 +914,8 @@ public class Example {
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
-| **storageClass** | **String**|  | [optional] |
-| **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional] |
+| **storageClass** | **String**| Deprecated, this capability will not be supported in future releases. | [optional] |
+| **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional] |
 | **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] |
 
 ### Return type
