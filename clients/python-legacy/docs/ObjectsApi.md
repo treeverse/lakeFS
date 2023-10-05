@@ -1050,8 +1050,8 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     path = "path_example" # str | relative to the branch
-    storage_class = "storageClass_example" # str |  (optional)
-    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
+    storage_class = "storageClass_example" # str | Deprecated, this capability will not be supported in future releases. (optional)
+    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
     content = open('/path/to/file', 'rb') # file_type | Only a single file per upload which must be named \\\"content\\\". (optional)
 
     # example passing only required values which don't have defaults set
@@ -1078,8 +1078,8 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
- **storage_class** | **str**|  | [optional]
- **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
+ **storage_class** | **str**| Deprecated, this capability will not be supported in future releases. | [optional]
+ **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional]
  **content** | **file_type**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 
 ### Return type

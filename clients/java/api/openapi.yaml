@@ -4225,15 +4225,20 @@ paths:
         schema:
           type: string
         style: form
-      - explode: true
+      - deprecated: true
+        description: "Deprecated, this capability will not be supported in future\
+          \ releases."
+        explode: true
         in: query
         name: storageClass
         required: false
         schema:
           type: string
         style: form
-      - description: Currently supports only "*" to allow uploading an object only
-          if one doesn't exist yet
+      - deprecated: true
+        description: |
+          Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+          Deprecated, this capability will not be supported in future releases.
         example: '*'
         explode: false
         in: header

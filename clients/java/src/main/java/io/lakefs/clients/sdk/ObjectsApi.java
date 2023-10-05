@@ -1950,7 +1950,7 @@ public class ObjectsApi {
 
         /**
          * Set storageClass
-         * @param storageClass  (optional)
+         * @param storageClass Deprecated, this capability will not be supported in future releases. (optional)
          * @return APIuploadObjectRequest
          */
         public APIuploadObjectRequest storageClass(String storageClass) {
@@ -1960,7 +1960,7 @@ public class ObjectsApi {
 
         /**
          * Set ifNoneMatch
-         * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet (optional)
+         * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
          * @return APIuploadObjectRequest
          */
         public APIuploadObjectRequest ifNoneMatch(String ifNoneMatch) {

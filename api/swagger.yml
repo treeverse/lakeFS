@@ -3789,14 +3789,19 @@ paths:
       parameters:
         - in: query
           name: storageClass
+          description: Deprecated, this capability will not be supported in future releases.
           required: false
+          deprecated: true
           schema:
             type: string
         - in: header
           name: If-None-Match
-          description: Currently supports only "*" to allow uploading an object only if one doesn't exist yet
+          description: |
+            Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+            Deprecated, this capability will not be supported in future releases.
           example: "*"
           required: false
+          deprecated: true
           schema:
             type: string
             pattern: '^\*$' # Currently, only "*" is supported
