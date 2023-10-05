@@ -156,6 +156,7 @@ class ExperimentalApi(object):
         _response_types_map = {
             '200': "OTFDiffs",
             '401': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -328,6 +329,7 @@ class ExperimentalApi(object):
             '401': "Error",
             '404': "Error",
             '412': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
