@@ -92,6 +92,7 @@ This endpoint does not need any parameter.
 |-------------|-------------|------------------|
 **200** | available Open Table Format diffs |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="otfDiff"></a>
@@ -192,5 +193,6 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

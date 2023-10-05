@@ -100,6 +100,7 @@ public class Example {
 | **200** | meta-range URI |  * Location - redirect to S3 <br>  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getRange"></a>
@@ -194,5 +195,6 @@ public class Example {
 | **200** | range URI |  * Location - redirect to S3 <br>  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

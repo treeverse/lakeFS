@@ -103,6 +103,7 @@ Name | Type | Description  | Notes
 **200** | physical address for staging area |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="linkPhysicalAddress"></a>
@@ -204,5 +205,6 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Internal Server Error |  -  |
 **409** | conflict with a commit, try here |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
