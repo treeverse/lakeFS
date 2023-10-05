@@ -108,6 +108,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteGCRules"></a>
@@ -198,6 +199,7 @@ null (empty response body)
 **204** | deleted garbage collection rules successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteRepository"></a>
@@ -288,6 +290,7 @@ null (empty response body)
 **204** | repository deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getBranchProtectionRules"></a>
@@ -379,6 +382,7 @@ Name | Type | Description  | Notes
 **200** | branch protection rules |  * ETag -  <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getGCRules"></a>
@@ -470,6 +474,7 @@ Name | Type | Description  | Notes
 **200** | repository GC rules |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getRepository"></a>
@@ -561,6 +566,7 @@ Name | Type | Description  | Notes
 **200** | repository |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getRepositoryMetadata"></a>
@@ -652,6 +658,7 @@ Name | Type | Description  | Notes
 **200** | repository metadata |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listRepositories"></a>
@@ -746,6 +753,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **200** | repository list |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="setBranchProtectionRules"></a>
@@ -842,6 +850,7 @@ null (empty response body)
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="setGCRules"></a>
@@ -934,5 +943,6 @@ null (empty response body)
 **204** | set garbage collection rules successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

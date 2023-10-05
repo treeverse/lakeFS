@@ -1412,6 +1412,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1429,6 +1431,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SetupState"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1458,6 +1462,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1501,6 +1507,8 @@ paths:
                 $ref: "#/components/schemas/AuthenticationToken"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1520,6 +1528,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthCapabilities"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1542,6 +1552,8 @@ paths:
                 $ref: "#/components/schemas/UserList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1571,6 +1583,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1597,6 +1611,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -1611,6 +1627,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1633,6 +1651,8 @@ paths:
                 $ref: "#/components/schemas/GroupList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1656,6 +1676,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1682,6 +1704,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -1696,6 +1720,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1718,6 +1744,8 @@ paths:
                 $ref: "#/components/schemas/PolicyList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1744,6 +1772,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1770,6 +1800,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     put:
@@ -1796,6 +1828,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -1810,6 +1844,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1838,6 +1874,8 @@ paths:
                 $ref: "#/components/schemas/UserList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1865,6 +1903,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1880,6 +1920,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1910,6 +1952,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1929,6 +1973,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1956,6 +2002,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1975,6 +2023,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2005,6 +2055,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2041,6 +2093,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2068,6 +2122,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2082,6 +2138,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2112,6 +2170,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2139,6 +2199,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2154,6 +2216,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2183,6 +2247,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2202,6 +2268,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFoundOrNoACL"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2224,6 +2292,8 @@ paths:
                 $ref: "#/components/schemas/RepositoryList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -2257,6 +2327,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2283,6 +2355,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2297,6 +2371,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2323,6 +2399,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2349,6 +2427,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     put:
@@ -2368,6 +2448,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2381,6 +2463,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2414,6 +2498,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2447,6 +2533,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         412:
           $ref: "#/components/responses/PreconditionFailed"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2465,6 +2553,8 @@ paths:
                 $ref: "#/components/schemas/OTFDiffs"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2515,6 +2605,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         412:
           $ref: "#/components/responses/PreconditionFailed"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2545,6 +2637,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2577,6 +2671,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2607,6 +2703,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2636,6 +2734,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2667,6 +2767,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2681,6 +2783,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2711,6 +2815,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -2739,6 +2845,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2797,6 +2905,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2845,14 +2955,16 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
         412:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}:
     parameters:
@@ -2882,6 +2994,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2898,6 +3012,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     put:
@@ -2918,6 +3034,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2959,6 +3077,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3004,6 +3124,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3065,6 +3187,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     get:
@@ -3085,6 +3209,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3121,6 +3247,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3170,6 +3298,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3201,6 +3331,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3293,8 +3425,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
         410:
           description: object expired
           content:
@@ -3307,6 +3437,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
     head:
       tags:
         - objects
@@ -3360,6 +3494,8 @@ paths:
           description: object expired
         416:
           description: Requested Range Not Satisfiable
+        420:
+          description: too many requests
         default:
           description: internal server error
 
@@ -3403,6 +3539,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3442,6 +3580,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3480,6 +3620,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -3506,6 +3648,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -3531,6 +3675,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3565,6 +3711,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3613,6 +3761,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3667,6 +3817,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         412:
           $ref: "#/components/responses/PreconditionFailed"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -3683,6 +3835,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3722,6 +3876,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3768,6 +3924,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3821,6 +3979,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         410:
           description: object gone (but partial metadata may be available)
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3859,6 +4019,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3907,6 +4069,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3944,6 +4108,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3980,6 +4146,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4011,6 +4179,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4044,6 +4214,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4081,6 +4253,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4117,6 +4291,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4153,6 +4329,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4174,6 +4352,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4200,6 +4380,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4221,6 +4403,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -4235,6 +4419,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4261,6 +4447,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4294,6 +4482,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4317,6 +4507,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4346,6 +4538,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4367,6 +4561,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -4392,6 +4588,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
   /healthcheck:
@@ -4486,5 +4684,7 @@ paths:
           $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"

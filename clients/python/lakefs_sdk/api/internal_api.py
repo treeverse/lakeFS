@@ -335,6 +335,7 @@ class InternalApi(object):
             '201': "StorageURI",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -475,6 +476,7 @@ class InternalApi(object):
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -604,6 +606,7 @@ class InternalApi(object):
 
         _response_types_map = {
             '200': "AuthCapabilities",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -999,6 +1002,7 @@ class InternalApi(object):
 
         _response_types_map = {
             '200': "SetupState",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1715,6 +1719,7 @@ class InternalApi(object):
             '200': "List[BranchProtectionRule]",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1856,6 +1861,7 @@ class InternalApi(object):
             '200': "GarbageCollectionRules",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -2289,6 +2295,7 @@ class InternalApi(object):
             '201': "GarbageCollectionPrepareResponse",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -2444,6 +2451,7 @@ class InternalApi(object):
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -2875,6 +2883,7 @@ class InternalApi(object):
             '200': "CredentialsWithSecret",
             '400': "Error",
             '409': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -3191,6 +3200,7 @@ class InternalApi(object):
             '401': "Error",
             '403': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(

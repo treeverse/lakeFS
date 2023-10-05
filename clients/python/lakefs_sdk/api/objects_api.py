@@ -203,6 +203,7 @@ class ObjectsApi(object):
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -517,6 +518,7 @@ class ObjectsApi(object):
             '401': "Error",
             '403': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -692,6 +694,7 @@ class ObjectsApi(object):
             '404': "Error",
             '410': "Error",
             '416': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -847,6 +850,7 @@ class ObjectsApi(object):
             '200': "UnderlyingObjectProperties",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1197,6 +1201,7 @@ class ObjectsApi(object):
             '200': "ObjectStatsList",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1370,6 +1375,7 @@ class ObjectsApi(object):
             '404': "Error",
             '400': "Error",
             '410': None,
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1559,6 +1565,7 @@ class ObjectsApi(object):
             '403': "Error",
             '404': "Error",
             '412': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(

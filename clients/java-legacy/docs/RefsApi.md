@@ -113,6 +113,7 @@ Name | Type | Description  | Notes
 **200** | diff between refs |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="findMergeBase"></a>
@@ -209,6 +210,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="logCommits"></a>
@@ -314,6 +316,7 @@ Name | Type | Description  | Notes
 **200** | commit log |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="mergeIntoBranch"></a>
@@ -415,5 +418,6 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
 **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
