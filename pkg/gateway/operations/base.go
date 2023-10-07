@@ -47,7 +47,7 @@ type Operation struct {
 	OperationID      OperationID
 	Region           string
 	FQDN             string
-	Catalog          catalog.Interface
+	Catalog          *catalog.Catalog
 	MultipartTracker multipart.Tracker
 	BlockStore       block.Adapter
 	Auth             auth.GatewayService

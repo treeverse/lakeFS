@@ -217,7 +217,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 	})
 }
 
-func testCommitEntries(t *testing.T, ctx context.Context, cat catalog.Interface, deps *dependencies, params commitEntriesParams) string {
+func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, deps *dependencies, params commitEntriesParams) string {
 	t.Helper()
 	for _, p := range params.paths {
 		err := cat.CreateEntry(ctx, params.repo, params.branch,
