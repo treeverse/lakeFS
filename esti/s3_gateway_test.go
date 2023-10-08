@@ -172,7 +172,7 @@ func TestS3ReadObject(t *testing.T) {
 		})
 		t.Run("Exists - should have Content-Length header", func(t *testing.T) {
 			// using presigned URL so we can check the headers
-			preSignedUrl, err := client.Presign(ctx, "GET", repo, goodPath, 0, url.Values{})
+			preSignedUrl, err := client.Presign(ctx, "GET", repo, goodPath, 60, url.Values{})
 			if err != nil {
 				t.Errorf("client.Presign(%s, %s): %s", repo, goodPath, err)
 			}
@@ -210,7 +210,7 @@ func TestS3ReadObject(t *testing.T) {
 
 		t.Run("Dosn't exist - should not have Content-Length header", func(t *testing.T) {
 			// using presigned URL so we can check the headers
-			preSignedUrl, err := client.Presign(ctx, "GET", repo, badPath, 0, url.Values{})
+			preSignedUrl, err := client.Presign(ctx, "GET", repo, badPath, 60, url.Values{})
 			if err != nil {
 				t.Errorf("client.Presign(%s, %s): %s", repo, badPath, err)
 			}
