@@ -14,6 +14,7 @@
 - API: GC prepare move operations to internal tag (#6700)
 - API: support response Too many requests 420 (#6711)
 - API: deprecate upload object If-None-Match and Storage Class (#6708)
+- LakeFSFileSystem is now compatible only with lakeFS versions >= 0.108.0 (#6725)
 
 # v0.111.1
 
