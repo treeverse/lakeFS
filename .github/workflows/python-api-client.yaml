@@ -28,7 +28,7 @@ jobs:
     - name: Python build and make package
       run: make package-python PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
-    - name: Python SDK legacy publish package
+    - name: Python legacy SDK legacy publish package
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
@@ -36,13 +36,13 @@ jobs:
         packages_dir: clients/python-legacy/dist/
         verbose: true
 
-#    - name: Python SDK publish package
-#      uses: pypa/gh-action-pypi-publish@release/v1
-#      with:
-#        user: __token__
-#        password: ${{ secrets.PYPI_API_TOKEN }}
-#        packages_dir: clients/python/dist/
-#        verbose: true
+    - name: Python SDK publish package
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: clients/python/dist/
+        verbose: true
 
     - name: Extract docs version
       shell: bash
@@ -61,15 +61,15 @@ jobs:
         ruby-version: '2.7'
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
-    - name: Build release as latest
+    - name: Build legacy release as latest
       working-directory: clients/python-legacy
       run: bundle exec jekyll build -d _site -b /
 
-    - name: Build release ${{ steps.docver.outputs.tag }}
+    - name: Build legacy release ${{ steps.docver.outputs.tag }}
       working-directory: clients/python-legacy
       run: bundle exec jekyll build -d _site/${{ steps.docver.outputs.tag }} -b /${{ steps.docver.outputs.tag }}
 
-    - name: Publish to docs repository
+    - name: Publish legacy to docs repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
@@ -80,21 +80,21 @@ jobs:
         user_email: 'support@treeverse.io'
         user_name: 'python-docs-action'
 
-#    - name: Build release as latest
-#      working-directory: clients/python
-#      run: bundle exec jekyll build -d _site -b /
+    - name: Build release as latest
+      working-directory: clients/python
+      run: bundle exec jekyll build -d _site -b /
 
-#    - name: Build release ${{ steps.docver.outputs.tag }}
-#      working-directory: clients/python
-#      run: bundle exec jekyll build -d _site/${{ steps.docver.outputs.tag }} -b /${{ steps.docver.outputs.tag }}
+    - name: Build release ${{ steps.docver.outputs.tag }}
+      working-directory: clients/python
+      run: bundle exec jekyll build -d _site/${{ steps.docver.outputs.tag }} -b /${{ steps.docver.outputs.tag }}
 
-#    - name: Publish to docs repository
-#      uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
-#      env:
-#        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
-#      with:
-#        source_file: clients/python/_site/.
-#        destination_repo: treeverse/docs-lakefs-sdk-python
-#        destination_folder: /
-#        user_email: 'support@treeverse.io'
-#        user_name: 'python-docs-action'
+    - name: Publish to docs repository
+      uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+      with:
+        source_file: clients/python/_site/.
+        destination_repo: treeverse/docs-lakefs-sdk-python
+        destination_folder: /
+        user_email: 'support@treeverse.io'
+        user_name: 'python-docs-action'
