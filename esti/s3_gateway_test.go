@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -168,6 +170,27 @@ func TestS3ReadObject(t *testing.T) {
 				t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
 			}
 		})
+		t.Run("Exists - should have Content-Length header", func(t *testing.T) {
+			// using presigned URL so we can check the headers
+			preSignedUrl, err := client.Presign(ctx, "GET", repo, goodPath, 0, url.Values{})
+			if err != nil {
+				t.Errorf("client.Presign(%s, %s): %s", repo, goodPath, err)
+			}
+
+			req, err := http.NewRequest("GET", preSignedUrl.String(), nil)
+			if err != nil {
+				t.Errorf("http.NewRequest: %s", err)
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Errorf("http.DefaultClient.Do: %s", err)
+			}
+			contentLength := resp.Header.Get("Content-Length")
+			if contentLength == "" {
+				t.Errorf("Expected Content-Length header to be set")
+			}
+		})
+
 		t.Run("Doesn't exist", func(t *testing.T) {
 			res, err := client.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
 			if err != nil {
@@ -182,6 +205,27 @@ func TestS3ReadObject(t *testing.T) {
 			if s3ErrorResponse.StatusCode != 404 {
 				t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
 					s3ErrorResponse, s3ErrorResponse.StatusCode)
+			}
+		})
+
+		t.Run("Dosn't exist - should not have Content-Length header", func(t *testing.T) {
+			// using presigned URL so we can check the headers
+			preSignedUrl, err := client.Presign(ctx, "GET", repo, badPath, 0, url.Values{})
+			if err != nil {
+				t.Errorf("client.Presign(%s, %s): %s", repo, badPath, err)
+			}
+
+			req, err := http.NewRequest("GET", preSignedUrl.String(), nil)
+			if err != nil {
+				t.Errorf("http.NewRequest: %s", err)
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Errorf("http.DefaultClient.Do: %s", err)
+			}
+			contentLength := resp.Header.Get("Content-Length")
+			if contentLength != "" {
+				t.Errorf("Expected Content-Length header not to be set")
 			}
 		})
 	})
