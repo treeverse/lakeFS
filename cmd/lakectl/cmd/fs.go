@@ -1,12 +1,8 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/spf13/cobra"
 )
-
-var ErrRequestFailed = errors.New("request failed")
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{

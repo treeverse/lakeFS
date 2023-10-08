@@ -46,7 +46,7 @@ const (
 
 type dependencies struct {
 	blocks      block.Adapter
-	catalog     catalog.Interface
+	catalog     *catalog.Catalog
 	authService auth.Service
 	collector   *memCollector
 	server      *httptest.Server

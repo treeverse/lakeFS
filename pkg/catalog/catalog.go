@@ -125,6 +125,74 @@ const (
 	MetaRangeFSName = "meta-range"
 )
 
+const (
+	DefaultPathDelimiter = "/"
+)
+
+type DiffParams struct {
+	Limit            int
+	After            string
+	Prefix           string
+	Delimiter        string
+	AdditionalFields []string // db fields names that will be load in additional to Path on Difference's Entry
+}
+
+type RevertParams struct {
+	Reference    string // the commit to revert
+	ParentNumber int    // if reverting a merge commit, the change will be reversed relative to this parent number (1-based).
+	Committer    string
+}
+
+type CherryPickParams struct {
+	Reference    string // the commit to pick
+	ParentNumber *int   // if a merge commit was picked, the change will be applied relative to this parent number (1-based).
+	Committer    string
+}
+
+type PathRecord struct {
+	Path     Path
+	IsPrefix bool
+}
+
+type LogParams struct {
+	PathList      []PathRecord
+	FromReference string
+	Amount        int
+	Limit         bool
+	FirstParent   bool
+}
+
+type ExpireResult struct {
+	Repository        string
+	Branch            string
+	PhysicalAddress   string
+	InternalReference string
+}
+
+// ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
+type ExpiryRows interface {
+	Close()
+	Next() bool
+	Err() error
+	// Read returns the current from ExpiryRows, or an error on failure.  Call it only after
+	// successfully calling Next.
+	Read() (*ExpireResult, error)
+}
+
+// GetEntryParams configures what entries GetEntry returns.
+type GetEntryParams struct {
+	// StageOnly when true will return entry found on stage without checking committed data
+	StageOnly bool
+}
+
+type WriteRangeRequest struct {
+	SourceURI         string
+	Prepend           string
+	After             string
+	StagingToken      string
+	ContinuationToken string
+}
+
 type Config struct {
 	Config                *config.Config
 	KVStore               kv.Store
@@ -350,7 +418,8 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	return catalogRepo, nil
 }
 
-// CreateBareRepository creates a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
+// CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
+// defaultBranchID will point to a non-existent branch on creation, it is up to the caller to eventually create it.
 func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
@@ -412,6 +481,7 @@ func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error
 	return c.Store.DeleteRepository(ctx, repositoryID)
 }
 
+// GetRepositoryMetadata get repository metadata
 func (c *Catalog) GetRepositoryMetadata(ctx context.Context, repository string) (graveler.RepositoryMetadata, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -2267,6 +2337,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	return &dstEntry, nil
 }
 
+// SetLinkAddress to validate single use limited in time of a given physical address
 func (c *Catalog) SetLinkAddress(ctx context.Context, repository, physicalAddress string) error {
 	repo, err := c.getRepository(ctx, repository)
 	if err != nil {
