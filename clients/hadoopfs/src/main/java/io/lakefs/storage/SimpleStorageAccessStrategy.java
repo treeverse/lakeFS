@@ -14,11 +14,11 @@ import org.apache.hadoop.fs.Path;
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSLinker;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.ObjectsApi;
+import io.lakefs.clients.sdk.StagingApi;
+import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.utils.ObjectLocation;
 
 public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
@@ -39,8 +39,11 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
             CreateOutputStreamParams params) throws ApiException, IOException {
         StagingApi staging = lfsClient.getStagingApi();
-        StagingLocation stagingLocation = staging.getPhysicalAddress(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false);
+        StagingLocation stagingLocation =
+            staging.getPhysicalAddress(objectLocation.getRepository(),
+                                       objectLocation.getRef(), objectLocation.getPath())
+            .presign(false)
+            .execute();
         Path physicalPath;
         try {
             physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stagingLocation.getPhysicalAddress()));
@@ -67,7 +70,9 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
             throws ApiException, IOException {
         ObjectsApi objects = lfsClient.getObjectsApi();
         ObjectStats stats = objects.statObject(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false, false);
+                                               objectLocation.getRef(), objectLocation.getPath())
+            .userMetadata(false).presign(false)
+            .execute();
         Path physicalPath;
         try {
             physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stats.getPhysicalAddress()));

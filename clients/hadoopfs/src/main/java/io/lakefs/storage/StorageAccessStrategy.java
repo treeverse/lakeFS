@@ -8,7 +8,7 @@ import java.net.URI;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 
-import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.utils.ObjectLocation;
 
 public interface StorageAccessStrategy {
