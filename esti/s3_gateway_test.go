@@ -174,18 +174,15 @@ func TestS3ReadObject(t *testing.T) {
 		t.Run("ExistsPreSigned", func(t *testing.T) {
 			// using presigned URL so we can check the headers
 			// We expect the Content-Length header to be set
-			preSignedUrl, err := client.Presign(ctx, "GET", repo, goodPath, time.Second*60, url.Values{})
+			preSignedUrl, err := client.Presign(ctx, http.MethodGet, repo, goodPath, time.Second*60, url.Values{})
 			if err != nil {
-				t.Errorf("client.Presign(%s, %s): %s", repo, goodPath, err)
+				t.Fatalf("client.Presign(%s, %s): %s", repo, goodPath, err)
 			}
 
-			req, err := http.NewRequest("GET", preSignedUrl.String(), nil)
+			resp, err := http.Get(preSignedUrl.String())
+			defer func() { _ = resp.Body.Close() }()
 			if err != nil {
-				t.Errorf("http.NewRequest: %s", err)
-			}
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				t.Errorf("http.DefaultClient.Do: %s", err)
+				t.Fatalf("http.DefaultClient.Do: %s", err)
 			}
 			contentLength := resp.Header.Get("Content-Length")
 			if contentLength == "" {

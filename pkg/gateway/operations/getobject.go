@@ -29,6 +29,7 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 
 func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("get_object", o.Principal, o.Repository.Name, o.Reference)
+	ctx := req.Context()
 	query := req.URL.Query()
 	if _, exists := query["versioning"]; exists {
 		o.EncodeResponse(w, req, serde.VersioningConfiguration{}, http.StatusOK)
@@ -41,7 +42,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+	entry, err := o.Catalog.GetEntry(ctx, o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
 	o.Log(req).
 		WithField("took", metaTook).
@@ -79,47 +80,43 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		}
 		// by here, we have a range we can use.
 	}
-	var returnHTTPStatus int
-	var contentLength int64
+
+	statusCode := http.StatusOK
+	contentLength := entry.Size
+	contentRange := ""
+	objectPointer := block.ObjectPointer{
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   entry.AddressType.ToIdentifierType(),
+		Identifier:       entry.PhysicalAddress,
+	}
+
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
-		data, err = o.BlockStore.Get(req.Context(), block.ObjectPointer{
-			StorageNamespace: o.Repository.StorageNamespace,
-			IdentifierType:   entry.AddressType.ToIdentifierType(),
-			Identifier:       entry.PhysicalAddress,
-		}, entry.Size)
-		if err != nil {
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-			return
-		}
-		contentLength = entry.Size
-		returnHTTPStatus = http.StatusOK
+		data, err = o.BlockStore.Get(ctx, objectPointer, entry.Size)
 	} else {
-		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
-			StorageNamespace: o.Repository.StorageNamespace,
-			IdentifierType:   entry.AddressType.ToIdentifierType(),
-			Identifier:       entry.PhysicalAddress,
-		}, rng.StartOffset, rng.EndOffset)
-		if err != nil {
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-			return
-		}
-		contentRange := fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)
-		o.SetHeader(w, "Content-Range", contentRange)
 		contentLength = rng.Size()
-		returnHTTPStatus = http.StatusPartialContent
+		contentRange = fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)
+		statusCode = http.StatusPartialContent
+		data, err = o.BlockStore.GetRange(ctx, objectPointer, rng.StartOffset, rng.EndOffset)
+	}
+	if err != nil {
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
 	}
 
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader(w, "Content-Type", entry.ContentType)
 	o.SetHeader(w, "Accept-Ranges", "bytes")
-	amzMetaWriteHeaders(w, entry.Metadata)
+	if contentRange != "" {
+		o.SetHeader(w, "Content-Range", contentRange)
+	}
 	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", contentLength))
 	o.SetHeader(w, "X-Content-Type-Options", "nosniff")
 	o.SetHeader(w, "X-Frame-Options", "SAMEORIGIN")
 	o.SetHeader(w, "Content-Security-Policy", "default-src 'none'")
-	w.WriteHeader(returnHTTPStatus)
+	amzMetaWriteHeaders(w, entry.Metadata)
+	w.WriteHeader(statusCode)
 
 	defer func() {
 		_ = data.Close()
