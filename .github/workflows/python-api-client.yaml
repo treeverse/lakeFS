@@ -57,7 +57,7 @@ jobs:
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
-        working-directory: clients/python-legacy
+        working-directory: clients
         ruby-version: '2.7'
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
@@ -79,13 +79,6 @@ jobs:
         destination_folder: /
         user_email: 'support@treeverse.io'
         user_name: 'python-docs-action'
-
-#    - name: Setup Ruby
-#      uses: ruby/setup-ruby@v1
-#      with:
-#        working-directory: clients/python
-#        ruby-version: '2.7'
-#        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
 #    - name: Build release as latest
 #      working-directory: clients/python
