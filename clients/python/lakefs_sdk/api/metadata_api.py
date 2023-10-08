@@ -172,6 +172,7 @@ class MetadataApi(object):
             '200': "StorageURI",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -319,6 +320,7 @@ class MetadataApi(object):
             '200': "StorageURI",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(

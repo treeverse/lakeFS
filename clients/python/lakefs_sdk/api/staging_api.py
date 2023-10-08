@@ -192,6 +192,7 @@ class StagingApi(object):
             '200': "StagingLocation",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -366,6 +367,7 @@ class StagingApi(object):
             '401': "Error",
             '404': "Error",
             '409': "StagingLocation",
+            '420': None,
         }
 
         return self.api_client.call_api(

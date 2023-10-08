@@ -11,9 +11,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.ObjectErrorList;
-import io.lakefs.clients.api.model.PathList;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.model.ObjectErrorList;
+import io.lakefs.clients.sdk.model.PathList;
 
 public class BulkDeleterTest {
     protected ExecutorService executorService = Executors.newFixedThreadPool(3);

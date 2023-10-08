@@ -102,6 +102,7 @@ public class Example {
 | **200** | action run result |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getRunHookOutput"></a>
@@ -198,6 +199,7 @@ public class Example {
 | **200** | run hook output |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listRepositoryRuns"></a>
@@ -302,6 +304,7 @@ public class Example {
 | **200** | list action runs |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listRunHooks"></a>
@@ -402,5 +405,6 @@ public class Example {
 | **200** | list specific run hooks |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

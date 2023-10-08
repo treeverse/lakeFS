@@ -111,6 +111,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteObject"></a>
@@ -206,6 +207,7 @@ null (empty response body)
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="deleteObjects"></a>
@@ -302,6 +304,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getObject"></a>
@@ -405,6 +408,7 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
 **416** | Requested Range Not Satisfiable |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getUnderlyingProperties"></a>
@@ -500,6 +504,7 @@ Name | Type | Description  | Notes
 **200** | object metadata on underlying storage |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="headObject"></a>
@@ -599,6 +604,7 @@ null (empty response body)
 **404** | object not found |  -  |
 **410** | object expired |  -  |
 **416** | Requested Range Not Satisfiable |  -  |
+**420** | too many requests |  -  |
 **0** | internal server error |  -  |
 
 <a name="listObjects"></a>
@@ -704,6 +710,7 @@ Name | Type | Description  | Notes
 **200** | object listing |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="statObject"></a>
@@ -805,6 +812,7 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **400** | Bad Request |  -  |
 **410** | object gone (but partial metadata may be available) |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="uploadObject"></a>
@@ -859,8 +867,8 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
-    String storageClass = "storageClass_example"; // String | 
-    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
+    String storageClass = "storageClass_example"; // String | Deprecated, this capability will not be supported in future releases.
+    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
       ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
@@ -883,8 +891,8 @@ Name | Type | Description  | Notes
  **repository** | **String**|  |
  **branch** | **String**|  |
  **path** | **String**| relative to the branch |
- **storageClass** | **String**|  | [optional]
- **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
+ **storageClass** | **String**| Deprecated, this capability will not be supported in future releases. | [optional]
+ **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional]
  **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 
 ### Return type
@@ -909,5 +917,6 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

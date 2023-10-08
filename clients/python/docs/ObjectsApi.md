@@ -125,6 +125,7 @@ Name | Type | Description  | Notes
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -233,6 +234,7 @@ void (empty response body)
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -345,6 +347,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -462,6 +465,7 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
 **416** | Requested Range Not Satisfiable |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -572,6 +576,7 @@ Name | Type | Description  | Notes
 **200** | object metadata on underlying storage |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -684,6 +689,7 @@ void (empty response body)
 **404** | object not found |  -  |
 **410** | object expired |  -  |
 **416** | Requested Range Not Satisfiable |  -  |
+**420** | too many requests |  -  |
 **0** | internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -804,6 +810,7 @@ Name | Type | Description  | Notes
 **200** | object listing |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -920,6 +927,7 @@ Name | Type | Description  | Notes
 **404** | Resource Not Found |  -  |
 **400** | Bad Request |  -  |
 **410** | object gone (but partial metadata may be available) |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -991,8 +999,8 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     repository = 'repository_example' # str | 
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
-    storage_class = 'storage_class_example' # str |  (optional)
-    if_none_match = '*' # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet (optional)
+    storage_class = 'storage_class_example' # str | Deprecated, this capability will not be supported in future releases. (optional)
+    if_none_match = '*' # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
     content = None # bytearray | Only a single file per upload which must be named \\\"content\\\". (optional)
 
     try:
@@ -1012,8 +1020,8 @@ Name | Type | Description  | Notes
  **repository** | **str**|  | 
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
- **storage_class** | **str**|  | [optional] 
- **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional] 
+ **storage_class** | **str**| Deprecated, this capability will not be supported in future releases. | [optional] 
+ **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional] 
  **content** | **bytearray**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] 
 
 ### Return type
@@ -1038,6 +1046,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

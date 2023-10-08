@@ -89,7 +89,7 @@ if(hasProperty('target') && target == 'android') {
     publishing {
         publications {
             maven(MavenPublication) {
-               artifactId = 'sdk-client'
+               artifactId = 'sdk'
                from components.java
             }
         }

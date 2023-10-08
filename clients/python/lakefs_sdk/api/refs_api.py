@@ -226,6 +226,7 @@ class RefsApi(object):
             '200': "DiffList",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -382,6 +383,7 @@ class RefsApi(object):
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -579,6 +581,7 @@ class RefsApi(object):
             '200': "CommitList",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -753,6 +756,7 @@ class RefsApi(object):
             '404': "Error",
             '409': "MergeResult",
             '412': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(

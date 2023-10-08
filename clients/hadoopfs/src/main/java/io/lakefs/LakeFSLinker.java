@@ -2,10 +2,10 @@ package io.lakefs;
 
 import java.io.IOException;
 import org.apache.hadoop.fs.Path;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.StagingLocation;
-import io.lakefs.clients.api.model.StagingMetadata;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.StagingApi;
+import io.lakefs.clients.sdk.model.StagingLocation;
+import io.lakefs.clients.sdk.model.StagingMetadata;
 import io.lakefs.utils.ObjectLocation;
 
 public class LakeFSLinker {
@@ -28,7 +28,8 @@ public class LakeFSLinker {
                 new StagingMetadata().checksum(eTag).sizeBytes(byteSize).staging(stagingLocation);
         try {
             staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(),
-                    objectLoc.getPath(), stagingMetadata);
+                    objectLoc.getPath(), stagingMetadata)
+                .execute();
         } catch (ApiException e) {
             throw new IOException("link lakeFS path to physical address", e);
         }

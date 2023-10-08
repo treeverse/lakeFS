@@ -101,6 +101,7 @@ Name | Type | Description  | Notes
 **200** | action run result |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getRunHookOutput"></a>
@@ -196,6 +197,7 @@ Name | Type | Description  | Notes
 **200** | run hook output |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listRepositoryRuns"></a>
@@ -295,6 +297,7 @@ Name | Type | Description  | Notes
 **200** | list action runs |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="listRunHooks"></a>
@@ -392,5 +395,6 @@ Name | Type | Description  | Notes
 **200** | list specific run hooks |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

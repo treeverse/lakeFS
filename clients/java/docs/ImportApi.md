@@ -104,6 +104,7 @@ null (empty response body)
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="importStart"></a>
@@ -201,6 +202,7 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="importStatus"></a>
@@ -297,5 +299,6 @@ public class Example {
 | **200** | import status |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

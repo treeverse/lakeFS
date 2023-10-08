@@ -15,7 +15,7 @@ import com.google.common.collect.Lists;
 
 import org.apache.commons.io.IOUtils;
 
-import io.lakefs.clients.api.model.*;
+import io.lakefs.clients.sdk.model.*;
 
 import org.junit.Assert;
 import org.junit.Before;

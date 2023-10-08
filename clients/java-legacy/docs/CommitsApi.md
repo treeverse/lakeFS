@@ -106,6 +106,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 <a name="getCommit"></a>
@@ -199,5 +200,6 @@ Name | Type | Description  | Notes
 **200** | commit |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

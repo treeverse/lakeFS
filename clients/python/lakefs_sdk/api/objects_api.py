@@ -203,6 +203,7 @@ class ObjectsApi(object):
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -517,6 +518,7 @@ class ObjectsApi(object):
             '401': "Error",
             '403': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -692,6 +694,7 @@ class ObjectsApi(object):
             '404': "Error",
             '410': "Error",
             '416': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -847,6 +850,7 @@ class ObjectsApi(object):
             '200': "UnderlyingObjectProperties",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1197,6 +1201,7 @@ class ObjectsApi(object):
             '200': "ObjectStatsList",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1370,6 +1375,7 @@ class ObjectsApi(object):
             '404': "Error",
             '400': "Error",
             '410': None,
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -1390,7 +1396,7 @@ class ObjectsApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def upload_object(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], storage_class : Optional[StrictStr] = None, if_none_match : Annotated[Optional[constr(strict=True)], Field(description="Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet")] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ObjectStats:  # noqa: E501
+    def upload_object(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], storage_class : Annotated[Optional[StrictStr], Field(description="Deprecated, this capability will not be supported in future releases.")] = None, if_none_match : Annotated[Optional[constr(strict=True)], Field(description="Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. ")] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ObjectStats:  # noqa: E501
         """upload_object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -1405,9 +1411,9 @@ class ObjectsApi(object):
         :type branch: str
         :param path: relative to the branch (required)
         :type path: str
-        :param storage_class:
+        :param storage_class: Deprecated, this capability will not be supported in future releases.
         :type storage_class: str
-        :param if_none_match: Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
+        :param if_none_match: Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
         :type if_none_match: str
         :param content: Only a single file per upload which must be named \\\"content\\\".
         :type content: bytearray
@@ -1428,7 +1434,7 @@ class ObjectsApi(object):
         return self.upload_object_with_http_info(repository, branch, path, storage_class, if_none_match, content, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def upload_object_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], storage_class : Optional[StrictStr] = None, if_none_match : Annotated[Optional[constr(strict=True)], Field(description="Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet")] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def upload_object_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], storage_class : Annotated[Optional[StrictStr], Field(description="Deprecated, this capability will not be supported in future releases.")] = None, if_none_match : Annotated[Optional[constr(strict=True)], Field(description="Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. ")] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """upload_object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -1443,9 +1449,9 @@ class ObjectsApi(object):
         :type branch: str
         :param path: relative to the branch (required)
         :type path: str
-        :param storage_class:
+        :param storage_class: Deprecated, this capability will not be supported in future releases.
         :type storage_class: str
-        :param if_none_match: Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
+        :param if_none_match: Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
         :type if_none_match: str
         :param content: Only a single file per upload which must be named \\\"content\\\".
         :type content: bytearray
@@ -1559,6 +1565,7 @@ class ObjectsApi(object):
             '403': "Error",
             '404': "Error",
             '412': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(

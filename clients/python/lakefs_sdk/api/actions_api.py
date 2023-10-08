@@ -176,6 +176,7 @@ class ActionsApi(object):
             '200': "ActionRun",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -331,6 +332,7 @@ class ActionsApi(object):
             '200': "bytearray",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -502,6 +504,7 @@ class ActionsApi(object):
             '200': "ActionRunList",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
@@ -665,6 +668,7 @@ class ActionsApi(object):
             '200': "HookRunList",
             '401': "Error",
             '404': "Error",
+            '420': None,
         }
 
         return self.api_client.call_api(
