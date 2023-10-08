@@ -84,6 +84,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		// by here, we have a range we can use.
 	}
 
+	var contentLength int64
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
 		data, err = o.BlockStore.Get(req.Context(), block.ObjectPointer{
@@ -95,7 +96,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
-		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
+		contentLength = entry.Size
 	} else {
 		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,
@@ -108,10 +109,11 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		}
 		contentRange := fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)
 		o.SetHeader(w, "Content-Range", contentRange)
-		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", rng.Size()))
+		contentLength = rng.Size()
 		w.WriteHeader(http.StatusPartialContent)
 	}
 
+	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", contentLength))
 	o.SetHeader(w, "X-Content-Type-Options", "nosniff")
 	o.SetHeader(w, "X-Frame-Options", "SAMEORIGIN")
 	o.SetHeader(w, "Content-Security-Policy", "default-src 'none'")
