@@ -154,7 +154,7 @@ func DurationHandler(next http.Handler) http.Handler {
 	})
 }
 
-func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.GatewayService, fallbackProxy http.Handler, next http.Handler) http.Handler {
+func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.GatewayService, fallbackProxy http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
@@ -162,7 +162,7 @@ func EnrichWithRepositoryOrFallback(c catalog.Interface, authService auth.Gatewa
 		username := user.Username
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		if repoID == "" {
-			// action without repo
+			// action without a repo
 			next.ServeHTTP(w, req)
 			return
 		}
@@ -226,7 +226,7 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 	})
 }
 
-// memberFold returns true if 'a' is equal case-folded to a member of bs.
+// memberFold returns true if 'a' is an equal case-folded to a member of bs.
 func memberFold(a string, bs []string) bool {
 	for _, b := range bs {
 		if strings.EqualFold(a, b) {
