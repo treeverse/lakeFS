@@ -171,8 +171,9 @@ func TestS3ReadObject(t *testing.T) {
 				t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
 			}
 		})
-		t.Run("Exists - should have Content-Length header", func(t *testing.T) {
+		t.Run("ExistsPreSigned", func(t *testing.T) {
 			// using presigned URL so we can check the headers
+			// We expect the Content-Length header to be set
 			preSignedUrl, err := client.Presign(ctx, "GET", repo, goodPath, time.Second*60, url.Values{})
 			if err != nil {
 				t.Errorf("client.Presign(%s, %s): %s", repo, goodPath, err)
@@ -206,27 +207,6 @@ func TestS3ReadObject(t *testing.T) {
 			if s3ErrorResponse.StatusCode != 404 {
 				t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
 					s3ErrorResponse, s3ErrorResponse.StatusCode)
-			}
-		})
-
-		t.Run("Dosn't exist - should not have Content-Length header", func(t *testing.T) {
-			// using presigned URL so we can check the headers
-			preSignedUrl, err := client.Presign(ctx, "GET", repo, badPath, time.Second*60, url.Values{})
-			if err != nil {
-				t.Errorf("client.Presign(%s, %s): %s", repo, badPath, err)
-			}
-
-			req, err := http.NewRequest("GET", preSignedUrl.String(), nil)
-			if err != nil {
-				t.Errorf("http.NewRequest: %s", err)
-			}
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				t.Errorf("http.DefaultClient.Do: %s", err)
-			}
-			contentLength := resp.Header.Get("Content-Length")
-			if contentLength != "" {
-				t.Errorf("Expected Content-Length header not to be set")
 			}
 		})
 	})

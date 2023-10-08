@@ -61,11 +61,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
-	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
-	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
-	o.SetHeader(w, "Content-Type", entry.ContentType)
-	o.SetHeader(w, "Accept-Ranges", "bytes")
-	amzMetaWriteHeaders(w, entry.Metadata)
+
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 	// range query
 	var data io.ReadCloser
@@ -83,7 +79,8 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		}
 		// by here, we have a range we can use.
 	}
-
+	var returnHTTPStatus int
+	var contentLength int64
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
 		data, err = o.BlockStore.Get(req.Context(), block.ObjectPointer{
@@ -95,7 +92,8 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
-		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", entry.Size))
+		contentLength = entry.Size
+		returnHTTPStatus = http.StatusOK
 	} else {
 		data, err = o.BlockStore.GetRange(req.Context(), block.ObjectPointer{
 			StorageNamespace: o.Repository.StorageNamespace,
@@ -108,13 +106,20 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		}
 		contentRange := fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)
 		o.SetHeader(w, "Content-Range", contentRange)
-		o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", rng.Size()))
-		w.WriteHeader(http.StatusPartialContent)
+		contentLength = rng.Size()
+		returnHTTPStatus = http.StatusPartialContent
 	}
 
+	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
+	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
+	o.SetHeader(w, "Content-Type", entry.ContentType)
+	o.SetHeader(w, "Accept-Ranges", "bytes")
+	amzMetaWriteHeaders(w, entry.Metadata)
+	o.SetHeader(w, "Content-Length", fmt.Sprintf("%d", contentLength))
 	o.SetHeader(w, "X-Content-Type-Options", "nosniff")
 	o.SetHeader(w, "X-Frame-Options", "SAMEORIGIN")
 	o.SetHeader(w, "Content-Security-Policy", "default-src 'none'")
+	w.WriteHeader(returnHTTPStatus)
 
 	defer func() {
 		_ = data.Close()
