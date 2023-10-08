@@ -1,6 +1,22 @@
 # Changelog
 
+# v0.112.0
+
+:new: What's new:
+- New Java SDK (#6656)
+- New Pyhon SDK (#6562)
+- Export Hooks: Glue Catalog exporter (#6653)
+- Remove recursive flag from lakectl fs Upload and Download (#6681)
+- CosmosDB: Add throughput configuration (#6693)
+- lakectl: block `fs stage` command for objects in the storage namespace (#6696)
+- API: Deprecate stageObject (#6690)
+- API: linkPhysicalAddress do not verify external addresses (#6667)
+- API: GC prepare move operations to internal tag (#6700)
+- API: support response Too many requests 420 (#6711)
+- API: deprecate upload object If-None-Match and Storage Class (#6708)
+
 # v0.111.1
+
 :bug: Bugs fixed:
 - Fix email display bug when using external auth provider (#6680)
 - Fix repository creation bug in quickstart mode (#6682)
