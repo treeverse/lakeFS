@@ -25,7 +25,7 @@ jobs:
         fi
       id: version
 
-    - name: Python build and make legacy and new packages
+    - name: Python build and make package
       run: make package-python-sdk PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
     - name: Python SDK publish package
@@ -87,7 +87,7 @@ jobs:
         fi
       id: version
 
-    - name: Python build and make legacy and new packages
+    - name: Python build and make legacy package
       run: make package-python-client PACKAGE_VERSION=${{ steps.version.outputs.tag }}
     - name: Python legacy SDK legacy publish package
       uses: pypa/gh-action-pypi-publish@release/v1
