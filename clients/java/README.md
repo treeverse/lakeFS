@@ -1,4 +1,4 @@
-# sdk-client
+# sdk
 
 lakeFS API
 - API version: 0.1.0
@@ -38,7 +38,7 @@ Add this dependency to your project's POM:
 ```xml
 <dependency>
   <groupId>io.lakefs</groupId>
-  <artifactId>sdk-client</artifactId>
+  <artifactId>sdk</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <scope>compile</scope>
 </dependency>
@@ -50,12 +50,12 @@ Add this dependency to your project's build file:
 
 ```groovy
   repositories {
-    mavenCentral()     // Needed if the 'sdk-client' jar has been published to maven central.
-    mavenLocal()       // Needed if the 'sdk-client' jar has been published to the local maven repo.
+    mavenCentral()     // Needed if the 'sdk' jar has been published to maven central.
+    mavenLocal()       // Needed if the 'sdk' jar has been published to the local maven repo.
   }
 
   dependencies {
-     implementation "io.lakefs:sdk-client:0.1.0-SNAPSHOT"
+     implementation "io.lakefs:sdk:0.1.0-SNAPSHOT"
   }
 ```
 
@@ -69,7 +69,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/sdk-client-0.1.0-SNAPSHOT.jar`
+* `target/sdk-0.1.0-SNAPSHOT.jar`
 * `target/lib/*.jar`
 
 ## Getting Started
