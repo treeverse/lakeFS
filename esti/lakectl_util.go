@@ -29,7 +29,7 @@ var (
 	reTime            = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
 	reCommitID        = regexp.MustCompile(`[\d|a-f]{64}`)
 	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
-	reChecksum        = regexp.MustCompile(`[\d|a-f]{32}`)
+	reChecksum        = regexp.MustCompile(`([\d|a-f]{32})|(0x[0-9A-F]{15})`)
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
 	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
@@ -130,12 +130,12 @@ func sanitize(output string, vars map[string]string) string {
 	if _, ok := vars["DATE"]; !ok {
 		s = normalizeProgramTimestamp(s)
 	}
-	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
 	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
 	s = normalizePreSignURL(s) // should be after storage and endpoint to enable non pre-sign url on azure
+	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	return s
 }
 

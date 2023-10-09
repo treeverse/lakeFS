@@ -109,7 +109,7 @@ func TestLakectlPreSignUpload(t *testing.T) {
 
 	filePath := "ro_1k.1"
 	vars["FILE_PATH"] = filePath
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --pre-sign", false, "lakectl_fs_upload", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --pre-sign", false, "lakectl_fs_upload_pre_signed", vars)
 
 }
 

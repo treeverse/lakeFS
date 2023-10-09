@@ -156,6 +156,7 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 
 	etag := putResp.Header.Get("Etag")
 	etag = strings.TrimSpace(etag)
+	etag = strings.Trim(etag, "\"")
 	if etag == "" {
 		return nil, fmt.Errorf("etag is missing: %w", ErrRequestFailed)
 	}
@@ -177,7 +178,10 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 		return nil, fmt.Errorf("link object to backing store: %w", err)
 	}
 	if linkResp.JSON200 != nil {
-		return linkResp.JSON200, nil
+		objStat := *linkResp.JSON200
+		// this is a workaround for the fact that the API does not return the full physical address
+		objStat.PhysicalAddress = preSignURL
+		return &objStat, nil
 	}
 	if linkResp.JSON409 != nil {
 		return nil, ErrConflict
