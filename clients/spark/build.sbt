@@ -132,6 +132,9 @@ lazy val s3UploadSettings = Seq(
   s3Upload / s3Progress := true
 )
 
+// Don't publish root project
+root / publish / skip := true
+
 lazy val commonSettings = Seq(
   version := projectVersion,
   // Use an older JDK to be Spark compatible
