@@ -5,8 +5,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **email** | **str** | the provided email | [optional] 
-**feature_updates** | **bool** | was \&quot;feature updates\&quot; checked | 
-**security_updates** | **bool** | was \&quot;security updates\&quot; checked | 
+**feature_updates** | **bool** | user preference to receive feature updates | 
+**security_updates** | **bool** | user preference to receive security updates | 
 
 ## Example
 

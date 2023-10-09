@@ -8,8 +8,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **email** | **String** | the provided email |  [optional]
-**featureUpdates** | **Boolean** | was \&quot;feature updates\&quot; checked | 
-**securityUpdates** | **Boolean** | was \&quot;security updates\&quot; checked | 
+**featureUpdates** | **Boolean** | user preference to receive feature updates | 
+**securityUpdates** | **Boolean** | user preference to receive security updates | 
 
 
 

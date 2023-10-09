@@ -6603,15 +6603,23 @@ components:
         email: email
       properties:
         id:
-          description: a unique identifier for the user.
+          description: A unique identifier for the user. Cannot be edited.
           type: string
         creation_date:
           description: Unix Epoch in seconds
           format: int64
           type: integer
         friendly_name:
+          description: |
+            A shorter name for the user than the id. Unlike id it does not identify the user (it
+            might not be unique). Used in some places in the UI.
           type: string
         email:
+          description: "The email address of the user. If API authentication is enabled,\
+            \ this field is mandatory and will be invited to login.\nIf API authentication\
+            \ is disabled, this field will be ignored. All current APIAuthenticators\
+            \ require the email to be \nlowercase and unique, although custom authenticators\
+            \ may not enforce this.\n"
           type: string
       required:
       - creation_date
@@ -6760,10 +6768,10 @@ components:
           description: the provided email
           type: string
         featureUpdates:
-          description: was "feature updates" checked
+          description: user preference to receive feature updates
           type: boolean
         securityUpdates:
-          description: was "security updates" checked
+          description: user preference to receive security updates
           type: boolean
       required:
       - featureUpdates

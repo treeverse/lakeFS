@@ -1044,6 +1044,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
 			Email:        u.Email,
+			FriendlyName: u.FriendlyName,
 			CreationDate: u.CreatedAt.Unix(),
 		})
 	}
@@ -1091,7 +1092,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		}
 		err := inviter.InviteUser(ctx, *parsedEmail)
 		if c.handleAPIError(ctx, w, r, err) {
-			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
+			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("Failed creating user")
 			return
 		}
 		writeResponse(w, r, http.StatusCreated, apigen.User{Id: *parsedEmail})

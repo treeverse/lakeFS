@@ -95,7 +95,7 @@ public class CommPrefsInput {
   }
 
    /**
-   * was \&quot;feature updates\&quot; checked
+   * user preference to receive feature updates
    * @return featureUpdates
   **/
   @javax.annotation.Nonnull
@@ -116,7 +116,7 @@ public class CommPrefsInput {
   }
 
    /**
-   * was \&quot;security updates\&quot; checked
+   * user preference to receive security updates
    * @return securityUpdates
   **/
   @javax.annotation.Nonnull
