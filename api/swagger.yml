@@ -672,7 +672,7 @@ components:
       properties:
         id:
           type: string
-          description: A unique identifier for the user.
+          description: A unique identifier for the user. Cannot be edited.
         creation_date:
           type: integer
           format: int64
@@ -686,7 +686,8 @@ components:
           type: string
           description: |
             The email address of the user. If API authentication is enabled, this field is mandatory and will be invited to login.
-            If API authentication is disabled, this field will be ignored.
+            If API authentication is disabled, this field will be ignored. All current APIAuthenticators require the email to be 
+            lowercase and unique, although custom authenticators may not enforce this.
 
     CurrentUser:
       type: object
