@@ -111,7 +111,7 @@ class User(ModelNormal):
         """User - a model defined in OpenAPI
 
         Args:
-            id (str): a unique identifier for the user.
+            id (str): A unique identifier for the user. Cannot be edited.
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -145,8 +145,8 @@ class User(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            friendly_name (str): [optional]  # noqa: E501
-            email (str): [optional]  # noqa: E501
+            friendly_name (str): A shorter name for the user than the id. Unlike id it does not identify the user (it might not be unique). Used in some places in the UI. . [optional]  # noqa: E501
+            email (str): The email address of the user. If API authentication is enabled, this field is mandatory and will be invited to login. If API authentication is disabled, this field will be ignored. All current APIAuthenticators require the email to be  lowercase and unique, although custom authenticators may not enforce this. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -200,7 +200,7 @@ class User(ModelNormal):
         """User - a model defined in OpenAPI
 
         Args:
-            id (str): a unique identifier for the user.
+            id (str): A unique identifier for the user. Cannot be edited.
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -234,8 +234,8 @@ class User(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            friendly_name (str): [optional]  # noqa: E501
-            email (str): [optional]  # noqa: E501
+            friendly_name (str): A shorter name for the user than the id. Unlike id it does not identify the user (it might not be unique). Used in some places in the UI. . [optional]  # noqa: E501
+            email (str): The email address of the user. If API authentication is enabled, this field is mandatory and will be invited to login. If API authentication is disabled, this field will be ignored. All current APIAuthenticators require the email to be  lowercase and unique, although custom authenticators may not enforce this. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

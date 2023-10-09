@@ -26,10 +26,10 @@ class User(BaseModel):
     """
     User
     """
-    id: StrictStr = Field(..., description="a unique identifier for the user.")
+    id: StrictStr = Field(..., description="A unique identifier for the user. Cannot be edited.")
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
-    friendly_name: Optional[StrictStr] = None
-    email: Optional[StrictStr] = None
+    friendly_name: Optional[StrictStr] = Field(None, description="A shorter name for the user than the id. Unlike id it does not identify the user (it might not be unique). Used in some places in the UI. ")
+    email: Optional[StrictStr] = Field(None, description="The email address of the user. If API authentication is enabled, this field is mandatory and will be invited to login. If API authentication is disabled, this field will be ignored. All current APIAuthenticators require the email to be  lowercase and unique, although custom authenticators may not enforce this. ")
     __properties = ["id", "creation_date", "friendly_name", "email"]
 
     class Config:

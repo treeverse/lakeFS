@@ -4,8 +4,8 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**feature_updates** | **bool** | was \&quot;feature updates\&quot; checked | 
-**security_updates** | **bool** | was \&quot;security updates\&quot; checked | 
+**feature_updates** | **bool** | user preference to receive feature updates | 
+**security_updates** | **bool** | user preference to receive security updates | 
 **email** | **str** | the provided email | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
