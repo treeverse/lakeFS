@@ -100,14 +100,14 @@ object StorageUtils {
 
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
-      var client =
+      val client =
         initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
         } catch {
           case e: Throwable =>
-            logger.info(f"Could not fetch region for bucket ${bucket}", e)
+            logger.info(f"Could not fetch region for bucket $bucket", e)
             ""
         }
       if (bucketRegion == "" && region == "") {

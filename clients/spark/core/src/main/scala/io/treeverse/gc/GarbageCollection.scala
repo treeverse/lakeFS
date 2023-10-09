@@ -101,7 +101,6 @@ object GarbageCollection {
   }
 
   def main(args: Array[String]): Unit = {
-    val hc = spark.sparkContext.hadoopConfiguration
     val region = if (args.length == 2) args(1) else ""
     val repo = args(0)
     run(region, repo)
@@ -137,14 +136,14 @@ object GarbageCollection {
 
     val shouldMark = hc.getBoolean(LAKEFS_CONF_GC_DO_MARK, true)
     // Unified GC does not support sweep mode: it only marks objects for deletion
-    var shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
+    val shouldSweep = hc.getBoolean(LAKEFS_CONF_GC_DO_SWEEP, true)
     val markID = hc.get(LAKEFS_CONF_GC_MARK_ID, "")
 
     validateRunModeConfigs(shouldMark, shouldSweep, markID)
     val apiConf =
       APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, sourceName)
     val apiClient = ApiClient.get(apiConf)
-    val storageType = apiClient.getBlockstoreType()
+    val storageType = apiClient.getBlockstoreType
     var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
     if (!storageNamespace.endsWith("/")) {
       storageNamespace += "/"
@@ -256,7 +255,7 @@ object GarbageCollection {
         StorageClients(storageType, configMapper, storageNamespace, region)
       val bulkRemover =
         BulkRemoverFactory(storageClient, storageNamespace)
-      val chunkSize = bulkRemover.getMaxBulkSize()
+      val chunkSize = bulkRemover.getMaxBulkSize
       val chunk = it.asScala.take(chunkSize).toSeq
       bulkRemover.deleteObjects(chunk, storageNamespace)
     }
@@ -295,7 +294,7 @@ object GarbageCollection {
       runID: String,
       outputPrefix: String
   ): String = {
-    s"${storageNamespace}_lakefs/retention/gc/${outputPrefix}/$runID"
+    s"${storageNamespace}_lakefs/retention/gc/$outputPrefix/$runID"
   }
 
   def readMarkedAddresses(

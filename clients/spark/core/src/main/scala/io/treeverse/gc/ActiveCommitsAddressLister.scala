@@ -5,8 +5,9 @@ import org.apache.spark.sql.DataFrame
 import io.treeverse.clients.ApiClient
 import io.treeverse.clients.LakeFSContext
 import io.treeverse.clients.LakeFSJobParams
+
 import java.net.URI
-import io.lakefs.clients.api.ApiException
+import io.lakefs.clients.sdk.ApiException
 import org.apache.http.HttpStatus
 
 class ActiveCommitsAddressLister(
@@ -24,8 +25,8 @@ class ActiveCommitsAddressLister(
       try {
         apiClient.prepareGarbageCollectionCommits(repoName, "")
       } catch {
-        case e: ApiException => {
-          if (e.getCode() == HttpStatus.SC_NOT_FOUND) {
+        case e: ApiException =>
+          if (e.getCode == HttpStatus.SC_NOT_FOUND) {
             // no garbage collection rules, consider all commits as active:
             return new NaiveCommittedAddressLister().listCommittedAddresses(spark,
                                                                             storageNamespace,
@@ -34,7 +35,6 @@ class ActiveCommitsAddressLister(
           } else {
             throw e
           }
-        }
       }
     val gcCommitsLocation =
       ApiClient.translateURI(new URI(prepareResult.getGcCommitsLocation), storageType)

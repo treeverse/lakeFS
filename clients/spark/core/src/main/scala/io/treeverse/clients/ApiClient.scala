@@ -10,10 +10,9 @@ import dev.failsafe.FailsafeExecutor
 import dev.failsafe.Policy
 import dev.failsafe.RetryPolicy
 import dev.failsafe.function.CheckedSupplier
-import io.lakefs.clients.api
-import io.lakefs.clients.api.ConfigApi
-import io.lakefs.clients.api.RetentionApi
-import io.lakefs.clients.api.model._
+import io.lakefs.clients.sdk
+import io.lakefs.clients.sdk.ConfigApi
+import io.lakefs.clients.sdk.model._
 import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.StorageTypeAzure
@@ -128,7 +127,7 @@ case class APIConfigurations(
 // constructor is private.
 class ApiClient private (conf: APIConfigurations) {
 
-  val client = new api.ApiClient
+  val client = new sdk.ApiClient
   client.addDefaultHeader(
     "X-Lakefs-Client",
     s"lakefs-metaclient/${BuildInfo.version}${if (conf.source.nonEmpty) "/" + conf.source else ""}"
@@ -143,11 +142,11 @@ class ApiClient private (conf: APIConfigurations) {
     client.setReadTimeout(conf.readTimeoutMillisec)
   }
 
-  private val repositoriesApi = new api.RepositoriesApi(client)
-  private val commitsApi = new api.CommitsApi(client)
-  private val metadataApi = new api.MetadataApi(client)
-  private val branchesApi = new api.BranchesApi(client)
-  private val retentionApi = new RetentionApi(client)
+  private val repositoriesApi = new sdk.RepositoriesApi(client)
+  private val commitsApi = new sdk.CommitsApi(client)
+  private val metadataApi = new sdk.MetadataApi(client)
+  private val branchesApi = new sdk.BranchesApi(client)
+  private val internalApi = new sdk.InternalApi(client)
   private val configApi = new ConfigApi(client)
 
   private val retryWrapper = new RequestRetryWrapper(client.getReadTimeout)
@@ -163,13 +162,13 @@ class ApiClient private (conf: APIConfigurations) {
   def keyToStorageNamespace(key: StorageNamespaceCacheKey): String = {
 
     val getRepo = new dev.failsafe.function.CheckedSupplier[Repository]() {
-      def get(): Repository = repositoriesApi.getRepository(key.repoName)
+      def get(): Repository = repositoriesApi.getRepository(key.repoName).execute()
     }
     val repo = retryWrapper.wrapWithRetry(getRepo)
     val storageNamespace = key.storageClientType match {
       case StorageClientType.HadoopFS =>
         ApiClient
-          .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType())
+          .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType)
           .normalize()
           .toString
       case StorageClientType.SDKClient => repo.getStorageNamespace
@@ -188,10 +187,9 @@ class ApiClient private (conf: APIConfigurations) {
   ): PrepareGCUncommittedResponse = {
     val prepareGcUncommitted =
       new dev.failsafe.function.CheckedSupplier[PrepareGCUncommittedResponse]() {
-        def get(): PrepareGCUncommittedResponse = retentionApi.prepareGarbageCollectionUncommitted(
-          repoName,
-          new PrepareGCUncommittedRequest().continuationToken(continuationToken)
-        )
+        def get(): PrepareGCUncommittedResponse = {
+          internalApi.prepareGarbageCollectionUncommitted(repoName).execute()
+        }
       }
     retryWrapper.wrapWithRetry(prepareGcUncommitted)
   }
@@ -202,42 +200,43 @@ class ApiClient private (conf: APIConfigurations) {
   ): GarbageCollectionPrepareResponse = {
     val prepareGcCommits =
       new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
-        def get(): GarbageCollectionPrepareResponse = retentionApi.prepareGarbageCollectionCommits(
-          repoName,
-          new GarbageCollectionPrepareRequest().previousRunId(previousRunID)
-        )
+        def get(): GarbageCollectionPrepareResponse =
+          internalApi.prepareGarbageCollectionCommits(repoName).execute()
       }
     retryWrapper.wrapWithRetry(prepareGcCommits)
   }
 
   def getGarbageCollectionRules(repoName: String): String = {
     val getGcRules = new dev.failsafe.function.CheckedSupplier[GarbageCollectionRules]() {
-      def get(): GarbageCollectionRules = retentionApi.getGarbageCollectionRules(repoName)
+      def get(): GarbageCollectionRules = repositoriesApi.getGCRules(repoName).execute()
     }
     val gcRules = retryWrapper.wrapWithRetry(getGcRules)
     gcRules.toString()
   }
 
-  def getBlockstoreType(): String = {
+  def getBlockstoreType: String = {
     val getStorageConfig = new dev.failsafe.function.CheckedSupplier[StorageConfig]() {
-      def get(): StorageConfig = configApi.getStorageConfig()
+      def get(): StorageConfig = {
+        val cfg = configApi.getConfig.execute()
+        cfg.getStorageConfig
+      }
     }
     val storageConfig = retryWrapper.wrapWithRetry(getStorageConfig)
-    storageConfig.getBlockstoreType()
+    storageConfig.getBlockstoreType
   }
 
-  def getCommit(repoName: String, commitID: String): api.model.Commit = {
+  def getCommit(repoName: String, commitID: String): sdk.model.Commit = {
     val getCommit = new dev.failsafe.function.CheckedSupplier[Commit]() {
-      def get(): Commit = commitsApi.getCommit(repoName, commitID)
+      def get(): Commit = commitsApi.getCommit(repoName, commitID).execute()
     }
     retryWrapper.wrapWithRetry(getCommit)
   }
 
-  def getMetaRangeURL(repoName: String, commit: api.model.Commit): String = {
+  def getMetaRangeURL(repoName: String, commit: sdk.model.Commit): String = {
     val metaRangeID = commit.getMetaRangeId
     if (metaRangeID != "") {
       val getMetaRange = new dev.failsafe.function.CheckedSupplier[StorageURI]() {
-        def get(): StorageURI = metadataApi.getMetaRange(repoName, metaRangeID)
+        def get(): StorageURI = metadataApi.getMetaRange(repoName, metaRangeID).execute()
       }
       val metaRange = retryWrapper.wrapWithRetry(getMetaRange)
       val location = metaRange.getLocation
@@ -262,7 +261,7 @@ class ApiClient private (conf: APIConfigurations) {
    */
   def getRangeURL(repoName: String, rangeID: String): String = {
     val getRange = new dev.failsafe.function.CheckedSupplier[StorageURI]() {
-      def get(): StorageURI = metadataApi.getRange(repoName, rangeID)
+      def get(): StorageURI = metadataApi.getRange(repoName, rangeID).execute()
     }
     val range = retryWrapper.wrapWithRetry(getRange)
     val location = range.getLocation
@@ -274,7 +273,7 @@ class ApiClient private (conf: APIConfigurations) {
 
   def getBranchHEADCommit(repoName: String, branch: String): String = {
     val getBranch = new dev.failsafe.function.CheckedSupplier[Ref]() {
-      def get(): Ref = branchesApi.getBranch(repoName, branch)
+      def get(): Ref = branchesApi.getBranch(repoName, branch).execute()
     }
     val response = retryWrapper.wrapWithRetry(getBranch)
     response.getCommitId
