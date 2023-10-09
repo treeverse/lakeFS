@@ -656,7 +656,7 @@ jobs:
         working-directory: clients/spark
         run: |
           mkdir -p ${{ github.workspace }}/test/spark/metaclient
-          cp core/target/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly-core.jar
+          cp target/core/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly-core.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x

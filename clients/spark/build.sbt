@@ -14,7 +14,7 @@ def settingsToCompileIn(dir: String) = {
   )
 }
 
-lazy val root = Project(s"lakefs-spark-client", file("core"))
+lazy val root =  (project in file("."))
   .settings(
     name := "lakefs-spark-client",
     sharedSettings,
@@ -40,7 +40,8 @@ lazy val root = Project(s"lakefs-spark-client", file("core"))
     // Uncomment to get (very) full stacktraces in test:
     //      Test / testOptions += Tests.Argument("-oF"),
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage := "io.treeverse.clients"
+    buildInfoPackage := "io.treeverse.clients",
+    target := file(s"target/core/")
   )
   .enablePlugins(S3Plugin, BuildInfoPlugin)
 
