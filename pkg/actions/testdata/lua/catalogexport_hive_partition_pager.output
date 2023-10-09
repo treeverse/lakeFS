@@ -1,0 +1,110 @@
+result for page_size 1
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 2
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 3
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 4
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 5
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 6
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 7
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 8
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 9
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
+result for page_size 10
+# partition: letters/a=1/b=1/
+path: letters/a=1/b=1/b.csv physical: s3://bucket/a1/b1/b
+# partition: letters/a=2/b=2/
+path: letters/a=2/b=2/a.csv physical: s3://bucket/a2/b2/a
+path: letters/a=2/b=2/b.csv physical: s3://bucket/a2/b2/b
+# partition: letters/a=2/b=3/
+path: letters/a=2/b=3/a.csv physical: s3://bucket/a2/b3/a
+# partition: letters/a=3/b=4/
+path: letters/a=3/b=4/a.csv physical: s3://bucket/a3/b4/a
+path: letters/a=3/b=4/b.csv physical: s3://bucket/a3/b4/b
