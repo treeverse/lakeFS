@@ -21,34 +21,16 @@ Please note that Spark 2 is no longer supported with the lakeFS metadata client.
 
 Start Spark Shell / PySpark with the `--packages` flag:
 
-<div class="tabs">
-  <ul>
-	<li><a href="#packages-3-hadoop2">Spark 3.x for Hadoop 2 (deprecated)</a></li>
-	<li><a href="#packages-3-hadoop3">Spark 3.x for Hadoop 3</a></li>
-  </ul>
-  <div markdown="1" id="packages-3-hadoop2">
-  This client is compiled for Spark 3.0.1 with Hadoop 2 and tested with it, but can work for
-  higher versions.
-
-  ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client-301_2.12:0.10.0
-  ```
+This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but can work for other Spark
+versions and higher Hadoop versions.
   
-  Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client-301/0.10.0/lakefs-spark-client-301-assembly-0.10.0.jar`
-  </div> 
+```bash
+spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.10.0
+```
 
-  <div markdown="1" id="packages-3-hadoop3">
-  This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but can work for other Spark
-  versions and higher Hadoop versions.
-  
-  ```bash
-  spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.10.0
-  ```
-
-  Alternatively an assembled jar is available on S3, at
-  `s3://treeverse-clients-us-east/lakefs-spark-client/0.10.0/lakefs-spark-client-assembly-0.10.0.jar`
-  </div>
+Alternatively an assembled jar is available on S3, at
+`s3://treeverse-clients-us-east/lakefs-spark-client/0.10.0/lakefs-spark-client-assembly-0.10.0.jar`
+</div>
 
 ## Configuration
 

@@ -1,102 +1,53 @@
-import build.BuildType
-
-lazy val baseName = "lakefs-spark"
 lazy val projectVersion = "0.10.0"
 lazy val hadoopVersion = "3.2.1"
 
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
-def settingsToCompileIn(dir: String, flavour: String = "") = {
-  lazy val allSettings = Seq(
+def settingsToCompileIn(dir: String) = {
+  Seq(
     Compile / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "scala",
     Test / scalaSource := (ThisBuild / baseDirectory).value / dir / "src" / "test" / "scala",
     Compile / resourceDirectory := (ThisBuild / baseDirectory).value / dir / "src" / "main" / "resources",
     Compile / PB.includePaths += (Compile / resourceDirectory).value,
     Compile / PB.protoSources += (Compile / resourceDirectory).value
   )
-  lazy val flavourSettings =
-    if (flavour != "")
-      Seq(
-        Compile / unmanagedSourceDirectories += (ThisBuild / baseDirectory).value / dir / "src" / "main" / flavour / "scala"
-      )
-    else
-      Seq()
-  allSettings ++ flavourSettings
 }
 
-def generateCoreProject(buildType: BuildType) = {
-  Project(s"${baseName}-client${buildType.suffix}", file("core"))
-    .settings(
-      sharedSettings,
-      if (buildType.hadoopFlavour == "hadoop2") hadoop2ShadingSettings
-      else hadoop3ShadingSettings,
-      s3UploadSettings,
-      settingsToCompileIn("core", buildType.hadoopFlavour),
-      semanticdbEnabled := true, // enable SemanticDB
-      semanticdbVersion := scalafixSemanticdb.revision,
-      scalacOptions += "-Ywarn-unused-import",
-      Compile / PB.targets := Seq(
-        scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-      ),
-      libraryDependencies ++= getSharedLibraryDependencies(buildType)
-        ++ getLibraryDependenciesByHadoopFlavour(buildType.hadoopFlavour),
-      testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
-      Test / logBuffered := false,
-      // Uncomment to get accurate benchmarks with just "sbt test".
-      // Otherwise tell sbt to
-      //     "testOnly io.treeverse.clients.ReadSSTableBenchmark"
-      // (or similar).
-      //
-      //     Test / parallelExecution := false,
+lazy val root = (project in file("core"))
+  .settings(
+    name := "lakefs-spark-client",
+    sharedSettings,
+    hadoop3ShadingSettings,
+    s3UploadSettings,
+    settingsToCompileIn("core"),
+    semanticdbEnabled := true, // enable SemanticDB
+    semanticdbVersion := scalafixSemanticdb.revision,
+    scalacOptions += "-Ywarn-unused-import",
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+    ),
+    libraryDependencies ++= getSharedLibraryDependencies(),
+    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+    Test / logBuffered := false,
+    // Uncomment to get accurate benchmarks with just "sbt test".
+    // Otherwise tell sbt to
+    //     "testOnly io.treeverse.clients.ReadSSTableBenchmark"
+    // (or similar).
+    //
+    //     Test / parallelExecution := false,
 
-      // Uncomment to get (very) full stacktraces in test:
-      //      Test / testOptions += Tests.Argument("-oF"),
-      target := file(s"target/core${buildType.suffix}/"),
-      buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-      buildInfoPackage := "io.treeverse.clients"
-    )
-    .enablePlugins(S3Plugin, BuildInfoPlugin)
-}
-def generateExamplesProject(buildType: BuildType) =
-  Project(s"${baseName}-examples${buildType.suffix}", file(s"examples"))
-    .settings(
-      sharedSettings,
-      settingsToCompileIn("examples", buildType.hadoopFlavour),
-      semanticdbEnabled := true, // enable SemanticDB
-      semanticdbVersion := scalafixSemanticdb.revision,
-      scalacOptions += "-Ywarn-unused-import",
-      libraryDependencies ++= Seq(
-        "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
-        "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194"
-      ),
-      assembly / mainClass := Some("io.treeverse.examples.List"),
-      target := file(s"target/examples${buildType.suffix}/"),
-      run / fork := false // https://stackoverflow.com/questions/44298847/sbt-spark-fork-in-run
-    )
+    // Uncomment to get (very) full stacktraces in test:
+    //      Test / testOptions += Tests.Argument("-oF"),
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "io.treeverse.clients"
+  )
+  .enablePlugins(S3Plugin, BuildInfoPlugin)
 
-lazy val spark3Type =
-  new BuildType("-301", "3.0.1", "0.10.11", "hadoop2", "hadoop2-2.0.1")
-
-// EMR-6.5.0 beta, managed GC
-lazy val spark312Type =
-  new BuildType("-312-hadoop3", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
-
-lazy val coreType =
-  new BuildType("", "3.1.2", "0.10.11", "hadoop3", "hadoop3-2.0.1")
-lazy val core = generateCoreProject(coreType)
-lazy val core3 = generateCoreProject(spark3Type)
-lazy val core312 = generateCoreProject(spark312Type)
-lazy val examples3 = generateExamplesProject(spark3Type).dependsOn(core3)
-lazy val examples312 = generateExamplesProject(spark312Type).dependsOn(core312)
-
-lazy val root =
-  (project in file(".")).aggregate(core, core3, core312, examples3, examples312)
-
-def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
+def getSharedLibraryDependencies(): Seq[ModuleID] = {
   Seq(
     "io.lakefs" % "api-client" % "0.91.0",
-    "org.apache.spark" %% "spark-sql" % buildType.sparkVersion % "provided",
+    "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
     "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
     "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
@@ -107,6 +58,7 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "com.azure" % "azure-storage-blob" % "12.9.0",
     "com.azure" % "azure-storage-blob-batch" % "12.7.0",
     "com.azure" % "azure-identity" % "1.2.0",
+    "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
     // Snappy is JNI :-(.  However it does claim to work with
     // ClassLoaders, and (even more importantly!) using a preloaded JNI
     // version will probably continue to work because the C language API
@@ -127,17 +79,6 @@ def getSharedLibraryDependencies(buildType: BuildType): Seq[ModuleID] = {
     "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
     "com.storm-enroute" %% "scalameter" % "0.18" % "test"
   )
-}
-
-def getLibraryDependenciesByHadoopFlavour(hadoopFlavour: String): Seq[ModuleID] = {
-  if (hadoopFlavour == "hadoop2") {
-    // hadoop-aws provides AWS SDK at version >= 1.7.4.  So declare this
-    // version, but ask to use whatever is provided so we do not
-    // override what it selects.
-    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194")
-  } else {
-    Seq("com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided")
-  }
 }
 
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
@@ -193,9 +134,6 @@ lazy val s3UploadSettings = Seq(
   s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com",
   s3Upload / s3Progress := true
 )
-
-// Don't publish root project
-root / publish / skip := true
 
 lazy val commonSettings = Seq(
   version := projectVersion,

@@ -13,35 +13,17 @@ _Please note that starting version 0.9.0, Spark 2 is not supported with the lake
 
 ### Uber-jar
 The Uber-Jar can be found on a public S3 location:
-
-It should be used when running into conflicting dependencies on environments like EMR, Databricks, etc.
-
-For Spark for Hadoop 3:
 http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client/${CLIENT_VERSION}/lakefs-spark-client-assembly-${CLIENT_VERSION}.jar
 
-For Spark for Hadoop 2 (deprecated):
-http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/${CLIENT_VERSION}/lakefs-spark-client-301-assembly-${CLIENT_VERSION}.jar
-
-
 ### Maven
-Otherwise, the client can be included using Maven coordinates:
-
-For Spark for Hadoop 3:
 ```
-io.lakefs:lakefs-spark-client_2.12:<version>
+io.lakefs:lakefs-spark-client_2.12:${CLIENT_VERSION}
 ```
-[See available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
-
-For Spark for Hadoop 2 (deprecated):
-```
-io.lakefs:lakefs-spark-client-301_2.12:<version>
-```
-[See available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12).
 
 ## Usage Examples
 ### Export using spark-submit
 
-Replace `<version>` below with the latest version available. See available versions for [Spark for Hadoop 3](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12) or [Spark for Hadoop 2](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12) (deprecated).
+Replace `<version>` below with the latest version available. See [available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
 
 ```
 CLIENT_VERSION=0.10.0
@@ -58,7 +40,7 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 
 ### Export using spark-submit (uber-jar)
 
-Replace `<version>` below with the latest version available. See available versions for [Spark for Hadoop 3](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12) or [Spark for Hadoop 2](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client-301_2.12) (deprecated).
+Replace `<version>` below with the latest version available. See [available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
 ```
 CLIENT_VERSION=0.10.0
 
