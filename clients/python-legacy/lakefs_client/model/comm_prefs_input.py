@@ -109,8 +109,8 @@ class CommPrefsInput(ModelNormal):
         """CommPrefsInput - a model defined in OpenAPI
 
         Args:
-            feature_updates (bool): was \"feature updates\" checked
-            security_updates (bool): was \"security updates\" checked
+            feature_updates (bool): user preference to receive feature updates
+            security_updates (bool): user preference to receive security updates
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -197,8 +197,8 @@ class CommPrefsInput(ModelNormal):
         """CommPrefsInput - a model defined in OpenAPI
 
         Args:
-            feature_updates (bool): was \"feature updates\" checked
-            security_updates (bool): was \"security updates\" checked
+            feature_updates (bool): user preference to receive feature updates
+            security_updates (bool): user preference to receive security updates
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

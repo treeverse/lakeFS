@@ -78,7 +78,7 @@ public class User {
   }
 
    /**
-   * a unique identifier for the user.
+   * A unique identifier for the user. Cannot be edited.
    * @return id
   **/
   @javax.annotation.Nonnull
@@ -120,7 +120,7 @@ public class User {
   }
 
    /**
-   * Get friendlyName
+   * A shorter name for the user than the id. Unlike id it does not identify the user (it might not be unique). Used in some places in the UI. 
    * @return friendlyName
   **/
   @javax.annotation.Nullable
@@ -141,7 +141,7 @@ public class User {
   }
 
    /**
-   * Get email
+   * The email address of the user. If API authentication is enabled, this field is mandatory and will be invited to login. If API authentication is disabled, this field will be ignored. All current APIAuthenticators require the email to be  lowercase and unique, although custom authenticators may not enforce this. 
    * @return email
   **/
   @javax.annotation.Nullable

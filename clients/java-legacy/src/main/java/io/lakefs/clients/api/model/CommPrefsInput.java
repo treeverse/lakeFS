@@ -72,11 +72,11 @@ public class CommPrefsInput {
   }
 
    /**
-   * was \&quot;feature updates\&quot; checked
+   * user preference to receive feature updates
    * @return featureUpdates
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "was \"feature updates\" checked")
+  @ApiModelProperty(required = true, value = "user preference to receive feature updates")
 
   public Boolean getFeatureUpdates() {
     return featureUpdates;
@@ -95,11 +95,11 @@ public class CommPrefsInput {
   }
 
    /**
-   * was \&quot;security updates\&quot; checked
+   * user preference to receive security updates
    * @return securityUpdates
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "was \"security updates\" checked")
+  @ApiModelProperty(required = true, value = "user preference to receive security updates")
 
   public Boolean getSecurityUpdates() {
     return securityUpdates;
