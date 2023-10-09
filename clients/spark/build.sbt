@@ -14,7 +14,7 @@ def settingsToCompileIn(dir: String) = {
   )
 }
 
-lazy val root = (project in file("core"))
+lazy val root = Project(s"lakefs-spark-client", file("core"))
   .settings(
     name := "lakefs-spark-client",
     sharedSettings,
@@ -119,10 +119,7 @@ lazy val sharedShadeRules = Seq(
   rename("reactor.util.**").inAll
 )
 
-lazy val hadoop2ShadeRules = sharedShadeRules ++ Seq(rename("com.amazonaws.**").inAll)
 lazy val hadoop3ShadeRules = sharedShadeRules
-
-lazy val hadoop2ShadingSettings = assembly / assemblyShadeRules := hadoop2ShadeRules
 lazy val hadoop3ShadingSettings = assembly / assemblyShadeRules := hadoop3ShadeRules
 
 // Upload assembly jars to S3

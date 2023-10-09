@@ -633,7 +633,7 @@ jobs:
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
-          key: metadata-client-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client-core-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -674,7 +674,7 @@ jobs:
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
-          key: metadata-client-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client-core-${{ hashFiles('./clients/spark/**') }}
 
       - name: Generate uniquifying value
         id: unique
