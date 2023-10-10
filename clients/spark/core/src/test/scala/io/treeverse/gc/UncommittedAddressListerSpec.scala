@@ -1,6 +1,6 @@
 package io.treeverse.gc
 
-import io.lakefs.clients.api.model.PrepareGCUncommittedResponse
+import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse
 import io.treeverse.clients.{ApiClient, SparkSessionSetup}
 import org.scalatest.funspec._
 import org.scalatest.matchers._

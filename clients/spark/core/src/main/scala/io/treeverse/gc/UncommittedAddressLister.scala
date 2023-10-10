@@ -1,6 +1,6 @@
 package io.treeverse.gc
 
-import io.lakefs.clients.api.model.PrepareGCUncommittedResponse
+import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse
 import io.treeverse.clients.ApiClient
 import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.SparkSession
@@ -10,12 +10,6 @@ trait UncommittedAddressLister {
 }
 
 class UncommittedGCRunInfo(val uncommittedLocation: String, val runID: String)
-
-class DummyUncommittedAddressLister(parquetLocation: String) extends UncommittedAddressLister {
-  override def listUncommittedAddresses(spark: SparkSession, repo: String): UncommittedGCRunInfo = {
-    new UncommittedGCRunInfo(parquetLocation, "dummy_run_id")
-  }
-}
 
 class APIUncommittedAddressLister(apiClient: ApiClient) extends UncommittedAddressLister {
   override def listUncommittedAddresses(spark: SparkSession, repo: String): UncommittedGCRunInfo = {

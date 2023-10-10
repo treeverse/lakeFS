@@ -9,15 +9,15 @@ import matchers.should._
 import funspec._
 
 /** Test suite to perform property-based checking on parsers.  See
-  * https://github.com/typelevel/scalacheck/blob/main/doc/UserGuide.md.
+ *  https://github.com/typelevel/scalacheck/blob/main/doc/UserGuide.md.
  */
 class BlockParserCheck extends AnyFunSpec with ScalaCheckDrivenPropertyChecks with Matchers {
   describe("readMagic") {
     it("fails on any non-magic bytes") {
       val gen = Gen.containerOf[Seq, Byte](arbByte.arbitrary)
-      forAll(gen) {
-        case (bytes) => if (bytes != BlockParser.footerMagic)
-          a [BadFileFormatException] should be thrownBy {
+      forAll(gen) { case (bytes) =>
+        if (bytes != BlockParser.footerMagic)
+          a[BadFileFormatException] should be thrownBy {
             BlockParser.readMagic(bytes.iterator)
           }
       }

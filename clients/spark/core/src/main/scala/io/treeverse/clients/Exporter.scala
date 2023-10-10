@@ -47,7 +47,7 @@ class Exporter(
 
     // pin Exporter field to avoid serialization
     val dst = dstRoot
-    val actionsDF = spark.sql(s"SELECT 'copy' as action, * FROM ${tableName}")
+    val actionsDF = spark.sql(s"SELECT 'copy' as action, * FROM $tableName")
 
     actOnActions(ns, dst, commitID, actionsDF)
   }
@@ -126,8 +126,8 @@ class Exporter(
     FROM
     (SELECT n.key as nkey, n.address as naddress, n.etag as netag,
       p.key as pkey, p.address as paddress, p.etag as petag
-      FROM ${newTableName} n
-      FULL OUTER JOIN ${prevTableName} p
+      FROM $newTableName n
+      FULL OUTER JOIN $prevTableName p
       ON n.key = p.key
       WHERE n.etag <> p.etag OR n.etag is null or p.etag is null)
     """)
@@ -155,7 +155,7 @@ class Exporter(
   private def writeSummaryFile(success: Boolean, commitID: String, content: String) = {
     val suffix = if (success) "SUCCESS" else "FAILURE"
     val time = DateTimeFormatter.ISO_INSTANT.format(java.time.Clock.systemUTC.instant())
-    val dstPath = URLResolver.resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${time}_${suffix}")
+    val dstPath = URLResolver.resolveURL(new URI(dstRoot), s"EXPORT_${commitID}_${time}_$suffix")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
 
     val stream = dstFS.create(dstPath)
@@ -283,11 +283,8 @@ class Handler(
           dstFS.delete(dstPath, false)
           ExportStatus(key, success = true, "")
         } catch {
-          case e: (IOException) =>
-            ExportStatus(dstPath.toString,
-                         success = false,
-                         s"Unable to delete file ${dstPath}: ${e}"
-                        )
+          case e: IOException =>
+            ExportStatus(dstPath.toString, success = false, s"Unable to delete file $dstPath: $e")
         }
       }
 
@@ -302,16 +299,16 @@ class Handler(
                                             )
           ExportStatus(key, success = true, "")
         } catch {
-          case e: (FileNotFoundException) =>
+          case e: FileNotFoundException =>
             ExportStatus(
               dstPath.toString,
               success = true,
-              s"Unable to copy file ${dstPath} from source ${srcPath} since source file is missing: ${e}"
+              s"Unable to copy file $dstPath from source $srcPath since source file is missing: $e"
             )
-          case e: (IOException) =>
+          case e: IOException =>
             ExportStatus(dstPath.toString,
                          success = false,
-                         s"Unable to copy file ${dstPath} from source ${srcPath}: ${e}"
+                         s"Unable to copy file $dstPath from source $srcPath: $e"
                         )
         }
       }
