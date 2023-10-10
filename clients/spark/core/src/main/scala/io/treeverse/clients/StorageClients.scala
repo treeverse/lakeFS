@@ -20,7 +20,7 @@ object StorageClients {
       with Serializable {
     private val storageNSURI: URI = new URI(storageNamespace)
     private val bucket: String = storageNSURI.getHost
-    @transient lazy val s3Client: AmazonS3 = io.treeverse.clients.conditional.S3ClientBuilder
+    @transient lazy val s3Client: AmazonS3 = io.treeverse.clients.S3ClientBuilder
       .build(config.configuration, bucket, region, retries)
   }
 
