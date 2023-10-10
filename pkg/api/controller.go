@@ -358,7 +358,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
+	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
+
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been saved for linking
 		err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
@@ -403,7 +405,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
-		PhysicalAddress: entry.PhysicalAddress,
+		PhysicalAddress: fullPhysicalAddress,
 		SizeBytes:       swag.Int64(entry.Size),
 	}
 
