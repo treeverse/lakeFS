@@ -23,7 +23,7 @@ class ActiveCommitsAddressLister(
   ): DataFrame = {
     val prepareResult =
       try {
-        apiClient.prepareGarbageCollectionCommits(repoName, "")
+        apiClient.prepareGarbageCollectionCommits(repoName)
       } catch {
         case e: ApiException =>
           if (e.getCode == HttpStatus.SC_NOT_FOUND) {

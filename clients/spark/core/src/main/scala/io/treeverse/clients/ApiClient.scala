@@ -116,7 +116,7 @@ case class APIConfigurations(
   val readTimeoutMillisec: Int = stringAsMillisec(readTimeoutSec)
 
   def stringAsMillisec(s: String): Int = {
-    if (s != null && !s.isEmpty)
+    if (s != null && s.nonEmpty)
       s.toInt * FROM_SEC_TO_MILLISEC
     else
       TIMEOUT_NOT_SET
@@ -188,15 +188,19 @@ class ApiClient private (conf: APIConfigurations) {
     val prepareGcUncommitted =
       new dev.failsafe.function.CheckedSupplier[PrepareGCUncommittedResponse]() {
         def get(): PrepareGCUncommittedResponse = {
-          internalApi.prepareGarbageCollectionUncommitted(repoName).execute()
+          internalApi
+            .prepareGarbageCollectionUncommitted(repoName)
+            .prepareGCUncommittedRequest(
+              new PrepareGCUncommittedRequest().continuationToken(continuationToken)
+            )
+            .execute()
         }
       }
     retryWrapper.wrapWithRetry(prepareGcUncommitted)
   }
 
   def prepareGarbageCollectionCommits(
-      repoName: String,
-      previousRunID: String
+      repoName: String
   ): GarbageCollectionPrepareResponse = {
     val prepareGcCommits =
       new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
