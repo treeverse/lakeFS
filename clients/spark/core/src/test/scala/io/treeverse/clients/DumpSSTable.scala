@@ -1,6 +1,6 @@
 // Standalone reader for SSTables.
 
-// Usage from SBT: "lakefs-spark-client-312-hadoop3/test:run /path/to/table.sst"
+// Usage from SBT: "lakefs-spark-client/test:run /path/to/table.sst"
 
 package io.treeverse.clients
 
