@@ -77,8 +77,8 @@ def getSharedLibraryDependencies(): Seq[ModuleID] = {
     "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
     // Test with an up-to-date fasterxml.
-    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2" % "test",
-    "com.storm-enroute" %% "scalameter" % "0.18" % "test"
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2" % "test",
+    "com.storm-enroute" %% "scalameter" % "0.19" % "test"
   )
 }
 

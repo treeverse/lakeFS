@@ -97,7 +97,6 @@ object StorageUtils {
         region: String,
         bucket: String
     ): AmazonS3 = {
-
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
       val client =
