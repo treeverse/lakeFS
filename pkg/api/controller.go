@@ -367,7 +367,10 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		}
 	}
 
-	checksum := strings.Trim(strings.TrimSpace(body.Checksum), `"`) // trim etag spaces and quotes
+	// trim spaces and quotes from etag
+	checksum := strings.TrimFunc(body.Checksum, func(r rune) bool {
+		return r == '"' || r == ' '
+	})
 	if checksum == "" {
 		writeError(w, r, http.StatusBadRequest, "checksum is required")
 		return
