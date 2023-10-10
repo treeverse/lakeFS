@@ -359,7 +359,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
-
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been saved for linking
 		err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
@@ -367,7 +366,13 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 			return
 		}
 	}
+
 	checksum := strings.Trim(strings.TrimSpace(body.Checksum), `"`) // trim etag spaces and quotes
+	if checksum == "" {
+		writeError(w, r, http.StatusBadRequest, "checksum is required")
+		return
+	}
+
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
