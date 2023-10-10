@@ -10,9 +10,7 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
   /** Call fn(start, end) for every 0 <= start <= end <= s.size */
   def forPairs[T](s: Iterable[T], fn: (Int, Int) => Unit): Unit = {
     val size = s.size
-      (0 to size).foreach(start =>
-        (start to size).foreach(end =>
-          fn(start, end)))
+    (0 to size).foreach(start => (start to size).foreach(end => fn(start, end)))
   }
 
   describe("ByteBufferIndexedBytes") {
@@ -54,9 +52,12 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
       it("returns same elements as slice") {
         val buffer = IndexedBytes.create(bytesSeq)
         val bufferConcrete = buffer.asInstanceOf[BufferIndexedBytes]
-        forPairs(bytesSeq, (start: Int, end: Int) =>
-          bufferConcrete.sliceView(start, end)
-            should contain theSameElementsInOrderAs (buffer.slice(start, end).iterator.toSeq))
+        forPairs(
+          bytesSeq,
+          (start: Int, end: Int) =>
+            bufferConcrete.sliceView(start, end)
+              should contain theSameElementsInOrderAs (buffer.slice(start, end).iterator.toSeq)
+        )
       }
     }
 
@@ -73,15 +74,20 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
 
       it("loops on slices") {
         val buffer = IndexedBytes.create(bytesSeq)
-        forPairs(bytesSeq, (start, end) => {
-          val slice = buffer.slice(start, end)
-          val iterator = slice.iterator
-          (start to end-1).foreach(i => withClue(s"($start, $end)") {
-            iterator.hasNext should be(true)
-            iterator.next should equal(bytesSeq(i))
-          })
-          iterator.hasNext should be(false)
-        })
+        forPairs(
+          bytesSeq,
+          (start, end) => {
+            val slice = buffer.slice(start, end)
+            val iterator = slice.iterator
+            (start to end - 1).foreach(i =>
+              withClue(s"($start, $end)") {
+                iterator.hasNext should be(true)
+                iterator.next should equal(bytesSeq(i))
+              }
+            )
+            iterator.hasNext should be(false)
+          }
+        )
       }
 
       it("takes") {
@@ -91,9 +97,13 @@ class ByteBufferIndexedBytesSpec extends AnyFunSpec with Matchers {
         // Verify slices contents
         for (indices <- sliceIndices) {
           val takenX = bytesSeq.iterator.drop(indices._1).take(indices._2 - indices._1)
-          takenX.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1, indices._2 ))
+          takenX.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
+                                                                              indices._2
+                                                                             ))
           val taken = buffer.iterator.drop(indices._1).take(indices._2 - indices._1)
-          taken.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1, indices._2 ))
+          taken.toSeq should contain theSameElementsInOrderAs (bytesSeq.view(indices._1,
+                                                                             indices._2
+                                                                            ))
         }
       }
     }

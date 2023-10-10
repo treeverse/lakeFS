@@ -22,7 +22,7 @@ trait BulkRemover {
    *
    *  @return max bulk size
    */
-  def getMaxBulkSize(): Int
+  def getMaxBulkSize: Int
 
   /** Constructs object URIs so that they are consumable by the SDK client that does the actual deletion.
    *
@@ -75,7 +75,7 @@ object BulkRemoverFactory {
                                                    keepNsSchemeAndHost = false,
                                                    applyUTF8Encoding = false
                                                   )
-      logger.info(s"Remove keys from ${bucket}: ${removeKeyNames.take(100).mkString(", ")}")
+      logger.info(s"Remove keys from $bucket: ${removeKeyNames.take(100).mkString(", ")}")
       val removeKeys = removeKeyNames.map(k => new model.DeleteObjectsRequest.KeyVersion(k)).asJava
 
       val delObjReq = new model.DeleteObjectsRequest(bucket).withKeys(removeKeys)
@@ -89,14 +89,14 @@ object BulkRemoverFactory {
 
           // TODO(ariels): Metric!
           val errors = mde.getErrors();
-          logger.info(s"deleteObjects: Partial failure: ${errors.size} errors: ${errors}")
-          errors.asScala.foreach((de) =>
+          logger.info(s"deleteObjects: Partial failure: ${errors.size} errors: $errors")
+          errors.asScala.foreach(de =>
             logger.info(s"\t${de.getKey}: [${de.getCode}] ${de.getMessage}")
           )
           mde.getDeletedObjects.asScala.map(_.getKey)
         }
         case e: Exception => {
-          logger.info(s"deleteObjects failed: ${e}")
+          logger.info(s"deleteObjects failed: $e")
           throw e
         }
       }
@@ -142,7 +142,6 @@ object BulkRemoverFactory {
           .filter(isNonEmptyString)
           .collect(Collectors.toList())
           .asScala
-          .toSeq
       } catch {
         case e: Throwable =>
           e.printStackTrace()
