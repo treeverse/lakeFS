@@ -56,8 +56,8 @@ following interfaces:
 * Any call to such an interface through the published, generated SDKs.
   These include:
 
-  * Python `lakefs-sdk` - `https://pypi.org/project/lakefs-sdk/`
-  * Java Maven `io.lakefs:sdk` - `https://mvnrepository.com/artifact/io.lakefs/sdk`
+  * [Python `lakefs-sdk`](https://pypi.org/project/lakefs-sdk/)
+  * [Java Maven `io.lakefs:lakefs-sdk`](https://search.maven.org/artifact/io.lakefs/sdk)
 
   If your program only uses such calls on the SDK, it will continue to
   compile and function across a minor version upgrade of the SDK.
