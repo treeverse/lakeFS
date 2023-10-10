@@ -5,13 +5,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.commons.lang3.ObjectUtils;
+
 import io.lakefs.LakeFSLinker;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Handle writes into a storage URL. Will set the request Content-Length header. When closed, links
  * the address in lakeFS.
- * 
+ * <p>
  * TODO(johnnyaug): do not hold everything in memory
  * TODO(johnnyaug): support multipart uploads
  */
@@ -43,12 +46,33 @@ public class LakeFSFileSystemOutputStream extends OutputStream {
         OutputStream out = connection.getOutputStream();
         out.write(buffer.toByteArray());
         out.close();
-        String eTag = ObjectUtils.firstNonNull(connection.getHeaderField("Content-MD5"),
-                connection.getHeaderField("ETag"));
-        linker.link(eTag, Long.valueOf(buffer.size()));
+        String eTag = extractETag();
+        if (eTag == null) {
+            throw new IOException("Failed to finish writing to presigned link. No ETag found.");
+        }
+        linker.link(eTag, buffer.size());
         if (connection.getResponseCode() > 299) {
             throw new IOException("Failed to finish writing to presigned link. Response code: "
                     + connection.getResponseCode());
         }
+    }
+
+    /**
+     * Extracts the ETag from the response headers. Use Content-MD5 if present, otherwise use ETag.
+     * @return the ETag of the uploaded object, or null if not found
+     */
+    private String extractETag() {
+        String contentMD5 = connection.getHeaderField("Content-MD5");
+        if (contentMD5 != null) {
+            //noinspection VulnerableCodeUsages
+            byte[] dataMD5 = Base64.decodeBase64(contentMD5);
+            return Hex.encodeHexString(dataMD5);
+        }
+
+        String eTag = connection.getHeaderField("ETag");
+        if (eTag != null) {
+            return StringUtils.strip(eTag, "\" ");
+        }
+        return null;
     }
 }
