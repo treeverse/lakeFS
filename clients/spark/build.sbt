@@ -4,7 +4,7 @@ lazy val baseName = "lakefs-spark"
 lazy val projectVersion = "0.10.0"
 lazy val hadoopVersion = "3.2.1"
 
-ThisBuild / isSnapshot := true
+ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
 def settingsToCompileIn(dir: String, flavour: String = "") = {
