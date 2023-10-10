@@ -1,6 +1,8 @@
 package io.treeverse.clients.examples
 
+import io.treeverse.clients.LakeFSContext
 import org.apache.spark.sql.SparkSession
+import io.treeverse.clients.LakeFSJobParams
 
 object List extends App {
   private def dirs(path: String): Seq[String] =
