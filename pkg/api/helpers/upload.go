@@ -10,12 +10,14 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 // ClientUpload uploads contents as a file via lakeFS
@@ -102,6 +104,14 @@ func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
+func isAzureBlobURL(u string) bool {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return false
+	}
+	return strings.HasSuffix(parsedURL.Host, ".blob.core.windows.net")
+}
+
 // clientUploadPreSignHelper helper func to get physical address an upload content. Special case if conflict that
 // ErrConflict is returned where a re-try is required.
 func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID string, branchID string, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, contentLength int64) (*apigen.ObjectStats, error) {
@@ -131,18 +141,22 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
+	if isAzureBlobURL(preSignURL) {
+		req.Header.Set("x-ms-blob-type", "BlockBlob")
+	}
 
 	putResp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = putResp.Body.Close() }()
-	if putResp.StatusCode != http.StatusOK {
+	if !httputil.IsSuccessStatusCode(putResp) {
 		return nil, fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status)
 	}
 
 	etag := putResp.Header.Get("Etag")
 	etag = strings.TrimSpace(etag)
+	etag = strings.Trim(etag, "\"")
 	if etag == "" {
 		return nil, fmt.Errorf("etag is missing: %w", ErrRequestFailed)
 	}
@@ -164,7 +178,10 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 		return nil, fmt.Errorf("link object to backing store: %w", err)
 	}
 	if linkResp.JSON200 != nil {
-		return linkResp.JSON200, nil
+		objStat := *linkResp.JSON200
+		// this is a workaround for the fact that the API does not return the full physical address
+		objStat.PhysicalAddress = preSignURL
+		return &objStat, nil
 	}
 	if linkResp.JSON409 != nil {
 		return nil, ErrConflict
