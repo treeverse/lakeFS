@@ -134,8 +134,8 @@ func sanitize(output string, vars map[string]string) string {
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
 	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
-	s = normalizePreSignURL(s) // should be after storage and endpoint to enable non pre-sign url on azure
-	s = normalizeRandomObjectKey(s, vars["STORAGE"])
+	s = normalizePreSignURL(s)                       // should be after storage and endpoint to enable non pre-sign url on azure
+	s = normalizeRandomObjectKey(s, vars["STORAGE"]) // should be after pre-sign on azure in order not to break the pre-sign url
 	return s
 }
 
