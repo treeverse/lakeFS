@@ -284,10 +284,7 @@ class Handler(
           ExportStatus(key, success = true, "")
         } catch {
           case e: IOException =>
-            ExportStatus(dstPath.toString,
-                         success = false,
-                         s"Unable to delete file $dstPath: $e"
-                        )
+            ExportStatus(dstPath.toString, success = false, s"Unable to delete file $dstPath: $e")
         }
       }
 
