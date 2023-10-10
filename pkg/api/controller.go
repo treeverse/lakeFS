@@ -367,6 +367,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 			return
 		}
 	}
+	checksum := strings.Trim(strings.TrimSpace(body.Checksum), `"`) // trim etag spaces and quotes
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
@@ -374,7 +375,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		AddressType(addressType).
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
-		Checksum(body.Checksum).
+		Checksum(checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
