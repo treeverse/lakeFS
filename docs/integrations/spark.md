@@ -617,13 +617,12 @@ When using this mode, you don't need to configure the client with access to your
   </ul> 
   <div markdown="1" id="config-cli">
 ```shell
-spark-shell --conf spark.hadoop.fs.access.mode=presigned \
+spark-shell --conf spark.hadoop.fs.lakefs.access.mode=presigned \
               --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.15 \
-              io.example.ExampleClass
+              --packages io.lakefs:hadoop-lakefs-assembly:0.1.15
 ```
   </div>
   <div markdown="1" id="config-scala">
