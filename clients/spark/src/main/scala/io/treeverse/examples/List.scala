@@ -1,4 +1,4 @@
-package io.treeverse.clients.examples
+package io.treeverse.examples
 
 import io.treeverse.clients.LakeFSContext
 import org.apache.spark.sql.SparkSession
