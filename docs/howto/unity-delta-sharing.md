@@ -139,7 +139,7 @@ type: delta
 path: path/to/users/
 ```
 
-Note: The filename of the 'yaml' file containing the table definition must match 'name' of the table itself. In the example above, '_lakefs_tables/users.yaml'.
+Note: The filename of the 'yaml' file containing the table definition must match the 'name' of the table itself. In the example above, '_lakefs_tables/users.yaml'.
 {: .note }
 
 When placed inside `_lakefs_tables/users.yaml` this defines a table `users` on the prefix `path/to/users/` (so `path/to/users/` holds the prefix `_delta_log`).
