@@ -30,56 +30,6 @@ Server or the S3 Gateway.
 lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
 To configure a Remote Authenticator see the [configuration fields]({% link reference/configuration.md %}#authentication-and-authorization).
 
-#### LDAP server
-
-**Note**
-This feature is deprecated ([learn more]({% link posts/security_update.md %})). For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
-{: .note }
-
-Configure lakeFS to authenticate users on an LDAP server. Once configured,
-users can additionally log into lakeFS using their credentials LDAP. These
-users may then generate an access key and a secret access key on the Web UI
-at Administration / My Credentials. lakeFS generates an internal user once
-logged in via the LDAP server. Adding this internal user to a group allows
-assigning them a different policy.
-
-Configure the LDAP server using the [configuration fields]({% link reference/configuration.md %}):
-
-* `server_endpoint`: the `ldaps:` (or `ldap:`) URL of the LDAP server.
-* `bind_dn`, `bind_password`: Credentials for lakeFS to use to query the
-  LDAP server for users. They must identify a user with Basic
-  Authentication, and are used to convert a user ID attribute to a full
-  user DN.
-* `default_user_group`: A group to add users the first time they log in
-  using LDAP.  Typically `Viewers` or `Developers`.
-
-  Once logged in, LDAP users may be added as normal to any other group.
-* `username_attribute`: Attribute on LDAP user to identify user when
-  logging in.  Typically `uid` or `cn`.
-* `user_base_dn`: DN of root of DAP tree containing users,
-  e.g. `ou=Users,dc=treeverse,dc=io`.
-* `user_filter`: An additional filter for users allowed to login,
-  e.g. `(objectClass=person)`.
-
-LDAP users log in using the following flow:
-
-1. Bind the lakeFS control connection to `server_endpoint` using `bind_dn`,
-   `bind_password`.
-1. Receive an LDAP user-ID (e.g. "joebloggs") and a password entered on the
-   Web UI login page.
-1. Attempt to log in as internally-defined users; fail.
-1. Search the LDAP server using the control connection for the user: out of
-   all users under `user_base_dn` that satisfy `user_filter`, there must be
-   a single user whose `username_attribute` was specified by the user. Get
-   their DN.
-
-   In our example, this may be `uid=joebloggs,ou=Users,dc=treeverse,dc=io`
-   (this entry must have `objectClass: person` because of `user_filter`).
-1. Attempt to bind the received DN on the LDAP server using the password.
-1. On success, the user is authenticated.
-1. Create a new internal user with that DN if needed. When creating a user,
-   add them to the internal group named `default_user_group`.
-
 ### API Server Authentication
 
 Authenticating against the API server is done using a key-pair, passed via [Basic Access Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication).
