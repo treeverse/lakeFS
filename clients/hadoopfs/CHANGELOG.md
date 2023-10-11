@@ -2,6 +2,33 @@
 
 ## _Upcoming_
 
+## 0.2.0
+
+### Breaking changes
+
+* New required fields added to StorageConfig API (#6509).  **:warning: This
+  is a breaking change:** Only lakeFS server versions >= 0.108.0 are
+  supported.
+
+### Bug fixes
+
+* Better handling of quotes and encoding of ETags / checksums, especially
+  relevant to Azure (#6756).
+* Correctly parse physical URIs that contain whitespace (#5827).
+
+### This release contains significant maintenance changes
+
+None of these are user-visible, but all may be of interest.
+
+* Unit test using mockserver (#6646).  Unit tests now more accurate _and_
+  faster.
+* Use upcoming future-proof SDK (#6737).  This change servers as an example
+  of how you might transition other code to the new future-proof SDK.
+
+  Additionally, :warning: if you do not use an assembled hadoopfs "Über" Jar
+  then you will need to change your dependencies to include `io.lakefs:sdk`
+  rather than `io.lakefs:api-client`.
+
 ## 0.1.15
 
 * Fix presigned mode on Azure fails getting blockstore type (#6028)
