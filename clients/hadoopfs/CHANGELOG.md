@@ -12,6 +12,8 @@
 
 ### Bug fixes
 
+* Better handling of quotes and encoding of ETags / checksums, especially
+  relevant to Azure (#6756).
 * Correctly parse physical URIs that contain whitespace (#5827).
 
 ### This release contains significant maintenance changes
