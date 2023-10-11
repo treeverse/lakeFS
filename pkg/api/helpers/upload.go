@@ -156,7 +156,6 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 
 	etag := putResp.Header.Get("Etag")
 	etag = strings.TrimSpace(etag)
-	etag = strings.Trim(etag, "\"")
 	if etag == "" {
 		return nil, fmt.Errorf("etag is missing: %w", ErrRequestFailed)
 	}
