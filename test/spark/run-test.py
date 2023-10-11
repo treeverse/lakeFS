@@ -62,7 +62,7 @@ def main():
         "spark.hadoop.fs.lakefs.impl": "io.lakefs.LakeFSFileSystem",
         "spark.driver.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
         "spark.executor.extraJavaOptions": "-Dcom.amazonaws.services.s3.enableV4=true",
-        "spark.hadoop.fs.lakefs.endpoint": "http://lakefs:8000/api/v1",
+        "spark.hadoop.fs.lakefs.endpoint": "http://lakefs:8000/",
         "spark.hadoop.fs.lakefs.access.key": lakefs_access_key,
         "spark.hadoop.fs.lakefs.secret.key": lakefs_secret_key,
     }
