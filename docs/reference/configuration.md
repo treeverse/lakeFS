@@ -23,7 +23,7 @@ This reference uses `.` to denote the nesting of values.
 ## Reference
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
-* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
+* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
 
   **Note:** In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs
