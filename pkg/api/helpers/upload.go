@@ -3,6 +3,8 @@ package helpers
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -154,8 +156,7 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 		return nil, fmt.Errorf("upload %w %s: %s", ErrRequestFailed, preSignURL, putResp.Status)
 	}
 
-	etag := putResp.Header.Get("Etag")
-	etag = strings.TrimSpace(etag)
+	etag := extractEtagFromResponseHeader(putResp.Header)
 	if etag == "" {
 		return nil, fmt.Errorf("etag is missing: %w", ErrRequestFailed)
 	}
@@ -186,6 +187,24 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 		return nil, ErrConflict
 	}
 	return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrRequestFailed, linkResp.Status())
+}
+
+// extractEtagFromResponseHeader extracts the ETag from the response header.
+// If the response contains a Content-MD5 header, it will be decoded from base64 and returned as hex.
+func extractEtagFromResponseHeader(h http.Header) string {
+	// prefer Content-MD5 if exists
+	contentMD5 := h.Get("Content-MD5")
+	if contentMD5 != "" {
+		// decode base64, return as hex
+		decodeMD5, err := base64.StdEncoding.DecodeString(contentMD5)
+		if err == nil {
+			return hex.EncodeToString(decodeMD5)
+		}
+	}
+	// fallback to ETag
+	etag := h.Get("ETag")
+	etag = strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
+	return etag
 }
 
 func getPhysicalAddress(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID string, branchID string, params *apigen.GetPhysicalAddressParams) (*apigen.StagingLocation, error) {
