@@ -38,6 +38,9 @@ further assistance.
 * Configuration URL
 * Access key ID and secret access key for user `lakefs-delta-sharing-service`.
 
+Note: All YAML files extensions used in this guide must be `yaml`. Do not use a `yml` extension instead.
+{: .note }
+
 ### 2. Initial configuration
 
 Select a secret authorization token to share Unity catalog.  Unity catalog will use to authenticate to the lakeFS Delta Sharing server.  
@@ -135,6 +138,9 @@ name: users
 type: delta
 path: path/to/users/
 ```
+
+Note: The filename of the 'yaml' file containing the table definition must match 'name' of the table itself. In the example above, '_lakefs_tables/users.yaml'.
+{: .note }
 
 When placed inside `_lakefs_tables/users.yaml` this defines a table `users` on the prefix `path/to/users/` (so `path/to/users/` holds the prefix `_delta_log`).
 
