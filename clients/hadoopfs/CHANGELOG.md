@@ -6,9 +6,9 @@
 
 ### Breaking changes
 
-* Rely on copy and remove fallback to deprecated "stage object" API (#6668).
-  **:warning: This is a breaking change:** Only lakeFS versions >= 0.108.0
-  are supported.
+* New required fields added to StorageConfig API (#6509).  **:warning: This
+  is a breaking change:** Only lakeFS server versions >= 0.108.0 are
+  supported.
 
 ### Bug fixes
 
