@@ -68,7 +68,7 @@ For using presigned URLs in the UI:
           <AllowedOrigins>lakefs.endpoint</AllowedOrigins>  
           <AllowedMethods>PUT,GET</AllowedMethods>  
           <AllowedHeaders>*</AllowedHeaders>  
-          <ExposedHeaders>ETag</ExposedHeaders>  
+          <ExposedHeaders>ETag,x-ms-*</ExposedHeaders>  
           <MaxAgeInSeconds>3600</MaxAgeInSeconds>  
       </CorsRule>  
   </Cors>
