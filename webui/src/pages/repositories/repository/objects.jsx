@@ -234,7 +234,6 @@ function extractChecksumFromResponse(response) {
       const hex = raw.charCodeAt(i).toString(16);
       result += (hex.length === 2 ? hex : '0' + hex);
     }
-    console.log('[DEBUG] content md5', result);
     return result;
   }
 
