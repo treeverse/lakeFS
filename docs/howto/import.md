@@ -125,7 +125,7 @@ Once the import is complete, the changes are merged into the destination branch.
 
 #### Notes
 
-* Import uses the `src-wins` merge strategy. Therefore - import of existing objects nad prefixes in destination will override them.
+* Import uses the `src-wins` merge strategy. Therefore - import of existing objects and prefixes in destination will override them.
 * The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
 ### _lakectl import_
