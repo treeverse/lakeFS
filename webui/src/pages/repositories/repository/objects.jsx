@@ -225,6 +225,25 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
+function extractChecksumFromResponse(response) {
+  if (response.contentMD5) {
+    // convert base64 to hex
+    const raw = atob(response.contentMD5)
+    let result = '';
+    for (let i = 0; i < raw.length; i++) {
+      const hex = raw.charCodeAt(i).toString(16);
+      result += (hex.length === 2 ? hex : '0' + hex);
+    }
+    console.log('[DEBUG] content md5', result);
+    return result;
+  }
+
+  if (response.etag) {
+    // drop any quote and space
+    return response.etag.replace(/[" ]+/g, "");
+  }
+  return ""
+}
 
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {
   const fpath = destinationPath(path, file);
@@ -234,12 +253,12 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
           additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
       }
     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-    const { status, etag } = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
-    if (status >= 400) {
+    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
+    if (uploadResponse.status >= 400) {
       throw new Error(`Error uploading file: HTTP ${status}`)
     }
-    const hash = etag.replace(/"/g, "");
-    await staging.link(repo.id, reference.id, fpath, getResp, hash, file.size, file.type);
+    const checksum = extractChecksumFromResponse(uploadResponse)
+    await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
   } else {
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
   }
