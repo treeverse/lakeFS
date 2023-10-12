@@ -1,662 +1,150 @@
-# Welcome to the Lake!
+<p align="center">
+  <img src="docs/assets/img/logo_large.png"/>
+</p>
+<p align="center">
+	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
+		<img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache License" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/test.yaml?query=branch%3Amaster">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Test/badge.svg?branch=master" alt="Go tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/node.yaml?query=branch%3Amaster" >
+		<img src="https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master" alt="Node tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/esti.yaml?query=branch%3Amaster">
+		<img src="https://github.com/treeverse/lakeFS/workflows/Esti/badge.svg?branch=master" alt="Integration tests status" /></a>
+	<a href="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml">
+		<img src="https://github.com/treeverse/lakeFS/actions/workflows/docs-pr.yaml/badge.svg" alt="Docs Preview & Link Check status" /></a>
+	<a href="https://artifacthub.io/packages/search?repo=lakefs">
+		<img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/lakefs" alt="Artifact HUB" /></a>
+	<a href="CODE_OF_CONDUCT.md">
+		<img src="https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg" alt="code of conduct"></a>
+</p>
 
-![Waving Axolotl](/images/waving-axolotl-transparent-w90.gif)
+## ⚠️ An update on Hacktoberfest ⚠️
 
-**lakeFS brings software engineering best practices and applies them to data engineering**.
+We are always happy to review your lakeFS PRs!  Unfortunately however this year we are unable to allocate resources to support these efforts _in the context of Hacktoberfest_.
 
-lakeFS provides version control over the data lake, and uses Git-like semantics to create and access those versions. If you know git, you'll be right at home with lakeFS.
+## lakeFS is Data Version Control (Git for Data)
 
-With lakeFS, you can use concepts on your data lake such as **branch** to create an isolated version of the data, **commit** to create a reproducible point in time, and **merge** in order to incorporate your changes in one atomic action.
+lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
 
-This quickstart will introduce you to some of the core ideas in lakeFS and show what you can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in four short sections.
+With lakeFS you can build repeatable, atomic, and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
-* ![Query icon](/images/quickstart-step-01-query.png) [Query](#query) the pre-populated data on the `main` branch
-* ![Branch icon](/images/quickstart-step-02-branch.png) [Make changes](#branch) to the data on a new branch
-* ![Merge icon](/images/quickstart-step-03-merge.png) [Merge](#commit-and-merge) the changed data back to the `main` branch
-* ![Rollback icon](/images/quickstart-step-04-rollback.png) [Change our mind](#rollback) and rollback the changes
-* ![Actions and Hooks icon](/images/quickstart-step-05-actions.png) Learn about [actions and hooks](#actions-and-hooks) in lakeFS
+lakeFS supports AWS S3, Azure Blob Storage, and Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, DuckDB, and Presto.
 
-You might also be interested in this list of [additional lakeFS resources](#resources).
+For more information, see the [documentation](https://docs.lakefs.io).
 
-## Setup
+## Getting Started
 
-If you're reading this within the sample repository on lakeFS then you've already got lakeFS running! In this quickstart we'll reference different ways to perform tasks depending on how you're running lakeFS. See below for how you need to set up your environment for these. 
-
-<details>
-  <summary>Docker</summary>
-
-If you're running lakeFS with Docker then all the tools you need (`lakectl`) are included in the image already. 
-
-```bash
-docker run --name lakefs --pull always \
-             --rm --publish 8000:8000 \
-             treeverse/lakefs:latest \
-             run --quickstart
-```
-
-Configure `lakectl` by running the following in a new terminal window: 
-
-```bash
-docker exec -it lakefs lakectl config
-```
-
-Follow the prompts to enter your credentials that you created when you first setup lakeFS. Leave the **Server endpoint URL** as `http://127.0.0.1:8000`. 
-
-</details>
-
-<details>
-  <summary>Local install</summary>
-
-1. When you download [lakeFS from the GitHub repository](https://github.com/treeverse/lakeFS/releases) the distribution includes the `lakectl` tool. 
-
-    Add this to your `$PATH`, or when invoking it reference it from the downloaded folder
-2. [Configure](https://docs.lakefs.io/reference/cli.html#configuring-credentials-and-api-endpoint) `lakectl` by running
-
-    ```bash
-    lakectl config
-    ```
-</details>
-
-
-<a name="query"></a>
-
-# Let's get started 😺
-
-_We'll start off by querying the sample data to orient ourselves around what it is we're working with. The lakeFS server has been loaded with a sample parquet datafile. Fittingly enough for a piece of software to help users of data lakes, the `lakes.parquet` file holds data about lakes around the world._
-
-_You'll notice that the branch is set to `main`. This is conceptually the same as your main branch in Git against which you develop software code._
-
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Frepo-contents.png" alt="The lakeFS objects list with a highlight to indicate that the branch is set to main." class="quickstart"/>
-
-_Let's have a look at the data, ahead of making some changes to it on a branch in the following steps._.
-
-Click on [`lakes.parquet`](object?ref=main&path=lakes.parquet) from the object browser and notice that the built-it DuckDB runs a query to show a preview of the file's contents.
-
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
-
-_Now we'll run our own query on it to look at the top five countries represented in the data_.
-
-Copy and paste the following SQL statement into the DuckDB query panel and click on Execute.
-
-```sql
-SELECT   country, COUNT(*)
-FROM     READ_PARQUET('lakefs://test/main/lakes.parquet')
-GROUP BY country
-ORDER BY COUNT(*)
-DESC LIMIT 5;
-```
-
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
-
-_Next we're going to make some changes to the data—but on a development branch so that the data in the main branch remains untouched._
-
-<a name="branch"></a>
-# Create a Branch 🪓
-
-_lakeFS uses branches in a similar way to Git. It's a great way to isolate changes until, or if, we are ready to re-integrate them. lakeFS uses a copy-on-write technique which means that it's very efficient to create branches of your data._
-
-_Having seen the lakes data in the previous step we're now going to create a new dataset to hold data only for lakes in 🇩🇰 Denmark. Why? Well, because 😄_
-
-_The first thing we'll do is create a branch for us to do this development against. Choose one of the following methods depending on your preferred interface and how you're running lakeFS._
-
-
-<details>
-  <summary>Web UI</summary>
-
-From the [branches](./branches) page, click on **Create Branch**. Call the new branch `denmark-lakes` and click on **Create**
-
-![lakeFS Create Branch dialog](/images/create-lakefs-branch.png)
-
-</details>
-
-<details>
-  <summary>CLI (Docker)</summary>
-
-_We'll use the `lakectl` tool to create the branch._
-
-In a new terminal window run the following:
+You can spin up a standalone sandbox instance of lakeFS using Docker:
 
 ```bash
-docker exec lakefs \
-    lakectl branch create \
-	    lakefs://test/denmark-lakes \
-      --source lakefs://test/main
+docker run --pull always \
+		   --name lakefs \
+		   -p 8000:8000 \
+		   treeverse/lakefs:latest \
+		   run --quickstart
 ```
 
-_You should get a confirmation message like this:_
+Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
 
-```bash
-Source ref: lakefs://test/main
-created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
-```
-</details>
+### Quickstart
 
-<details>
-  <summary>CLI (local)</summary>
+**👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
 
-_We'll use the `lakectl` tool to create the branch._
+Make sure to also have a look at the [lakeFS samples](https://github.com/treeverse/lakeFS-samples). These are a rich resource of examples of end-to-end applications that you can build with lakeFS.
 
-In a new terminal window run the following:
+## Why Do I Need lakeFS?
 
-```bash
-lakectl branch create \
-  lakefs://test/denmark-lakes \
-  --source lakefs://test/main
-```
+### ETL Testing with Isolated Dev/Test Environment
 
-_You should get a confirmation message like this:_
+When working with a data lake, it’s useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting downstream data consumers.
 
-```bash
-Source ref: lakefs://test/main
-created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
-```
-</details>
+Running ETL and transformation jobs directly in production without proper ETL Testing is a guaranteed way to have data issues flow into dashboards, ML models, and other consumers sooner or later. The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environment to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production. With lakeFS you can create branches, and get a copy of the full production data, without copying anything. This enables a faster and easier process of ETL testing.
 
-## Transforming the Data
+### Reproducibility
 
-_Now we'll make a change to the data. lakeFS has several native clients, as well as an [S3-compatible endpoint](https://docs.lakefs.io/understand/architecture.html#s3-gateway). This means that anything that can use S3 will work with lakeFS. Pretty neat._
+Data changes frequently. This makes the task of keeping track of its exact state over time difficult. Oftentimes, people maintain only one state of their data––its current state.
 
-We're going to use DuckDB which is embedded within the web interface of lakeFS.
+This has a negative impact on the work, as it becomes hard to:
+* Debug a data issue.
+* Validate machine learning training accuracy (re-running a model over different data gives different results).
+Comply with data audits.
 
-From the lakeFS [**Objects** page](/repositories/test/objects?ref=main) select the [`lakes.parquet`](/repositories/test/object?ref=main&path=lakes.parquet) file to open the DuckDB editor: 
+In comparison, lakeFS exposes a Git-like interface to data that allows keeping track of more than just the current state of data. This makes reproducing its state at any point in time straightforward.
 
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
+### CI/CD for Data
 
-To start with, we'll load the lakes data into a DuckDB table so that we can manipulate it. Replace the previous text in the DuckDB editor with this: 
+Data pipelines feed processed data from data lakes to downstream consumers like business dashboards and machine learning models. As more and more organizations rely on data to enable business critical decisions, data reliability and trust are of paramount concern. Thus, it’s important to ensure that production data adheres to the data governance policies of businesses. These data governance requirements can be as simple as a file format validation, schema check, or an exhaustive PII(Personally Identifiable Information) data removal from all of organization’s data.
 
-```sql
-CREATE OR REPLACE TABLE lakes AS 
-    SELECT * FROM READ_PARQUET('lakefs:/testdenmark-lakes/lakes.parquet');
-```
+Thus, to ensure the quality and reliability at each stage of the data lifecycle, data quality gates need to be implemented. That is, we need to run Continuous Integration(CI) tests on the data, and only if data governance requirements are met can the data can be promoted to production for business use.
 
-You'll see a row count of 100,000 to confirm that the DuckDB table has been created. 
+Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production. With lakeFS you can create hooks that make sure that only data that passed these tests will become part of production.
 
-Just to check that it's the same data that we saw before we'll run the same query. Note that now we are querying a DuckDB table (`lakes`), rather than using a function to query a parquet file directly. 
+### Rollback
+A rollback operation is used to to fix critical data errors immediately.
 
-```sql
-SELECT   country, COUNT(*)
-FROM     lakes
-GROUP BY country
-ORDER BY COUNT(*) 
-DESC LIMIT 5;
-```
+What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-editor-02.png" alt="The DuckDB editor pane querying the lakes table" class="quickstart"/>
+Rolling back returns data to a state in the past, before the error was present. You might not be showing all the latest data after a rollback, but at least you aren’t showing incorrect data or raising errors. Since lakeFS provides versions of the data without making copies of the data, you can time travel between versions and roll back to the version of the data before the error was presented.
 
+## Community
 
-### Making a Change to the Data
+Stay up to date and get lakeFS support via:
 
-Now we can change our table, which was loaded from the original `lakes.parquet`, to remove all rows not for Denmark:
+- Share your lakeFS experience and get support on [our Slack](https://go.lakefs.io/JoinSlack).
+- Follow us and join the conversation on [Twitter](https://twitter.com/lakeFS) and [Mastodon](https://data-folks.masto.host/@lakeFS).
+- Learn from video tutorials on [our YouTube channel](https://lakefs.io/youtube).
+- Read more on data versioning and other data lake best practices in [our blog](https://lakefs.io/blog/data-version-control/).
+- Feel free to [contact us](https://lakefs.io/contact-us/) about anything else.
 
-```sql
-DELETE FROM lakes WHERE Country != 'Denmark';
-```
+## More information
 
-<img src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-editor-03.png" alt="The DuckDB editor pane deleting rows from the lakes table" class="quickstart"/>
+- Read the [documentation](https://docs.lakefs.io).
+- See the [contributing guide](https://docs.lakefs.io/contributing).
+- Take a look at our [roadmap](https://docs.lakefs.io/understand/roadmap.html) to peek into the future of lakeFS.
 
-We can verify that it's worked by reissuing the same query as before:
+## Licensing
 
-```sql
-SELECT   country, COUNT(*)
-FROM     lakes
-GROUP BY country
-ORDER BY COUNT(*) 
-DESC LIMIT 5;
-```
+lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
-<img src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-editor-04.png" alt="The DuckDB editor pane querying the lakes table showing only rows for Denmark remain" class="quickstart"/>
+## Who Uses lakeFS?
 
-## Write the Data back to lakeFS
+lakeFS is used by numerous companies, including those below. _If you use lakeFS and would like to be included here please open a PR._
 
-_The changes so far have only been to DuckDB's copy of the data. Let's now push it back to lakeFS._ 
-
-_Note the lakeFS path is different this time as we're writing it to the `denmark-lakes` branch, not `main`._
-
-```sql
-COPY lakes TO 'lakefs://test/denmark-lakes/lakes.parquet';
-```
-
-<img src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-editor-05.png" alt="The DuckDB editor pane writing data back to the denmark-lakes branch" class="quickstart"/>
-
-## Verify that the Data's Changed on the Branch
-
-_Let's just confirm for ourselves that the parquet file itself has the new data._ 
-
-_We'll drop the `lakes` table just to be sure, and then query the parquet file directly:_
-
-```sql
-DROP TABLE lakes;
-
-SELECT   country, COUNT(*)
-FROM     READ_PARQUET('lakefs://test/denmark-lakes/lakes.parquet')
-GROUP BY country
-ORDER BY COUNT(*)
-DESC LIMIT 5;
-```
-
-<img src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-editor-06.png" alt="The DuckDB editor pane show the parquet file on denmark-lakes branch has been changed" class="quickstart"/>
-
-## What about the data in `main`?
-
-_So we've changed the data in our `denmark-lakes` branch, deleting swathes of the dataset. What's this done to our original data in the `main` branch? Absolutely nothing!_ 
-
-See for yourself by returning to [the lakeFS object view](object?ref=main&path=lakes.parquet) and re-running the same query:
-
-```sql
-SELECT   country, COUNT(*)
-FROM     READ_PARQUET('lakefs://test/main/lakes.parquet')
-GROUP BY country
-ORDER BY COUNT(*)
-DESC LIMIT 5;
-```
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
-
-_In the next step we'll see how to merge our branch back into main._
-
-<a name="commit-and-merge"></a>
-# Committing Changes in lakeFS 🤝🏻
-
-_In the previous step we branched our data from `main` into a new `denmark-lakes` branch, and overwrote the `lakes.parquet` to hold solely information about lakes in Denmark. Now we're going to commit that change (just like Git) and merge it back to main (just like Git)._
-
-_Having make the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with lakeFS' API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl`._
-
-Choose one of the following methods depending on your preferred interface and how you're running lakeFS.
-
-<details>
-  <summary>Web UI</summary>
-
-1. Go to the [**Uncommitted Changes**](./changes?ref=denmark-lakes) and make sure you have the `denmark-lakes` branch selected
-
-2. Click on **Commit Changes**
-
-    ![Screenshot of Uncommitted Changes screen in lakeFS](images/commit-change.png)
-
-3. Enter a commit message and then click **Commits Changes**
-
-    ![Adding a commit message in lakeFS](images/commit-change-02.png)
-
-</details>
-
-<details>
-  <summary>CLI (Docker)</summary>
-Run the following from a terminal window:
-
-```bash
-docker exec lakefs \
-  lakectl commit lakefs://test/denmark-lakes \
-	-m "Create a dataset of just the lakes in Denmark"
-```
-
-_You will get confirmation of the commit including its hash._
-
-```bash
-Branch: lakefs://test/denmark-lakes
-Commit for branch "denmark-lakes" completed.
-
-ID: ba6d71d0965fa5d97f309a17ce08ad006c0dde15f99c5ea0904d3ad3e765bd74
-Message: Create a dataset of just the lakes in Denmark
-Timestamp: 2023-03-15 08:09:36 +0000 UTC
-Parents: 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
-```
-
-</details>
-
-<details>
-  <summary>CLI (local)</summary>
-Run the following from a terminal window:
-
-```bash
-lakectl commit lakefs://test/denmark-lakes \
-  -m "Create a dataset of just the lakes in Denmark"
-```
-
-_You will get confirmation of the commit including its hash._
-
-```bash
-Branch: lakefs://test/denmark-lakes
-Commit for branch "denmark-lakes" completed.
-
-ID: ba6d71d0965fa5d97f309a17ce08ad006c0dde15f99c5ea0904d3ad3e765bd74
-Message: Create a dataset of just the lakes in Denmark
-Timestamp: 2023-03-15 08:09:36 +0000 UTC
-Parents: 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
-```
-
-</details>
-
-
-_With our change committed, it's now time to merge it to back to the `main` branch._
-
-# Merging Branches in lakeFS 🔀
-
-_As with most operations in lakeFS, merging can be done through a variety of interfaces._
-
-<details>
-  <summary>Web UI</summary>
-
-1. Click [here](./compare?ref=main&compare=denmark-lakes), or manually go to the **Compare** tab and set the **Compared to branch** to `denmark-lakes`.
-
-    ![Merge dialog in lakeFS](images/merge01.png)
-
-2. Click on **Merge**, leave the **Strategy** as `Default` and click on **Merge** confirm
-
-    ![Merge dialog in lakeFS](images/merge02.png)
-
-</details>
-
-<details>
-  <summary>CLI (Docker)</summary>
-
-_The syntax for `merge` requires us to specify the source and target of the merge._ 
-
-Run this from a terminal window.
-
-```bash
-docker exec lakefs \
-	lakectl merge \
-		lakefs://test/denmark-lakes \
-		lakefs://test/main
-```
-
-</details>
-
-<details>
-  <summary>CLI (local)</summary>
-
-_The syntax for `merge` requires us to specify the source and target of the merge._ 
-
-Run this from a terminal window.
-
-```bash
-lakectl merge \
-  lakefs://test/denmark-lakes \
-  lakefs://test/main
-```
-
-</details>
-
-
-_We can confirm that this has worked by returning to the same object view of [`lakes.parquet`](object?ref=main&path=lakes.parquet) as before and clicking on **Execute** to rerun the same query. You'll see that the country row counts have changed, and only Denmark is left in the data._
-
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
-
-**But…oh no!** 😬 A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻‍♀.
-
-_Is all lost? Will our hero overcome the obstacles? No, and yes respectively!_
-
-_Have no fear; lakeFS can revert changes. Keep reading for the final part of the quickstart to see how._
-
-<a name="rollback"></a>
-# Rolling back Changes in lakeFS ↩️
-
-_Our intrepid user (you) merged a change back into the `main` branch and realised that they had made a mistake 🤦🏻._
-
-_The good news for them (you) is that lakeFS can revert changes made, similar to how you would in Git 😅._
-
-<details>
-  <summary>CLI (Docker)</summary>
-
-From your terminal window run `lakectl` with the `revert` command:
-
-```bash
-docker exec -it lakefs \
-    lakectl branch revert \
-	    lakefs://test/main \
-	    main --parent-number 1 --yes
-```
-
-_You should see a confirmation of a successful rollback:_
-
-```bash
-Branch: lakefs://test/main
-commit main successfully reverted
-```
-
-</details>
-
-<details>
-  <summary>CLI (local)</summary>
-
-From your terminal window run `lakectl` with the `revert` command:
-
-```bash
-lakectl branch revert \
-  lakefs://test/main \
-  main --parent-number 1 --yes
-```
-
-_You should see a confirmation of a successful rollback:_
-
-```bash
-Branch: lakefs://test/main
-commit main successfully reverted
-```
-
-</details>
-
-Back in the object page and the DuckDB query we can see that the original file is now back to how it was.
-
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fduckdb-main-02.png" alt="The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge." class="quickstart"/>
-
-
-<a name="actions-and-hooks"></a>
-# Actions and Hooks in lakeFS 🪝
-
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](https://docs.lakefs.io/howto/hooks/) can be of benefit here.
-
-We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
-
-* the commit message must not be blank
-* there must be `job_name` and `version` metadata
-* the `version` must be numeric
-
-To do this we'll create an _action_. In lakeFS, an action specifies one or more events that will trigger it, and references one or more _hooks_ to run when triggered. Actions are YAML files written to lakeFS under the `_lakefs_actions/` folder of the lakeFS repository.
-
-_Hooks_ can be either a Lua script that lakeFS will execute itself, an external web hook, or an Airflow DAG. In this example, we're using a Lua hook.
-
-## Configuring the Action
-
-1. In lakeFS create a new branch called `add_action`. You can do this through the UI or with `lakectl`: 
-
-    ```bash
-    docker exec lakefs \
-        lakectl branch create \
-                lakefs://quickstart/add_action \
-                        --source lakefs://quickstart/main
-    ```
-
-1. Open up your favorite text editor (or emacs), and paste the following YAML: 
-
-    ```yaml
-    name: Check Commit Message and Metadata
-    on:
-    pre-commit:
-        branches: 
-        - etl**
-    hooks:
-    - id: check_metadata
-        type: lua
-        properties:
-        script: |
-            commit_message=action.commit.message
-            if commit_message and #commit_message>0 then
-                print("✅ The commit message exists and is not empty: " .. commit_message)
-            else
-                error("\n\n❌ A commit message must be provided")
-            end
-
-            job_name=action.commit.metadata["job_name"]
-            if job_name == nil then
-                error("\n❌ Commit metadata must include job_name")
-            else
-                print("✅ Commit metadata includes job_name: " .. job_name)
-            end
-
-            version=action.commit.metadata["version"]
-            if version == nil then
-                error("\n❌ Commit metadata must include version")
-            else
-                print("✅ Commit metadata includes version: " .. version)
-                if tonumber(version) then
-                    print("✅ Commit metadata version is numeric")
-                else
-                    error("\n❌ Version metadata must be numeric: " .. version)
-                end
-            end
-    ```
-
-1. Save this file as `/tmp/check_commit_metadata.yml`
-
-    * You can save it elsewhere, but make sure you change the path below when uploading
-
-1. Upload the `check_commit_metadata.yml` file to the `add_action` branch under `_lakefs_actions/`. As above, you can use the UI (make sure you select the correct branch when you do), or with `lakectl`:
-
-    ```bash
-    docker exec lakefs \
-        lakectl fs upload \
-            lakefs://quickstart/add_action/_lakefs_actions/check_commit_metadata.yml \
-            --source /tmp/check_commit_metadata.yml
-    ```
-
-1. Go to the **Uncommitted Changes** tab in the UI, and make sure that you see the new file in the path shown: 
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-00.png" alt="lakeFS Uncommitted Changes view showing a file called `check_commit_metadata.yml` under the path `_lakefs_actions/`" class="quickstart"/>
-
-    Click **Commit Changes** and enter a suitable message to commit this new file to the branch. 
-
-1. Now we'll merge this new branch into `main`. From the **Compare** tab in the UI compare the `main` branch with `add_action` and click **Merge**
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-01.png" alt="lakeFS Compare view showing the difference between `main` and `add_action` branches" class="quickstart"/>
-
-## Testing the Action
-
-Let's remind ourselves what the rules are that the action is going to enforce. 
-
-> When a commit is made to any branch that begins with `etl`: 
-
-> * the commit message must not be blank
-> * there must be `job_name` and `version` metadata
-> * the `version` must be numeric
-
-We'll start by creating a branch that's going to match the `etl` pattern, and then go ahead and commit a change and see how the action works. 
-
-1. Create a new branch (see above instructions on how to do this if necessary) called `etl_20230504`. Make sure you use `main` as the source branch. 
-
-    In your new branch you should see the action that you created and merged above: 
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-02.png" alt="lakeFS branch etl_20230504 with object /_lakefs_actions/check_commit_metadata.yml" class="quickstart"/>
-
-1. To simulate an ETL job we'll use the built-in DuckDB editor to run some SQL and write the result back to the lakeFS branch. 
-
-    Open the `lakes.parquet` file on the `etl_20230504` branch from the **Objects** tab. Replace the SQL statement with the following: 
-
-    ```sql
-    COPY (
-        WITH src AS (
-            SELECT lake_name, country, depth_m,
-                RANK() OVER ( ORDER BY depth_m DESC) AS lake_rank
-            FROM READ_PARQUET('lakefs://quickstart/etl_20230504/lakes.parquet'))
-        SELECT * FROM SRC WHERE lake_rank <= 10
-    ) TO 'lakefs://quickstart/etl_20230504/top10_lakes.parquet'    
-    ```
-
-1. Head to the **Uncommitted Changes** tab in the UI and notice that there is now a file called `top10_lakes.parquet` waiting to be committed. 
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-03.png" alt="lakeFS branch etl_20230504 with uncommitted file top10_lakes.parquet" class="quickstart"/>
-
-    Now we're ready to start trying out the commit rules, and seeing what happens if we violate them.
-    
-1. Click on **Commit Changes**, leave the _Commit message_ blank, and click **Commit Changes** to confirm. 
-
-    Note that the commit fails because the hook did not succeed
-    
-    `pre-commit hook aborted`
-    
-    with the output from the hook's code displayed
-
-    `❌ A commit message must be provided`
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-04.png" alt="lakeFS blocking an attempt to commit with no commit message" class="quickstart"/>
-
-1. Do the same as the previous step, but provide a message this time: 
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-05.png" alt="A commit to lakeFS with commit message in place" class="quickstart"/>
-
-    The commit still fails as we need to include metadata too, which is what the error tells us
-
-    `❌ Commit metadata must include job_name`
-
-1. Repeat the **Commit Changes** dialog and use the **Add Metadata field** to add the required metadata: 
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-06.png" alt="A commit to lakeFS with commit message and metadata in place" class="quickstart"/>
-
-    We're almost there, but this still fails (as it should), since the version is not entirely numeric but includes `v` and `ß`: 
-
-    `❌ Version metadata must be numeric: v1.00ß`
-
-    Repeat the commit attempt specify the version as `1.00` this time, and rejoice as the commit succeeds
-
-    <img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-07.png" alt="Commit history in lakeFS showing that the commit met the rules set by the action and completed successfully." class="quickstart"/>
-
----
-
-You can view the history of all action runs from the **Action** tab: 
-
-<img width="75%" src="/api/v1/repositories/test/refs/main/objects?path=images%2Fhooks-08.png" alt="Action run history in lakeFS" class="quickstart"/>
-
-
-## Bonus Challenge
-
-And so with that, this quickstart for lakeFS draws to a close. If you're simply having _too much fun_ to stop then here's an exercise for you.
-
-Implement the requirement from above *correctly*, such that you write `denmark-lakes.parquet` in the respective branch and successfully merge it back into main. Look up how to list the contents of the `main` branch and verify that it looks like this:
-
-```bash
-object          2023-03-21 17:33:51 +0000 UTC    20.9 kB         denmark-lakes.parquet
-object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
-```
-
-<a name="resources"></a>
-# Learn more about lakeFS
-
-Here are some more resources to help you find out more about lakeFS.
-
-## Connecting lakeFS to your own object storage
-
-Enjoyed the quickstart and want to try out lakeFS against your own data? The documentation explains [how to run lakeFS locally as a Docker container locally connecting to an object store](https://docs.lakefs.io/quickstart/learning-more-lakefs.html#connecting-lakefs-to-your-own-object-storage).
-
-## Deploying lakeFS
-
-Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](https://docs.lakefs.io/deploy/onprem.html) (including on [Kubernetes](https://docs.lakefs.io/deploy/onprem.html#k8s)) or on [AWS](https://docs.lakefs.io/deploy/aws.html), [Azure](https://docs.lakefs.io/deploy/azure.html), or [GCP](https://docs.lakefs.io/deploy/gcp.html).
-
-Alternatively you might want to have a look at [lakeFS Cloud](https://lakefs.cloud/) which provides a fully-managed, SOC-2 compliant, lakeFS service.
-
-## lakeFS Samples
-
-The [lakeFS Samples](https://github.com/treeverse/lakeFS-samples) GitHub repository includes some excellent examples including:
-
-* How to implement multi-table transaction on multiple Delta Tables
-* Notebooks to show integration of lakeFS with Spark, Python, Delta Lake, Airflow and Hooks.
-* Examples of using lakeFS webhooks to run automated data quality checks on different branches.
-* Using lakeFS branching features to create dev/test data environments for ETL testing and experimentation.
-* Reproducing ML experiments with certainty using lakeFS tags.
-
-## lakeFS Community
-
-lakeFS' community is important to us. Our **guiding principles** are.
-
-* Fully open, in code and conversation
-* We learn and grow together
-* Compassion and respect in every interaction
-
-We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#announcements-and-more`. Or just lurk and soak up the vibes 😎
-
-If you're interested in getting involved in lakeFS' development head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](https://docs.lakefs.io/contributing.html) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help.
-
-We love speaking at meetups and chatting to community members at them - you can find a list of these [here](https://lakefs.io/community/).
-
-Finally, make sure to drop by to say hi on [Twitter](https://twitter.com/lakeFS), [Mastodon](https://data-folks.masto.host/@lakeFS), and [LinkedIn](https://www.linkedin.com/company/treeverse/) 👋🏻
-
-## lakeFS Concepts and Internals
-
-We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](https://docs.lakefs.io/understand/model.html) and [architecture](https://docs.lakefs.io/understand/architecture.html) guides, as well as the explanation of [how merges are handled](https://docs.lakefs.io/understand/how/merge.html). To go deeper you might be interested in [the internals of versioning](https://docs.lakefs.io/understand/how/versioning-internals.htm) and our [internal database structure](https://docs.lakefs.io/understand/how/kv.html).
+* AirAsia
+* APEX Global
+* AppsFlyer
+* Auburn University
+* BAE Systems
+* Bureau of Labor Statistics
+* Cambridge Consultants
+* Connor, Clark & Lunn Financial Group
+* Context Labs Bv
+* Daimler Truck
+* Enigma
+* EPCOR
+* Ford Motor Company
+* Generali
+* Giesecke+Devrient
+* greehill
+* Karius
+* Lockheed Martin
+* Luxonis
+* Mixpeek
+* Netflix
+* Paige
+* PETRONAS
+* Pollinate
+* Proton Technologies AG
+* ProtonMail
+* Renaissance Computing Institute
+* RHEA Group 
+* RMS
+* Sensum
+* Similarweb
+* State Street Global Advisors
+* Terramera
+* Tredence
+* Volvo Cars
+* Webiks
+* Windward
+* Woven by Toyota
