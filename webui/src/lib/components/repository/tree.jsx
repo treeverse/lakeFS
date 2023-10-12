@@ -25,7 +25,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import { commits, linkToPath } from "../../api";
+import {config, commits, linkToPath, objects} from "../../api";
 import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
@@ -47,7 +47,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -76,14 +76,17 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
-          {entry.path_type === "object" && (
-              <Dropdown.Item
-                  onClick={(e) => {
-                    copyTextToClipboard(
-                        entry.physical_address
-                    );
-                    e.preventDefault();
-                  }}
+          {entry.path_type === "object" && presign && (
+               <Dropdown.Item
+                onClick={async e => {
+                  try {
+                    const resp = await objects.getStat(repo.id, reference.id, entry.path, true);
+                    copyTextToClipboard(resp.physical_address);
+                  } catch (err) {
+                    alert(err);
+                  }
+                  e.preventDefault();
+                }}
               >
                 <LinkIcon /> Copy Presigned URL
               </Dropdown.Item>
@@ -94,7 +97,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
-              presign={presign}
+              presign={presign_ui}
             >
               <DownloadIcon /> Download
             </PathLink>
@@ -469,6 +472,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
         entry={entry}
         onDelete={onDelete}
         presign={config.config.pre_sign_support}
+        presign_ui={config.config.pre_sign_support_ui}
       />
     );
   }
