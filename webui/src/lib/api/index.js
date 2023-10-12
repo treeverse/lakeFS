@@ -590,30 +590,30 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', event => {
-            if (onProgress)
-                onProgress((event.loaded / event.total) * 100)
+            if (onProgress) {
+                onProgress((event.loaded / event.total) * 100);
+            }
         });
         xhr.addEventListener('load', () => {
           resolve({
               status: xhr.status,
               body: xhr.responseText,
               contentType: xhr.getResponseHeader('Content-Type'),
-              etag: xhr.getResponseHeader('ETag')
+              etag: xhr.getResponseHeader('ETag'),
+              contentMD5: xhr.getResponseHeader('Content-MD5'),
           })
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
         xhr.open(method, url, true);
-        xhr.setRequestHeader('Accept', 'application/json')
-        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion')
-        Object.keys(additionalHeaders).map(function(key, _) {
-            xhr.setRequestHeader(key, additionalHeaders[key])
-        })
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion');
+        Object.keys(additionalHeaders).map(key => xhr.setRequestHeader(key, additionalHeaders[key]))
         if (url.startsWith(API_ENDPOINT)) {
             // swagger API requires a form with a "content" field
             const data = new FormData();
             data.append('content', file);
-            xhr.send(data)
+            xhr.send(data);
         } else {
             xhr.send(file);
         }
