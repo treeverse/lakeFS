@@ -25,7 +25,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import {config, commits, linkToPath, objects} from "../../api";
+import { commits, linkToPath, objects } from "../../api";
 import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
