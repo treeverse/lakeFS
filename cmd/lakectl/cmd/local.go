@@ -116,6 +116,7 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		return
 	}
 	localPath = Must(filepath.Abs("."))
+
 	if considerGitRoot {
 		gitRoot, err := git.GetRepositoryPath(localPath)
 		if err == nil {
@@ -124,7 +125,6 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 			DieErr(err)
 		}
 	}
-
 	return
 }
 

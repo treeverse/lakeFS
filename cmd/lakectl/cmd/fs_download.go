@@ -30,11 +30,6 @@ var fsDownloadCmd = &cobra.Command{
 			DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
 		}
 
-		// optional destination directory
-		if len(args) > 1 {
-			dest = args[1]
-		}
-
 		ctx := cmd.Context()
 		client := getClient()
 		s := local.NewSyncManager(ctx, client, parallelism, preSignMode)
