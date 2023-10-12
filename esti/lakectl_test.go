@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -434,6 +435,25 @@ func TestLakectlFsDownload(t *testing.T) {
 	t.Run("single_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 "+dest, false, false, map[string]string{})
+		require.Contains(t, sanitizedResult, "download ro_1k.0")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 1")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
+	})
+
+	t.Run("single_with_rel_dest", func(t *testing.T) {
+		dest := t.TempDir()
+
+		// Change directory
+		currDir, err := os.Getwd()
+		require.NoError(t, err)
+		require.NoError(t, os.Chdir(dest))
+		defer func() {
+			require.NoError(t, os.Chdir(currDir))
+		}()
+
+		sanitizedResult := runCmd(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 ./", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro_1k.0")
 		require.Contains(t, sanitizedResult, "Download Summary:")
 		require.Contains(t, sanitizedResult, "Downloaded: 1")

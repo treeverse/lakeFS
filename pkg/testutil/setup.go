@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -48,11 +50,15 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	viper.SetDefault("storage_namespace", fmt.Sprintf("s3://%s", params.StorageNS))
 	viper.SetDefault(config.BlockstoreTypeKey, block.BlockstoreTypeS3)
 	viper.SetDefault("version", "dev")
-	viper.SetDefault("lakectl_dir", "..")
+	currDir, err := os.Getwd()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to get CWD")
+	}
+	viper.SetDefault("lakectl_dir", filepath.Join(currDir, ".."))
 	viper.SetDefault("azure_storage_account", "")
 	viper.SetDefault("azure_storage_access_key", "")
 
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		logger.WithError(err).Fatal("Failed to read configuration")
 	}
