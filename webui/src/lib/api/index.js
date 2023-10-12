@@ -586,7 +586,7 @@ class Tags {
 
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
 //  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
-export const uploadWithProgress = (url, file, method = 'POST', onProgress = null) => {
+export const uploadWithProgress = (url, file, method = 'POST', onProgress = null, additionalHeaders = null) => {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', event => {
@@ -606,6 +606,9 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
         xhr.open(method, url, true);
         xhr.setRequestHeader('Accept', 'application/json')
         xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion')
+        Object.keys(additionalHeaders).map(function(key, _) {
+            xhr.setRequestHeader(key, additionalHeaders[key])
+        })
         if (url.startsWith(API_ENDPOINT)) {
             // swagger API requires a form with a "content" field
             const data = new FormData();

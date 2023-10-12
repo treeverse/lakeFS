@@ -229,8 +229,12 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {
   const fpath = destinationPath(path, file);
   if (config.pre_sign_support_ui) {
+      let additionalHeaders;
+      if (config.blockstore_type === "azure") {
+          additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
+      }
     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-    const { status, etag } = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress)
+    const { status, etag } = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
     if (status >= 400) {
       throw new Error(`Error uploading file: HTTP ${status}`)
     }
