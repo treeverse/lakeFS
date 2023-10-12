@@ -20,7 +20,7 @@ var localPullCmd = &cobra.Command{
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
-		syncFlags := getLocalSyncFlags(cmd, client)
+		syncFlags := getSyncFlags(cmd, client)
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -66,7 +66,7 @@ var localPullCmd = &cobra.Command{
 			return nil
 		})
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(pullOperation))
-		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
+		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {
 			DieErr(err)
@@ -89,6 +89,6 @@ var localPullCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	withForceFlag(localPullCmd, "Reset any uncommitted local change")
-	withLocalSyncFlags(localPullCmd)
+	withSyncFlags(localPullCmd)
 	localCmd.AddCommand(localPullCmd)
 }

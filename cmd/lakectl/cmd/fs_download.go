@@ -22,28 +22,15 @@ var fsDownloadCmd = &cobra.Command{
 	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, dest := getSyncArgs(args, true, false)
-		flagSet := cmd.Flags()
-		preSignMode := Must(flagSet.GetBool("pre-sign"))
-		parallelism := Must(flagSet.GetInt("parallelism"))
-
-		if parallelism < 1 {
-			DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
-		}
-
-		ctx := cmd.Context()
 		client := getClient()
-		s := local.NewSyncManager(ctx, client, parallelism, preSignMode)
+		syncFlags := getSyncFlags(cmd, client)
+		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
+		ctx := cmd.Context()
 		remotePath := remote.GetPath()
 
 		ch := make(chan *local.Change, filesChanSize)
 
-		stat, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
-			Path: *remote.Path,
-		})
-		switch {
-		case err != nil:
-			DieErr(err)
-		case stat.JSON200 != nil:
+		if !recursive {
 			var objName string
 			if strings.Contains(remotePath, uri.PathSeparator) {
 				lastInd := strings.LastIndex(remotePath, uri.PathSeparator)
@@ -58,7 +45,7 @@ var fsDownloadCmd = &cobra.Command{
 				Type:   local.ChangeTypeAdded,
 			}
 			close(ch)
-		default:
+		} else {
 			if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 				*remote.Path += uri.PathSeparator
 			}
@@ -74,6 +61,9 @@ var fsDownloadCmd = &cobra.Command{
 					DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
 					if listResp.JSON200 == nil {
 						Die("Bad response from server during list objects", 1)
+					}
+					if len(listResp.JSON200.Results) == 0 {
+						DieFmt("No objects in path: %s", remote.String())
 					}
 
 					for _, o := range listResp.JSON200.Results {
@@ -97,8 +87,9 @@ var fsDownloadCmd = &cobra.Command{
 				}
 			}()
 		}
-		err = s.Sync(dest, remote, ch)
 
+		s := local.NewSyncManager(ctx, client, syncFlags)
+		err := s.Sync(dest, remote, ch)
 		if err != nil {
 			DieErr(err)
 		}
@@ -115,7 +106,7 @@ var fsDownloadCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	fsDownloadCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
-	withParallelismFlag(fsDownloadCmd)
+	withSyncFlags(fsDownloadCmd)
+	withRecursiveFlag(fsDownloadCmd, "recursively download all objects under path")
 	fsCmd.AddCommand(fsDownloadCmd)
 }

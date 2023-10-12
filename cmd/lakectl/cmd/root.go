@@ -6,18 +6,23 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
+	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/git"
+	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
 )
@@ -115,6 +120,72 @@ var (
 	// verboseMode is set to true when the user requests verbose output
 	verboseMode = false
 )
+
+const (
+	recursiveFlagName   = "recursive"
+	recursiveFlagShort  = "r"
+	presignFlagName     = "pre-sign"
+	parallelismFlagName = "parallelism"
+
+	defaultSyncParallelism = 25
+	defaultSyncPresign     = true
+)
+
+func withRecursiveFlag(cmd *cobra.Command, usage string) {
+	cmd.Flags().BoolP(recursiveFlagName, recursiveFlagShort, false, usage)
+}
+
+func withSyncFlags(cmd *cobra.Command) {
+	withParallelismFlag(cmd)
+	withPresignFlag(cmd)
+}
+
+func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
+	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
+	if parallelism < 1 {
+		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
+	}
+
+	presign := Must(cmd.Flags().GetBool(presignFlagName))
+	presignFlag := cmd.Flags().Lookup(presignFlagName)
+	if !presignFlag.Changed {
+		resp, err := client.GetConfigWithResponse(cmd.Context())
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+		presign = resp.JSON200.StorageConfig.PreSignSupport
+	}
+
+	return local.SyncFlags{Parallelism: parallelism, Presign: presign}
+}
+
+// getSyncArgs parses arguments to extract a remote URI and deduces the local path.
+// If the local path isn't provided and considerGitRoot is true, it uses the git repository root.
+func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
+	idx := 0
+	if requireRemote {
+		remote = MustParsePathURI("path", args[0])
+		idx += 1
+	}
+
+	if len(args) > idx {
+		expanded := Must(homedir.Expand(args[idx]))
+		localPath = Must(filepath.Abs(expanded))
+		return
+	}
+
+	localPath = Must(filepath.Abs("."))
+	if considerGitRoot {
+		gitRoot, err := git.GetRepositoryPath(localPath)
+		if err == nil {
+			localPath = gitRoot
+		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
+			DieErr(err)
+		}
+	}
+	return
+}
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
