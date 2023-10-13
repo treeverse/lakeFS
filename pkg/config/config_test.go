@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/local"
-	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -121,10 +121,11 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("s3 block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
-		testutil.Must(t, err)
-		if _, ok := adapter.(*s3a.Adapter); !ok {
-			t.Fatalf("expected an s3 block adapter, got something else instead")
+
+		_, err = factory.BuildBlockAdapter(ctx, nil, c)
+		var errProfileNotExists awsconfig.SharedConfigProfileNotExistError
+		if !errors.As(err, &errProfileNotExists) {
+			t.Fatalf("expected a config.SharedConfigProfileNotExistError, got '%v'", err)
 		}
 	})
 
