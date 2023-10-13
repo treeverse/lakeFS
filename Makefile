@@ -295,7 +295,7 @@ $(UI_DIR)/node_modules:
 gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
-proto: ## Build proto (Protocol Buffers) files (uses Buf cli)
+gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	buf generate
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
