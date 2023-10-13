@@ -246,7 +246,7 @@ validate-fmt:  ## Validate go format
 	fi
 
 .PHONY: validate-proto
-validate-proto: proto  ## build proto and check if diff found
+validate-proto: gen-proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/actions/actions.pb.go || (echo "Modification verification failed! pkg/actions/actions.pb.go"; false)
 	git diff --quiet -- pkg/auth/model/model.pb.go || (echo "Modification verification failed! pkg/auth/model/model.pb.go"; false)
 	git diff --quiet -- pkg/catalog/catalog.pb.go || (echo "Modification verification failed! pkg/catalog/catalog.pb.go"; false)
