@@ -176,12 +176,13 @@ func getMultipartSize(ctx context.Context, container container.Client, objName s
 
 func copyPartRange(ctx context.Context, destinationContainer container.Client, destinationObjName string, sourceBlobURL blockblob.Client, startPosition, count int64) (*block.UploadPartResponse, error) {
 	base64BlockID := generateRandomBlockID()
-	_, err := sourceBlobURL.StageBlockFromURL(ctx, base64BlockID, sourceBlobURL.URL(), count, &blockblob.StageBlockFromURLOptions{
-		Range: blob.HTTPRange{
-			Offset: startPosition,
-			Count:  count,
-		},
-	})
+	_, err := sourceBlobURL.StageBlockFromURL(ctx, base64BlockID, sourceBlobURL.URL(),
+		&blockblob.StageBlockFromURLOptions{
+			Range: blob.HTTPRange{
+				Offset: startPosition,
+				Count:  count,
+			},
+		})
 	if err != nil {
 		return nil, err
 	}

@@ -64,12 +64,9 @@ func (h *MSClient) open(addr string, secure bool) error {
 			//nolint:gosec
 			InsecureSkipVerify: true,
 		}
-		h.transport, err = thrift.NewTSSLSocketConf(addr, cfg)
+		h.transport = thrift.NewTSSLSocketConf(addr, cfg)
 	} else {
-		h.transport, err = thrift.NewTSocketConf(addr, cfg)
-	}
-	if err != nil {
-		return err
+		h.transport = thrift.NewTSocketConf(addr, cfg)
 	}
 	err = h.transport.Open()
 	if err != nil {

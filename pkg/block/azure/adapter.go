@@ -240,7 +240,9 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		if err != nil {
 			return "", err
 		}
-		return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
+		client := container.NewBlobClient(qualifiedKey.BlobURL)
+		urlExpiry := a.newPreSignedTime()
+		return client.GetSASURL(permissions, urlExpiry, &blob.GetSASURLOptions{})
 	}
 
 	// Otherwise assume using role based credentials and build signed URL using user delegation credentials

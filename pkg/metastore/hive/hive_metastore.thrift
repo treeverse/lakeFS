@@ -1716,7 +1716,7 @@ service ThriftHiveMetastore
   // Notification logging calls
   NotificationEventResponse get_next_notification(1:NotificationEventRequest rqst) 
   CurrentNotificationEventId get_current_notificationEventId()
-  NotificationEventsCountResponse get_notification_events_count(NotificationEventsCountRequest rqst)
+  NotificationEventsCountResponse get_notification_events_count(1:NotificationEventsCountRequest rqst)
   FireEventResponse fire_listener_event(1:FireEventRequest rqst)
   void flushCache()
 
