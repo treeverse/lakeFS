@@ -195,6 +195,9 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		hasMore           bool
 	)
 	err := filepath.Walk(rightPath, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() || diffShouldIgnore(info.Name()) {
 			return nil
 		}
@@ -267,7 +270,7 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 		}
 
 		if listResp.HTTPResponse.StatusCode != http.StatusOK {
-			return fmt.Errorf("HTTP %d: %w", listResp.StatusCode(), ErrRemoteDiffFailed)
+			return fmt.Errorf("list remote failed. HTTP %d: %w", listResp.StatusCode(), ErrRemoteFailure)
 		}
 		for _, o := range listResp.JSON200.Results {
 			path := strings.TrimPrefix(o.Path, loc.GetPath())

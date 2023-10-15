@@ -4,16 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -22,15 +18,11 @@ import (
 type LocalOperation string
 
 const (
-	localDefaultSyncParallelism = 25
-	localDefaultSyncPresign     = true
-	localDefaultMinArgs         = 0
-	localDefaultMaxArgs         = 1
+	localDefaultMinArgs = 0
+	localDefaultMaxArgs = 1
 
-	localPresignFlagName     = "pre-sign"
-	localParallelismFlagName = "parallelism"
-	localGitIgnoreFlagName   = "gitignore"
-	localForceFlagName       = "force"
+	localGitIgnoreFlagName = "gitignore"
+	localForceFlagName     = "force"
 
 	commitOperation   LocalOperation = "commit"
 	pullOperation     LocalOperation = "pull"
@@ -53,21 +45,6 @@ var (
 	ErrUnknownOperation   = errors.New("unknown operation")
 )
 
-func withParallelismFlag(cmd *cobra.Command) {
-	cmd.Flags().IntP(localParallelismFlagName, "p", localDefaultSyncParallelism,
-		"Max concurrent operations to perform")
-}
-
-func withPresignFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool(localPresignFlagName, localDefaultSyncPresign,
-		"Use pre-signed URLs when downloading/uploading data (recommended)")
-}
-
-func withLocalSyncFlags(cmd *cobra.Command) {
-	withParallelismFlag(cmd)
-	withPresignFlag(cmd)
-}
-
 func withGitIgnoreFlag(cmd *cobra.Command) {
 	cmd.Flags().Bool(localGitIgnoreFlagName, true,
 		"Update .gitignore file when working in a git repository context")
@@ -75,57 +52,6 @@ func withGitIgnoreFlag(cmd *cobra.Command) {
 
 func withForceFlag(cmd *cobra.Command, usage string) {
 	cmd.Flags().Bool(localForceFlagName, false, usage)
-}
-
-type syncFlags struct {
-	parallelism int
-	presign     bool
-}
-
-func getLocalSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) syncFlags {
-	presign := Must(cmd.Flags().GetBool(localPresignFlagName))
-	presignFlag := cmd.Flags().Lookup(localPresignFlagName)
-	if !presignFlag.Changed {
-		resp, err := client.GetConfigWithResponse(cmd.Context())
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-		presign = resp.JSON200.StorageConfig.PreSignSupport
-	}
-
-	parallelism := Must(cmd.Flags().GetInt(localParallelismFlagName))
-	if parallelism < 1 {
-		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
-	}
-	return syncFlags{parallelism: parallelism, presign: presign}
-}
-
-// getSyncArgs parses arguments to extract a remote URI and deduces the local path.
-// If the local path isn't provided and considerGitRoot is true, it uses the git repository root.
-func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
-	idx := 0
-	if requireRemote {
-		remote = MustParsePathURI("path", args[0])
-		idx += 1
-	}
-
-	if len(args) > idx {
-		expanded := Must(homedir.Expand(args[idx]))
-		localPath = Must(filepath.Abs(expanded))
-		return
-	}
-	localPath = Must(filepath.Abs("."))
-
-	if considerGitRoot {
-		gitRoot, err := git.GetRepositoryPath(localPath)
-		if err == nil {
-			localPath = gitRoot
-		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
-			DieErr(err)
-		}
-	}
-	return
 }
 
 func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {

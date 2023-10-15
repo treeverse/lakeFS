@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"os"
 	"strings"
 	"testing"
@@ -461,8 +462,13 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
+	t.Run("single_with_recursive_flag", func(t *testing.T) {
+		dest := t.TempDir()
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 "+dest+" --recursive", false, "No objects in path: lakefs://${REPO}/${BRANCH}/data/ro/ro_1k.0/\nError executing command.\n", vars)
+	})
+
 	t.Run("directory", func(t *testing.T) {
-		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data --recursive", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
@@ -476,7 +482,7 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	t.Run("directory_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest, false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest+" --recursive", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
@@ -486,6 +492,10 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "Downloaded: 5")
 		require.Contains(t, sanitizedResult, "Uploaded: 0")
 		require.Contains(t, sanitizedResult, "Removed: 0")
+	})
+
+	t.Run("directory_without_recursive", func(t *testing.T) {
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "download data failed: (stat: HTTP 404, message: not found): error downloading file\nError executing command.\n", map[string]string{})
 	})
 }
 
@@ -501,11 +511,19 @@ func TestLakectlFsUpload(t *testing.T) {
 
 	t.Run("single_file", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
+	})
+	t.Run("single_file_with_separator", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep/"
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "target path is not a valid URI\nError executing command.\n", vars)
+	})
+	t.Run("single_file_with_recursive", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/ro_1k.0"
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "\ndiff 'local://files/ro_1k/' <--> 'lakefs://${REPO}/${BRANCH}/${FILE_PATH}'...\nlstat files/ro_1k/: not a directory\nError executing command.\n", vars)
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
-		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 
 		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "upload ro_1k")
@@ -518,11 +536,26 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("exist_dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
-		sanitizedResult := runCmd(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "Upload Summary:")
 		require.Contains(t, sanitizedResult, "No changes")
 	})
+	t.Run("dir_without_recursive", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/"
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "target path is not a valid URI\nError executing command.\n", vars)
+	})
+}
+
+func getStorageConfig(t *testing.T) *apigen.StorageConfig {
+	storageResp, err := client.GetStorageConfigWithResponse(context.Background())
+	if err != nil {
+		t.Fatalf("GetStorageConfig failed: %s", err)
+	}
+	if storageResp.JSON200 == nil {
+		t.Fatalf("GetStorageConfig failed with stats: %s", storageResp.Status())
+	}
+	return storageResp.JSON200
 }
 
 func TestLakectlFsStat(t *testing.T) {
@@ -543,7 +576,25 @@ func TestLakectlFsStat(t *testing.T) {
 	}
 
 	t.Run("default", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
+		config := getStorageConfig(t)
+		goldenFile := "lakectl_stat_default"
+		if config.PreSignSupport {
+			goldenFile = "lakectl_stat_pre_sign"
+			if config.BlockstoreType == "s3" {
+				goldenFile = "lakectl_stat_pre_sign_with_expiry"
+			}
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, goldenFile, map[string]string{
+			"REPO":    repoName,
+			"STORAGE": storage,
+			"BRANCH":  mainBranch,
+			"PATH":    "data/ro",
+			"FILE":    "ro_1k.0",
+		})
+	})
+
+	t.Run("no_presign", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign=false lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
 			"REPO":    repoName,
 			"STORAGE": storage,
 			"BRANCH":  mainBranch,
@@ -553,18 +604,12 @@ func TestLakectlFsStat(t *testing.T) {
 	})
 
 	t.Run("pre-sign", func(t *testing.T) {
-		storageResp, err := client.GetStorageConfigWithResponse(context.Background())
-		if err != nil {
-			t.Fatalf("GetStorageConfig failed: %s", err)
-		}
-		if storageResp.JSON200 == nil {
-			t.Fatalf("GetStorageConfig failed with stats: %s", storageResp.Status())
-		}
-		if !storageResp.JSON200.PreSignSupport {
+		config := getStorageConfig(t)
+		if !config.PreSignSupport {
 			t.Skip("No pre-sign support for this storage")
 		}
 		goldenFile := "lakectl_stat_pre_sign"
-		if storageResp.JSON200.BlockstoreType == "s3" {
+		if config.BlockstoreType == "s3" {
 			goldenFile = "lakectl_stat_pre_sign_with_expiry"
 		}
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1", false, goldenFile, map[string]string{

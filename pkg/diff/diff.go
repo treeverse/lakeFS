@@ -37,7 +37,7 @@ func StreamRepositoryDiffs(ctx context.Context, client apigen.ClientWithResponse
 			return err
 		}
 		if diffResp.HTTPResponse.StatusCode != http.StatusOK {
-			return fmt.Errorf("HTTP %d: %w", diffResp.StatusCode(), local.ErrRemoteDiffFailed)
+			return fmt.Errorf("diff remote failed. HTTP %d: %w", diffResp.StatusCode(), local.ErrRemoteFailure)
 		}
 
 		for _, d := range diffResp.JSON200.Results {

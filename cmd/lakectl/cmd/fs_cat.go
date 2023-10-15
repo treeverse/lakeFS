@@ -17,16 +17,15 @@ var fsCatCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
-		flagSet := cmd.Flags()
-		preSignMode := Must(flagSet.GetBool("pre-sign"))
+		client := getClient()
+		preSign := getPresignMode(cmd, client)
 
 		var err error
 		var body io.ReadCloser
-		client := getClient()
 		var resp *http.Response
 		resp, err = client.GetObject(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.GetObjectParams{
 			Path:    *pathURI.Path,
-			Presign: swag.Bool(preSignMode),
+			Presign: swag.Bool(preSign),
 		})
 		DieOnHTTPError(resp)
 		body = resp.Body
@@ -48,7 +47,6 @@ var fsCatCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	fsCatCmd.Flags().Bool("pre-sign", false, "Use pre-sign link to access the data")
-
+	withPresignFlag(fsCatCmd)
 	fsCmd.AddCommand(fsCatCmd)
 }

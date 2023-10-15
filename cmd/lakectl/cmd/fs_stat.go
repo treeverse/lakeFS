@@ -15,8 +15,9 @@ var fsStatCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
-		preSign := Must(cmd.Flags().GetBool("pre-sign"))
 		client := getClient()
+		preSign := getPresignMode(cmd, client)
+
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StatObjectParams{
 			Path:         *pathURI.Path,
 			Presign:      swag.Bool(preSign),
@@ -49,7 +50,6 @@ Metadata:
 
 //nolint:gochecknoinits
 func init() {
-	fsStatCmd.Flags().Bool("pre-sign", false, "Request pre-sign for physical address")
-
+	withPresignFlag(fsStatCmd)
 	fsCmd.AddCommand(fsStatCmd)
 }
