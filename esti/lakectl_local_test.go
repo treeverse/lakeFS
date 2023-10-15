@@ -1,6 +1,7 @@
 package esti
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -200,8 +201,9 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.NoError(t, err)
 		vars["PREFIX"] = "dir_marker/"
 		vars["LOCAL_DIR"] = dataDir
-		localCreateTestData(t, vars, []string{vars["PREFIX"]})
+		_, err = uploadContent(context.Background(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "")
 		require.NoError(t, err)
+		runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 		relPath, err := filepath.Rel(tmpDir, dataDir)
