@@ -17,10 +17,11 @@
 - Fix LinkPhysicalAddress response with full path (#6748)
 - Fix lakectl download error with bad path traversal blocked (#6775)
 - Fix UI Azure pre-sign upload (#6764)
-- Fix UI upload azure presigned URL checksum as hex md5 (#6770)
-- Fix UI copy presigned URL not working when presign ui disabled (#6776)
+- Fix UI upload azure pre-signed URL checksum as hex md5 (#6770)
+- Fix UI copy pre-signed URL not working when pre-sign UI disabled (#6776)
 - Fix delete branch protection prevent commit because invalid state (#6788)
-- Update Go packages with relevasnt API updates (#6785,#6780)
+- Update Go packages with relevant API updates (#6785,#6780)
+
 
 # v0.112.0
 
