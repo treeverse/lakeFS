@@ -1,5 +1,27 @@
 # Changelog
 
+# v0.113.0
+
+:new: What's new:
+
+- Reintroduce recursive flag for lakectl fs download/upload (#6777)
+- Spark client update to use the latest lakefs SDK package (#6742)
+- Enable OpenAPI breaking changes workflow (#6739)
+
+:bug: Bugs fixed:
+
+- Fix lakectl upload with pre-sign for Azure (#6660)
+- Fix lakeFSFS ETag value when using pre-signed mode (#6751)
+- Fix LinkPhysicalAddress trim quotes and spaces from checksum (#6749)
+- Fix lakectl upload using pre-signed use ContentMD5 header for ETag (#6750)
+- Fix LinkPhysicalAddress response with full path (#6748)
+- Fix lakectl download error with bad path traversal blocked (#6775)
+- Fix UI Azure pre-sign upload (#6764)
+- Fix UI upload azure presigned URL checksum as hex md5 (#6770)
+- Fix UI copy presigned URL not working when presign ui disabled (#6776)
+- Fix delete branch protection prevent commit because invalid state (#6788)
+- Update Go packages with relevasnt API updates (#6785,#6780)
+
 # v0.112.0
 
 :new: What's new:
