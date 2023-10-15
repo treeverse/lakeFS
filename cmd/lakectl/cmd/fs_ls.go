@@ -17,7 +17,7 @@ var fsLsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := MustParsePathURI("path", args[0])
-		recursive := Must(cmd.Flags().GetBool("recursive"))
+		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non-recursive)
@@ -65,8 +65,7 @@ var fsLsCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	fsLsCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
-
+	withRecursiveFlag(fsLsCmd, "list all objects under the specified path")
 	fsCmd.AddCommand(fsLsCmd)
 }
 

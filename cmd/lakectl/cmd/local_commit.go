@@ -36,7 +36,7 @@ var localCommitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
-		syncFlags := getLocalSyncFlags(cmd, client)
+		syncFlags := getSyncFlags(cmd, client)
 		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
 		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
 		if message == "" && !allowEmptyMessage {
@@ -119,7 +119,7 @@ var localCommitCmd = &cobra.Command{
 			}
 		}()
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
-		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
+		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
 			DieErr(err)
@@ -187,6 +187,6 @@ func init() {
 	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
 	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
 	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
-	withLocalSyncFlags(localCommitCmd)
+	withSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }

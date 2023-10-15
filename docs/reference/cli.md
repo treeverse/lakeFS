@@ -2113,7 +2113,7 @@ lakectl fs cat <path uri> [flags]
 
 ```
   -h, --help       help for cat
-      --pre-sign   Use pre-sign link to access the data
+      --pre-sign   Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2132,7 +2132,8 @@ lakectl fs download <path uri> [<destination path>] [flags]
 ```
   -h, --help              help for download
   -p, --parallelism int   Max concurrent operations to perform (default 25)
-      --pre-sign          Use pre-sign link to access the data
+      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+  -r, --recursive         recursively download all objects under path
 ```
 
 
@@ -2173,7 +2174,7 @@ lakectl fs ls <path uri> [flags]
 
 ```
   -h, --help        help for ls
-      --recursive   list all objects under the specified prefix
+  -r, --recursive   list all objects under the specified path
 ```
 
 
@@ -2242,7 +2243,7 @@ lakectl fs stat <path uri> [flags]
 
 ```
   -h, --help       help for stat
-      --pre-sign   Request pre-sign for physical address
+      --pre-sign   Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2262,7 +2263,8 @@ lakectl fs upload <path uri> [flags]
       --content-type string   MIME type of contents
   -h, --help                  help for upload
   -p, --parallelism int       Max concurrent operations to perform (default 25)
-      --pre-sign              Use pre-sign link to access the data
+      --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+  -r, --recursive             recursively copy all files under local source
   -s, --source string         local file to upload, or "-" for stdin
 ```
 

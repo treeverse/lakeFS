@@ -19,7 +19,7 @@ var fsRmCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		recursive := Must(cmd.Flags().GetBool("recursive"))
+		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path", args[0])
 		client := getClient()
@@ -115,7 +115,7 @@ func deleteObject(ctx context.Context, client apigen.ClientWithResponsesInterfac
 //nolint:gochecknoinits
 func init() {
 	const defaultConcurrency = 50
-	fsRmCmd.Flags().BoolP("recursive", "r", false, "recursively delete all objects under the specified path")
+	withRecursiveFlag(fsRmCmd, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", defaultConcurrency, "max concurrent single delete operations to send to the lakeFS server")
 
 	fsCmd.AddCommand(fsRmCmd)
