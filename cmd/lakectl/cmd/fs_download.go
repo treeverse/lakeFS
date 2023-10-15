@@ -43,11 +43,13 @@ var fsDownloadCmd = &cobra.Command{
 				Path:   remotePath,
 				Type:   local.ChangeTypeAdded,
 			}
+			close(ch)
 		} else {
 			if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 				*remote.Path += uri.PathSeparator
 			}
 			go func() {
+				defer close(ch)
 				var after string
 				for {
 					listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, remote.Ref, &apigen.ListObjectsParams{
@@ -84,7 +86,6 @@ var fsDownloadCmd = &cobra.Command{
 				}
 			}()
 		}
-		close(ch)
 
 		s := local.NewSyncManager(ctx, client, syncFlags)
 		err := s.Sync(dest, remote, ch)
