@@ -32,25 +32,22 @@ var fsDownloadCmd = &cobra.Command{
 
 		if !recursive {
 			var objName string
-			if strings.Contains(remotePath, uri.PathSeparator) {
-				lastInd := strings.LastIndex(remotePath, uri.PathSeparator)
-				remotePath, objName = remotePath[lastInd+len(uri.PathSeparator):], remotePath[:lastInd]
-			} else {
-				objName = ""
+			idx := strings.LastIndex(remotePath, uri.PathSeparator)
+			if idx >= 0 {
+				remotePath, objName = remotePath[idx+len(uri.PathSeparator):], remotePath[:idx]
 			}
+
 			remote.Path = swag.String(objName)
 			ch <- &local.Change{
 				Source: local.ChangeSourceRemote,
 				Path:   remotePath,
 				Type:   local.ChangeTypeAdded,
 			}
-			close(ch)
 		} else {
 			if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 				*remote.Path += uri.PathSeparator
 			}
 			go func() {
-				defer close(ch)
 				var after string
 				for {
 					listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, remote.Ref, &apigen.ListObjectsParams{
@@ -87,6 +84,7 @@ var fsDownloadCmd = &cobra.Command{
 				}
 			}()
 		}
+		close(ch)
 
 		s := local.NewSyncManager(ctx, client, syncFlags)
 		err := s.Sync(dest, remote, ch)

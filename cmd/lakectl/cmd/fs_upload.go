@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -26,10 +25,11 @@ var fsUploadCmd = &cobra.Command{
 		source := Must(cmd.Flags().GetString("source"))
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
+		remotePath := pathURI.GetPath()
 		ctx := cmd.Context()
 
 		if !recursive { // Assume source is a single file
-			if pathURI.GetPath() == "" || path.Clean(pathURI.GetPath()) != pathURI.GetPath() {
+			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
 			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign)
@@ -44,7 +44,7 @@ var fsUploadCmd = &cobra.Command{
 		if !strings.HasSuffix(source, string(filepath.Separator)) {
 			source += string(filepath.Separator)
 		}
-		changes := localDiff(cmd.Context(), client, pathURI, source)
+		changes := localDiff(ctx, client, pathURI, source)
 		// sync changes
 		c := make(chan *local.Change, filesChanSize)
 		go func() {

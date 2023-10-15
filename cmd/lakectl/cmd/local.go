@@ -45,16 +45,6 @@ var (
 	ErrUnknownOperation   = errors.New("unknown operation")
 )
 
-func withParallelismFlag(cmd *cobra.Command) {
-	cmd.Flags().IntP(parallelismFlagName, "p", defaultSyncParallelism,
-		"Max concurrent operations to perform")
-}
-
-func withPresignFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool(presignFlagName, defaultSyncPresign,
-		"Use pre-signed URLs when downloading/uploading data (recommended)")
-}
-
 func withGitIgnoreFlag(cmd *cobra.Command) {
 	cmd.Flags().Bool(localGitIgnoreFlagName, true,
 		"Update .gitignore file when working in a git repository context")

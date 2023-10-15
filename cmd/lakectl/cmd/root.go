@@ -135,17 +135,22 @@ func withRecursiveFlag(cmd *cobra.Command, usage string) {
 	cmd.Flags().BoolP(recursiveFlagName, recursiveFlagShort, false, usage)
 }
 
+func withParallelismFlag(cmd *cobra.Command) {
+	cmd.Flags().IntP(parallelismFlagName, "p", defaultSyncParallelism,
+		"Max concurrent operations to perform")
+}
+
+func withPresignFlag(cmd *cobra.Command) {
+	cmd.Flags().Bool(presignFlagName, defaultSyncPresign,
+		"Use pre-signed URLs when downloading/uploading data (recommended)")
+}
+
 func withSyncFlags(cmd *cobra.Command) {
 	withParallelismFlag(cmd)
 	withPresignFlag(cmd)
 }
 
-func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
-	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
-	if parallelism < 1 {
-		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
-	}
-
+func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) bool {
 	presign := Must(cmd.Flags().GetBool(presignFlagName))
 	presignFlag := cmd.Flags().Lookup(presignFlagName)
 	if !presignFlag.Changed {
@@ -157,6 +162,16 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 		presign = resp.JSON200.StorageConfig.PreSignSupport
 	}
 
+	return presign
+}
+
+func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
+	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
+	if parallelism < 1 {
+		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
+	}
+
+	presign := getPresignMode(cmd, client)
 	return local.SyncFlags{Parallelism: parallelism, Presign: presign}
 }
 
