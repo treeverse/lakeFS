@@ -196,8 +196,8 @@ func (c *copier) write(chunk copierChunk) {
 		return
 	}
 	_, err := c.to.StageBlock(c.ctx, chunk.id, streaming.NopCloser(bytes.NewReader(chunk.buffer)), &blockblob.StageBlockOptions{
-		CpkInfo:                 c.o.CpkInfo,
-		CpkScopeInfo:            c.o.CpkScopeInfo,
+		CPKInfo:                 c.o.CPKInfo,
+		CPKScopeInfo:            c.o.CPKScopeInfo,
 		TransactionalValidation: c.o.TransactionalValidation,
 	})
 	if err != nil {
@@ -218,8 +218,8 @@ func (c *copier) close() error {
 		Metadata:         c.o.Metadata,
 		Tier:             c.o.AccessTier,
 		HTTPHeaders:      c.o.HTTPHeaders,
-		CpkInfo:          c.o.CpkInfo,
-		CpkScopeInfo:     c.o.CpkScopeInfo,
+		CPKInfo:          c.o.CPKInfo,
+		CPKScopeInfo:     c.o.CPKScopeInfo,
 		AccessConditions: c.o.AccessConditions,
 	})
 	return err
