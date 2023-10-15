@@ -65,17 +65,19 @@ func NewManager(refManager graveler.RefManager, store kv.Store, options ...Manag
 // If lastKnownChecksum is nil, the setting is persisted unconditionally.
 func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecord, key string, setting proto.Message, lastKnownChecksum *string) error {
 	logSetting(logging.FromContext(ctx), repository.RepositoryID, key, setting, "saving repository-level setting")
+	repoPartition := graveler.RepoPartition(repository)
+	keyPath := []byte(graveler.SettingsPath(key))
 	if lastKnownChecksum == nil {
-		return kv.SetMsg(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting)
+		return kv.SetMsg(ctx, m.store, repoPartition, keyPath, setting)
 	}
 	if *lastKnownChecksum == "" {
-		err := kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, nil)
+		err := kv.SetMsgIf(ctx, m.store, repoPartition, keyPath, setting, nil)
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			return graveler.ErrPreconditionFailed
 		}
 		return err
 	}
-	valueWithPredicate, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
+	valueWithPredicate, err := m.store.Get(ctx, []byte(repoPartition), keyPath)
 	if errors.Is(err, kv.ErrNotFound) {
 		return graveler.ErrPreconditionFailed
 	}
@@ -89,7 +91,7 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 	if *currentChecksum != *lastKnownChecksum {
 		return graveler.ErrPreconditionFailed
 	}
-	err = kv.SetMsgIf(ctx, m.store, graveler.RepoPartition(repository), []byte(graveler.SettingsPath(key)), setting, valueWithPredicate.Predicate)
+	err = kv.SetMsgIf(ctx, m.store, repoPartition, keyPath, setting, valueWithPredicate.Predicate)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		return graveler.ErrPreconditionFailed
 	}
@@ -97,8 +99,9 @@ func (m *Manager) Save(ctx context.Context, repository *graveler.RepositoryRecor
 }
 
 func computeChecksum(value []byte) (*string, error) {
-	if value == nil {
-		return nil, graveler.ErrInvalidValue
+	if len(value) == 0 {
+		// empty value checksum is the empty string
+		return swag.String(""), nil
 	}
 	h := sha256.New()
 	_, err := h.Write(value)
