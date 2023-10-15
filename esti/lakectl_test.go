@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"os"
 	"strings"
 	"testing"
@@ -546,6 +547,17 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 }
 
+func getStorageConfig(t *testing.T) *apigen.StorageConfig {
+	storageResp, err := client.GetStorageConfigWithResponse(context.Background())
+	if err != nil {
+		t.Fatalf("GetStorageConfig failed: %s", err)
+	}
+	if storageResp.JSON200 == nil {
+		t.Fatalf("GetStorageConfig failed with stats: %s", storageResp.Status())
+	}
+	return storageResp.JSON200
+}
+
 func TestLakectlFsStat(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -564,7 +576,25 @@ func TestLakectlFsStat(t *testing.T) {
 	}
 
 	t.Run("default", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
+		config := getStorageConfig(t)
+		goldenFile := "lakectl_stat_default"
+		if config.PreSignSupport {
+			goldenFile = "lakectl_stat_pre_sign"
+			if config.BlockstoreType == "s3" {
+				goldenFile = "lakectl_stat_pre_sign_with_expiry"
+			}
+		}
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, goldenFile, map[string]string{
+			"REPO":    repoName,
+			"STORAGE": storage,
+			"BRANCH":  mainBranch,
+			"PATH":    "data/ro",
+			"FILE":    "ro_1k.0",
+		})
+	})
+
+	t.Run("no_presign", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign=false lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
 			"REPO":    repoName,
 			"STORAGE": storage,
 			"BRANCH":  mainBranch,
@@ -574,18 +604,12 @@ func TestLakectlFsStat(t *testing.T) {
 	})
 
 	t.Run("pre-sign", func(t *testing.T) {
-		storageResp, err := client.GetStorageConfigWithResponse(context.Background())
-		if err != nil {
-			t.Fatalf("GetStorageConfig failed: %s", err)
-		}
-		if storageResp.JSON200 == nil {
-			t.Fatalf("GetStorageConfig failed with stats: %s", storageResp.Status())
-		}
-		if !storageResp.JSON200.PreSignSupport {
+		config := getStorageConfig(t)
+		if !config.PreSignSupport {
 			t.Skip("No pre-sign support for this storage")
 		}
 		goldenFile := "lakectl_stat_pre_sign"
-		if storageResp.JSON200.BlockstoreType == "s3" {
+		if config.BlockstoreType == "s3" {
 			goldenFile = "lakectl_stat_pre_sign_with_expiry"
 		}
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1", false, goldenFile, map[string]string{
