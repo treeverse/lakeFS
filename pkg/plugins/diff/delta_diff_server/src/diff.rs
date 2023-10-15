@@ -30,7 +30,7 @@ pub struct GatewayConfig {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DiffRequest {
+pub struct TableDiffRequest {
     #[prost(message, optional, tag = "1")]
     pub props: ::core::option::Option<DiffProps>,
     #[prost(message, optional, tag = "2")]
@@ -38,7 +38,7 @@ pub struct DiffRequest {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DiffResponse {
+pub struct TableDiffResponse {
     #[prost(message, repeated, tag = "1")]
     pub entries: ::prost::alloc::vec::Vec<TableOperation>,
     #[prost(enumeration = "DiffType", tag = "2")]
@@ -46,13 +46,13 @@ pub struct DiffResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct HistoryRequest {
+pub struct ShowHistoryRequest {
     #[prost(message, optional, tag = "1")]
     pub path: ::core::option::Option<TablePath>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct HistoryResponse {
+pub struct ShowHistoryResponse {
     #[prost(message, repeated, tag = "1")]
     pub entries: ::prost::alloc::vec::Vec<TableOperation>,
 }
@@ -151,12 +151,12 @@ pub mod table_differ_server {
     pub trait TableDiffer: Send + Sync + 'static {
         async fn table_diff(
             &self,
-            request: tonic::Request<super::DiffRequest>,
-        ) -> Result<tonic::Response<super::DiffResponse>, tonic::Status>;
+            request: tonic::Request<super::TableDiffRequest>,
+        ) -> Result<tonic::Response<super::TableDiffResponse>, tonic::Status>;
         async fn show_history(
             &self,
-            request: tonic::Request<super::HistoryRequest>,
-        ) -> Result<tonic::Response<super::HistoryResponse>, tonic::Status>;
+            request: tonic::Request<super::ShowHistoryRequest>,
+        ) -> Result<tonic::Response<super::ShowHistoryResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct TableDifferServer<T: TableDiffer> {
@@ -220,16 +220,18 @@ pub mod table_differ_server {
                 "/diff.TableDiffer/TableDiff" => {
                     #[allow(non_camel_case_types)]
                     struct TableDiffSvc<T: TableDiffer>(pub Arc<T>);
-                    impl<T: TableDiffer> tonic::server::UnaryService<super::DiffRequest>
+                    impl<
+                        T: TableDiffer,
+                    > tonic::server::UnaryService<super::TableDiffRequest>
                     for TableDiffSvc<T> {
-                        type Response = super::DiffResponse;
+                        type Response = super::TableDiffResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::DiffRequest>,
+                            request: tonic::Request<super::TableDiffRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).table_diff(request).await };
@@ -258,16 +260,16 @@ pub mod table_differ_server {
                     struct ShowHistorySvc<T: TableDiffer>(pub Arc<T>);
                     impl<
                         T: TableDiffer,
-                    > tonic::server::UnaryService<super::HistoryRequest>
+                    > tonic::server::UnaryService<super::ShowHistoryRequest>
                     for ShowHistorySvc<T> {
-                        type Response = super::HistoryResponse;
+                        type Response = super::ShowHistoryResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::HistoryRequest>,
+                            request: tonic::Request<super::ShowHistoryRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
